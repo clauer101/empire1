@@ -1,0 +1,50 @@
+# gameserver items configuration
+# This file defines all buildings, knowledge, structures, critters, artefacts and wonders.
+
+# Item types:
+#   building  - empire buildings that provide effects
+#   knowledge - research items that provide effects
+#   structure - defensive towers placed on the hex map
+#   critter   - attack units sent along paths
+#   artefact  - collectible items with passive effects
+#   wonder    - world wonders (victory condition)
+
+buildings: {}
+  # example_building:
+  #   name: "Example Building"
+  #   type: building
+  #   effort: 100
+  #   costs: { gold: 500, culture: 100 }
+  #   requirements: []
+  #   effects: { gold_modifier: 0.1 }
+
+knowledge: {}
+
+structures: {}
+  # example_tower:
+  #   name: "Arrow Tower"
+  #   type: structure
+  #   damage: 5.0
+  #   range: 3          # hex fields
+  #   reload_time: 1000  # ms
+  #   shot_speed: 8.0    # hex/s
+  #   shot_type: normal
+  #   effects: {}
+
+critters: {}
+  # example_critter:
+  #   name: "Goblin"
+  #   type: critter
+  #   speed: 2.0         # hex fields per second
+  #   health: 20.0
+  #   armour: 0.0
+  #   slots: 1
+  #   time_between: 500  # ms between spawns in a wave
+  #   is_boss: false
+  #   capture: { gold: 10 }
+  #   bonus: { gold: 5 }
+  #   spawn_on_death: {}
+
+artefacts: {}
+
+wonders: {}

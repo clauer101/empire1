@@ -1,0 +1,22 @@
+# AI army templates
+# Scaled by empire effort level at trigger time.
+
+difficulty_tiers:
+  easy:
+    max_effort: 14
+  normal:
+    max_effort: 20
+  hard:
+    max_effort: 26
+  crushing:
+    max_effort: 32
+  insane:
+    max_effort: 40
+
+templates: {}
+  # example_ai_army:
+  #   waves:
+  #     - critter_iid: "goblin"
+  #       slots: 10
+  #     - critter_iid: "orc"
+  #       slots: 5
