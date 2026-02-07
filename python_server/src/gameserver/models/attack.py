@@ -1,0 +1,42 @@
+"""Attack model — state machine for army travel and siege.
+
+An Attack tracks an army travelling to a target, entering siege,
+and eventually triggering a battle.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+
+
+class AttackPhase(Enum):
+    """Phases of an attack."""
+
+    TRAVELLING = "travelling"
+    IN_SIEGE = "in_siege"
+    IN_BATTLE = "in_battle"
+    FINISHED = "finished"
+
+
+@dataclass
+class Attack:
+    """State of an in-progress attack.
+
+    Attributes:
+        attack_id: Unique attack ID.
+        attacker_uid: UID of the attacking player.
+        defender_uid: UID of the defending player.
+        army_aid: AID of the army being sent.
+        phase: Current phase of the attack.
+        eta_seconds: Remaining travel time in seconds.
+        siege_remaining_seconds: Remaining siege countdown.
+    """
+
+    attack_id: int
+    attacker_uid: int
+    defender_uid: int
+    army_aid: int
+    phase: AttackPhase = AttackPhase.TRAVELLING
+    eta_seconds: float = 5400.0  # BASE_TRAVEL_OFFSET
+    siege_remaining_seconds: float = 0.0

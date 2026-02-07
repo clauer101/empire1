@@ -1,0 +1,33 @@
+meta:
+  version: 1
+  saved_at: '2026-02-07T21:09:50'
+  saved_at_unix: 1770494990.3419635
+empires:
+- uid: 100
+  name: TestImperium
+  resources:
+    gold: 124.31897810364467
+    culture: 46.107805399412236
+    life: 10.0
+  buildings:
+    farm: 0.0
+    library: 0.0
+  knowledge:
+    archery: 0.0
+  citizens:
+    merchant: 2
+    scientist: 1
+    artist: 1
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  empire_map:
+    paths: {}
+    build_tiles: []
+    occupied: []
+attacks: []
+battles: []
