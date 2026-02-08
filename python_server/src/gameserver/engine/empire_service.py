@@ -90,17 +90,17 @@ class EmpireService:
         """Generate gold and culture based on citizens and effects."""
         # Gold: base * modifier + offset
         merchant_count = empire.citizens.get("merchant", 0)
-        gold_modifier = 1.0 + merchant_count * self._citizen_effect
+        gold_modifier = merchant_count * self._citizen_effect
         gold_modifier += empire.get_effect("gold_modifier", 0.0)
         gold_offset = empire.get_effect("gold_offset", 0.0)
-        empire.resources["gold"] += (self._base_gold * gold_modifier + gold_offset) * dt
+        empire.resources["gold"] += ((self._base_gold + gold_offset) * (1 + gold_modifier )) * dt
 
         # Culture: base * modifier + offset
         artist_count = empire.citizens.get("artist", 0)
-        culture_modifier = 1.0 + artist_count * self._citizen_effect
+        culture_modifier = artist_count * self._citizen_effect
         culture_modifier += empire.get_effect("culture_modifier", 0.0)
         culture_offset = empire.get_effect("culture_offset", 0.0)
-        empire.resources["culture"] += (self._base_culture * culture_modifier + culture_offset) * dt
+        empire.resources["culture"] += ((self._base_culture + culture_offset) * (1 + culture_modifier)) * dt
 
         # Life: offset only (restore_life)
         life_offset = empire.get_effect("life_offset", 0.0)
@@ -191,6 +191,8 @@ class EmpireService:
         """Start building/researching an item. Returns error message or None.
 
         Validates requirements, deducts costs, and enqueues the item.
+        If another item is already in the queue, it is paused (progress saved)
+        and the new item takes over.
         Buildings go to ``build_queue``, knowledge to ``research_queue``.
         """
         item = self._upgrades.get(iid)
@@ -213,37 +215,43 @@ class EmpireService:
         from gameserver.models.items import ItemType
 
         if item.item_type == ItemType.BUILDING:
-            if iid in empire.buildings:
-                return f"Building {iid} already started or completed"
-            if empire.build_queue is not None:
-                return "Build queue is busy"
-            # Deduct costs
-            for res, cost in item.costs.items():
-                current = empire.resources.get(res, 0.0)
-                if current < cost:
-                    return f"Not enough {res} (need {cost}, have {current:.1f})"
-            for res, cost in item.costs.items():
-                empire.resources[res] -= cost
-            # Enqueue
-            empire.buildings[iid] = float(item.effort)
+            if iid in empire.buildings and empire.buildings[iid] <= 0:
+                return f"Building {iid} already completed"
+            # Check if building is starting for the first time (costs only paid once)
+            is_new_start = iid not in empire.buildings
+            # Deduct costs only on first start
+            if is_new_start:
+                for res, cost in item.costs.items():
+                    current = empire.resources.get(res, 0.0)
+                    if current < cost:
+                        return f"Not enough {res} (need {cost}, have {current:.1f})"
+                for res, cost in item.costs.items():
+                    empire.resources[res] -= cost
+            # Enqueue (replace current build queue item)
+            # Only set effort if not already started (not in dict or already completed)
+            if is_new_start:
+                empire.buildings[iid] = float(item.effort)
             if item.effort > 0:
                 empire.build_queue = iid
             log.info("Empire %d: started building %s (effort=%s)", empire.uid, iid, item.effort)
 
         elif item.item_type == ItemType.KNOWLEDGE:
-            if iid in empire.knowledge:
-                return f"Knowledge {iid} already started or completed"
-            if empire.research_queue is not None:
-                return "Research queue is busy"
-            # Deduct costs
-            for res, cost in item.costs.items():
-                current = empire.resources.get(res, 0.0)
-                if current < cost:
-                    return f"Not enough {res} (need {cost}, have {current:.1f})"
-            for res, cost in item.costs.items():
-                empire.resources[res] -= cost
-            # Enqueue
-            empire.knowledge[iid] = float(item.effort)
+            if iid in empire.knowledge and empire.knowledge[iid] <= 0:
+                return f"Knowledge {iid} already completed"
+            # Check if research is starting for the first time (costs only paid once)
+            is_new_start = iid not in empire.knowledge
+            # Deduct costs only on first start
+            if is_new_start:
+                for res, cost in item.costs.items():
+                    current = empire.resources.get(res, 0.0)
+                    if current < cost:
+                        return f"Not enough {res} (need {cost}, have {current:.1f})"
+                for res, cost in item.costs.items():
+                    empire.resources[res] -= cost
+            # Enqueue (replace current research queue item)
+            # Only set effort if not already started (not in dict or already completed)
+            if is_new_start:
+                empire.knowledge[iid] = float(item.effort)
             if item.effort > 0:
                 empire.research_queue = iid
             log.info("Empire %d: started research %s (effort=%s)", empire.uid, iid, item.effort)
@@ -264,13 +272,12 @@ class EmpireService:
         pass
 
     def upgrade_citizen(self, empire: Empire) -> Optional[str]:
-        """Add one citizen (artist). Returns error message or None."""
+        """Add one new free citizen. Returns error message or None."""
         n = sum(empire.citizens.values())
         price = self._citizen_price(n + 1)
         if empire.resources.get("culture", 0.0) < price:
             return f"Not enough culture (need {price:.1f}, have {empire.resources.get('culture', 0.0):.1f})"
-        empire.resources["culture"] -= price
-        empire.citizens["artist"] = empire.citizens.get("artist", 0) + 1
+        empire.citizens["free"] = empire.citizens.get("free", 0) + 1
         return None
 
     def _citizen_price(self, i: int) -> float:
@@ -280,6 +287,38 @@ class EmpireService:
         return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:
-        """Redistribute citizens. Returns error message or None."""
-        # TODO: implement
-        pass
+        """Redistribute citizens among roles. Returns error message or None.
+        
+        Args:
+            empire: Target empire
+            distribution: Dict like {'merchant': 2, 'scientist': 1, 'artist': 3}
+                         Total must equal current total.
+        
+        Returns:
+            Error message if validation fails, None on success.
+        """
+        # Valid citizen roles
+        valid_roles = {"merchant", "scientist", "artist"}
+        
+        # Get current total
+        current_total = sum(empire.citizens.values())
+        
+        # Validate all keys are valid roles
+        for role in distribution.keys():
+            if role not in valid_roles:
+                return f"Invalid citizen role: {role}"
+        
+        # Validate all values are non-negative
+        for role, count in distribution.items():
+            if not isinstance(count, int) or count < 0:
+                return f"Citizen count must be non-negative integer: {role}={count}"
+        
+        # Validate total doesn't exceed current
+        new_total = sum(distribution.values())
+        if new_total > current_total:
+            return f"Too many citizens assigned (max {current_total}, got {new_total})"
+        
+        # Apply new distribution + calculate "free"
+        empire.citizens = distribution
+        empire.citizens["free"] = current_total - new_total
+        return None

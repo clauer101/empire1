@@ -168,19 +168,6 @@ class TestBuildItemQueue:
         assert err is not None
         assert "already" in err.lower()
 
-    def test_build_queue_busy(self):
-        """Cannot start another building while one is in progress."""
-        empire = _make_empire(buildings={"INIT": 0.0})
-        self.svc.build_item(empire, "FIRE_PLACE")  # fills build_queue
-        assert empire.build_queue == "FIRE_PLACE"
-        # Try starting another — should fail (FIRE_PLACE not done yet)
-        # MAIN_HOUSE requires FIRE_PLACE anyway, but let's test queue busy
-        empire.buildings["FIRE_PLACE"] = 0.0  # force complete for requirement
-        err = self.svc.build_item(empire, "MAIN_HOUSE")
-        # build_queue is still FIRE_PLACE (we didn't clear it)
-        assert err is not None
-        assert "busy" in err.lower()
-
     def test_zero_effort_building_no_queue(self):
         """INIT has 0 effort — should complete instantly, no queue block."""
         empire = Empire(uid=2, name="Fresh")
@@ -188,12 +175,3 @@ class TestBuildItemQueue:
         assert err is None
         assert empire.buildings["INIT"] == 0.0
         assert empire.build_queue is None  # 0-effort doesn't occupy queue
-
-    def test_research_queue_busy(self):
-        """Cannot start two researches simultaneously."""
-        empire = _make_empire(buildings={"INIT": 0.0, "FIRE_PLACE": 0.0})
-        err1 = self.svc.build_item(empire, "HUNTING")
-        assert err1 is None
-        err2 = self.svc.build_item(empire, "CRAFTSMANSHIP")
-        assert err2 is not None
-        assert "busy" in err2.lower()

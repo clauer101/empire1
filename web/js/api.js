@@ -13,6 +13,7 @@
 
 import { state } from './state.js';
 import { eventBus } from './events.js';
+import { debug } from './debug.js';
 
 let _requestId = 0;
 function nextRequestId() {
@@ -193,6 +194,7 @@ class ApiClient {
       if (msg.type === 'error') {
         reject(new Error(msg.message || 'Server error'));
       } else {
+        debug.logResponse(msg.type, msg);
         resolve(msg);
       }
       return;
@@ -216,6 +218,12 @@ class ApiClient {
         break;
       case 'notification':
         eventBus.emit('server:notification', msg);
+        break;
+      case 'citizen_upgrade_response':
+        eventBus.emit('server:citizen_upgrade_response', msg);
+        break;
+      case 'change_citizen_response':
+        eventBus.emit('server:change_citizen_response', msg);
         break;
       case 'battle_setup':
         eventBus.emit('server:battle_setup', msg);
@@ -515,17 +523,67 @@ class ApiClient {
 
   /**
    * Upgrade citizen count.
+   * @returns {Promise<{success: boolean, error?: string}>}
    */
   async upgradeCitizen() {
-    return this._request({ type: 'citizen_upgrade' }, null);
+    return new Promise((resolve, reject) => {
+      if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
+        return reject(new Error('Not connected'));
+      }
+
+      // Send request
+      const msg = { type: 'citizen_upgrade' };
+      if (state.auth.authenticated && state.auth.uid) {
+        msg.sender = state.auth.uid;
+      }
+      this._ws.send(JSON.stringify(msg));
+
+      // Wait for response (with timeout)
+      const timer = setTimeout(() => {
+        unsub();
+        reject(new Error('citizen_upgrade response timeout'));
+      }, this.timeout);
+
+      const unsub = eventBus.on('server:citizen_upgrade_response', (response) => {
+        clearTimeout(timer);
+        unsub();
+        debug.logResponse('citizen_upgrade_response', response);
+        resolve(response);
+      });
+    });
   }
 
   /**
    * Reassign citizen roles.
    * @param {object} citizens e.g. { merchant: 2, scientist: 1, artist: 0 }
+   * @returns {Promise<{success: boolean, error?: string}>}
    */
   async changeCitizen(citizens) {
-    return this._request({ type: 'change_citizen', citizens }, null);
+    return new Promise((resolve, reject) => {
+      if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
+        return reject(new Error('Not connected'));
+      }
+
+      // Send request
+      const msg = { type: 'change_citizen', citizens };
+      if (state.auth.authenticated && state.auth.uid) {
+        msg.sender = state.auth.uid;
+      }
+      this._ws.send(JSON.stringify(msg));
+
+      // Wait for response (with timeout)
+      const timer = setTimeout(() => {
+        unsub();
+        reject(new Error('change_citizen response timeout'));
+      }, this.timeout);
+
+      const unsub = eventBus.on('server:change_citizen_response', (response) => {
+        clearTimeout(timer);
+        unsub();
+        debug.logResponse('change_citizen_response', response);
+        resolve(response);
+      });
+    });
   }
 
   /**

@@ -3,6 +3,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { formatEffect } from '../i18n.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -57,8 +58,7 @@ function render() {
     ...(summary.completed_buildings || []),
     ...(summary.completed_research || []),
   ]);
-  const activeKeys = Object.keys(summary.active_buildings || {});
-  const active = new Set(activeKeys);
+  const buildQueue = summary.build_queue;  // Only this item is "building"
   const buildings = items.buildings || {};
 
   const entries = Object.entries(buildings)
@@ -75,14 +75,22 @@ function render() {
   const rows = entries.map(([iid, info]) => {
     let status = 'available';
     if (completed.has(iid)) status = 'completed';
-    else if (active.has(iid)) status = 'in-progress';
+    else if (iid === buildQueue) status = 'in-progress';
 
     const badgeClass = `badge badge--${status}`;
     const badgeText = status === 'in-progress' ? 'building' : status;
 
+    // Calculate progress: full_effort - remaining = done
+    const fullEffort = info.effort;
+    const remaining = summary.buildings?.[iid] ?? fullEffort;  // If not started, remaining = full effort
+    const done = Math.max(0, fullEffort - remaining);
+    const progressStr = `${fmtEffort(done)}/${fmtEffort(fullEffort)}`;
+
     return `<tr>
-      <td>${info.name || iid}</td>
-      <td style="font-variant-numeric:tabular-nums">${fmtEffort(info.effort)}</td>
+      <td><strong>${info.name || iid}</strong></td>
+      <td style="max-width:250px; font-size:0.9em; color:#666">${info.description || '—'}</td>
+      <td style="font-variant-numeric:tabular-nums">${progressStr}</td>
+      <td>${fmtEffects(info.effects)}</td>
       <td>${(info.requirements || []).map(r =>
         `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
       ).join('') || '—'}</td>
@@ -94,7 +102,7 @@ function render() {
   }).join('');
 
   el.innerHTML = `<table>
-    <thead><tr><th>Name</th><th>Effort</th><th>Requires</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Description</th><th>Effort</th><th>Effects</th><th>Requires</th><th>Status</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 
@@ -107,7 +115,14 @@ function fmtEffort(n) {
   if (n == null) return '—';
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
+  return String(Math.round(n));
+}
+
+function fmtEffects(effects) {
+  if (!effects || Object.keys(effects).length === 0) return '—';
+  return Object.entries(effects)
+    .map(([k, v]) => `<span class="badge" style="margin-right:6px">${formatEffect(k, v)}</span>`)
+    .join('');
 }
 
 export default {

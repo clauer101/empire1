@@ -210,3 +210,9 @@ class Server:
             if request_id is not None:
                 response["request_id"] = request_id
             await ws.send(json.dumps(response, ensure_ascii=False, default=str))
+            
+            # After successful auth, re-register the session with the real UID
+            if msg_type == "auth_request" and response.get("success") and response.get("uid"):
+                real_uid = response["uid"]
+                self.register_session(real_uid, ws)
+                log.info("Session upgraded: guest=%s → uid=%d", uid, real_uid)

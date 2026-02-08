@@ -7,6 +7,7 @@ import { state } from './state.js';
 import { eventBus } from './events.js';
 import { Router } from './router.js';
 import { initStatusBar } from './views/statusbar.js';
+import { debug } from './debug.js';
 
 import loginView   from './views/login.js';
 import dashView    from './views/dashboard.js';
@@ -39,15 +40,18 @@ initStatusBar(document.getElementById('status-bar'));
 eventBus.on('quick_message', (data) => showToast(data.message || data.text || JSON.stringify(data)));
 eventBus.on('notification',  (data) => showToast(data.message || data.text || JSON.stringify(data)));
 
-function showToast(text) {
+function showToast(text, type = 'message') {
   const container = document.getElementById('toast-container');
   if (!container) return;
   const el = document.createElement('div');
-  el.className = 'toast';
+  el.className = `toast${type ? ` toast-${type}` : ''}`;
   el.textContent = text;
   container.appendChild(el);
   setTimeout(() => el.remove(), 5000);
 }
+
+// ── Register debug toast callback ──────────────────────────
+debug.setToastCallback((text, type) => showToast(text, type));
 
 // ── Auth state → update nav + redirect ─────────────────────
 const navAuth = document.getElementById('nav-auth');
@@ -79,6 +83,19 @@ eventBus.on('state:auth', (auth) => {
 // ── Start ──────────────────────────────────────────────────
 // Connect + auto-login first, then activate router so the
 // login screen never flashes when credentials are stored.
+
+// ── Debug Toggle (bottom-right) ────────────────────────────
+const debugToggle = document.createElement('div');
+debugToggle.id = 'debug-toggle';
+debugToggle.className = 'debug-toggle' + (debug.enabled ? ' active' : '');
+debugToggle.title = 'Toggle debug mode (shows API responses)';
+debugToggle.innerHTML = '🐛';
+debugToggle.addEventListener('click', () => {
+  debug.toggle(!debug.enabled);
+  debugToggle.classList.toggle('active', debug.enabled);
+  showToast(`Debug mode ${debug.enabled ? 'enabled' : 'disabled'}`);
+});
+document.body.appendChild(debugToggle);
 
 (async () => {
   try {
