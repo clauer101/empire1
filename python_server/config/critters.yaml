@@ -1,0 +1,337 @@
+# Critter definitions (attack units)
+# speed: hex fields per second
+# health: base hit points
+# armour: damage reduction factor (0.0 = none)
+# slots: wave capacity per unit
+# time_between: ms between spawns in a wave
+# is_boss: true for hero/boss critters
+# capture: resources gained when critter reaches goal
+# bonus: resources gained for the attacker per critter
+# spawn_on_death: optional critter IID spawned when this unit dies
+
+SLAVE:
+  name: "Slave"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+WARRIOR:
+  name: "Warrior"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+BOWMAN:
+  name: "Bowman"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+SWORDMAN:
+  name: "Swordman"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+PIKENEER:
+  name: "Pikeneer"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+HORSEMAN_SLOW:
+  name: "Heavy Horseman"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+HORSEMAN_FAST:
+  name: "Light Horseman"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+CRUSADER:
+  name: "Crusader"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+SAMURAI:
+  name: "Samurai"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+NINJA:
+  name: "Ninja"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+MUSKETEER:
+  name: "Musketeer"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+DRAGOONER:
+  name: "Dragoon"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+SOLDIER:
+  name: "Soldier"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+CART:
+  name: "Cart"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+LARGE_CART:
+  name: "Large Cart"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+CARGO:
+  name: "Cargo"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+TRANSPORTER:
+  name: "Transporter"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+MOTORBIKE:
+  name: "Motorbike"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+SMALL_TANK:
+  name: "Small Tank"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+SIEGE_TANK:
+  name: "Siege Tank"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+SPECOPS:
+  name: "Special Ops"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+HELI:
+  name: "Helicopter"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+# --- Bosses / Heroes ---
+
+THE_SWORDMASTER:
+  name: "The Swordmaster"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: true
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+THE_KING:
+  name: "The King"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: true
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []
+
+THE_GENERAL:
+  name: "The General"
+  speed: 0
+  health: 0
+  armour: 0
+  slots: 1
+  time_between: 0
+  is_boss: true
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: []

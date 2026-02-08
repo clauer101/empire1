@@ -7,6 +7,7 @@ citizens, effects, artefacts, and the player's hex map.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 from gameserver.models.army import Army, SpyArmy
 from gameserver.models.critter import Critter
@@ -23,7 +24,11 @@ class Empire:
         name: Empire display name.
         resources: Current resource amounts {key: amount}.
         buildings: Building IIDs → remaining effort (0 = complete).
+        build_queue: IID of the building currently under construction.
+            Only this item is progressed each tick.
         knowledge: Knowledge IIDs → remaining effort (0 = complete).
+        research_queue: IID of the knowledge currently being researched.
+            Only this item is progressed each tick.
         structures: Structure instances by SID.
         armies: Player's attack armies.
         spies: Player's spy armies.
@@ -44,7 +49,9 @@ class Empire:
         "life": 10.0,
     })
     buildings: dict[str, float] = field(default_factory=dict)
+    build_queue: Optional[str] = None
     knowledge: dict[str, float] = field(default_factory=dict)
+    research_queue: Optional[str] = None
     structures: dict[int, Structure] = field(default_factory=dict)
     armies: list[Army] = field(default_factory=list)
     spies: list[SpyArmy] = field(default_factory=list)

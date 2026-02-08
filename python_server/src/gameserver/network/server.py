@@ -2,42 +2,206 @@
 
 Accepts WebSocket connections, handles connection lifecycle,
 and dispatches incoming messages to the router.
+Uses the ``websockets`` library with asyncio.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import asyncio
+import json
+import logging
+from typing import Any, Optional, TYPE_CHECKING
+
+import websockets
+from websockets.asyncio.server import ServerConnection, Server as WSServer
 
 if TYPE_CHECKING:
     from gameserver.network.router import Router
 
+log = logging.getLogger(__name__)
+
 
 class Server:
-    """asyncio WebSocket server.
+    """asyncio WebSocket server with session tracking.
+
+    Each connected client goes through:
+    1. WebSocket handshake
+    2. First message must be ``{"type": "auth_request", ...}`` or
+       the connection is assigned a guest/debug UID.
+    3. Messages are routed via the Router; responses sent back.
 
     Args:
+        router: Message router for dispatching incoming messages.
         host: Bind address.
         port: Bind port.
-        router: Message router for dispatching incoming messages.
     """
 
     def __init__(self, router: Router, host: str = "0.0.0.0", port: int = 8765) -> None:
         self._router = router
         self._host = host
         self._port = port
-        self._connections: dict[int, object] = {}  # uid → websocket
+        self._connections: dict[int, ServerConnection] = {}  # uid → ws
+        self._ws_to_uid: dict[int, int] = {}  # id(ws) → uid
+        self._server: Optional[WSServer] = None
+        self._next_guest_uid = -1  # negative UIDs for unauthenticated
+
+    # -- Lifecycle -------------------------------------------------------
 
     async def start(self) -> None:
         """Start the WebSocket server."""
-        # TODO: implement with websockets library
-        pass
+        self._server = await websockets.serve(
+            self._on_connect,
+            self._host,
+            self._port,
+            ping_interval=30,
+            ping_timeout=10,
+            max_size=1_048_576,  # 1 MB max message
+        )
+        log.info("WebSocket server listening on ws://%s:%d", self._host, self._port)
 
-    async def send_to(self, uid: int, data: dict) -> None:
-        """Send a message to a specific connected client."""
-        # TODO: implement
-        pass
+    async def stop(self) -> None:
+        """Stop the WebSocket server and close all connections."""
+        if self._server is not None:
+            self._server.close()
+            await self._server.wait_closed()
+            log.info("WebSocket server stopped")
 
-    async def broadcast(self, uids: set[int], data: dict) -> None:
-        """Send a message to multiple clients."""
-        # TODO: implement
-        pass
+    # -- Session management ----------------------------------------------
+
+    def register_session(self, uid: int, ws: ServerConnection) -> None:
+        """Bind a UID to a WebSocket connection (called after auth)."""
+        # Close any existing connection for this UID
+        old = self._connections.get(uid)
+        if old is not None and old != ws:
+            asyncio.ensure_future(old.close(1008, "Superseded by new connection"))
+        self._connections[uid] = ws
+        self._ws_to_uid[id(ws)] = uid
+        log.info("Session registered: uid=%d", uid)
+
+    def unregister_session(self, ws: ServerConnection) -> Optional[int]:
+        """Remove a WebSocket from the session table. Returns the UID."""
+        uid = self._ws_to_uid.pop(id(ws), None)
+        if uid is not None:
+            self._connections.pop(uid, None)
+        return uid
+
+    def get_uid(self, ws: ServerConnection) -> Optional[int]:
+        """Look up the UID for a WebSocket connection."""
+        return self._ws_to_uid.get(id(ws))
+
+    @property
+    def connected_uids(self) -> list[int]:
+        """List of all connected UIDs."""
+        return sorted(self._connections.keys())
+
+    @property
+    def connection_count(self) -> int:
+        return len(self._connections)
+
+    # -- Sending ---------------------------------------------------------
+
+    async def send_to(self, uid: int, data: dict[str, Any]) -> bool:
+        """Send a message to a specific connected client.
+
+        Returns True if the message was sent, False if client not connected.
+        """
+        ws = self._connections.get(uid)
+        if ws is None:
+            return False
+        try:
+            raw = json.dumps(data, ensure_ascii=False, default=str)
+            await ws.send(raw)
+            return True
+        except websockets.ConnectionClosed:
+            log.debug("send_to uid=%d failed — connection closed", uid)
+            return False
+
+    async def broadcast(self, uids: set[int], data: dict[str, Any]) -> int:
+        """Send a message to multiple clients.
+
+        Returns the number of clients that received the message.
+        """
+        raw = json.dumps(data, ensure_ascii=False, default=str)
+        sent = 0
+        for uid in uids:
+            ws = self._connections.get(uid)
+            if ws is None:
+                continue
+            try:
+                await ws.send(raw)
+                sent += 1
+            except websockets.ConnectionClosed:
+                pass
+        return sent
+
+    async def broadcast_all(self, data: dict[str, Any]) -> int:
+        """Send a message to ALL connected clients."""
+        return await self.broadcast(set(self._connections.keys()), data)
+
+    # -- Connection handler ----------------------------------------------
+
+    async def _on_connect(self, ws: ServerConnection) -> None:
+        """Handle a new WebSocket connection lifecycle."""
+        # Assign a temporary guest UID
+        guest_uid = self._next_guest_uid
+        self._next_guest_uid -= 1
+        self.register_session(guest_uid, ws)
+        remote = ws.remote_address
+        log.info("Client connected: uid=%d remote=%s", guest_uid, remote)
+
+        try:
+            async for raw_msg in ws:
+                await self._handle_message(ws, raw_msg)
+        except websockets.ConnectionClosed as e:
+            log.info("Client disconnected: uid=%d code=%s", guest_uid, e.code)
+        finally:
+            removed_uid = self.unregister_session(ws)
+            log.info("Session removed: uid=%s", removed_uid)
+
+    async def _handle_message(self, ws: ServerConnection, raw_msg: Any) -> None:
+        """Parse and route a single incoming message."""
+        uid = self.get_uid(ws) or 0
+
+        # Parse JSON
+        if isinstance(raw_msg, bytes):
+            raw_msg = raw_msg.decode("utf-8")
+        try:
+            data = json.loads(raw_msg)
+        except json.JSONDecodeError as e:
+            await ws.send(json.dumps({
+                "type": "error",
+                "message": f"Invalid JSON: {e}",
+            }))
+            return
+
+        if not isinstance(data, dict):
+            await ws.send(json.dumps({
+                "type": "error",
+                "message": "Message must be a JSON object",
+            }))
+            return
+
+        # Preserve request_id for response correlation
+        request_id = data.get("request_id")
+        msg_type = data.get("type", "")
+        log.debug("Received: type=%s uid=%d", msg_type, uid)
+
+        # Route through the Router
+        try:
+            response = await self._router.route(data, uid)
+        except Exception as exc:
+            log.exception("Handler error: type=%s uid=%d", msg_type, uid)
+            error_resp: dict[str, Any] = {
+                "type": "error",
+                "message": str(exc),
+            }
+            if request_id is not None:
+                error_resp["request_id"] = request_id
+            await ws.send(json.dumps(error_resp))
+            return
+
+        # Send response back to sender if handler returned one
+        if response is not None:
+            if request_id is not None:
+                response["request_id"] = request_id
+            await ws.send(json.dumps(response, ensure_ascii=False, default=str))
