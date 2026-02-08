@@ -22,12 +22,13 @@ from __future__ import annotations
 
 import logging
 import time
+from collections import deque
 from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gameserver.main import Services
 
-from gameserver.models.messages import GameMessage
+from gameserver.models.messages import GameMessage, MapSaveRequest
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +40,84 @@ def _svc() -> Services:
     """Get the Services container. Raises if not initialized."""
     assert _services is not None, "handlers: services not initialized"
     return _services
+
+
+# ===================================================================
+# Map validation helpers
+# ===================================================================
+
+def _has_path_from_spawn_to_castle(tiles: dict[str, str]) -> bool:
+    """Check if there's a path from any spawnpoint to the castle.
+    
+    Can only traverse spawnpoint, path, and castle tiles via 6-connected hex neighbors.
+    
+    Args:
+        tiles: Dict of {"q,r": "tile_type"} where tile_type is 'castle', 'spawnpoint', etc.
+    
+    Returns:
+        True if at least one path exists, False otherwise.
+    """
+    # Find castle and spawnpoints
+    castle_key: Optional[str] = None
+    spawn_keys: list[str] = []
+    
+    for key, tile_type in tiles.items():
+        if tile_type == 'castle':
+            castle_key = key
+        elif tile_type == 'spawnpoint':
+            spawn_keys.append(key)
+    
+    # Must have both
+    if not castle_key or not spawn_keys:
+        return False
+    
+    # Parse key to coordinates
+    def key_to_coords(k: str) -> tuple[int, int]:
+        q, r = k.split(',')
+        return int(q), int(r)
+    
+    # Hex neighbors in axial coordinates
+    def hex_neighbors(q: int, r: int) -> list[tuple[int, int]]:
+        return [
+            (q + 1, r),
+            (q + 1, r - 1),
+            (q, r - 1),
+            (q - 1, r),
+            (q - 1, r + 1),
+            (q, r + 1),
+        ]
+    
+    def coords_to_key(q: int, r: int) -> str:
+        return f"{q},{r}"
+    
+    castle_q, castle_r = key_to_coords(castle_key)
+    
+    # BFS from each spawnpoint
+    for spawn_key in spawn_keys:
+        spawn_q, spawn_r = key_to_coords(spawn_key)
+        
+        queue: deque[tuple[int, int]] = deque([(spawn_q, spawn_r)])
+        visited: set[tuple[int, int]] = {(spawn_q, spawn_r)}
+        
+        while queue:
+            q, r = queue.popleft()
+            
+            # Reached castle?
+            if (q, r) == (castle_q, castle_r):
+                return True
+            
+            # Explore neighbors
+            for nq, nr in hex_neighbors(q, r):
+                if (nq, nr) not in visited:
+                    key = coords_to_key(nq, nr)
+                    tile_type = tiles.get(key)
+                    
+                    # Only traverse through passable tiles
+                    if tile_type in ('spawnpoint', 'path', 'castle'):
+                        visited.add((nq, nr))
+                        queue.append((nq, nr))
+    
+    return False
 
 
 # ===================================================================
@@ -132,9 +211,9 @@ async def handle_summary_request(
 async def handle_item_request(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
-    """Handle ``item_request`` — return available buildings & research.
+    """Handle ``item_request`` — return available buildings, research & structures.
 
-    Returns all buildings/knowledge whose prerequisites are satisfied
+    Returns all buildings/knowledge/structures whose prerequisites are satisfied
     by the empire's completed items.
     """
     svc = _svc()
@@ -145,6 +224,7 @@ async def handle_item_request(
             "type": "item_response",
             "buildings": {},
             "knowledge": {},
+            "structures": {},
         }
 
     # Completed items = buildings done + knowledge done + artefacts owned
@@ -182,10 +262,26 @@ async def handle_item_request(
             "effects": dict(item.effects),
         }
 
+    # Structures (towers) — available based on research
+    structures = {}
+    for item in up.available_items(ItemType.STRUCTURE, completed):
+        structures[item.iid] = {
+            "name": item.name,
+            "description": item.description,
+            "damage": item.damage,
+            "range": item.range,
+            "reload_time_ms": item.reload_time_ms,
+            "shot_speed": item.shot_speed,
+            "shot_type": item.shot_type,
+            "requirements": list(item.requirements),
+            "effects": dict(item.effects),
+        }
+
     return {
         "type": "item_response",
         "buildings": buildings,
         "knowledge": knowledge,
+        "structures": structures,
     }
 
 
@@ -617,6 +713,107 @@ async def handle_create_empire(
 
 
 # ===================================================================
+# Map (Composer) requests
+# ===================================================================
+
+async def handle_map_load_request(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Load the hex map for the current empire."""
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+    
+    if empire is None:
+        return {
+            "type": "map_load_response",
+            "tiles": {},
+            "error": f"No empire found for uid {target_uid}",
+        }
+    
+    # Get hex_map from Empire object (or use empty dict if not present)
+    hex_map = getattr(empire, 'hex_map', {}) or {}
+    
+    return {
+        "type": "map_load_response",
+        "tiles": hex_map,
+    }
+
+
+async def handle_map_save_request(
+    message: MapSaveRequest, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Save the hex map for the current empire.
+    
+    The map data is stored in the empire object. It will be persisted
+    automatically during the next regular state save (e.g., on shutdown).
+    """
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+    
+    if empire is None:
+        log.warning(f"Map save failed: No empire found for uid {target_uid}")
+        return {
+            "type": "map_save_response",
+            "success": False,
+            "error": f"No empire found for uid {target_uid}",
+        }
+    
+    # Get tiles from typed message model
+    raw_tiles = message.tiles or {}
+    
+    # Normalize: accept both {"0,0": "type"} and {"0,0": {"type": "type"}}
+    tiles = {}
+    for k, v in raw_tiles.items():
+        if isinstance(v, dict):
+            tiles[k] = v.get('type', 'empty')
+        else:
+            tiles[k] = v
+
+    # -- Validation --------------------------------------------------
+    type_counts: dict[str, int] = {}
+    for tile_type in tiles.values():
+        type_counts[tile_type] = type_counts.get(tile_type, 0) + 1
+
+    castle_count = type_counts.get('castle', 0)
+    spawnpoint_count = type_counts.get('spawnpoint', 0)
+    errors: list[str] = []
+
+    if castle_count != 1:
+        errors.append(
+            f"Map must contain exactly 1 castle (found {castle_count})"
+        )
+    if spawnpoint_count < 1:
+        errors.append("Map must contain at least 1 spawnpoint")
+    
+    # Check path connectivity (only if basic requirements are met)
+    if not errors and not _has_path_from_spawn_to_castle(tiles):
+        errors.append("No passable path found from spawnpoint to castle")
+
+    if errors:
+        log.warning(
+            "Map validation failed for %s (uid=%s): %s",
+            empire.name, target_uid, "; ".join(errors),
+        )
+        return {
+            "type": "map_save_response",
+            "success": False,
+            "error": "; ".join(errors),
+        }
+
+    # -- Persist -----------------------------------------------------
+    tile_count = len(tiles)
+    empire.hex_map = tiles
+    log.info(f"Map saved for empire {empire.name} (uid={target_uid}): {tile_count} tiles")
+    
+    return {
+        "type": "map_save_response",
+        "success": True,
+    }
+
+
+# ===================================================================
 # Registration — THE central place to add all handlers
 # ===================================================================
 
@@ -638,6 +835,10 @@ def register_all_handlers(services: Services) -> None:
     router.register("summary_request", handle_summary_request)
     router.register("item_request", handle_item_request)
     router.register("military_request", handle_military_request)
+
+    # -- Map (Composer) --------------------------------------------------
+    router.register("map_load_request", handle_map_load_request)
+    router.register("map_save_request", handle_map_save_request)
 
     # -- Building / Research (fire-and-forget) ---------------------------
     router.register("new_item", handle_new_item)

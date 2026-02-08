@@ -15,7 +15,7 @@ from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction, HexMap
+from gameserver.models.map import Direction
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
 from gameserver.persistence.state_load import RestoredState, load_state
@@ -78,14 +78,7 @@ def _make_empire(uid: int = 1, name: str = "TestEmpire") -> Empire:
                 speed=0.5, armour=5.0, level=3, xp=250.0, is_boss=True,
             ),
         },
-        empire_map=HexMap(
-            paths={
-                Direction.NORTH: [HexCoord(0, 0), HexCoord(0, -1), HexCoord(0, -2)],
-                Direction.SOUTH: [HexCoord(0, 0), HexCoord(0, 1)],
-            },
-            build_tiles={HexCoord(1, 0), HexCoord(2, 0), HexCoord(3, -1)},
-            occupied={HexCoord(3, -1)},
-        ),
+
     )
 
 
@@ -255,12 +248,7 @@ class TestSaveLoad:
         src = _make_empire()
         self._run(save_state({src.uid: src}, path=path))
         e = self._run(load_state(path)).empires[src.uid]
-        m = e.empire_map
-        assert Direction.NORTH in m.paths
-        assert len(m.paths[Direction.NORTH]) == 3
-        assert m.paths[Direction.NORTH][2] == HexCoord(0, -2)
-        assert HexCoord(1, 0) in m.build_tiles
-        assert HexCoord(3, -1) in m.occupied
+        assert e.hex_map == {}
 
     def test_round_trip_attack(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")
@@ -356,3 +344,79 @@ class TestSaveLoad:
         assert boss.slow_speed == 0.5
         assert boss.burn_remaining_ms == 3000.0
         assert boss.burn_dps == 2.5
+
+    # ---------------------------------------------------------------
+    # hex_map (editor map) round-trip
+    # ---------------------------------------------------------------
+
+    def test_round_trip_hex_map_with_tiles(self, tmp_path: Path) -> None:
+        """A hex_map with various tile types survives save → load."""
+        path = str(tmp_path / "state.yaml")
+        tiles = {
+            "0,0": "void",
+            "0,1": "void",
+            "0,2": "spawnpoint",
+            "1,0": "empty",
+            "1,1": "path",
+            "2,1": "castle",
+            "5,0": "void",
+            "5,1": "void",
+        }
+        e = Empire(uid=77, name="MapEmpire", hex_map=dict(tiles))
+        self._run(save_state({77: e}, path=path))
+        r = self._run(load_state(path))
+        assert r is not None
+        loaded = r.empires[77]
+        assert loaded.hex_map == tiles
+
+    def test_round_trip_hex_map_empty(self, tmp_path: Path) -> None:
+        """An empty hex_map is preserved as empty dict."""
+        path = str(tmp_path / "state.yaml")
+        e = Empire(uid=78, name="EmptyMap", hex_map={})
+        self._run(save_state({78: e}, path=path))
+        r = self._run(load_state(path))
+        assert r is not None
+        assert r.empires[78].hex_map == {}
+
+    def test_round_trip_hex_map_default(self, tmp_path: Path) -> None:
+        """Empire without explicit hex_map gets empty dict."""
+        path = str(tmp_path / "state.yaml")
+        e = Empire(uid=79, name="NoMap")
+        self._run(save_state({79: e}, path=path))
+        r = self._run(load_state(path))
+        assert r is not None
+        assert r.empires[79].hex_map == {}
+
+    def test_hex_map_yaml_format(self, tmp_path: Path) -> None:
+        """hex_map is serialized as list of tile dicts in YAML."""
+        path = str(tmp_path / "state.yaml")
+        tiles = {"0,2": "spawnpoint", "1,2": "path", "2,1": "castle"}
+        e = Empire(uid=80, name="FormatCheck", hex_map=dict(tiles))
+        self._run(save_state({80: e}, path=path))
+
+        # Read raw YAML and verify list format
+        import yaml
+        raw = yaml.safe_load(Path(path).read_text())
+        empire_data = raw["empires"][0]
+        hex_list = empire_data["hex_map"]
+
+        assert isinstance(hex_list, list)
+        assert len(hex_list) == 3
+        # Verify each tile has q, r, type keys
+        for tile in hex_list:
+            assert "q" in tile
+            assert "r" in tile
+            assert "type" in tile
+        # Verify sorted order (by key "q,r")
+        types = [t["type"] for t in hex_list]
+        assert types == ["spawnpoint", "path", "castle"]
+
+    def test_hex_map_multiple_empires_independent(self, tmp_path: Path) -> None:
+        """Each empire preserves its own hex_map independently."""
+        path = str(tmp_path / "state.yaml")
+        e1 = Empire(uid=81, name="E1", hex_map={"0,0": "castle", "1,0": "path"})
+        e2 = Empire(uid=82, name="E2", hex_map={"3,3": "spawnpoint"})
+        self._run(save_state({81: e1, 82: e2}, path=path))
+        r = self._run(load_state(path))
+        assert r.empires[81].hex_map == {"0,0": "castle", "1,0": "path"}
+        assert r.empires[82].hex_map == {"3,3": "spawnpoint"}

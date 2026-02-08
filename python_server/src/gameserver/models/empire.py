@@ -11,7 +11,6 @@ from typing import Optional
 
 from gameserver.models.army import Army, SpyArmy
 from gameserver.models.critter import Critter
-from gameserver.models.map import HexMap
 from gameserver.models.structure import Structure
 
 
@@ -36,7 +35,6 @@ class Empire:
         effects: Accumulated passive effects {key: value}.
         artefacts: Collected artefact IIDs.
         bosses: Boss critters {iid: Critter}.
-        empire_map: This empire's hex map.
         max_life: Maximum life points.
     """
 
@@ -63,7 +61,7 @@ class Empire:
     effects: dict[str, float] = field(default_factory=dict)
     artefacts: list[str] = field(default_factory=list)
     bosses: dict[str, Critter] = field(default_factory=dict)
-    empire_map: HexMap = field(default_factory=HexMap)
+    hex_map: dict = field(default_factory=dict)  # Composer hex tiles
     max_life: float = 10.0
 
     # -- Helpers ---------------------------------------------------------

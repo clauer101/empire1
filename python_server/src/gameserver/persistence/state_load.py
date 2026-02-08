@@ -19,7 +19,7 @@ from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction, HexMap
+from gameserver.models.map import Direction
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
 from gameserver.persistence.state_save import DEFAULT_STATE_PATH
@@ -147,8 +147,6 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
     for iid, c_dict in d.get("bosses", {}).items():
         bosses[iid] = _deserialize_critter(c_dict)
 
-    empire_map = _deserialize_hex_map(d.get("empire_map", {}))
-
     return Empire(
         uid=d["uid"],
         name=d.get("name", ""),
@@ -165,7 +163,7 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
         armies=armies,
         spies=spies,
         bosses=bosses,
-        empire_map=empire_map,
+        hex_map=_deserialize_editor_hex_map(d.get("hex_map", [])),
     )
 
 
@@ -237,23 +235,27 @@ def _deserialize_spy_army(d: dict[str, Any]) -> SpyArmy:
     )
 
 
-def _deserialize_hex_map(d: dict[str, Any]) -> HexMap:
-    if not d:
-        return HexMap()
-
-    paths: dict[Direction, list[HexCoord]] = {}
-    for dir_str, coords in d.get("paths", {}).items():
-        try:
-            direction = Direction(dir_str)
-            paths[direction] = _to_hex_list(coords)
-        except ValueError:
-            log.warning("Unknown direction %r in saved map paths — skipping", dir_str)
-
-    return HexMap(
-        paths=paths,
-        build_tiles=_to_hex_set(d.get("build_tiles", [])),
-        occupied=_to_hex_set(d.get("occupied", [])),
-    )
+def _deserialize_editor_hex_map(tiles_list: Any) -> dict[str, str]:
+    """Convert editor hex_map from list format to dict format {"q,r": "type"}.
+    
+    Converts the persistent YAML list format back to the internal
+    representation used by composer.js. Handles both list and dict formats
+    for backwards compatibility.
+    """
+    result: dict[str, str] = {}
+    
+    if isinstance(tiles_list, list):
+        # New format: list of tile dicts
+        for tile in tiles_list:
+            if isinstance(tile, dict) and "q" in tile and "r" in tile:
+                key = f"{tile['q']},{tile['r']}"
+                tile_type = tile.get("type", "empty")
+                result[key] = tile_type
+    elif isinstance(tiles_list, dict):
+        # Old format: already a dict, keep as-is
+        result = tiles_list
+    
+    return result
 
 
 # ===================================================================

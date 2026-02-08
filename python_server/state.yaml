@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-08T17:13:17'
-  saved_at_unix: 1770567197.6618595
+  saved_at: '2026-02-08T19:48:43'
+  saved_at_unix: 1770576523.6488657
 empires:
 - uid: 100
   name: TestImperium
@@ -27,16 +27,22 @@ empires:
   armies: []
   spies: []
   bosses: {}
-  empire_map:
-    paths: {}
-    build_tiles: []
-    occupied: []
+  hex_map:
+  - q: 0
+    r: 0
+    type: empty
+  - q: 0
+    r: 1
+    type: empty
+  - q: 1
+    r: 0
+    type: empty
 - uid: 2
   name: Empire1
   resources:
-    gold: 1622.0879081977782
-    culture: 1426.6366234282107
-    life: 8.330482593120028
+    gold: 3543.956264959776
+    culture: 2991.136461430151
+    life: 10.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -46,7 +52,7 @@ empires:
     STONE_CIRCLE: 0.0
     SHRINE: 0.0
     EPIC_DRAWINGS: 0.0
-    EXCHANGE_POST: 425.6235745739902
+    EXCHANGE_POST: 0.0
     TOOL_SHOP: 0.0
     BOW_MAKER: 0.0
   build_queue: null
@@ -57,17 +63,19 @@ empires:
     DOMESTICATION: 0.0
     HORSEBACK_RIDING: 0.0
     MUSIC: 3994.840608282842
+    HERBOLOGY: 0.0
   research_queue: null
   citizens:
-    merchant: 7
-    scientist: 0
-    artist: 0
+    merchant: 2
+    scientist: 3
+    artist: 3
     free: 0
   effects:
-    life_offset: 0.01
-    gold_offset: 0.15000000000000002
+    life_offset: 0.001
+    gold_offset: 0.2
     culture_offset: 0.15000000000000002
     culture_modifier: 0.1
+    gold_modifier: 0.1
     build_speed_modifier: 0.1
   artefacts: []
   max_life: 10.0
@@ -75,9 +83,15 @@ empires:
   armies: []
   spies: []
   bosses: {}
-  empire_map:
-    paths: {}
-    build_tiles: []
-    occupied: []
+  hex_map:
+  - q: 1
+    r: 0
+    type: castle
+  - q: 0
+    r: 0
+    type: path
+  - q: 0
+    r: 1
+    type: spawnpoint
 attacks: []
 battles: []
