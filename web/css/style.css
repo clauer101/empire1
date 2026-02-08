@@ -532,6 +532,45 @@ label {
   background: var(--muted);
 }
 
+/* ── Debug Toggle ────────────────────────────────────────── */
+.debug-toggle {
+  position: fixed;
+  bottom: 76px;
+  left: 16px;
+  width: 48px;
+  height: 48px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all .2s ease;
+  opacity: .6;
+  z-index: 999;
+}
+
+.debug-toggle:hover {
+  opacity: 1;
+  background: var(--surface-hover);
+  border-color: var(--accent-dim);
+}
+
+.debug-toggle.active {
+  opacity: 1;
+  background: rgba(79, 195, 247, .15);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(79, 195, 247, .2);
+}
+
+.toast-debug {
+  background: rgba(79, 195, 247, .15);
+  border: 1px solid rgba(79, 195, 247, .3);
+  color: var(--accent);
+}
+
 /* ── Responsive: collapse at narrow widths ───────────────── */
 @media (max-width: 900px) {
   #shell {

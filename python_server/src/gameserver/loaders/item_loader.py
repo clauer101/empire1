@@ -36,6 +36,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
         items.append(ItemDetails(
             iid=iid,
             name=attrs.get("name", iid),
+            description=attrs.get("description", ""),
             item_type=item_type,
             effort=float(attrs.get("effort", 0)),
             costs=attrs.get("costs", {}),

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------
-# restart.sh — Beendet den laufenden GameServer sauber und
-#              startet ihn neu.
+# restart.sh — GameServer Lifecycle Management
 #
 # Nutzung:
-#   ./run.sh            # Normaler Neustart
-#   ./run.sh --kill     # Sofort beenden (SIGKILL) falls nötig
+#   ./restart.sh           # Neustart (stop + start)
+#   ./restart.sh restart   # Neustart (stop + start)
+#   ./restart.sh stop      # Nur stoppen
+#   ./restart.sh start     # Nur starten
+#   ./restart.sh --kill    # Sofort beenden (SIGKILL) falls nötig
 # ---------------------------------------------------------------
 set -euo pipefail
 
@@ -93,17 +95,48 @@ start_server() {
 
 # -- Hauptprogramm --------------------------------------------------
 
-echo "========================================"
-echo " GameServer Restart"
-echo " $(date '+%Y-%m-%d %H:%M:%S')"
-echo "========================================"
+CMD="${1:-restart}"  # Default: restart
 
-# Schritt 1: Stoppen
-stop_server
-
-# Schritt 2: Starten
-start_server
-
-echo "========================================"
-echo " Fertig."
-echo "========================================"
+case "$CMD" in
+    stop)
+        echo "========================================"
+        echo " GameServer Stop"
+        echo " $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "========================================"
+        stop_server
+        echo "========================================"
+        echo " Fertig."
+        echo "========================================"
+        ;;
+    start)
+        echo "========================================"
+        echo " GameServer Start"
+        echo " $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "========================================"
+        start_server
+        echo "========================================"
+        echo " Fertig."
+        echo "========================================"
+        ;;
+    restart|"")
+        echo "========================================"
+        echo " GameServer Restart"
+        echo " $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "========================================"
+        stop_server
+        start_server
+        echo "========================================"
+        echo " Fertig."
+        echo "========================================"
+        ;;
+    *)
+        echo "[FEHLER] Unbekannter Befehl: $CMD" >&2
+        echo "" >&2
+        echo "Nutzung:" >&2
+        echo "  ./restart.sh           # Neustart (stop + start)" >&2
+        echo "  ./restart.sh restart   # Neustart (stop + start)" >&2
+        echo "  ./restart.sh stop      # Nur stoppen" >&2
+        echo "  ./restart.sh start     # Nur starten" >&2
+        exit 1
+        ;;
+esac

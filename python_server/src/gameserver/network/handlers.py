@@ -109,13 +109,20 @@ async def handle_summary_request(
         "resources": {k: round(v, 2) for k, v in empire.resources.items()},
         "citizens": dict(empire.citizens),
         "citizen_price": svc.empire_service._citizen_price(sum(empire.citizens.values()) + 1),
+        "citizen_effect": svc.empire_service._citizen_effect,
+        "base_gold": svc.empire_service._base_gold,
+        "base_culture": svc.empire_service._base_culture,
         "max_life": empire.max_life,
         "effects": dict(empire.effects),
         "artefacts": list(empire.artefacts),
+        "buildings": dict(empire.buildings),  # iid -> remaining effort
+        "knowledge": dict(empire.knowledge),  # iid -> remaining effort
         "active_buildings": active_buildings,
         "completed_buildings": completed_buildings,
         "active_research": active_research,
         "completed_research": completed_research,
+        "build_queue": empire.build_queue,
+        "research_queue": empire.research_queue,
         "structures": structures_list,
         "army_count": len(empire.armies),
         "spy_count": len(empire.spies),
@@ -157,6 +164,7 @@ async def handle_item_request(
     for item in up.available_items(ItemType.BUILDING, completed):
         buildings[item.iid] = {
             "name": item.name,
+            "description": item.description,
             "effort": item.effort,
             "costs": dict(item.costs),
             "requirements": list(item.requirements),
@@ -167,6 +175,7 @@ async def handle_item_request(
     for item in up.available_items(ItemType.KNOWLEDGE, completed):
         knowledge[item.iid] = {
             "name": item.name,
+            "description": item.description,
             "effort": item.effort,
             "costs": dict(item.costs),
             "requirements": list(item.requirements),
@@ -271,8 +280,10 @@ async def handle_citizen_upgrade(
     TODO: Implement in EmpireService.upgrade_citizen().
     """
     svc = _svc()
+    log.info("citizen_upgrade request from uid=%d", sender_uid)
     empire = svc.empire_service.get(sender_uid)
     if empire is None:
+        log.warning("citizen_upgrade failed: no empire found for uid=%d", sender_uid)
         return {"type": "citizen_upgrade_response", "success": False, "error": "No empire found"}
     error = svc.empire_service.upgrade_citizen(empire)
     if error:
@@ -285,12 +296,22 @@ async def handle_citizen_upgrade(
 async def handle_change_citizen(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
-    """Handle ``change_citizen`` — redistribute citizens.
-
-    TODO: Implement in EmpireService.change_citizens().
-    """
-    log.info("change_citizen from uid=%d (not yet implemented)", sender_uid)
-    return None
+    """Handle ``change_citizen`` — redistribute citizens among roles."""
+    svc = _svc()
+    log.info("change_citizen request from uid=%d", sender_uid)
+    empire = svc.empire_service.get(sender_uid)
+    if empire is None:
+        log.warning("change_citizen failed: no empire found for uid=%d", sender_uid)
+        return {"type": "change_citizen_response", "success": False, "error": "No empire found"}
+    
+    citizens = getattr(message, "citizens", {})
+    error = svc.empire_service.change_citizens(empire, citizens)
+    if error:
+        log.info("change_citizen failed uid=%d: %s", sender_uid, error)
+        return {"type": "change_citizen_response", "success": False, "error": error}
+    
+    log.info("change_citizen success uid=%d: %s", sender_uid, citizens)
+    return {"type": "change_citizen_response", "success": True, "error": ""}
 
 
 # ===================================================================

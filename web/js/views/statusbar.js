@@ -53,12 +53,12 @@ export function initStatusBar(container) {
         <span class="label">Building</span>
         <span class="value" id="sb-building">idle</span>
       </div>
-      <div class="progress"><div class="progress-fill" id="sb-build-bar" style="width:0%"></div></div>
+      <div class="progress"><div class="progress-fill" id="sb-build-bar"></div></div>
       <div class="panel-row" style="margin-top:8px">
         <span class="label">Research</span>
         <span class="value" id="sb-research">idle</span>
       </div>
-      <div class="progress"><div class="progress-fill" id="sb-research-bar" style="width:0%"></div></div>
+      <div class="progress"><div class="progress-fill" id="sb-research-bar"></div></div>
     </div>
 
     <div class="panel" id="sb-military">
@@ -99,33 +99,43 @@ function onSummary(data) {
   _el.querySelector('#sb-life').textContent    =
     `${fmt(r.life ?? data.life ?? 0)} / ${fmt(data.max_life ?? 0)}`;
 
-  // Build queue — active_buildings is {iid: remaining_effort}
-  const bld = data.active_buildings || {};
-  const bldEntries = Object.entries(bld);
+  // Build queue — build_queue is the IID, remaining from active_buildings
+  const activeBld = data.active_buildings || {};
   const bldEl = _el.querySelector('#sb-building');
   const bBar = _el.querySelector('#sb-build-bar');
-  if (bldEntries.length) {
-    const [iid, remaining] = bldEntries[0];
-    const total = state.items?.buildings?.[iid]?.effort || remaining || 1;
-    const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
-    bldEl.textContent = `${state.items?.buildings?.[iid]?.name || iid} (${fmtEffort(remaining)})`;
-    bBar.style.width = `${pct.toFixed(0)}%`;
+  if (data.build_queue) {
+    const iid = data.build_queue;
+    const remaining = activeBld[iid];
+    if (remaining != null) {
+      const total = state.items?.buildings?.[iid]?.effort || remaining || 1;
+      const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
+      bldEl.textContent = `${state.items?.buildings?.[iid]?.name || iid} (${fmtEffort(remaining)})`;
+      bBar.style.width = `${pct.toFixed(0)}%`;
+    } else {
+      bldEl.textContent = 'idle';
+      bBar.style.width = '0%';
+    }
   } else {
     bldEl.textContent = 'idle';
     bBar.style.width = '0%';
   }
 
-  // Research queue — active_research is {iid: remaining_effort}
-  const res = data.active_research || {};
-  const resEntries = Object.entries(res);
+  // Research queue — research_queue is the IID, remaining from active_research
+  const activeRes = data.active_research || {};
   const resEl = _el.querySelector('#sb-research');
   const rBar = _el.querySelector('#sb-research-bar');
-  if (resEntries.length) {
-    const [iid, remaining] = resEntries[0];
-    const total = state.items?.knowledge?.[iid]?.effort || remaining || 1;
-    const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
-    resEl.textContent = `${state.items?.knowledge?.[iid]?.name || iid} (${fmtEffort(remaining)})`;
-    rBar.style.width = `${pct.toFixed(0)}%`;
+  if (data.research_queue) {
+    const iid = data.research_queue;
+    const remaining = activeRes[iid];
+    if (remaining != null) {
+      const total = state.items?.knowledge?.[iid]?.effort || remaining || 1;
+      const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
+      resEl.textContent = `${state.items?.knowledge?.[iid]?.name || iid} (${fmtEffort(remaining)})`;
+      rBar.style.width = `${pct.toFixed(0)}%`;
+    } else {
+      resEl.textContent = 'idle';
+      rBar.style.width = '0%';
+    }
   } else {
     resEl.textContent = 'idle';
     rBar.style.width = '0%';

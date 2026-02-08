@@ -31,6 +31,7 @@ class ItemDetails:
     Attributes:
         iid: Unique item identifier string.
         name: Human-readable display name.
+        description: Extended description of the item.
         item_type: Category of the item.
         effort: Build / research effort (buildings, knowledge, wonders).
         costs: Resource costs to build / research. {resource_key: amount}
@@ -65,6 +66,7 @@ class ItemDetails:
     costs: dict[str, float] = field(default_factory=dict)
     requirements: list[str] = field(default_factory=list)
     effects: dict[str, float] = field(default_factory=dict)
+    description: str = ""
 
     # Structure
     damage: float = 0.0
