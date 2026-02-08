@@ -36,6 +36,9 @@ class Router {
     this._activeViewId = null;
     /** @type {string} default route when hash is empty */
     this.defaultRoute = 'login';
+
+    /** @type {string|null} route the user wanted before auth redirect */
+    this.pendingRoute = null;
     /** @type {string[]} routes that don't require auth */
     this.publicRoutes = ['login', 'signup'];
 
@@ -98,6 +101,7 @@ class Router {
 
     // Auth guard: redirect to login if not authenticated
     if (!this.publicRoutes.includes(routeId) && !this._state.auth.authenticated) {
+      this.pendingRoute = routeId;
       this.navigate('login');
       return;
     }

@@ -363,10 +363,13 @@ class TestFireAndForgetHandlers:
         register_all_handlers(self.svc)
 
     @pytest.mark.asyncio
-    async def test_new_item_returns_none(self):
+    async def test_new_item_unknown_returns_error(self):
         msg = parse_message({"type": "new_item", "iid": "barracks", "sender": 100})
         result = await handle_new_item(msg, sender_uid=100)
-        assert result is None
+        assert result is not None
+        assert result["type"] == "build_response"
+        assert result["success"] is False
+        assert "Unknown item" in result["error"]
 
     @pytest.mark.asyncio
     async def test_new_structure_returns_none(self):
@@ -471,9 +474,13 @@ class TestRouterHandlerIntegration:
 
     @pytest.mark.asyncio
     async def test_fire_and_forget_roundtrip(self):
+        """new_item with unknown iid returns error (no longer fire-and-forget stub)."""
         raw = {"type": "new_item", "iid": "workshop", "sender": 100}
         result = await self.svc.router.route(raw, sender_uid=100)
-        assert result is None
+        # workshop already in empire → error
+        assert result is not None
+        assert result["type"] == "build_response"
+        assert result["success"] is False
 
     @pytest.mark.asyncio
     async def test_unregistered_type(self):
@@ -564,11 +571,15 @@ class TestServerHandleMessage:
         assert resp["type"] == "summary_response"
 
     @pytest.mark.asyncio
-    async def test_fire_and_forget_no_response(self):
+    async def test_build_existing_item_returns_error(self):
+        """Building an already started/completed item returns an error response."""
         raw = json.dumps({"type": "new_item", "iid": "farm", "sender": 100})
         await self.server._handle_message(self.ws, raw)
 
-        assert len(self.ws.sent) == 0
+        assert len(self.ws.sent) == 1
+        resp = self.ws.last_sent_json
+        assert resp["type"] == "build_response"
+        assert resp["success"] is False
 
     @pytest.mark.asyncio
     async def test_unknown_type_no_response(self):
@@ -898,7 +909,8 @@ class TestMessageSequence:
         )
 
         responses = self.ws.all_sent_json
-        # Only summary_response and item_response sent (new_item is fire-and-forget)
-        assert len(responses) == 2
+        # summary_response, build_response (farm already built), item_response
+        assert len(responses) == 3
         assert responses[0]["type"] == "summary_response"
-        assert responses[1]["type"] == "item_response"
+        assert responses[1]["type"] == "build_response"
+        assert responses[2]["type"] == "item_response"

@@ -53,8 +53,12 @@ function render() {
   if (!items || !summary) return;
 
   const filter = (container.querySelector('#research-filter')?.value || '').toLowerCase();
-  const completed = new Set(summary.completed_research || []);
-  const active = new Set(summary.active_research || []);
+  const completed = new Set([
+    ...(summary.completed_research || []),
+    ...(summary.completed_buildings || []),
+  ]);
+  const activeKeys = Object.keys(summary.active_research || {});
+  const active = new Set(activeKeys);
   const knowledge = items.knowledge || {};
 
   const entries = Object.entries(knowledge)
@@ -72,10 +76,6 @@ function render() {
     let status = 'available';
     if (completed.has(iid)) status = 'completed';
     else if (active.has(iid)) status = 'in-progress';
-
-    // check if requirements are met
-    const reqsMet = (info.requirements || []).every(r => completed.has(r));
-    if (status === 'available' && !reqsMet) status = 'locked';
 
     const badgeClass = `badge badge--${status}`;
     const badgeText = status === 'in-progress' ? 'researching' : status;

@@ -478,7 +478,10 @@ class ApiClient {
    * @param {string} iid Item IID
    */
   async buildItem(iid) {
-    return this._request({ type: 'new_item', iid }, null);
+    const resp = await this._request({ type: 'new_item', iid }, 'build_response');
+    // Refresh items + summary so UI reflects changes
+    await Promise.all([this.getItems(), this.getSummary()]);
+    return resp;
   }
 
   /**

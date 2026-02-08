@@ -1,13 +1,13 @@
 meta:
   version: 1
-  saved_at: '2026-02-08T10:20:05'
-  saved_at_unix: 1770542405.2065563
+  saved_at: '2026-02-08T12:35:38'
+  saved_at_unix: 1770550538.6454065
 empires:
 - uid: 100
   name: TestImperium
   resources:
-    gold: 25433.06870290758
-    culture: 12342.339983016413
+    gold: 29738.74192695728
+    culture: 14434.247256965082
     life: 10.0
   buildings:
     farm: 0.0
@@ -32,16 +32,20 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 405.5926767189958
-    culture: 202.7963383594979
+    gold: 288.85710702879965
+    culture: 0.0
     life: 10.0
-  buildings: {}
+  buildings:
+    INIT: 0.0
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
   knowledge: {}
   citizens:
     merchant: 0
     scientist: 0
     artist: 0
-  effects: {}
+  effects:
+    gold_offset: 0.1
   artefacts: []
   max_life: 10.0
   structures: {}

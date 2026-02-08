@@ -11,6 +11,7 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from gameserver.loaders.game_config_loader import GameConfig
     from gameserver.persistence.database import Database
 
 log = logging.getLogger(__name__)
@@ -30,8 +31,11 @@ class AuthService:
         database: Database instance for user queries.
     """
 
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, game_config: GameConfig | None = None) -> None:
         self._db = database
+        self._min_user = game_config.min_username_length if game_config else 2
+        self._max_user = game_config.max_username_length if game_config else 20
+        self._min_pass = game_config.min_password_length if game_config else 4
 
     async def login(self, username: str, password: str) -> int | None:
         """Authenticate a user. Returns UID on success, None on failure."""
@@ -54,12 +58,12 @@ class AuthService:
     ) -> int | str:
         """Create a new account. Returns UID on success, or error string."""
         # Validate fields
-        if not username or len(username) < 2:
-            return "Username must be at least 2 characters"
-        if len(username) > 20:
-            return "Username must be at most 20 characters"
-        if not password or len(password) < 4:
-            return "Password must be at least 4 characters"
+        if not username or len(username) < self._min_user:
+            return f"Username must be at least {self._min_user} characters"
+        if len(username) > self._max_user:
+            return f"Username must be at most {self._max_user} characters"
+        if not password or len(password) < self._min_pass:
+            return f"Password must be at least {self._min_pass} characters"
         if email and not _EMAIL_RE.match(email):
             return "Invalid email format"
         if not empire_name:

@@ -60,3 +60,60 @@ nohup: ignoring input
 10:25:00 [INFO] gameserver.network.server: Session registered: uid=-7
 10:25:00 [INFO] gameserver.network.server: Client connected: uid=-7 remote=('192.168.178.2', 49843)
 10:25:00 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:32:54 [INFO] gameserver.network.server: Session removed: uid=-7
+10:32:54 [INFO] websockets.server: connection open
+10:32:54 [INFO] gameserver.network.server: Session registered: uid=-8
+10:32:54 [INFO] gameserver.network.server: Client connected: uid=-8 remote=('192.168.178.2', 57852)
+10:32:54 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:35:58 [INFO] gameserver.network.server: Session removed: uid=-8
+10:35:58 [INFO] websockets.server: connection open
+10:35:58 [INFO] gameserver.network.server: Session registered: uid=-9
+10:35:58 [INFO] gameserver.network.server: Client connected: uid=-9 remote=('192.168.178.2', 65249)
+10:35:58 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:36:40 [INFO] gameserver.debug.dashboard: Signal sent (handled): type=summary_request sender=2
+10:39:33 [INFO] __main__: Shutdown signal received — stopping …
+10:39:33 [INFO] __main__: Shutting down …
+10:39:33 [INFO] gameserver.persistence.state_save: Game state saved to state.yaml (2 empires, 0 attacks, 0 battles)
+10:39:33 [INFO] websockets.server: server closing
+10:39:33 [INFO] gameserver.network.server: Session removed: uid=-9
+10:39:33 [INFO] websockets.server: server closed
+10:39:33 [INFO] gameserver.network.server: WebSocket server stopped
+10:39:33 [INFO] __main__:   WebSocket server stopped
+10:39:33 [INFO] __main__:   debug dashboard stopped
+10:39:33 [INFO] __main__:   database closed
+10:39:33 [INFO] __main__:   goodbye
+12:40:09 [INFO] __main__: === Game Server starting ===
+12:40:09 [INFO] __main__: Loading configuration …
+12:40:10 [INFO] __main__:   items:        210 loaded from config
+12:40:10 [INFO] __main__:   map:          4 paths, 23 build tiles from config/maps/default.yaml
+12:40:10 [INFO] __main__:   ai_templates: 2 entries from config/ai_templates.yaml
+12:40:10 [INFO] gameserver.loaders.game_config_loader: Loaded game config from config/game.yaml (29 keys)
+12:40:10 [INFO] __main__:   game_config:  loaded
+12:40:10 [INFO] __main__: Initializing persistence …
+12:40:10 [INFO] gameserver.persistence.database: Database connected: gameserver.db
+12:40:10 [INFO] __main__:   database:     connected (gameserver.db)
+12:40:10 [INFO] gameserver.persistence.state_load: Restoring state from state.yaml (saved at 2026-02-08T12:35:38, version 1)
+12:40:10 [INFO] gameserver.persistence.state_load: Restored 2 empires, 0 attacks, 0 battles
+12:40:10 [INFO] __main__:   state:        restored from disk (2 empires, 0 attacks)
+12:40:10 [INFO] __main__: Creating services …
+12:40:10 [INFO] __main__:   upgrade_provider: 210 items registered
+12:40:10 [INFO] __main__:   all services created
+12:40:10 [INFO] __main__: Wiring event handlers …
+12:40:10 [INFO] __main__:   event handlers registered
+12:40:10 [INFO] gameserver.engine.empire_service: Empire registered: uid=100 name='TestImperium'
+12:40:10 [INFO] gameserver.engine.empire_service: Empire 100: recalculated effects → {}
+12:40:10 [INFO] gameserver.engine.empire_service: Empire registered: uid=2 name='Empire1'
+12:40:10 [INFO] gameserver.engine.empire_service: Empire 2: recalculated effects → {'gold_offset': 0.1}
+12:40:10 [INFO] __main__: Restored 2 empires from saved state
+12:40:10 [INFO] __main__: Starting network server …
+12:40:10 [INFO] gameserver.network.handlers: Registered 29 message handlers: summary_request, item_request, military_request, new_item, new_structure, delete_structure, upgrade_structure, citizen_upgrade, change_citizen, increase_life, new_army, new_attack_request, change_army, new_wave, change_wave, end_siege, battle_register, battle_unregister, battle_next_wave_request, notification_request, user_message, timeline_request, userinfo_request, hall_of_fame_request, preferences_request, change_preferences, auth_request, signup, create_empire
+12:40:10 [INFO] websockets.server: server listening on 0.0.0.0:8765
+12:40:10 [INFO] gameserver.network.server: WebSocket server listening on ws://0.0.0.0:8765
+12:40:10 [INFO] __main__:   WebSocket server listening on 0.0.0.0:8765
+12:40:10 [INFO] gameserver.debug.dashboard: Debug dashboard running at http://0.0.0.0:9000/
+12:40:10 [INFO] __main__: Starting game loop …
+12:40:10 [INFO] __main__:   game loop running (1 s tick)
+12:40:31 [INFO] websockets.server: connection open
+12:40:31 [INFO] gameserver.network.server: Session registered: uid=-1
+12:40:31 [INFO] gameserver.network.server: Client connected: uid=-1 remote=('192.168.178.2', 56636)
+12:40:31 [INFO] gameserver.network.auth: Login success: eem (uid=2)

@@ -53,8 +53,12 @@ function render() {
   if (!items || !summary) return;
 
   const filter = (container.querySelector('#buildings-filter')?.value || '').toLowerCase();
-  const completed = new Set(summary.completed_buildings || []);
-  const active = new Set(summary.active_buildings || []);
+  const completed = new Set([
+    ...(summary.completed_buildings || []),
+    ...(summary.completed_research || []),
+  ]);
+  const activeKeys = Object.keys(summary.active_buildings || {});
+  const active = new Set(activeKeys);
   const buildings = items.buildings || {};
 
   const entries = Object.entries(buildings)
@@ -79,7 +83,9 @@ function render() {
     return `<tr>
       <td>${info.name || iid}</td>
       <td style="font-variant-numeric:tabular-nums">${fmtEffort(info.effort)}</td>
-      <td>${(info.requirements || []).join(', ') || '—'}</td>
+      <td>${(info.requirements || []).map(r =>
+        `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
+      ).join('') || '—'}</td>
       <td><span class="${badgeClass}">${badgeText}</span></td>
       <td>${status === 'available'
         ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button>`

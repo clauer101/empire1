@@ -111,7 +111,7 @@ class TestResearchQueue:
     def test_research_effect_bonus(self, service: EmpireService, empire: Empire):
         empire.knowledge["fire"] = 10.0
         empire.research_queue = "fire"
-        empire.effects["research_bonus"] = 0.5
+        empire.effects["research_speed_modifier"] = 0.5
 
         speed = 1.0 + 0.5  # base + effect
         service._progress_knowledge(empire, dt=1.0)
