@@ -321,6 +321,18 @@ class MapLoadResponse(GameMessage):
     error: str = ""
 
 
+# -- Battle ----------------------------------------------------------------
+
+class BattleRequest(GameMessage):
+    type: Literal["battle_request"] = "battle_request"
+
+
+class BattleResponse(GameMessage):
+    type: Literal["battle_response"] = "battle_response"
+    success: bool = False
+    error: str = ""
+
+
 # -- Message type registry -----------------------------------------------
 
 MESSAGE_TYPES: dict[str, type[GameMessage]] = {
@@ -381,6 +393,9 @@ MESSAGE_TYPES: dict[str, type[GameMessage]] = {
     "map_save_response": MapSaveResponse,
     "map_load_request": MapLoadRequest,
     "map_load_response": MapLoadResponse,
+    # Battle
+    "battle_request": BattleRequest,
+    "battle_response": BattleResponse,
 }
 
 

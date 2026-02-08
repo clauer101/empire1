@@ -26,6 +26,10 @@ let grid = null;
 
 const STORAGE_KEY = 'e3_map_editor';
 
+// Battle test state
+let _battleTestActive = false;
+let _testMobilePos = { q: 0, r: 0 };  // Current position of moving point
+
 // ── View lifecycle ──────────────────────────────────────────
 
 function init(el, _api, _state) {
@@ -38,12 +42,8 @@ function init(el, _api, _state) {
       <div class="hex-editor__toolbar">
         <h2 class="hex-editor__title">⬡ Map Editor</h2>
         <div class="hex-editor__actions">
-          <button id="map-clear" class="btn-ghost btn-sm" title="Alle Tiles zurücksetzen">Clear</button>
-          <button id="map-save" class="btn-sm" title="In Browser speichern">Save</button>
-          <button id="map-load" class="btn-ghost btn-sm" title="Aus Browser laden">Load</button>
-          <button id="map-export" class="btn-ghost btn-sm" title="Als JSON-Datei exportieren">Export</button>
-          <input type="file" id="map-import" accept=".json" style="display:none">
-          <button id="map-import-btn" class="btn-ghost btn-sm" title="JSON-Datei importieren">Import</button>
+          <button id="map-save" class="btn-sm" title="Karte speichern">Save</button>
+          <button id="map-battle" class="btn-ghost btn-sm" title="Schlacht starten">Battle</button>
         </div>
       </div>
 
@@ -90,6 +90,9 @@ async function enter() {
 
   // Subscribe to item updates
   _unsub.push(eventBus.on('state:items', _buildPalette));
+
+  // Subscribe to battle test updates
+  _unsub.push(eventBus.on('server:battle_update', _onBattleUpdate));
 
   _buildPalette();
 
@@ -375,16 +378,6 @@ function _updateMapInfo() {
 function _bindToolbar() {
   const $ = function(id) { return container.querySelector('#' + id); };
 
-  $('map-clear').addEventListener('click', function() {
-    if (confirm('Alle Tiles zurücksetzen?')) {
-      grid.clearAll();
-      _updateMapInfo();
-      _autoSave();
-      const content = container.querySelector('#props-content');
-      if (content) content.innerHTML = '<span class="props-empty">Click a tile to inspect</span>';
-    }
-  });
-
   $('map-save').addEventListener('click', async function() {
     try {
       const data = grid.toJSON();
@@ -397,7 +390,6 @@ function _bindToolbar() {
         return;
       }
       
-      _saveToStorage();
       _flashButton($('map-save'), 'Saved!');
     } catch (err) {
       _showMapError(err.message);
@@ -406,43 +398,15 @@ function _bindToolbar() {
     }
   });
 
-  $('map-load').addEventListener('click', function() {
-    _tryLoadFromStorage();
-    _updateMapInfo();
-    _flashButton($('map-load'), 'Loaded!');
-  });
-
-  $('map-export').addEventListener('click', function() {
-    const data = grid.toJSON();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'hex_map.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  $('map-import-btn').addEventListener('click', function() {
-    $('map-import').click();
-  });
-
-  $('map-import').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function() {
-      try {
-        const data = JSON.parse(reader.result);
-        grid.fromJSON(data);
-        _updateMapInfo();
-        _autoSave();
-      } catch (err) {
-        alert('Invalid map file: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  $('map-battle').addEventListener('click', async function() {
+    try {
+      const resp = await api.startBattle();
+      _flashButton($('map-battle'), 'Running...');
+    } catch (err) {
+      _showMapError(err.message);
+      _flashButton($('map-battle'), 'Error!');
+      console.error('[Composer] battle error:', err.message);
+    }
   });
 }
 
@@ -467,15 +431,6 @@ function _showMapError(message) {
 
 // ── Persistence (localStorage + Server) ────────────────────
 
-function _saveToStorage() {
-  try {
-    const data = grid.toJSON();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {
-    console.warn('[Composer] save failed', e);
-  }
-}
-
 function _tryLoadFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -490,9 +445,6 @@ function _tryLoadFromStorage() {
 let _autoSaveTimeout = null;
 
 function _autoSave() {
-  // Save to localStorage immediately
-  _saveToStorage();
-
   // Debounce server save (max every 1 second)
   if (_autoSaveTimeout) clearTimeout(_autoSaveTimeout);
   _autoSaveTimeout = setTimeout(async function() {
@@ -509,6 +461,17 @@ function _autoSave() {
       console.error('[Composer] ✗ Server save failed:', err.message);
     }
   }, 1000);  // Reduced from 2000ms to 1000ms for faster persistence
+}
+
+// ── Battle test ──────────────────────────────────────────────
+
+function _onBattleUpdate(msg) {
+  if (msg && msg.position) {
+    _testMobilePos = msg.position;
+    grid.testMobilePos = msg.position;  // Update HexGrid render
+    _battleTestActive = msg.active !== false;
+    grid._dirty = true;  // Trigger redraw
+  }
 }
 
 // ── Export ───────────────────────────────────────────────────

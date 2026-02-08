@@ -59,9 +59,9 @@ class TestLoadItemsFromConfigDir:
     def test_buildings_have_effort(self):
         items = load_items(CONFIG_DIR)
         buildings = [i for i in items if i.item_type == ItemType.BUILDING]
-        # INIT is a special start marker with no effort
+        # INIT and BASE_CAMP are special start markers with no effort
         for b in buildings:
-            if b.iid == "INIT":
+            if b.iid in ("INIT", "BASE_CAMP"):
                 continue
             assert b.effort > 0, f"Building {b.iid} has no effort value"
 
