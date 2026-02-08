@@ -1,6 +1,11 @@
 """Game constants — timing, costs, thresholds.
 
 All magic numbers from the Java Constants class, centralized here.
+
+.. deprecated::
+    Runtime code should use ``GameConfig`` (loaded from ``config/game.yaml``)
+    instead of importing from this module.  These values remain as reference
+    defaults and for tests that do not need a full GameConfig instance.
 """
 
 # -- Timing --------------------------------------------------------------

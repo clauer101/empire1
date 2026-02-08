@@ -56,3 +56,12 @@ class UpgradeProvider:
             if i.item_type == ItemType.CRITTER
             and all(req in completed for req in i.requirements)
         ]
+
+    def available_items(self, item_type: ItemType, completed: set[str]) -> list[ItemDetails]:
+        """Return all items of *item_type* whose requirements are met."""
+        return [
+            i
+            for i in self.items.values()
+            if i.item_type == item_type
+            and all(req in completed for req in i.requirements)
+        ]

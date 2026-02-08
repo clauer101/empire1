@@ -36,10 +36,15 @@ class Server:
         port: Bind port.
     """
 
-    def __init__(self, router: Router, host: str = "0.0.0.0", port: int = 8765) -> None:
+    def __init__(self, router: Router, host: str = "0.0.0.0", port: int = 8765,
+                 ping_interval: int = 30, ping_timeout: int = 10,
+                 max_size: int = 1_048_576) -> None:
         self._router = router
         self._host = host
         self._port = port
+        self._ping_interval = ping_interval
+        self._ping_timeout = ping_timeout
+        self._max_size = max_size
         self._connections: dict[int, ServerConnection] = {}  # uid → ws
         self._ws_to_uid: dict[int, int] = {}  # id(ws) → uid
         self._server: Optional[WSServer] = None
@@ -53,9 +58,9 @@ class Server:
             self._on_connect,
             self._host,
             self._port,
-            ping_interval=30,
-            ping_timeout=10,
-            max_size=1_048_576,  # 1 MB max message
+            ping_interval=self._ping_interval,
+            ping_timeout=self._ping_timeout,
+            max_size=self._max_size,
         )
         log.info("WebSocket server listening on ws://%s:%d", self._host, self._port)
 

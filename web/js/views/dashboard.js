@@ -56,6 +56,7 @@ function render(data) {
   }
   const r = data.resources || {};
 
+  const price = data.citizen_price;
   el.innerHTML = `
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:8px;">
 
@@ -69,6 +70,13 @@ function render(data) {
       <div class="panel">
         <div class="panel-header">Citizens</div>
         ${renderCitizens(data.citizens)}
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">Buy Citizen</div>
+        <div class="panel-row"><span class="label">Next price</span><span class="value">${fmt(price)} Culture</span></div>
+        <div class="panel-row"><button id="buy-citizen-btn">Buy Citizen</button></div>
+        <div class="panel-row" id="buy-citizen-msg"></div>
       </div>
 
       <div class="panel">
@@ -94,6 +102,27 @@ function render(data) {
 
     </div>
   `;
+  const btn = el.querySelector('#buy-citizen-btn');
+  if (btn) {
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const msgEl = el.querySelector('#buy-citizen-msg');
+      msgEl.textContent = '';
+      try {
+        const resp = await api.upgradeCitizen();
+        if (resp && resp.success) {
+          msgEl.textContent = 'Citizen bought!';
+          await refresh();
+        } else {
+          msgEl.textContent = resp && resp.error ? resp.error : 'Failed.';
+        }
+      } catch (err) {
+        msgEl.textContent = err.message;
+      }
+      btn.disabled = false;
+    };
+  }
+  // citizenPrice entfernt, Preis kommt vom Backend
 }
 
 function renderCitizens(citizens) {

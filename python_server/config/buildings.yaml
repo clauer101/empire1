@@ -5,8 +5,8 @@
 # requirements: list of prerequisite IIDs (buildings or knowledge)
 # effects: passive effects granted when complete
 
-INIT:
-  name: "Initialization"
+BASE_CAMP:
+  name: "Base Camp"
   effort: 0
   costs: {}
   requirements: []
@@ -16,15 +16,15 @@ FIRE_PLACE:
   name: "Fire Place"
   effort: 20
   costs: {}
-  requirements: [INIT]
-  effects: {}
+  requirements: [BASE_CAMP]
+  effects: {"gold_offset": 0.1}
 
 STONE_CIRCLE:
   name: "Stone Circle"
   effort: 50
   costs: {}
-  requirements: [INIT]
-  effects: {}
+  requirements: [BASE_CAMP, MYSTIC]
+  effects: {"culture_offset": 0.1}
 
 MAIN_HOUSE:
   name: "Main House"
@@ -45,7 +45,8 @@ TOOL_SHOP:
   effort: 500
   costs: {}
   requirements: [MAIN_HOUSE, CRAFTSMANSHIP]
-  effects: {}
+  effects:
+    build_speed_modifier: 0.1
 
 SHRINE:
   name: "Shrine"
@@ -59,7 +60,8 @@ EXCHANGE_POST:
   effort: 1500
   costs: {}
   requirements: [MAIN_HOUSE, CRAFTSMANSHIP]
-  effects: {}
+  effects:
+    gold_modifier: 0.1
 
 BOW_MAKER:
   name: "Bow Maker"
@@ -73,14 +75,16 @@ EPIC_DRAWINGS:
   effort: 1000
   costs: {}
   requirements: [STONE_CIRCLE, HUNTING]
-  effects: {}
+  effects:
+    culture_modifier: 0.1
 
 MEDICUS:
   name: "Medicus"
   effort: 4000
   costs: {}
   requirements: [SHRINE, HERBOLOGY]
-  effects: {}
+  effects:
+    life_offset: 0.01
 
 WATCH_TOWER:
   name: "Watch Tower"
@@ -94,7 +98,8 @@ FIELD_HEALER:
   effort: 6000
   costs: {}
   requirements: [MEDICUS, HERBOLOGY]
-  effects: {}
+  effects:
+    life_offset: 0.02
 
 SWORD_MAKER:
   name: "Sword Maker"
@@ -108,21 +113,24 @@ MARKET_PLACE:
   effort: 12000
   costs: {}
   requirements: [EXCHANGE_POST, CURRENCY]
-  effects: {}
+  effects:
+    gold_modifier: 0.2
 
 CHAPEL:
   name: "Chapel"
   effort: 15000
   costs: {}
   requirements: [SHRINE, RELIGION]
-  effects: {}
+  effects:
+    culture_modifier: 0.15
 
 LIBRARY:
   name: "Library"
   effort: 18000
   costs: {}
   requirements: [BULLETIN_BOARD, ALPHABET_WRITING]
-  effects: {}
+  effects:
+    research_speed_modifier: 0.15
 
 BULLETIN_BOARD:
   name: "Bulletin Board"
@@ -150,14 +158,16 @@ FORGE:
   effort: 22000
   costs: {}
   requirements: [TOOL_SHOP, IRON]
-  effects: {}
+  effects:
+    build_speed_modifier: 0.15
 
 TREASURE_CHAMBER:
   name: "Treasure Chamber"
   effort: 25000
   costs: {}
   requirements: [MARKET_PLACE, CURRENCY]
-  effects: {}
+  effects:
+    gold_offset: 0.5
 
 CARTOGRAPHER:
   name: "Cartographer"
@@ -192,7 +202,9 @@ THEATER:
   effort: 40000
   costs: {}
   requirements: [LORE_COLLECTION, ARTS]
-  effects: {}
+  effects:
+    culture_modifier: 0.2
+    culture_offset: 0.3
 
 STABLES:
   name: "Stables"
@@ -241,7 +253,9 @@ BANK:
   effort: 90000
   costs: {}
   requirements: [MARKET_PLACE, ECONOMY]
-  effects: {}
+  effects:
+    gold_modifier: 0.3
+    gold_offset: 1.0
 
 FENCING_SCHOOL:
   name: "Fencing School"
@@ -262,21 +276,25 @@ ACADEMY:
   effort: 100000
   costs: {}
   requirements: [LIBRARY, SCIENCE]
-  effects: {}
+  effects:
+    research_speed_modifier: 0.25
 
 LABORATORY:
   name: "Laboratory"
   effort: 150000
   costs: {}
   requirements: [ACADEMY, SCIENCE]
-  effects: {}
+  effects:
+    research_speed_modifier: 0.3
 
 MUSEUM:
   name: "Museum"
   effort: 130000
   costs: {}
   requirements: [LIBRARY, PAINTING, ARTS]
-  effects: {}
+  effects:
+    culture_modifier: 0.25
+    culture_offset: 0.5
 
 RACE_COURSE:
   name: "Race Course"

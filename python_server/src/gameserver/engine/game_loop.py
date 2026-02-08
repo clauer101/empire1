@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from gameserver.engine.attack_service import AttackService
     from gameserver.engine.empire_service import EmpireService
     from gameserver.engine.statistics import StatisticsService
+    from gameserver.loaders.game_config_loader import GameConfig
     from gameserver.util.events import EventBus
 
 
@@ -41,12 +42,14 @@ class GameLoop:
         empire_service: EmpireService,
         attack_service: AttackService,
         statistics: StatisticsService,
+        game_config: GameConfig | None = None,
     ) -> None:
         self._events = event_bus
         self._empires = empire_service
         self._attacks = attack_service
         self._stats = statistics
         self._running = False
+        self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
 
         # --- Debug / monitoring counters ---
         self.tick_count: int = 0
@@ -76,7 +79,7 @@ class GameLoop:
             self._tick_duration_sum += elapsed_ms
             self.avg_tick_duration_ms = self._tick_duration_sum / self.tick_count
 
-            await asyncio.sleep(1.0)
+            await asyncio.sleep(self._step_interval)
 
     @property
     def uptime_seconds(self) -> float:

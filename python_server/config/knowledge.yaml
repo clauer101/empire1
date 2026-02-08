@@ -23,7 +23,7 @@ MYSTIC:
   name: "Mystic"
   effort: 100
   costs: {}
-  requirements: []
+  requirements: [FIRE_PLACE]
   effects: {}
 
 ALPHABET_WRITING:

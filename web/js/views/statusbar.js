@@ -6,6 +6,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { state } from '../state.js';
 
 let _el;
 let _unsub = [];
@@ -74,6 +75,7 @@ export function initStatusBar(container) {
   _unsub.push(eventBus.on('state:disconnected',  () => setConnected(false)));
   _unsub.push(eventBus.on('state:auth',           onAuth));
   _unsub.push(eventBus.on('state:summary',        onSummary));
+  _unsub.push(eventBus.on('state:items',           () => { if (state.summary) onSummary(state.summary); }));
   _unsub.push(eventBus.on('state:military',        onMilitary));
 }
 
@@ -97,21 +99,37 @@ function onSummary(data) {
   _el.querySelector('#sb-life').textContent    =
     `${fmt(r.life ?? data.life ?? 0)} / ${fmt(data.max_life ?? 0)}`;
 
-  // Build queue
-  const bld = data.active_buildings;
+  // Build queue — active_buildings is {iid: remaining_effort}
+  const bld = data.active_buildings || {};
+  const bldEntries = Object.entries(bld);
   const bldEl = _el.querySelector('#sb-building');
-  bldEl.textContent = bld?.length ? bld[0] : 'idle';
-
-  // Research queue
-  const res = data.active_research;
-  const resEl = _el.querySelector('#sb-research');
-  resEl.textContent = res?.length ? res[0] : 'idle';
-
-  // Progress bars (if percent fields exist)
   const bBar = _el.querySelector('#sb-build-bar');
+  if (bldEntries.length) {
+    const [iid, remaining] = bldEntries[0];
+    const total = state.items?.buildings?.[iid]?.effort || remaining || 1;
+    const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
+    bldEl.textContent = `${state.items?.buildings?.[iid]?.name || iid} (${fmtEffort(remaining)})`;
+    bBar.style.width = `${pct.toFixed(0)}%`;
+  } else {
+    bldEl.textContent = 'idle';
+    bBar.style.width = '0%';
+  }
+
+  // Research queue — active_research is {iid: remaining_effort}
+  const res = data.active_research || {};
+  const resEntries = Object.entries(res);
+  const resEl = _el.querySelector('#sb-research');
   const rBar = _el.querySelector('#sb-research-bar');
-  bBar.style.width = `${data.build_progress ?? 0}%`;
-  rBar.style.width = `${data.research_progress ?? 0}%`;
+  if (resEntries.length) {
+    const [iid, remaining] = resEntries[0];
+    const total = state.items?.knowledge?.[iid]?.effort || remaining || 1;
+    const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
+    resEl.textContent = `${state.items?.knowledge?.[iid]?.name || iid} (${fmtEffort(remaining)})`;
+    rBar.style.width = `${pct.toFixed(0)}%`;
+  } else {
+    resEl.textContent = 'idle';
+    rBar.style.width = '0%';
+  }
 }
 
 function onMilitary(data) {
@@ -124,4 +142,11 @@ function fmt(n) {
   if (n == null) return '—';
   if (typeof n !== 'number') return String(n);
   return n.toLocaleString('de-DE');
+}
+
+function fmtEffort(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
+  return String(Math.round(n));
 }

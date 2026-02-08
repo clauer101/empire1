@@ -70,25 +70,27 @@ eventBus.on('state:auth', (auth) => {
     navAuth.href = '#login';
   }
   if (auth.authenticated && router.currentRoute() === 'login') {
-    router.navigate('dashboard');
+    const target = router.pendingRoute || 'dashboard';
+    router.pendingRoute = null;
+    router.navigate(target);
   }
 });
 
 // ── Start ──────────────────────────────────────────────────
-// Show UI immediately, connect in the background
-router.start();
+// Connect + auto-login first, then activate router so the
+// login screen never flashes when credentials are stored.
 
 (async () => {
   try {
     await api.connect();
     console.log('[app] connected to', wsUrl);
-    state.setConnected(true);  // ensure status bar reflects connection
+    state.setConnected(true);
     await api.tryAutoLogin();
     api.startPolling();
   } catch (err) {
     console.warn('[app] initial connection failed, will retry:', err);
-    // connect() rejects on error but onclose also triggers reconnect;
-    // if it didn't (e.g. error before open), kick it manually
     api._scheduleReconnect();
   }
+  // Activate router only after auth state is known
+  router.start();
 })();

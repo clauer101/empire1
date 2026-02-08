@@ -46,6 +46,7 @@ from gameserver.util.events import EventBus
 from gameserver.models.empire import Empire
 from gameserver.debug.dashboard import DebugDashboard
 from gameserver.network.handlers import register_all_handlers
+from gameserver.loaders.game_config_loader import GameConfig, load_game_config
 
 log = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ class Configuration:
     items: list = field(default_factory=list)
     hex_map: Optional[HexMap] = None
     ai_templates: dict = field(default_factory=dict)
+    game: GameConfig = field(default_factory=GameConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +83,7 @@ class Configuration:
 class Services:
     """Holds references to all engine services."""
 
+    game_config: Optional[GameConfig] = None
     event_bus: Optional[EventBus] = None
     upgrade_provider: Optional[UpgradeProvider] = None
     empire_service: Optional[EmpireService] = None
@@ -132,7 +135,10 @@ def load_configuration(
     ai_templates = load_ai_templates(ai_path)
     log.info("  ai_templates: %d entries from %s", len(ai_templates), ai_path)
 
-    return Configuration(items=items, hex_map=hex_map, ai_templates=ai_templates)
+    game_cfg = load_game_config()
+    log.info("  game_config:  loaded")
+
+    return Configuration(items=items, hex_map=hex_map, ai_templates=ai_templates, game=game_cfg)
 
 
 # ===================================================================
@@ -184,27 +190,29 @@ def create_services(config: Configuration, database: Database) -> Services:
     """
     log.info("Creating services …")
 
+    gc = config.game
     event_bus = EventBus()
     upgrade_provider = UpgradeProvider()
     upgrade_provider.load(config.items)
     log.info("  upgrade_provider: %d items registered", len(config.items))
 
-    empire_service = EmpireService(upgrade_provider, event_bus)
+    empire_service = EmpireService(upgrade_provider, event_bus, gc)
     battle_service = BattleService(event_bus, upgrade_provider)
     attack_service = AttackService(event_bus)
     army_service = ArmyService(upgrade_provider, event_bus)
     ai_service = AIService(upgrade_provider, config.ai_templates)
     statistics = StatisticsService()
 
-    game_loop = GameLoop(event_bus, empire_service, attack_service, statistics)
+    game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc)
 
-    auth_service = AuthService(database)
+    auth_service = AuthService(database, gc)
     router = Router()
-    server = Server(router)
+    server = Server(router, port=gc.ws_port)
 
     log.info("  all services created")
 
     svc = Services(
+        game_config=gc,
         event_bus=event_bus,
         upgrade_provider=upgrade_provider,
         empire_service=empire_service,
@@ -221,7 +229,7 @@ def create_services(config: Configuration, database: Database) -> Services:
     )
 
     # Debug dashboard (references services, so created last)
-    svc.debug_dashboard = DebugDashboard(svc, port=DEFAULT_DEBUG_PORT)
+    svc.debug_dashboard = DebugDashboard(svc, port=gc.debug_port)
 
     return svc
 
@@ -374,6 +382,7 @@ async def _start() -> None:
     if saved_state is not None and saved_state.empires:
         for empire in saved_state.empires.values():
             services.empire_service.register(empire)
+            services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
         # TODO: Restore attacks once AttackService supports it
         #   for attack in saved_state.attacks:
