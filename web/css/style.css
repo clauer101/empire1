@@ -589,3 +589,211 @@ label {
   #status-bar { flex-direction: row; flex-wrap: wrap; }
   #status-bar .panel { flex: 1; min-width: 180px; }
 }
+
+/* ── Hex Map Editor ──────────────────────────────────────── */
+
+.hex-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.hex-editor__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.hex-editor__title {
+  margin-bottom: 0;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.hex-editor__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hex-editor__body {
+  display: grid;
+  grid-template-columns: 160px 1fr 200px;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Palette ─────────────────────────────────────────────── */
+
+.hex-editor__palette {
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.palette-category {
+  margin-bottom: 10px;
+}
+
+.palette-category__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background .12s;
+  user-select: none;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.palette-item:hover {
+  background: var(--surface-hover);
+}
+
+.palette-item.active {
+  background: rgba(79, 195, 247, .15);
+  outline: 1px solid var(--accent-dim);
+}
+
+.palette-item.dragging {
+  opacity: .5;
+}
+
+.palette-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.palette-swatch--sm {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.palette-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+/* ── Canvas area ─────────────────────────────────────────── */
+
+.hex-editor__canvas-wrap {
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.hex-editor__canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Properties panel ────────────────────────────────────── */
+
+.hex-editor__props {
+  overflow-y: auto;
+}
+
+.hex-editor__props .panel {
+  font-size: 12px;
+}
+
+.props-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+.props-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.props-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.props-row .label {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.props-row .value {
+  color: var(--text-bright);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.props-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.props-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* ── Hex editor responsive ───────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .hex-editor__body {
+    grid-template-columns: 140px 1fr;
+  }
+  .hex-editor__props {
+    display: none;
+  }
+}

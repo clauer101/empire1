@@ -20,7 +20,7 @@ from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction, HexMap
+from gameserver.models.map import Direction
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
 
@@ -128,7 +128,7 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
             iid: _serialize_critter(c)
             for iid, c in empire.bosses.items()
         },
-        "empire_map": _serialize_hex_map(empire.empire_map),
+        "hex_map": _serialize_editor_hex_map(empire.hex_map) if hasattr(empire, 'hex_map') else [],
     }
 
 
@@ -202,15 +202,35 @@ def _serialize_spy_army(spy: SpyArmy) -> dict[str, Any]:
     }
 
 
-def _serialize_hex_map(m: HexMap) -> dict[str, Any]:
-    return {
-        "paths": {
-            d.value: _hex_list(coords)
-            for d, coords in m.paths.items()
-        },
-        "build_tiles": _hex_set(m.build_tiles),
-        "occupied": _hex_set(m.occupied),
-    }
+def _serialize_editor_hex_map(hex_map: dict) -> list[dict[str, Any]]:
+    """Convert editor hex_map from dict format {"q,r": "type"} to list format.
+    
+    Converts the internal representation used by composer.js to the
+    persistent YAML list format. Handles None or invalid inputs gracefully.
+    """
+    if hex_map is None:
+        return []
+    
+    result = []
+    try:
+        for key in sorted(hex_map.keys()):
+            try:
+                q, r = map(int, key.split(','))
+                tile_type = hex_map[key]
+                result.append({
+                    "q": q,
+                    "r": r,
+                    "type": tile_type
+                })
+            except (ValueError, AttributeError, TypeError):
+                # Skip invalid keys (log but don't fail)
+                log.debug(f"Skipping invalid hex_map key: {key}")
+                continue
+    except Exception as e:
+        log.warning(f"Error serializing editor_hex_map: {e}")
+        return []
+    
+    return result
 
 
 # ===================================================================

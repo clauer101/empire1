@@ -409,6 +409,31 @@ class ApiClient {
   }
 
   /**
+   * Load the hex map from the server.
+   * @returns {Promise<object>} map_load_response with tiles
+   */
+  async loadMap() {
+    const resp = await this._request(
+      { type: 'map_load_request' },
+      'map_load_response'
+    );
+    return resp;
+  }
+
+  /**
+   * Save the hex map to the server.
+   * @param {object} tiles Hex tiles {hexKey: {type, ...}}
+   * @returns {Promise<object>} map_save_response
+   */
+  async saveMap(tiles) {
+    const resp = await this._request(
+      { type: 'map_save_request', tiles },
+      'map_save_response'
+    );
+    return resp;
+  }
+
+  /**
    * Get timeline / messages.
    * @param {number} targetUid
    * @param {string[]} [markRead]

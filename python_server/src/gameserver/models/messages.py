@@ -298,6 +298,29 @@ class PreferencesResponse(GameMessage):
     email: str = ""
 
 
+# -- Map Editor ----------------------------------------------------------
+
+class MapSaveRequest(GameMessage):
+    type: Literal["map_save_request"] = "map_save_request"
+    tiles: dict[str, Any] = {}
+
+
+class MapLoadRequest(GameMessage):
+    type: Literal["map_load_request"] = "map_load_request"
+
+
+class MapSaveResponse(GameMessage):
+    type: Literal["map_save_response"] = "map_save_response"
+    success: bool = False
+    error: str = ""
+
+
+class MapLoadResponse(GameMessage):
+    type: Literal["map_load_response"] = "map_load_response"
+    tiles: dict[str, Any] = {}
+    error: str = ""
+
+
 # -- Message type registry -----------------------------------------------
 
 MESSAGE_TYPES: dict[str, type[GameMessage]] = {
@@ -353,6 +376,11 @@ MESSAGE_TYPES: dict[str, type[GameMessage]] = {
     "change_preferences": ChangePreferencesRequest,
     "preferences_request": PreferencesRequest,
     "preferences_response": PreferencesResponse,
+    # Map Editor
+    "map_save_request": MapSaveRequest,
+    "map_save_response": MapSaveResponse,
+    "map_load_request": MapLoadRequest,
+    "map_load_response": MapLoadResponse,
 }
 
 

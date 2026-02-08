@@ -6,24 +6,26 @@
  */
 
 import {
-  hexToPixel, pixelToHex, hexCorners, hexKey, parseKey,
+  hexToPixel, pixelToHex, hexCorners, hexKey, parseKey, hexNeighbors,
 } from './hex.js';
 
 /** Tile type definitions with visual styling. */
 export const TILE_TYPES = {
-  empty:       { id: 'empty',       label: 'Leer',         color: '#1e1e2e', stroke: '#2a2a3a', icon: null },
-  grass:       { id: 'grass',       label: 'Gras',         color: '#2d4a2d', stroke: '#3a5c3a', icon: null },
-  path:        { id: 'path',        label: 'Pfad',         color: '#5c4a32', stroke: '#7a6545', icon: null },
-  build_zone:  { id: 'build_zone',  label: 'Bauzone',      color: '#2a3a4a', stroke: '#3a5070', icon: '🏗' },
-  spawn_north: { id: 'spawn_north', label: 'Spawn Nord',   color: '#5a2a2a', stroke: '#8a3a3a', icon: '▼' },
-  spawn_south: { id: 'spawn_south', label: 'Spawn Süd',    color: '#5a2a2a', stroke: '#8a3a3a', icon: '▲' },
-  spawn_east:  { id: 'spawn_east',  label: 'Spawn Ost',    color: '#5a2a2a', stroke: '#8a3a3a', icon: '◀' },
-  spawn_west:  { id: 'spawn_west',  label: 'Spawn West',   color: '#5a2a2a', stroke: '#8a3a3a', icon: '▶' },
-  castle:      { id: 'castle',      label: 'Burg (Ziel)',  color: '#4a4a1a', stroke: '#7a7a30', icon: '🏰' },
-  tower_slot:  { id: 'tower_slot',  label: 'Turm-Platz',   color: '#2a3550', stroke: '#3a5080', icon: '🗼' },
-  water:       { id: 'water',       label: 'Wasser',       color: '#1a2a4a', stroke: '#2a3a6a', icon: '~' },
-  rock:        { id: 'rock',        label: 'Fels',         color: '#3a3a3a', stroke: '#4a4a4a', icon: '�ite' },
+  void:        { id: 'void',        label: 'Void',          color: '#161620', stroke: '#1a1a24', icon: null },
+  empty:       { id: 'empty',       label: 'Empty',          color: '#1e1e2e', stroke: '#2a2a3a', icon: null },
+  path:        { id: 'path',        label: 'Path',          color: '#5c4a32', stroke: '#7a6545', icon: null },
+  spawnpoint:  { id: 'spawnpoint',  label: 'Spawnpoint',    color: '#5a2a2a', stroke: '#8a3a3a', icon: '★' },
+  castle:      { id: 'castle',      label: 'Castle (Target)',   color: '#4a4a1a', stroke: '#7a7a30', icon: '🏰' },
 };
+
+/**
+ * Register a new tile type dynamically (e.g., from server data).
+ * @param {string} id  Tile type ID
+ * @param {object} def  { label, color, stroke, icon }
+ */
+export function registerTileType(id, def) {
+  TILE_TYPES[id] = { id, ...def };
+}
 
 export function getTileType(id) {
   return TILE_TYPES[id] || TILE_TYPES.empty;
@@ -78,6 +80,7 @@ export class HexGrid {
     this._dirty = true;
 
     this._initGrid();
+    this.addVoidNeighbors();
     this._bindEvents();
     this._centerGrid();
     this._startLoop();
@@ -103,6 +106,27 @@ export class HexGrid {
   /** Return all valid tile keys. */
   get validKeys() {
     return new Set(this.tiles.keys());
+  }
+
+  /**
+   * Add void tiles around all non-void tiles.
+   * Void tiles are purely visual (client-side) and not persisted.
+   */
+  addVoidNeighbors() {
+    const realKeys = new Set();
+    for (const [key, data] of this.tiles) {
+      if (data.type !== 'void') realKeys.add(key);
+    }
+    for (const key of realKeys) {
+      const { q, r } = parseKey(key);
+      for (const nb of hexNeighbors(q, r)) {
+        const nbKey = hexKey(nb.q, nb.r);
+        if (!this.tiles.has(nbKey)) {
+          this.tiles.set(nbKey, { type: 'void' });
+        }
+      }
+    }
+    this._dirty = true;
   }
 
   // ── Centering ──────────────────────────────────────────────
@@ -296,13 +320,12 @@ export class HexGrid {
 
   // ── Serialization ──────────────────────────────────────────
 
-  /** Export map as JSON-serializable object. */
+  /** Export map as JSON-serializable object. Excludes void tiles. */
   toJSON() {
     const tiles = {};
     for (const [key, data] of this.tiles) {
-      if (data.type !== 'empty') {
-        tiles[key] = data;
-      }
+      if (data.type === 'void') continue;  // void tiles are client-side only
+      tiles[key] = data.type || 'empty';
     }
     return {
       version: 1,
@@ -321,13 +344,13 @@ export class HexGrid {
     this.rows = data.rows || this.rows;
     this.hexSize = data.hexSize || this.hexSize;
     this.tiles.clear();
-    this._initGrid();
 
+    // Only create tiles that exist in the data — no 6x6 prefill
     for (const [key, tileData] of Object.entries(data.tiles)) {
-      if (this.tiles.has(key)) {
-        this.tiles.set(key, tileData);
-      }
+      this.tiles.set(key, typeof tileData === 'string' ? { type: tileData } : tileData);
     }
+    // Add void border tiles around real tiles
+    this.addVoidNeighbors();
     this.selectedKey = null;
     this._centerGrid();
     this._dirty = true;
@@ -365,9 +388,10 @@ export class HexGrid {
     // Draw tiles
     for (const [key, data] of this.tiles) {
       const { q, r } = parseKey(key);
+      const tileType = getTileType(data.type);
+
       const { x, y } = hexToPixel(q, r, sz);
       const corners = hexCorners(x, y, sz);
-      const tileType = getTileType(data.type);
 
       const isHovered = key === this.hoveredKey;
       const isSelected = key === this.selectedKey;
