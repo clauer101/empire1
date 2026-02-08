@@ -68,6 +68,9 @@ export class HexGrid {
     this.hoveredKey = null;
     this.selectedKey = null;
 
+    // Battle test mobile position
+    this.testMobilePos = null;  // { q, r } or null
+
     // Pan state
     this._isPanning = false;
     this._panStartX = 0;
@@ -441,6 +444,18 @@ export class HexGrid {
         ctx.textBaseline = 'bottom';
         ctx.fillText(`${q},${r}`, x, y + sz * 0.75);
       }
+    }
+
+    // Draw test mobile critter
+    if (this.testMobilePos) {
+      const { x, y } = hexToPixel(this.testMobilePos.q, this.testMobilePos.r, sz);
+      ctx.fillStyle = '#ffcc00';
+      ctx.beginPath();
+      ctx.arc(x, y, sz * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffaa00';
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
 
     ctx.restore();

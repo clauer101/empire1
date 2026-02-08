@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-08T19:48:43'
-  saved_at_unix: 1770576523.6488657
+  saved_at: '2026-02-08T20:18:52'
+  saved_at_unix: 1770578332.224735
 empires:
 - uid: 100
   name: TestImperium
@@ -40,8 +40,8 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 3543.956264959776
-    culture: 2991.136461430151
+    gold: 3955.19198635789
+    culture: 3307.5398074196382
     life: 10.0
   buildings:
     INIT: 0.0
@@ -84,14 +84,14 @@ empires:
   spies: []
   bosses: {}
   hex_map:
-  - q: 1
-    r: 0
-    type: castle
   - q: 0
     r: 0
-    type: path
+    type: empty
   - q: 0
     r: 1
     type: spawnpoint
+  - q: 1
+    r: 0
+    type: castle
 attacks: []
 battles: []

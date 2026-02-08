@@ -433,6 +433,14 @@ class ApiClient {
     return resp;
   }
 
+  async startBattle() {
+    const resp = await this._request(
+      { type: 'battle_request' },
+      'battle_response'
+    );
+    return resp;
+  }
+
   /**
    * Get timeline / messages.
    * @param {number} targetUid

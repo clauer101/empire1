@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import logging
 import time
+import asyncio
 from collections import deque
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -371,43 +372,46 @@ async def handle_delete_structure(
 async def handle_citizen_upgrade(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
-    """Handle ``citizen_upgrade`` — add one citizen.
+    """Handle ``citizen_upgrade`` — add one citizen (fire-and-forget).
 
-    TODO: Implement in EmpireService.upgrade_citizen().
+    Fire-and-forget: no response sent to client.
     """
     svc = _svc()
     log.info("citizen_upgrade request from uid=%d", sender_uid)
     empire = svc.empire_service.get(sender_uid)
     if empire is None:
         log.warning("citizen_upgrade failed: no empire found for uid=%d", sender_uid)
-        return {"type": "citizen_upgrade_response", "success": False, "error": "No empire found"}
+        return None
     error = svc.empire_service.upgrade_citizen(empire)
     if error:
         log.info("citizen_upgrade failed uid=%d: %s", sender_uid, error)
-        return {"type": "citizen_upgrade_response", "success": False, "error": error}
+        return None
     log.info("citizen_upgrade success uid=%d", sender_uid)
-    return {"type": "citizen_upgrade_response", "success": True, "error": ""}
+    return None
 
 
 async def handle_change_citizen(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
-    """Handle ``change_citizen`` — redistribute citizens among roles."""
+    """Handle ``change_citizen`` — redistribute citizens among roles (fire-and-forget).
+    
+    Fire-and-forget: no response sent to client.
+    """
     svc = _svc()
     log.info("change_citizen request from uid=%d", sender_uid)
     empire = svc.empire_service.get(sender_uid)
     if empire is None:
         log.warning("change_citizen failed: no empire found for uid=%d", sender_uid)
-        return {"type": "change_citizen_response", "success": False, "error": "No empire found"}
+        return None
     
     citizens = getattr(message, "citizens", {})
     error = svc.empire_service.change_citizens(empire, citizens)
     if error:
         log.info("change_citizen failed uid=%d: %s", sender_uid, error)
-        return {"type": "change_citizen_response", "success": False, "error": error}
+        return None
     
     log.info("change_citizen success uid=%d: %s", sender_uid, citizens)
-    return {"type": "change_citizen_response", "success": True, "error": ""}
+    return None
 
 
 # ===================================================================
@@ -814,6 +818,139 @@ async def handle_map_save_request(
 
 
 # ===================================================================
+# Battle Test
+# ===================================================================
+
+_active_battles: dict[int, bool] = {}  # uid → is_active
+
+
+async def handle_battle_request(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Start a battle simulation: move critters from spawnpoint to castle."""
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+    
+    if empire is None:
+        return {
+            "type": "battle_test_response",
+            "success": False,
+            "error": f"No empire found for uid {target_uid}",
+        }
+    
+    if not empire.hex_map:
+        return {
+            "type": "battle_test_response",
+            "success": False,
+            "error": "No map configured",
+        }
+    
+    # Start battle simulation
+    _active_battles[target_uid] = True
+    asyncio.create_task(_simulate_battle(target_uid, empire.hex_map))
+    
+    return {
+        "type": "battle_response",
+        "success": True,
+    }
+
+
+async def _simulate_battle(uid: int, tiles: dict[str, str]) -> None:
+    """Simulate critter movement from spawn to castle over 10 seconds."""
+    svc = _svc()
+    
+    # Find spawn and castle
+    spawn_pos, castle_pos = None, None
+    for key, tile_type in tiles.items():
+        q, r = map(int, key.split(','))
+        if tile_type == 'spawnpoint' and spawn_pos is None:
+            spawn_pos = (q, r)
+        elif tile_type == 'castle':
+            castle_pos = (q, r)
+    
+    if not spawn_pos or not castle_pos:
+        return
+    
+    # Build path via BFS
+    path = _find_path(spawn_pos, castle_pos, tiles)
+    if not path:
+        return
+    
+    # Animate along path for ~10 seconds (250 ticks at 25 Hz)
+    tick_duration = 0.04  # 25 Hz
+    total_ticks = 250
+    path_length = len(path) - 1
+    
+    for tick in range(total_ticks):
+        if not _active_battles.get(uid):
+            break
+        
+        # Calculate progress (0.0 to 1.0)
+        progress = tick / total_ticks
+        path_index = int(progress * path_length)
+        path_index = min(path_index, path_length)
+        
+        q, r = path[path_index]
+        update_msg = {
+            "type": "battle_update",
+            "position": {"q": q, "r": r},
+            "active": True,
+        }
+        
+        # Broadcast to this client
+        if svc.server:
+            await svc.server.send_to(uid, update_msg)
+        
+        await asyncio.sleep(tick_duration)
+    
+    # End message
+    final_msg = {
+        "type": "battle_update",
+        "position": {"q": castle_pos[0], "r": castle_pos[1]},
+        "active": False,
+    }
+    if svc.server:
+        await svc.server.send_to(uid, final_msg)
+    
+    _active_battles.pop(uid, None)
+
+
+def _find_path(start: tuple[int, int], end: tuple[int, int], tiles: dict[str, str]) -> list[tuple[int, int]]:
+    """BFS to find path from start to end through passable tiles."""
+    from collections import deque
+    
+    queue = deque([(start, [start])])
+    visited = {start}
+    
+    def hex_neighbors(q: int, r: int) -> list[tuple[int, int]]:
+        return [
+            (q + 1, r),
+            (q + 1, r - 1),
+            (q, r - 1),
+            (q - 1, r),
+            (q - 1, r + 1),
+            (q, r + 1),
+        ]
+    
+    while queue:
+        (q, r), path = queue.popleft()
+        
+        if (q, r) == end:
+            return path
+        
+        for nq, nr in hex_neighbors(q, r):
+            if (nq, nr) not in visited:
+                key = f"{nq},{nr}"
+                tile_type = tiles.get(key)
+                if tile_type in ('spawnpoint', 'path', 'castle'):
+                    visited.add((nq, nr))
+                    queue.append(((nq, nr), path + [(nq, nr)]))
+    
+    return []
+
+
+# ===================================================================
 # Registration — THE central place to add all handlers
 # ===================================================================
 
@@ -881,6 +1018,9 @@ def register_all_handlers(services: Services) -> None:
     router.register("auth_request", handle_auth_request)
     router.register("signup", handle_signup)
     router.register("create_empire", handle_create_empire)
+
+    # -- Battle ----------------------------------------------------------
+    router.register("battle_request", handle_battle_request)
 
     registered = router.registered_types
     log.info("Registered %d message handlers: %s", len(registered), ", ".join(registered))
