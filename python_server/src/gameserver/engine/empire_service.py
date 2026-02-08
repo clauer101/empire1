@@ -96,40 +96,46 @@ class EmpireService:
     # -- Build progress --------------------------------------------------
 
     def _progress_buildings(self, empire: Empire, dt: float) -> None:
-        """Tick building construction. Emits ItemCompleted when done."""
-        completed = []
-        for iid, remaining in empire.buildings.items():
-            if remaining <= 0:
-                continue  # already finished
-            remaining -= dt
-            if remaining <= 0:
-                remaining = 0.0
-                completed.append(iid)
-            empire.buildings[iid] = remaining
+        """Tick building construction for the single active build item."""
+        if empire.build_queue is None:
+            return
 
-        for iid in completed:
+        iid = empire.build_queue
+        remaining = empire.buildings.get(iid, 0.0)
+        if remaining <= 0:
+            empire.build_queue = None
+            return
+
+        remaining -= dt
+        if remaining <= 0:
+            remaining = 0.0
+            empire.build_queue = None
             log.info("Empire %d: building %s completed", empire.uid, iid)
             # TODO: emit ItemCompleted event, apply effects
+        empire.buildings[iid] = remaining
 
     def _progress_knowledge(self, empire: Empire, dt: float) -> None:
-        """Tick research progress. Emits ItemCompleted when done."""
-        completed = []
-        for iid, remaining in empire.knowledge.items():
-            if remaining <= 0:
-                continue
-            # Scientist bonus
-            scientist_count = empire.citizens.get("scientist", 0)
-            speed = 1.0 + scientist_count * CITIZEN_EFFECT
-            speed += empire.get_effect("research_bonus", 0.0)
-            remaining -= dt * speed
-            if remaining <= 0:
-                remaining = 0.0
-                completed.append(iid)
-            empire.knowledge[iid] = remaining
+        """Tick research progress for the single active research item."""
+        if empire.research_queue is None:
+            return
 
-        for iid in completed:
+        iid = empire.research_queue
+        remaining = empire.knowledge.get(iid, 0.0)
+        if remaining <= 0:
+            empire.research_queue = None
+            return
+
+        # Scientist bonus
+        scientist_count = empire.citizens.get("scientist", 0)
+        speed = 1.0 + scientist_count * CITIZEN_EFFECT
+        speed += empire.get_effect("research_bonus", 0.0)
+        remaining -= dt * speed
+        if remaining <= 0:
+            remaining = 0.0
+            empire.research_queue = None
             log.info("Empire %d: knowledge %s completed", empire.uid, iid)
             # TODO: emit ItemCompleted event, apply effects
+        empire.knowledge[iid] = remaining
 
     # -- Actions ---------------------------------------------------------
 

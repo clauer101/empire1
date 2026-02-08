@@ -45,13 +45,14 @@ from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus
 from gameserver.models.empire import Empire
 from gameserver.debug.dashboard import DebugDashboard
+from gameserver.network.handlers import register_all_handlers
 
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Default paths — relative to the working directory
 # ---------------------------------------------------------------------------
-DEFAULT_ITEMS_PATH = "config/items.yaml"
+DEFAULT_ITEMS_PATH = "config"
 DEFAULT_MAP_PATH = "config/maps/default.yaml"
 DEFAULT_AI_PATH = "config/ai_templates.yaml"
 DEFAULT_DB_PATH = "gameserver.db"
@@ -273,13 +274,8 @@ async def start_network(services: Services) -> None:
     """
     log.info("Starting network server …")
 
-    # Register message handlers on the router
-    # Each handler is an async callable(message, sender_uid)
-    # Additional handlers will be added as services are implemented
-    router = services.router
-
-    # Example: auth messages
-    # router.register("auth", services.auth_service.handle_auth)
+    # Register all message handlers on the router
+    register_all_handlers(services)
 
     await services.server.start()
     log.info("  WebSocket server listening on %s:%d", services.server._host, services.server._port)
@@ -336,6 +332,9 @@ async def start_game_loop(services: Services) -> None:
         except Exception:
             log.exception("State save failed — continuing shutdown")
 
+    if services.server is not None:
+        await services.server.stop()
+        log.info("  WebSocket server stopped")
     if services.debug_dashboard is not None:
         await services.debug_dashboard.stop()
         log.info("  debug dashboard stopped")

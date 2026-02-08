@@ -42,6 +42,14 @@ class SignupRequest(GameMessage):
     username: str
     password: str
     email: str = ""
+    empire_name: str = ""
+
+
+class SignupResponse(GameMessage):
+    type: Literal["signup_response"] = "signup_response"
+    success: bool
+    uid: int = 0
+    reason: str = ""
 
 
 # -- Empire queries ------------------------------------------------------

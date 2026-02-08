@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="shell">
+
+    <!-- ── Left: Navigation ──────────────────────────────── -->
+    <nav id="main-nav">
+      <div class="nav-brand">E 3</div>
+
+      <div class="nav-section">Empire</div>
+      <a data-route="dashboard" href="#dashboard">
+        <span class="nav-icon">◈</span> Dashboard
+      </a>
+      <a data-route="buildings" href="#buildings">
+        <span class="nav-icon">▦</span> Buildings
+      </a>
+      <a data-route="research" href="#research">
+        <span class="nav-icon">◉</span> Research
+      </a>
+
+      <div class="nav-section">Military</div>
+      <a data-route="composer" href="#composer">
+        <span class="nav-icon">⬡</span> Composer
+      </a>
+      <a data-route="army" href="#army">
+        <span class="nav-icon">⚔</span> Army
+      </a>
+
+      <div class="nav-section">Social</div>
+      <a data-route="social" href="#social">
+        <span class="nav-icon">✉</span> Messages
+      </a>
+
+      <div class="nav-spacer"></div>
+
+      <a id="nav-auth" data-route="login" href="#login">
+        <span class="nav-icon">⏻</span> <span id="nav-auth-label">Login</span>
+      </a>
+    </nav>
+
+    <!-- ── Center: Main Content ──────────────────────────── -->
+    <main id="app"></main>
+
+    <!-- ── Right: Quick Status ───────────────────────────── -->
+    <aside id="status-bar"></aside>
+
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

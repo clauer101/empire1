@@ -1,0 +1,624 @@
+# Buildings tech tree
+# Each building has: effort, costs, requirements, effects
+# effort: time units to complete construction
+# costs: resource costs {gold: ..., culture: ...}
+# requirements: list of prerequisite IIDs (buildings or knowledge)
+# effects: passive effects granted when complete
+
+INIT:
+  name: "Initialization"
+  effort: 0
+  costs: {}
+  requirements: []
+  effects: {}
+
+FIRE_PLACE:
+  name: "Fire Place"
+  effort: 20
+  costs: {}
+  requirements: [INIT]
+  effects: {}
+
+STONE_CIRCLE:
+  name: "Stone Circle"
+  effort: 50
+  costs: {}
+  requirements: [INIT]
+  effects: {}
+
+MAIN_HOUSE:
+  name: "Main House"
+  effort: 100
+  costs: {}
+  requirements: [FIRE_PLACE]
+  effects: {}
+
+EARTH_WALL:
+  name: "Earth Wall"
+  effort: 150
+  costs: {}
+  requirements: [MAIN_HOUSE]
+  effects: {}
+
+TOOL_SHOP:
+  name: "Tool Shop"
+  effort: 500
+  costs: {}
+  requirements: [MAIN_HOUSE, CRAFTSMANSHIP]
+  effects: {}
+
+SHRINE:
+  name: "Shrine"
+  effort: 800
+  costs: {}
+  requirements: [STONE_CIRCLE, MYSTIC]
+  effects: {}
+
+EXCHANGE_POST:
+  name: "Exchange Post"
+  effort: 1500
+  costs: {}
+  requirements: [MAIN_HOUSE, CRAFTSMANSHIP]
+  effects: {}
+
+BOW_MAKER:
+  name: "Bow Maker"
+  effort: 2500
+  costs: {}
+  requirements: [TOOL_SHOP, HUNTING]
+  effects: {}
+
+EPIC_DRAWINGS:
+  name: "Epic Drawings"
+  effort: 1000
+  costs: {}
+  requirements: [STONE_CIRCLE, HUNTING]
+  effects: {}
+
+MEDICUS:
+  name: "Medicus"
+  effort: 4000
+  costs: {}
+  requirements: [SHRINE, HERBOLOGY]
+  effects: {}
+
+WATCH_TOWER:
+  name: "Watch Tower"
+  effort: 5000
+  costs: {}
+  requirements: [EARTH_WALL, COPPER_BRONZE]
+  effects: {}
+
+FIELD_HEALER:
+  name: "Field Healer"
+  effort: 6000
+  costs: {}
+  requirements: [MEDICUS, HERBOLOGY]
+  effects: {}
+
+SWORD_MAKER:
+  name: "Sword Maker"
+  effort: 8000
+  costs: {}
+  requirements: [TOOL_SHOP, COPPER_BRONZE]
+  effects: {}
+
+MARKET_PLACE:
+  name: "Market Place"
+  effort: 12000
+  costs: {}
+  requirements: [EXCHANGE_POST, CURRENCY]
+  effects: {}
+
+CHAPEL:
+  name: "Chapel"
+  effort: 15000
+  costs: {}
+  requirements: [SHRINE, RELIGION]
+  effects: {}
+
+LIBRARY:
+  name: "Library"
+  effort: 18000
+  costs: {}
+  requirements: [BULLETIN_BOARD, ALPHABET_WRITING]
+  effects: {}
+
+BULLETIN_BOARD:
+  name: "Bulletin Board"
+  effort: 10000
+  costs: {}
+  requirements: [MAIN_HOUSE, ALPHABET_WRITING]
+  effects: {}
+
+BOOT_CAMP:
+  name: "Boot Camp"
+  effort: 14000
+  costs: {}
+  requirements: [BOW_MAKER, DRILL]
+  effects: {}
+
+LORE_COLLECTION:
+  name: "Lore Collection"
+  effort: 20000
+  costs: {}
+  requirements: [LIBRARY, ARTS]
+  effects: {}
+
+FORGE:
+  name: "Forge"
+  effort: 22000
+  costs: {}
+  requirements: [TOOL_SHOP, IRON]
+  effects: {}
+
+TREASURE_CHAMBER:
+  name: "Treasure Chamber"
+  effort: 25000
+  costs: {}
+  requirements: [MARKET_PLACE, CURRENCY]
+  effects: {}
+
+CARTOGRAPHER:
+  name: "Cartographer"
+  effort: 30000
+  costs: {}
+  requirements: [LIBRARY, CARTOGRAPHY]
+  effects: {}
+
+TOWN_GUARD:
+  name: "Town Guard"
+  effort: 16000
+  costs: {}
+  requirements: [WATCH_TOWER, DRILL]
+  effects: {}
+
+IRON_WORK:
+  name: "Iron Work"
+  effort: 28000
+  costs: {}
+  requirements: [FORGE, IRON]
+  effects: {}
+
+WORK_SHOP:
+  name: "Work Shop"
+  effort: 35000
+  costs: {}
+  requirements: [FORGE, MECHANICS]
+  effects: {}
+
+THEATER:
+  name: "Theater"
+  effort: 40000
+  costs: {}
+  requirements: [LORE_COLLECTION, ARTS]
+  effects: {}
+
+STABLES:
+  name: "Stables"
+  effort: 45000
+  costs: {}
+  requirements: [MAIN_HOUSE, HORSEBACK_RIDING]
+  effects: {}
+
+CHURCH:
+  name: "Church"
+  effort: 60000
+  costs: {}
+  requirements: [CHAPEL, RELIGION]
+  effects: {}
+
+GUILD:
+  name: "Guild"
+  effort: 70000
+  costs: {}
+  requirements: [WORK_SHOP, ECONOMY]
+  effects: {}
+
+CASTLE:
+  name: "Castle"
+  effort: 120000
+  costs: {}
+  requirements: [CITY_WALLS, MONARCHY]
+  effects: {}
+
+MONASTERY:
+  name: "Monastery"
+  effort: 80000
+  costs: {}
+  requirements: [CHURCH, RELIGION]
+  effects: {}
+
+TEMPLE:
+  name: "Temple"
+  effort: 55000
+  costs: {}
+  requirements: [CHAPEL, ARCHITECTURE]
+  effects: {}
+
+BANK:
+  name: "Bank"
+  effort: 90000
+  costs: {}
+  requirements: [MARKET_PLACE, ECONOMY]
+  effects: {}
+
+FENCING_SCHOOL:
+  name: "Fencing School"
+  effort: 65000
+  costs: {}
+  requirements: [SWORD_MAKER, IRON, DRILL]
+  effects: {}
+
+MANOR:
+  name: "Manor"
+  effort: 85000
+  costs: {}
+  requirements: [TREASURE_CHAMBER, FEUDALISM]
+  effects: {}
+
+ACADEMY:
+  name: "Academy"
+  effort: 100000
+  costs: {}
+  requirements: [LIBRARY, SCIENCE]
+  effects: {}
+
+LABORATORY:
+  name: "Laboratory"
+  effort: 150000
+  costs: {}
+  requirements: [ACADEMY, SCIENCE]
+  effects: {}
+
+MUSEUM:
+  name: "Museum"
+  effort: 130000
+  costs: {}
+  requirements: [LIBRARY, PAINTING, ARTS]
+  effects: {}
+
+RACE_COURSE:
+  name: "Race Course"
+  effort: 50000
+  costs: {}
+  requirements: [STABLES, HORSEBACK_RIDING]
+  effects: {}
+
+CITY_WALLS:
+  name: "City Walls"
+  effort: 110000
+  costs: {}
+  requirements: [EARTH_WALL, ARCHITECTURE, IRON_WORK]
+  effects: {}
+
+SOVEREIGN_GUARD:
+  name: "Sovereign Guard"
+  effort: 75000
+  costs: {}
+  requirements: [TOWN_GUARD, COMMAND_CHAIN]
+  effects: {}
+
+CATHEDRAL:
+  name: "Cathedral"
+  effort: 140000
+  costs: {}
+  requirements: [CHURCH, ARCHITECTURE]
+  effects: {}
+
+GUNSMITH:
+  name: "Gunsmith"
+  effort: 200000
+  costs: {}
+  requirements: [FORGE, GUNPOWDER]
+  effects: {}
+
+ARCHIVES:
+  name: "Archives"
+  effort: 160000
+  costs: {}
+  requirements: [LIBRARY, PRINTING_PRESS]
+  effects: {}
+
+BARRACKS:
+  name: "Barracks"
+  effort: 2000000
+  costs: {}
+  requirements: [DEFENSE_DEPARTMENT, FACTORY]
+  effects: {}
+
+COURTHOUSE:
+  name: "Courthouse"
+  effort: 180000
+  costs: {}
+  requirements: [LAWS, ARCHIVES]
+  effects: {}
+
+SECRET_ORDER:
+  name: "Secret Order"
+  effort: 250000
+  costs: {}
+  requirements: [STEALTH_SECRECY, MONASTERY]
+  effects: {}
+
+BOTANIC_GARDENS:
+  name: "Botanic Gardens"
+  effort: 220000
+  costs: {}
+  requirements: [HERBOLOGY, ACADEMY]
+  effects: {}
+
+HIGH_COURT:
+  name: "High Court"
+  effort: 300000
+  costs: {}
+  requirements: [COURTHOUSE, CONSTITUTION]
+  effects: {}
+
+TRIUMPHAL_ARC:
+  name: "Triumphal Arc"
+  effort: 170000
+  costs: {}
+  requirements: [CITY_WALLS, MONARCHY]
+  effects: {}
+
+PARLIAMENT:
+  name: "Parliament"
+  effort: 350000
+  costs: {}
+  requirements: [HIGH_COURT, CONSTITUTION]
+  effects: {}
+
+STOCK_MARKET:
+  name: "Stock Market"
+  effort: 450000
+  costs: {}
+  requirements: [BANK, ECONOMY, PRINTING_PRESS]
+  effects: {}
+
+UNIVERSITY:
+  name: "University"
+  effort: 280000
+  costs: {}
+  requirements: [ACADEMY, PRINTING_PRESS, SCIENCE]
+  effects: {}
+
+THE_KINGS_LAIR:
+  name: "The King's Lair"
+  effort: 130000
+  costs: {}
+  requirements: [CASTLE, MONARCHY]
+  effects: {}
+
+EMPERORS_PALACE:
+  name: "Emperor's Palace"
+  effort: 400000
+  costs: {}
+  requirements: [CASTLE, PARLIAMENT]
+  effects: {}
+
+PARADE_GROUND:
+  name: "Parade Ground"
+  effort: 190000
+  costs: {}
+  requirements: [BOOT_CAMP, COMMAND_CHAIN, SOVEREIGN_GUARD]
+  effects: {}
+
+CANNON_MANUFACTORY:
+  name: "Cannon Manufactory"
+  effort: 230651
+  costs: {}
+  requirements: [GUNSMITH, IRON_WORK]
+  effects: {}
+
+VEHICLE_WORKSHOP:
+  name: "Vehicle Workshop"
+  effort: 800000
+  costs: {}
+  requirements: [MECHANICAL_ENGINEERING, HEAVY_EQUIPMENT]
+  effects: {}
+
+RAIL_ROADS:
+  name: "Rail Roads"
+  effort: 750000
+  costs: {}
+  requirements: [STEAM_ENGINE, IRON_WORK]
+  effects: {}
+
+TREADWHEEL_CRANE:
+  name: "Treadwheel Crane"
+  effort: 50000
+  costs: {}
+  requirements: [WORK_SHOP, MECHANICS]
+  effects: {}
+
+HEAVY_EQUIPMENT:
+  name: "Heavy Equipment"
+  effort: 500000
+  costs: {}
+  requirements: [MECHANICAL_ENGINEERING, WORK_SHOP]
+  effects: {}
+
+HOSPITAL:
+  name: "Hospital"
+  effort: 1700000
+  costs: {}
+  requirements: [FIELD_HEALER, CHEMISTRY, ELECTRICITY]
+  effects: {}
+
+AIRFIELD:
+  name: "Airfield"
+  effort: 1500000
+  costs: {}
+  requirements: [COMBUSTION_ENGINE, HEAVY_EQUIPMENT]
+  effects: {}
+
+FACTORY:
+  name: "Factory"
+  effort: 1800000
+  costs: {}
+  requirements: [STEAM_ENGINE, HEAVY_EQUIPMENT]
+  effects: {}
+
+HANGAR:
+  name: "Hangar"
+  effort: 1600000
+  costs: {}
+  requirements: [AIRFIELD, MECHANICAL_ENGINEERING]
+  effects: {}
+
+ELECTRIC_FENCE:
+  name: "Electric Fence"
+  effort: 1400000
+  costs: {}
+  requirements: [ELECTRICITY, CITY_WALLS]
+  effects: {}
+
+DEFENSE_DEPARTMENT:
+  name: "Defense Department"
+  effort: 1200000
+  costs: {}
+  requirements: [STRATEGIC_WARFARE, CITY_WALLS, PARLIAMENT]
+  effects: {}
+
+EMERGENCY_ROOM:
+  name: "Emergency Room"
+  effort: 1900000
+  costs: {}
+  requirements: [HOSPITAL, ELECTRICITY]
+  effects: {}
+
+DERIVATIVE_MARKET:
+  name: "Derivative Market"
+  effort: 3750000
+  costs: {}
+  requirements: [FEDERAL_RESERVE, STOCK_MARKET]
+  effects: {}
+
+ROCKET_SILO:
+  name: "Rocket Silo"
+  effort: 2500000
+  costs: {}
+  requirements: [FACTORY, CHEMISTRY]
+  effects: {}
+
+RESEARCH_VAULT:
+  name: "Research Vault"
+  effort: 2500000
+  costs: {}
+  requirements: [UNIVERSITY, LABORATORY, ELECTRICITY]
+  effects: {}
+
+ARTS_GALLERY:
+  name: "Arts Gallery"
+  effort: 3100000
+  costs: {}
+  requirements: [MUSEUM, STOCK_MARKET]
+  effects: {}
+
+RESEARCH_LAB:
+  name: "Research Lab"
+  effort: 3200000
+  costs: {}
+  requirements: [RESEARCH_VAULT, UNIVERSITY]
+  effects: {}
+
+ECHELON_DEFENSE_FACILITY:
+  name: "Echelon Defense Facility"
+  effort: 3200000
+  costs: {}
+  requirements: [DEFENSE_DEPARTMENT, ELECTRIC_FENCE]
+  effects: {}
+
+FEDERAL_RESERVE:
+  name: "Federal Reserve"
+  effort: 3250000
+  costs: {}
+  requirements: [STOCK_MARKET, PARLIAMENT]
+  effects: {}
+
+SOCIAL_SECURITY_SYSTEM:
+  name: "Social Security System"
+  effort: 3250000
+  costs: {}
+  requirements: [PARLIAMENT, HOSPITAL]
+  effects: {}
+
+EXECUTIVE_CARPOOL:
+  name: "Executive Carpool"
+  effort: 3350000
+  costs: {}
+  requirements: [FACTORY, VEHICLE_WORKSHOP]
+  effects: {}
+
+NAVIGATION_SYSTEM:
+  name: "Navigation System"
+  effort: 3500000
+  costs: {}
+  requirements: [ELECTRICITY, AIRFIELD]
+  effects: {}
+
+BOMBING_AREA:
+  name: "Bombing Area"
+  effort: 4000000
+  costs: {}
+  requirements: [AIRFIELD, WMD_SITE]
+  effects: {}
+
+NUCLEAR_POWER_PLANT:
+  name: "Nuclear Power Plant"
+  effort: 4000000
+  costs: {}
+  requirements: [RESEARCH_LAB, ELECTRICITY]
+  effects: {}
+
+ROBO_MANUFACTURE:
+  name: "Robo Manufacture"
+  effort: 4000000
+  costs: {}
+  requirements: [FACTORY, RESEARCH_LAB]
+  effects: {}
+
+INTELLIGENCE_AGENCY:
+  name: "Intelligence Agency"
+  effort: 4250000
+  costs: {}
+  requirements: [SECRET_ORDER, ECHELON_DEFENSE_FACILITY]
+  effects: {}
+
+WMD_SITE:
+  name: "WMD Site"
+  effort: 2600000
+  costs: {}
+  requirements: [ROCKET_SILO, CHEMISTRY]
+  effects: {}
+
+MECH_WARRIOR_LAB:
+  name: "Mech Warrior Lab"
+  effort: 5000000
+  costs: {}
+  requirements: [ROBO_MANUFACTURE, RESEARCH_LAB]
+  effects: {}
+
+ELITE_ACADEMY:
+  name: "Elite Academy"
+  effort: 5000000
+  costs: {}
+  requirements: [BARRACKS, ACADEMY]
+  effects: {}
+
+RECRUITING_OFFICE:
+  name: "Recruiting Office"
+  effort: 5300000
+  costs: {}
+  requirements: [BARRACKS, ELITE_ACADEMY]
+  effects: {}
+
+THE_WORLD_WONDER:
+  name: "The World Wonder"
+  type: wonder
+  effort: 40000000
+  costs: {}
+  requirements: [RESEARCH_LAB, NUCLEAR_POWER_PLANT, CATHEDRAL]
+  effects: {}
+

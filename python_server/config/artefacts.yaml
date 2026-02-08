@@ -1,0 +1,73 @@
+# Artefact definitions (collectible passive effect items)
+# effects: passive bonuses while the artefact is owned
+# description: flavour text
+
+ANCIENT_RELIQUE:
+  name: "Ancient Relique"
+  effects: {}
+  description: ""
+
+ASSASSINS_DAGGER:
+  name: "Assassin's Dagger"
+  effects: {}
+  description: ""
+
+AWE_INSPIRING_GRAIL:
+  name: "Awe-Inspiring Grail"
+  effects: {}
+  description: ""
+
+BATTLE_DRUMS:
+  name: "Battle Drums"
+  effects: {}
+  description: ""
+
+BOOK_OF_HEROES:
+  name: "Book of Heroes"
+  effects: {}
+  description: ""
+
+FINE_TROWEL:
+  name: "Fine Trowel"
+  effects: {}
+  description: ""
+
+GOLDEN_ARC:
+  name: "Golden Arc"
+  effects: {}
+  description: ""
+
+HOLY_ARTEFACT:
+  name: "Holy Artefact"
+  effects: {}
+  description: ""
+
+LOST_ALMANAC:
+  name: "Lost Almanac"
+  effects: {}
+  description: ""
+
+MERCIFUL_ARMOUR:
+  name: "Merciful Armour"
+  effects: {}
+  description: ""
+
+POTION_OF_HEALING:
+  name: "Potion of Healing"
+  effects: {}
+  description: ""
+
+SCROLLS_OF_WISDOM:
+  name: "Scrolls of Wisdom"
+  effects: {}
+  description: ""
+
+SIEGE_TRUMPET:
+  name: "Siege Trumpet"
+  effects: {}
+  description: ""
+
+TREASURE_CHEST:
+  name: "Treasure Chest"
+  effects: {}
+  description: ""

@@ -222,7 +222,46 @@ function render(snap) {
     ['Server time', proc.time || '?'],
   ]);
 
+  // Accounts
+  const accts = snap.accounts || [];
+  html += renderAccounts(accts);
+
   document.getElementById('panels').innerHTML = html;
+}
+
+function renderAccounts(accounts) {
+  let html = '<div class="card" style="grid-column:1/-1;overflow-x:auto"><h2>&#x1f464; Accounts (' + accounts.length + ')</h2>';
+  if (accounts.length === 0) {
+    html += '<table><tr><td style="color:#484f58">No accounts</td></tr></table>';
+  } else {
+    html += '<table><tr style="color:var(--accent)"><td>UID</td><td>Username</td><td>Empire</td><td>Email</td><td>Created</td><td></td></tr>';
+    for (const a of accounts) {
+      html += `<tr><td>${a.uid}</td><td>${a.username}</td><td>${a.empire_name}</td><td>${a.email || '\u2013'}</td><td>${a.created_at || '\u2013'}</td>`;
+      html += `<td><button onclick="deleteAccount('${a.username}')" style="background:var(--red);color:#fff;border:none;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px">&#x1f5d1; Delete</button></td></tr>`;
+    }
+    html += '</table>';
+  }
+  html += '</div>';
+  return html;
+}
+
+async function deleteAccount(username) {
+  if (!confirm('Account "' + username + '" wirklich löschen?')) return;
+  try {
+    const r = await fetch('/api/accounts/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username}),
+    });
+    const result = await r.json();
+    if (result.ok) {
+      poll();
+    } else {
+      alert('Delete failed: ' + (result.error || 'unknown'));
+    }
+  } catch (e) {
+    alert('Delete error: ' + e.message);
+  }
 }
 
 async function poll() {
@@ -315,7 +354,7 @@ _SIGNALS_HTML = r"""<!DOCTYPE html>
     font-size: 12px; margin-top: 4px; padding: 3px 8px;
     border-radius: 3px; display: none;
   }
-  .result.ok { display: block; background: #0d2818; color: var(--green); }
+  .result.ok { display: block; background: #0d2818; color: var(--green); max-height: 300px; overflow-y: auto; }
   .result.err { display: block; background: #2d0f0f; color: var(--red); }
   .result.noop { display: block; background: #1c1c00; color: var(--yellow); }
   #log-panel {
@@ -462,7 +501,7 @@ function createSignalCard(sig) {
   btn.onclick = async () => {
     btn.disabled = true;
     result.className = 'result';
-    result.style.display = 'none';
+    result.style.removeProperty('display');
     try {
       const payload = { type: sig.type };
       Object.keys(inputs).forEach(name => {
@@ -485,7 +524,12 @@ function createSignalCard(sig) {
 
       if (data.ok && data.handled) {
         result.className = 'result ok';
-        result.textContent = '\u2713 ' + data.message;
+        let txt = '\u2713 ' + data.message;
+        if (data.response) {
+          txt += '\n' + JSON.stringify(data.response, null, 2);
+        }
+        result.textContent = txt;
+        result.style.whiteSpace = 'pre-wrap';
       } else if (data.ok && !data.handled) {
         result.className = 'result noop';
         result.textContent = '\u26A0 ' + data.message;
@@ -515,7 +559,8 @@ function addLogEntry(type, data) {
   let status = 'ERROR';
   if (data.ok && data.handled) { cls = 'log-ok'; status = 'OK'; }
   else if (data.ok && !data.handled) { cls = 'log-noop'; status = 'NO-OP'; }
-  el.innerHTML = `<span class="log-time">${now}</span> <span class="log-type">${type}</span> <span class="${cls}">${status}</span>`;
+  const respHint = (data.response && data.response.type) ? ` \u2192 ${data.response.type}` : '';
+  el.innerHTML = `<span class="log-time">${now}</span> <span class="log-type">${type}</span> <span class="${cls}">${status}${respHint}</span>`;
   const container = document.getElementById('log-entries');
   container.prepend(el);
   // Keep max 50 entries
@@ -535,9 +580,10 @@ class DebugDashboard:
     Routes:
     - ``GET /``              → HTML status dashboard
     - ``GET /signals``       → HTML signal sender page
-    - ``GET /api/state``     → JSON snapshot of engine state
+    - ``GET /api/state``     → JSON snapshot of engine state (incl. accounts)
     - ``GET /api/signals``   → JSON signal catalog
     - ``POST /api/send``     → Send a signal to the router
+    - ``POST /api/accounts/delete`` → Delete a user account
 
     Args:
         services: The Services container from main.py.
@@ -617,6 +663,9 @@ class DebugDashboard:
     async def _handle_get(self, writer: asyncio.StreamWriter, path: str) -> None:
         if path == "/api/state":
             snap = collect_snapshot(self._services)
+            # Add accounts from DB (async)
+            db = self._services.database
+            snap["accounts"] = await db.list_users() if db else []
             body = json.dumps(snap, ensure_ascii=False, default=str).encode("utf-8")
             await self._send_response(writer, 200, "application/json", body)
         elif path == "/api/signals":
@@ -637,6 +686,9 @@ class DebugDashboard:
             await self._send_response(writer, 404, "text/plain", b"Not Found")
 
     async def _handle_post(self, writer: asyncio.StreamWriter, path: str, body_data: bytes) -> None:
+        if path == "/api/accounts/delete":
+            await self._handle_delete_account(writer, body_data)
+            return
         if path != "/api/send":
             await self._send_response(writer, 404, "text/plain", b"Not Found")
             return
@@ -682,15 +734,19 @@ class DebugDashboard:
             return
 
         try:
-            await router.route(payload, sender_uid)
+            result = await router.route(payload, sender_uid)
             log_entry["result"] = "handled"
+            log_entry["response"] = result
             self._send_log.append(log_entry)
             log.info("Signal sent (handled): type=%s sender=%d", msg_type, sender_uid)
-            resp = json.dumps({
+            resp_body: dict = {
                 "ok": True,
                 "handled": True,
                 "message": f"Signal '{msg_type}' routed to handler",
-            }).encode()
+            }
+            if result is not None:
+                resp_body["response"] = result
+            resp = json.dumps(resp_body, ensure_ascii=False, default=str).encode()
             await self._send_response(writer, 200, "application/json", resp)
         except Exception as exc:
             log_entry["result"] = f"error: {exc}"
@@ -721,3 +777,41 @@ class DebugDashboard:
         writer.write(header.encode("utf-8"))
         writer.write(body)
         await writer.drain()
+
+    async def _handle_delete_account(
+        self, writer: asyncio.StreamWriter, body_data: bytes
+    ) -> None:
+        """Handle POST /api/accounts/delete — remove a user account."""
+        try:
+            payload = json.loads(body_data.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            resp = json.dumps({"ok": False, "error": f"Invalid JSON: {e}"}).encode()
+            await self._send_response(writer, 400, "application/json", resp)
+            return
+
+        username = payload.get("username", "")
+        if not username:
+            resp = json.dumps({"ok": False, "error": "Missing username"}).encode()
+            await self._send_response(writer, 400, "application/json", resp)
+            return
+
+        db = self._services.database
+        if db is None:
+            resp = json.dumps({"ok": False, "error": "Database not available"}).encode()
+            await self._send_response(writer, 503, "application/json", resp)
+            return
+
+        # Look up UID before deleting (to also remove the empire)
+        user = await db.get_user(username)
+        deleted = await db.delete_user(username)
+
+        # Also remove the empire from the empire service if it exists
+        if user and self._services.empire_service:
+            self._services.empire_service.unregister(user["uid"])
+
+        if deleted:
+            log.info("Account deleted via debug dashboard: %s", username)
+            resp = json.dumps({"ok": True, "message": f"Account '{username}' deleted"}).encode()
+        else:
+            resp = json.dumps({"ok": False, "error": f"User '{username}' not found"}).encode()
+        await self._send_response(writer, 200, "application/json", resp)

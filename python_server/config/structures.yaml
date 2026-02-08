@@ -1,0 +1,273 @@
+# Structure definitions (defensive towers)
+# damage: base damage per shot
+# range: attack range in hex fields
+# reload_time: ms between shots
+# shot_speed: projectile speed in hex/s
+# shot_type: normal, splash, slow, poison, etc.
+# upgrade_costs: cost to upgrade to next level
+# max_level: maximum upgrade level
+# effects: special effects (slow, splash_radius, dot, etc.)
+
+BASIC_TOWER:
+  name: "Basic Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+SLING_TOWER:
+  name: "Sling Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+DOUBLE_SLING_TOWER:
+  name: "Double Sling Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+ARROW_TOWER:
+  name: "Arrow Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+ARBELESTE_TOWER:
+  name: "Arbalest Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+CATAPULTS:
+  name: "Catapult"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+TAR_TOWER:
+  name: "Tar Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "slow"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+COAL_TOWER:
+  name: "Coal Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+COLD_TOWER:
+  name: "Cold Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "slow"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+ICE_TOWER:
+  name: "Ice Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "slow"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+HEAVY_TOWER:
+  name: "Heavy Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+MECHANICAL_BALISTA:
+  name: "Mechanical Ballista"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+FLAME_THROWER:
+  name: "Flame Thrower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+NAPALM_THROWER:
+  name: "Napalm Thrower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+CANNON_TOWER:
+  name: "Cannon Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+RIFLE_TOWER:
+  name: "Rifle Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+SHOCK_TOWER:
+  name: "Shock Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+PARALYZNG_TOWER:
+  name: "Paralyzing Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "stun"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+MG_TOWER:
+  name: "MG Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+RAPID_FIRE_MG_BUNKER:
+  name: "Rapid Fire MG Bunker"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+SNIPER_TOWER:
+  name: "Sniper Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []
+
+ROCKET_TOWER:
+  name: "Rocket Tower"
+  damage: 0
+  range: 0
+  reload_time: 0
+  shot_speed: 0
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: []

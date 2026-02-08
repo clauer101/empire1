@@ -52,7 +52,9 @@ SIGNAL_CATALOG: list[dict[str, Any]] = [
         "category": "Empire",
         "type": "summary_request",
         "description": "Empire-Übersicht anfordern (Ressourcen, Bürger, Artefakte)",
-        "params": [],
+        "params": [
+            {"name": "sender", "type": "INT", "default": 100, "description": "UID des Empires"},
+        ],
     },
     {
         "category": "Empire",

@@ -1,0 +1,434 @@
+# Knowledge (research) tech tree
+# Each knowledge item has: effort, costs, requirements, effects
+# effort: time units to complete research (scaled by scientist bonus)
+# costs: resource costs {gold: ..., culture: ...}
+# requirements: list of prerequisite IIDs (buildings or knowledge)
+# effects: passive effects granted when complete
+
+HUNTING:
+  name: "Hunting"
+  effort: 20
+  costs: {}
+  requirements: [FIRE_PLACE]
+  effects: {}
+
+CRAFTSMANSHIP:
+  name: "Craftsmanship"
+  effort: 200
+  costs: {}
+  requirements: [HUNTING]
+  effects: {}
+
+MYSTIC:
+  name: "Mystic"
+  effort: 100
+  costs: {}
+  requirements: []
+  effects: {}
+
+ALPHABET_WRITING:
+  name: "Alphabet & Writing"
+  effort: 1500
+  costs: {}
+  requirements: [CRAFTSMANSHIP]
+  effects: {}
+
+DOMESTICATION:
+  name: "Domestication"
+  effort: 150
+  costs: {}
+  requirements: [HUNTING]
+  effects: {}
+
+COPPER_BRONZE:
+  name: "Copper & Bronze"
+  effort: 2500
+  costs: {}
+  requirements: [CRAFTSMANSHIP]
+  effects: {}
+
+HERBOLOGY:
+  name: "Herbology"
+  effort: 800
+  costs: {}
+  requirements: [HUNTING, DOMESTICATION]
+  effects: {}
+
+RELIGION:
+  name: "Religion"
+  effort: 3500
+  costs: {}
+  requirements: [MYSTIC, ALPHABET_WRITING]
+  effects: {}
+
+CURRENCY:
+  name: "Currency"
+  effort: 6000
+  costs: {}
+  requirements: [COPPER_BRONZE, ALPHABET_WRITING]
+  effects: {}
+
+MECHANICS:
+  name: "Mechanics"
+  effort: 10000
+  costs: {}
+  requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
+  effects: {}
+
+ARTS:
+  name: "Arts"
+  effort: 8000
+  costs: {}
+  requirements: [MUSIC, ALPHABET_WRITING]
+  effects: {}
+
+DRILL:
+  name: "Drill"
+  effort: 7000
+  costs: {}
+  requirements: [HORSEBACK_RIDING, COPPER_BRONZE]
+  effects: {}
+
+CARTOGRAPHY:
+  name: "Cartography"
+  effort: 12000
+  costs: {}
+  requirements: [MATHMATICS]
+  effects: {}
+
+IRON:
+  name: "Iron"
+  effort: 15000
+  costs: {}
+  requirements: [COPPER_BRONZE, MECHANICS]
+  effects: {}
+
+MATHMATICS:
+  name: "Mathematics"
+  effort: 11000
+  costs: {}
+  requirements: [ALPHABET_WRITING]
+  effects: {}
+
+ARCHITECTURE:
+  name: "Architecture"
+  effort: 18000
+  costs: {}
+  requirements: [MATHMATICS, MECHANICS]
+  effects: {}
+
+HORSEBACK_RIDING:
+  name: "Horseback Riding"
+  effort: 5000
+  costs: {}
+  requirements: [DOMESTICATION]
+  effects: {}
+
+SCIENCE:
+  name: "Science"
+  effort: 25000
+  costs: {}
+  requirements: [MATHMATICS, ARCHITECTURE]
+  effects: {}
+
+LAWS:
+  name: "Laws"
+  effort: 14000
+  costs: {}
+  requirements: [ALPHABET_WRITING, RELIGION]
+  effects: {}
+
+HOLY_WAR:
+  name: "Holy War"
+  effort: 40000
+  costs: {}
+  requirements: [RELIGION, FANATISM]
+  effects: {}
+
+TACTICS:
+  name: "Tactics"
+  effort: 30000
+  costs: {}
+  requirements: [COMMAND_CHAIN, DRILL]
+  effects: {}
+
+FANATISM:
+  name: "Fanatism"
+  effort: 35000
+  costs: {}
+  requirements: [RELIGION, DRILL]
+  effects: {}
+
+COMMAND_CHAIN:
+  name: "Command Chain"
+  effort: 28000
+  costs: {}
+  requirements: [DRILL, LAWS]
+  effects: {}
+
+PAINTING:
+  name: "Painting"
+  effort: 20000
+  costs: {}
+  requirements: [ARTS]
+  effects: {}
+
+MUSIC:
+  name: "Music"
+  effort: 4000
+  costs: {}
+  requirements: [MYSTIC, CRAFTSMANSHIP]
+  effects: {}
+
+LITRATURE:
+  name: "Literature"
+  effort: 22000
+  costs: {}
+  requirements: [ALPHABET_WRITING, ARTS]
+  effects: {}
+
+ECONOMY:
+  name: "Economy"
+  effort: 45000
+  costs: {}
+  requirements: [CURRENCY, LAWS]
+  effects: {}
+
+FEUDALISM:
+  name: "Feudalism"
+  effort: 55000
+  costs: {}
+  requirements: [LAWS, ECONOMY]
+  effects: {}
+
+MONARCHY:
+  name: "Monarchy"
+  effort: 65000
+  costs: {}
+  requirements: [FEUDALISM, COMMAND_CHAIN]
+  effects: {}
+
+CONSTITUTION:
+  name: "Constitution"
+  effort: 150000
+  costs: {}
+  requirements: [LAWS, MONARCHY, PRINTING_PRESS]
+  effects: {}
+
+STEEL:
+  name: "Steel"
+  effort: 80000
+  costs: {}
+  requirements: [IRON, MECHANICS]
+  effects: {}
+
+STEALTH_SECRECY:
+  name: "Stealth & Secrecy"
+  effort: 120000
+  costs: {}
+  requirements: [TACTICS, COMMAND_CHAIN]
+  effects: {}
+
+PRINTING_PRESS:
+  name: "Printing Press"
+  effort: 100000
+  costs: {}
+  requirements: [MECHANICS, LITRATURE]
+  effects: {}
+
+KNO_ARMOUR:
+  name: "Armour"
+  effort: 6055849
+  costs: {}
+  requirements: [STEEL, MECHANICAL_ENGINEERING]
+  effects: {}
+
+STRATEGIC_WARFARE:
+  name: "Strategic Warfare"
+  effort: 200000
+  costs: {}
+  requirements: [TACTICS, GUNPOWDER, STEALTH_SECRECY]
+  effects: {}
+
+GUNPOWDER:
+  name: "Gunpowder"
+  effort: 70000
+  costs: {}
+  requirements: [IRON, SCIENCE]
+  effects: {}
+
+PHYSICS:
+  name: "Physics"
+  effort: 250000
+  costs: {}
+  requirements: [SCIENCE, MATHMATICS]
+  effects: {}
+
+CHEMISTRY:
+  name: "Chemistry"
+  effort: 300000
+  costs: {}
+  requirements: [SCIENCE, PHYSICS]
+  effects: {}
+
+MECHANICAL_ENGINEERING:
+  name: "Mechanical Engineering"
+  effort: 400000
+  costs: {}
+  requirements: [MECHANICS, PHYSICS, STEEL]
+  effects: {}
+
+MEDICINE:
+  name: "Medicine"
+  effort: 19071696
+  costs: {}
+  requirements: [HERBOLOGY, CHEMISTRY]
+  effects: {}
+
+STEAM_ENGINE:
+  name: "Steam Engine"
+  effort: 600000
+  costs: {}
+  requirements: [MECHANICAL_ENGINEERING, CHEMISTRY]
+  effects: {}
+
+COMBUSTION_ENGINE:
+  name: "Combustion Engine"
+  effort: 1000000
+  costs: {}
+  requirements: [STEAM_ENGINE, CHEMISTRY]
+  effects: {}
+
+ELECTRICITY:
+  name: "Electricity"
+  effort: 800000
+  costs: {}
+  requirements: [PHYSICS, CHEMISTRY]
+  effects: {}
+
+SOCIAL_SCIENCES:
+  name: "Social Sciences"
+  effort: 16558443
+  costs: {}
+  requirements: [CONSTITUTION, PRINTING_PRESS]
+  effects: {}
+
+CRYPTOLOGY:
+  name: "Cryptology"
+  effort: 30000000
+  costs: {}
+  requirements: [MATHMATICS, STEALTH_SECRECY, ELECTRICITY]
+  effects: {}
+
+MILITARY_SERVICE:
+  name: "Military Service"
+  effort: 30000000
+  costs: {}
+  requirements: [STRATEGIC_WARFARE, CONSTITUTION]
+  effects: {}
+
+AVIATION:
+  name: "Aviation"
+  effort: 30000000
+  costs: {}
+  requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
+  effects: {}
+
+ELECTRONICS:
+  name: "Electronics"
+  effort: 30000000
+  costs: {}
+  requirements: [ELECTRICITY, PHYSICS]
+  effects: {}
+
+MASS_PRODUCTION:
+  name: "Mass Production"
+  effort: 50000000
+  costs: {}
+  requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
+  effects: {}
+
+NUCLEAR_REACTION:
+  name: "Nuclear Reaction"
+  effort: 50000000
+  costs: {}
+  requirements: [PHYSICS, CHEMISTRY, ELECTRICITY]
+  effects: {}
+
+CHEMICAL_WARFARE:
+  name: "Chemical Warfare"
+  effort: 50000000
+  costs: {}
+  requirements: [CHEMISTRY, MILITARY_SERVICE]
+  effects: {}
+
+ROCKET_SCIENCE:
+  name: "Rocket Science"
+  effort: 50000000
+  costs: {}
+  requirements: [PHYSICS, COMBUSTION_ENGINE]
+  effects: {}
+
+AERO_DYNAMICS:
+  name: "Aero Dynamics"
+  effort: 50000000
+  costs: {}
+  requirements: [PHYSICS, AVIATION]
+  effects: {}
+
+GLOBALIZATION_STRATEGIES:
+  name: "Globalization Strategies"
+  effort: 50000000
+  costs: {}
+  requirements: [ECONOMY, ELECTRONICS, SOCIAL_SCIENCES]
+  effects: {}
+
+CIVIL_ENGINEERING:
+  name: "Civil Engineering"
+  effort: 50000000
+  costs: {}
+  requirements: [ARCHITECTURE, MECHANICAL_ENGINEERING, STEEL]
+  effects: {}
+
+SATELITE_SYSTEMS:
+  name: "Satellite Systems"
+  effort: 50000000
+  costs: {}
+  requirements: [ELECTRONICS, AVIATION]
+  effects: {}
+
+COMPUTER_TECHNOLOGY:
+  name: "Computer Technology"
+  effort: 50000000
+  costs: {}
+  requirements: [ELECTRONICS, MATHMATICS, CRYPTOLOGY]
+  effects: {}
+
+SPECIAL_FORCES:
+  name: "Special Forces"
+  effort: 100000000
+  costs: {}
+  requirements: [MILITARY_SERVICE, STEALTH_SECRECY, ELECTRONICS]
+  effects: {}
+
+BIONICS:
+  name: "Bionics"
+  effort: 100000000
+  costs: {}
+  requirements: [MEDICINE, ELECTRONICS]
+  effects: {}
+
+FIBER_COMPOSITE:
+  name: "Fiber Composite"
+  effort: 100000000
+  costs: {}
+  requirements: [CHEMISTRY, MASS_PRODUCTION]
+  effects: {}
+
+COLD_FUSION:
+  name: "Cold Fusion"
+  effort: 100000000
+  costs: {}
+  requirements: [NUCLEAR_REACTION, PHYSICS]
+  effects: {}
+

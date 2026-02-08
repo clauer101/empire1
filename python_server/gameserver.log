@@ -1,0 +1,62 @@
+nohup: ignoring input
+10:20:07 [INFO] __main__: === Game Server starting ===
+10:20:07 [INFO] __main__: Loading configuration …
+10:20:07 [INFO] __main__:   items:        210 loaded from config
+10:20:07 [INFO] __main__:   map:          4 paths, 23 build tiles from config/maps/default.yaml
+10:20:07 [INFO] __main__:   ai_templates: 2 entries from config/ai_templates.yaml
+10:20:07 [INFO] __main__: Initializing persistence …
+10:20:07 [INFO] gameserver.persistence.database: Database connected: gameserver.db
+10:20:07 [INFO] __main__:   database:     connected (gameserver.db)
+10:20:07 [INFO] gameserver.persistence.state_load: Restoring state from state.yaml (saved at 2026-02-08T10:20:05, version 1)
+10:20:07 [INFO] gameserver.persistence.state_load: Restored 2 empires, 0 attacks, 0 battles
+10:20:07 [INFO] __main__:   state:        restored from disk (2 empires, 0 attacks)
+10:20:07 [INFO] __main__: Creating services …
+10:20:07 [INFO] __main__:   upgrade_provider: 210 items registered
+10:20:07 [INFO] __main__:   all services created
+10:20:07 [INFO] __main__: Wiring event handlers …
+10:20:07 [INFO] __main__:   event handlers registered
+10:20:07 [INFO] gameserver.engine.empire_service: Empire registered: uid=100 name='TestImperium'
+10:20:07 [INFO] gameserver.engine.empire_service: Empire registered: uid=2 name='Empire1'
+10:20:07 [INFO] __main__: Restored 2 empires from saved state
+10:20:07 [INFO] __main__: Starting network server …
+10:20:07 [INFO] gameserver.network.handlers: Registered 29 message handlers: summary_request, item_request, military_request, new_item, new_structure, delete_structure, upgrade_structure, citizen_upgrade, change_citizen, increase_life, new_army, new_attack_request, change_army, new_wave, change_wave, end_siege, battle_register, battle_unregister, battle_next_wave_request, notification_request, user_message, timeline_request, userinfo_request, hall_of_fame_request, preferences_request, change_preferences, auth_request, signup, create_empire
+10:20:07 [INFO] websockets.server: server listening on 0.0.0.0:8765
+10:20:07 [INFO] gameserver.network.server: WebSocket server listening on ws://0.0.0.0:8765
+10:20:07 [INFO] __main__:   WebSocket server listening on 0.0.0.0:8765
+10:20:07 [INFO] gameserver.debug.dashboard: Debug dashboard running at http://0.0.0.0:9000/
+10:20:07 [INFO] __main__: Starting game loop …
+10:20:07 [INFO] __main__:   game loop running (1 s tick)
+10:20:08 [INFO] websockets.server: connection open
+10:20:08 [INFO] gameserver.network.server: Session registered: uid=-1
+10:20:08 [INFO] gameserver.network.server: Client connected: uid=-1 remote=('192.168.178.2', 54946)
+10:20:08 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:22:19 [INFO] gameserver.network.server: Session removed: uid=-1
+10:22:20 [INFO] websockets.server: connection open
+10:22:20 [INFO] gameserver.network.server: Session registered: uid=-2
+10:22:20 [INFO] gameserver.network.server: Client connected: uid=-2 remote=('192.168.178.2', 60774)
+10:22:20 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:22:32 [INFO] gameserver.network.server: Session removed: uid=-2
+10:22:32 [INFO] websockets.server: connection open
+10:22:32 [INFO] gameserver.network.server: Session registered: uid=-3
+10:22:32 [INFO] gameserver.network.server: Client connected: uid=-3 remote=('192.168.178.2', 60781)
+10:22:32 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:22:33 [INFO] gameserver.network.server: Session removed: uid=-3
+10:22:33 [INFO] websockets.server: connection open
+10:22:33 [INFO] gameserver.network.server: Session registered: uid=-4
+10:22:33 [INFO] gameserver.network.server: Client connected: uid=-4 remote=('192.168.178.2', 60783)
+10:22:33 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:22:33 [INFO] gameserver.network.server: Session removed: uid=-4
+10:22:33 [INFO] websockets.server: connection open
+10:22:33 [INFO] gameserver.network.server: Session registered: uid=-5
+10:22:33 [INFO] gameserver.network.server: Client connected: uid=-5 remote=('192.168.178.2', 60788)
+10:22:33 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:23:56 [INFO] gameserver.network.server: Session removed: uid=-5
+10:23:56 [INFO] websockets.server: connection open
+10:23:56 [INFO] gameserver.network.server: Session registered: uid=-6
+10:23:56 [INFO] gameserver.network.server: Client connected: uid=-6 remote=('192.168.178.2', 61681)
+10:23:56 [INFO] gameserver.network.auth: Login success: eem (uid=2)
+10:25:00 [INFO] gameserver.network.server: Session removed: uid=-6
+10:25:00 [INFO] websockets.server: connection open
+10:25:00 [INFO] gameserver.network.server: Session registered: uid=-7
+10:25:00 [INFO] gameserver.network.server: Client connected: uid=-7 remote=('192.168.178.2', 49843)
+10:25:00 [INFO] gameserver.network.auth: Login success: eem (uid=2)

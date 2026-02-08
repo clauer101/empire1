@@ -1,13 +1,13 @@
 meta:
   version: 1
-  saved_at: '2026-02-07T21:09:50'
-  saved_at_unix: 1770494990.3419635
+  saved_at: '2026-02-08T10:20:05'
+  saved_at_unix: 1770542405.2065563
 empires:
 - uid: 100
   name: TestImperium
   resources:
-    gold: 124.31897810364467
-    culture: 46.107805399412236
+    gold: 25433.06870290758
+    culture: 12342.339983016413
     life: 10.0
   buildings:
     farm: 0.0
@@ -18,6 +18,29 @@ empires:
     merchant: 2
     scientist: 1
     artist: 1
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  empire_map:
+    paths: {}
+    build_tiles: []
+    occupied: []
+- uid: 2
+  name: Empire1
+  resources:
+    gold: 405.5926767189958
+    culture: 202.7963383594979
+    life: 10.0
+  buildings: {}
+  knowledge: {}
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
   effects: {}
   artefacts: []
   max_life: 10.0
