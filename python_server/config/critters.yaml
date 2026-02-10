@@ -15,7 +15,7 @@ SLAVE:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -28,7 +28,7 @@ WARRIOR:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -41,7 +41,7 @@ BOWMAN:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -54,7 +54,7 @@ SWORDMAN:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -67,7 +67,7 @@ PIKENEER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -80,7 +80,7 @@ HORSEMAN_SLOW:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -93,7 +93,7 @@ HORSEMAN_FAST:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -106,7 +106,7 @@ CRUSADER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -119,7 +119,7 @@ SAMURAI:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -132,7 +132,7 @@ NINJA:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -145,7 +145,7 @@ MUSKETEER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -158,7 +158,7 @@ DRAGOONER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -171,7 +171,7 @@ SOLDIER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -184,7 +184,7 @@ CART:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -197,7 +197,7 @@ LARGE_CART:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -210,7 +210,7 @@ CARGO:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -223,7 +223,7 @@ TRANSPORTER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -236,7 +236,7 @@ MOTORBIKE:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -249,7 +249,7 @@ SMALL_TANK:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -262,7 +262,7 @@ SIEGE_TANK:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -275,7 +275,7 @@ SPECOPS:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -288,7 +288,7 @@ HELI:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -303,7 +303,7 @@ THE_SWORDMASTER:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: true
   capture: {}
   bonus: {}
@@ -316,7 +316,7 @@ THE_KING:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: true
   capture: {}
   bonus: {}
@@ -329,7 +329,7 @@ THE_GENERAL:
   health: 0
   armour: 0
   slots: 1
-  time_between: 0
+  time_between: 2000
   is_boss: true
   capture: {}
   bonus: {}

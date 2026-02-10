@@ -36,28 +36,15 @@ class Army:
         uid: Owner player UID.
         name: Display name.
         waves: Ordered list of critter waves.
-        wave_pointer: Index of next wave to dispatch.
-        next_wave_ms: Countdown to next wave dispatch.
+    
+    Note: Wave progression (wave_pointer, critter_pointer, next_wave_ms)
+          is tracked in the Attack object during active attacks.
     """
 
     aid: int
     uid: int
     name: str = ""
     waves: list[CritterWave] = field(default_factory=list)
-    wave_pointer: int = 0
-    next_wave_ms: float = 25_000.0  # INITIAL_WAVE_DELAY
-
-    @property
-    def is_finished(self) -> bool:
-        """True when the last wave has finished deployment.
-        
-        Note: This checks wave_pointer against wave count, but the actual
-        dispatch state (spawn_pointer) is tracked in BattleState during battle.
-        """
-        if not self.waves:
-            return True
-        # All waves have been started
-        return self.wave_pointer >= len(self.waves)
 
 
 @dataclass

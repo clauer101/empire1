@@ -15,6 +15,7 @@ import buildView   from './views/buildings.js';
 import resView     from './views/research.js';
 import compView    from './views/composer.js';
 import armyView    from './views/army.js';
+import battleView  from './views/battle.js';
 import socialView  from './views/social.js';
 import signupView  from './views/signup.js';
 
@@ -30,7 +31,7 @@ const appEl  = document.getElementById('app');
 const router = new Router(appEl, api, state);
 
 // ── Register views ─────────────────────────────────────────
-[loginView, signupView, dashView, buildView, resView, compView, armyView, socialView]
+[loginView, signupView, dashView, buildView, resView, compView, armyView, battleView, socialView]
   .forEach(v => router.register(v));
 
 // ── Initialize status sidebar ──────────────────────────────
@@ -39,6 +40,13 @@ initStatusBar(document.getElementById('status-bar'));
 // ── Toast notifications for push messages ──────────────────
 eventBus.on('quick_message', (data) => showToast(data.message || data.text || JSON.stringify(data)));
 eventBus.on('notification',  (data) => showToast(data.message || data.text || JSON.stringify(data)));
+
+// ── Auto-navigate to battle view on battle_setup ───────────
+eventBus.on('server:battle_setup', (data) => {
+  console.log('[app] Battle setup received, navigating to battle view...');
+  router.navigate('battle');
+  showToast('⚔ Battle started!', 'warning');
+});
 
 function showToast(text, type = 'message') {
   const container = document.getElementById('toast-container');

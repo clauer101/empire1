@@ -33,6 +33,9 @@ class Attack:
         siege_remaining_seconds: Remaining siege countdown.
         total_eta_seconds: Initial travel time for progress calculation.
         total_siege_seconds: Initial siege duration for progress calculation.
+        wave_pointer: Index of current wave being spawned.
+        critter_pointer: Number of critters spawned in current wave.
+        next_wave_ms: Countdown to next wave dispatch.
     """
 
     attack_id: int
@@ -44,3 +47,6 @@ class Attack:
     total_eta_seconds: float = 5400.0  # initial ETA for progress calculation
     siege_remaining_seconds: float = 0.0
     total_siege_seconds: float = 30.0  # initial siege duration for progress calculation
+    wave_pointer: int = 0  # Current wave index
+    critter_pointer: int = 0  # Critters spawned in current wave
+    next_wave_ms: float = 25_000.0  # Countdown to next wave

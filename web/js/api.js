@@ -243,6 +243,9 @@ class ApiClient {
       case 'battle_summary':
         eventBus.emit('server:battle_summary', msg);
         break;
+      case 'battle_status':
+        eventBus.emit('server:battle_status', msg);
+        break;
       case 'attack_phase_changed':
         console.log('[PUSH] Attack phase changed: id=%d phase=%s', msg.attack_id, msg.new_phase);
         eventBus.emit('server:attack_phase_changed', msg);

@@ -20,7 +20,7 @@ broadcast_interval_ms: 250.0
 min_keep_alive_ms: 10000.0
 
 # Delay before the first wave is dispatched in a battle (ms)
-initial_wave_delay_ms: 25000.0
+initial_wave_delay_ms: 15000.0
 
 # Flight time for splash sub-shots (ms)
 splash_flight_ms: 500.0
@@ -51,6 +51,9 @@ starting_max_life: 10.0
 
 # Base attack travel time in seconds (~90 minutes)
 base_travel_offset: 5400.0
+
+# Base siege duration in seconds (before defender modifiers)
+base_siege_offset: 30.0
 
 # -- Army & Waves --------------------------------------------
 

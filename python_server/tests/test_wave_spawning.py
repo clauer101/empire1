@@ -13,13 +13,12 @@ def _make_wave(num_slots: int = 5, iid: str = "goblin") -> CritterWave:
 
 
 class TestArmy:
-    def test_initial_wave_delay(self):
-        army = Army(aid=1, uid=100)
-        assert army.next_wave_ms == pytest.approx(25_000.0)
-
-    def test_finished_with_no_waves(self):
-        army = Army(aid=1, uid=100, waves=[])
-        assert army.is_finished
+    def test_create_army_with_waves(self):
+        """Test that an army can be created with waves."""
+        army = Army(aid=1, uid=100, waves=[_make_wave(3)])
+        assert len(army.waves) == 1
+        assert army.waves[0].slots == 3
+        assert army.waves[0].iid == "goblin"
 
     def test_not_finished_with_active_waves(self):
         army = Army(

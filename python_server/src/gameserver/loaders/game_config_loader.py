@@ -57,6 +57,7 @@ class GameConfig:
 
     # -- Travel & Siege ----------------------------------------------
     base_travel_offset: float = 5400.0
+    base_siege_offset: float = 30.0
 
     # -- Army & Waves ------------------------------------------------
     waves_per_level: float = 1.0

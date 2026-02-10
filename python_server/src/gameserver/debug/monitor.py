@@ -180,8 +180,8 @@ def _attacks_info(services: Services) -> dict[str, Any]:
             "total_siege_seconds": round(a.total_siege_seconds, 1),
         })
     return {
-        "total": len(attacks),
-        "attacks": attacks,
+        "active": len(attacks),
+        "details": attacks,
     }
 
 
