@@ -195,12 +195,18 @@ class ApiClient {
         reject(new Error(msg.message || 'Server error'));
       } else {
         debug.logResponse(msg.type, msg);
+        if (msg._debug) {
+          console.debug('[ApiClient] Debug info:', msg._debug);
+        }
         resolve(msg);
       }
       return;
     }
 
     // Server-push message — dispatch via EventBus
+    if (msg._debug) {
+      console.debug('[ApiClient] Server debug (push):', msg._debug);
+    }
     this._handlePush(msg);
   }
 
@@ -225,6 +231,9 @@ class ApiClient {
       case 'change_citizen_response':
         eventBus.emit('server:change_citizen_response', msg);
         break;
+      case 'build_response':
+        eventBus.emit('server:build_response', msg);
+        break;
       case 'battle_setup':
         eventBus.emit('server:battle_setup', msg);
         break;
@@ -234,8 +243,21 @@ class ApiClient {
       case 'battle_summary':
         eventBus.emit('server:battle_summary', msg);
         break;
+      case 'attack_phase_changed':
+        console.log('[PUSH] Attack phase changed: id=%d phase=%s', msg.attack_id, msg.new_phase);
+        eventBus.emit('server:attack_phase_changed', msg);
+        break;
+      case 'attack_response':
+        console.warn('[ApiClient] ⚠️  attack_response received as PUSH (request_id missing!):', msg);
+        console.warn('[ApiClient] This means the request_id was not preserved. Check server.py or message handler.');
+        eventBus.emit('server:message', msg);
+        break;
       default:
-        console.log('[ApiClient] unhandled push:', msg.type, msg);
+        if (msg.type && msg.type.includes('response')) {
+          console.warn('[ApiClient] ⚠️  Response received as PUSH:', msg.type, msg);
+        } else {
+          console.log('[ApiClient] unhandled push:', msg.type, msg);
+        }
         eventBus.emit('server:message', msg);
     }
   }
@@ -517,12 +539,37 @@ class ApiClient {
   /**
    * Queue a building or research item.
    * @param {string} iid Item IID
+   * @returns {Promise<{success: boolean, error?: string}>}
    */
   async buildItem(iid) {
-    const resp = await this._request({ type: 'new_item', iid }, 'build_response');
-    // Refresh items + summary so UI reflects changes
-    await Promise.all([this.getItems(), this.getSummary()]);
-    return resp;
+    return new Promise((resolve, reject) => {
+      if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
+        return reject(new Error('Not connected'));
+      }
+
+      // Send request WITHOUT request_id so server sends as push notification
+      const msg = { type: 'new_item', iid };
+      if (state.auth.authenticated && state.auth.uid) {
+        msg.sender = state.auth.uid;
+      }
+      console.log('[ApiClient] → new_item:', iid);
+      this._ws.send(JSON.stringify(msg));
+
+      // Wait for push response (with timeout)
+      const timer = setTimeout(() => {
+        unsub();
+        console.warn('[ApiClient] ⚠️ build_response timeout after', this.timeout, 'ms');
+        reject(new Error('build_response timeout'));
+      }, this.timeout);
+
+      const unsub = eventBus.on('server:build_response', (response) => {
+        clearTimeout(timer);
+        unsub();
+        console.log('[ApiClient] ← build_response received:', response);
+        debug.logResponse('build_response', response);
+        resolve(response);
+      });
+    });
   }
 
   /**
@@ -628,46 +675,45 @@ class ApiClient {
 
   /**
    * Create a new army.
-   * @param {string} direction e.g. 'north', 'south'
    * @param {string} name
    */
-  async createArmy(direction, name) {
-    return this._request({ type: 'new_army', direction, name }, null);
+  async createArmy(name) {
+    return this._request({ type: 'new_army', name }, null);
   }
 
   /**
    * Modify an existing army.
-   * @param {string} aid Army ID
+   * @param {int} aid Army ID
    * @param {string} name
-   * @param {string} direction
    */
-  async changeArmy(aid, name, direction) {
-    return this._request({ type: 'change_army', aid, name, direction }, null);
+  async changeArmy(aid, name) {
+    return this._request({ type: 'change_army', aid, name }, null);
   }
 
   /**
-   * Add a wave to an army.
-   * @param {string} aid Army ID
-   * @param {string} critterIid Critter IID
+   * Add a new wave to an army.
+   * The server decides the critter type (defaults to SLAVE).
+   * @param {int} aid Army ID
    */
-  async addWave(aid, critterIid) {
+  async addWave(aid) {
     return this._request(
-      { type: 'new_wave', aid, critter_iid: critterIid },
+      { type: 'new_wave', aid },
       null
     );
   }
 
   /**
-   * Change critter in existing wave.
-   * @param {string} aid Army ID
-   * @param {number} waveNumber
-   * @param {string} critterIid
+   * Change critter type and/or critter count in existing wave.
+   * @param {int} aid Army ID
+   * @param {int} waveNumber Wave index (0-based)
+   * @param {string} critterIid Critter type (optional)
+   * @param {int} slots Wave capacity (optional)
    */
-  async changeWave(aid, waveNumber, critterIid) {
-    return this._request(
-      { type: 'change_wave', aid, wave_number: waveNumber, critter_iid: critterIid },
-      null
-    );
+  async changeWave(aid, waveNumber, critterIid, slots) {
+    const payload = { type: 'change_wave', aid, wave_number: waveNumber };
+    if (critterIid) payload.critter_iid = critterIid;
+    if (slots !== undefined) payload.slots = slots;
+    return this._request(payload, null);
   }
 
   /**
@@ -680,6 +726,16 @@ class ApiClient {
     const msg = { type: 'new_attack_request', target_uid: targetUid, army_aid: armyAid };
     if (spyOptions) msg.spy_options = spyOptions;
     return this._request(msg, null);
+  }
+
+  /**
+   * Launch an attack by target Empire UID.
+   * @param {number} targetUid Target Empire UID
+   * @param {number} armyAid
+   */
+  async attackOpponent(targetUid, armyAid) {
+    const msg = { type: 'new_attack_request', target_uid: targetUid, army_aid: armyAid };
+    return this._request(msg, 'attack_response');
   }
 
   /** End an active siege. */

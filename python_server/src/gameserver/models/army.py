@@ -8,34 +8,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from gameserver.models.critter import Critter
-from gameserver.models.map import Direction
-
 
 @dataclass
 class CritterWave:
-    """A wave of identical critters within an army.
+    """A wave of critters within an army.
 
     Attributes:
-        critter_iid: Item type of the critters in this wave.
-        slots: Capacity of this wave (determines critter count).
-        critters: Pre-instantiated critter list.
-        spawn_interval_ms: Time between individual critter spawns.
-        next_spawn_ms: Countdown to next critter spawn.
-        spawn_pointer: Index of the next critter to spawn.
+        wave_id: Unique wave ID within the army.
+        iid: Critter type (item ID) for all critters in this wave.
+        slots: Number of critter slots in this wave.
+    
+    Note: Runtime state (spawn_pointer, next_spawn_ms) is managed by BattleService
+          during battle execution and stored in BattleState, not persisted.
     """
 
-    critter_iid: str
-    slots: int
-    critters: list[Critter] = field(default_factory=list)
-    spawn_interval_ms: float = 500.0
-    next_spawn_ms: float = 0.0
-    spawn_pointer: int = 0
-
-    @property
-    def is_dispatched(self) -> bool:
-        """True when all critters in this wave have been spawned."""
-        return self.spawn_pointer >= len(self.critters)
+    wave_id: int
+    iid: str = ""
+    slots: int = 0
 
 
 @dataclass
@@ -45,7 +34,6 @@ class Army:
     Attributes:
         aid: Unique army ID.
         uid: Owner player UID.
-        direction: Entry direction on the map (NORTH/SOUTH/EAST/WEST).
         name: Display name.
         waves: Ordered list of critter waves.
         wave_pointer: Index of next wave to dispatch.
@@ -54,7 +42,6 @@ class Army:
 
     aid: int
     uid: int
-    direction: Direction
     name: str = ""
     waves: list[CritterWave] = field(default_factory=list)
     wave_pointer: int = 0
@@ -62,10 +49,15 @@ class Army:
 
     @property
     def is_finished(self) -> bool:
-        """True when the last wave has dispatched all its critters."""
+        """True when the last wave has finished deployment.
+        
+        Note: This checks wave_pointer against wave count, but the actual
+        dispatch state (spawn_pointer) is tracked in BattleState during battle.
+        """
         if not self.waves:
             return True
-        return self.waves[-1].is_dispatched
+        # All waves have been started
+        return self.wave_pointer >= len(self.waves)
 
 
 @dataclass

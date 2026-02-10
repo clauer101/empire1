@@ -164,15 +164,24 @@ def _attacks_info(services: Services) -> dict[str, Any]:
     if at is None:
         return {"status": "not created"}
     attacks: list[dict[str, Any]] = []
-    if hasattr(at, "_active_attacks"):
-        for a in at._active_attacks:
-            attacks.append({
-                "phase": getattr(a, "phase", "?"),
-                "eta": getattr(a, "eta_seconds", "?"),
-            })
+    all_attacks = at.get_all_attacks()
+    for a in all_attacks:
+        attacker = services.empire_service.get(a.attacker_uid)
+        defender = services.empire_service.get(a.defender_uid)
+        attacks.append({
+            "id": a.attack_id,
+            "attacker": attacker.name if attacker else f"uid{a.attacker_uid}",
+            "defender": defender.name if defender else f"uid{a.defender_uid}",
+            "army_aid": a.army_aid,
+            "phase": a.phase.value,
+            "eta_seconds": round(a.eta_seconds, 1),
+            "total_eta_seconds": round(a.total_eta_seconds, 1),
+            "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
+            "total_siege_seconds": round(a.total_siege_seconds, 1),
+        })
     return {
-        "active": len(attacks),
-        "details": attacks,
+        "total": len(attacks),
+        "attacks": attacks,
     }
 
 

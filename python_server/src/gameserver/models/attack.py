@@ -31,6 +31,8 @@ class Attack:
         phase: Current phase of the attack.
         eta_seconds: Remaining travel time in seconds.
         siege_remaining_seconds: Remaining siege countdown.
+        total_eta_seconds: Initial travel time for progress calculation.
+        total_siege_seconds: Initial siege duration for progress calculation.
     """
 
     attack_id: int
@@ -39,4 +41,6 @@ class Attack:
     army_aid: int
     phase: AttackPhase = AttackPhase.TRAVELLING
     eta_seconds: float = 5400.0  # BASE_TRAVEL_OFFSET
+    total_eta_seconds: float = 5400.0  # initial ETA for progress calculation
     siege_remaining_seconds: float = 0.0
+    total_siege_seconds: float = 30.0  # initial siege duration for progress calculation

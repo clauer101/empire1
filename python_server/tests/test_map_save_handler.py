@@ -5,17 +5,30 @@ import pytest
 from gameserver.models.empire import Empire
 from gameserver.models.messages import MapSaveRequest
 from gameserver.network.handlers import handle_map_save_request
-from gameserver.services import Services
+from gameserver.main import Services
 from gameserver.network.handlers import _services as handlers_services
 
 
 @pytest.fixture
 def mock_services():
     """Create minimal mock services."""
+    from gameserver.engine.empire_service import EmpireService
+    from gameserver.engine.upgrade_provider import UpgradeProvider
+    from gameserver.util.events import EventBus
+    from gameserver.loaders.item_loader import load_items
+    
     svc = Services()
+    svc.event_bus = EventBus()
+    
+    # Load items for upgrade provider
+    items = load_items()
+    svc.upgrade_provider = UpgradeProvider()
+    svc.upgrade_provider.load(items)
+    svc.empire_service = EmpireService(svc.upgrade_provider, svc.event_bus)
+    
     # Add a test empire
     empire = Empire(uid=42, name="TestEmpire")
-    svc.empire_service._empires[42] = empire
+    svc.empire_service.register(empire)
     return svc
 
 

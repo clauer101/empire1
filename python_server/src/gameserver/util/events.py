@@ -60,9 +60,28 @@ class AttackArrived:
 
 
 @dataclass(frozen=True)
+class BattleStartRequested:
+    """Battle should start (siege phase complete)."""
+    attack_id: int
+    attacker_uid: int
+    defender_uid: int
+    army_aid: int
+
+
+@dataclass(frozen=True)
 class SiegeExpired:
     """A siege timer has expired, battle should start."""
     defender_uid: int
+
+
+@dataclass(frozen=True)
+class AttackPhaseChanged:
+    """An attack's phase has changed (TRAVELLING → IN_SIEGE or IN_SIEGE → IN_BATTLE)."""
+    attack_id: int
+    attacker_uid: int
+    defender_uid: int
+    army_aid: int
+    new_phase: str  # e.g. "in_siege" or "in_battle"
 
 
 # -- Empire events -------------------------------------------------------

@@ -102,7 +102,19 @@ class GameLoop:
         self._empires.step_all(dt)
 
         # 2. Advance all active attacks (travel countdown, siege)
-        # TODO: self._attacks.step_all(dt)
+        # Returns list of Attack objects for battles that should start
+        battles_to_start = self._attacks.step_all(dt)
+        
+        # 3. Signal battle starts via event bus
+        from gameserver.util.events import BattleStartRequested
+        for attack in battles_to_start:
+            event = BattleStartRequested(
+                attack_id=attack.attack_id,
+                attacker_uid=attack.attacker_uid,
+                defender_uid=attack.defender_uid,
+                army_aid=attack.army_aid,
+            )
+            self._events.emit(event)
 
-        # 3. Update statistics
+        # 4. Update statistics
         # TODO: self._stats.update()

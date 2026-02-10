@@ -95,9 +95,11 @@ function render() {
         `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
       ).join('') || '—'}</td>
       <td><span class="${badgeClass}">${badgeText}</span></td>
-      <td>${status === 'available'
-        ? `<button class="btn-sm research-btn" data-iid="${iid}">Research</button>`
-        : ''}</td>
+      <td>
+        ${status === 'available'
+          ? `<button class="btn-sm research-btn" data-iid="${iid}">Research</button><div class="research-msg"></div>`
+          : ''}
+      </td>
     </tr>`;
   }).join('');
 
@@ -107,7 +109,55 @@ function render() {
   </table>`;
 
   el.querySelectorAll('.research-btn').forEach(btn => {
-    btn.addEventListener('click', () => api.buildItem(btn.dataset.iid));
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const msgEl = btn.nextElementSibling;
+      msgEl.textContent = '';
+      const iid = btn.dataset.iid;
+      const currentRow = btn.closest('tr');
+      const currentStatusCell = currentRow.querySelector('td:nth-child(6)');
+      const currentActionCell = currentRow.querySelector('td:nth-child(7)');
+      
+      try {
+        const resp = await api.buildItem(iid);
+        if (resp.success) {
+          const rows = el.querySelectorAll('tbody tr');
+          
+          // Clear old research status (change from "researching" to "available")
+          rows.forEach(row => {
+            const statusSpan = row.querySelector('td:nth-child(6) span');
+            const actionCell = row.querySelector('td:nth-child(7)');
+            if (statusSpan && statusSpan.textContent === 'researching') {
+              statusSpan.className = 'badge badge--available';
+              statusSpan.textContent = 'available';
+              // Re-add button
+              const oldIid = row.querySelector('strong').textContent.trim();
+              actionCell.innerHTML = `<button class="btn-sm research-btn" data-iid="${oldIid}">Research</button><div class="research-msg"></div>`;
+            }
+          });
+          
+          // Update current research to "researching"
+          currentStatusCell.querySelector('span').className = 'badge badge--in-progress';
+          currentStatusCell.querySelector('span').textContent = 'researching';
+          currentActionCell.innerHTML = '';
+          
+          msgEl.textContent = '✓ Research started!';
+          msgEl.style.color = 'var(--success)';
+        } else if (resp.error) {
+          msgEl.textContent = `✗ ${resp.error}`;
+          msgEl.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        msgEl.textContent = `✗ ${err.message}`;
+        msgEl.style.color = 'var(--danger)';
+      } finally {
+        btn.disabled = false;
+        // Auto-hide message after 3s
+        setTimeout(() => {
+          msgEl.textContent = '';
+        }, 3000);
+      }
+    });
   });
 }
 

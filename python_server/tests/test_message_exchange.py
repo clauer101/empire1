@@ -20,6 +20,7 @@ from gameserver.models.army import Army, SpyArmy
 from gameserver.models.map import HexCoord, Direction
 from gameserver.models.structure import Structure
 from gameserver.engine.empire_service import EmpireService
+from gameserver.engine.attack_service import AttackService
 from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.network.router import Router
 from gameserver.network import handlers
@@ -50,6 +51,7 @@ def _make_services(empire: Optional[Empire] = None) -> Any:
     event_bus = EventBus()
     upgrade_provider = UpgradeProvider()
     empire_service = EmpireService(upgrade_provider, event_bus)
+    attack_service = AttackService(event_bus)
     if empire is not None:
         empire_service.register(empire)
 
@@ -60,6 +62,7 @@ def _make_services(empire: Optional[Empire] = None) -> Any:
     svc.event_bus = event_bus
     svc.upgrade_provider = upgrade_provider
     svc.empire_service = empire_service
+    svc.attack_service = attack_service
     svc.router = router
     return svc
 
@@ -76,7 +79,7 @@ def _make_empire(uid: int = 100, name: str = "TestEmpire") -> Empire:
         structures={
             1: Structure(sid=1, iid="tower", position=HexCoord(2, 3), damage=10.0, range=3, reload_time_ms=1000.0, shot_speed=5.0),
         },
-        armies=[Army(aid=1, uid=uid, name="Alpha", direction=Direction.NORTH)],
+        armies=[Army(aid=1, uid=uid, name="Alpha")],
         effects={"speed": 1.5},
         artefacts=["golden_shield"],
         max_life=10.0,
@@ -384,28 +387,65 @@ class TestFireAndForgetHandlers:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_citizen_upgrade_returns_none(self):
+    async def test_citizen_upgrade_returns_response(self):
         msg = parse_message({"type": "citizen_upgrade", "sender": 100})
         result = await handle_citizen_upgrade(msg, sender_uid=100)
-        assert result is None
+        assert result is not None
+        assert result["type"] == "citizen_upgrade_response"
+        assert result["success"] is True
+        assert "citizens" in result
 
     @pytest.mark.asyncio
-    async def test_change_citizen_returns_none(self):
+    async def test_change_citizen_returns_response(self):
         msg = parse_message({"type": "change_citizen", "sender": 100, "citizens": {"merchant": 2}})
         result = await handle_change_citizen(msg, sender_uid=100)
-        assert result is None
+        assert result is not None
+        assert result["type"] == "change_citizen_response"
+        assert result["success"] is True
+        assert "citizens" in result
 
     @pytest.mark.asyncio
-    async def test_new_army_returns_none(self):
-        msg = parse_message({"type": "new_army", "sender": 100, "direction": "N", "name": "Beta"})
+    async def test_new_army_returns_response(self):
+        msg = parse_message({"type": "new_army", "sender": 100, "name": "Beta"})
         result = await handle_new_army(msg, sender_uid=100)
-        assert result is None
+        assert result is not None
+        assert result["type"] == "new_army_response"
+        assert result["success"] is True
+        assert "aid" in result
 
     @pytest.mark.asyncio
-    async def test_new_attack_returns_none(self):
-        msg = parse_message({"type": "new_attack_request", "sender": 100, "target_uid": 200})
+    async def test_new_attack_self_attack_fails(self):
+        msg = parse_message({"type": "new_attack_request", "sender": 100, "target_uid": 100, "army_aid": 1})
         result = await handle_new_attack(msg, sender_uid=100)
-        assert result is None
+        assert result is not None
+        assert result["type"] == "attack_response"
+        assert result["success"] is False
+        assert "yourself" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_new_attack_unknown_defender_fails(self):
+        msg = parse_message({"type": "new_attack_request", "sender": 100, "target_uid": 999, "army_aid": 1})
+        result = await handle_new_attack(msg, sender_uid=100)
+        assert result is not None
+        assert result["type"] == "attack_response"
+        assert result["success"] is False
+
+    @pytest.mark.asyncio
+    async def test_new_attack_by_name_not_found(self):
+        msg = parse_message({"type": "new_attack_request", "sender": 100, "opponent_name": "NonExistent"})
+        result = await handle_new_attack(msg, sender_uid=100)
+        assert result is not None
+        assert result["type"] == "attack_response"
+        assert result["success"] is False
+        assert "not found" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_new_attack_no_target_fails(self):
+        msg = parse_message({"type": "new_attack_request", "sender": 100})
+        result = await handle_new_attack(msg, sender_uid=100)
+        assert result is not None
+        assert result["type"] == "attack_response"
+        assert result["success"] is False
 
 
 # ===================================================================
