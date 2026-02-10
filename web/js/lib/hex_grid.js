@@ -68,8 +68,11 @@ export class HexGrid {
     this.hoveredKey = null;
     this.selectedKey = null;
 
-    // Battle test mobile position
-    this.testMobilePos = null;  // { q, r } or null
+    // Battle critter registry: cid → { path:[{q,r},...], speed, progress, alive }
+    // Each critter autonomously moves along its path at `speed` hex/sec
+    this.battleCritters = new Map();
+    this.battleActive = false;
+    this._lastFrameTime = null;
 
     // Pan state
     this._isPanning = false;
@@ -362,14 +365,78 @@ export class HexGrid {
   // ── Render loop ────────────────────────────────────────────
 
   _startLoop() {
-    const loop = () => {
+    const loop = (timestamp) => {
+      // When battle is active, step critters and force redraw every frame
+      if (this.battleActive && this.battleCritters.size > 0) {
+        this._stepBattleCritters(timestamp);
+        this._dirty = true;
+      }
+
       if (this._dirty) {
         this._render();
         this._dirty = false;
       }
       this._rafId = requestAnimationFrame(loop);
     };
-    loop();
+    loop(performance.now());
+  }
+
+  /** Advance all battle critters along their paths (client-side autonomous movement). */
+  _stepBattleCritters(timestamp) {
+    if (!this._lastFrameTime) {
+      this._lastFrameTime = timestamp;
+      return;
+    }
+    const dt = (timestamp - this._lastFrameTime) / 1000.0; // seconds
+    this._lastFrameTime = timestamp;
+
+    for (const [cid, critter] of this.battleCritters) {
+      if (!critter.alive) continue;
+      const maxProgress = critter.path.length - 1;
+      critter.progress = Math.min(critter.progress + critter.speed * dt, maxProgress);
+    }
+  }
+
+  /** Get interpolated pixel position of a critter on its path. */
+  _getCritterPixelPos(critter, sz) {
+    const idx = Math.min(Math.floor(critter.progress), critter.path.length - 2);
+    const frac = critter.progress - idx;
+    const a = critter.path[idx];
+    const b = critter.path[Math.min(idx + 1, critter.path.length - 1)];
+    // Interpolate in hex space, then convert to pixel
+    const q = a.q + (b.q - a.q) * frac;
+    const r = a.r + (b.r - a.r) * frac;
+    return hexToPixel(q, r, sz);
+  }
+
+  /** Add a critter to the battle registry. Called from composer on battle_update.new_critters. */
+  addBattleCritter(cid, path, speed) {
+    this.battleCritters.set(cid, {
+      path,  // [{q,r}, ...]
+      speed, // hex/sec
+      progress: 0.0,
+      alive: true,
+    });
+    this.battleActive = true;
+    this._lastFrameTime = null; // reset delta timer
+    this._dirty = true;
+  }
+
+  /** Remove a critter (died or finished). */
+  removeBattleCritter(cid) {
+    this.battleCritters.delete(cid);
+    if (this.battleCritters.size === 0) {
+      // keep battleActive true — more critters may come
+    }
+    this._dirty = true;
+  }
+
+  /** Clear all battle state. */
+  clearBattle() {
+    this.battleCritters.clear();
+    this.battleActive = false;
+    this._lastFrameTime = null;
+    this._dirty = true;
   }
 
   _render() {
@@ -446,9 +513,12 @@ export class HexGrid {
       }
     }
 
-    // Draw test mobile critter
-    if (this.testMobilePos) {
-      const { x, y } = hexToPixel(this.testMobilePos.q, this.testMobilePos.r, sz);
+    // Draw battle critters
+    for (const [cid, critter] of this.battleCritters) {
+      if (!critter.alive || critter.path.length < 2) continue;
+      const { x, y } = this._getCritterPixelPos(critter, sz);
+
+      // Yellow filled circle
       ctx.fillStyle = '#ffcc00';
       ctx.beginPath();
       ctx.arc(x, y, sz * 0.3, 0, Math.PI * 2);

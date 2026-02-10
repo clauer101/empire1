@@ -58,6 +58,11 @@ class BattleState:
     structures: dict[int, Structure] = field(default_factory=dict)
     pending_shots: list[Shot] = field(default_factory=list)
 
+    # Wave runtime state (not persisted; reset each battle)
+    # Keys: (direction, wave_id) tuples
+    wave_spawn_pointers: dict[tuple[str, int], int] = field(default_factory=dict)
+    wave_next_spawn_ms: dict[tuple[str, int], float] = field(default_factory=dict)
+
     elapsed_ms: float = 0.0
     broadcast_timer_ms: float = 0.0
     keep_alive: bool = True
@@ -78,10 +83,12 @@ class BattleState:
     attacker_gains: dict[int, dict[str, float]] = field(default_factory=dict)
     defender_losses: dict[str, float] = field(default_factory=dict)
 
+    # Configuration (set at battle creation time)
+    broadcast_interval_ms: float = 250.0  # Configurable from game.yaml
+
     # -- Constants -------------------------------------------------------
 
     MIN_KEEP_ALIVE_MS: float = 10_000.0
-    BROADCAST_INTERVAL_MS: float = 250.0
 
     def should_broadcast(self) -> bool:
         """Check if enough time has passed for a network update."""
@@ -89,7 +96,7 @@ class BattleState:
 
     def reset_broadcast(self) -> None:
         """Reset broadcast timer and clear delta lists."""
-        self.broadcast_timer_ms = self.BROADCAST_INTERVAL_MS
+        self.broadcast_timer_ms = self.broadcast_interval_ms
         self.new_critters.clear()
         self.new_shots.clear()
         self.dead_critter_ids.clear()

@@ -67,6 +67,7 @@ export function initStatusBar(container) {
         <span class="label">Armies</span>
         <span class="value" id="sb-armies">—</span>
       </div>
+      <div id="sb-attacks"></div>
     </div>
   `;
 
@@ -77,6 +78,7 @@ export function initStatusBar(container) {
   _unsub.push(eventBus.on('state:summary',        onSummary));
   _unsub.push(eventBus.on('state:items',           () => { if (state.summary) onSummary(state.summary); }));
   _unsub.push(eventBus.on('state:military',        onMilitary));
+  _unsub.push(eventBus.on('server:attack_phase_changed',  onAttackPhaseChanged));
 }
 
 function setConnected(online) {
@@ -140,12 +142,101 @@ function onSummary(data) {
     resEl.textContent = 'idle';
     rBar.style.width = '0%';
   }
+
+  // Attacks progress
+  const attacksEl = _el.querySelector('#sb-attacks');
+  const outgoing = data.attacks_outgoing || [];
+  const incoming = data.attacks_incoming || [];
+
+  if (outgoing.length === 0 && incoming.length === 0) {
+    attacksEl.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+
+  for (const atk of outgoing) {
+    const total = atk.total_eta_seconds || 60;
+    const remaining = atk.eta_seconds || 0;
+    const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
+    const armyName = _findArmyName([], atk.army_aid);
+    const phaseStr = atk.phase || 'travelling';
+    html += `
+      <div class="panel-row" style="margin-top:8px">
+        <span class="label">⚔ ${armyName}</span>
+        <span class="value" title="Phase: ${phaseStr}">${fmtTime(remaining)}</span>
+      </div>
+      <div class="progress"><div class="progress-fill" style="width:${pct.toFixed(0)}%"></div></div>
+    `;
+  }
+
+  for (const atk of incoming) {
+    const phaseStr = atk.phase || 'travelling';
+    
+    if (phaseStr === 'in_battle') {
+      // Battle ongoing: full red bar + link to composer
+      html += `
+        <div class="panel-row" style="margin-top:8px">
+          <span class="value"><a href="#composer" style="color:var(--danger);font-weight:bold">⚠ BATTLE ONGOING</a></span>
+        </div>
+        <div class="progress"><div class="progress-fill" style="width:100%; background:var(--danger)"></div></div>
+      `;
+    } else if (phaseStr === 'in_siege') {
+      // Siege phase: show remaining siege time
+      const totalSiege = atk.total_siege_seconds || 30;
+      const remainingSiege = atk.siege_remaining_seconds || 0;
+      const pct = Math.min(100, Math.max(0, (1 - remainingSiege / totalSiege) * 100));
+      html += `
+        <div class="panel-row" style="margin-top:8px">
+          <span class="label">⚠ Siege ongoing</span>
+          <span class="value" title="Phase: ${phaseStr}">${fmtTime(remainingSiege)}</span>
+        </div>
+        <div class="progress"><div class="progress-fill" style="width:${pct.toFixed(0)}%; background:var(--danger)"></div></div>
+      `;
+    } else {
+      // Travelling phase: show ETA
+      const total = atk.total_eta_seconds || 60;
+      const remaining = atk.eta_seconds || 0;
+      const pct = Math.min(100, Math.max(0, (1 - remaining / total) * 100));
+      html += `
+        <div class="panel-row" style="margin-top:8px">
+          <span class="label">⚠ Incoming</span>
+          <span class="value" title="Phase: ${phaseStr}">${fmtTime(remaining)}</span>
+        </div>
+        <div class="progress"><div class="progress-fill" style="width:${pct.toFixed(0)}%; background:var(--danger)"></div></div>
+      `;
+    }
+  }
+
+  attacksEl.innerHTML = html;
 }
 
 function onMilitary(data) {
   if (!data) return;
   const armies = data.armies || [];
   _el.querySelector('#sb-armies').textContent = armies.length;
+}
+
+function _findArmyName(armies, aid) {
+  for (const a of armies) {
+    if (a.aid === aid) return a.name;
+  }
+  return `Army ${aid}`;
+}
+
+function onAttackPhaseChanged(msg) {
+  if (!msg) return;
+  // Refresh summary data when phase changes to update attack display
+  if (state.summary) {
+    onSummary(state.summary);
+  }
+}
+
+function fmtTime(seconds) {
+  if (seconds == null || seconds <= 0) return 'arrived';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
 function fmt(n) {

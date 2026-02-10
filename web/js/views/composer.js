@@ -26,9 +26,8 @@ let grid = null;
 
 const STORAGE_KEY = 'e3_map_editor';
 
-// Battle test state
-let _battleTestActive = false;
-let _testMobilePos = { q: 0, r: 0 };  // Current position of moving point
+// Battle state
+let _battleActive = false;
 
 // ── View lifecycle ──────────────────────────────────────────
 
@@ -91,8 +90,10 @@ async function enter() {
   // Subscribe to item updates
   _unsub.push(eventBus.on('state:items', _buildPalette));
 
-  // Subscribe to battle test updates
+  // Subscribe to battle events (delta-based)
+  _unsub.push(eventBus.on('server:battle_setup', _onBattleSetup));
   _unsub.push(eventBus.on('server:battle_update', _onBattleUpdate));
+  _unsub.push(eventBus.on('server:battle_summary', _onBattleSummary));
 
   _buildPalette();
 
@@ -463,15 +464,60 @@ function _autoSave() {
   }, 1000);  // Reduced from 2000ms to 1000ms for faster persistence
 }
 
-// ── Battle test ──────────────────────────────────────────────
+// ── Battle events (delta-based, Java-style) ─────────────────
+
+function _onBattleSetup(msg) {
+  console.log('[Composer] Battle setup:', msg);
+  grid.clearBattle();
+  _battleActive = true;
+  grid._dirty = true;
+}
 
 function _onBattleUpdate(msg) {
-  if (msg && msg.position) {
-    _testMobilePos = msg.position;
-    grid.testMobilePos = msg.position;  // Update HexGrid render
-    _battleTestActive = msg.active !== false;
-    grid._dirty = true;  // Trigger redraw
+  if (!msg) return;
+
+  // Spawn new critters (client will autonomously move them along path)
+  if (msg.new_critters && msg.new_critters.length > 0) {
+    for (const c of msg.new_critters) {
+      console.log(
+        '[SPAWN] Critter spawned: cid=%d type=%s speed=%.1f path_len=%d',
+        c.cid, c.iid, c.speed || 0, c.path ? c.path.length : 0
+      );
+      grid.addBattleCritter(c.cid, c.path, c.speed);
+    }
   }
+
+  // Remove dead critters
+  if (msg.dead_critter_ids && msg.dead_critter_ids.length > 0) {
+    for (const cid of msg.dead_critter_ids) {
+      console.log('[SPAWN] Critter killed: cid=%d', cid);
+      grid.removeBattleCritter(cid);
+    }
+  }
+
+  // Remove finished critters (reached castle)
+  if (msg.finished_critter_ids && msg.finished_critter_ids.length > 0) {
+    for (const cid of msg.finished_critter_ids) {
+      console.log('[SPAWN] Critter finished: cid=%d', cid);
+      grid.removeBattleCritter(cid);
+    }
+  }
+
+  // Shots (visual only — future)
+  if (msg.new_shots && msg.new_shots.length > 0) {
+    console.log('[SPAWN] Shots fired: count=%d', msg.new_shots.length);
+  }
+
+  grid._dirty = true;
+}
+
+function _onBattleSummary(msg) {
+  console.log('[Composer] Battle summary:', msg);
+  _battleActive = false;
+  // Keep critters visible briefly, then clean up
+  setTimeout(() => {
+    grid.clearBattle();
+  }, 1500);
 }
 
 // ── Export ───────────────────────────────────────────────────

@@ -15,7 +15,6 @@ from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
 from gameserver.persistence.state_load import RestoredState, load_state
@@ -49,20 +48,12 @@ def _make_empire(uid: int = 1, name: str = "TestEmpire") -> Empire:
         },
         armies=[
             Army(
-                aid=1, uid=uid, direction=Direction.NORTH, name="Alpha",
+                aid=1, uid=uid, name="Alpha",
                 waves=[
                     CritterWave(
-                        critter_iid="goblin", slots=5,
-                        critters=[
-                            Critter(cid=100, iid="goblin", health=10.0,
-                                    max_health=10.0, speed=1.5, armour=0.0,
-                                    path=[HexCoord(0, 0), HexCoord(1, 0), HexCoord(2, 0)],
-                                    path_progress=0.5,
-                                    capture={"gold": 2.0}, bonus={"gold": 1.0}),
-                        ],
-                        spawn_interval_ms=600.0,
-                        next_spawn_ms=200.0,
-                        spawn_pointer=1,
+                        wave_id=1,
+                        iid="goblin",
+                        slots=1,
                     ),
                 ],
                 wave_pointer=0,
@@ -208,19 +199,12 @@ class TestSaveLoad:
         assert len(e.armies) == 1
         army = e.armies[0]
         assert army.aid == 1
-        assert army.direction == Direction.NORTH
         assert army.name == "Alpha"
         assert len(army.waves) == 1
         wave = army.waves[0]
-        assert wave.critter_iid == "goblin"
-        assert wave.slots == 5
-        assert len(wave.critters) == 1
-        c = wave.critters[0]
-        assert c.cid == 100
-        assert c.health == 10.0
-        assert len(c.path) == 3
-        assert c.path[1] == HexCoord(1, 0)
-        assert c.path_progress == pytest.approx(0.5)
+        assert wave.wave_id == 1
+        assert wave.iid == "goblin"
+        assert wave.slots == 1
 
     def test_round_trip_spies(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")

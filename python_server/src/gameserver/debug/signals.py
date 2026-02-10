@@ -58,21 +58,6 @@ SIGNAL_CATALOG: list[dict[str, Any]] = [
     },
     {
         "category": "Empire",
-        "type": "citizen_upgrade",
-        "description": "Bürger-Kapazität erhöhen",
-        "params": [],
-    },
-    {
-        "category": "Empire",
-        "type": "change_citizen",
-        "description": "Bürger auf Rollen verteilen",
-        "params": [
-            _p("citizens", JSON, '{"merchant": 2, "scientist": 1, "artist": 0}',
-               "Verteilung {Rolle: Anzahl}"),
-        ],
-    },
-    {
-        "category": "Empire",
         "type": "increase_life",
         "description": "Max-Leben um 1 erhöhen (kostet Kultur)",
         "params": [],
@@ -127,7 +112,9 @@ SIGNAL_CATALOG: list[dict[str, Any]] = [
         "category": "Military",
         "type": "military_request",
         "description": "Militärstatus anfordern (Armeen, Critter, Angriffe)",
-        "params": [],
+        "params": [
+            _p("uid", INT, 100, "UID des Imperiums (optional; wenn leer = eigenes Imperium)"),
+        ],
     },
     {
         "category": "Military",
@@ -135,17 +122,15 @@ SIGNAL_CATALOG: list[dict[str, Any]] = [
         "description": "Neuen Armee-Slot erstellen",
         "params": [
             _p("name", TEXT, "", "Armee-Name"),
-            _p("direction", TEXT, "north", "Angriffsrichtung (north/south/east/west)"),
         ],
     },
     {
         "category": "Military",
         "type": "change_army",
-        "description": "Armee umbenennen oder Richtung ändern",
+        "description": "Armee umbenennen",
         "params": [
             _p("aid", INT, 0, "Armee-ID"),
             _p("name", TEXT, "", "Neuer Name"),
-            _p("direction", TEXT, "", "Neue Richtung"),
         ],
     },
     {
@@ -154,17 +139,17 @@ SIGNAL_CATALOG: list[dict[str, Any]] = [
         "description": "Neue Welle zu einer Armee hinzufügen",
         "params": [
             _p("aid", INT, 0, "Armee-ID"),
-            _p("critter_iid", TEXT, "", "Critter-Typ ID"),
         ],
     },
     {
         "category": "Military",
         "type": "change_wave",
-        "description": "Critter-Typ einer bestehenden Welle ändern",
+        "description": "Critter-Typ oder Anzahl einer Welle ändern",
         "params": [
             _p("aid", INT, 0, "Armee-ID"),
             _p("wave_number", INT, 0, "Wellen-Nummer"),
-            _p("critter_iid", TEXT, "", "Neuer Critter-Typ"),
+            _p("critter_iid", TEXT, "", "Neuer Critter-Typ (optional)"),
+            _p("slots", INT, 5, "Neue Anzahl von Critters (optional)"),
         ],
     },
 

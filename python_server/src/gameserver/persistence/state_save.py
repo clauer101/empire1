@@ -20,7 +20,6 @@ from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
 
@@ -173,12 +172,9 @@ def _serialize_critter(c: Critter) -> dict[str, Any]:
 
 def _serialize_critter_wave(wave: CritterWave) -> dict[str, Any]:
     return {
-        "critter_iid": wave.critter_iid,
+        "wave_id": wave.wave_id,
+        "iid": wave.iid,
         "slots": wave.slots,
-        "critters": [_serialize_critter(c) for c in wave.critters],
-        "spawn_interval_ms": wave.spawn_interval_ms,
-        "next_spawn_ms": wave.next_spawn_ms,
-        "spawn_pointer": wave.spawn_pointer,
     }
 
 
@@ -186,7 +182,6 @@ def _serialize_army(army: Army) -> dict[str, Any]:
     return {
         "aid": army.aid,
         "uid": army.uid,
-        "direction": army.direction.value,
         "name": army.name,
         "waves": [_serialize_critter_wave(w) for w in army.waves],
         "wave_pointer": army.wave_pointer,
@@ -238,12 +233,7 @@ def _serialize_editor_hex_map(hex_map: dict) -> list[dict[str, Any]]:
 # ===================================================================
 
 def _serialize_attack(attack: Attack) -> dict[str, Any]:
-    """Serialize an attack.
-
-    TODO: AttackService has no active attack list yet — attacks
-          are serialized structurally but no attacks will be present
-          until AttackService.start_attack() is implemented.
-    """
+    """Serialize an attack."""
     return {
         "attack_id": attack.attack_id,
         "attacker_uid": attack.attacker_uid,
@@ -251,7 +241,9 @@ def _serialize_attack(attack: Attack) -> dict[str, Any]:
         "army_aid": attack.army_aid,
         "phase": attack.phase.value,
         "eta_seconds": attack.eta_seconds,
+        "total_eta_seconds": attack.total_eta_seconds,
         "siege_remaining_seconds": attack.siege_remaining_seconds,
+        "total_siege_seconds": attack.total_siege_seconds,
     }
 
 

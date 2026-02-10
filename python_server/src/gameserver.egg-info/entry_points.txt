@@ -1,0 +1,2 @@
+[console_scripts]
+gameserver = gameserver.main:main

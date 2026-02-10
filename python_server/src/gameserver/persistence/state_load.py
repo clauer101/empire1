@@ -19,7 +19,6 @@ from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
 from gameserver.persistence.state_save import DEFAULT_STATE_PATH
@@ -206,12 +205,9 @@ def _deserialize_critter(d: dict[str, Any]) -> Critter:
 
 def _deserialize_critter_wave(d: dict[str, Any]) -> CritterWave:
     return CritterWave(
-        critter_iid=d["critter_iid"],
-        slots=d["slots"],
-        critters=[_deserialize_critter(c) for c in d.get("critters", [])],
-        spawn_interval_ms=d.get("spawn_interval_ms", 500.0),
-        next_spawn_ms=d.get("next_spawn_ms", 0.0),
-        spawn_pointer=d.get("spawn_pointer", 0),
+        wave_id=d["wave_id"],
+        iid=d.get("iid", "SLAVE"),
+        slots=d.get("slots", 0),
     )
 
 
@@ -219,7 +215,6 @@ def _deserialize_army(d: dict[str, Any]) -> Army:
     return Army(
         aid=d["aid"],
         uid=d["uid"],
-        direction=Direction(d["direction"]),
         name=d.get("name", ""),
         waves=[_deserialize_critter_wave(w) for w in d.get("waves", [])],
         wave_pointer=d.get("wave_pointer", 0),
@@ -263,12 +258,7 @@ def _deserialize_editor_hex_map(tiles_list: Any) -> dict[str, str]:
 # ===================================================================
 
 def _deserialize_attack(d: dict[str, Any]) -> Attack:
-    """Deserialize an attack.
-
-    TODO: AttackService has no mechanism to re-register restored attacks yet.
-          The Attack objects are restored but will not be ticked unless
-          AttackService is extended with a restore/register method.
-    """
+    """Deserialize an attack."""
     return Attack(
         attack_id=d["attack_id"],
         attacker_uid=d["attacker_uid"],
@@ -276,7 +266,9 @@ def _deserialize_attack(d: dict[str, Any]) -> Attack:
         army_aid=d["army_aid"],
         phase=AttackPhase(d.get("phase", "travelling")),
         eta_seconds=d.get("eta_seconds", 0.0),
+        total_eta_seconds=d.get("total_eta_seconds", 60.0),  # default to 60s if not in save
         siege_remaining_seconds=d.get("siege_remaining_seconds", 0.0),
+        total_siege_seconds=d.get("total_siege_seconds", 30.0),  # default to 30s if not in save
     )
 
 

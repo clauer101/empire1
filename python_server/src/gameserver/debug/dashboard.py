@@ -200,9 +200,7 @@ function render(snap) {
   ]);
 
   // Attacks
-  html += renderCard('&#x1f6e1;&#xfe0f; Attacks', [
-    ['Active', val(att.active || 0)],
-  ]);
+  html += renderAttacks(att);
 
   // Upgrade Provider
   const byType = up.by_type || {};
@@ -238,6 +236,32 @@ function renderAccounts(accounts) {
     for (const a of accounts) {
       html += `<tr><td>${a.uid}</td><td>${a.username}</td><td>${a.empire_name}</td><td>${a.email || '\u2013'}</td><td>${a.created_at || '\u2013'}</td>`;
       html += `<td><button onclick="deleteAccount('${a.username}')" style="background:var(--red);color:#fff;border:none;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px">&#x1f5d1; Delete</button></td></tr>`;
+    }
+    html += '</table>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderAttacks(attacks) {
+  let html = '<div class="card" style="grid-column:1/-1;overflow-x:auto"><h2>&#x1f6e1;&#xfe0f; Attacks (' + (attacks.total || 0) + ')</h2>';
+  const list = attacks.attacks || [];
+  if (list.length === 0) {
+    html += '<table><tr><td style="color:#484f58">No active attacks</td></tr></table>';
+  } else {
+    html += '<table><tr style="color:var(--accent)"><td>ID</td><td>Attacker</td><td>Defender</td><td>Army ID</td><td>Phase</td><td>ETA (s)</td><td>Total ETA</td><td>Siege (s)</td><td>Total Siege</td></tr>';
+    for (const a of list) {
+      html += `<tr>`;
+      html += `<td><code style="font-size:11px">${a.id}</code></td>`;
+      html += `<td>${a.attacker}</td>`;
+      html += `<td>${a.defender}</td>`;
+      html += `<td>${a.army_aid}</td>`;
+      html += `<td>${a.phase}</td>`;
+      html += `<td style="text-align:right">${a.eta_seconds}</td>`;
+      html += `<td style="text-align:right">${a.total_eta_seconds}</td>`;
+      html += `<td style="text-align:right">${a.siege_remaining_seconds || 0}</td>`;
+      html += `<td style="text-align:right">${a.total_siege_seconds || 30}</td>`;
+      html += `</tr>`;
     }
     html += '</table>';
   }

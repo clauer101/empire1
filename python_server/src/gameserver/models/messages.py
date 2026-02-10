@@ -7,7 +7,7 @@ Replaces the generic HashMap<String,Object> payload from the Java version.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -77,8 +77,18 @@ class ItemResponse(GameMessage):
     knowledge: dict[str, Any] = {}
 
 
+class BuildResponse(GameMessage):
+    type: Literal["build_response"] = "build_response"
+    success: bool = False
+    iid: str = ""
+    error: str = ""
+    build_queue: str = ""  # Current building queue item (for immediate UI update)
+    research_queue: str = ""  # Current research queue item (for immediate UI update)
+
+
 class MilitaryRequest(GameMessage):
     type: Literal["military_request"] = "military_request"
+    uid: int = 0  # Optional: query a different empire's armies
 
 
 class MilitaryResponse(GameMessage):
@@ -128,11 +138,24 @@ class IncreaseLifeRequest(GameMessage):
     type: Literal["increase_life"] = "increase_life"
 
 
+class CitizenUpgradeResponse(GameMessage):
+    type: Literal["citizen_upgrade_response"] = "citizen_upgrade_response"
+    success: bool = False
+    error: str = ""
+    citizens: dict[str, int] = {}  # Updated citizen distribution
+
+
+class ChangeCitizenResponse(GameMessage):
+    type: Literal["change_citizen_response"] = "change_citizen_response"
+    success: bool = False
+    error: str = ""
+    citizens: dict[str, int] = {}  # Updated citizen distribution
+
+
 # -- Army ----------------------------------------------------------------
 
 class NewArmyRequest(GameMessage):
     type: Literal["new_army"] = "new_army"
-    direction: str = ""
     name: str = ""
 
 
@@ -140,13 +163,11 @@ class ChangeArmyRequest(GameMessage):
     type: Literal["change_army"] = "change_army"
     aid: int = 0
     name: str = ""
-    direction: str = ""
 
 
 class NewWaveRequest(GameMessage):
     type: Literal["new_wave"] = "new_wave"
     aid: int = 0
-    critter_iid: str = ""
 
 
 class ChangeWaveRequest(GameMessage):
@@ -154,12 +175,14 @@ class ChangeWaveRequest(GameMessage):
     aid: int = 0
     wave_number: int = 0
     critter_iid: str = ""
+    slots: Optional[int] = None
 
 
 class NewAttackRequest(GameMessage):
     type: Literal["new_attack_request"] = "new_attack_request"
     target_uid: int = 0
     army_aid: int = 0
+    opponent_name: str = ""
     spy_options: list[str] = []
 
 
@@ -182,14 +205,16 @@ class BattleUnregister(GameMessage):
 class BattleSetup(GameMessage):
     type: Literal["battle_setup"] = "battle_setup"
     bid: int = 0
-    armies: list[dict[str, Any]] = []
+    defender_uid: int = 0
     structures: list[dict[str, Any]] = []
-    critters: list[dict[str, Any]] = []
+    paths: dict[str, list[dict[str, int]]] = {}  # direction -> [{q,r}, ...]
+    wave_preview: list[dict[str, Any]] = []
 
 
 class BattleUpdate(GameMessage):
     type: Literal["battle_update"] = "battle_update"
     bid: int = 0
+    time: float = 0.0
     new_critters: list[dict[str, Any]] = []
     new_shots: list[dict[str, Any]] = []
     dead_critter_ids: list[int] = []
@@ -346,10 +371,13 @@ MESSAGE_TYPES: dict[str, type[GameMessage]] = {
     "summary_response": SummaryResponse,
     "item_request": ItemRequest,
     "item_response": ItemResponse,
+    "build_response": BuildResponse,
     "new_item": NewItemRequest,
     # Citizens
     "citizen_upgrade": CitizenUpgradeRequest,
+    "citizen_upgrade_response": CitizenUpgradeResponse,
     "change_citizen": ChangeCitizenRequest,
+    "change_citizen_response": ChangeCitizenResponse,
     "increase_life": IncreaseLifeRequest,
     # Structures
     "new_structure": NewStructureRequest,

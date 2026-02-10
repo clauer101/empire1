@@ -491,6 +491,334 @@ label {
   color: var(--text-dim);
 }
 
+/* ── Armies Container (Army Groups with Wave Tiles) ──────── */
+.armies-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.armies-container .empty-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* ── Army Group ──────────────────────────────────────────── */
+.army-group {
+  margin-bottom: 24px;
+}
+
+.army-name-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.army-attack-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 0;
+}
+
+.target-uid-input {
+  flex: 1;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: all .15s;
+}
+
+.target-uid-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.army-opponent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 0;
+}
+
+.army-opponent-row label {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+  min-width: 50px;
+}
+
+.opponent-name-input {
+  flex: 1;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: all .15s;
+}
+
+.opponent-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.army-attack-btn {
+  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  border: 1px solid #c62828;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+}
+
+.army-attack-btn:hover {
+  background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
+  transform: translateY(-1px);
+}
+
+.army-attack-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+}
+
+.army-name {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-dim);
+  padding-left: 0;
+}
+
+.army-id {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.army-edit-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.army-edit-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.army-name-input {
+  flex: 1;
+  background: var(--surface-alt);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 200px;
+}
+
+.army-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.army-confirm-btn,
+.army-cancel-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.army-confirm-btn:hover {
+  background: var(--accent-glow);
+}
+
+.army-cancel-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(239, 83, 80, 0.12);
+}
+
+/* ── Waves Container (horizontal scrollable) ──────────────── */
+.waves-container {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  min-height: 80px;
+  align-items: flex-start;
+}
+
+/* ── Wave Tile (small cards for individual waves) ────────── */
+.wave-tile {
+  flex: 0 0 100px;
+  height: 100px;
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  transition: all .15s;
+  cursor: pointer;
+}
+
+.wave-tile:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(79, 195, 247, .15);
+}
+
+.wave-tile-header {
+  flex: 0;
+  min-height: 24px;
+  margin-bottom: 4px;
+}
+
+.wave-critter-select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.wave-critter-select:hover {
+  border-color: var(--accent);
+}
+
+.wave-critter-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 4px var(--accent-glow);
+}
+
+.wave-tile-body {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.wave-tile-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  flex: 1;
+  text-align: center;
+}
+
+.wave-slots-btn {
+  background: rgba(79, 195, 247, .2);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.wave-slots-btn:hover {
+  background: rgba(79, 195, 247, .4);
+  border-color: var(--accent);
+}
+
+.wave-slots-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(79, 195, 247, .1);
+}
+
+.wave-slots-btn:disabled:hover {
+  background: rgba(79, 195, 247, .1);
+  border-color: var(--accent-dim);
+}
+
+.wave-tile-footer {
+  flex: 0;
+  text-align: center;
+}
+
+.wave-time {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ── Wave Tile Add (plus button) ────────────────────────── */
+.wave-tile-add {
+  background: rgba(79, 195, 247, .08);
+  border-color: var(--accent-dim);
+}
+
+.wave-tile-add:hover {
+  background: rgba(79, 195, 247, .15);
+  border-color: var(--accent);
+}
+
+.wave-tile-plus {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* ── Army Separator ────────────────────────────────────────– */
+.army-separator {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border) 25%,
+    var(--border) 75%,
+    transparent
+  );
+  margin: 16px 0 8px 0;
+}
+
 /* ── Empty state ─────────────────────────────────────────── */
 .empty-state {
   text-align: center;
@@ -796,4 +1124,16 @@ label {
   .hex-editor__props {
     display: none;
   }
+}
+
+/* ── Build & Research Message Feedback ────────────────────── */
+.build-msg,
+.research-msg {
+  font-size: 12px;
+  padding: 4px 8px;
+  margin-top: 4px;
+  border-radius: var(--radius);
+  color: white;
+  text-align: center;
+  min-height: 20px;
 }

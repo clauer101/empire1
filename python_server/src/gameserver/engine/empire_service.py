@@ -66,6 +66,14 @@ class EmpireService:
         """Look up an empire by UID."""
         return self._empires.get(uid)
 
+    def find_by_name(self, name: str) -> Optional[Empire]:
+        """Look up an empire by name (case-insensitive)."""
+        name_lower = name.lower()
+        for empire in self._empires.values():
+            if empire.name.lower() == name_lower:
+                return empire
+        return None
+
     @property
     def all_empires(self) -> dict[int, Empire]:
         """Read-only access to all managed empires."""

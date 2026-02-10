@@ -95,9 +95,11 @@ function render() {
         `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
       ).join('') || '—'}</td>
       <td><span class="${badgeClass}">${badgeText}</span></td>
-      <td>${status === 'available'
-        ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button>`
-        : ''}</td>
+      <td>
+        ${status === 'available'
+          ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button><div class="build-msg"></div>`
+          : ''}
+      </td>
     </tr>`;
   }).join('');
 
@@ -107,7 +109,55 @@ function render() {
   </table>`;
 
   el.querySelectorAll('.build-btn').forEach(btn => {
-    btn.addEventListener('click', () => api.buildItem(btn.dataset.iid));
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const msgEl = btn.nextElementSibling;
+      msgEl.textContent = '';
+      const iid = btn.dataset.iid;
+      const currentRow = btn.closest('tr');
+      const currentStatusCell = currentRow.querySelector('td:nth-child(6)');
+      const currentActionCell = currentRow.querySelector('td:nth-child(7)');
+      
+      try {
+        const resp = await api.buildItem(iid);
+        if (resp.success) {
+          const rows = el.querySelectorAll('tbody tr');
+          
+          // Clear old building status (change from "building" to "available")
+          rows.forEach(row => {
+            const statusSpan = row.querySelector('td:nth-child(6) span');
+            const actionCell = row.querySelector('td:nth-child(7)');
+            if (statusSpan && statusSpan.textContent === 'building') {
+              statusSpan.className = 'badge badge--available';
+              statusSpan.textContent = 'available';
+              // Re-add button
+              const oldIid = row.querySelector('strong').textContent.trim();
+              actionCell.innerHTML = `<button class="btn-sm build-btn" data-iid="${oldIid}">Build</button><div class="build-msg"></div>`;
+            }
+          });
+          
+          // Update current building to "building"
+          currentStatusCell.querySelector('span').className = 'badge badge--in-progress';
+          currentStatusCell.querySelector('span').textContent = 'building';
+          currentActionCell.innerHTML = '';
+          
+          msgEl.textContent = '✓ Building started!';
+          msgEl.style.color = 'var(--success)';
+        } else if (resp.error) {
+          msgEl.textContent = `✗ ${resp.error}`;
+          msgEl.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        msgEl.textContent = `✗ ${err.message}`;
+        msgEl.style.color = 'var(--danger)';
+      } finally {
+        btn.disabled = false;
+        // Auto-hide message after 3s
+        setTimeout(() => {
+          msgEl.textContent = '';
+        }, 3000);
+      }
+    });
   });
 }
 

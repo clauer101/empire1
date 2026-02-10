@@ -19,6 +19,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import sys
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
@@ -106,23 +108,33 @@ class Services:
 
 
 def load_configuration(
-    items_path: str = DEFAULT_ITEMS_PATH,
-    map_path: str = DEFAULT_MAP_PATH,
-    ai_path: str = DEFAULT_AI_PATH,
+    config_dir: str = "config",
+    items_path: str = "",
+    map_path: str = "",
+    ai_path: str = "",
 ) -> Configuration:
     """Load items, hex map, and AI templates from YAML files.
 
     All loaders are synchronous (pure file I/O + parsing).
 
     Args:
-        items_path: Path to the items YAML.
-        map_path: Path to the hex-map YAML.
-        ai_path: Path to the AI templates YAML.
+        config_dir: Base configuration directory (default: "config").
+        items_path: Path to the items YAML (default: config_dir).
+        map_path: Path to the hex-map YAML (default: config_dir/maps/default.yaml).
+        ai_path: Path to the AI templates YAML (default: config_dir/ai_templates.yaml).
 
     Returns:
         Populated :class:`Configuration` containing items, map, and AI data.
     """
     log.info("Loading configuration …")
+
+    # Use provided paths or defaults based on config_dir
+    if not items_path:
+        items_path = config_dir
+    if not map_path:
+        map_path = os.path.join(config_dir, "maps/default.yaml")
+    if not ai_path:
+        ai_path = os.path.join(config_dir, "ai_templates.yaml")
 
     items = load_items(items_path)
     log.info("  items:        %d loaded from %s", len(items), items_path)
@@ -146,11 +158,12 @@ def load_configuration(
 # ===================================================================
 
 
-async def init_persistence(db_path: str = DEFAULT_DB_PATH) -> tuple:
+async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "state.yaml") -> tuple:
     """Open the database and try to restore previous game state.
 
     Args:
         db_path: Path to the SQLite file.
+        state_file: Path to the state YAML file (default: state.yaml).
 
     Returns:
         Tuple of (Database, restored_state_or_None).
@@ -161,7 +174,7 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH) -> tuple:
     await database.connect()
     log.info("  database:     connected (%s)", db_path)
 
-    restored = await load_state()
+    restored = await load_state(path=state_file)
     if restored is not None:
         log.info("  state:        restored from disk (%d empires, %d attacks)",
                  len(restored.empires), len(restored.attacks))
@@ -197,8 +210,8 @@ def create_services(config: Configuration, database: Database) -> Services:
     log.info("  upgrade_provider: %d items registered", len(config.items))
 
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
-    battle_service = BattleService(event_bus, upgrade_provider)
-    attack_service = AttackService(event_bus)
+    battle_service = BattleService()
+    attack_service = AttackService(event_bus, gc)
     army_service = ArmyService(upgrade_provider, event_bus)
     ai_service = AIService(upgrade_provider, config.ai_templates)
     statistics = StatisticsService()
@@ -328,14 +341,10 @@ async def start_game_loop(services: Services) -> None:
     # Persist complete game state to YAML
     if services.empire_service is not None:
         try:
-            # TODO: Pass active attacks from AttackService once it
-            #       maintains an attack registry.
-            # TODO: Pass active battles from BattleService once it
-            #       maintains a battle registry.
             await save_state(
                 empires=services.empire_service.all_empires,
-                attacks=[],   # TODO: services.attack_service.active_attacks
-                battles=[],   # TODO: services.battle_service.active_battles
+                attacks=services.attack_service.get_all_attacks(),
+                battles=[],
             )
         except Exception:
             log.exception("State save failed — continuing shutdown")
@@ -357,8 +366,13 @@ async def start_game_loop(services: Services) -> None:
 # ===================================================================
 
 
-async def _start() -> None:
-    """Initialize and run all server components."""
+async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> None:
+    """Initialize and run all server components.
+    
+    Args:
+        config_dir: Base configuration directory path.
+        state_file: Path to the state YAML file for restoration.
+    """
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -367,10 +381,10 @@ async def _start() -> None:
     log.info("=== Game Server starting ===")
 
     # 1. Load configuration
-    config = load_configuration()
+    config = load_configuration(config_dir=config_dir)
 
     # 2. Initialize persistence
-    database, saved_state = await init_persistence()
+    database, saved_state = await init_persistence(state_file=state_file)
 
     # 3. Create services
     services = create_services(config, database)
@@ -384,12 +398,11 @@ async def _start() -> None:
             services.empire_service.register(empire)
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
-        # TODO: Restore attacks once AttackService supports it
-        #   for attack in saved_state.attacks:
-        #       services.attack_service.register(attack)
-        # TODO: Restore battles once BattleService supports it
-        #   for battle in saved_state.battles:
-        #       services.battle_service.resume_battle(battle)
+        # Restore attacks
+        for attack in saved_state.attacks:
+            services.attack_service._attacks.append(attack)
+        if saved_state.attacks:
+            log.info("Restored %d attacks from saved state", len(saved_state.attacks))
     else:
         _add_test_empire(services)
 
@@ -418,8 +431,25 @@ def _add_test_empire(services: Services) -> None:
 
 
 def main() -> None:
-    """Entry point for the game server."""
-    asyncio.run(_start())
+    """Entry point for the game server.
+    
+    Supports command-line arguments:
+        --state_file <path>  Use custom state file for restoration (default: state.yaml)
+    """
+    config_dir = "config"  # Default config directory
+    state_file = "state.yaml"  # Default state file
+    
+    # Parse command-line arguments
+    if "--state_file" in sys.argv:
+        try:
+            idx = sys.argv.index("--state_file")
+            if idx + 1 < len(sys.argv):
+                state_file = sys.argv[idx + 1]
+        except (ValueError, IndexError):
+            print("Error: --state_file requires an argument", file=sys.stderr)
+            sys.exit(1)
+    
+    asyncio.run(_start(config_dir=config_dir, state_file=state_file))
 
 
 if __name__ == "__main__":
