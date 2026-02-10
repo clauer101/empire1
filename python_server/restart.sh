@@ -255,7 +255,7 @@ case "$CMD" in
         echo " Start GameServer & WebServer"
         echo " $(date '+%Y-%m-%d %H:%M:%S')"
         echo "========================================"
-        start_gameserver "$STATE_FILE"
+        start_gameserver "${STATE_FILE:-state.yaml}"
         echo ""
         start_webserver
         echo "========================================"
@@ -281,7 +281,7 @@ case "$CMD" in
                     echo " Start GameServer"
                     echo " $(date '+%Y-%m-%d %H:%M:%S')"
                     echo "========================================"
-                    start_gameserver "$STATE_FILE"
+                    start_gameserver "${STATE_FILE:-state.yaml}"
                     echo "========================================"
                     echo " Fertig."
                     echo "========================================"
@@ -299,7 +299,7 @@ case "$CMD" in
             echo " $(date '+%Y-%m-%d %H:%M:%S')"
             echo "========================================"
             stop_gameserver
-            start_gameserver "$STATE_FILE"
+            start_gameserver "${STATE_FILE:-state.yaml}"
             echo "========================================"
             echo " Fertig."
             echo "========================================"
@@ -357,7 +357,7 @@ case "$CMD" in
         echo ""
         stop_webserver
         echo ""
-        start_gameserver "$CONFIG_DIR"
+        start_gameserver "${STATE_FILE:-state.yaml}"
         echo ""
         start_webserver
         echo "========================================"
