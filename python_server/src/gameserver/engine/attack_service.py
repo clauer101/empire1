@@ -29,15 +29,23 @@ class AttackService:
 
     Args:
         event_bus: Event bus for attack lifecycle events.
+        game_config: Game configuration for travel/siege timings.
+        empire_service: Empire service for defender lookups.
     """
 
     def __init__(self, event_bus: EventBus,
-                 game_config: GameConfig | None = None) -> None:
+                 game_config: GameConfig | None = None,
+                 empire_service: EmpireService | None = None) -> None:
         self._events = event_bus
+        self._empire_service = empire_service
         self._attacks: list[Attack] = []
         self._base_travel_offset = (
             game_config.base_travel_offset if game_config else 5400.0
         )
+        self._base_siege_offset = (
+            game_config.base_siege_offset if game_config else 30.0
+        )
+        self._broadcast_timer: dict[int, float] = {}  # attack_id -> seconds since last broadcast
 
     # -- Query -----------------------------------------------------------
 
@@ -142,11 +150,13 @@ class AttackService:
                     attack.defender_uid, attack.army_aid,
                 )
                 attack.phase = AttackPhase.IN_SIEGE
-                # Siege duration: 30 seconds (TODO: config)
-                attack.siege_remaining_seconds = 30.0
-                # Store total siege duration for progress calculation
+                
+                # Calculate siege duration ONLY for new attacks (not restored from save)
                 if attack.total_siege_seconds == 0.0:
-                    attack.total_siege_seconds = 30.0
+                    siege_duration = self._calculate_siege_duration(attack.defender_uid)
+                    attack.siege_remaining_seconds = siege_duration
+                    attack.total_siege_seconds = siege_duration
+                    
                 # Emit event for push notification to clients
                 from gameserver.util.events import AttackPhaseChanged
                 self._events.emit(AttackPhaseChanged(
@@ -192,6 +202,20 @@ class AttackService:
             result = self.step(attack, dt)
             if result:
                 battles_to_start.append(result)
+            
+            # Broadcast battle status to observers during IN_SIEGE and IN_BATTLE
+            if attack.phase in (AttackPhase.IN_SIEGE, AttackPhase.IN_BATTLE):
+                # Throttle broadcasts to 1 per second
+                if attack.attack_id not in self._broadcast_timer:
+                    self._broadcast_timer[attack.attack_id] = 0.0
+                
+                self._broadcast_timer[attack.attack_id] += dt
+                
+                if self._broadcast_timer[attack.attack_id] >= 1.0:
+                    self._broadcast_timer[attack.attack_id] = 0.0
+                    # Emit event for observers to receive updates
+                    from gameserver.util.events import BattleObserverBroadcast
+                    self._events.emit(BattleObserverBroadcast(attack_id=attack.attack_id))
         
         # Prune finished attacks
         self._attacks = [
@@ -199,3 +223,48 @@ class AttackService:
         ]
         
         return battles_to_start
+
+    # -- Helpers ---------------------------------------------------------
+
+    def _calculate_siege_duration(self, defender_uid: int) -> float:
+        """Calculate siege duration based on defender effects.
+        
+        Formula (from Java implementation):
+            siege_duration = offset + (offset * modifier)
+        
+        Where:
+            - offset: SIEGE_TIME_OFFSET effect (base siege time in seconds)
+            - modifier: SIEGE_TIME_MODIFIER effect (percentage modifier)
+        
+        Args:
+            defender_uid: The UID of the defending empire.
+            
+        Returns:
+            Siege duration in seconds.
+        """
+        # If no empire service, fall back to base value
+        if not self._empire_service:
+            return self._base_siege_offset
+        
+        defender = self._empire_service.get(defender_uid)
+        if not defender:
+            log.warning(
+                "Defender %d not found for siege calculation, using base duration",
+                defender_uid
+            )
+            return self._base_siege_offset
+        
+        # Get effects from defender (with base as fallback)
+        from gameserver.util import effects
+        offset = defender.get_effect(effects.SIEGE_TIME_OFFSET, self._base_siege_offset)
+        modifier = defender.get_effect(effects.SIEGE_TIME_MODIFIER, 0.0)
+        
+        # Calculate: offset + (offset * modifier)
+        siege_duration = offset + (offset * modifier)
+        
+        log.debug(
+            "Calculated siege duration for defender %d: %.1fs (offset=%.1f, modifier=%.2f)",
+            defender_uid, siege_duration, offset, modifier
+        )
+        
+        return siege_duration

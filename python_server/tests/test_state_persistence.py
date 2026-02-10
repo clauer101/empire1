@@ -56,8 +56,6 @@ def _make_empire(uid: int = 1, name: str = "TestEmpire") -> Empire:
                         slots=1,
                     ),
                 ],
-                wave_pointer=0,
-                next_wave_ms=20000.0,
             ),
         ],
         spies=[

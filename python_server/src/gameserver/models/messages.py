@@ -194,18 +194,19 @@ class EndSiegeRequest(GameMessage):
 
 class BattleRegister(GameMessage):
     type: Literal["battle_register"] = "battle_register"
-    bid: int = 0
+    target_uid: int = 0  # UID of defender or attacker to subscribe to
 
 
 class BattleUnregister(GameMessage):
     type: Literal["battle_unregister"] = "battle_unregister"
-    bid: int = 0
+    target_uid: int = 0  # UID of defender or attacker to unsubscribe from
 
 
 class BattleSetup(GameMessage):
     type: Literal["battle_setup"] = "battle_setup"
     bid: int = 0
     defender_uid: int = 0
+    tiles: dict[str, Any] = {}  # Defender's hex map
     structures: list[dict[str, Any]] = []
     paths: dict[str, list[dict[str, int]]] = {}  # direction -> [{q,r}, ...]
     wave_preview: list[dict[str, Any]] = []

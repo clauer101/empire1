@@ -210,8 +210,8 @@ def create_services(config: Configuration, database: Database) -> Services:
     log.info("  upgrade_provider: %d items registered", len(config.items))
 
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
-    battle_service = BattleService()
-    attack_service = AttackService(event_bus, gc)
+    battle_service = BattleService(items=upgrade_provider.items)
+    attack_service = AttackService(event_bus, gc, empire_service)
     army_service = ArmyService(upgrade_provider, event_bus)
     ai_service = AIService(upgrade_provider, config.ai_templates)
     statistics = StatisticsService()

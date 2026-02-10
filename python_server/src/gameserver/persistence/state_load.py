@@ -217,8 +217,7 @@ def _deserialize_army(d: dict[str, Any]) -> Army:
         uid=d["uid"],
         name=d.get("name", ""),
         waves=[_deserialize_critter_wave(w) for w in d.get("waves", [])],
-        wave_pointer=d.get("wave_pointer", 0),
-        next_wave_ms=d.get("next_wave_ms", 25_000.0),
+        # wave_pointer and next_wave_ms moved to Attack model
     )
 
 
@@ -269,6 +268,9 @@ def _deserialize_attack(d: dict[str, Any]) -> Attack:
         total_eta_seconds=d.get("total_eta_seconds", 60.0),  # default to 60s if not in save
         siege_remaining_seconds=d.get("siege_remaining_seconds", 0.0),
         total_siege_seconds=d.get("total_siege_seconds", 30.0),  # default to 30s if not in save
+        wave_pointer=d.get("wave_pointer", 0),
+        critter_pointer=d.get("critter_pointer", 0),
+        next_wave_ms=d.get("next_wave_ms", 25_000.0),
     )
 
 

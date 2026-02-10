@@ -52,16 +52,20 @@ class BattleState:
     bid: int
     defender_uid: int
     attacker_uids: list[int] = field(default_factory=list)
+    attack_id: int | None = None  # Reference to Attack (if battle is part of an attack)
 
     armies: dict[str, Army] = field(default_factory=dict)
     critters: dict[int, Critter] = field(default_factory=dict)
     structures: dict[int, Structure] = field(default_factory=dict)
     pending_shots: list[Shot] = field(default_factory=list)
 
-    # Wave runtime state (not persisted; reset each battle)
-    # Keys: (direction, wave_id) tuples
+    # Wave runtime state (not persisted; reset each battle)    # Keys: (direction, wave_id) tuples for critter-level tracking
     wave_spawn_pointers: dict[tuple[str, int], int] = field(default_factory=dict)
     wave_next_spawn_ms: dict[tuple[str, int], float] = field(default_factory=dict)
+    
+    # Keys: direction string for wave-level tracking
+    army_wave_pointers: dict[str, int] = field(default_factory=dict)  # Current wave index per army
+    army_next_wave_ms: dict[str, float] = field(default_factory=dict)  # Time until next wave per army
 
     elapsed_ms: float = 0.0
     broadcast_timer_ms: float = 0.0

@@ -84,6 +84,12 @@ class AttackPhaseChanged:
     new_phase: str  # e.g. "in_siege" or "in_battle"
 
 
+@dataclass(frozen=True)
+class BattleObserverBroadcast:
+    """Request to broadcast battle status to all observers."""
+    attack_id: int
+
+
 # -- Empire events -------------------------------------------------------
 
 @dataclass(frozen=True)

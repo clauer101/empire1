@@ -59,6 +59,8 @@ Battle (Datencontainer)
 4. **step_armies()** / stepArmies()
    - Wave-Timer herunterrechnen
    - Critter spawnen wenn Wave-Timer 0 ist
+   - defending empire nach instanz des critter anfragen
+   - defending empire leifert critter nach aktuellen effects
    - Spawn-Pointer weiterbewegen
 
 5. **check_finished()** / endBattleIfFinished()
@@ -77,13 +79,13 @@ class Critter:
     iid: str                    # Item type (references ItemDetails)
     health: float
     path: list[HexCoord]        # Kompletter Pfad als Liste
-    path_progress: float        # Fractional position (0.0 = start)
+    current_hex: HexCoord      # aktuelle tile des critters
+    path_progress: float        # von aktueller tile bis zur nächsten tile gerechnet (wir genutzt um smoothe bewegung zu ermöglichen)
     speed: float                # hex fields/second
     
     # Movement calculation:
     distance = speed * dt_ms / 1000.0
-    path_progress += distance
-    current_hex = path[int(path_progress)]
+    path_progress += distance  # wenn über 100% -> next tile
 ```
 
 ### Java Model (gleich)
@@ -134,14 +136,16 @@ should_broadcast() → broadcast_timer_ms <= 0
 
 Bei jedem Broadcast:
   delta_list = {
-    new_critters: [added critters],
-    new_shots: [fired shots],
-    dead_critter_ids: [killed cids],
+    critters: [critters],
+    shots: [shots],
     finished_critter_ids: [reached end],
-    new_structure_ids: [placed towers]
+    structures: [towers]
   }
   
   reset_broadcast() → clear deltas + reset timer
+  -> braodcasts beinhalten zu jedem zeitpunkt die komplettten informationen was auf der karte zu rendern ist. in theorie könnte man also von jedem einzelnen broadcast den korrekten zu stadn zeichnen. das soll verhindern, dass sich inkosistente zustände nicht selbst heilen.
+  broadcast intervall soll 20hz sein.
+  die map wird bei battle setup einmalig übermittelt. sie wird sich nicht ändern währnd gekämpft wird.
 ```
 
 ### Java
@@ -166,8 +170,8 @@ send_fn(uid: int, data: dict) → Async callback
   Abstrahiert WebSocket-Layer
   
 Messages gesendet:
-  battle_setup → {"bid", "armies", "structures", "map"}
-  battle_update (250ms) → {"new_critters", "new_shots", ...}
+  battle_setup → {"bid", "participants", "structures", "map"}
+  battle_update (50ms) → {"critters", "shots", ...}
   battle_summary (on finish) → {"winner", "gains", "losses"}
 ```
 
@@ -191,12 +195,11 @@ class Army {
 }
 
 # In step_armies():
-for each (direction, wave):
-    wave_spawn_time -= dt_ms
-    if wave_spawn_time <= 0:
-        for slot in range(wave.slots):
-            spawn_critter(wave.iid, path)
-        wave_spawn_time = wave.interval  # Next spawn delay
+critter_spawn_time -= dt_ms
+if critter_spawn_time <= 0:  
+    spawn_critter(wave.iid, path)
+    spawn_pointer+=1
+    critter_spawn_time = critter.respawn_timer  # Next spawn delay: hängt von den crittern des angreifers ab. muss in der critter factory des angreifers mitgesendet werden
 ```
 
 ### Java
@@ -220,7 +223,6 @@ if (mNextWaveIn <= 0) {
 
 ## 8. Siege vs. Battle
 
-**Wichtiger Detail**: Aktuell sind **Siege und Battle noch nicht verbunden**!
 
 ### Python: Attack Model (WIP)
 ```python
@@ -232,6 +234,7 @@ class Attack:
     phase: enum [TRAVELLING, IN_SIEGE, IN_BATTLE, FINISHED]
     eta_seconds: float
     total_eta_seconds: float
+    total_sieg_time: float  # fehlte hier
     siege_remaining_seconds: float
 ```
 

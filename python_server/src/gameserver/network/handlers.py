@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from gameserver.main import Services
 
 from gameserver.models.messages import GameMessage, MapSaveRequest
-from gameserver.models.attack import AttackPhase
+from gameserver.models.attack import AttackPhase, Attack
 
 log = logging.getLogger(__name__)
 
@@ -908,26 +908,259 @@ async def handle_increase_life(
 # Battle
 # ===================================================================
 
+async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> None:
+    """Send current battle state to an observer.
+    
+    This sends status updates during IN_SIEGE and IN_BATTLE phases.
+    """
+    svc = _svc()
+    
+    # Get defender and attacker empires
+    defender_empire = svc.empire_service.get(attack.defender_uid)
+    attacker_empire = svc.empire_service.get(attack.attacker_uid)
+    
+    if not defender_empire or not attacker_empire:
+        return
+    
+    # Get attacking army
+    attacking_army = None
+    for army in attacker_empire.armies:
+        if army.aid == attack.army_aid:
+            attacking_army = army
+            break
+    
+    if not attacking_army:
+        return
+    
+    # Prepare wave information
+    waves_info = []
+    for i, wave in enumerate(attacking_army.waves):
+        waves_info.append({
+            "wave_id": wave.wave_id,  # Use actualwave_id from wave object, not index
+            "critter_iid": wave.iid,
+            "slots": wave.slots,
+        })
+    
+    # Get battle state (if battle is running)
+    battle = _active_battles.get(attack.defender_uid)
+    
+    # Determine current wave_pointer: use live battle state if available, else attack state
+    if battle and attack.phase == AttackPhase.IN_BATTLE:
+        direction = f"attacker_{attack.attacker_uid}"
+        wave_pointer = battle.army_wave_pointers.get(direction, 0)
+    else:
+        wave_pointer = attack.wave_pointer
+    
+    # Calculate current wave based on wave_pointer
+    # If wave_pointer >= len(waves_info), all waves are finished -> current_wave = None
+    current_wave = waves_info[wave_pointer] if wave_pointer < len(waves_info) else None
+    # Next wave is the one after current
+    next_wave = waves_info[wave_pointer + 1] if (wave_pointer + 1) < len(waves_info) else None
+    
+    # Extract phase-specific data based on attack phase
+    if attack.phase == AttackPhase.IN_SIEGE:
+        time_since_start_s = -attack.siege_remaining_seconds  # Negative = countdown to battle start
+        status = "in_siege"
+        current_wave_critter_pointer = 0
+        next_wave_countdown_ms = 0.0
+        
+    elif attack.phase == AttackPhase.IN_BATTLE and battle:
+        # Battle is running - get live data from BattleState
+        time_since_start_s = battle.elapsed_ms / 1000.0
+        status = "in_battle"
+        
+        # Extract critter spawn progress for attacking army
+        direction = f"attacker_{attack.attacker_uid}"
+        army = battle.armies.get(direction)
+        
+        if army and wave_pointer < len(army.waves):
+            wave_id = army.waves[wave_pointer].wave_id
+            current_wave_critter_pointer = battle.wave_spawn_pointers.get((direction, wave_id), 0)
+            next_wave_countdown_ms = battle.army_next_wave_ms.get(direction, 0.0)
+            log.info("[battle_status] direction=%s wave_pointer=%d wave_id=%d critter_pointer=%d",
+                     direction, wave_pointer, wave_id, current_wave_critter_pointer)
+        else:
+            current_wave_critter_pointer = 0
+            next_wave_countdown_ms = 0.0
+            
+    else:
+        # TRAVELLING, FINISHED, or IN_BATTLE without active battle
+        time_since_start_s = 0
+        status = attack.phase.value
+        current_wave_critter_pointer = 0
+        next_wave_countdown_ms = 0.0
+    
+    # Send battle status update
+    status_msg = {
+        "type": "battle_status",
+        "attack_id": attack.attack_id,
+        "phase": status,
+        "defender_uid": attack.defender_uid,
+        "defender_name": defender_empire.name,
+        "attacker_uid": attack.attacker_uid,
+        "attacker_name": attacker_empire.name,
+        "time_since_start_s": time_since_start_s,
+        "current_wave": current_wave,
+        "next_wave": next_wave,
+        "total_waves": len(waves_info),
+        "current_wave_critter_pointer": current_wave_critter_pointer,
+        "next_wave_countdown_ms": next_wave_countdown_ms,
+    }
+    
+    if svc.server:
+        await svc.server.send_to(observer_uid, status_msg)
+
+
+async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> None:
+    """Send battle_setup message to initialize the battle view.
+    
+    This includes the defender's map, structures, and paths.
+    """
+    from gameserver.engine.battle_service import find_hex_path
+    from gameserver.models.hex import HexCoord
+    
+    svc = _svc()
+    
+    # Get defender empire (owner of the map)
+    defender_empire = svc.empire_service.get(attack.defender_uid)
+    if not defender_empire:
+        log.warning("_send_battle_setup: defender %d not found", attack.defender_uid)
+        return
+    
+    if not defender_empire.hex_map:
+        log.warning("_send_battle_setup: defender %d has no map", attack.defender_uid)
+        return
+    
+    # ── Parse map to find spawn and castle ──────────────
+    tiles = defender_empire.hex_map
+    spawn_pos: tuple[int, int] | None = None
+    castle_pos: tuple[int, int] | None = None
+    passable: set[tuple[int, int]] = set()
+    
+    for key, tile_type in tiles.items():
+        q, r = map(int, key.split(","))
+        if tile_type in ("spawnpoint", "path", "castle"):
+            passable.add((q, r))
+        if tile_type == "spawnpoint" and spawn_pos is None:
+            spawn_pos = (q, r)
+        elif tile_type == "castle":
+            castle_pos = (q, r)
+    
+    # Calculate path
+    hex_path = []
+    if spawn_pos and castle_pos:
+        hex_path = find_hex_path(spawn_pos, castle_pos, passable)
+    
+    # ── Get structures ───────────────────────────────────
+    structures_dict = {}
+    if defender_empire.structures:
+        structures_dict = dict(defender_empire.structures)
+    
+    # ── Send battle_setup ────────────────────────────────
+    setup_msg = {
+        "type": "battle_setup",
+        "bid": attack.attack_id,
+        "defender_uid": attack.defender_uid,
+        "attacker_uid": attack.attacker_uid,
+        "tiles": tiles,
+        "structures": [
+            {
+                "sid": s.sid,
+                "iid": s.iid,
+                "q": s.position.q,
+                "r": s.position.r,
+                "damage": s.damage,
+                "range": s.range,
+            }
+            for s in structures_dict.values()
+        ],
+        "paths": {
+            f"attacker_{attack.attacker_uid}": [{"q": h.q, "r": h.r} for h in hex_path],
+        },
+    }
+    
+    if svc.server:
+        await svc.server.send_to(observer_uid, setup_msg)
+        log.info("_send_battle_setup: sent to uid=%d (attack_id=%d)", observer_uid, attack.attack_id)
+
+
 async def handle_battle_register(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
     """Handle ``battle_register`` — register as battle observer.
-
-    TODO: Register sender as observer of the battle for given UID.
+    
+    Client subscribes to battle updates for attacks they're involved in.
     """
-    log.info("battle_register from uid=%d (not yet implemented)", sender_uid)
-    return None
+    target_uid = getattr(message, "target_uid", None)
+    if target_uid is None:
+        log.warning("battle_register: missing target_uid")
+        return {"type": "error", "message": "Missing target_uid"}
+    
+    svc = _svc()
+    
+    # Find attack involving this target_uid (either as attacker or defender)
+    attack_svc = svc.attack_service
+    attack = None
+    
+    # Check if sender is attacker
+    for a in attack_svc.get_outgoing(sender_uid):
+        if a.defender_uid == target_uid:
+            attack = a
+            break
+    
+    # Check if sender is defender
+    if not attack:
+        for a in attack_svc.get_incoming(sender_uid):
+            if a.attacker_uid == target_uid or a.defender_uid == sender_uid:
+                attack = a
+                break
+    
+    if not attack:
+        log.warning("battle_register: no attack found for uid=%d target=%d", sender_uid, target_uid)
+        return {"type": "error", "message": "No active attack found"}
+    
+    # Register observer
+    if not hasattr(attack, '_observers'):
+        attack._observers = set()
+    attack._observers.add(sender_uid)
+    
+    log.info("battle_register: uid=%d registered for attack %d (phase=%s)", 
+             sender_uid, attack.attack_id, attack.phase.value)
+    
+    # Send battle_setup to initialize the map view
+    await _send_battle_setup_to_observer(attack, sender_uid)
+    
+    # Send initial state immediately
+    await _send_battle_state_to_observer(attack, sender_uid)
+    
+    return {"type": "battle_register_ack", "attack_id": attack.attack_id}
 
 
 async def handle_battle_unregister(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
     """Handle ``battle_unregister`` — unregister from battle observation.
-
-    TODO: Remove sender from battle observer list.
+    
+    Client unsubscribes from battle updates.
     """
-    log.info("battle_unregister from uid=%d (not yet implemented)", sender_uid)
-    return None
+    target_uid = getattr(message, "target_uid", None)
+    if target_uid is None:
+        log.warning("battle_unregister: missing target_uid")
+        return {"type": "error", "message": "Missing target_uid"}
+    
+    svc = _svc()
+    attack_svc = svc.attack_service
+    
+    # Find attack and remove observer
+    for attack in attack_svc.get_all_attacks():
+        if hasattr(attack, '_observers') and sender_uid in attack._observers:
+            attack._observers.remove(sender_uid)
+            log.info("battle_unregister: uid=%d unregistered from attack %d", 
+                     sender_uid, attack.attack_id)
+            return {"type": "battle_unregister_ack"}
+    
+    log.warning("battle_unregister: uid=%d not registered for any attack", sender_uid)
+    return {"type": "battle_unregister_ack"}
 
 
 async def handle_battle_next_wave(
@@ -1296,7 +1529,6 @@ async def handle_battle_request(
         uid=target_uid,
         name="Test Army",
         waves=[wave],
-        next_wave_ms=1000.0,  # first wave after 1s
     )
 
     # ── Create BattleState ──────────────────────────────
@@ -1310,6 +1542,10 @@ async def handle_battle_request(
         structures=structures_dict,
         observer_uids={target_uid},
     )
+    # Initialize wave progression for test battle
+    battle.army_wave_pointers["attacker_1"] = 0
+    battle.army_next_wave_ms["attacker_1"] = 1000.0  # first wave after 1s
+    
     _active_battles[target_uid] = battle
 
     # ── Send battle_setup ───────────────────────────────
@@ -1317,11 +1553,13 @@ async def handle_battle_request(
         "type": "battle_setup",
         "bid": bid,
         "defender_uid": target_uid,
+        "tiles": tiles,  # Defender's hex map
         "structures": [
             {
                 "sid": s.sid,
                 "iid": s.iid,
-                "position": {"q": s.position.q, "r": s.position.r},
+                "q": s.position.q,
+                "r": s.position.r,
                 "damage": s.damage,
                 "range": s.range,
             }
@@ -1335,7 +1573,9 @@ async def handle_battle_request(
         await svc.server.send_to(target_uid, setup_msg)
 
     # ── Launch battle loop ──────────────────────────────
-    battle_svc = BattleService()
+    svc = _svc()
+    items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    battle_svc = BattleService(items=items)
     
     # Get broadcast interval from game config (default 250ms)
     broadcast_interval_ms = 250.0
@@ -1436,6 +1676,45 @@ def _create_attack_phase_handler() -> Callable:
     return _on_attack_phase_changed
 
 
+def _create_battle_observer_broadcast_handler() -> Callable:
+    """Create a handler for BattleObserverBroadcast events.
+    
+    Broadcasts battle status to all registered observers.
+    """
+    async def _async_broadcast_to_observers(event: "BattleObserverBroadcast") -> None:
+        """Async wrapper for broadcasting to observers."""
+        svc = _svc()
+        attack_svc = svc.attack_service
+        
+        # Find attack by ID
+        attack = None
+        for a in attack_svc.get_all_attacks():
+            if a.attack_id == event.attack_id:
+                attack = a
+                break
+        
+        if not attack:
+            return
+        
+        # Get observers (if any)
+        if not hasattr(attack, '_observers') or not attack._observers:
+            return
+        
+        # Send status update to each observer
+        for observer_uid in list(attack._observers):
+            try:
+                await _send_battle_state_to_observer(attack, observer_uid)
+            except Exception as e:
+                log.exception("Failed to send battle status to observer %d: %s", 
+                             observer_uid, e)
+    
+    def _on_battle_observer_broadcast(event: "BattleObserverBroadcast") -> None:
+        """Sync handler that schedules the async broadcast task."""
+        asyncio.create_task(_async_broadcast_to_observers(event))
+    
+    return _on_battle_observer_broadcast
+
+
 def _create_battle_start_handler() -> Callable:
     """Create a handler for BattleStartRequested events.
     
@@ -1523,10 +1802,14 @@ def _create_battle_start_handler() -> Callable:
             bid=bid,
             defender_uid=defender_uid,
             attacker_uids=[attacker_uid],
+            attack_id=attack_id,
             armies={f"attacker_{attacker_uid}": attacking_army},
             structures=structures_dict,
             observer_uids={attacker_uid, defender_uid},
         )
+        
+        # Register battle in active battles dictionary
+        _active_battles[defender_uid] = battle
         
         log.info("[battle:start_requested] SUCCESS: battle %d created (attacker=%d, defender=%d)",
                  bid, attacker_uid, defender_uid)
@@ -1537,11 +1820,13 @@ def _create_battle_start_handler() -> Callable:
             "bid": bid,
             "defender_uid": defender_uid,
             "attacker_uid": attacker_uid,
+            "tiles": tiles,  # Defender's hex map
             "structures": [
                 {
                     "sid": s.sid,
                     "iid": s.iid,
-                    "position": {"q": s.position.q, "r": s.position.r},
+                    "q": s.position.q,
+                    "r": s.position.r,
                     "damage": s.damage,
                     "range": s.range,
                 }
@@ -1557,7 +1842,8 @@ def _create_battle_start_handler() -> Callable:
             await svc.server.send_to(defender_uid, setup_msg)
         
         # ── Launch battle loop ───────────────────────────────
-        battle_svc = BattleService()
+        items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+        battle_svc = BattleService(items=items)
         
         # Get broadcast interval from game config (default 250ms)
         broadcast_interval_ms = 250.0
@@ -1681,11 +1967,13 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         "bid": bid,
         "defender_uid": defender_uid,
         "attacker_uid": attacker_uid,
+        "tiles": tiles,  # Defender's hex map
         "structures": [
             {
                 "sid": s.sid,
                 "iid": s.iid,
-                "position": {"q": s.position.q, "r": s.position.r},
+                "q": s.position.q,
+                "r": s.position.r,
                 "damage": s.damage,
                 "range": s.range,
             }
@@ -1701,7 +1989,8 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         await svc.server.send_to(defender_uid, setup_msg)
     
     # ── Launch battle loop ───────────────────────────────
-    battle_svc = BattleService()
+    items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    battle_svc = BattleService(items=items)
     
     # Get broadcast interval from game config (default 250ms)
     broadcast_interval_ms = 250.0
@@ -1768,10 +2057,11 @@ def register_all_handlers(services: Services) -> None:
     router.register("battle_next_wave_request", handle_battle_next_wave)
 
     # -- Battle event handlers (internal) --------------------------------
-    from gameserver.util.events import BattleStartRequested, AttackPhaseChanged
+    from gameserver.util.events import BattleStartRequested, AttackPhaseChanged, BattleObserverBroadcast
     if services.event_bus:
         services.event_bus.on(BattleStartRequested, _create_battle_start_handler())
         services.event_bus.on(AttackPhaseChanged, _create_attack_phase_handler())
+        services.event_bus.on(BattleObserverBroadcast, _create_battle_observer_broadcast_handler())
 
     # -- Social / Messaging ----------------------------------------------
     router.register("notification_request", handle_notification_request)

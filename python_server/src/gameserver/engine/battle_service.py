@@ -117,8 +117,19 @@ class BattleService:
     decoupled from the WebSocket server.
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, items: list | dict | None = None) -> None:
+        """Initialize battle service.
+        
+        Args:
+            items: List or dict of ItemDetails for looking up critter stats (e.g., time_between_ms).
+                   Can be a list of ItemDetails or a dict[str, ItemDetails].
+        """
+        if items is None:
+            self._items_by_iid = {}
+        elif isinstance(items, dict):
+            self._items_by_iid = items
+        else:
+            self._items_by_iid = {item.iid: item for item in items}
 
     # ── Main loop ──────────────────────────────────────────────
 
@@ -139,6 +150,9 @@ class BattleService:
         """
         battle.broadcast_interval_ms = broadcast_interval_ms
         battle.broadcast_timer_ms = broadcast_interval_ms
+        
+        log.info("[battle_loop] Starting battle (bid=%d, defender=%d, attackers=%s)",
+                 battle.bid, battle.defender_uid, battle.attacker_uids)
         
         last = time.monotonic()
         while battle.keep_alive:
@@ -305,18 +319,38 @@ class BattleService:
         """Set next spawn time for a wave."""
         key = (direction, wave_id)
         battle.wave_next_spawn_ms[key] = value
+    
+    def _get_critter_spawn_interval(self, critter_iid: str) -> float:
+        """Get spawn interval (time_between_ms) for a critter type.
+        
+        Args:
+            critter_iid: Critter item ID.
+            
+        Returns:
+            Spawn interval in milliseconds (default 500ms if not found).
+        """
+        item = self._items_by_iid.get(critter_iid)
+        if item and hasattr(item, 'time_between_ms'):
+            return float(item.time_between_ms)
+        return 500.0  # Fallback default
 
     def _step_armies(self, battle: BattleState, dt_ms: float) -> None:
         """Advance wave timers, spawn critters from active waves."""
         for direction, army in battle.armies.items():
-            if army.is_finished:
+            # Get wave progression state for this army
+            wave_pointer = battle.army_wave_pointers.get(direction, 0)
+            next_wave_ms = battle.army_next_wave_ms.get(direction, 0.0)
+            
+            # Check if all waves are finished
+            if wave_pointer >= len(army.waves):
                 continue
 
-            army.next_wave_ms = max(0.0, army.next_wave_ms - dt_ms)
+            next_wave_ms = max(0.0, next_wave_ms - dt_ms)
+            battle.army_next_wave_ms[direction] = next_wave_ms
 
             # Dispatch next wave when timer hits 0
-            if army.next_wave_ms <= 0 and army.wave_pointer < len(army.waves):
-                wave = army.waves[army.wave_pointer]
+            if next_wave_ms <= 0 and wave_pointer < len(army.waves):
+                wave = army.waves[wave_pointer]
 
                 # Get runtime state for this wave
                 spawn_pointer = self._get_wave_spawn_pointer(battle, direction, wave.wave_id)
@@ -338,7 +372,8 @@ class BattleService:
                     battle.critters[critter.cid] = critter
                     battle.new_critters.append(critter)
                     spawn_pointer += 1
-                    next_spawn_ms = 500.0  # Default spawn interval
+                    # Use critter-specific spawn interval from config
+                    next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
 
                 # Save runtime state back
                 self._set_wave_spawn_pointer(battle, direction, wave.wave_id, spawn_pointer)
@@ -346,8 +381,10 @@ class BattleService:
 
                 # When wave is fully dispatched, move to next wave
                 if spawn_pointer >= wave.slots:
-                    army.wave_pointer += 1
-                    army.next_wave_ms = 5000.0  # 5s between waves
+                    wave_pointer += 1
+                    next_wave_ms = 5000.0  # 5s between waves
+                    battle.army_wave_pointers[direction] = wave_pointer
+                    battle.army_next_wave_ms[direction] = next_wave_ms
 
     # -- Finish conditions -----------------------------------------------
 
@@ -358,7 +395,14 @@ class BattleService:
         if battle.elapsed_ms < battle.MIN_KEEP_ALIVE_MS:
             return
 
-        all_armies_done = all(a.is_finished for a in battle.armies.values())
+        # Check if all armies have finished dispatching all waves
+        all_armies_done = True
+        for direction, army in battle.armies.items():
+            wave_pointer = battle.army_wave_pointers.get(direction, 0)
+            if wave_pointer < len(army.waves):
+                all_armies_done = False
+                break
+        
         no_critters = len(battle.critters) == 0
 
         if all_armies_done and no_critters:

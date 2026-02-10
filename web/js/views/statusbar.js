@@ -174,22 +174,21 @@ function onSummary(data) {
     const phaseStr = atk.phase || 'travelling';
     
     if (phaseStr === 'in_battle') {
-      // Battle ongoing: full red bar + link to composer
+      // Battle ongoing: full red bar + link to battle view
       html += `
         <div class="panel-row" style="margin-top:8px">
-          <span class="value"><a href="#composer" style="color:var(--danger);font-weight:bold">⚠ BATTLE ONGOING</a></span>
+          <span class="value"><a href="#battle" style="color:var(--danger);font-weight:bold">⚠ BATTLE ONGOING</a></span>
         </div>
         <div class="progress"><div class="progress-fill" style="width:100%; background:var(--danger)"></div></div>
       `;
     } else if (phaseStr === 'in_siege') {
-      // Siege phase: show remaining siege time
+      // Siege phase: show remaining siege time with link to battle view
       const totalSiege = atk.total_siege_seconds || 30;
       const remainingSiege = atk.siege_remaining_seconds || 0;
       const pct = Math.min(100, Math.max(0, (1 - remainingSiege / totalSiege) * 100));
       html += `
         <div class="panel-row" style="margin-top:8px">
-          <span class="label">⚠ Siege ongoing</span>
-          <span class="value" title="Phase: ${phaseStr}">${fmtTime(remainingSiege)}</span>
+          <span class="value"><a href="#battle" style="color:var(--danger);font-weight:bold">⚠ SIEGE: ${fmtTime(remainingSiege)}</a></span>
         </div>
         <div class="progress"><div class="progress-fill" style="width:${pct.toFixed(0)}%; background:var(--danger)"></div></div>
       `;
