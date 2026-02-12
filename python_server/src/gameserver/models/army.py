@@ -17,14 +17,17 @@ class CritterWave:
         wave_id: Unique wave ID within the army.
         iid: Critter type (item ID) for all critters in this wave.
         slots: Number of critter slots in this wave.
+        num_critters_spawned: Runtime state - spawn count in current wave (0 to slots).
+        next_critter_ms: Runtime state - time until next critter spawn in milliseconds.
     
-    Note: Runtime state (spawn_pointer, next_spawn_ms) is managed by BattleService
-          during battle execution and stored in BattleState, not persisted.
+    Note: Runtime state is managed by BattleService during battle execution.
     """
 
     wave_id: int
     iid: str = ""
     slots: int = 0
+    num_critters_spawned: int = 0
+    next_critter_ms: float = 0.0
 
 
 @dataclass
@@ -36,15 +39,17 @@ class Army:
         uid: Owner player UID.
         name: Display name.
         waves: Ordered list of critter waves.
+        current_wave_pointer: Runtime state - index of the currently active wave.
+        next_wave_ms: Runtime state - time in ms until the next wave starts.
     
-    Note: Wave progression (wave_pointer, critter_pointer, next_wave_ms)
-          is tracked in the Attack object during active attacks.
+    Note: current_wave_pointer and next_wave_ms are managed by BattleService during battle execution.
     """
 
     aid: int
     uid: int
     name: str = ""
     waves: list[CritterWave] = field(default_factory=list)
+
 
 
 @dataclass

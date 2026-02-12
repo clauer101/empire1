@@ -41,7 +41,7 @@ class GameConfig:
     battle_tick_ms: float = 15.0
     broadcast_interval_ms: float = 250.0
     min_keep_alive_ms: float = 10_000.0
-    initial_wave_delay_ms: float = 25_000.0
+    initial_wave_delay_ms: float = 0.0
     splash_flight_ms: float = 500.0
 
     # -- Economy -----------------------------------------------------

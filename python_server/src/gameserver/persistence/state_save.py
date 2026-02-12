@@ -175,6 +175,8 @@ def _serialize_critter_wave(wave: CritterWave) -> dict[str, Any]:
         "wave_id": wave.wave_id,
         "iid": wave.iid,
         "slots": wave.slots,
+        "num_critters_spawned": wave.num_critters_spawned,
+        "next_critter_ms": wave.next_critter_ms,
     }
 
 
@@ -184,6 +186,8 @@ def _serialize_army(army: Army) -> dict[str, Any]:
         "uid": army.uid,
         "name": army.name,
         "waves": [_serialize_critter_wave(w) for w in army.waves],
+        "current_wave_pointer": army.current_wave_pointer,
+        "next_wave_ms": army.next_wave_ms,
     }
 
 
@@ -275,9 +279,7 @@ def _serialize_battle(battle: BattleState) -> dict[str, Any]:
         "bid": battle.bid,
         "defender_uid": battle.defender_uid,
         "attacker_uids": list(battle.attacker_uids),
-        "armies": {
-            key: _serialize_army(a) for key, a in battle.armies.items()
-        },
+        "attacker": _serialize_army(battle.attacker) if battle.attacker else None,
         "critters": {
             str(cid): _serialize_critter(c) for cid, c in battle.critters.items()
         },

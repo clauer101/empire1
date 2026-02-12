@@ -46,6 +46,7 @@ class AttackService:
             game_config.base_siege_offset if game_config else 30.0
         )
         self._broadcast_timer: dict[int, float] = {}  # attack_id -> seconds since last broadcast
+        self._battles_started: set[int] = set()  # attack_ids that have already emitted BattleStartRequested
 
     # -- Query -----------------------------------------------------------
 
@@ -62,6 +63,13 @@ class AttackService:
     def get_all_attacks(self) -> list[Attack]:
         """Return all attacks (for persistence/debugging)."""
         return list(self._attacks)
+
+    def get(self, attack_id: int) -> Attack | None:
+        """Return the attack with the given ID, if it exists."""
+        for attack in self._attacks:
+            if attack.attack_id == attack_id:
+                return attack
+        return None
 
     # -- Lifecycle -------------------------------------------------------
 
@@ -186,8 +194,19 @@ class AttackService:
                     army_aid=attack.army_aid,
                     new_phase="in_battle",
                 ))
-                # Return attack object so caller can start battle
+                # Mark battle as started and return attack object so caller can start battle
+                self._battles_started.add(attack.attack_id)
                 return attack
+        
+        # Handle case where attack was loaded from persistent state already IN_BATTLE
+        if attack.phase == AttackPhase.IN_BATTLE and attack.attack_id not in self._battles_started:
+            log.info(
+                "[STATE] Attack %d: Recovered from saved state IN_BATTLE (attacker=%d, defender=%d, army=%d)",
+                attack.attack_id, attack.attacker_uid,
+                attack.defender_uid, attack.army_aid,
+            )
+            self._battles_started.add(attack.attack_id)
+            return attack
         
         return None
 

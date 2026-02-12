@@ -208,6 +208,8 @@ def _deserialize_critter_wave(d: dict[str, Any]) -> CritterWave:
         wave_id=d["wave_id"],
         iid=d.get("iid", "SLAVE"),
         slots=d.get("slots", 0),
+        num_critters_spawned=d.get("num_critters_spawned", 0),
+        next_critter_ms=d.get("next_critter_ms", 0.0),
     )
 
 
@@ -217,7 +219,6 @@ def _deserialize_army(d: dict[str, Any]) -> Army:
         uid=d["uid"],
         name=d.get("name", ""),
         waves=[_deserialize_critter_wave(w) for w in d.get("waves", [])],
-        # wave_pointer and next_wave_ms moved to Attack model
     )
 
 
@@ -297,9 +298,8 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
           Once BattleService supports resumption, add a
           ``resume_battle(state: BattleState)`` method.
     """
-    armies: dict[str, Army] = {}
-    for key, a_dict in d.get("armies", {}).items():
-        armies[key] = _deserialize_army(a_dict)
+    attacker_dict = d.get("attacker")
+    attacker = _deserialize_army(attacker_dict) if attacker_dict else None
 
     critters: dict[int, Critter] = {}
     for cid_str, c_dict in d.get("critters", {}).items():
@@ -319,7 +319,7 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
         bid=d["bid"],
         defender_uid=d["defender_uid"],
         attacker_uids=list(d.get("attacker_uids", [])),
-        armies=armies,
+        attacker=attacker,
         critters=critters,
         structures=structures,
         pending_shots=pending_shots,

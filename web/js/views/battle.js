@@ -263,16 +263,6 @@ async function _unsubscribeFromBattle() {
 function _onBattleStatus(msg) {
   if (!msg) return;
   
-  // Check if wave changed (reset spawned counter)
-  if (_battleState.current_wave && msg.current_wave) {
-    if (_battleState.current_wave_id !== msg.current_wave.wave_id) {
-      _battleState.current_wave_spawned = 0;
-      _battleState.current_wave_id = msg.current_wave.wave_id;
-    }
-  } else if (msg.current_wave) {
-    _battleState.current_wave_id = msg.current_wave.wave_id;
-  }
-  
   // Update battle state
   _battleState.phase = msg.phase || 'waiting';
   _battleState.defender_uid = msg.defender_uid;
@@ -280,18 +270,10 @@ function _onBattleStatus(msg) {
   _battleState.attacker_uid = msg.attacker_uid;
   _battleState.attacker_name = msg.attacker_name || 'Unknown';
   _battleState.time_since_start_s = msg.time_since_start_s || 0;
-  _battleState.current_wave = msg.current_wave;
-  _battleState.next_wave = msg.next_wave;
-  _battleState.total_waves = msg.total_waves || 0;
-  _battleState.next_wave_countdown_ms = msg.next_wave_countdown_ms || 0;
-  
-  // Update current wave spawned counter from server
-  if (msg.current_wave_critter_pointer !== undefined) {
-    _battleState.current_wave_spawned = msg.current_wave_critter_pointer;
-  }
   
   // Update status display
-  _updateStatusFromBattleMsg ();
+  _updateStatusFromBattleMsg();
+}
 }
 
 function _onBattleSetup(msg) {
@@ -310,13 +292,7 @@ function _onBattleSetup(msg) {
     is_finished: false,
     defender_won: null,
     phase: 'waiting',
-    current_wave: null,
-    current_wave_id: -1,
-    next_wave: null,
-    total_waves: 0,
     time_since_start_s: 0,
-    current_wave_spawned: 0,
-    next_wave_countdown_ms: 0,
   };
 
   // Clear previous battle
