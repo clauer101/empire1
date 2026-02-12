@@ -943,52 +943,16 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
     
     # Get battle state (if battle is running)
     battle = _active_battles.get(attack.defender_uid)
-    
-    # Determine current wave_pointer: use live battle state if available, else attack state
-    if battle and attack.phase == AttackPhase.IN_BATTLE:
-        direction = f"attacker_{attack.attacker_uid}"
-        wave_pointer = battle.army_wave_pointers.get(direction, 0)
-    else:
-        wave_pointer = attack.wave_pointer
-    
-    # Calculate current wave based on wave_pointer
-    # If wave_pointer >= len(waves_info), all waves are finished -> current_wave = None
-    current_wave = waves_info[wave_pointer] if wave_pointer < len(waves_info) else None
-    # Next wave is the one after current
-    next_wave = waves_info[wave_pointer + 1] if (wave_pointer + 1) < len(waves_info) else None
-    
-    # Extract phase-specific data based on attack phase
+       
+    # Determine phase-specific timing and status text
     if attack.phase == AttackPhase.IN_SIEGE:
         time_since_start_s = -attack.siege_remaining_seconds  # Negative = countdown to battle start
-        status = "in_siege"
-        current_wave_critter_pointer = 0
-        next_wave_countdown_ms = 0.0
-        
     elif attack.phase == AttackPhase.IN_BATTLE and battle:
-        # Battle is running - get live data from BattleState
         time_since_start_s = battle.elapsed_ms / 1000.0
-        status = "in_battle"
-        
-        # Extract critter spawn progress for attacking army
-        direction = f"attacker_{attack.attacker_uid}"
-        army = battle.armies.get(direction)
-        
-        if army and wave_pointer < len(army.waves):
-            wave_id = army.waves[wave_pointer].wave_id
-            current_wave_critter_pointer = battle.wave_spawn_pointers.get((direction, wave_id), 0)
-            next_wave_countdown_ms = battle.army_next_wave_ms.get(direction, 0.0)
-            log.info("[battle_status] direction=%s wave_pointer=%d wave_id=%d critter_pointer=%d",
-                     direction, wave_pointer, wave_id, current_wave_critter_pointer)
-        else:
-            current_wave_critter_pointer = 0
-            next_wave_countdown_ms = 0.0
-            
     else:
         # TRAVELLING, FINISHED, or IN_BATTLE without active battle
         time_since_start_s = 0
-        status = attack.phase.value
-        current_wave_critter_pointer = 0
-        next_wave_countdown_ms = 0.0
+    status = attack.phase.value
     
     # Send battle status update
     status_msg = {
@@ -1000,11 +964,6 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
         "attacker_uid": attack.attacker_uid,
         "attacker_name": attacker_empire.name,
         "time_since_start_s": time_since_start_s,
-        "current_wave": current_wave,
-        "next_wave": next_wave,
-        "total_waves": len(waves_info),
-        "current_wave_critter_pointer": current_wave_critter_pointer,
-        "next_wave_countdown_ms": next_wave_countdown_ms,
     }
     
     if svc.server:
@@ -1074,9 +1033,7 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
             }
             for s in structures_dict.values()
         ],
-        "paths": {
-            f"attacker_{attack.attacker_uid}": [{"q": h.q, "r": h.r} for h in hex_path],
-        },
+        "path": [{"q": h.q, "r": h.r} for h in hex_path],
     }
     
     if svc.server:
@@ -1448,153 +1405,6 @@ _active_battles: dict[int, "BattleState"] = {}  # uid → BattleState
 _next_bid: int = 1
 
 
-async def handle_battle_request(
-    message: GameMessage, sender_uid: int,
-) -> Optional[dict[str, Any]]:
-    """Start a battle: build path, spawn critters, run simulation loop."""
-    from gameserver.engine.battle_service import BattleService, find_hex_path, _new_cid
-    from gameserver.models.battle import BattleState
-    from gameserver.models.critter import Critter
-    from gameserver.models.hex import HexCoord
-    from gameserver.models.army import Army, CritterWave
-
-    global _next_bid
-
-    svc = _svc()
-    target_uid = sender_uid if sender_uid > 0 else message.sender
-    empire = svc.empire_service.get(target_uid)
-
-    if empire is None:
-        return {
-            "type": "battle_response",
-            "success": False,
-            "error": f"No empire found for uid {target_uid}",
-        }
-
-    if not empire.hex_map:
-        return {
-            "type": "battle_response",
-            "success": False,
-            "error": "No map configured",
-        }
-
-    tiles = empire.hex_map
-
-    # ── Find spawnpoints and castle ──────────────────────
-    spawn_pos: tuple[int, int] | None = None
-    castle_pos: tuple[int, int] | None = None
-    passable: set[tuple[int, int]] = set()
-
-    for key, tile_type in tiles.items():
-        q, r = map(int, key.split(","))
-        if tile_type in ("spawnpoint", "path", "castle"):
-            passable.add((q, r))
-        if tile_type == "spawnpoint" and spawn_pos is None:
-            spawn_pos = (q, r)
-        elif tile_type == "castle":
-            castle_pos = (q, r)
-
-    if not spawn_pos or not castle_pos:
-        return {
-            "type": "battle_response",
-            "success": False,
-            "error": "Map needs a spawnpoint and a castle",
-        }
-
-    hex_path = find_hex_path(spawn_pos, castle_pos, passable)
-    if not hex_path:
-        return {
-            "type": "battle_response",
-            "success": False,
-            "error": "No path from spawnpoint to castle",
-        }
-
-    # ── Find structures on the map (placeholder — config values are 0) ──
-    structures_dict = {}
-    # TODO: when structures have real stats in config, populate here
-
-    # ── Create test critters (one wave of 5 critters) ───
-    critter_speed = 1.5  # hex fields per second
-    critter_health = 10.0
-    critter_count = 5
-
-    wave = CritterWave(
-        wave_id=1,
-        iid="WARRIOR",
-        slots=critter_count,
-    )
-
-    army = Army(
-        aid=1,
-        uid=target_uid,
-        name="Test Army",
-        waves=[wave],
-    )
-
-    # ── Create BattleState ──────────────────────────────
-    bid = _next_bid
-    _next_bid += 1
-
-    battle = BattleState(
-        bid=bid,
-        defender_uid=target_uid,
-        armies={"attacker_1": army},
-        structures=structures_dict,
-        observer_uids={target_uid},
-    )
-    # Initialize wave progression for test battle
-    battle.army_wave_pointers["attacker_1"] = 0
-    battle.army_next_wave_ms["attacker_1"] = 1000.0  # first wave after 1s
-    
-    _active_battles[target_uid] = battle
-
-    # ── Send battle_setup ───────────────────────────────
-    setup_msg = {
-        "type": "battle_setup",
-        "bid": bid,
-        "defender_uid": target_uid,
-        "tiles": tiles,  # Defender's hex map
-        "structures": [
-            {
-                "sid": s.sid,
-                "iid": s.iid,
-                "q": s.position.q,
-                "r": s.position.r,
-                "damage": s.damage,
-                "range": s.range,
-            }
-            for s in structures_dict.values()
-        ],
-        "paths": {
-            "attacker_1": [{"q": h.q, "r": h.r} for h in hex_path],
-        },
-    }
-    if svc.server:
-        await svc.server.send_to(target_uid, setup_msg)
-
-    # ── Launch battle loop ──────────────────────────────
-    svc = _svc()
-    items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    battle_svc = BattleService(items=items)
-    
-    # Get broadcast interval from game config (default 250ms)
-    broadcast_interval_ms = 250.0
-    if svc.game_config and hasattr(svc.game_config, 'broadcast_interval_ms'):
-        broadcast_interval_ms = svc.game_config.broadcast_interval_ms
-
-    async def send_fn(uid: int, data: dict) -> bool:
-        if svc.server:
-            return await svc.server.send_to(uid, data)
-        return False
-
-    asyncio.create_task(_run_battle_task(target_uid, battle, battle_svc, send_fn, broadcast_interval_ms))
-
-    return {
-        "type": "battle_response",
-        "success": True,
-    }
-
-
 async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleService", send_fn, broadcast_interval_ms: float = 250.0) -> None:
     """Wrapper for the async battle loop with cleanup and resource transfer.
     
@@ -1797,16 +1607,29 @@ def _create_battle_start_handler() -> Callable:
         # ── Create BattleState ───────────────────────────────
         bid = _next_bid
         _next_bid += 1
-        
         battle = BattleState(
             bid=bid,
             defender_uid=defender_uid,
             attacker_uids=[attacker_uid],
             attack_id=attack_id,
-            armies={f"attacker_{attacker_uid}": attacking_army},
+            attacker=attacking_army,
             structures=structures_dict,
             observer_uids={attacker_uid, defender_uid},
         )
+        attack_state = None
+        if svc.attack_service:
+            attack_state = svc.attack_service.get(attack_id)
+
+        if attack_state:
+            attacking_army.current_wave_pointer = attack_state.wave_pointer
+            attacking_army.next_wave_ms = int(attack_state.next_wave_ms)
+            if attack_state.wave_pointer < len(attacking_army.waves):
+                wave = attacking_army.waves[attack_state.wave_pointer]
+                wave.num_critters_spawned = min(
+                    max(attack_state.critter_pointer, 0),
+                    wave.slots,
+                )
+                wave.next_critter_ms = 0
         
         # Register battle in active battles dictionary
         _active_battles[defender_uid] = battle
@@ -1832,9 +1655,7 @@ def _create_battle_start_handler() -> Callable:
                 }
                 for s in structures_dict.values()
             ],
-            "paths": {
-                f"attacker_{attacker_uid}": [{"q": h.q, "r": h.r} for h in hex_path],
-            },
+            "path": [{"q": h.q, "r": h.r} for h in hex_path],            
         }
         
         if svc.server:
@@ -1953,7 +1774,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         bid=bid,
         defender_uid=defender_uid,
         attacker_uids=[attacker_uid],
-        armies={f"attacker_{attacker_uid}": attacking_army},
+        attacker=attacking_army,
         structures=structures_dict,
         observer_uids={attacker_uid, defender_uid},
     )
@@ -1979,9 +1800,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
             }
             for s in structures_dict.values()
         ],
-        "paths": {
-            f"attacker_{attacker_uid}": [{"q": h.q, "r": h.r} for h in hex_path],
-        },
+        "path":  [{"q": h.q, "r": h.r} for h in hex_path],
     }
     
     if svc.server:
@@ -2080,9 +1899,6 @@ def register_all_handlers(services: Services) -> None:
     router.register("auth_request", handle_auth_request)
     router.register("signup", handle_signup)
     router.register("create_empire", handle_create_empire)
-
-    # -- Battle ----------------------------------------------------------
-    router.register("battle_request", handle_battle_request)
 
     registered = router.registered_types
     log.info("Registered %d message handlers: %s", len(registered), ", ".join(registered))

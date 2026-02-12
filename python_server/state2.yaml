@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-10T20:23:11'
-  saved_at_unix: 1770751391.344269
+  saved_at: '2026-02-11T04:57:57'
+  saved_at_unix: 1770782277.0483575
 empires:
 - uid: 100
   name: TestImperium
@@ -32,9 +32,13 @@ empires:
     - wave_id: 1
       iid: SWORDMAN
       slots: 6
+      next_critter_ms: 0.0
+      critters_spawned: 0
     - wave_id: 2
       iid: SLAVE
       slots: 4
+      next_critter_ms: 15000.0
+      critters_spawned: 0
   spies: []
   bosses: {}
   hex_map:
@@ -50,8 +54,8 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 4342.111661486657
-    culture: 5736.0377357274965
+    gold: 7724.148018577762
+    culture: 8637.880630976846
     life: 10.0
   buildings:
     INIT: 0.0
@@ -66,8 +70,8 @@ empires:
     TOOL_SHOP: 0.0
     BOW_MAKER: 0.0
     MEDICUS: 3637.5278055969998
-    BULLETIN_BOARD: 7645.814664066784
-  build_queue: BULLETIN_BOARD
+    BULLETIN_BOARD: 0.0
+  build_queue: null
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -88,7 +92,7 @@ empires:
   effects:
     life_offset: 0.001
     gold_offset: 0.2
-    culture_offset: 0.15000000000000002
+    culture_offset: 0.2
     culture_modifier: 0.1
     gold_modifier: 0.1
     build_speed_modifier: 0.1
@@ -117,11 +121,8 @@ attacks:
   defender_uid: 2
   army_aid: 1
   phase: travelling
-  eta_seconds: 10
+  eta_seconds: 0.0
   total_eta_seconds: 230.0
-  siege_remaining_seconds: 3.0
-  total_siege_seconds: 3.0
-  wave_pointer: 0
-  critter_pointer: 0
-  next_wave_ms: 25000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 5.0
 battles: []

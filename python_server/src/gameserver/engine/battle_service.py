@@ -33,6 +33,7 @@ from gameserver.models.shot import Shot
 if TYPE_CHECKING:
     from gameserver.models.battle import BattleState
     from gameserver.models.empire import Empire
+    from gameserver.models.army import Army
 
 log = logging.getLogger(__name__)
 
@@ -182,6 +183,10 @@ class BattleService:
         battle.elapsed_ms += dt_ms
         battle.broadcast_timer_ms -= dt_ms
         self._check_finished(battle)
+        
+        # Log active critter count periodically
+        #if battle.elapsed_ms % 1000 < dt_ms:  # Every ~1 second
+        #    log.info("[battle %d] Active critters: %d", battle.bid, len(battle.critters))
 
     # -- Shot resolution -------------------------------------------------
 
@@ -298,28 +303,8 @@ class BattleService:
                     battle.new_shots.append(shot)
                     structure.reload_remaining_ms = structure.reload_time_ms
 
-    # -- Army wave dispatch (simplified: single wave auto-spawn) ---------
+    # -- Army wave dispatch ---------
 
-    def _get_wave_spawn_pointer(self, battle: BattleState, direction: str, wave_id: int) -> int:
-        """Get spawn pointer for a wave, initializing to 0 if not found."""
-        key = (direction, wave_id)
-        return battle.wave_spawn_pointers.get(key, 0)
-
-    def _set_wave_spawn_pointer(self, battle: BattleState, direction: str, wave_id: int, value: int) -> None:
-        """Set spawn pointer for a wave."""
-        key = (direction, wave_id)
-        battle.wave_spawn_pointers[key] = value
-
-    def _get_wave_next_spawn_ms(self, battle: BattleState, direction: str, wave_id: int) -> float:
-        """Get next spawn time for a wave, initializing to 0 if not found."""
-        key = (direction, wave_id)
-        return battle.wave_next_spawn_ms.get(key, 0.0)
-
-    def _set_wave_next_spawn_ms(self, battle: BattleState, direction: str, wave_id: int, value: float) -> None:
-        """Set next spawn time for a wave."""
-        key = (direction, wave_id)
-        battle.wave_next_spawn_ms[key] = value
-    
     def _get_critter_spawn_interval(self, critter_iid: str) -> float:
         """Get spawn interval (time_between_ms) for a critter type.
         
@@ -333,58 +318,75 @@ class BattleService:
         if item and hasattr(item, 'time_between_ms'):
             return float(item.time_between_ms)
         return 500.0  # Fallback default
+    
+    def _get_wave_interval(self, army: Army) -> float:
+        """Get interval between waves (wave_start_ms) for a wave."""
+        return 10000.0  # Fallback default
+
+    def _step_wave(self, wave, dt_ms: float) -> list[Critter]:
+        """Step a wave: decrement spawn timer and spawn critters as needed.
+        
+        This function manages the spawn timing for a single wave, spawning
+        critters at the configured spawn interval until all slots are filled.
+        
+        Args:
+            wave: The wave object with .iid (critter type), .slots (total count),
+                  .num_critters_spawned, and .next_critter_ms.
+            dt_ms: Time delta in milliseconds.
+            
+        Returns:
+            List of newly spawned Critter objects (may be empty).
+        """
+        critters: list[Critter] = []
+        
+        # Decrement spawn timer
+        next_spawn_ms = max(0, wave.next_critter_ms - dt_ms)
+        critters_spawned = wave.num_critters_spawned
+        
+        if critters_spawned >= wave.slots:
+            return []  # Wave fully spawned
+        
+        # Spawn critters if wave hasn't finished
+        if next_spawn_ms <= 0:
+            critter = Critter(
+                cid=_new_cid(),
+                iid=wave.iid,
+                health=1.0,
+                max_health=1.0,
+                speed=0.0,
+                armour=0.0,
+            )
+            critters.append(critter)
+            critters_spawned += 1
+            next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
+        
+        # Update wave state with new pointers and timer
+        wave.num_critters_spawned = critters_spawned
+        wave.next_critter_ms = int(next_spawn_ms)
+        
+        return critters
 
     def _step_armies(self, battle: BattleState, dt_ms: float) -> None:
-        """Advance wave timers, spawn critters from active waves."""
-        for direction, army in battle.armies.items():
-            # Get wave progression state for this army
-            wave_pointer = battle.army_wave_pointers.get(direction, 0)
-            next_wave_ms = battle.army_next_wave_ms.get(direction, 0.0)
+        """Advance wave timers, spawn critters from active waves.
+        
+        Steps all waves from 0 to current_wave_pointer + 1 if they exist.
+        """
+        if not battle.attacker:
+            return
+        
+        army = battle.attacker        
+
+        # Step all waves up to and including the next wave
+        for wave in army.waves:
+            new_critters = self._step_wave(wave, dt_ms)
             
-            # Check if all waves are finished
-            if wave_pointer >= len(army.waves):
-                continue
+            for critter in new_critters:
+                battle.critters[critter.cid] = critter
+                battle.new_critters.append(critter)
+                log.info("[SPAWN] Critter cid=%d (%s) spawned from wave %d (progress=%d/%d)",
+                         critter.cid, critter.iid, wave.wave_id, wave.num_critters_spawned, wave.slots)
 
-            next_wave_ms = max(0.0, next_wave_ms - dt_ms)
-            battle.army_next_wave_ms[direction] = next_wave_ms
 
-            # Dispatch next wave when timer hits 0
-            if next_wave_ms <= 0 and wave_pointer < len(army.waves):
-                wave = army.waves[wave_pointer]
-
-                # Get runtime state for this wave
-                spawn_pointer = self._get_wave_spawn_pointer(battle, direction, wave.wave_id)
-                next_spawn_ms = self._get_wave_next_spawn_ms(battle, direction, wave.wave_id)
-
-                # Spawn critters from current wave based on iid and slots
-                next_spawn_ms = max(0.0, next_spawn_ms - dt_ms)
-                while next_spawn_ms <= 0 and spawn_pointer < wave.slots:
-                    # Create a new critter with the wave's iid
-                    critter = Critter(
-                        cid=_new_cid(),
-                        iid=wave.iid,
-                        health=1.0,
-                        max_health=1.0,
-                        speed=0.0,
-                        armour=0.0,
-                    )
-                    # Path should already be assigned
-                    battle.critters[critter.cid] = critter
-                    battle.new_critters.append(critter)
-                    spawn_pointer += 1
-                    # Use critter-specific spawn interval from config
-                    next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
-
-                # Save runtime state back
-                self._set_wave_spawn_pointer(battle, direction, wave.wave_id, spawn_pointer)
-                self._set_wave_next_spawn_ms(battle, direction, wave.wave_id, next_spawn_ms)
-
-                # When wave is fully dispatched, move to next wave
-                if spawn_pointer >= wave.slots:
-                    wave_pointer += 1
-                    next_wave_ms = 5000.0  # 5s between waves
-                    battle.army_wave_pointers[direction] = wave_pointer
-                    battle.army_next_wave_ms[direction] = next_wave_ms
 
     # -- Finish conditions -----------------------------------------------
 
@@ -395,13 +397,10 @@ class BattleService:
         if battle.elapsed_ms < battle.MIN_KEEP_ALIVE_MS:
             return
 
-        # Check if all armies have finished dispatching all waves
+        # Check if attacker has finished dispatching all waves
         all_armies_done = True
-        for direction, army in battle.armies.items():
-            wave_pointer = battle.army_wave_pointers.get(direction, 0)
-            if wave_pointer < len(army.waves):
-                all_armies_done = False
-                break
+        if battle.attacker and battle.attacker.current_wave_pointer < len(battle.attacker.waves):
+            all_armies_done = False
         
         no_critters = len(battle.critters) == 0
 
