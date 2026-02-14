@@ -186,8 +186,6 @@ def _serialize_army(army: Army) -> dict[str, Any]:
         "uid": army.uid,
         "name": army.name,
         "waves": [_serialize_critter_wave(w) for w in army.waves],
-        "current_wave_pointer": army.current_wave_pointer,
-        "next_wave_ms": army.next_wave_ms,
     }
 
 
@@ -246,9 +244,6 @@ def _serialize_attack(attack: Attack) -> dict[str, Any]:
         "total_eta_seconds": attack.total_eta_seconds,
         "siege_remaining_seconds": attack.siege_remaining_seconds,
         "total_siege_seconds": attack.total_siege_seconds,
-        "wave_pointer": attack.wave_pointer,
-        "critter_pointer": attack.critter_pointer,
-        "next_wave_ms": attack.next_wave_ms,
     }
 
 

@@ -81,14 +81,7 @@ def test_two_waves_spawn_in_sequence(battle_service, test_path, two_wave_army):
     max_time_ms = 10000.0
     
     while total_time_ms < max_time_ms:
-        battle_service.tick(battle, tick_interval_ms)
-        
-        # Assign path to newly spawned critters
-        for critter in battle.new_critters:
-            if not critter.path:
-                critter.path = test_path
-        battle.new_critters.clear()
-        
+        battle_service.tick(battle, tick_interval_ms)        
         total_time_ms += tick_interval_ms
     
     # Count critters by type
@@ -134,12 +127,6 @@ def test_wave_spawn_intervals(battle_service, test_path):
     while total_time_ms < max_time_ms:
         prev_count = len(battle.critters)
         battle_service.tick(battle, tick_interval_ms)
-        
-        # Assign path to newly spawned critters
-        for critter in battle.new_critters:
-            if not critter.path:
-                critter.path = test_path
-        battle.new_critters.clear()
         
         # Check if new critter spawned
         if len(battle.critters) > prev_count:

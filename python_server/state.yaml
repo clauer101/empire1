@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-12T20:37:36'
-  saved_at_unix: 1770925056.437273
+  saved_at: '2026-02-13T20:41:21'
+  saved_at_unix: 1771011681.8963447
 empires:
 - uid: 100
   name: TestImperium
@@ -37,10 +37,8 @@ empires:
     - wave_id: 2
       iid: SLAVE
       slots: 4
-      num_critters_spawned: 1
-      next_critter_ms: 1382
-    current_wave_pointer: 0
-    next_wave_ms: 25000
+      num_critters_spawned: 4
+      next_critter_ms: 2000
   spies: []
   bosses: {}
   hex_map:
@@ -56,8 +54,8 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 7734.37321884734
-    culture: 8647.841386411863
+    gold: 7737.390953245002
+    culture: 8650.781075954414
     life: 10.0
   buildings:
     INIT: 0.0
@@ -117,17 +115,5 @@ empires:
   - q: 1
     r: 0
     type: castle
-attacks:
-- attack_id: 1
-  attacker_uid: 100
-  defender_uid: 2
-  army_aid: 1
-  phase: in_battle
-  eta_seconds: 0.0
-  total_eta_seconds: 230.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  wave_pointer: 0
-  critter_pointer: 0
-  next_wave_ms: 25000.0
+attacks: []
 battles: []

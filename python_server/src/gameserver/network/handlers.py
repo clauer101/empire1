@@ -1613,23 +1613,10 @@ def _create_battle_start_handler() -> Callable:
             attacker_uids=[attacker_uid],
             attack_id=attack_id,
             attacker=attacking_army,
+            defender=defender_empire,
             structures=structures_dict,
             observer_uids={attacker_uid, defender_uid},
         )
-        attack_state = None
-        if svc.attack_service:
-            attack_state = svc.attack_service.get(attack_id)
-
-        if attack_state:
-            attacking_army.current_wave_pointer = attack_state.wave_pointer
-            attacking_army.next_wave_ms = int(attack_state.next_wave_ms)
-            if attack_state.wave_pointer < len(attacking_army.waves):
-                wave = attacking_army.waves[attack_state.wave_pointer]
-                wave.num_critters_spawned = min(
-                    max(attack_state.critter_pointer, 0),
-                    wave.slots,
-                )
-                wave.next_critter_ms = 0
         
         # Register battle in active battles dictionary
         _active_battles[defender_uid] = battle
@@ -1775,6 +1762,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         defender_uid=defender_uid,
         attacker_uids=[attacker_uid],
         attacker=attacking_army,
+        defender=defender_empire,
         structures=structures_dict,
         observer_uids={attacker_uid, defender_uid},
     )
