@@ -91,8 +91,12 @@ min_password_length: 4
 # WebSocket server port
 ws_port: 8765
 
+# REST API port (FastAPI / uvicorn)
+rest_port: 8080
+
 # WebSocket ping interval (seconds)
-ws_ping_interval: 30
+# Reduced to 15s to match client keepalive and prevent timeouts
+ws_ping_interval: 15
 
 # WebSocket ping timeout (seconds)
 ws_ping_timeout: 10

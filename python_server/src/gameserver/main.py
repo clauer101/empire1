@@ -140,9 +140,9 @@ def load_configuration(
     log.info("  items:        %d loaded from %s", len(items), items_path)
 
     hex_map = load_map(map_path)
-    path_count = sum(1 for p in hex_map.paths.values() if p)
+    path_count = len(hex_map.critter_path) if hex_map.critter_path else 0
     tile_count = len(hex_map.build_tiles)
-    log.info("  map:          %d paths, %d build tiles from %s", path_count, tile_count, map_path)
+    log.info("  map:          %d path tiles, %d build tiles from %s", path_count, tile_count, map_path)
 
     ai_templates = load_ai_templates(ai_path)
     log.info("  ai_templates: %d entries from %s", len(ai_templates), ai_path)
@@ -285,21 +285,42 @@ def wire_events(services: Services) -> None:
 
 
 async def start_network(services: Services) -> None:
-    """Start the WebSocket server so clients can connect.
+    """Start the WebSocket server and REST API so clients can connect.
 
     Message handlers are registered on the router before the server
-    begins accepting connections.
+    begins accepting connections.  The FastAPI REST app is started on
+    a separate port via uvicorn.
 
     Args:
         services: All instantiated services.
     """
-    log.info("Starting network server …")
+    log.info("Starting network servers …")
 
     # Register all message handlers on the router
     register_all_handlers(services)
 
     await services.server.start()
     log.info("  WebSocket server listening on %s:%d", services.server._host, services.server._port)
+
+    # Start REST API (FastAPI + uvicorn)
+    from gameserver.network.rest_api import create_app
+    import uvicorn
+
+    rest_app = create_app(services)
+    rest_port = services.game_config.rest_port if services.game_config else 8080
+    config = uvicorn.Config(
+        rest_app,
+        host="0.0.0.0",
+        port=rest_port,
+        log_level="info",
+        access_log=False,
+    )
+    rest_server = uvicorn.Server(config)
+    # Store reference for shutdown
+    services._rest_server = rest_server
+    # Start as background task (non-blocking)
+    asyncio.create_task(rest_server.serve())
+    log.info("  REST API listening on http://0.0.0.0:%d", rest_port)
 
     # Start debug dashboard
     if services.debug_dashboard is not None:
@@ -352,6 +373,10 @@ async def start_game_loop(services: Services) -> None:
     if services.server is not None:
         await services.server.stop()
         log.info("  WebSocket server stopped")
+    rest_server = getattr(services, "_rest_server", None)
+    if rest_server is not None:
+        rest_server.should_exit = True
+        log.info("  REST API server stopped")
     if services.debug_dashboard is not None:
         await services.debug_dashboard.stop()
         log.info("  debug dashboard stopped")

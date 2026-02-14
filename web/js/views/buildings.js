@@ -4,6 +4,7 @@
 
 import { eventBus } from '../events.js';
 import { formatEffect } from '../i18n.js';
+import { rest } from '../rest.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -35,7 +36,7 @@ async function enter() {
   _unsub.push(eventBus.on('state:summary', render));
   _unsub.push(eventBus.on('state:items', render));
   try {
-    await Promise.all([api.getSummary(), api.getItems()]);
+    await Promise.all([rest.getSummary(), rest.getItems()]);
   } catch (err) {
     container.querySelector('#buildings-content').innerHTML =
       `<div class="error-msg">${err.message}</div>`;
@@ -119,7 +120,7 @@ function render() {
       const currentActionCell = currentRow.querySelector('td:nth-child(7)');
       
       try {
-        const resp = await api.buildItem(iid);
+        const resp = await rest.buildItem(iid);
         if (resp.success) {
           const rows = el.querySelectorAll('tbody tr');
           

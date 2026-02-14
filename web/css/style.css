@@ -90,6 +90,21 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-decoration: none;
+  transition: color .3s, text-shadow .3s;
+}
+
+#main-nav .nav-brand:hover {
+  color: var(--text-bright);
+}
+
+#main-nav .nav-brand.alarm {
+  animation: brand-alarm 1s ease-in-out infinite;
+}
+
+@keyframes brand-alarm {
+  0%, 100% { color: var(--accent); text-shadow: none; }
+  50% { color: #ff4444; text-shadow: 0 0 12px rgba(255, 68, 68, .6); }
 }
 
 #main-nav .ws-status {
@@ -175,17 +190,12 @@ html, body {
     min-height: calc(100vh - 60px); /* viewport height minus nav height */
     height: auto;
   }
-}
 
-/* ── Right: Status Sidebar ───────────────────────────────── */
-#status-bar {
-  background: var(--surface);
-  border-radius: var(--radius);
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  .hex-editor,
+  .battle-view {
+    height: auto;
+    min-height: calc(100vh - 120px);
+  }
 }
 
 /* ── Panels (reusable card) ──────────────────────────────── */
@@ -963,10 +973,6 @@ label {
     padding: var(--gap);
   }
   
-  #status-bar {
-    display: none; /* Hide status bar on tablets */
-  }
-  
   #app {
     padding: 16px 20px;
   }
@@ -1041,10 +1047,6 @@ label {
     padding: 16px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-  }
-  
-  #status-bar { 
-    display: none;
   }
   
   /* Touch-optimized buttons */
@@ -1440,7 +1442,7 @@ label {
 
 @media (max-width: 640px) {
   .hex-editor__canvas-wrap {
-    min-height: 300px;
+    min-height: 50vh;
   }
   
   .hex-editor__title {
@@ -1646,7 +1648,7 @@ label {
   }
   
   .battle-canvas-wrap {
-    min-height: 300px;
+    min-height: 50vh;
   }
 }
 

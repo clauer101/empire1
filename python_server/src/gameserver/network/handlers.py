@@ -52,13 +52,28 @@ def _svc() -> Services:
 
 
 # ===================================================================
+# Connection / Keepalive
+# ===================================================================
+
+async def handle_ping(message: GameMessage, sender_uid: int) -> dict:
+    """Simple ping handler to keep connections alive.
+    
+    iOS Safari and other mobile browsers can aggressively close
+    inactive WebSocket connections. This handler allows clients
+    to send a keepalive ping.
+    """
+    log.info("Ping received from uid=%d", sender_uid)
+    return {"type": "pong", "timestamp": time.time()}
+
+
+# ===================================================================
 # Map validation helpers
 # ===================================================================
 
 def _has_path_from_spawn_to_castle(tiles: dict[str, str]) -> bool:
     """Check if there's a path from any spawnpoint to the castle.
     
-    Can only traverse spawnpoint, path, and castle tiles via 6-connected hex neighbors.
+    Uses the centralized pathfinding logic from hex_pathfinding module.
     
     Args:
         tiles: Dict of {"q,r": "tile_type"} where tile_type is 'castle', 'spawnpoint', etc.
@@ -66,67 +81,8 @@ def _has_path_from_spawn_to_castle(tiles: dict[str, str]) -> bool:
     Returns:
         True if at least one path exists, False otherwise.
     """
-    # Find castle and spawnpoints
-    castle_key: Optional[str] = None
-    spawn_keys: list[str] = []
-    
-    for key, tile_type in tiles.items():
-        if tile_type == 'castle':
-            castle_key = key
-        elif tile_type == 'spawnpoint':
-            spawn_keys.append(key)
-    
-    # Must have both
-    if not castle_key or not spawn_keys:
-        return False
-    
-    # Parse key to coordinates
-    def key_to_coords(k: str) -> tuple[int, int]:
-        q, r = k.split(',')
-        return int(q), int(r)
-    
-    # Hex neighbors in axial coordinates
-    def hex_neighbors(q: int, r: int) -> list[tuple[int, int]]:
-        return [
-            (q + 1, r),
-            (q + 1, r - 1),
-            (q, r - 1),
-            (q - 1, r),
-            (q - 1, r + 1),
-            (q, r + 1),
-        ]
-    
-    def coords_to_key(q: int, r: int) -> str:
-        return f"{q},{r}"
-    
-    castle_q, castle_r = key_to_coords(castle_key)
-    
-    # BFS from each spawnpoint
-    for spawn_key in spawn_keys:
-        spawn_q, spawn_r = key_to_coords(spawn_key)
-        
-        queue: deque[tuple[int, int]] = deque([(spawn_q, spawn_r)])
-        visited: set[tuple[int, int]] = {(spawn_q, spawn_r)}
-        
-        while queue:
-            q, r = queue.popleft()
-            
-            # Reached castle?
-            if (q, r) == (castle_q, castle_r):
-                return True
-            
-            # Explore neighbors
-            for nq, nr in hex_neighbors(q, r):
-                if (nq, nr) not in visited:
-                    key = coords_to_key(nq, nr)
-                    tile_type = tiles.get(key)
-                    
-                    # Only traverse through passable tiles
-                    if tile_type in ('spawnpoint', 'path', 'castle'):
-                        visited.add((nq, nr))
-                        queue.append((nq, nr))
-    
-    return False
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+    return find_path_from_spawn_to_castle(tiles) is not None
 
 
 # ===================================================================
@@ -157,83 +113,7 @@ async def handle_summary_request(
             "error": f"No empire found for uid {target_uid}",
         }
 
-    # Active builds: buildings with remaining effort > 0
-    active_buildings = {
-        iid: round(remaining, 1)
-        for iid, remaining in empire.buildings.items()
-        if remaining > 0
-    }
-    completed_buildings = [
-        iid for iid, remaining in empire.buildings.items()
-        if remaining <= 0
-    ]
-
-    # Active research: knowledge with remaining effort > 0
-    active_research = {
-        iid: round(remaining, 1)
-        for iid, remaining in empire.knowledge.items()
-        if remaining > 0
-    }
-    completed_research = [
-        iid for iid, remaining in empire.knowledge.items()
-        if remaining <= 0
-    ]
-
-    # Structures summary
-    structures_list = []
-    for sid, s in empire.structures.items():
-        structures_list.append({
-            "sid": sid,
-            "iid": s.iid,
-            "position": {"q": s.position.q, "r": s.position.r},
-            "damage": s.damage,
-            "range": s.range,
-        })
-
-    # Ongoing attacks
-    def _attack_dto(a):
-        return {
-            "attack_id": a.attack_id,
-            "attacker_uid": a.attacker_uid,
-            "defender_uid": a.defender_uid,
-            "army_aid": a.army_aid,
-            "phase": a.phase.value,
-            "eta_seconds": round(a.eta_seconds, 1),
-            "total_eta_seconds": round(a.total_eta_seconds, 1),
-            "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
-            "total_siege_seconds": round(a.total_siege_seconds, 1),
-        }
-
-    attacks_incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(target_uid)]
-    attacks_outgoing = [_attack_dto(a) for a in svc.attack_service.get_outgoing(target_uid)]
-
-    return {
-        "type": "summary_response",
-        "uid": empire.uid,
-        "name": empire.name,
-        "resources": {k: round(v, 2) for k, v in empire.resources.items()},
-        "citizens": dict(empire.citizens),
-        "citizen_price": svc.empire_service._citizen_price(sum(empire.citizens.values()) + 1),
-        "citizen_effect": svc.empire_service._citizen_effect,
-        "base_gold": svc.empire_service._base_gold,
-        "base_culture": svc.empire_service._base_culture,
-        "max_life": empire.max_life,
-        "effects": dict(empire.effects),
-        "artefacts": list(empire.artefacts),
-        "buildings": dict(empire.buildings),  # iid -> remaining effort
-        "knowledge": dict(empire.knowledge),  # iid -> remaining effort
-        "active_buildings": active_buildings,
-        "completed_buildings": completed_buildings,
-        "active_research": active_research,
-        "completed_research": completed_research,
-        "build_queue": empire.build_queue,
-        "research_queue": empire.research_queue,
-        "structures": structures_list,
-        "army_count": len(empire.armies),
-        "spy_count": len(empire.spies),
-        "attacks_incoming": attacks_incoming,
-        "attacks_outgoing": attacks_outgoing,
-    }
+    return _build_empire_summary(empire, target_uid)
 
 
 async def handle_item_request(
@@ -1227,24 +1107,156 @@ async def handle_change_preferences(
 async def handle_auth_request(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
-    """Handle ``auth_request`` — authenticate a player."""
+    """Handle ``auth_request`` — authenticate a player.
+
+    On successful auth the response includes ``session_state`` so
+    the client knows which subscriptions to restore (e.g. battle
+    observer registrations that were lost during a reconnect).
+    """
     svc = _svc()
     username = getattr(message, "username", "")
     password = getattr(message, "password", "")
 
     uid = await svc.auth_service.login(username, password)
     if uid is not None:
+        # Gather restorable session state for the reconnecting client
+        session_state = _build_session_state(uid)
+        
+        # Fetch summary immediately so client has fresh state after login
+        empire = svc.empire_service.get(uid)
+        summary_data = _build_empire_summary(empire, uid) if empire else None
+        
         return {
             "type": "auth_response",
             "success": True,
             "uid": uid,
             "reason": "",
+            "session_state": session_state,
+            "summary": summary_data,
         }
     return {
         "type": "auth_response",
         "success": False,
         "uid": 0,
         "reason": "Invalid username or password",
+    }
+
+
+def _build_session_state(uid: int) -> dict[str, Any]:
+    """Build a dict describing restorable session state for *uid*.
+
+    Includes:
+    - ``active_battles``: list of attack IDs the user is involved in
+      (so the client can re-register as observer).
+    - ``has_active_siege``: whether the user is under siege.
+    """
+    svc = _svc()
+    attack_svc = svc.attack_service
+
+    active_battles: list[dict[str, Any]] = []
+    for a in attack_svc.get_incoming(uid):
+        active_battles.append({
+            "attack_id": a.attack_id,
+            "role": "defender",
+            "phase": a.phase.value if hasattr(a.phase, "value") else str(a.phase),
+        })
+    for a in attack_svc.get_outgoing(uid):
+        active_battles.append({
+            "attack_id": a.attack_id,
+            "role": "attacker",
+            "phase": a.phase.value if hasattr(a.phase, "value") else str(a.phase),
+        })
+
+    return {
+        "active_battles": active_battles,
+    }
+
+
+def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
+    """Build a complete empire summary for a given UID.
+    
+    Used by both handle_summary_request() and handle_auth_request().
+    Returns the full empire state including resources, buildings, research,
+    structures, and ongoing attacks.
+    """
+    svc = _svc()
+    
+    # Active builds: buildings with remaining effort > 0
+    active_buildings = {
+        iid: round(remaining, 1)
+        for iid, remaining in empire.buildings.items()
+        if remaining > 0
+    }
+    completed_buildings = [
+        iid for iid, remaining in empire.buildings.items()
+        if remaining <= 0
+    ]
+
+    # Active research: knowledge with remaining effort > 0
+    active_research = {
+        iid: round(remaining, 1)
+        for iid, remaining in empire.knowledge.items()
+        if remaining > 0
+    }
+    completed_research = [
+        iid for iid, remaining in empire.knowledge.items()
+        if remaining <= 0
+    ]
+
+    # Structures summary
+    structures_list = []
+    for sid, s in empire.structures.items():
+        structures_list.append({
+            "sid": sid,
+            "iid": s.iid,
+            "position": {"q": s.position.q, "r": s.position.r},
+            "damage": s.damage,
+            "range": s.range,
+        })
+
+    # Ongoing attacks
+    def _attack_dto(a):
+        return {
+            "attack_id": a.attack_id,
+            "attacker_uid": a.attacker_uid,
+            "defender_uid": a.defender_uid,
+            "army_aid": a.army_aid,
+            "phase": a.phase.value,
+            "eta_seconds": round(a.eta_seconds, 1),
+            "total_eta_seconds": round(a.total_eta_seconds, 1),
+            "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
+            "total_siege_seconds": round(a.total_siege_seconds, 1),
+        }
+
+    attacks_incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(uid)]
+    attacks_outgoing = [_attack_dto(a) for a in svc.attack_service.get_outgoing(uid)]
+
+    return {
+        "type": "summary_response",
+        "uid": empire.uid,
+        "name": empire.name,
+        "resources": {k: round(v, 2) for k, v in empire.resources.items()},
+        "citizens": dict(empire.citizens),
+        "citizen_price": svc.empire_service._citizen_price(sum(empire.citizens.values()) + 1),
+        "citizen_effect": svc.empire_service._citizen_effect,
+        "base_gold": svc.empire_service._base_gold,
+        "base_culture": svc.empire_service._base_culture,
+        "max_life": empire.max_life,
+        "effects": dict(empire.effects),
+        "artefacts": list(empire.artefacts),
+        "buildings": dict(empire.buildings),  # iid -> remaining effort
+        "knowledge": dict(empire.knowledge),  # iid -> remaining effort
+        "active_buildings": active_buildings,
+        "completed_buildings": completed_buildings,
+        "active_research": active_research,
+        "completed_research": completed_research,
+        "build_queue": empire.build_queue,
+        "research_queue": empire.research_queue,
+        "structures": structures_list,
+        "army_count": len(empire.armies),
+        "spy_count": len(empire.spies),
+        "attacks_incoming": attacks_incoming,
+        "attacks_outgoing": attacks_outgoing,
     }
 
 
@@ -1421,35 +1433,11 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         # Battle finished - apply resource transfers
         log.info("[battle] bid=%d complete: attacker_wins=%s", bid, not battle.defender_won)
         
-        # Get empires for resource transfer
-        defender_empire = svc.empire_service.get(battle.defender_uid)
-        attacker_empires = {
-            uid: svc.empire_service.get(uid) 
-            for uid in battle.attacker_uids
-        }
-        
-        # Filter out None values (in case empire was deleted)
-        attacker_empires = {uid: e for uid, e in attacker_empires.items() if e is not None}
-        
-        if defender_empire and attacker_empires:
-            # Apply resource transfers
-            battle_svc.apply_battle_resources(battle, attacker_empires, defender_empire)
-            log.info("[battle] bid=%d resource transfer complete", bid)
-        
-        # Mark attacks as FINISHED
-        # Find all attacks involved in this battle and mark them as FINISHED
-        for attack in svc.attack_service.get_all_attacks():
-            if (attack.attacker_uid in attacker_empires and 
-                attack.defender_uid == battle.defender_uid and
-                attack.phase == AttackPhase.IN_BATTLE):
-                attack.phase = AttackPhase.FINISHED
-                log.info("[battle] marked attack %d as FINISHED", attack.attack_id)
-        
     except Exception:
         import traceback
         log.error("Battle loop crashed: %s", traceback.format_exc())
     finally:
-        _active_battles.pop(battle.defender_uid, None)
+        _active_battles.pop(battle.defender.uid, None)
 
 
 def _create_attack_phase_handler() -> Callable:
@@ -1573,28 +1561,12 @@ def _create_battle_start_handler() -> Callable:
             log.error("[battle:start_requested] FAIL: defender %d has no map", defender_uid)
             return
         
-        # ── Find spawnpoints and castle ──────────────────────
+        # ── Find path from spawnpoint to castle ──────────────
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
         tiles = defender_empire.hex_map
-        spawn_pos: tuple[int, int] | None = None
-        castle_pos: tuple[int, int] | None = None
-        passable: set[tuple[int, int]] = set()
+        critter_path = find_path_from_spawn_to_castle(tiles)
         
-        for key, tile_type in tiles.items():
-            q, r = map(int, key.split(","))
-            if tile_type in ("spawnpoint", "path", "castle"):
-                passable.add((q, r))
-            if tile_type == "spawnpoint" and spawn_pos is None:
-                spawn_pos = (q, r)
-            elif tile_type == "castle":
-                castle_pos = (q, r)
-        
-        if not spawn_pos or not castle_pos:
-            log.error("[battle:start_requested] FAIL: defender %d map missing spawnpoint or castle",
-                      defender_uid)
-            return
-        
-        hex_path = find_hex_path(spawn_pos, castle_pos, passable)
-        if not hex_path:
+        if not critter_path:
             log.error("[battle:start_requested] FAIL: defender %d map has no valid path",
                       defender_uid)
             return
@@ -1609,13 +1581,13 @@ def _create_battle_start_handler() -> Callable:
         _next_bid += 1
         battle = BattleState(
             bid=bid,
-            defender_uid=defender_uid,
-            attacker_uids=[attacker_uid],
-            attack_id=attack_id,
-            attacker=attacking_army,
             defender=defender_empire,
+            attacker=attacker_empire,
+            attack_id=attack_id,
+            army=attacking_army,
             structures=structures_dict,
             observer_uids={attacker_uid, defender_uid},
+            critter_path=critter_path,
         )
         
         # Register battle in active battles dictionary
@@ -1642,7 +1614,7 @@ def _create_battle_start_handler() -> Callable:
                 }
                 for s in structures_dict.values()
             ],
-            "path": [{"q": h.q, "r": h.r} for h in hex_path],            
+            "path": [{"q": h.q, "r": h.r} for h in critter_path],            
         }
         
         if svc.server:
@@ -1722,28 +1694,11 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         log.error("[battle:start_requested] FAIL: defender %d has no map", defender_uid)
         return
     
-    # ── Find spawnpoints and castle ──────────────────────
-    tiles = defender_empire.hex_map
-    spawn_pos: tuple[int, int] | None = None
-    castle_pos: tuple[int, int] | None = None
-    passable: set[tuple[int, int]] = set()
+    # ── Find path from spawnpoint to castle ──────────────
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+    critter_path = find_path_from_spawn_to_castle(defender_empire.hex_map)
     
-    for key, tile_type in tiles.items():
-        q, r = map(int, key.split(","))
-        if tile_type in ("spawnpoint", "path", "castle"):
-            passable.add((q, r))
-        if tile_type == "spawnpoint" and spawn_pos is None:
-            spawn_pos = (q, r)
-        elif tile_type == "castle":
-            castle_pos = (q, r)
-    
-    if not spawn_pos or not castle_pos:
-        log.error("[battle:start_requested] FAIL: defender %d map missing spawnpoint or castle",
-                  defender_uid)
-        return
-    
-    hex_path = find_hex_path(spawn_pos, castle_pos, passable)
-    if not hex_path:
+    if not critter_path:
         log.error("[battle:start_requested] FAIL: defender %d map has no valid path",
                   defender_uid)
         return
@@ -1759,12 +1714,12 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     
     battle = BattleState(
         bid=bid,
-        defender_uid=defender_uid,
-        attacker_uids=[attacker_uid],
-        attacker=attacking_army,
         defender=defender_empire,
+        attacker=attacker_empire,
+        army=attacking_army,
         structures=structures_dict,
         observer_uids={attacker_uid, defender_uid},
+        critter_path=critter_path,
     )
     
     log.info("[battle:start_requested] SUCCESS: battle %d created (attacker=%d, defender=%d)",
@@ -1788,7 +1743,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
             }
             for s in structures_dict.values()
         ],
-        "path":  [{"q": h.q, "r": h.r} for h in hex_path],
+        "path":  [{"q": h.q, "r": h.r} for h in critter_path],
     }
     
     if svc.server:
@@ -1829,6 +1784,9 @@ def register_all_handlers(services: Services) -> None:
     _services = services
 
     router = services.router
+
+    # -- Connection / Keepalive ------------------------------------------
+    router.register("ping", handle_ping)
 
     # -- Empire queries --------------------------------------------------
     router.register("summary_request", handle_summary_request)

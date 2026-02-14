@@ -3,6 +3,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { rest } from '../rest.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -49,7 +50,7 @@ async function enter() {
   
   // Load once on entry
   try {
-    await api.getMilitary();
+    await rest.getMilitary();
   } catch (err) {
     console.error('Failed to load military data:', err);
   }
@@ -91,9 +92,9 @@ function leave() {
 async function onCreateArmy() {
   const name = container.querySelector('#army-name').value.trim();
   if (!name) return;
-  await api.createArmy(name);
+  await rest.createArmy(name);
   container.querySelector('#army-name').value = '';
-  await api.getMilitary();
+  await rest.getMilitary();
 }
 
 async function onEditArmyName(e) {
@@ -122,19 +123,19 @@ async function onEditArmyName(e) {
     const newName = input.value.trim();
     if (newName && newName !== currentName) {
       try {
-        await api.changeArmy(aid, newName);
-        await api.getMilitary();
+        await rest.changeArmy(aid, newName);
+        await rest.getMilitary();
       } catch (err) {
         console.error('Failed to change army name:', err);
       }
     } else {
       // Cancel: re-render
-      await api.getMilitary();
+      await rest.getMilitary();
     }
   };
 
   const cancelChange = async () => {
-    await api.getMilitary();
+    await rest.getMilitary();
   };
 
   input.addEventListener('keydown', (ev) => {
@@ -153,8 +154,8 @@ async function onAddWave(e) {
   const aid = parseInt(armyGroup.getAttribute('data-aid'), 10);
 
   try {
-    await api.addWave(aid);  // Server decides critter type (SLAVE)
-    await api.getMilitary();
+    await rest.addWave(aid);  // Server decides critter type (SLAVE)
+    await rest.getMilitary();
   } catch (err) {
     console.error('Failed to add wave:', err);
   }
@@ -169,8 +170,8 @@ async function onChangeCritter(e) {
   if (!critterIid) return;
 
   try {
-    await api.changeWave(aid, waveIdx, critterIid);
-    await api.getMilitary();
+    await rest.changeWave(aid, waveIdx, critterIid);
+    await rest.getMilitary();
   } catch (err) {
     console.error('Failed to change critter:', err);
   }
@@ -184,8 +185,8 @@ async function onIncreaseSlots(e) {
   const newCount = currentCount + 1;
 
   try {
-    await api.changeWave(aid, waveIdx, undefined, newCount);
-    await api.getMilitary();
+    await rest.changeWave(aid, waveIdx, undefined, newCount);
+    await rest.getMilitary();
   } catch (err) {
     console.error('Failed to increase critter count:', err);
   }
@@ -205,8 +206,8 @@ async function onDecreaseSlots(e) {
   const newCount = currentCount - 1;
 
   try {
-    await api.changeWave(aid, waveIdx, undefined, newCount);
-    await api.getMilitary();
+    await rest.changeWave(aid, waveIdx, undefined, newCount);
+    await rest.getMilitary();
   } catch (err) {
     console.error('Failed to decrease critter count:', err);
   }
@@ -232,7 +233,7 @@ async function onAttackOpponent(e) {
   }
 
   try {
-    const resp = await api.attackOpponent(targetUid, aid);
+    const resp = await rest.attackOpponent(targetUid, aid);
     if (resp.success) {
       showMessage(input, `Attack launched! ETA: ${Math.round(resp.eta_seconds)}s`, 'success');
     } else {

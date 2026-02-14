@@ -49,8 +49,8 @@ find_server_pids() {
 }
 
 find_webserver_pids() {
-    # Findet alle PIDs für den WebServer (Python HTTP-Server)
-    pgrep -f "python.*-m http.server.*$WEB_PORT" 2>/dev/null || true
+    # Findet alle PIDs für den WebServer (FastAPI/Uvicorn)
+    pgrep -f "uvicorn.*fastapi_server" 2>/dev/null || pgrep -f "python.*fastapi_server.py" 2>/dev/null || true
 }
 
 stop_gameserver() {
@@ -170,7 +170,7 @@ start_gameserver() {
 }
 
 start_webserver() {
-    echo "[INFO] Starte WebServer …"
+    echo "[INFO] Starte WebServer (FastAPI + Uvicorn) …"
     
     # Prüfe ob das Web-Verzeichnis existiert
     if [[ ! -d "$WEB_DIR" ]]; then
@@ -178,17 +178,24 @@ start_webserver() {
         return 1
     fi
 
+    # Prüfe ob FastAPI Server existiert
+    if [[ ! -f "$WEB_DIR/fastapi_server.py" ]]; then
+        echo "[FEHLER] fastapi_server.py nicht gefunden: $WEB_DIR/fastapi_server.py" >&2
+        return 1
+    fi
+
     cd "$WEB_DIR"
 
-    # Starte SimpleHTTPServer im Hintergrund
-    nohup "$VENV" -m http.server $WEB_PORT >> "$WEB_LOG" 2>&1 &
+    # Starte FastAPI Server mit Uvicorn im Hintergrund (mit no-cache für Development)
+    nohup "$VENV" "$WEB_DIR/fastapi_server.py" --port $WEB_PORT --no-cache >> "$WEB_LOG" 2>&1 &
     local pid=$!
     echo "$pid" > "$WEB_PIDFILE"
 
     # Kurz warten und prüfen ob der Prozess lebt
-    sleep 2
+    sleep 3
     if kill -0 "$pid" 2>/dev/null; then
         echo "[OK]   WebServer gestartet (PID: $pid)"
+        echo "       Mode: FastAPI (Development, No-Cache)"
         echo "       Log: $WEB_LOG"
         echo "       URL: http://$(hostname -I | awk '{print $1}'):${WEB_PORT}/"
     else

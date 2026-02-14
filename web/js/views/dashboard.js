@@ -7,6 +7,7 @@
 
 import { eventBus } from '../events.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
+import { rest } from '../rest.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -30,8 +31,23 @@ function init(el, _api, _state) {
 }
 
 function enter() {
-  refresh();
+  // Register listeners first
   _unsub.push(eventBus.on('state:summary', render));
+  _unsub.push(eventBus.on('state:items', () => { if (st.summary) render(st.summary); }));
+
+  // Render immediately if summary already exists
+  // (avoids race condition if event fired before listener was added)
+  if (st.summary) {
+    render(st.summary);
+  } else {
+    // Otherwise fetch it
+    refresh();
+  }
+  
+  // Ensure items are loaded (if not already)
+  if (!st.items) {
+    rest.getItems().catch(err => console.error('[dashboard] getItems failed:', err));
+  }
 }
 
 function leave() {
@@ -41,7 +57,7 @@ function leave() {
 
 async function refresh() {
   try {
-    const summary = await api.getSummary();
+    const summary = await rest.getSummary();
     st.setSummary(summary);
   } catch (err) {
     container.querySelector('#dashboard-content').innerHTML =
@@ -119,7 +135,7 @@ function render(data) {
       const msgEl = el.querySelector('#buy-citizen-msg');
       msgEl.textContent = '';
       try {
-        const resp = await api.upgradeCitizen();
+        const resp = await rest.upgradeCitizen();
         if (resp.success) {
           msgEl.textContent = '✓ Citizen acquired!';
           msgEl.style.color = 'var(--success)';
@@ -162,7 +178,7 @@ function render(data) {
       
       try {
         btn.disabled = true;
-        const resp = await api.changeCitizen(currentDistribution);
+        const resp = await rest.changeCitizen(currentDistribution);
         if (resp.success) {
           await refresh();
         } else if (resp.error) {

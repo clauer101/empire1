@@ -12,6 +12,7 @@
 import { HexGrid, TILE_TYPES, getTileType, registerTileType } from '../lib/hex_grid.js';
 import { hexKey } from '../lib/hex.js';
 import { eventBus } from '../events.js';
+import { rest } from '../rest.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -82,7 +83,7 @@ async function enter() {
 
   // Load items from server to get unlocked structures
   try {
-    await api.getItems();
+    await rest.getItems();
   } catch (err) {
     console.warn('[Composer] could not load items:', err.message);
   }
@@ -99,7 +100,7 @@ async function enter() {
 
   // Load map from server, fallback to localStorage
   try {
-    const response = await api.loadMap();
+    const response = await rest.loadMap();
     if (response && response.tiles) {
       grid.fromJSON({ tiles: response.tiles });
       console.log('[Composer] Map loaded from server');
@@ -383,7 +384,7 @@ function _bindToolbar() {
     try {
       const data = grid.toJSON();
       const tiles = data.tiles || {};
-      const resp = await api.saveMap(tiles);
+      const resp = await rest.saveMap(tiles);
       
       if (resp && resp.success === false) {
         _showMapError(resp.error || 'Save failed');
@@ -399,15 +400,9 @@ function _bindToolbar() {
     }
   });
 
-  $('map-battle').addEventListener('click', async function() {
-    try {
-      const resp = await api.startBattle();
-      _flashButton($('map-battle'), 'Running...');
-    } catch (err) {
-      _showMapError(err.message);
-      _flashButton($('map-battle'), 'Error!');
-      console.error('[Composer] battle error:', err.message);
-    }
+  $('map-battle').addEventListener('click', function() {
+    // Navigate to battle view — WS connection is managed there
+    window.location.hash = '#battle';
   });
 }
 
@@ -452,7 +447,7 @@ function _autoSave() {
     try {
       const data = grid.toJSON();
       const tiles = data.tiles || {};
-      const resp = await api.saveMap(tiles);
+      const resp = await rest.saveMap(tiles);
       if (resp && resp.success === false) {
         console.warn('[Composer] ⚠ Auto-save rejected:', resp.error);
       } else {
