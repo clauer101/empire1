@@ -40,6 +40,9 @@
   /* typo */
   --font:          'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono:          'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  
+  /* touch targets (min 44x44px for mobile) */
+  --touch-target:  44px;
 }
 
 html, body {
@@ -50,6 +53,9 @@ html, body {
   font-size: 14px;
   line-height: 1.5;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── App Shell — 3-column grid ───────────────────────────── */
@@ -80,6 +86,28 @@ html, body {
   text-align: center;
   padding: 16px 16px 24px;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#main-nav .ws-status {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: background-color .3s, box-shadow .3s;
+}
+
+#main-nav .ws-status.connected {
+  background-color: var(--success);
+  box-shadow: 0 0 8px rgba(102, 187, 106, .6);
+}
+
+#main-nav .ws-status.disconnected {
+  background-color: var(--danger);
+  box-shadow: 0 0 8px rgba(239, 83, 80, .3);
 }
 
 #main-nav a {
@@ -140,6 +168,13 @@ html, body {
 .view {
   min-height: 100%;
   height: 100%;
+}
+
+@media (max-width: 900px) {
+  .view {
+    min-height: calc(100vh - 60px); /* viewport height minus nav height */
+    height: auto;
+  }
 }
 
 /* ── Right: Status Sidebar ───────────────────────────────── */
@@ -380,6 +415,14 @@ label {
   justify-content: center;
   min-height: 100%;
   height: 100%;
+}
+
+@media (max-width: 900px) {
+  .login-wrapper {
+    min-height: calc(100vh - 60px); /* viewport height minus nav */
+    height: auto;
+    padding: 20px 0;
+  }
 }
 
 .login-card {
@@ -899,23 +942,257 @@ label {
   color: var(--accent);
 }
 
-/* ── Responsive: collapse at narrow widths ───────────────── */
+/* ── Responsive: Tablets & Mobile ────────────────────────── */
+
+/* Tablet & smaller desktop (< 1200px) */
+@media (max-width: 1200px) {
+  :root {
+    --nav-w: 180px;
+    --status-w: 220px;
+  }
+}
+
+/* Large tablets & small desktop (< 1024px) */
+@media (max-width: 1024px) {
+  :root {
+    --gap: 8px;
+  }
+  
+  #shell {
+    grid-template-columns: var(--nav-w) 1fr;
+    padding: var(--gap);
+  }
+  
+  #status-bar {
+    display: none; /* Hide status bar on tablets */
+  }
+  
+  #app {
+    padding: 16px 20px;
+  }
+}
+
+/* Tablets portrait & large phones (< 900px) */
 @media (max-width: 900px) {
+  :root {
+    --gap: 4px;
+    font-size: 14px;
+  }
+  
   #shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr;
+    padding: 0;
+    gap: 0;
   }
+  
   #main-nav {
     flex-direction: row;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 0;
+    border-radius: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
   }
-  #main-nav .nav-brand { padding: 8px 16px; font-size: 16px; }
-  #main-nav a { padding: 8px 14px; border-left: none; border-bottom: 3px solid transparent; }
-  #main-nav a.active { border-left-color: transparent; border-bottom-color: var(--accent); }
-  #main-nav .nav-section, #main-nav .nav-spacer { display: none; }
-  #status-bar { flex-direction: row; flex-wrap: wrap; }
-  #status-bar .panel { flex: 1; min-width: 180px; }
+  
+  #main-nav::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+  
+  #main-nav .nav-brand { 
+    padding: 12px 16px; 
+    font-size: 16px;
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 1;
+    border-right: 1px solid var(--border);
+  }
+  
+  #main-nav a { 
+    padding: 12px 16px;
+    min-width: fit-content;
+    white-space: nowrap;
+    border-left: none; 
+    border-bottom: 3px solid transparent;
+    flex-shrink: 0;
+  }
+  
+  #main-nav a.active { 
+    border-left-color: transparent; 
+    border-bottom-color: var(--accent); 
+  }
+  
+  #main-nav .nav-section, 
+  #main-nav .nav-spacer { 
+    display: none; 
+  }
+  
+  #main-nav a .nav-icon {
+    font-size: 18px;
+  }
+  
+  #app {
+    border-radius: 0;
+    padding: 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  #status-bar { 
+    display: none;
+  }
+  
+  /* Touch-optimized buttons */
+  button, .btn {
+    min-height: var(--touch-target);
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  /* Larger form inputs for touch */
+  input[type="text"],
+  input[type="password"],
+  input[type="number"],
+  input[type="email"],
+  select,
+  textarea {
+    min-height: var(--touch-target);
+    padding: 12px 14px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+}
+
+/* Mobile phones landscape & portrait (< 640px) */
+@media (max-width: 640px) {
+  :root {
+    font-size: 14px;
+  }
+  
+  #app {
+    padding: 12px;
+  }
+  
+  h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  /* Stack form rows vertically */
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Responsive tables */
+  table {
+    font-size: 12px;
+  }
+  
+  thead th {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+  
+  tbody td {
+    padding: 8px;
+  }
+  
+  /* Login card full width on mobile */
+  .login-card {
+    padding: 24px 20px;
+    border-radius: var(--radius);
+    max-width: 100%;
+    margin: 0 12px;
+  }
+  
+  /* Toast notifications */
+  #toast-container {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+  }
+  
+  .toast {
+    max-width: 100%;
+  }
+  
+  /* Armies & waves */
+  .army-attack-row,
+  .army-opponent-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .army-attack-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .waves-container {
+    gap: 6px;
+  }
+  
+  .wave-tile {
+    flex: 0 0 90px;
+    height: 95px;
+  }
+  
+  /* Cards more compact */
+  .card {
+    padding: 12px;
+  }
+  
+  .panel {
+    padding: 12px;
+  }
+  
+  /* Debug toggle smaller */
+  .debug-toggle {
+    width: 44px;
+    height: 44px;
+    bottom: 64px;
+    left: 8px;
+  }
+}
+
+/* Small mobile phones (< 400px) */
+@media (max-width: 400px) {
+  #main-nav .nav-brand {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  #main-nav a {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  #app {
+    padding: 8px;
+  }
+  
+  h2 {
+    font-size: 18px;
+  }
+  
+  .wave-tile {
+    flex: 0 0 80px;
+    height: 90px;
+  }
+  
+  .wave-tile-count {
+    font-size: 11px;
+  }
+  
+  button, .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
 }
 
 /* ── Hex Map Editor ──────────────────────────────────────── */
@@ -1126,6 +1403,51 @@ label {
   }
 }
 
+@media (max-width: 900px) {
+  .hex-editor__toolbar {
+    flex-wrap: wrap;
+  }
+  
+  .hex-editor__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .hex-editor__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  
+  .hex-editor__palette {
+    max-height: 120px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  
+  .palette-category {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  
+  .palette-item {
+    flex-direction: column;
+    padding: 8px;
+    min-width: 60px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hex-editor__canvas-wrap {
+    min-height: 300px;
+  }
+  
+  .hex-editor__title {
+    font-size: 16px;
+  }
+}
+
 /* ── Build & Research Message Feedback ────────────────────── */
 .build-msg,
 .research-msg {
@@ -1305,13 +1627,48 @@ label {
 
 /* Battle View Responsive */
 @media (max-width: 900px) {
+  .battle-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .battle-actions {
+    justify-content: stretch;
+  }
+  
+  .battle-actions button {
+    flex: 1;
+  }
+  
   .battle-status {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .battle-canvas-wrap {
+    min-height: 300px;
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .battle-status {
     grid-template-columns: 1fr;
+  }
+  
+  .battle-title {
+    font-size: 16px;
+  }
+  
+  .battle-summary-card {
+    padding: 24px 16px;
+    width: 95%;
+  }
+  
+  .battle-summary-card h3 {
+    font-size: 24px;
+  }
+  
+  .battle-summary-card p {
+    font-size: 14px;
   }
 }

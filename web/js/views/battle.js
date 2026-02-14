@@ -274,7 +274,6 @@ function _onBattleStatus(msg) {
   // Update status display
   _updateStatusFromBattleMsg();
 }
-}
 
 function _onBattleSetup(msg) {
   console.log('[Battle] Battle setup:', msg);
