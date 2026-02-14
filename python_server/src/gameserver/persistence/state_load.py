@@ -108,6 +108,11 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
         except Exception:
             log.exception("Failed to restore battle: %s", battle_dict.get("bid", "?"))
 
+    # ---- Link defender empires to battles ----
+    for battle in result.battles:
+        if battle.defender_uid in result.empires:
+            battle.defender = result.empires[battle.defender_uid]
+
     log.info("Restored %d empires, %d attacks, %d battles",
              len(result.empires), len(result.attacks), len(result.battles))
     return result
@@ -269,9 +274,6 @@ def _deserialize_attack(d: dict[str, Any]) -> Attack:
         total_eta_seconds=d.get("total_eta_seconds", 60.0),  # default to 60s if not in save
         siege_remaining_seconds=d.get("siege_remaining_seconds", 0.0),
         total_siege_seconds=d.get("total_siege_seconds", 30.0),  # default to 30s if not in save
-        wave_pointer=d.get("wave_pointer", 0),
-        critter_pointer=d.get("critter_pointer", 0),
-        next_wave_ms=d.get("next_wave_ms", 25_000.0),
     )
 
 

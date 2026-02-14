@@ -7,11 +7,15 @@ Business logic is in engine/battle_service.py.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from gameserver.models.army import Army
 from gameserver.models.critter import Critter
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
+
+if TYPE_CHECKING:
+    from gameserver.models.empire import Empire
 
 
 @dataclass
@@ -55,6 +59,7 @@ class BattleState:
     attack_id: int | None = None  # Reference to Attack (if battle is part of an attack)
 
     attacker: Army | None = None  # The attacking army
+    defender: Empire | None = None  # The defending empire
     critters: dict[int, Critter] = field(default_factory=dict)
     structures: dict[int, Structure] = field(default_factory=dict)
     pending_shots: list[Shot] = field(default_factory=list)
@@ -66,13 +71,6 @@ class BattleState:
     keep_alive: bool = True
     is_finished: bool = False
     defender_won: bool | None = None
-
-    # Delta tracking
-    new_critters: list[Critter] = field(default_factory=list)
-    new_shots: list[Shot] = field(default_factory=list)
-    dead_critter_ids: list[int] = field(default_factory=list)
-    finished_critter_ids: list[int] = field(default_factory=list)
-    new_structure_ids: list[int] = field(default_factory=list)
 
     # Observers
     observer_uids: set[int] = field(default_factory=set)
@@ -94,9 +92,4 @@ class BattleState:
 
     def reset_broadcast(self) -> None:
         """Reset broadcast timer and clear delta lists."""
-        self.broadcast_timer_ms = self.broadcast_interval_ms
-        self.new_critters.clear()
-        self.new_shots.clear()
-        self.dead_critter_ids.clear()
-        self.finished_critter_ids.clear()
-        self.new_structure_ids.clear()
+        pass

@@ -39,10 +39,9 @@ class Army:
         uid: Owner player UID.
         name: Display name.
         waves: Ordered list of critter waves.
-        current_wave_pointer: Runtime state - index of the currently active wave.
-        next_wave_ms: Runtime state - time in ms until the next wave starts.
     
-    Note: current_wave_pointer and next_wave_ms are managed by BattleService during battle execution.
+    Note: Wave progression is managed by BattleService during battle execution.
+    Each wave spawns critters based on its next_critter_ms and num_critters_spawned runtime state.
     """
 
     aid: int

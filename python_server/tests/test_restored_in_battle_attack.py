@@ -34,9 +34,6 @@ async def test_restored_in_battle_attack_triggers_battle_start() -> None:
         total_eta_seconds=0.0,
         siege_remaining_seconds=0.0,
         total_siege_seconds=0.0,
-        wave_pointer=0,
-        critter_pointer=0,
-        next_wave_ms=5000.0,
     )
     
     # Add to attack service (simulating load from state file)
@@ -73,9 +70,6 @@ async def test_restored_in_battle_attack_does_not_trigger_twice() -> None:
         total_eta_seconds=0.0,
         siege_remaining_seconds=0.0,
         total_siege_seconds=0.0,
-        wave_pointer=0,
-        critter_pointer=0,
-        next_wave_ms=5000.0,
     )
     
     attack_svc._attacks.append(persisted_attack)
@@ -124,9 +118,6 @@ async def test_normal_transition_to_in_battle_still_works() -> None:
         total_eta_seconds=0.0,
         siege_remaining_seconds=1.0,  # 1 second remaining
         total_siege_seconds=30.0,
-        wave_pointer=0,
-        critter_pointer=0,
-        next_wave_ms=25000.0,
     )
     
     attack_svc._attacks.append(attack)
