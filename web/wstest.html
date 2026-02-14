@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WS Debug</title>
+  <style>
+    body { font-family: monospace; padding: 16px; background: #111; color: #0f0; font-size: 14px; }
+    #log { white-space: pre-wrap; line-height: 1.6; }
+    .err { color: #f44; }
+    .ok  { color: #4f4; }
+    .info { color: #4af; }
+    button { margin: 8px 4px; padding: 8px 16px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>WebSocket Debug</h2>
+  <div>
+    <button onclick="doConnect()">Connect</button>
+    <button onclick="doSendPing()">Send Ping</button>
+    <button onclick="doLogin()">Login (eem)</button>
+    <button onclick="doClose()">Close</button>
+  </div>
+  <div id="log"></div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    let ws = null;
+
+    function log(msg, cls = '') {
+      const ts = new Date().toLocaleTimeString();
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = `[${ts}] ${msg}`;
+      logEl.prepend(line);
+    }
+
+    function getWsUrl() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      return `${proto}://${location.hostname}:8765`;
+    }
+
+    function doConnect() {
+      const url = getWsUrl();
+      log(`Connecting to ${url} ...`, 'info');
+
+      if (ws) {
+        try { ws.close(); } catch(_) {}
+        ws = null;
+      }
+
+      try {
+        ws = new WebSocket(url);
+      } catch(e) {
+        log(`new WebSocket() threw: ${e}`, 'err');
+        return;
+      }
+
+      log(`WebSocket created, readyState=${ws.readyState}`, 'info');
+
+      ws.onopen = () => {
+        log(`CONNECTED readyState=${ws.readyState} protocol="${ws.protocol}"`, 'ok');
+      };
+
+      ws.onclose = (ev) => {
+        log(`CLOSED code=${ev.code} reason="${ev.reason}" wasClean=${ev.wasClean}`, 'err');
+        ws = null;
+      };
+
+      ws.onerror = (ev) => {
+        const rsState = ws ? `readyState=${ws.readyState}` : 'ws=null';
+        log(`ERROR event fired (${rsState}) — browser hides details`, 'err');
+        log(`  • Possible: network fail, DNS, timeout, server reset, protocol violation`, 'err');
+      };
+
+      ws.onmessage = (ev) => {
+        log(`MSG ← ${ev.data}`, 'ok');
+      };
+    }
+
+    function doSendPing() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        log('Not connected', 'err');
+        return;
+      }
+      const msg = JSON.stringify({ type: 'ping' });
+      ws.send(msg);
+      log(`MSG → ${msg}`, 'info');
+    }
+
+    function doLogin() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        log('Not connected', 'err');
+        return;
+      }
+      const creds = localStorage.getItem('e3_credentials');
+      let username = 'eem', password = '';
+      if (creds) {
+        try {
+          const parsed = JSON.parse(creds);
+          username = parsed.username || username;
+          password = parsed.password || password;
+        } catch(_) {}
+      }
+      if (!password) {
+        password = prompt('Password for ' + username + ':', '');
+        if (!password) return;
+      }
+      const msg = JSON.stringify({ type: 'auth_request', username, password });
+      ws.send(msg);
+      log(`MSG → auth_request (user=${username})`, 'info');
+    }
+
+    function doClose() {
+      if (ws) {
+        ws.close();
+        log('Closing...', 'info');
+      }
+    }
+
+    // Auto-connect on load
+    log(`UA: ${navigator.userAgent}`, 'info');
+    log(`Protocol: ${location.protocol}`, 'info');
+    log(`Online: ${navigator.onLine}`, 'info');
+    doConnect();
+  </script>
+</body>
+</html>
