@@ -1,6 +1,8 @@
 /**
- * Login view — auth_request + auto-login via URL params.
+ * Login view — auth via REST API.
  */
+
+import { rest } from '../rest.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -51,7 +53,7 @@ async function onLogin() {
   }
 
   try {
-    const resp = await api.login(user, pwd);
+    const resp = await rest.login(user, pwd);
     if (resp.success) {
       window.location.hash = '#dashboard';
     } else {

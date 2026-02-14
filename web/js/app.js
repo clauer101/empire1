@@ -1,12 +1,14 @@
 /**
- * App bootstrap — wires together ApiClient, Router, views, status sidebar.
+ * App bootstrap — wires together Router, views, status sidebar.
+ *
+ * Economy communication goes through REST (rest.js).
+ * WebSocket is only used on the battle page (managed by battle.js).
  */
 
-import { ApiClient } from './api.js';
+import { rest } from './rest.js';
 import { state } from './state.js';
 import { eventBus } from './events.js';
 import { Router } from './router.js';
-import { initStatusBar } from './views/statusbar.js';
 import { debug } from './debug.js';
 
 import loginView   from './views/login.js';
@@ -19,34 +21,28 @@ import battleView  from './views/battle.js';
 import socialView  from './views/social.js';
 import signupView  from './views/signup.js';
 
-// ── Determine WebSocket URL ────────────────────────────────
-// In production the client is served from the same host.
-// Allow override via ?ws=<url> query param.
+// ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
-const wsUrl = params.get('ws') || `ws://${window.location.hostname}:8765`;
+const restUrl = params.get('rest') || `http://${window.location.hostname}:8080`;
 
 // ── Instantiate core objects ───────────────────────────────
-const api    = new ApiClient(wsUrl);
+rest.init(restUrl);
 const appEl  = document.getElementById('app');
-const router = new Router(appEl, api, state);
+const router = new Router(appEl, null, state);
+
+// On REST unauthorized, redirect to login
+eventBus.on('rest:unauthorized', () => {
+  rest.logout();
+  router.navigate('login');
+});
 
 // ── Register views ─────────────────────────────────────────
 [loginView, signupView, dashView, buildView, resView, compView, armyView, battleView, socialView]
   .forEach(v => router.register(v));
 
-// ── Initialize status sidebar ──────────────────────────────
-initStatusBar(document.getElementById('status-bar'));
-
 // ── Toast notifications for push messages ──────────────────
 eventBus.on('quick_message', (data) => showToast(data.message || data.text || JSON.stringify(data)));
 eventBus.on('notification',  (data) => showToast(data.message || data.text || JSON.stringify(data)));
-
-// ── Auto-navigate to battle view on battle_setup ───────────
-eventBus.on('server:battle_setup', (data) => {
-  console.log('[app] Battle setup received, navigating to battle view...');
-  router.navigate('battle');
-  showToast('⚔ Battle started!', 'warning');
-});
 
 function showToast(text, type = 'message') {
   const container = document.getElementById('toast-container');
@@ -61,6 +57,36 @@ function showToast(text, type = 'message') {
 // ── Register debug toast callback ──────────────────────────
 debug.setToastCallback((text, type) => showToast(text, type));
 
+// ── Incoming attack alarm on nav-brand ──────────────────────
+const navBrand = document.getElementById('nav-brand');
+eventBus.on('state:summary', (data) => {
+  const hasIncoming = data && Array.isArray(data.attacks_incoming) && data.attacks_incoming.length > 0;
+  navBrand.classList.toggle('alarm', hasIncoming);
+  navBrand.title = hasIncoming
+    ? `⚠ ${data.attacks_incoming.length} incoming attack(s)!`
+    : 'E3';
+});
+
+// ── Summary polling (every 5s while authenticated) ─────────
+let _pollTimer = null;
+
+function startPolling() {
+  if (_pollTimer) return;
+  _pollTimer = setInterval(async () => {
+    if (!state.auth.authenticated) return;
+    try { await rest.getSummary(); } catch (_) { /* ignore */ }
+  }, 5000);
+}
+
+function stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+eventBus.on('state:auth', (auth) => {
+  if (auth.authenticated) startPolling();
+  else stopPolling();
+});
+
 // ── Auth state → update nav + redirect ─────────────────────
 const navAuth = document.getElementById('nav-auth');
 const navAuthLabel = document.getElementById('nav-auth-label');
@@ -68,7 +94,7 @@ const navAuthLabel = document.getElementById('nav-auth-label');
 navAuth.addEventListener('click', (e) => {
   if (state.auth.authenticated) {
     e.preventDefault();
-    api.logout();
+    rest.logout();
     window.location.hash = '#login';
   }
 });
@@ -106,16 +132,13 @@ debugToggle.addEventListener('click', () => {
 document.body.appendChild(debugToggle);
 
 (async () => {
+  // 1. Try REST auto-login (validates stored JWT or credentials)
   try {
-    await api.connect();
-    console.log('[app] connected to', wsUrl);
-    state.setConnected(true);
-    await api.tryAutoLogin();
-    api.startPolling();
+    await rest.tryAutoLogin();
   } catch (err) {
-    console.warn('[app] initial connection failed, will retry:', err);
-    api._scheduleReconnect();
+    console.warn('[app] REST auto-login failed:', err.message);
   }
-  // Activate router only after auth state is known
+
+  // 2. Activate router (no WS needed — battle view manages its own)
   router.start();
 })();

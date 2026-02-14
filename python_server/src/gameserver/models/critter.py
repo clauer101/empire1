@@ -51,10 +51,10 @@ class Critter:
 
     cid: int
     iid: str
-    health: float
-    max_health: float
-    speed: float
-    armour: float
+    health: float = 1.0
+    max_health: float = 1.0
+    speed: float = 0.15
+    armour: float = 0.0
     path: list[HexCoord] = field(default_factory=list)
     path_progress: float = 0.0
 

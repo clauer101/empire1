@@ -9,13 +9,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from gameserver.models.army import Army
 from gameserver.models.critter import Critter
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
+from gameserver.models.hex import HexCoord
 
 if TYPE_CHECKING:
-    from gameserver.models.empire import Empire
+    from gameserver.models.empire import Army, Empire
 
 
 @dataclass
@@ -54,17 +54,16 @@ class BattleState:
     """
 
     bid: int
-    defender_uid: int
-    attacker_uids: list[int] = field(default_factory=list)
+    defender: Empire | None
+    attacker: Empire | None
     attack_id: int | None = None  # Reference to Attack (if battle is part of an attack)
 
-    attacker: Army | None = None  # The attacking army
-    defender: Empire | None = None  # The defending empire
+    army: Army | None = None  # The attacking empire
     critters: dict[int, Critter] = field(default_factory=dict)
     structures: dict[int, Structure] = field(default_factory=dict)
     pending_shots: list[Shot] = field(default_factory=list)
-
-
+    
+    critter_path: list[HexCoord] = field(default_factory=list)  # Precomputed path for critters to follow
 
     elapsed_ms: float = 0.0
     broadcast_timer_ms: float = 0.0

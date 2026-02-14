@@ -116,7 +116,7 @@ class BattleService:
         battle.broadcast_timer_ms = broadcast_interval_ms
         
         log.info("[battle_loop] Starting battle (bid=%d, defender=%d, attackers=%s)",
-                 battle.bid, battle.defender_uid, battle.attacker_uids)
+                 battle.bid, battle.defender.uid if battle.defender else None, battle.attacker.uid if battle.attacker else None)
         
         last = time.monotonic()
         while battle.keep_alive:
@@ -166,16 +166,57 @@ class BattleService:
 
     def _step_critters(self, battle: BattleState, dt_ms: float) -> None:
         """Move all critters, handle finish/death."""
-        # TODO: Implement more efficient iteration if needed (e.g., separate lists for alive/finished).
         for cid, critter in list(battle.critters.items()):
-            # Move critter along path based on speed and dt_ms
-            # Check for finish (reached end) or death (health <= 0) and handle accordingly
             if critter.health <= 0:
                 self._critter_died(battle, critter)
-                del battle.critters[cid]
+            elif critter.path_progress >= 1.0:
+                self._critter_finished(battle, critter)
             else:
-                # TODO: Move critter along path  
-                pass
+                self._move_critter(battle, critter, dt_ms)
+                    
+
+
+    def _move_critter(self, battle: BattleState, critter: Critter, dt_ms: float) -> None:
+        """Move a critter along its path based on speed and effects.
+        
+        Updates critter.path_progress (normalized 0.0 to 1.0) based on:
+        - Base speed (hex tiles per second)
+        - Slow effects (reduces speed)
+        - Time delta (dt_ms)
+        - Path length normalization
+        """
+        if not critter.path or len(critter.path) < 2:
+            return
+        
+        # Calculate effective speed (reduced by slow effects)
+        effective_speed = critter.speed
+        if critter.slow_remaining_ms > 0:
+            effective_speed = critter.slow_speed
+        
+        # Distance traveled in this tick (in hex tiles)
+        dt_s = dt_ms / 1000.0
+        distance = effective_speed * dt_s
+        
+        # Normalize by path length to get progress in [0, 1]
+        path_length = len(critter.path) - 1
+        if path_length > 0:
+            normalized_distance = distance / path_length
+            critter.path_progress += normalized_distance
+        
+        # Clamp to valid range [0.0, 1.0]
+        critter.path_progress = max(0.0, min(1.0, critter.path_progress))
+        
+        # Decrement status effect timers
+        if critter.slow_remaining_ms > 0:
+            critter.slow_remaining_ms -= dt_ms
+        if critter.burn_remaining_ms > 0:
+            critter.burn_remaining_ms -= dt_ms
+            # Apply burn damage
+            burn_damage = critter.burn_dps * dt_s
+            critter.health = max(0, critter.health - burn_damage)
+            if burn_damage > 0:
+                log.debug("[BURN] Critter %d takes %.1f burn damage (remaining: %.0fms)", 
+                          critter.cid, burn_damage, critter.burn_remaining_ms)
             
         
 
@@ -234,10 +275,6 @@ class BattleService:
             critter = Critter(
                 cid=_new_cid(),
                 iid=wave.iid,
-                health=1.0,
-                max_health=1.0,
-                speed=0.0,
-                armour=0.0,
             )
             critters.append(critter)
             critters_spawned += 1
@@ -252,26 +289,30 @@ class BattleService:
     def _step_armies(self, battle: BattleState, dt_ms: float) -> None:
         """Advance wave timers, spawn critters from active waves.
         
-        Steps all waves from 0 to current_wave_pointer + 1 if they exist.
+        Steps all waves and assigns the precomputed critter path to spawned critters.
         """
-        if not battle.attacker:
+        if not battle.army:
             return
         
-        army = battle.attacker        
-
+        # Get the precomputed critter path (calculated when battle was created)
+        if not battle.critter_path:
+            log.warning("[_step_armies] Battle %d has no critter path", battle.bid)
+            return
+        
         # Step all waves up to and including the next wave
-        for wave in army.waves:
-            new_critters = self._step_wave(wave, dt_ms)
+        for wave in battle.army.waves:
+            new_critters = self._step_wave(wave, dt_ms)            
             
             for critter in new_critters:
+                # Set the critter's path from the precomputed battle path
+                critter.path = battle.critter_path
+                
                 battle.critters[critter.cid] = critter
-                log.info("[SPAWN] Critter cid=%d (%s) spawned from wave %d (progress=%d/%d)",
-                         critter.cid, critter.iid, wave.wave_id, wave.num_critters_spawned, wave.slots)
-
+                log.info("[SPAWN] Critter cid=%d (%s) spawned from wave %d (progress=%d/%d, path_length=%d)",
+                         critter.cid, critter.iid, wave.wave_id, wave.num_critters_spawned, wave.slots, len(critter.path))
 
 
     # -- Finish conditions -----------------------------------------------
-
     def _check_finished(self, battle: BattleState) -> None:
         """Check if battle is done: all armies dispatched and no critters left."""
         if battle.is_finished:
@@ -289,8 +330,8 @@ class BattleService:
         
         # Check if attacker has finished dispatching all waves
         all_armies_done = True
-        if battle.attacker:
-            for wave in battle.attacker.waves:
+        if battle.army:
+            for wave in battle.army.waves:
                 if wave.num_critters_spawned < wave.slots:
                     all_armies_done = False
                     break
@@ -303,32 +344,22 @@ class BattleService:
             battle.defender_won = True  # critters didn't break through
             log.info("[FINISH] Battle bid=%d finished (defender won)", battle.bid)
 
+
     def _critter_finished(self, battle: BattleState, critter: Critter) -> None:
         """Handle critter reaching the castle.
         
         Attacker gains the capture resources.
         """
-        battle.finished_critter_ids.append(critter.cid)
         log.debug("Critter %d (%s) finished", critter.cid, critter.iid)
         
-        # Record attacker's resource gains for each attacker (split evenly for now)
-        # TODO: should this be distributed or split among all attackers?
-        for attacker_uid in battle.attacker_uids:
-            if attacker_uid not in battle.attacker_gains:
-                battle.attacker_gains[attacker_uid] = {}
-            
-            for resource_key, amount in critter.capture.items():
-                if resource_key not in battle.attacker_gains[attacker_uid]:
-                    battle.attacker_gains[attacker_uid][resource_key] = 0.0
-                battle.attacker_gains[attacker_uid][resource_key] += amount
-                log.debug("Attacker %d gains %.0f %s from critter", 
-                          attacker_uid, amount, resource_key)
+        
 
     def _critter_died(self, battle: BattleState, critter: Critter) -> None:
         """Handle critter killed by tower.
         
         Defender gains the bonus resources. Spawns replacement critters if configured.
         """
+        del battle.critters[critter.cid]
         log.info("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f", 
                  critter.cid, critter.iid, critter.path_progress)    
        
@@ -341,8 +372,30 @@ class BattleService:
         battle: BattleState,
         send_fn: Callable[[int, dict[str, Any]], Awaitable[bool]],
     ) -> None:
-        """Send battle_update delta to all observers (only when changes exist)."""
-        # TODO: send battle update
+        """Send battle_update delta to all observers with current critter positions."""
+        # Build critter snapshot for all active critters
+        critter_updates = []
+        for cid, critter in battle.critters.items():
+            critter_updates.append({
+                "cid": cid,
+                "iid": critter.iid,
+                "health": critter.health,
+                "max_health": critter.max_health,
+                "path_progress": critter.path_progress,
+                "slow_remaining_ms": max(0, critter.slow_remaining_ms),
+                "burn_remaining_ms": max(0, critter.burn_remaining_ms),
+            })
+        
+        msg: dict[str, Any] = {
+            "type": "battle_update",
+            "bid": battle.bid,
+            "elapsed_ms": battle.elapsed_ms,
+            "critters": critter_updates,
+        }
+        
+        # Send to all observers
+        for uid in battle.observer_uids:
+            await send_fn(uid, msg)
 
     async def _send_summary(
         self,

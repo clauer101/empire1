@@ -4,8 +4,6 @@
 
 import { eventBus } from '../events.js';
 
-/** @type {import('../api.js').ApiClient} */
-let api;
 /** @type {import('../state.js').StateStore} */
 let st;
 /** @type {HTMLElement} */
@@ -14,7 +12,6 @@ let _unsub = [];
 
 function init(el, _api, _state) {
   container = el;
-  api = _api;
   st = _state;
 
   container.innerHTML = `
@@ -55,21 +52,13 @@ function leave() {
 }
 
 async function refresh() {
-  try {
-    const notifs = await api.getNotifications();
-    renderMessages(notifs);
-  } catch (err) {
-    container.querySelector('#message-list').innerHTML =
-      `<div class="error-msg">${err.message}</div>`;
-  }
+  // messaging not yet implemented on server
+  renderMessages(null);
 }
 
 async function onSend() {
-  const uid = parseInt(container.querySelector('#msg-target-uid').value, 10);
-  const body = container.querySelector('#msg-body').value.trim();
-  if (!uid || !body) return;
-  await api.sendMessage(uid, body);
-  container.querySelector('#msg-body').value = '';
+  // messaging not yet implemented on server
+  console.warn('[Social] sendMessage not implemented');
 }
 
 function renderMessages(data) {

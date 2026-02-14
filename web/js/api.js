@@ -14,6 +14,7 @@
 import { state } from './state.js';
 import { eventBus } from './events.js';
 import { debug } from './debug.js';
+import ReconnectingWebSocket from './lib/reconnecting-websocket.mjs';
 
 let _requestId = 0;
 function nextRequestId() {
@@ -26,16 +27,18 @@ class ApiClient {
    */
   constructor(wsUrl) {
     this.wsUrl = wsUrl;
-    /** @type {WebSocket|null} */
+    /** @type {ReconnectingWebSocket|null} */
     this._ws = null;
+    /** @type {Promise<void>|null} */
+    this._connectPromise = null;
     /** @type {Map<string, {resolve: Function, reject: Function, timer: number}>} */
     this._pending = new Map();
     /** @type {number} ms before a request times out */
     this.timeout = 10000;
-    /** @type {number|null} */
-    this._reconnectTimer = null;
     /** @type {boolean} */
     this._intentionalClose = false;
+    /** @type {boolean} */
+    this._hasConnectedOnce = false;
     /** @type {number|null} polling interval id */
     this._pollTimer = null;
     /** @type {number} ms between polling cycles */
@@ -49,89 +52,153 @@ class ApiClient {
    * @returns {Promise<void>} resolves once connected
    */
   connect() {
-    return new Promise((resolve, reject) => {
+    if (this._connectPromise) {
+      return this._connectPromise;
+    }
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      return Promise.resolve();
+    }
+
+    if (this._ws && this._ws.readyState === WebSocket.CONNECTING) {
+      this._connectPromise = new Promise((resolve, reject) => {
+        const ws = this._ws;
+        let settled = false;
+
+        const cleanup = () => {
+          ws.removeEventListener('open', onOpen);
+          ws.removeEventListener('close', onClose);
+          ws.removeEventListener('error', onError);
+          this._connectPromise = null;
+        };
+
+        const onOpen = () => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve();
+        };
+
+        const onClose = (ev) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(new Error(`WebSocket closed while connecting (code ${ev.code})`));
+        };
+
+        const onError = () => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(new Error('WebSocket error while connecting'));
+        };
+
+        ws.addEventListener('open', onOpen);
+        ws.addEventListener('close', onClose);
+        ws.addEventListener('error', onError);
+      });
+
+      return this._connectPromise;
+    }
+
+    this._connectPromise = new Promise((resolve, reject) => {
       this._intentionalClose = false;
 
-      // Close any existing socket cleanly before reconnecting
+      // Close any existing socket before reinitializing
       if (this._ws) {
-        this._ws.onopen = null;
-        this._ws.onclose = null;
-        this._ws.onerror = null;
-        this._ws.onmessage = null;
-        try { this._ws.close(); } catch (_) {}
+        this._ws.removeEventListener('open', this._onSocketOpen);
+        this._ws.removeEventListener('close', this._onSocketClose);
+        this._ws.removeEventListener('error', this._onSocketError);
+        this._ws.removeEventListener('message', this._onSocketMessage);
+        try { this._ws.close(1000, 'reinitialize'); } catch (_) {}
         this._ws = null;
       }
 
-      const ws = new WebSocket(this.wsUrl);
+      const ws = new ReconnectingWebSocket(this.wsUrl, [], {
+        WebSocket,
+        minReconnectionDelay: 1000,
+        maxReconnectionDelay: 10000,
+        reconnectionDelayGrowFactor: 1.5,
+        connectionTimeout: 4000,
+        maxRetries: Infinity,
+      });
+      this._ws = ws;
+
       let settled = false;
 
-      ws.onopen = () => {
-        console.log('[ApiClient] connected to', this.wsUrl);
-        this._ws = ws;
-        settled = true;
+      this._onSocketOpen = async () => {
+        const isReconnect = this._hasConnectedOnce;
+        this._hasConnectedOnce = true;
+        console.log(isReconnect ? '[ApiClient] reconnected to' : '[ApiClient] connected to', this.wsUrl);
         state.setConnected(true);
-        resolve();
-      };
 
-      ws.onclose = (ev) => {
-        console.log('[ApiClient] disconnected', ev.code, ev.reason);
-        if (this._ws === ws) {
-          this._ws = null;
-          state.setConnected(false);
-          this._rejectAllPending('Connection closed');
-          if (!this._intentionalClose) {
-            this._scheduleReconnect();
-          }
-        }
         if (!settled) {
           settled = true;
+          this._connectPromise = null;
+          resolve();
+          return;
+        }
+
+        if (this._intentionalClose) return;
+
+        const creds = this._loadCredentials();
+        if (creds) {
+          try {
+            await this.login(creds.username, creds.password);
+          } catch (err) {
+            console.warn('[ApiClient] re-auth on reconnect failed:', err?.message || err);
+          }
+        }
+      };
+
+      this._onSocketClose = (ev) => {
+        console.log('[ApiClient] disconnected', ev.code, ev.reason);
+        state.setConnected(false);
+        this._rejectAllPending('Connection closed');
+        if (!settled) {
+          settled = true;
+          this._connectPromise = null;
           reject(new Error(`WebSocket closed before open (code ${ev.code})`));
         }
       };
 
-      ws.onerror = () => {
-        // onerror is always followed by onclose — let onclose handle it
+      this._onSocketError = () => {
+        if (!settled) {
+          settled = true;
+          this._connectPromise = null;
+          reject(new Error('WebSocket connection failed'));
+        }
       };
 
-      ws.onmessage = (ev) => {
+      this._onSocketMessage = (ev) => {
         this._handleMessage(ev.data);
       };
+
+      ws.addEventListener('open', this._onSocketOpen);
+      ws.addEventListener('close', this._onSocketClose);
+      ws.addEventListener('error', this._onSocketError);
+      ws.addEventListener('message', this._onSocketMessage);
     });
+
+    return this._connectPromise;
   }
 
   /**
    * Close the connection intentionally (no auto-reconnect).
    */
-  disconnect() {
+  disconnect(reason = 'intentional-disconnect') {
     this._intentionalClose = true;
+    this._connectPromise = null;
     this.stopPolling();
-    if (this._reconnectTimer) {
-      clearTimeout(this._reconnectTimer);
-      this._reconnectTimer = null;
-    }
+    this._rejectAllPending(`Connection closed: ${reason}`);
     if (this._ws) {
-      this._ws.close();
+      this._ws.removeEventListener('open', this._onSocketOpen);
+      this._ws.removeEventListener('close', this._onSocketClose);
+      this._ws.removeEventListener('error', this._onSocketError);
+      this._ws.removeEventListener('message', this._onSocketMessage);
+      this._ws.close(1000, reason);
       this._ws = null;
     }
-  }
-
-  _scheduleReconnect() {
-    if (this._reconnectTimer) return;
-    console.log('[ApiClient] reconnecting in 3s...');
-    this._reconnectTimer = setTimeout(async () => {
-      this._reconnectTimer = null;
-      try {
-        await this.connect();
-        // re-authenticate if we had credentials
-        const creds = this._loadCredentials();
-        if (creds) {
-          await this.login(creds.username, creds.password);
-        }
-      } catch (err) {
-        console.error('[ApiClient] reconnect failed', err);
-        this._scheduleReconnect();
-      }
-    }, 3000);
+    state.setConnected(false);
   }
 
   // ── Low-level Send / Receive ───────────────────────────────
@@ -185,6 +252,10 @@ class ApiClient {
       return;
     }
 
+    if (msg.type === 'debug') {
+      debug.logResponse(msg.type, msg);
+    }
+
     // If this is a response to a pending request, resolve it
     if (msg.request_id && this._pending.has(msg.request_id)) {
       const { resolve, reject, timer } = this._pending.get(msg.request_id);
@@ -194,7 +265,6 @@ class ApiClient {
       if (msg.type === 'error') {
         reject(new Error(msg.message || 'Server error'));
       } else {
-        debug.logResponse(msg.type, msg);
         if (msg._debug) {
           console.debug('[ApiClient] Debug info:', msg._debug);
         }
@@ -333,6 +403,10 @@ class ApiClient {
     if (resp.success) {
       this._saveCredentials(username, password);
       state.setAuth(resp.uid, username);
+      // If server sends fresh summary data after login, apply it immediately
+      if (resp.summary) {
+        state.setSummary(resp.summary);
+      }
     }
     return resp;
   }
@@ -569,7 +643,6 @@ class ApiClient {
         clearTimeout(timer);
         unsub();
         console.log('[ApiClient] ← build_response received:', response);
-        debug.logResponse('build_response', response);
         resolve(response);
       });
     });
@@ -630,7 +703,6 @@ class ApiClient {
       const unsub = eventBus.on('server:citizen_upgrade_response', (response) => {
         clearTimeout(timer);
         unsub();
-        debug.logResponse('citizen_upgrade_response', response);
         resolve(response);
       });
     });
@@ -663,7 +735,6 @@ class ApiClient {
       const unsub = eventBus.on('server:change_citizen_response', (response) => {
         clearTimeout(timer);
         unsub();
-        debug.logResponse('change_citizen_response', response);
         resolve(response);
       });
     });

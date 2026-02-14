@@ -11,15 +11,6 @@ from enum import Enum
 from gameserver.models.hex import HexCoord
 
 
-class Direction(Enum):
-    """Cardinal entry directions for critter paths."""
-
-    NORTH = "north"
-    SOUTH = "south"
-    EAST = "east"
-    WEST = "west"
-
-
 @dataclass
 class HexMap:
     """The game map as a hexagonal grid.
@@ -30,7 +21,7 @@ class HexMap:
         occupied: Set of hex coordinates currently occupied by structures.
     """
 
-    paths: dict[Direction, list[HexCoord]] = field(default_factory=dict)
+    critter_path: list[HexCoord] = field(default_factory=list)
     build_tiles: set[HexCoord] = field(default_factory=set)
     occupied: set[HexCoord] = field(default_factory=set)
 
@@ -57,14 +48,9 @@ class HexMap:
         """Free tiles previously occupied by a structure."""
         self.occupied -= self._footprint(center, radius)
 
-    def path_length(self, direction: Direction) -> int:
-        """Number of hex steps in a path (fields - 1)."""
-        path = self.paths.get(direction, [])
-        return max(0, len(path) - 1)
-
-    def get_path(self, direction: Direction) -> list[HexCoord]:
+    def get_path(self) -> list[HexCoord]:
         """Return a copy of the path for the given direction."""
-        return list(self.paths.get(direction, []))
+        pass
 
     # -- Internal --------------------------------------------------------
 

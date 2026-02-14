@@ -92,9 +92,17 @@ class FakeWebSocket:
     def __init__(self) -> None:
         self.sent: list[str] = []
         self.remote_address = ("127.0.0.1", 12345)
+        self.closed = False
+        self.close_code: Optional[int] = None
+        self.close_reason: Optional[str] = None
 
     async def send(self, data: str) -> None:
         self.sent.append(data)
+
+    async def close(self, code: int = 1000, reason: str = "") -> None:
+        self.closed = True
+        self.close_code = code
+        self.close_reason = reason
 
     @property
     def last_sent_json(self) -> dict[str, Any]:
@@ -741,6 +749,80 @@ class TestServerSessions:
         self.server._next_guest_uid -= 1
         assert uid1 == -1
         assert uid2 == -2
+
+    def test_session_upgrade_cleans_guest_uid(self):
+        """When a guest session upgrades to a real UID, the old guest
+        mapping should be removed from _connections."""
+        ws = FakeWebSocket()
+        self.server.register_session(-1, ws)  # guest
+        assert self.server.get_uid(ws) == -1
+        assert -1 in self.server.connected_uids
+
+        # Upgrade to real uid
+        self.server.register_session(42, ws)
+        assert self.server.get_uid(ws) == 42
+        # Guest entry should be cleaned up
+        assert -1 not in self.server.connected_uids
+        assert 42 in self.server.connected_uids
+
+    def test_superseded_unregister_does_not_remove_new_session(self):
+        """The core multi-device bug: when device A supersedes device B,
+        device B's unregister_session must NOT remove device A's mapping.
+
+        Sequence:
+        1. iOS connects as guest -1, upgrades to uid=2
+        2. Desktop connects as guest -2, upgrades to uid=2 (supersedes iOS)
+        3. iOS's finally block calls unregister_session(ws_ios)
+        4. uid=2 must still map to ws_desktop (NOT be removed)
+        """
+        ws_ios = FakeWebSocket()
+        ws_desktop = FakeWebSocket()
+
+        # iOS logs in as uid=2
+        self.server.register_session(-1, ws_ios)
+        self.server.register_session(2, ws_ios)
+        assert self.server.get_uid(ws_ios) == 2
+
+        # Desktop logs in as uid=2 → supersedes iOS
+        self.server.register_session(-2, ws_desktop)
+        self.server.register_session(2, ws_desktop)
+        assert self.server.get_uid(ws_desktop) == 2
+
+        # iOS disconnects — unregister must NOT kill desktop's session
+        removed = self.server.unregister_session(ws_ios)
+        # The UID returned should still be 2 (from the ws_to_uid map)
+        # but _connections[2] must still point to ws_desktop
+        assert 2 in self.server.connected_uids
+        assert self.server.get_uid(ws_desktop) == 2
+
+        # Desktop can still send/receive
+        assert self.server.connection_count >= 1
+
+    def test_multi_device_rapid_supersede(self):
+        """Rapid back-and-forth supersedes (A→B→A) should leave the last
+        connection standing."""
+        ws_a = FakeWebSocket()
+        ws_b = FakeWebSocket()
+        ws_a2 = FakeWebSocket()
+
+        # A logs in
+        self.server.register_session(-1, ws_a)
+        self.server.register_session(5, ws_a)
+        # B logs in, supersedes A
+        self.server.register_session(-2, ws_b)
+        self.server.register_session(5, ws_b)
+        # A reconnects, supersedes B
+        self.server.register_session(-3, ws_a2)
+        self.server.register_session(5, ws_a2)
+
+        # Old connections unregister (order doesn't matter)
+        self.server.unregister_session(ws_a)
+        self.server.unregister_session(ws_b)
+
+        # Only ws_a2 should hold uid=5
+        assert self.server.get_uid(ws_a2) == 5
+        assert 5 in self.server.connected_uids
+        assert self.server.connection_count == 1
 
 
 # ===================================================================

@@ -77,6 +77,7 @@ class GameConfig:
 
     # -- Network -----------------------------------------------------
     ws_port: int = 8765
+    rest_port: int = 8080
     ws_ping_interval: int = 30
     ws_ping_timeout: int = 10
     ws_max_message_size: int = 1_048_576

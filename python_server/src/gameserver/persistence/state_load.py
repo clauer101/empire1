@@ -316,15 +316,24 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
     attacker_gains: dict[int, dict[str, float]] = {}
     for uid_str, gains in d.get("attacker_gains", {}).items():
         attacker_gains[int(uid_str)] = dict(gains)
+    
+    # Load critter path if present
+    critter_path = []
+    if "critter_path" in d:
+        from gameserver.models.hex import HexCoord
+        critter_path = [HexCoord(int(c.get("q", 0)), int(c.get("r", 0))) 
+                        for c in d.get("critter_path", [])]
 
     return BattleState(
         bid=d["bid"],
-        defender_uid=d["defender_uid"],
-        attacker_uids=list(d.get("attacker_uids", [])),
-        attacker=attacker,
+        defender=None,  # Will be loaded separately
+        attacker=None,  # Will be loaded separately
+        attack_id=d.get("attack_id"),
+        army=None,  # Will be loaded separately
         critters=critters,
         structures=structures,
         pending_shots=pending_shots,
+        critter_path=critter_path,
         elapsed_ms=d.get("elapsed_ms", 0.0),
         is_finished=d.get("is_finished", False),
         defender_won=d.get("defender_won"),

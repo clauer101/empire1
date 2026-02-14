@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-13T20:41:21'
-  saved_at_unix: 1771011681.8963447
+  saved_at: '2026-02-14T19:32:05'
+  saved_at_unix: 1771093925.8359685
 empires:
 - uid: 100
   name: TestImperium
@@ -54,8 +54,8 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 7737.390953245002
-    culture: 8650.781075954414
+    gold: 7738.086111551091
+    culture: 8651.458256028447
     life: 10.0
   buildings:
     INIT: 0.0
@@ -115,5 +115,14 @@ empires:
   - q: 1
     r: 0
     type: castle
-attacks: []
+attacks:
+- attack_id: 1
+  attacker_uid: 100
+  defender_uid: 2
+  army_aid: 1
+  phase: in_battle
+  eta_seconds: 0.0
+  total_eta_seconds: 230.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 5.0
 battles: []

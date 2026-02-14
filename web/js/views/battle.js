@@ -11,14 +11,19 @@
  * Architecture:
  *  Server sends delta updates (spawn/die/fire events) every 250ms.
  *  Client autonomously interpolates critter movement along paths.
+ *
+ * WebSocket lifecycle:
+ *  - WS connects only when battle view is entered
+ *  - WS disconnects when leaving the battle view
+ *  - WS disconnects on mobile screen-off (visibility hidden)
+ *  - WS reconnects on mobile screen-on if still on battle view
  */
 
 import { HexGrid, getTileType, registerTileType } from '../lib/hex_grid.js';
 import { hexKey } from '../lib/hex.js';
 import { eventBus } from '../events.js';
+import { rest } from '../rest.js';
 
-/** @type {import('../api.js').ApiClient} */
-let api;
 /** @type {import('../state.js').StateStore} */
 let st;
 /** @type {HTMLElement} */
@@ -27,6 +32,189 @@ let _unsub = [];
 
 /** @type {HexGrid|null} */
 let grid = null;
+
+// ── Battle WebSocket ────────────────────────────────────────
+
+/** @type {WebSocket|null} */
+let _ws = null;
+let _wsUrl = '';
+let _wsConnected = false;
+let _wsReconnectTimer = null;
+let _wsIntentionalClose = false;
+
+let _wsConnectTimeout = null;
+
+/**
+ * Connect the battle WebSocket (with JWT token).
+ * Only called from enter() or mobile wake-up.
+ */
+function _wsConnect() {
+  if (_ws && (_ws.readyState === WebSocket.OPEN || _ws.readyState === WebSocket.CONNECTING)) {
+    return;  // already connected or connecting
+  }
+
+  _wsIntentionalClose = false;
+
+  // Build WS URL — use same host:port as REST API, path /ws
+  const restBase = rest.baseUrl || `http://${window.location.hostname}:8080`;
+  const restUrl = new URL(restBase);
+  const wsProto = restUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  const baseUrl = `${wsProto}//${restUrl.host}/ws`;
+  _wsUrl = rest.getAuthenticatedWsUrl(baseUrl);
+
+  _addDebugLog(`🔌 WS connecting to ${baseUrl}...`);
+  let ws;
+  try {
+    ws = new WebSocket(_wsUrl);
+  } catch (err) {
+    _addDebugLog(`❌ WS constructor error: ${err.message}`);
+    return;
+  }
+  _ws = ws;
+
+  // Connection timeout — mobile browsers may hang without firing error/close
+  _wsConnectTimeout = setTimeout(() => {
+    if (ws.readyState === WebSocket.CONNECTING) {
+      _addDebugLog(`⏱ WS timeout after 8s (still CONNECTING) — closing`);
+      ws.close();
+    }
+  }, 8000);
+
+  ws.addEventListener('open', () => {
+    clearTimeout(_wsConnectTimeout);
+    _wsConnected = true;
+    _addDebugLog('🟢 WS connected');
+    _updateWsIndicator(true);
+
+    // Register for battle updates
+    _sendWs({ type: 'battle_register', target_uid: st.summary?.uid });
+  });
+
+  ws.addEventListener('message', (ev) => {
+    let msg;
+    try {
+      msg = JSON.parse(ev.data);
+    } catch (err) {
+      console.warn('[Battle.WS] invalid JSON:', ev.data);
+      return;
+    }
+    _handleWsMessage(msg);
+  });
+
+  ws.addEventListener('close', (ev) => {
+    clearTimeout(_wsConnectTimeout);
+    _wsConnected = false;
+    _updateWsIndicator(false);
+    _addDebugLog(`🔴 WS closed (code=${ev.code} reason=${ev.reason || 'none'})`);
+
+    if (!_wsIntentionalClose) {
+      // Auto-reconnect after 2s if not intentionally closed
+      _wsReconnectTimer = setTimeout(() => _wsConnect(), 2000);
+    }
+    _ws = null;
+  });
+
+  ws.addEventListener('error', (ev) => {
+    clearTimeout(_wsConnectTimeout);
+    _addDebugLog(`⚠ WS error (readyState=${ws.readyState}, url=${baseUrl})`);
+  });
+}
+
+/**
+ * Close the battle WebSocket intentionally (no auto-reconnect).
+ */
+function _wsDisconnect() {
+  _wsIntentionalClose = true;
+  if (_wsConnectTimeout) {
+    clearTimeout(_wsConnectTimeout);
+    _wsConnectTimeout = null;
+  }
+  if (_wsReconnectTimer) {
+    clearTimeout(_wsReconnectTimer);
+    _wsReconnectTimer = null;
+  }
+  if (_ws) {
+    // Unregister from battle before closing
+    _sendWs({ type: 'battle_unregister', target_uid: st.summary?.uid });
+    _ws.close(1000, 'leaving-battle');
+    _ws = null;
+    _wsConnected = false;
+    _addDebugLog('🔌 WS disconnected (intentional)');
+    _updateWsIndicator(false);
+  }
+}
+
+/**
+ * Send a JSON message over the battle WS.
+ * @param {object} msg
+ */
+function _sendWs(msg) {
+  if (_ws && _ws.readyState === WebSocket.OPEN) {
+    if (st.auth?.uid) msg.sender = st.auth.uid;
+    _ws.send(JSON.stringify(msg));
+  }
+}
+
+/**
+ * Handle incoming WS message — dispatch battle events.
+ */
+function _handleWsMessage(msg) {
+  switch (msg.type) {
+    case 'welcome':
+      _addDebugLog(`WS welcome: guest_uid=${msg.temp_uid}`);
+      break;
+    case 'battle_setup':
+      _onBattleSetup(msg);
+      break;
+    case 'battle_update':
+      _onBattleUpdate(msg);
+      break;
+    case 'battle_summary':
+      _onBattleSummary(msg);
+      break;
+    case 'battle_status':
+      _onBattleStatus(msg);
+      break;
+    case 'attack_phase_changed':
+      _addDebugLog(`Phase changed: attack_id=${msg.attack_id} → ${msg.new_phase}`);
+      break;
+    default:
+      // Ignore non-battle messages
+      break;
+  }
+}
+
+/**
+ * Update the WS status indicator in the status bar.
+ */
+function _updateWsIndicator(online) {
+  const el = document.getElementById('ws-status-indicator');
+  if (el) {
+    el.classList.toggle('connected', online);
+    el.classList.toggle('disconnected', !online);
+    el.title = online ? 'Battle WS: connected' : 'Battle WS: disconnected';
+  }
+}
+
+// ── Mobile visibility lifecycle ─────────────────────────────
+
+/**
+ * On mobile screen-off: close WS immediately.
+ * On mobile screen-on: reconnect if still on battle view.
+ */
+function _onVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    if (_wsConnected) {
+      _addDebugLog('📱 Screen off → closing WS');
+      _wsDisconnect();
+    }
+  } else if (document.visibilityState === 'visible') {
+    if (!_wsConnected && !_wsIntentionalClose) {
+      _addDebugLog('📱 Screen on → reconnecting WS');
+      _wsConnect();
+    }
+  }
+}
 
 // Battle state
 let _battleState = {
@@ -50,6 +238,29 @@ let _battleState = {
   next_wave_countdown_ms: 0,  // Time until next wave
 };
 
+// Debug log buffer
+let _debugLogs = [];
+const MAX_DEBUG_LOGS = 20;
+
+function _addDebugLog(msg) {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = `[${timestamp}] ${msg}`;
+  _debugLogs.unshift(logEntry);
+  if (_debugLogs.length > MAX_DEBUG_LOGS) {
+    _debugLogs.pop();
+  }
+  console.log('[Battle.DEBUG]', msg);
+  _updateDebugPanel();
+}
+
+function _updateDebugPanel() {
+  const panel = container?.querySelector('#battle-debug-panel');
+  if (!panel) return;
+  const logList = panel.querySelector('#battle-debug-logs');
+  if (!logList) return;
+  logList.innerHTML = _debugLogs.map(log => `<div style="font-size:11px;padding:2px 0;font-family:monospace;color:#4a4">${log}</div>`).join('');
+}
+
 // Structure colors for dynamic tile types
 const STRUCTURE_COLORS = [
   { color: '#3a5a4a', stroke: '#4a7a5a' },
@@ -64,7 +275,7 @@ const STRUCTURE_COLORS = [
 
 function init(el, _api, _state) {
   container = el;
-  api = _api;
+  // api parameter is no longer used — battle manages its own WS
   st = _state;
 
   container.innerHTML = `
@@ -125,6 +336,12 @@ function init(el, _api, _state) {
           <button id="summary-close" class="btn-primary">Close</button>
         </div>
       </div>
+
+      <!-- Debug Panel -->
+      <div id="battle-debug-panel" style="position:absolute;bottom:12px;right:12px;width:300px;background:rgba(0,0,0,0.85);border:1px solid #4a4;border-radius:4px;padding:8px;max-height:200px;overflow-y:auto;z-index:999;">
+        <div style="font-size:12px;font-weight:bold;color:#4a4;margin-bottom:4px;">⚙ Battle Debug</div>
+        <div id="battle-debug-logs" style="font-family:monospace;color:#4a4;font-size:10px;"></div>
+      </div>
     </div>
   `;
 
@@ -146,29 +363,27 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  _debugLogs = [];  // Clear previous debug logs
   _initCanvas();
-
-  // Subscribe to battle events
-  _unsub.push(eventBus.on('server:battle_setup', _onBattleSetup));
-  _unsub.push(eventBus.on('server:battle_update', _onBattleUpdate));
-  _unsub.push(eventBus.on('server:battle_summary', _onBattleSummary));
-  _unsub.push(eventBus.on('server:battle_status', _onBattleStatus));
 
   // Subscribe to items for structure tile types
   _unsub.push(eventBus.on('state:items', _registerStructureTileTypes));
 
-  // Load items to get structure tiles
+  // Load items to get structure tiles (via REST)
   try {
-    await api.getItems();
+    await rest.getItems();
   } catch (err) {
     console.warn('[Battle] could not load items:', err.message);
   }
 
   _registerStructureTileTypes();
 
-  // Subscribe to battle updates for defending empire
-  // (check if there's an active attack we should monitor)
-  _subscribeToActiveAttacks();
+  // Connect battle WebSocket
+  _wsConnect();
+
+  // Listen for mobile screen on/off
+  document.addEventListener('visibilitychange', _onVisibilityChange);
+  _unsub.push(() => document.removeEventListener('visibilitychange', _onVisibilityChange));
 
   // Start status update loop
   _startStatusLoop();
@@ -182,9 +397,9 @@ function leave() {
     grid = null;
   }
   _stopStatusLoop();
-  
-  // Unsubscribe from battle updates
-  _unsubscribeFromBattle();
+
+  // Disconnect battle WebSocket
+  _wsDisconnect();
 }
 
 // ── Canvas initialization ───────────────────────────────────
@@ -236,32 +451,13 @@ function _registerStructureTileTypes() {
 
 // ── Battle Events ───────────────────────────────────────────
 
-async function _subscribeToActiveAttacks() {
-  // Check if user is involved in any attack (as defender)
-  const summary = st.summary;
-  if (!summary || !summary.uid) return;
-  
-  // Subscribe to our own uid (will receive updates when we're defended)
-  await api._request({
-    type: 'battle_register',
-    target_uid: summary.uid,
-  }, null);
-  console.log('[Battle] Subscribed to battle updates for uid=' + summary.uid);
-}
-
-async function _unsubscribeFromBattle() {
-  const summary = st.summary;
-  if (!summary || !summary.uid) return;
-  
-  await api._request({
-    type: 'battle_unregister',
-    target_uid: summary.uid,
-  }, null);
-  console.log('[Battle] Unsubscribed from battle updates');
-}
-
 function _onBattleStatus(msg) {
   if (!msg) return;
+  
+  // Log phase changes
+  if (_battleState.phase !== (msg.phase || 'waiting')) {
+    _addDebugLog(`Phase: ${_battleState.phase} → ${msg.phase || 'waiting'}`);
+  }
   
   // Update battle state
   _battleState.phase = msg.phase || 'waiting';
@@ -277,6 +473,7 @@ function _onBattleStatus(msg) {
 
 function _onBattleSetup(msg) {
   console.log('[Battle] Battle setup:', msg);
+  _addDebugLog(`🎮 Battle Setup: ${msg.defender_name} vs ${msg.attacker_name}`);
 
   // Reset state
   _battleState = {
@@ -329,6 +526,7 @@ function _onBattleUpdate(msg) {
 
   // Spawn new critters (client will autonomously move them along path)
   if (msg.new_critters && msg.new_critters.length > 0) {
+    _addDebugLog(`👹 ${msg.new_critters.length} critters spawned`);
     for (const c of msg.new_critters) {
       console.log(
         '[Battle] Critter spawned: cid=%d type=%s speed=%.1f path_len=%d',
@@ -342,6 +540,7 @@ function _onBattleUpdate(msg) {
 
   // Remove dead critters
   if (msg.dead_critter_ids && msg.dead_critter_ids.length > 0) {
+    _addDebugLog(`💀 ${msg.dead_critter_ids.length} critters killed`);
     for (const cid of msg.dead_critter_ids) {
       console.log('[Battle] Critter killed: cid=%d', cid);
       grid.removeBattleCritter(cid);
@@ -350,6 +549,7 @@ function _onBattleUpdate(msg) {
 
   // Remove finished critters (reached castle)
   if (msg.finished_critter_ids && msg.finished_critter_ids.length > 0) {
+    _addDebugLog(`🏰 ${msg.finished_critter_ids.length} critters reached castle`);
     for (const cid of msg.finished_critter_ids) {
       console.log('[Battle] Critter finished: cid=%d', cid);
       grid.removeBattleCritter(cid);
@@ -368,6 +568,8 @@ function _onBattleUpdate(msg) {
 
 function _onBattleSummary(msg) {
   console.log('[Battle] Battle summary:', msg);
+  const result = msg.defender_won ? '🎉 Victory' : '💀 Defeat';
+  _addDebugLog(`⚔ Battle Finished: ${result}`);
 
   _battleState.is_finished = true;
   _battleState.defender_won = msg.defender_won || false;

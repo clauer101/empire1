@@ -1,6 +1,8 @@
 /**
- * Signup view — create a new account with empire.
+ * Signup view — create a new account via REST API.
  */
+
+import { rest } from '../rest.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -78,7 +80,7 @@ async function onSignup() {
   if (pwd !== pwd2) { showError('Passwords do not match'); return; }
 
   try {
-    const resp = await api.signup(user, pwd, email, empire);
+    const resp = await rest.signup(user, pwd, email, empire);
     if (resp.success) {
       window.location.hash = '#login';
     } else {

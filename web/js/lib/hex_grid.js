@@ -88,6 +88,7 @@ export class HexGrid {
     this._initGrid();
     this.addVoidNeighbors();
     this._bindEvents();
+    this._resize();       // Set canvas size before first render
     this._centerGrid();
     this._startLoop();
   }
@@ -150,8 +151,10 @@ export class HexGrid {
     }
     const gridW = maxX - minX + this.hexSize * 2;
     const gridH = maxY - minY + this.hexSize * 2;
-    this.offsetX = (this.canvas.width / 2 - (minX + maxX) / 2);
-    this.offsetY = (this.canvas.height / 2 - (minY + maxY) / 2);
+    const cw = this._logicalWidth  || this.canvas.width;
+    const ch = this._logicalHeight || this.canvas.height;
+    this.offsetX = (cw / 2 - (minX + maxX) / 2);
+    this.offsetY = (ch / 2 - (minY + maxY) / 2);
     this._dirty = true;
   }
 
@@ -197,8 +200,8 @@ export class HexGrid {
   _resize() {
     const parent = this.canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
-    const w = parent.clientWidth;
-    const h = parent.clientHeight;
+    const w = parent.clientWidth  || 300;
+    const h = parent.clientHeight || 300;
     this.canvas.width = w * dpr;
     this.canvas.height = h * dpr;
     this.canvas.style.width = w + 'px';
