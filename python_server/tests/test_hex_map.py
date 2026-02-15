@@ -1,30 +1,30 @@
 """Tests for HexMap — paths, build zones, occupancy."""
 
 from gameserver.models.hex import HexCoord
-from gameserver.models.map import Direction, HexMap
+from gameserver.models.map import HexMap
 
 
-def _make_straight_path(length: int, direction: Direction = Direction.NORTH) -> HexMap:
+def _make_straight_path(length: int) -> HexMap:
     """Create a map with a straight path of given length along q axis."""
     path = [HexCoord(q, 0) for q in range(length)]
     build = {HexCoord(q, 1) for q in range(length)}  # row below path
-    return HexMap(paths={direction: path}, build_tiles=build)
+    return HexMap(critter_path=path, build_tiles=build)
 
 
 class TestHexMapPaths:
     def test_path_length(self):
         m = _make_straight_path(10)
-        assert m.path_length(Direction.NORTH) == 9
+        assert len(m.critter_path) == 10
 
     def test_empty_path_length_zero(self):
         m = HexMap()
-        assert m.path_length(Direction.SOUTH) == 0
+        assert len(m.critter_path) == 0
 
-    def test_get_path_returns_copy(self):
+    def test_get_path_returns_list(self):
         m = _make_straight_path(5)
-        p = m.get_path(Direction.NORTH)
-        p.clear()
-        assert len(m.get_path(Direction.NORTH)) == 5
+        assert len(m.critter_path) == 5
+        assert m.critter_path[0] == HexCoord(0, 0)
+        assert m.critter_path[-1] == HexCoord(4, 0)
 
 
 class TestHexMapBuilding:

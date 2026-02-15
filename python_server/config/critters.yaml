@@ -11,8 +11,8 @@
 
 SLAVE:
   name: "Slave"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -24,8 +24,8 @@ SLAVE:
 
 WARRIOR:
   name: "Warrior"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -37,8 +37,8 @@ WARRIOR:
 
 BOWMAN:
   name: "Bowman"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -50,8 +50,8 @@ BOWMAN:
 
 SWORDMAN:
   name: "Swordman"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -63,8 +63,8 @@ SWORDMAN:
 
 PIKENEER:
   name: "Pikeneer"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -76,8 +76,8 @@ PIKENEER:
 
 HORSEMAN_SLOW:
   name: "Heavy Horseman"
-  speed: 0
-  health: 0
+  speed: 0.10
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -89,8 +89,8 @@ HORSEMAN_SLOW:
 
 HORSEMAN_FAST:
   name: "Light Horseman"
-  speed: 0
-  health: 0
+  speed: 0.25
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -102,8 +102,8 @@ HORSEMAN_FAST:
 
 CRUSADER:
   name: "Crusader"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -115,8 +115,8 @@ CRUSADER:
 
 SAMURAI:
   name: "Samurai"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -128,8 +128,8 @@ SAMURAI:
 
 NINJA:
   name: "Ninja"
-  speed: 0
-  health: 0
+  speed: 0.25
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -141,8 +141,8 @@ NINJA:
 
 MUSKETEER:
   name: "Musketeer"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -154,8 +154,8 @@ MUSKETEER:
 
 DRAGOONER:
   name: "Dragoon"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -167,8 +167,8 @@ DRAGOONER:
 
 SOLDIER:
   name: "Soldier"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -180,8 +180,8 @@ SOLDIER:
 
 CART:
   name: "Cart"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -193,8 +193,8 @@ CART:
 
 LARGE_CART:
   name: "Large Cart"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -206,8 +206,8 @@ LARGE_CART:
 
 CARGO:
   name: "Cargo"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -219,8 +219,8 @@ CARGO:
 
 TRANSPORTER:
   name: "Transporter"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -232,8 +232,8 @@ TRANSPORTER:
 
 MOTORBIKE:
   name: "Motorbike"
-  speed: 0
-  health: 0
+  speed: 0.30
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -245,8 +245,8 @@ MOTORBIKE:
 
 SMALL_TANK:
   name: "Small Tank"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -258,8 +258,8 @@ SMALL_TANK:
 
 SIEGE_TANK:
   name: "Siege Tank"
-  speed: 0
-  health: 0
+  speed: 0.10
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -271,8 +271,8 @@ SIEGE_TANK:
 
 SPECOPS:
   name: "Special Ops"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -284,8 +284,8 @@ SPECOPS:
 
 HELI:
   name: "Helicopter"
-  speed: 0
-  health: 0
+  speed: 0.30
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -299,8 +299,8 @@ HELI:
 
 THE_SWORDMASTER:
   name: "The Swordmaster"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -312,8 +312,8 @@ THE_SWORDMASTER:
 
 THE_KING:
   name: "The King"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000
@@ -325,8 +325,8 @@ THE_KING:
 
 THE_GENERAL:
   name: "The General"
-  speed: 0
-  health: 0
+  speed: 0.2
+  health: 2
   armour: 0
   slots: 1
   time_between: 2000

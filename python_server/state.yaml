@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-14T19:32:05'
-  saved_at_unix: 1771093925.8359685
+  saved_at: '2026-02-15T14:33:38'
+  saved_at_unix: 1771162418.5511153
 empires:
 - uid: 100
   name: TestImperium
@@ -54,8 +54,8 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 7738.086111551091
-    culture: 8651.458256028447
+    gold: 9849.939805841905
+    culture: 10708.695044432328
     life: 10.0
   buildings:
     INIT: 0.0
@@ -99,13 +99,27 @@ empires:
   artefacts: []
   max_life: 10.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 1
+    uid: 2
+    name: huhu
+    waves:
+    - wave_id: 1
+      iid: SOLDIER
+      slots: 5
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
+    - wave_id: 2
+      iid: SLAVE
+      slots: 5
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
   spies: []
   bosses: {}
   hex_map:
   - q: 0
     r: 0
-    type: empty
+    type: ARROW_TOWER
   - q: 0
     r: 1
     type: path
@@ -117,12 +131,12 @@ empires:
     type: castle
 attacks:
 - attack_id: 1
-  attacker_uid: 100
-  defender_uid: 2
+  attacker_uid: 2
+  defender_uid: 100
   army_aid: 1
   phase: in_battle
   eta_seconds: 0.0
-  total_eta_seconds: 230.0
+  total_eta_seconds: 60.0
   siege_remaining_seconds: 0.0
-  total_siege_seconds: 5.0
+  total_siege_seconds: 30.0
 battles: []

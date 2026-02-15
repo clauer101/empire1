@@ -67,13 +67,19 @@ def test_two_waves_spawn_in_sequence(battle_service, test_path, two_wave_army):
     # Create battle with 2-wave army
     battle = BattleState(
         bid=1,
-        defender_uid=200,
-        attacker_uids=[100],
+        defender=None,
+        attacker=None,
         attack_id=1,
-        attacker=two_wave_army,
+        army=two_wave_army,
+        critter_path=test_path,
         structures={},
         observer_uids=set(),
     )
+    
+    # Track critters spawned during battle (not at end, since they may reach goal)
+    spawned_goblins = 0
+    spawned_orcs = 0
+    seen_cids = set()
     
     # Simulate battle ticks
     tick_interval_ms = 15.0
@@ -81,20 +87,25 @@ def test_two_waves_spawn_in_sequence(battle_service, test_path, two_wave_army):
     max_time_ms = 10000.0
     
     while total_time_ms < max_time_ms:
+        # Check for newly spawned critters before tick
+        for cid, critter in battle.critters.items():
+            if cid not in seen_cids:
+                seen_cids.add(cid)
+                if critter.iid == "FAST_GOBLIN":
+                    spawned_goblins += 1
+                elif critter.iid == "FAST_ORC":
+                    spawned_orcs += 1
+                print(f"[TEST] Spawned {critter.iid} (cid={cid}) at t={total_time_ms:.0f}ms")
+        
         battle_service.tick(battle, tick_interval_ms)        
         total_time_ms += tick_interval_ms
     
-    # Count critters by type
-    goblin_count = sum(1 for c in battle.critters.values() if c.iid == "FAST_GOBLIN")
-    orc_count = sum(1 for c in battle.critters.values() if c.iid == "FAST_ORC")
+    print(f"\n[TEST] Total spawned: FAST_GOBLIN={spawned_goblins}, FAST_ORC={spawned_orcs}")
     
-    print(f"\n[TEST] Total critters: {len(battle.critters)}")
-    print(f"[TEST] FAST_GOBLIN: {goblin_count}, FAST_ORC: {orc_count}")
-    
-    # Assertions: verify all critters from both waves were spawned
-    assert goblin_count == 3, f"Should spawn 3 goblins from wave 1, got {goblin_count}"
-    assert orc_count == 2, f"Should spawn 2 orcs from wave 2, got {orc_count}"
-    assert len(battle.critters) == 5, f"Should spawn 5 total critters, got {len(battle.critters)}"
+    # Assertions: verify all critters from both waves were spawned (not remaining, but spawned total)
+    assert spawned_goblins == 3, f"Should spawn 3 goblins from wave 1, got {spawned_goblins}"
+    assert spawned_orcs == 2, f"Should spawn 2 orcs from wave 2, got {spawned_orcs}"
+    assert len(seen_cids) == 5, f"Should spawn 5 total critters, got {len(seen_cids)}"
 
 
 
@@ -111,35 +122,38 @@ def test_wave_spawn_intervals(battle_service, test_path):
     
     battle = BattleState(
         bid=1,
-        defender_uid=200,
-        attacker_uids=[100],
+        defender=None,
+        attacker=None,
         attack_id=1,
-        attacker=army,
+        army=army,
+        critter_path=test_path,
         structures={},
         observer_uids=set(),
     )
     
     spawn_times = []
+    seen_cids = set()
     tick_interval_ms = 15.0
     total_time_ms = 0.0
     max_time_ms = 2000.0
     
     while total_time_ms < max_time_ms:
-        prev_count = len(battle.critters)
+        # Check for newly spawned critters before tick
+        for cid, critter in battle.critters.items():
+            if cid not in seen_cids:
+                seen_cids.add(cid)
+                spawn_times.append(total_time_ms)
+                print(f"[TEST] Critter {len(spawn_times)} spawned at t={total_time_ms:.0f}ms")
+        
         battle_service.tick(battle, tick_interval_ms)
-        
-        # Check if new critter spawned
-        if len(battle.critters) > prev_count:
-            spawn_times.append(total_time_ms)
-            print(f"[TEST] Critter {len(battle.critters)} spawned at t={total_time_ms:.0f}ms")
-        
         total_time_ms += tick_interval_ms
     
     print(f"\n[TEST] Spawn times: {spawn_times}")
+    print(f"[TEST] Total spawned: {len(seen_cids)}")
     
     # Verify critters spawned
     assert len(spawn_times) >= 1, f"Should spawn at least 1 critter, got {len(spawn_times)}"
-    assert len(battle.critters) == 3, f"Should spawn 3 critters, got {len(battle.critters)}"
+    assert len(seen_cids) == 3, f"Should spawn 3 critters, got {len(seen_cids)}"
     
     # Check intervals between spawns (should be ~100ms as configured)
     if len(spawn_times) >= 2:

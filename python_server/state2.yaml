@@ -44,13 +44,16 @@ empires:
   hex_map:
   - q: 0
     r: 0
-    type: empty
+    type: ARROW_TOWER
   - q: 0
     r: 1
-    type: empty
+    type: path
+  - q: 0
+    r: 2
+    type: spawnpoint
   - q: 1
     r: 0
-    type: empty
+    type: castle
 - uid: 2
   name: Empire1
   resources:
@@ -105,7 +108,7 @@ empires:
   hex_map:
   - q: 0
     r: 0
-    type: empty
+    type: ARROW_TOWER
   - q: 0
     r: 1
     type: path
@@ -121,8 +124,8 @@ attacks:
   defender_uid: 2
   army_aid: 1
   phase: travelling
-  eta_seconds: 0.0
+  eta_seconds: 1.0
   total_eta_seconds: 230.0
-  siege_remaining_seconds: 0.0
+  siege_remaining_seconds: 1.0
   total_siege_seconds: 5.0
 battles: []

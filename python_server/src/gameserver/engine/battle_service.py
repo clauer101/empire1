@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from gameserver.models.battle import BattleState
     from gameserver.models.empire import Empire
     from gameserver.models.army import Army
+    from gameserver.models.structure import Structure
 
 log = logging.getLogger(__name__)
 
@@ -159,8 +160,77 @@ class BattleService:
 
     def _step_shots(self, battle: BattleState, dt_ms: float) -> None:
         """Decrement flight time, apply damage/effects when shots arrive."""
-        # TODO: Implement shot stepping: decrement flight time, apply damage/effects on arrival, remove from pending_shots.
-        pass
+        shots_to_remove = []
+        
+        for shot in battle.pending_shots:
+            # Store original flight time for path_progress calculation
+            if shot.path_progress == 0.0:
+                # First tick, store total flight time in a way we can access it
+                # We'll use the ratio of flight_remaining_ms to calculate progress
+                shot._total_flight_ms = shot.flight_remaining_ms
+            
+            # Decrement flight time
+            shot.flight_remaining_ms -= dt_ms
+            
+            # Update path_progress (0.0 at start, 1.0 at arrival)
+            if hasattr(shot, '_total_flight_ms') and shot._total_flight_ms > 0:
+                shot.path_progress = 1.0 - (shot.flight_remaining_ms / shot._total_flight_ms)
+                shot.path_progress = max(0.0, min(1.0, shot.path_progress))
+            
+            # Check if shot has arrived
+            if shot.flight_remaining_ms <= 0:
+                self._apply_shot_damage(battle, shot)
+                shots_to_remove.append(shot)
+        
+        # Remove resolved shots
+        for shot in shots_to_remove:
+            battle.pending_shots.remove(shot)
+    
+    def _apply_shot_damage(self, battle: BattleState, shot: Shot) -> None:
+        """Apply damage and effects from a shot to its target critter."""
+        # Find target critter
+        critter = battle.critters.get(shot.target_cid)
+        if not critter:
+            log.debug("[SHOT] Shot %d->%d missed (target not found)", shot.source_sid, shot.target_cid)
+            return
+        
+        # Apply base damage (reduced by armour for non-burn damage)
+        damage = shot.damage
+        if shot.shot_type != DamageType.BURN:
+            damage = max(0.0, damage - critter.armour)
+        
+        critter.health -= damage
+        log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)", 
+                  critter.cid, shot.source_sid, damage, critter.health)
+        
+        # Apply shot effects based on shot_type
+        if shot.shot_type == DamageType.COLD:
+            # Apply slow effect
+            slow_factor = shot.effects.get("slow_target", 0.5)  # Default 50% speed
+            slow_duration_s = shot.effects.get("slow_target_duration", 2.0)  # Default 2s
+            
+            critter.slow_remaining_ms = slow_duration_s * 1000.0
+            critter.slow_speed = critter.speed * slow_factor
+            
+            log.debug("[SLOW] Critter cid=%d slowed to %.2f hex/s for %.0fms", 
+                      critter.cid, critter.slow_speed, critter.slow_remaining_ms)
+        
+        elif shot.shot_type == DamageType.BURN:
+            # Apply burn effect (damage over time)
+            burn_dps = shot.effects.get("burn_target_dps", 1.0)  # Default 1 dps
+            burn_duration_s = shot.effects.get("burn_target_duration", 3.0)  # Default 3s
+            
+            critter.burn_remaining_ms = burn_duration_s * 1000.0
+            critter.burn_dps = burn_dps
+            
+            log.debug("[BURN] Critter cid=%d burning for %.1f dps over %.0fms", 
+                      critter.cid, critter.burn_dps, critter.burn_remaining_ms)
+        
+        elif shot.shot_type == DamageType.SPLASH:
+            # TODO: Implement splash damage (create sub-shots for nearby critters)
+            # For now, just apply direct damage
+            log.debug("[SPLASH] Splash damage at critter cid=%d (splash radius not yet implemented)", 
+                      critter.cid)
 
     # -- Critter movement ------------------------------------------------
 
@@ -206,17 +276,24 @@ class BattleService:
         # Clamp to valid range [0.0, 1.0]
         critter.path_progress = max(0.0, min(1.0, critter.path_progress))
         
-        # Decrement status effect timers
-        if critter.slow_remaining_ms > 0:
-            critter.slow_remaining_ms -= dt_ms
+        # Apply burn damage if burning
         if critter.burn_remaining_ms > 0:
-            critter.burn_remaining_ms -= dt_ms
-            # Apply burn damage
-            burn_damage = critter.burn_dps * dt_s
+            # Calculate actual burn time (might be less than dt_ms if effect expires)
+            burn_time_ms = min(dt_ms, critter.burn_remaining_ms)
+            burn_damage = critter.burn_dps * (burn_time_ms / 1000.0)
+            
             critter.health = max(0, critter.health - burn_damage)
+            critter.burn_remaining_ms -= dt_ms
+            critter.burn_remaining_ms = max(0.0, critter.burn_remaining_ms)
+            
             if burn_damage > 0:
                 log.debug("[BURN] Critter %d takes %.1f burn damage (remaining: %.0fms)", 
                           critter.cid, burn_damage, critter.burn_remaining_ms)
+        
+        # Decrement slow effect timer
+        if critter.slow_remaining_ms > 0:
+            critter.slow_remaining_ms -= dt_ms
+            critter.slow_remaining_ms = max(0.0, critter.slow_remaining_ms)
             
         
 
@@ -224,8 +301,68 @@ class BattleService:
 
     def _step_towers(self, battle: BattleState, dt_ms: float) -> None:
         """Towers acquire targets and fire shots."""
-        # TODO: Implement tower targeting logic (e.g., nearest, first, last) and shot creation.
-        pass
+        for sid, structure in battle.structures.items():
+            # Decrement reload timer
+            if structure.reload_remaining_ms > 0:
+                structure.reload_remaining_ms -= dt_ms
+            
+            # Check if tower is ready to fire
+            if structure.reload_remaining_ms <= 0:
+                # Find target: most-advanced critter in range
+                target = self._find_target(battle, structure)
+                
+                if target:
+                    # Calculate flight time: distance / speed * 1000ms
+                    distance = structure.position.distance_to(target.path[int(target.path_progress * (len(target.path) - 1))] if target.path else structure.position)
+                    flight_time_ms = (distance / structure.shot_speed) * 1000.0 if structure.shot_speed > 0 else 0.0
+                    
+                    # Create shot
+                    shot = Shot(
+                        damage=structure.damage,
+                        target_cid=target.cid,
+                        source_sid=sid,
+                        shot_type=structure.shot_type,
+                        effects=dict(structure.effects),
+                        flight_remaining_ms=flight_time_ms,
+                        origin=structure.position,
+                        path_progress=0.0,
+                    )
+                    
+                    # Add to pending shots
+                    battle.pending_shots.append(shot)
+                    
+                    # Update tower state
+                    structure.focus_cid = target.cid
+                    structure.reload_remaining_ms = structure.reload_time_ms
+                    
+                    log.debug("[SHOT] Tower sid=%d fired at critter cid=%d (distance=%.1f, flight_time=%.0fms)",
+                             sid, target.cid, distance, flight_time_ms)
+    
+    def _find_target(self, battle: BattleState, structure: Structure) -> Critter | None:
+        """Find the most-advanced critter within range.
+        
+        Targeting strategy: critter with highest path_progress (closest to finish).
+        """
+        best_target: Critter | None = None
+        best_progress = -1.0
+        
+        for critter in battle.critters.values():
+            if not critter.path:
+                continue
+                
+            # Get current position from path_progress
+            path_idx = int(critter.path_progress * (len(critter.path) - 1))
+            critter_pos = critter.path[path_idx]
+            
+            # Check if in range
+            distance = structure.position.distance_to(critter_pos)
+            if distance <= structure.range:
+                # Select most-advanced (highest path_progress)
+                if critter.path_progress > best_progress:
+                    best_progress = critter.path_progress
+                    best_target = critter
+        
+        return best_target
 
     # -- Army wave dispatch ---------
 
@@ -272,9 +409,16 @@ class BattleService:
         
         # Spawn critters if wave hasn't finished
         if next_spawn_ms <= 0:
+            # Get critter stats from item config
+            item = self._items_by_iid.get(wave.iid)
+            
             critter = Critter(
                 cid=_new_cid(),
                 iid=wave.iid,
+                health=getattr(item, 'health', 1.0) if item else 1.0,
+                max_health=getattr(item, 'health', 1.0) if item else 1.0,
+                speed=getattr(item, 'speed', 0.15) if item else 0.15,
+                armour=getattr(item, 'armour', 0.0) if item else 0.0,
             )
             critters.append(critter)
             critters_spawned += 1
@@ -343,16 +487,44 @@ class BattleService:
             battle.keep_alive = False
             battle.defender_won = True  # critters didn't break through
             log.info("[FINISH] Battle bid=%d finished (defender won)", battle.bid)
+        
+        
 
 
     def _critter_finished(self, battle: BattleState, critter: Critter) -> None:
         """Handle critter reaching the castle.
         
-        Attacker gains the capture resources.
+        Attacker gains the capture resources, defender loses life.
         """
-        log.debug("Critter %d (%s) finished", critter.cid, critter.iid)
+        # Remove critter from battle
+        del battle.critters[critter.cid]
         
+        # Calculate damage to defender (default 1 life per critter, or from capture dict)
+        life_damage = critter.capture.get("life", 1.0)
         
+        # Apply damage to defender
+        if battle.defender:
+            current_life = battle.defender.resources.get("life", 0.0)
+            new_life = max(0.0, current_life - life_damage)
+            battle.defender.resources["life"] = new_life
+            
+            log.info("[FINISHED] Critter cid=%d (%s) reached goal, defender life: %.1f -> %.1f (damage: %.1f)",
+                     critter.cid, critter.iid, current_life, new_life, life_damage)
+        
+        # Track defender losses for summary
+        battle.defender_losses["life"] = battle.defender_losses.get("life", 0.0) + life_damage
+        
+        # Give capture resources to attacker (if any beyond life damage)
+        if battle.attacker and critter.capture:
+            attacker_uid = battle.attacker.uid
+            if attacker_uid not in battle.attacker_gains:
+                battle.attacker_gains[attacker_uid] = {}
+            
+            for resource, amount in critter.capture.items():
+                if resource != "life":  # life is defender loss, not attacker gain
+                    battle.attacker_gains[attacker_uid][resource] = (
+                        battle.attacker_gains[attacker_uid].get(resource, 0.0) + amount
+                    )
 
     def _critter_died(self, battle: BattleState, critter: Critter) -> None:
         """Handle critter killed by tower.
@@ -386,11 +558,24 @@ class BattleService:
                 "burn_remaining_ms": max(0, critter.burn_remaining_ms),
             })
         
+        # Build shot snapshot for all pending shots
+        shot_updates = []
+        for shot in battle.pending_shots:
+            shot_updates.append({
+                "source_sid": shot.source_sid,
+                "target_cid": shot.target_cid,
+                "shot_type": shot.shot_type,
+                "path_progress": shot.path_progress,
+                "origin_q": shot.origin.q if shot.origin else 0,
+                "origin_r": shot.origin.r if shot.origin else 0,
+            })
+        
         msg: dict[str, Any] = {
             "type": "battle_update",
             "bid": battle.bid,
             "elapsed_ms": battle.elapsed_ms,
             "critters": critter_updates,
+            "shots": shot_updates,
         }
         
         # Send to all observers

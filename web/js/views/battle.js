@@ -23,6 +23,7 @@ import { HexGrid, getTileType, registerTileType } from '../lib/hex_grid.js';
 import { hexKey } from '../lib/hex.js';
 import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
+import { debug } from '../debug.js';
 
 /** @type {import('../state.js').StateStore} */
 let st;
@@ -256,6 +257,11 @@ function _addDebugLog(msg) {
 function _updateDebugPanel() {
   const panel = container?.querySelector('#battle-debug-panel');
   if (!panel) return;
+  
+  // Show/hide based on debug mode
+  panel.style.display = debug.enabled ? 'block' : 'none';
+  if (!debug.enabled) return;
+  
   const logList = panel.querySelector('#battle-debug-logs');
   if (!logList) return;
   logList.innerHTML = _debugLogs.map(log => `<div style="font-size:11px;padding:2px 0;font-family:monospace;color:#4a4">${log}</div>`).join('');
@@ -282,9 +288,6 @@ function init(el, _api, _state) {
     <div class="battle-view">
       <div class="battle-header">
         <h2 class="battle-title">⚔ Battle</h2>
-        <div class="battle-actions">
-          <button id="battle-exit" class="btn-ghost btn-sm" title="Exit to dashboard">Exit</button>
-        </div>
       </div>
 
       <!-- Battle Status Panel -->
@@ -301,18 +304,16 @@ function init(el, _api, _state) {
             </div>
           </div>
         </div>
-        <div class="battle-status__item">
-          <span class="label">Status</span>
-          <span class="value" id="battle-status-text">Waiting...</span>
-        </div>
-        <div class="battle-status__item">
-          <span class="label">Time</span>
-          <span class="value" id="battle-elapsed">00:00</span>
-        </div>
         <div class="battle-status__item" style="grid-column: 1 / -1;">
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
-            <span class="label">Current Wave</span>
-            <span class="value" id="battle-current-wave">-</span>
+            <div>
+              <span class="label">Status</span>
+              <span class="value" id="battle-status-text">Waiting...</span>
+            </div>
+            <div style="text-align:right">
+              <span class="label">Time</span>
+              <span class="value" id="battle-elapsed">00:00</span>
+            </div>
           </div>
         </div>
         <div class="battle-status__item" style="grid-column: 1 / -1;">
@@ -345,16 +346,6 @@ function init(el, _api, _state) {
     </div>
   `;
 
-  // Bind exit button
-  container.querySelector('#battle-exit').addEventListener('click', () => {
-    if (_battleState.active && !_battleState.is_finished) {
-      if (!confirm('Battle is still ongoing. Are you sure you want to leave?')) {
-        return;
-      }
-    }
-    window.location.hash = '#dashboard';
-  });
-
   // Bind summary close button
   container.querySelector('#summary-close').addEventListener('click', () => {
     container.querySelector('#battle-summary').style.display = 'none';
@@ -364,6 +355,7 @@ function init(el, _api, _state) {
 
 async function enter() {
   _debugLogs = [];  // Clear previous debug logs
+  _updateDebugPanel();  // Initialize debug panel visibility
   _initCanvas();
 
   // Subscribe to items for structure tile types
@@ -492,13 +484,22 @@ function _onBattleSetup(msg) {
   };
 
   // Clear previous battle
+  const wasActive = grid.battleActive;
   grid.clearBattle();
 
   // Load battle map
   if (msg.tiles) {
     grid.fromJSON({ tiles: msg.tiles });
     grid.addVoidNeighbors();
-    grid._centerGrid();
+    // Only center on first setup, not on reconnect/refresh
+    if (!wasActive) {
+      grid._centerGrid();
+    }
+  }
+
+  // Store critter path for rendering
+  if (msg.path) {
+    grid.setBattlePath(msg.path);
   }
 
   // Place structures (towers)
@@ -524,42 +525,44 @@ function _onBattleSetup(msg) {
 function _onBattleUpdate(msg) {
   if (!msg) return;
 
-  // Spawn new critters (client will autonomously move them along path)
-  if (msg.new_critters && msg.new_critters.length > 0) {
-    _addDebugLog(`👹 ${msg.new_critters.length} critters spawned`);
-    for (const c of msg.new_critters) {
-      console.log(
-        '[Battle] Critter spawned: cid=%d type=%s speed=%.1f path_len=%d',
-        c.cid, c.iid, c.speed || 0, c.path ? c.path.length : 0
-      );
-      grid.addBattleCritter(c.cid, c.path, c.speed);
-      _battleState.wave_count++;
-      // Note: current_wave_spawned is updated from battle_status, not here
+  // Update critter positions (new format: all critters with path_progress)
+  if (msg.critters && Array.isArray(msg.critters)) {
+    // Build set of active critter IDs from server
+    const activeCids = new Set();
+    for (const c of msg.critters) {
+      grid.updateBattleCritter(c);
+      activeCids.add(c.cid);
     }
+    
+    // Remove critters that are no longer in server's list (died or finished)
+    for (const cid of grid.battleCritters.keys()) {
+      if (!activeCids.has(cid)) {
+        grid.removeBattleCritter(cid);
+      }
+    }
+    
+    grid._dirty = true;
   }
 
-  // Remove dead critters
-  if (msg.dead_critter_ids && msg.dead_critter_ids.length > 0) {
-    _addDebugLog(`💀 ${msg.dead_critter_ids.length} critters killed`);
-    for (const cid of msg.dead_critter_ids) {
-      console.log('[Battle] Critter killed: cid=%d', cid);
-      grid.removeBattleCritter(cid);
+  // Update shot positions (all shots with path_progress)
+  if (msg.shots && Array.isArray(msg.shots)) {
+    console.log('[Battle] Received', msg.shots.length, 'shots');
+    
+    // Build set of active shot IDs from server
+    const activeShotIds = new Set();
+    for (const shot of msg.shots) {
+      grid.updateBattleShot(shot);
+      // Shot ID is constructed as `${source_sid}_${target_cid}`
+      const shot_id = `${shot.source_sid}_${shot.target_cid}`;
+      activeShotIds.add(shot_id);
     }
-  }
-
-  // Remove finished critters (reached castle)
-  if (msg.finished_critter_ids && msg.finished_critter_ids.length > 0) {
-    _addDebugLog(`🏰 ${msg.finished_critter_ids.length} critters reached castle`);
-    for (const cid of msg.finished_critter_ids) {
-      console.log('[Battle] Critter finished: cid=%d', cid);
-      grid.removeBattleCritter(cid);
+    
+    // Remove shots that are no longer in server's list (arrived or target died)
+    for (const shot_id of grid.battleShots.keys()) {
+      if (!activeShotIds.has(shot_id)) {
+        grid.battleShots.delete(shot_id);
+      }
     }
-  }
-
-  // Shots (TODO: Phase 3 - Shot visualization)
-  if (msg.new_shots && msg.new_shots.length > 0) {
-    console.log('[Battle] Shots fired: count=%d', msg.new_shots.length);
-    // TODO: grid.addBattleShot(shot)
   }
 
   grid._dirty = true;
@@ -636,30 +639,23 @@ function _updateStatusFromBattleMsg() {
   }
   _updateStatus(statusText);
   
-  // Update current wave with critter counter
-  const currentWaveEl = container.querySelector('#battle-current-wave');
-  if (currentWaveEl) {
-    if (_battleState.current_wave) {
-      const w = _battleState.current_wave;
-      const spawned = _battleState.current_wave_spawned;
-      const total = w.slots;
-      currentWaveEl.textContent = `${w.critter_iid} (${spawned}/${total})`;
-    } else {
-      // All waves finished
-      currentWaveEl.textContent = 'done';
-    }
-  }
-  
   // Update next wave with countdown
   const nextWaveEl = container.querySelector('#battle-next-wave');
   if (nextWaveEl) {
-    if (_battleState.next_wave) {
+    if (_battleState.current_wave) {
+      // Show current wave being spawned
+      const w = _battleState.current_wave;
+      const spawned = _battleState.current_wave_spawned;
+      const total = w.slots;
+      nextWaveEl.textContent = `${w.critter_iid} (${spawned}/${total})`;
+    } else if (_battleState.next_wave) {
+      // Show next wave with countdown
       const w = _battleState.next_wave;
       const countdown = _battleState.next_wave_countdown_ms;
       const timeStr = countdown > 0 ? ` in ${_formatTime(countdown)}` : '';
       nextWaveEl.textContent = `${w.critter_iid} x${w.slots}${timeStr}`;
     } else {
-      nextWaveEl.textContent = '-';
+      nextWaveEl.textContent = 'done';
     }
   }
   
