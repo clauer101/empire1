@@ -1,2 +1,6 @@
 __pycache__
+.venv
+.vscode
+.pytest_cache
 java_implementation
+plans

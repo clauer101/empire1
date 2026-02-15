@@ -17,7 +17,7 @@ import pytest
 
 from gameserver.models.empire import Empire
 from gameserver.models.army import Army, SpyArmy
-from gameserver.models.map import HexCoord, Direction
+from gameserver.models.hex import HexCoord
 from gameserver.models.structure import Structure
 from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.attack_service import AttackService

@@ -129,7 +129,7 @@ debugToggle.addEventListener('click', () => {
   debugToggle.classList.toggle('active', debug.enabled);
   showToast(`Debug mode ${debug.enabled ? 'enabled' : 'disabled'}`);
 });
-document.body.appendChild(debugToggle);
+// document.body.appendChild(debugToggle);
 
 (async () => {
   // 1. Try REST auto-login (validates stored JWT or credentials)

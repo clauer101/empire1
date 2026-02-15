@@ -259,6 +259,8 @@ def _serialize_shot(shot: Shot) -> dict[str, Any]:
         "shot_type": shot.shot_type,
         "effects": dict(shot.effects),
         "flight_remaining_ms": shot.flight_remaining_ms,
+        "origin": _hex(shot.origin) if shot.origin else None,
+        "path_progress": shot.path_progress,
     }
 
 
@@ -272,8 +274,8 @@ def _serialize_battle(battle: BattleState) -> dict[str, Any]:
     """
     return {
         "bid": battle.bid,
-        "defender_uid": battle.defender_uid,
-        "attacker_uids": list(battle.attacker_uids),
+        "defender_uid": battle.defender.uid if battle.defender else 0,
+        "attacker_uids": [battle.attacker.uid] if battle.attacker else [],
         "attacker": _serialize_army(battle.attacker) if battle.attacker else None,
         "critters": {
             str(cid): _serialize_critter(c) for cid, c in battle.critters.items()
@@ -282,6 +284,7 @@ def _serialize_battle(battle: BattleState) -> dict[str, Any]:
             str(sid): _serialize_structure(s) for sid, s in battle.structures.items()
         },
         "pending_shots": [_serialize_shot(s) for s in battle.pending_shots],
+        "critter_path": [_hex(coord) for coord in battle.critter_path],
         "elapsed_ms": battle.elapsed_ms,
         "is_finished": battle.is_finished,
         "defender_won": battle.defender_won,

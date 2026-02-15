@@ -891,9 +891,40 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
         hex_path = find_hex_path(spawn_pos, castle_pos, passable)
     
     # ── Get structures ───────────────────────────────────
+    # Load structures from hex_map tiles and create Structure objects
     structures_dict = {}
     if defender_empire.structures:
         structures_dict = dict(defender_empire.structures)
+    
+    # Also load structures from hex_map tiles (for backwards compatibility)
+    from gameserver.models.structure import Structure
+    from gameserver.models.hex import HexCoord
+    structure_sid = 1
+    items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    for tile_key, tile_type in tiles.items():
+        # Check if tile_type is a structure (not path, castle, etc.)
+        if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
+            # This is a structure tile, load stats from item provider
+            item = items_dict.get(tile_type)
+            if item:
+                # Parse q,r from key "q,r"
+                q, r = map(int, tile_key.split(","))
+                # Create Structure object with stats from item config
+                structure = Structure(
+                    sid=structure_sid,
+                    iid=tile_type,
+                    position=HexCoord(q, r),
+                    damage=getattr(item, "damage", 1.0),
+                    range=getattr(item, "range", 1),
+                    reload_time_ms=getattr(item, "reload_time", 2000.0),
+                    shot_speed=getattr(item, "shot_speed", 1.0),
+                    shot_type=getattr(item, "shot_type", "normal"),
+                    effects=getattr(item, "effects", {}),
+                )
+                structures_dict[structure_sid] = structure
+                structure_sid += 1
+                log.debug("[_send_battle_setup] Loaded structure sid=%d iid=%s at (%d,%d)",
+                         structure.sid, structure.iid, q, r)
     
     # ── Send battle_setup ────────────────────────────────
     setup_msg = {
@@ -1433,6 +1464,13 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         # Battle finished - apply resource transfers
         log.info("[battle] bid=%d complete: attacker_wins=%s", bid, not battle.defender_won)
         
+        # Mark attack as FINISHED so it gets removed from _attacks list
+        from gameserver.models.attack import AttackPhase
+        attack = svc.attack_service.get(bid)
+        if attack:
+            attack.phase = AttackPhase.FINISHED
+            log.info("[battle] Attack %d marked as FINISHED", bid)
+        
     except Exception:
         import traceback
         log.error("Battle loop crashed: %s", traceback.format_exc())
@@ -1572,9 +1610,40 @@ def _create_battle_start_handler() -> Callable:
             return
         
         # ── Get defender's structures ────────────────────────
+        # Load structures from hex_map tiles and create Structure objects
         structures_dict = {}
         if defender_empire.structures:
             structures_dict = dict(defender_empire.structures)
+        
+        # Also load structures from hex_map tiles (for backwards compatibility)
+        from gameserver.models.structure import Structure
+        from gameserver.models.hex import HexCoord
+        structure_sid = 1
+        items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
+        for tile_key, tile_type in tiles.items():
+            # Check if tile_type is a structure (not path, castle, etc.)
+            if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
+                # This is a structure tile, load stats from item provider
+                item = items_dict.get(tile_type)
+                if item:
+                    # Parse q,r from key "q,r"
+                    q, r = map(int, tile_key.split(","))
+                    # Create Structure object with stats from item config
+                    structure = Structure(
+                        sid=structure_sid,
+                        iid=tile_type,
+                        position=HexCoord(q, r),
+                        damage=getattr(item, "damage", 1.0),
+                        range=getattr(item, "range", 1),
+                        reload_time_ms=getattr(item, "reload_time", 2000.0),
+                        shot_speed=getattr(item, "shot_speed", 1.0),
+                        shot_type=getattr(item, "shot_type", "normal"),
+                        effects=getattr(item, "effects", {}),
+                    )
+                    structures_dict[structure_sid] = structure
+                    structure_sid += 1
+                    log.debug("[battle:start_requested] Loaded structure sid=%d iid=%s at (%d,%d)",
+                             structure.sid, structure.iid, q, r)
         
         # ── Create BattleState ───────────────────────────────
         bid = _next_bid
@@ -1696,7 +1765,8 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     
     # ── Find path from spawnpoint to castle ──────────────
     from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
-    critter_path = find_path_from_spawn_to_castle(defender_empire.hex_map)
+    tiles = defender_empire.hex_map
+    critter_path = find_path_from_spawn_to_castle(tiles)
     
     if not critter_path:
         log.error("[battle:start_requested] FAIL: defender %d map has no valid path",
@@ -1704,9 +1774,40 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         return
     
     # ── Get defender's structures ────────────────────────
+    # Load structures from hex_map tiles and create Structure objects
     structures_dict = {}
     if defender_empire.structures:
         structures_dict = dict(defender_empire.structures)
+    
+    # Also load structures from hex_map tiles (for backwards compatibility)
+    from gameserver.models.structure import Structure
+    from gameserver.models.hex import HexCoord
+    structure_sid = 1
+    items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    for tile_key, tile_type in tiles.items():
+        # Check if tile_type is a structure (not path, castle, etc.)
+        if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
+            # This is a structure tile, load stats from item provider
+            item = items_dict.get(tile_type)
+            if item:
+                # Parse q,r from key "q,r"
+                q, r = map(int, tile_key.split(","))
+                # Create Structure object with stats from item config
+                structure = Structure(
+                    sid=structure_sid,
+                    iid=tile_type,
+                    position=HexCoord(q, r),
+                    damage=getattr(item, "damage", 1.0),
+                    range=getattr(item, "range", 1),
+                    reload_time_ms=getattr(item, "reload_time", 2000.0),
+                    shot_speed=getattr(item, "shot_speed", 1.0),
+                    shot_type=getattr(item, "shot_type", "normal"),
+                    effects=getattr(item, "effects", {}),
+                )
+                structures_dict[structure_sid] = structure
+                structure_sid += 1
+                log.debug("[battle:start_requested] Loaded structure sid=%d iid=%s at (%d,%d)",
+                         structure.sid, structure.iid, q, r)
     
     # ── Create BattleState ───────────────────────────────
     bid = _next_bid

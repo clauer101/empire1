@@ -102,16 +102,24 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     # TODO: BattleService.run_battle() is not yet implemented.
     #       Restored BattleState objects cannot be resumed yet.
     #       They are loaded for completeness but will not be active.
+    battle_dicts = []  # Keep dicts for linking
     for battle_dict in raw.get("battles", []):
         try:
-            result.battles.append(_deserialize_battle(battle_dict))
+            battle = _deserialize_battle(battle_dict)
+            result.battles.append(battle)
+            battle_dicts.append((battle, battle_dict))
         except Exception:
             log.exception("Failed to restore battle: %s", battle_dict.get("bid", "?"))
 
     # ---- Link defender empires to battles ----
-    for battle in result.battles:
-        if battle.defender_uid in result.empires:
-            battle.defender = result.empires[battle.defender_uid]
+    for battle, battle_dict in battle_dicts:
+        defender_uid = battle_dict.get("defender_uid")
+        if defender_uid and defender_uid in result.empires:
+            battle.defender = result.empires[defender_uid]
+        # Link attacker (first attacker_uid)
+        attacker_uids = battle_dict.get("attacker_uids", [])
+        if attacker_uids and attacker_uids[0] in result.empires:
+            battle.attacker = result.empires[attacker_uids[0]]
 
     log.info("Restored %d empires, %d attacks, %d battles",
              len(result.empires), len(result.attacks), len(result.battles))
@@ -282,6 +290,11 @@ def _deserialize_attack(d: dict[str, Any]) -> Attack:
 # ===================================================================
 
 def _deserialize_shot(d: dict[str, Any]) -> Shot:
+    from gameserver.models.hex import HexCoord
+    origin = None
+    if d.get("origin"):
+        origin = HexCoord(int(d["origin"].get("q", 0)), int(d["origin"].get("r", 0)))
+    
     return Shot(
         damage=d["damage"],
         target_cid=d["target_cid"],
@@ -289,6 +302,8 @@ def _deserialize_shot(d: dict[str, Any]) -> Shot:
         shot_type=d.get("shot_type", 0),
         effects=dict(d.get("effects", {})),
         flight_remaining_ms=d.get("flight_remaining_ms", 0.0),
+        origin=origin,
+        path_progress=d.get("path_progress", 0.0),
     )
 
 

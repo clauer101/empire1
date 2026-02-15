@@ -6,7 +6,6 @@ Holds the hex grid, paths for critter movement, build zones, and occupancy track
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 
 from gameserver.models.hex import HexCoord
 
@@ -16,7 +15,7 @@ class HexMap:
     """The game map as a hexagonal grid.
 
     Attributes:
-        paths: Ordered list of hex coordinates per direction that critters follow.
+        critter_path: Ordered list of hex coordinates that critters follow.
         build_tiles: Set of hex coordinates where structures may be placed.
         occupied: Set of hex coordinates currently occupied by structures.
     """
@@ -49,8 +48,8 @@ class HexMap:
         self.occupied -= self._footprint(center, radius)
 
     def get_path(self) -> list[HexCoord]:
-        """Return a copy of the path for the given direction."""
-        pass
+        """Return a copy of the critter path."""
+        return list(self.critter_path)
 
     # -- Internal --------------------------------------------------------
 

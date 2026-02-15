@@ -86,8 +86,8 @@ def _make_attack() -> Attack:
 def _make_battle() -> BattleState:
     return BattleState(
         bid=7,
-        defender_uid=2,
-        attacker_uids=[1],
+        defender=None,
+        attacker=None,
         critters={
             200: Critter(cid=200, iid="orc", health=20.0, max_health=20.0,
                          speed=1.0, armour=1.0,
@@ -255,8 +255,6 @@ class TestSaveLoad:
         assert len(restored.battles) == 1
         b = restored.battles[0]
         assert b.bid == 7
-        assert b.defender_uid == 2
-        assert b.attacker_uids == [1]
         assert 200 in b.critters
         assert b.critters[200].iid == "orc"
         assert 10 in b.structures
