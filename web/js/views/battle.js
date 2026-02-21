@@ -324,9 +324,22 @@ function init(el, _api, _state) {
         </div>
       </div>
 
-      <!-- Canvas Container -->
-      <div class="battle-canvas-wrap" id="canvas-wrap">
-        <canvas id="battle-canvas"></canvas>
+      <!-- Battle Body (Canvas + Props Panel) -->
+      <div class="battle-view__body">
+        <!-- Canvas Container -->
+        <div class="battle-canvas-wrap" id="canvas-wrap">
+          <canvas id="battle-canvas"></canvas>
+        </div>
+
+        <!-- Tower Properties Panel (Desktop only) -->
+        <aside class="battle-view__props" id="tower-props">
+          <div class="panel">
+            <div class="panel-header">Tower Details</div>
+            <div id="tower-props-content" class="props-empty">
+              Click a tower to inspect
+            </div>
+          </div>
+        </aside>
       </div>
 
       <!-- Battle Summary Overlay (hidden initially) -->
@@ -335,6 +348,18 @@ function init(el, _api, _state) {
           <h3 id="summary-title">Battle Complete</h3>
           <div id="summary-content"></div>
           <button id="summary-close" class="btn-primary">Close</button>
+        </div>
+      </div>
+
+      <!-- Tower Details Overlay -->
+      <div class="tile-overlay" id="tower-overlay" style="display:none;">
+        <div class="tile-overlay__content">
+          <div class="tile-overlay__header">
+            <h3>Tower Details</h3>
+            <button class="tile-overlay__close" id="tower-overlay-close">✕</button>
+          </div>
+          <div class="tile-overlay__body" id="tower-overlay-body">
+          </div>
         </div>
       </div>
 
@@ -351,6 +376,99 @@ function init(el, _api, _state) {
     container.querySelector('#battle-summary').style.display = 'none';
     window.location.hash = '#dashboard';
   });
+
+  // Bind tower overlay
+  _bindTowerOverlay();
+}
+
+function _bindTowerOverlay() {
+  const closeBtn = container.querySelector('#tower-overlay-close');
+  const overlay = container.querySelector('#tower-overlay');
+  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      overlay.style.display = 'none';
+    });
+  }
+  
+  // Close on backdrop click
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.style.display = 'none';
+      }
+    });
+  }
+}
+
+function _showTowerDetails(q, r, tile) {
+  const overlayBody = container.querySelector('#tower-overlay-body');
+  const overlay = container.querySelector('#tower-overlay');
+  const propsContent = container.querySelector('#tower-props-content');
+  
+  if (!tile) {
+    return;
+  }
+
+  const t = getTileType(tile.type);
+
+  // Build tower info from server data
+  let towerInfo = '';
+  if (t.serverData) {
+    const s = t.serverData;
+    towerInfo = 
+      '<div class="props-divider"></div>' +
+      '<div class="props-section-label">Tower Stats</div>' +
+      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
+      '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
+      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
+      '<div class="props-row"><span class="label">Shot Speed</span><span class="value">' + (s.shot_speed || 0) + ' hex/s</span></div>' +
+      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+    if (s.effects && Object.keys(s.effects).length > 0) {
+      const effectsStr = Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ');
+      towerInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' + effectsStr + '</span></div>';
+    }
+    if (s.requirements && s.requirements.length > 0) {
+      towerInfo += '<div class="props-row"><span class="label">Requires</span><span class="value" style="font-size:10px;">' + s.requirements.join(', ') + '</span></div>';
+    }
+  } else {
+    // Not a tower tile, don't show anything
+    return;
+  }
+
+  const detailsHTML = 
+    '<div class="props-tile">' +
+      '<div class="props-row">' +
+        '<span class="label">Position</span>' +
+        '<span class="value mono">' + q + ', ' + r + '</span>' +
+      '</div>' +
+      '<div class="props-row">' +
+        '<span class="label">Type</span>' +
+        '<span class="value">' +
+          '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
+          t.label +
+        '</span>' +
+      '</div>' +
+      '<div class="props-row">' +
+        '<span class="label">Key</span>' +
+        '<span class="value mono">' + hexKey(q, r) + '</span>' +
+      '</div>' +
+      towerInfo +
+    '</div>';
+  
+  // Update desktop props panel
+  if (propsContent) {
+    propsContent.innerHTML = detailsHTML;
+  }
+  
+  // Update mobile overlay
+  if (overlayBody) {
+    overlayBody.innerHTML = detailsHTML;
+    // Show overlay only on mobile
+    if (window.innerWidth <= 1100) {
+      overlay.style.display = 'flex';
+    }
+  }
 }
 
 async function enter() {
@@ -370,6 +488,19 @@ async function enter() {
 
   _registerStructureTileTypes();
 
+  // Load map from server (like composer)
+  try {
+    const response = await rest.loadMap();
+    if (response && response.tiles) {
+      grid.fromJSON({ tiles: response.tiles });
+      grid.addVoidNeighbors();
+      grid._centerGrid();
+      console.log('[Battle] Map loaded from server');
+    }
+  } catch (err) {
+    console.warn('[Battle] could not load map from server:', err.message);
+  }
+
   // Connect battle WebSocket
   _wsConnect();
 
@@ -379,6 +510,9 @@ async function enter() {
 
   // Start status update loop
   _startStatusLoop();
+
+  // Load map background image
+  _loadMapBackground();
 }
 
 function leave() {
@@ -394,7 +528,19 @@ function leave() {
   _wsDisconnect();
 }
 
-// ── Canvas initialization ───────────────────────────────────
+/** Fetch the first available map PNG and apply it as the grid background. */
+async function _loadMapBackground() {
+  try {
+    const res = await fetch('/api/maps');
+    if (!res.ok) return;
+    const { maps } = await res.json();
+    if (maps && maps.length > 0 && grid) {
+      await grid.setMapBackground(maps[0].url);
+    }
+  } catch (e) {
+    console.warn('[Battle] map background not loaded:', e.message);
+  }
+}
 
 function _initCanvas() {
   const wrap = container.querySelector('#canvas-wrap');
@@ -402,10 +548,10 @@ function _initCanvas() {
 
   grid = new HexGrid({
     canvas,
-    cols: 8,
-    rows: 8,
-    hexSize: 32,
-    onTileClick: null,  // Read-only during battle
+    cols: 6,
+    rows: 6,
+    hexSize: 28,
+    onTileClick: (q, r, tile) => _showTowerDetails(q, r, tile),
     onTileHover: null,
     onTileDrop: null,
   });
@@ -546,7 +692,9 @@ function _onBattleUpdate(msg) {
 
   // Update shot positions (all shots with path_progress)
   if (msg.shots && Array.isArray(msg.shots)) {
-    console.log('[Battle] Received', msg.shots.length, 'shots');
+    if (msg.shots.length > 0) {
+      console.log('[Battle] Received', msg.shots.length, 'shots');
+    }
     
     // Build set of active shot IDs from server
     const activeShotIds = new Set();

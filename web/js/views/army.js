@@ -14,6 +14,17 @@ let container;
 let _unsub = [];
 let _availableCritters = [];
 
+/**
+ * Calculate critter slot price based on current slots in wave.
+ * Matches server-side sigmoid formula from empire_service.py
+ * @param {number} slotNumber - The slot number (1-based)
+ * @returns {number} Price in gold
+ */
+function calculateCritterSlotPrice(slotNumber) {
+  const maxv = 13000, minv = 25, spread = 15, steep = 6;
+  return minv + (maxv - minv) / (1 + Math.exp((-7 * slotNumber) / spread + steep));
+}
+
 function init(el, _api, _state) {
   container = el;
   api = _api;
@@ -30,8 +41,12 @@ function init(el, _api, _state) {
           <label for="army-name">Name</label>
           <input type="text" id="army-name" placeholder="Army name">
         </div>
-        <button id="create-army-btn" style="align-self:flex-end">Create</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;">
+          <button id="create-army-btn" style="align-self:flex-end">Create</button>
+          <div id="army-price-display" style="font-size:10px;margin-top:4px;color:var(--text-muted);"></div>
+        </div>
       </div>
+      <div id="army-create-msg"></div>
     </div>
 
     <!-- ── Armies Overview ────────────────────────────── -->
@@ -47,9 +62,12 @@ function init(el, _api, _state) {
 async function enter() {
   // Listen to military data updates (but only for this view)
   _unsub.push(eventBus.on('state:military', renderArmies));
+  _unsub.push(eventBus.on('state:summary', updateCreateArmyButton));
   
   // Load once on entry
   try {
+    await rest.getSummary();
+    updateCreateArmyButton();
     await rest.getMilitary();
   } catch (err) {
     console.error('Failed to load military data:', err);
@@ -63,7 +81,7 @@ function showMessage(inputElement, text, type = 'error') {
   msgEl.style.cssText = `
     font-size: 12px;
     padding: 4px 8px;
-    margin-top: 4px;
+    margin-top: 8px;
     border-radius: var(--radius);
     color: white;
     text-align: center;
@@ -77,10 +95,40 @@ function showMessage(inputElement, text, type = 'error') {
   }
   
   msgEl.textContent = text;
-  inputElement.parentNode.insertBefore(msgEl, inputElement.nextSibling);
+  
+  // Check if this is a wave/critter-related message
+  const armyGroup = inputElement.closest('.army-group');
+  if (armyGroup) {
+    // For wave/critter messages, show under the waves container
+    const wavesContainer = armyGroup.querySelector('.waves-container');
+    if (wavesContainer) {
+      // Remove any existing messages in this army group
+      const existingMsg = armyGroup.querySelector('.wave-message-container');
+      if (existingMsg) {
+        existingMsg.remove();
+      }
+      
+      // Insert message after waves container
+      const messageContainer = document.createElement('div');
+      messageContainer.className = 'wave-message-container';
+      messageContainer.appendChild(msgEl);
+      wavesContainer.parentNode.insertBefore(messageContainer, wavesContainer.nextSibling);
+    } else {
+      // Fallback to old behavior
+      inputElement.parentNode.insertBefore(msgEl, inputElement.nextSibling);
+    }
+  } else {
+    // For non-wave messages (like army creation), use old behavior
+    inputElement.parentNode.insertBefore(msgEl, inputElement.nextSibling);
+  }
   
   setTimeout(() => {
     msgEl.remove();
+    // Also remove the container if empty
+    const messageContainer = msgEl.closest('.wave-message-container');
+    if (messageContainer && !messageContainer.hasChildNodes()) {
+      messageContainer.remove();
+    }
   }, 3000);
 }
 
@@ -89,12 +137,63 @@ function leave() {
   _unsub = [];
 }
 
+function updateCreateArmyButton() {
+  const armyPrice = st.summary?.army_price || 0;
+  const currentGold = st.summary?.resources?.gold || 0;
+  const canAfford = currentGold >= armyPrice;
+  
+  const btn = container.querySelector('#create-army-btn');
+  const priceDisplay = container.querySelector('#army-price-display');
+  
+  if (btn && priceDisplay) {
+    priceDisplay.textContent = `💰 ${Math.round(armyPrice)} Gold`;
+    priceDisplay.style.color = canAfford ? 'var(--text-muted)' : 'var(--danger)';
+    
+    if (!canAfford) {
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+      btn.title = `Not enough gold (${Math.round(armyPrice)} needed)`;
+    } else {
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.title = `Create army (${Math.round(armyPrice)} gold)`;
+    }
+  }
+}
+
 async function onCreateArmy() {
-  const name = container.querySelector('#army-name').value.trim();
-  if (!name) return;
-  await rest.createArmy(name);
-  container.querySelector('#army-name').value = '';
-  await rest.getMilitary();
+  const armyPrice = st.summary?.army_price || 0;
+  const currentGold = st.summary?.resources?.gold || 0;
+  
+  if (currentGold < armyPrice) {
+    const msgEl = container.querySelector('#army-create-msg');
+    showMessage(msgEl, `Not enough gold (need ${Math.round(armyPrice)}, have ${Math.round(currentGold)})`, 'error');
+    return;
+  }
+  
+  const nameInput = container.querySelector('#army-name');
+  const name = nameInput.value.trim();
+  const msgEl = container.querySelector('#army-create-msg');
+  
+  if (!name) {
+    showMessage(msgEl, 'Please enter army name', 'error');
+    return;
+  }
+  
+  try {
+    const resp = await rest.createArmy(name);
+    if (resp.success) {
+      nameInput.value = '';
+      showMessage(msgEl, `✓ Army "${name}" created! Cost: ${Math.round(resp.cost)} gold`, 'success');
+      await rest.getSummary();
+      await rest.getMilitary();
+    } else {
+      showMessage(msgEl, `✗ ${resp.error || 'Failed to create army'}`, 'error');
+    }
+  } catch (err) {
+    console.error('Failed to create army:', err);
+    showMessage(msgEl, '✗ Network error', 'error');
+  }
 }
 
 async function onEditArmyName(e) {
@@ -149,15 +248,31 @@ async function onEditArmyName(e) {
 
 async function onAddWave(e) {
   const waveTile = e.currentTarget;
-  const wavesContainer = waveTile.closest('.waves-container');
-  const armyGroup = wavesContainer.closest('.army-group');
+  const canAfford = waveTile.getAttribute('data-can-afford') === 'true';
+  
+  if (!canAfford) {
+    const price = waveTile.getAttribute('data-price') || '0';
+    const currentGold = st.summary?.resources?.gold || 0;
+    showMessage(waveTile, `Not enough gold (need ${price}, have ${Math.round(currentGold)})`, 'error');
+    return;
+  }
+  
+  const armyGroup = waveTile.closest('.army-group');
   const aid = parseInt(armyGroup.getAttribute('data-aid'), 10);
 
   try {
-    await rest.addWave(aid);  // Server decides critter type (SLAVE)
-    await rest.getMilitary();
+    const resp = await rest.buyWave(aid);
+    if (resp.success) {
+      showMessage(waveTile, `✓ Wave added! Cost: ${Math.round(resp.cost)} gold`, 'success');
+      // Reload summary to update prices and gold
+      await rest.getSummary();
+      await rest.getMilitary();
+    } else {
+      showMessage(waveTile, `✗ ${resp.error || 'Failed to add wave'}`, 'error');
+    }
   } catch (err) {
     console.error('Failed to add wave:', err);
+    showMessage(waveTile, '✗ Network error', 'error');
   }
 }
 
@@ -179,16 +294,31 @@ async function onChangeCritter(e) {
 
 async function onIncreaseSlots(e) {
   const btn = e.currentTarget;
+  const canAfford = btn.getAttribute('data-can-afford') === 'true';
+  
+  if (!canAfford) {
+    const price = btn.getAttribute('data-price') || '0';
+    const currentGold = st.summary?.resources?.gold || 0;
+    showMessage(btn.closest('.wave-tile'), `Not enough gold (need ${price}, have ${Math.round(currentGold)})`, 'error');
+    return;
+  }
+  
   const aid = parseInt(btn.getAttribute('data-aid'), 10);
   const waveIdx = parseInt(btn.getAttribute('data-wave-idx'), 10);
-  const currentCount = parseInt(btn.getAttribute('data-count'), 10) || 1;
-  const newCount = currentCount + 1;
 
   try {
-    await rest.changeWave(aid, waveIdx, undefined, newCount);
-    await rest.getMilitary();
+    const resp = await rest.buyCritterSlot(aid, waveIdx);
+    if (resp.success) {
+      showMessage(btn.closest('.wave-tile'), `✓ Critter added! Cost: ${Math.round(resp.cost)} gold`, 'success');
+      // Reload summary to update prices and gold
+      await rest.getSummary();
+      await rest.getMilitary();
+    } else {
+      showMessage(btn.closest('.wave-tile'), `✗ ${resp.error || 'Failed to add critter'}`, 'error');
+    }
   } catch (err) {
     console.error('Failed to increase critter count:', err);
+    showMessage(btn.closest('.wave-tile'), '✗ Network error', 'error');
   }
 }
 
@@ -262,6 +392,11 @@ function renderArmies(data) {
     return;
   }
 
+  // Get prices from summary
+  const wavePrice = st.summary?.wave_price || 0;
+  const currentGold = st.summary?.resources?.gold || 0;
+  const canAffordWave = currentGold >= wavePrice;
+
   el.classList.add('armies-container');
   el.innerHTML = armies.map((a, idx) => `
     <div class="army-group" data-aid="${a.aid}">
@@ -277,7 +412,11 @@ function renderArmies(data) {
       </div>
       <div class="waves-container">
         ${(a.waves || []).length > 0 ? `
-          ${(a.waves || []).map((w, i) => `
+          ${(a.waves || []).map((w, i) => {
+            // Calculate slot price for this specific wave
+            const nextSlotPrice = calculateCritterSlotPrice((w.slots || 0) + 1);
+            const canAffordSlot = currentGold >= nextSlotPrice;
+            return `
             <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
               <div class="wave-tile-header">
                 <select class="wave-critter-select" data-aid="${a.aid}" data-wave-idx="${i}">
@@ -292,16 +431,30 @@ function renderArmies(data) {
               <div class="wave-tile-body">
                 <button class="wave-slots-btn wave-slots-decrease" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}" title="Remove critter" ${(w.slots || 0) <= 1 ? 'disabled' : ''}>-</button>
                 <div class="wave-tile-count">${w.slots || 0}</div>
-                <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}" title="Add critter">+</button>
+                <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}" 
+                  title="${canAffordSlot ? `Add critter (${Math.round(nextSlotPrice)} gold)` : `Not enough gold (${Math.round(nextSlotPrice)} needed)`}"
+                  style="position:relative;${canAffordSlot ? '' : 'opacity:0.5;cursor:not-allowed;'}"
+                  data-price="${Math.round(nextSlotPrice)}"
+                  data-can-afford="${canAffordSlot}">
+                  <span style="font-size:16px;">+</span>
+                  <span style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;color:${canAffordSlot ? 'var(--text)' : 'var(--danger)'};">
+                    💰${Math.round(nextSlotPrice)}
+                  </span>
+                </button>
               </div>
-              <div class="wave-tile-footer">
-                <span class="wave-time">${w.spawn_interval_ms}ms</span>
-              </div>
+              ${w.spawn_interval_ms ? `<div class="wave-tile-footer"><span class="wave-time">${w.spawn_interval_ms}ms</span></div>` : ''}
             </div>
-          `).join('')}
+          `;}).join('')}
         ` : ''}
-        <div class="wave-tile wave-tile-add">
+        <div class="wave-tile wave-tile-add" data-aid="${a.aid}" 
+          title="${canAffordWave ? `Add wave (${Math.round(wavePrice)} gold)` : `Not enough gold (${Math.round(wavePrice)} needed)`}"
+          style="${canAffordWave ? '' : 'opacity:0.5;cursor:not-allowed;'}"
+          data-price="${Math.round(wavePrice)}"
+          data-can-afford="${canAffordWave}">
           <div class="wave-tile-plus">+</div>
+          <div style="font-size:11px;margin-top:4px;color:${canAffordWave ? 'var(--text)' : 'var(--danger)'};">
+            💰 ${Math.round(wavePrice)}
+          </div>
         </div>
       </div>
       ${idx < armies.length - 1 ? '<div class="army-separator"></div>' : ''}

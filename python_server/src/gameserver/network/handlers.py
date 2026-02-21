@@ -445,6 +445,22 @@ async def handle_new_army(
             "error": "Army name cannot be empty",
         }
     
+    # Calculate cost based on number of existing armies
+    army_count = len(empire.armies)
+    army_price = svc.empire_service._army_price(army_count + 1)
+    
+    # Check if player has enough gold
+    current_gold = empire.resources.get('gold', 0.0)
+    if current_gold < army_price:
+        return {
+            "type": "new_army_response",
+            "success": False,
+            "error": f"Not enough gold (need {army_price:.1f}, have {current_gold:.1f})",
+        }
+    
+    # Deduct gold
+    empire.resources['gold'] -= army_price
+    
     # Find next available army ID
     max_aid = max([a.aid for a in empire.armies], default=0)
     new_aid = max_aid + 1
@@ -460,12 +476,13 @@ async def handle_new_army(
     # Add to empire
     empire.armies.append(new_army)
     
-    log.info("new_army success uid=%d aid=%d name=%s", target_uid, new_aid, name)
+    log.info("new_army success uid=%d aid=%d name=%s for %.1f gold", target_uid, new_aid, name, army_price)
     return {
         "type": "new_army_response",
         "success": True,
         "aid": new_aid,
         "name": name,
+        "cost": round(army_price, 2),
     }
 
 
@@ -647,14 +664,14 @@ async def handle_new_wave(
     new_wave = CritterWave(
         wave_id=_next_wid,
         iid="SLAVE",
-        slots=5,
+        slots=1,
     )
     _next_wid += 1
     
     # Add to army
     army.waves.append(new_wave)
     
-    log.info("new_wave success uid=%d aid=%d wave_id=%d with 5 SLAVE slots", target_uid, aid, new_wave.wave_id)
+    log.info("new_wave success uid=%d aid=%d wave_id=%d with 1 SLAVE slot", target_uid, aid, new_wave.wave_id)
     return {
         "type": "new_wave_response",
         "success": True,
@@ -1262,13 +1279,35 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
     attacks_incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(uid)]
     attacks_outgoing = [_attack_dto(a) for a in svc.attack_service.get_outgoing(uid)]
 
+    # Count purchased tiles (non-void tiles in hex_map)
+    hex_map = getattr(empire, 'hex_map', {}) or {}
+    purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
+    next_tile_price = svc.empire_service._tile_price(purchased_tile_count + 1)
+    
+    next_citizen_price = svc.empire_service._citizen_price(sum(empire.citizens.values()) + 1)
+    
+    # Count armies
+    army_count = len(empire.armies)
+    next_army_price = svc.empire_service._army_price(army_count + 1)
+    
+    # Count total waves across all armies
+    total_waves = sum(len(army.waves) for army in empire.armies)
+    next_wave_price = svc.empire_service._wave_price(total_waves + 1)
+    # Critter slot price is wave-specific (based on slots in that wave)
+    # Show base price for first slot as reference
+    base_critter_slot_price = svc.empire_service._critter_slot_price(1)
+
     return {
         "type": "summary_response",
         "uid": empire.uid,
         "name": empire.name,
         "resources": {k: round(v, 2) for k, v in empire.resources.items()},
         "citizens": dict(empire.citizens),
-        "citizen_price": svc.empire_service._citizen_price(sum(empire.citizens.values()) + 1),
+        "citizen_price": round(next_citizen_price, 2),
+        "tile_price": round(next_tile_price, 2),
+        "army_price": round(next_army_price, 2),
+        "wave_price": round(next_wave_price, 2),
+        "critter_slot_price": round(base_critter_slot_price, 2),
         "citizen_effect": svc.empire_service._citizen_effect,
         "base_gold": svc.empire_service._base_gold,
         "base_culture": svc.empire_service._base_culture,
@@ -1437,6 +1476,242 @@ async def handle_map_save_request(
     return {
         "type": "map_save_response",
         "success": True,
+    }
+
+
+async def handle_buy_tile_request(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Buy a void tile and convert it to empty land.
+    
+    Cost: TBD (currently free)
+    """
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+    
+    if empire is None:
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": f"No empire found for uid {target_uid}",
+        }
+    
+    q = getattr(message, 'q', None)
+    r = getattr(message, 'r', None)
+    
+    if q is None or r is None:
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": "Missing tile coordinates (q, r)",
+        }
+    
+    hex_map = getattr(empire, 'hex_map', {}) or {}
+    tile_key = f"{q},{r}"
+    
+    # Check if tile exists and is void
+    current_type = hex_map.get(tile_key, 'void')
+    if current_type != 'void':
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": f"Tile {tile_key} is not a void tile (current type: {current_type})",
+        }
+    
+    # Calculate cost based on number of already purchased tiles
+    purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
+    tile_price = svc.empire_service._tile_price(purchased_tile_count + 1)
+    
+    # Check if player has enough gold
+    current_gold = empire.resources.get('gold', 0.0)
+    if current_gold < tile_price:
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": f"Not enough gold (need {tile_price:.1f}, have {current_gold:.1f})",
+        }
+    
+    # Deduct gold
+    empire.resources['gold'] -= tile_price
+    
+    # Convert void tile to empty land
+    hex_map[tile_key] = 'empty'
+    empire.hex_map = hex_map
+    
+    log.info(f"Tile {tile_key} purchased by empire {empire.name} (uid={target_uid}) for {tile_price:.1f} gold")
+    
+    return {
+        "type": "buy_tile_response",
+        "success": True,
+        "tile_key": tile_key,
+        "new_type": "empty",
+        "cost": round(tile_price, 2),
+    }
+
+
+async def handle_buy_wave_request(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Buy a new wave for an army with gold.
+    
+    Cost based on total number of waves across all armies.
+    """
+    from gameserver.models.army import CritterWave
+    
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+    
+    if empire is None:
+        return {
+            "type": "buy_wave_response",
+            "success": False,
+            "error": f"No empire found for uid {target_uid}",
+        }
+    
+    aid = getattr(message, 'aid', None)
+    if aid is None:
+        return {
+            "type": "buy_wave_response",
+            "success": False,
+            "error": "Missing army ID (aid)",
+        }
+    
+    # Find the army
+    army = None
+    for a in empire.armies:
+        if a.aid == aid:
+            army = a
+            break
+    
+    if army is None:
+        return {
+            "type": "buy_wave_response",
+            "success": False,
+            "error": f"Army {aid} not found",
+        }
+    
+    # Calculate cost based on total waves across all armies
+    total_waves = sum(len(a.waves) for a in empire.armies)
+    wave_price = svc.empire_service._wave_price(total_waves + 1)
+    
+    # Check if player has enough gold
+    current_gold = empire.resources.get('gold', 0.0)
+    if current_gold < wave_price:
+        return {
+            "type": "buy_wave_response",
+            "success": False,
+            "error": f"Not enough gold (need {wave_price:.1f}, have {current_gold:.1f})",
+        }
+    
+    # Deduct gold
+    empire.resources['gold'] -= wave_price
+    
+    # Create new wave with default critter (SLAVE) and 1 slot
+    global _next_wid
+    new_wave = CritterWave(
+        wave_id=_next_wid,
+        iid="SLAVE",
+        slots=1,
+    )
+    _next_wid += 1
+    
+    # Add to army
+    army.waves.append(new_wave)
+    
+    log.info(f"Wave purchased for army {aid} by empire {empire.name} (uid={target_uid}) for {wave_price:.1f} gold")
+    
+    return {
+        "type": "buy_wave_response",
+        "success": True,
+        "aid": aid,
+        "wave_id": new_wave.wave_id,
+        "cost": round(wave_price, 2),
+        "wave_count": len(army.waves),
+    }
+
+
+async def handle_buy_critter_slot_request(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Buy an additional critter slot for a wave with gold.
+    
+    Cost based on total number of critter slots across all waves.
+    """
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+    
+    if empire is None:
+        return {
+            "type": "buy_critter_slot_response",
+            "success": False,
+            "error": f"No empire found for uid {target_uid}",
+        }
+    
+    aid = getattr(message, 'aid', None)
+    wave_number = getattr(message, 'wave_number', None)
+    
+    if aid is None or wave_number is None:
+        return {
+            "type": "buy_critter_slot_response",
+            "success": False,
+            "error": "Missing army ID (aid) or wave number",
+        }
+    
+    # Find the army
+    army = None
+    for a in empire.armies:
+        if a.aid == aid:
+            army = a
+            break
+    
+    if army is None:
+        return {
+            "type": "buy_critter_slot_response",
+            "success": False,
+            "error": f"Army {aid} not found",
+        }
+    
+    # Find the wave
+    if wave_number < 0 or wave_number >= len(army.waves):
+        return {
+            "type": "buy_critter_slot_response",
+            "success": False,
+            "error": f"Wave {wave_number} not found",
+        }
+    
+    wave = army.waves[wave_number]
+    
+    # Calculate cost based on slots in this specific wave only
+    slot_price = svc.empire_service._critter_slot_price(wave.slots + 1)
+    
+    # Check if player has enough gold
+    current_gold = empire.resources.get('gold', 0.0)
+    if current_gold < slot_price:
+        return {
+            "type": "buy_critter_slot_response",
+            "success": False,
+            "error": f"Not enough gold (need {slot_price:.1f}, have {current_gold:.1f})",
+        }
+    
+    # Deduct gold
+    empire.resources['gold'] -= slot_price
+    
+    # Increase slot count
+    old_slots = wave.slots
+    wave.slots += 1
+    
+    log.info(f"Critter slot purchased for army {aid} wave {wave_number} by empire {empire.name} (uid={target_uid}) for {slot_price:.1f} gold (slots: {old_slots} → {wave.slots})")
+    
+    return {
+        "type": "buy_critter_slot_response",
+        "success": True,
+        "aid": aid,
+        "wave_number": wave_number,
+        "new_slots": wave.slots,
+        "cost": round(slot_price, 2),
     }
 
 

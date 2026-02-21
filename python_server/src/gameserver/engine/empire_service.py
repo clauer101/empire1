@@ -289,10 +289,38 @@ class EmpireService:
         return None
 
     def _citizen_price(self, i: int) -> float:
-        # Java: sigmoid(i, MAX=60000, MIN=66, SPREAD=13, STEEP=8)
+        # sigmoid(i, MAX=60000, MIN=66, SPREAD=13, STEEP=8)
         import math
-        maxv, minv, spread, steep = 60000, 66, 13, 8
+        maxv, minv, spread, steep = 50000, 100, 15, 8
         return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+    
+    def _tile_price(self, i: int) -> float:
+        # sigmoid(i, MAX=30000, MIN=10, SPREAD=5, STEEP=5)
+        import math
+        maxv, minv, spread, steep = 47000, 100, 29, 8.5
+        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+
+    def _wave_price(self, i: int) -> float:
+        # Price for adding the i-th wave to an army
+        # sigmoid(i, MAX=8000, MIN=50, SPREAD=12, STEEP=7)
+        import math
+        maxv, minv, spread, steep = 28000, 100, 12, 7
+        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+    
+    def _critter_slot_price(self, i: int) -> float:
+        # Price for adding the i-th critter slot to a wave
+        # sigmoid(i, MAX=3000, MIN=20, SPREAD=15, STEEP=6)
+        import math
+        maxv, minv, spread, steep = 13000, 25, 23, 7
+        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+
+    def _army_price(self, i: int) -> float:
+        # Price for creating the i-th army
+        # sigmoid(i, MAX=15000, MIN=100, SPREAD=10, STEEP=6)
+        import math
+        maxv, minv, spread, steep = 75000, 1000, 7, 6
+        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:
         """Redistribute citizens among roles. Returns error message or None.

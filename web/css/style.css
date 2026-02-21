@@ -296,6 +296,85 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 
+/* items table (buildings/research) */
+.items-table .col-name { width: 55%; }
+.items-table .col-details { width: 45%; }
+
+.items-table .detail-row {
+  margin: 3px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.items-table .detail-row:first-child {
+  margin-top: 0;
+}
+
+.items-table .detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.items-table .detail-label {
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 6px;
+}
+
+/* responsive mobile layout for items table */
+@media (max-width: 900px) {
+  .items-table thead {
+    display: none;
+  }
+  
+  .items-table {
+    display: block;
+    width: 100%;
+  }
+  
+  .items-table tbody {
+    display: block;
+    width: 100%;
+  }
+  
+  .items-table tr {
+    display: block;
+    width: 100%;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  
+  .items-table td {
+    display: block;
+    width: 100% !important;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .items-table td:last-child {
+    border-bottom: none;
+  }
+  
+  .items-table .col-name {
+    padding-bottom: 8px;
+  }
+  
+  .items-table .col-details {
+    padding-top: 8px;
+  }
+  
+  /* Keep name and button side-by-side on mobile */
+  .items-table .item-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+  }
+}
+
 /* status badges in tables */
 .badge {
   display: inline-block;
@@ -363,6 +442,59 @@ button.btn-danger {
 button.btn-danger:hover {
   background: #c62828;
   color: var(--text-bright);
+}
+
+/* ── Toggle Switch ───────────────────────────────────────── */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  transition: .2s;
+  border-radius: 22px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-dim);
+  transition: .2s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(18px);
+  background-color: var(--text-bright);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 /* ── Inputs ──────────────────────────────────────────────── */
@@ -1450,6 +1582,81 @@ label {
   }
 }
 
+/* ── Tile Properties Overlay (Mobile) ────────────────────── */
+.tile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(2px);
+}
+
+.tile-overlay__content {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.tile-overlay__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tile-overlay__header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.tile-overlay__close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.tile-overlay__close:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.tile-overlay__body {
+  padding: 16px;
+}
+
+/* Hide overlay on desktop (props panel visible) */
+@media (min-width: 1101px) {
+  .tile-overlay {
+    display: none !important;
+  }
+  
+  /* Exception: tower overlay in battle view should always be visible */
+  #tower-overlay {
+    display: none; /* Reset !important, controlled by JS */
+  }
+}
+
 /* ── Build & Research Message Feedback ────────────────────── */
 .build-msg,
 .research-msg {
@@ -1469,7 +1676,8 @@ label {
 .battle-view {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   gap: 8px;
 }
 
@@ -1481,6 +1689,7 @@ label {
   background: var(--surface);
   border-radius: var(--radius);
   border-bottom: 2px solid var(--accent-dim);
+  flex-shrink: 0;
 }
 
 .battle-title {
@@ -1502,6 +1711,7 @@ label {
   padding: 8px;
   background: var(--surface);
   border-radius: var(--radius);
+  flex-shrink: 0;
 }
 
 .battle-status__item {
@@ -1529,12 +1739,21 @@ label {
   font-family: var(--mono);
 }
 
+/* Battle Body (Canvas + Props Layout) */
+.battle-view__body {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
 .battle-canvas-wrap {
   position: relative;
-  background: var(--surface);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  height: 600px;
   min-height: 400px;
 }
 
@@ -1548,6 +1767,15 @@ label {
 
 .battle-canvas-wrap canvas:active {
   cursor: grabbing;
+}
+
+/* Tower Properties Panel (Desktop) */
+.battle-view__props {
+  overflow-y: auto;
+}
+
+.battle-view__props .panel {
+  font-size: 12px;
 }
 
 /* Battle Summary Overlay */
@@ -1627,6 +1855,16 @@ label {
   max-width: 200px;
 }
 
+/* Battle View: Hide props panel on mobile (use overlay instead) */
+@media (max-width: 1100px) {
+  .battle-view__body {
+    grid-template-columns: 1fr;
+  }
+  .battle-view__props {
+    display: none;
+  }
+}
+
 /* Battle View Responsive */
 @media (max-width: 900px) {
   .battle-header {
@@ -1654,8 +1892,7 @@ label {
   }
   
   .battle-canvas-wrap {
-    height: 70vh;
-    min-height: 400px;
+    min-height: 50vh;
   }
 }
 
@@ -1673,6 +1910,10 @@ label {
   
   .battle-title {
     font-size: 16px;
+  }
+  
+  .battle-canvas-wrap {
+    min-height: 50vh;
   }
   
   .battle-summary-card {

@@ -82,6 +82,20 @@ class MapSaveResponse(BaseModel):
     error: str = ""
 
 
+class BuyTileRequest(BaseModel):
+    q: int
+    r: int
+
+
+class BuyWaveRequest(BaseModel):
+    aid: int
+
+
+class BuyCritterSlotRequest(BaseModel):
+    aid: int
+    wave_number: int
+
+
 class ArmyCreateRequest(BaseModel):
     name: str
 

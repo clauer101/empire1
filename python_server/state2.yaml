@@ -102,7 +102,16 @@ empires:
   artefacts: []
   max_life: 10.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 2
+    uid: 2
+    name: TestArmee
+    waves:
+    - wave_id: 1
+      iid: SLAVE
+      slots: 1
+      num_critters_spawned: 0
+      next_critter_ms: 2000
   spies: []
   bosses: {}
   hex_map:

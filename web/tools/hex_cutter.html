@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hex Tile Cutter</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #4fc3f7;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+    }
+    
+    .main-panel {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    
+    .side-panel {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+    }
+    
+    .controls {
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .control label {
+      font-size: 12px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .control input[type="range"] {
+      width: 100%;
+    }
+    
+    .control input[type="text"] {
+      background: #0f3460;
+      border: 1px solid #4fc3f7;
+      color: #eee;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .control .value-display {
+      background: #0f3460;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #4fc3f7;
+    }
+    
+    .canvas-container {
+      position: relative;
+      background: #0f3460;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: move;
+      user-select: none;
+    }
+    
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+    
+    .hex-overlay {
+      position: absolute;
+      pointer-events: none;
+      border: 3px solid #4fc3f7;
+      box-shadow: 0 0 20px rgba(79, 195, 247, 0.5);
+    }
+    
+    button {
+      background: #4fc3f7;
+      color: #1a1a2e;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background 0.2s;
+      width: 100%;
+      margin-top: 8px;
+    }
+    
+    button:hover {
+      background: #81d4fa;
+    }
+    
+    button:active {
+      background: #29b6f6;
+    }
+    
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    
+    .tile-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .tile-item {
+      background: #0f3460;
+      border-radius: 4px;
+      padding: 8px;
+      text-align: center;
+      position: relative;
+    }
+    
+    .tile-item canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    
+    .tile-item .tile-name {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 4px;
+      word-break: break-all;
+    }
+    
+    .tile-item .tile-actions {
+      margin-top: 6px;
+      display: flex;
+      gap: 4px;
+    }
+    
+    .tile-item button {
+      padding: 4px 8px;
+      font-size: 11px;
+      margin-top: 0;
+    }
+    
+    h2 {
+      color: #4fc3f7;
+      margin-bottom: 15px;
+      font-size: 18px;
+      border-bottom: 2px solid #0f3460;
+      padding-bottom: 8px;
+    }
+    
+    .info-box {
+      background: #0f3460;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    
+    .coord-display {
+      background: #0f3460;
+      padding: 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #4fc3f7;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>⬡ Hex Tile Cutter</h1>
+  
+  <div class="container">
+    <div class="main-panel">
+      <h2>Source Image</h2>
+      
+      <div class="controls">
+        <div class="control">
+          <label>Hex Size</label>
+          <input type="range" id="hex-size" min="20" max="200" step="5" value="80">
+          <div class="value-display" id="hex-size-val">80px</div>
+        </div>
+        <div class="control">
+          <label>Orientation</label>
+          <select id="orientation" style="background: #0f3460; border: 1px solid #4fc3f7; color: #eee; padding: 6px 10px; border-radius: 4px; font-size: 13px;">
+            <option value="flat">Flat Top</option>
+            <option value="pointy">Pointy Top</option>
+          </select>
+        </div>
+        <div class="control">
+          <label>Grid Columns</label>
+          <input type="number" id="grid-cols" min="1" max="50" value="3" style="background: #0f3460; border: 1px solid #4fc3f7; color: #eee; padding: 6px 10px; border-radius: 4px; font-size: 13px;">
+        </div>
+        <div class="control">
+          <label>Grid Rows</label>
+          <input type="number" id="grid-rows" min="1" max="50" value="3" style="background: #0f3460; border: 1px solid #4fc3f7; color: #eee; padding: 6px 10px; border-radius: 4px; font-size: 13px;">
+        </div>
+        <div class="control">
+          <label>Tile Prefix</label>
+          <input type="text" id="tile-name" placeholder="tile" value="tile">
+        </div>
+        <div class="control">
+          <label>Show Grid</label>
+          <input type="checkbox" id="show-grid" checked style="width: auto; margin-top: 8px;">
+        </div>
+      </div>
+      
+      <div class="coord-display">
+        <div>Grid Origin: <span id="hex-x">0</span>, <span id="hex-y">0</span></div>
+        <div style="margin-top: 4px;">Total Tiles: <span id="total-tiles" style="color: #4fc3f7; font-weight: bold;">900</span></div>
+        <div style="margin-top: 4px; font-size: 11px; color: #888;">
+          Use arrow keys to move grid (hold Shift for 10px steps)
+        </div>
+      </div>
+      
+      <div class="canvas-container" id="canvas-container">
+        <canvas id="main-canvas"></canvas>
+      </div>
+      
+      <button id="cut-btn">✂ Generate All Tiles</button>
+      <button id="reset-position">⊙ Reset Position</button>
+      
+      <div id="progress-bar" style="display: none; margin-top: 15px;">
+        <div style="background: #0f3460; border-radius: 4px; padding: 8px; margin-bottom: 8px;">
+          <div style="background: #4fc3f7; height: 20px; border-radius: 3px; width: 0%; transition: width 0.3s;" id="progress-fill"></div>
+        </div>
+        <div style="text-align: center; font-size: 12px; color: #aaa;">
+          <span id="progress-text">0 / 900</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="side-panel">
+      <h2>Cut Tiles</h2>
+      
+      <div class="info-box">
+        <strong>Controls:</strong><br>
+        • Drag to move grid origin<br>
+        • Arrow keys for precise movement<br>
+        • Adjust grid size (columns × rows)<br>
+        • Click "Generate All Tiles" to create<br>
+        • Download all tiles at once
+      </div>
+      
+      <div id="tile-count" style="color: #4fc3f7; font-size: 13px; margin-bottom: 10px;">
+        0 tiles created
+      </div>
+      
+      <button id="download-all">⬇ Download All</button>
+      <button id="clear-all" style="background: #e91e63;">🗑 Clear All</button>
+      
+      <div class="tile-gallery" id="tile-gallery"></div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let sourceImage = null;
+    let hexX = 0;
+    let hexY = 0;
+    let hexSize = 80;
+    let orientation = 'flat';
+    let gridCols = 3;
+    let gridRows = 3;
+    let showGrid = true;
+    let tiles = [];
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+    let isGenerating = false;
+    
+    // Elements
+    const mainCanvas = document.getElementById('main-canvas');
+    const ctx = mainCanvas.getContext('2d');
+    const canvasContainer = document.getElementById('canvas-container');
+    const hexSizeInput = document.getElementById('hex-size');
+    const hexSizeVal = document.getElementById('hex-size-val');
+    const orientationSelect = document.getElementById('orientation');
+    const gridColsInput = document.getElementById('grid-cols');
+    const gridRowsInput = document.getElementById('grid-rows');
+    const showGridCheckbox = document.getElementById('show-grid');
+    const tileNameInput = document.getElementById('tile-name');
+    const hexXDisplay = document.getElementById('hex-x');
+    const hexYDisplay = document.getElementById('hex-y');
+    const totalTilesDisplay = document.getElementById('total-tiles');
+    const tileGallery = document.getElementById('tile-gallery');
+    const tileCountDisplay = document.getElementById('tile-count');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    
+    // Load source image
+    const img = new Image();
+    img.onload = () => {
+      sourceImage = img;
+      mainCanvas.width = img.width;
+      mainCanvas.height = img.height;
+      hexX = Math.floor(img.width / 2);
+      hexY = Math.floor(img.height / 2);
+      console.log('Image loaded:', img.width, 'x', img.height);
+      render();
+    };
+    img.onerror = (e) => {
+      console.error('Failed to load image:', e);
+      alert('Failed to load map.jpg. Please check if the file exists.');
+    };
+    img.src = 'map.jpg';
+    
+    // Hex size control
+    hexSizeInput.addEventListener('input', (e) => {
+      hexSize = parseInt(e.target.value);
+      hexSizeVal.textContent = hexSize + 'px';
+      render();
+    });
+    
+    // Orientation control
+    orientationSelect.addEventListener('change', (e) => {
+      orientation = e.target.value;
+      render();
+    });
+    
+    // Grid controls
+    gridColsInput.addEventListener('input', (e) => {
+      gridCols = parseInt(e.target.value);
+      updateTotalTiles();
+      render();
+    });
+    
+    gridRowsInput.addEventListener('input', (e) => {
+      gridRows = parseInt(e.target.value);
+      updateTotalTiles();
+      render();
+    });
+    
+    showGridCheckbox.addEventListener('change', (e) => {
+      showGrid = e.target.checked;
+      render();
+    });
+    
+    // Mouse drag
+    canvasContainer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      canvasContainer.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      
+      hexX += dx;
+      hexY += dy;
+      
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      
+      updateCoordDisplay();
+      render();
+    });
+    
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      canvasContainer.style.cursor = 'move';
+    });
+    
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        
+        switch(e.key) {
+          case 'ArrowUp': hexY -= step; break;
+          case 'ArrowDown': hexY += step; break;
+          case 'ArrowLeft': hexX -= step; break;
+          case 'ArrowRight': hexX += step; break;
+        }
+        
+        updateCoordDisplay();
+        render();
+      }
+    });
+    
+    // Reset position
+    document.getElementById('reset-position').addEventListener('click', () => {
+      hexX = Math.floor(mainCanvas.width / 2);
+      hexY = Math.floor(mainCanvas.height / 2);
+      updateCoordDisplay();
+      render();
+    });
+    
+    // Generate all tiles
+    document.getElementById('cut-btn').addEventListener('click', async () => {
+      console.log('Generate button clicked');
+      console.log('sourceImage:', sourceImage);
+      console.log('isGenerating:', isGenerating);
+      console.log('gridCols:', gridCols, 'gridRows:', gridRows);
+      
+      if (!sourceImage) {
+        console.log('No source image loaded');
+        alert('Please wait for the image to load.');
+        return;
+      }
+      
+      if (isGenerating) {
+        console.log('Already generating');
+        return;
+      }
+      
+      console.log('Starting generation...');
+      isGenerating = true;
+      progressBar.style.display = 'block';
+      document.getElementById('cut-btn').disabled = true;
+      
+      tiles = [];
+      const prefix = tileNameInput.value || 'tile';
+      const totalTiles = gridCols * gridRows;
+      let count = 0;
+      
+      console.log('Getting grid positions...');
+      const positions = getGridPositions();
+      console.log('Generating', positions.length, 'tiles');
+      
+      try {
+        for (let i = 0; i < positions.length; i++) {
+          const pos = positions[i];
+          const tileName = `${prefix}_${String(i + 1).padStart(4, '0')}`;
+          
+          if (i === 0) console.log('Creating first tile at', pos.x, pos.y);
+          const tileCanvas = createHexTile(pos.x, pos.y);
+          if (i === 0) console.log('First tile canvas:', tileCanvas.width, 'x', tileCanvas.height);
+          
+          tiles.push({
+            name: tileName,
+            canvas: tileCanvas,
+            x: pos.x,
+            y: pos.y,
+            col: pos.col,
+            row: pos.row
+          });
+          
+          count++;
+          progressFill.style.width = (count / totalTiles * 100) + '%';
+          progressText.textContent = `${count} / ${totalTiles}`;
+          
+          // Allow UI to update every 50 tiles
+          if (count % 50 === 0) {
+            console.log('Progress:', count, '/', totalTiles);
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+        
+        console.log('Generation complete:', tiles.length, 'tiles');
+        updateGallery();
+        alert(`Generated ${tiles.length} tiles successfully!`);
+      } catch (error) {
+        console.error('Error during generation:', error);
+        alert('Error during tile generation: ' + error.message);
+      } finally {
+        isGenerating = false;
+        document.getElementById('cut-btn').disabled = false;
+        progressBar.style.display = 'none';
+        progressFill.style.width = '0%';
+      }
+    });
+    
+    // Download all
+    document.getElementById('download-all').addEventListener('click', async () => {
+      console.log('Download all clicked, tiles:', tiles.length);
+      
+      if (tiles.length === 0) {
+        alert('No tiles to download. Generate tiles first.');
+        return;
+      }
+      
+      try {
+        for (let i = 0; i < tiles.length; i++) {
+          const tile = tiles[i];
+          console.log('Downloading tile', i + 1, '/', tiles.length, ':', tile.name);
+          downloadCanvas(tile.canvas, tile.name);
+          
+          // Small delay between downloads to prevent browser blocking
+          if (i < tiles.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+        
+        alert('All tiles downloaded!');
+      } catch (error) {
+        console.error('Error during download:', error);
+        alert('Error during download: ' + error.message);
+      }
+    });
+    
+    // Clear all
+    document.getElementById('clear-all').addEventListener('click', () => {
+      tiles = [];
+      updateGallery();
+    });
+    
+    // Get grid positions
+    function getGridPositions() {
+      const positions = [];
+      
+      // Calculate hex dimensions
+      const width = orientation === 'flat' ? hexSize * 2 : hexSize * Math.sqrt(3);
+      const height = orientation === 'flat' ? hexSize * Math.sqrt(3) : hexSize * 2;
+      
+      // Calculate spacing for seamless tiles
+      // Flat-top: columns overlap horizontally, full vertical spacing
+      // Pointy-top: full horizontal spacing, rows overlap vertically
+      const horizSpacing = orientation === 'flat' ? width * 0.75 : width;
+      const vertSpacing = orientation === 'flat' ? height : height * 0.75;
+      
+      for (let row = 0; row < gridRows; row++) {
+        for (let col = 0; col < gridCols; col++) {
+          let x, y;
+          
+          if (orientation === 'flat') {
+            // Flat top: offset every other column
+            x = hexX + col * horizSpacing;
+            y = hexY + row * vertSpacing + (col % 2 === 1 ? height / 2 : 0);
+          } else {
+            // Pointy top: offset every other row
+            x = hexX + col * horizSpacing + (row % 2 === 1 ? width / 2 : 0);
+            y = hexY + row * vertSpacing;
+          }
+          
+          positions.push({ x, y, col, row });
+        }
+      }
+      
+      return positions;
+    }
+    
+    // Render main canvas
+    function render() {
+      if (!sourceImage) return;
+      
+      ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+      ctx.drawImage(sourceImage, 0, 0);
+      
+      if (showGrid) {
+        const positions = getGridPositions();
+        
+        ctx.save();
+        ctx.strokeStyle = 'rgba(79, 195, 247, 0.6)';
+        ctx.lineWidth = 2;
+        
+        // Draw all hex positions
+        positions.forEach(pos => {
+          ctx.beginPath();
+          drawHexPath(ctx, pos.x, pos.y, hexSize, orientation);
+          ctx.stroke();
+        });
+        
+        // Highlight origin hex
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = 'rgba(79, 195, 247, 0.8)';
+        ctx.shadowBlur = 10;
+        
+        ctx.beginPath();
+        drawHexPath(ctx, hexX, hexY, hexSize, orientation);
+        ctx.stroke();
+        
+        ctx.restore();
+      }
+    }
+    
+    // Draw hex path
+    function drawHexPath(context, x, y, size, orient) {
+      const angle = orient === 'flat' ? 0 : Math.PI / 6;
+      
+      context.moveTo(
+        x + size * Math.cos(angle),
+        y + size * Math.sin(angle)
+      );
+      
+      for (let i = 1; i <= 6; i++) {
+        const a = angle + (i * Math.PI / 3);
+        context.lineTo(
+          x + size * Math.cos(a),
+          y + size * Math.sin(a)
+        );
+      }
+      
+      context.closePath();
+    }
+    
+    // Create hex tile
+    function createHexTile(x, y) {
+      const size = hexSize;
+      
+      // Calculate exact bounding box for hex
+      const width = orientation === 'flat' ? size * 2 : size * Math.sqrt(3);
+      const height = orientation === 'flat' ? size * Math.sqrt(3) : size * 2;
+      
+      const tileCanvas = document.createElement('canvas');
+      tileCanvas.width = width;
+      tileCanvas.height = height;
+      const tileCtx = tileCanvas.getContext('2d');
+      
+      // Center of tile canvas
+      const cx = width / 2;
+      const cy = height / 2;
+      
+      // Calculate source region
+      const sx = x - cx;
+      const sy = y - cy;
+      
+      // Clip to hex shape
+      tileCtx.save();
+      tileCtx.beginPath();
+      drawHexPath(tileCtx, cx, cy, size, orientation);
+      tileCtx.clip();
+      
+      // Draw source image portion
+      tileCtx.drawImage(
+        sourceImage,
+        sx, sy, width, height,
+        0, 0, width, height
+      );
+      
+      tileCtx.restore();
+      
+      return tileCanvas;
+    }
+    
+    // Download canvas
+    function downloadCanvas(canvas, name) {
+      if (!canvas || !canvas.toBlob) {
+        console.error('Invalid canvas for download');
+        return;
+      }
+      
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error('Failed to create blob from canvas');
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      }, 'image/png');
+    }
+    
+    // Update gallery
+    function updateGallery() {
+      // Show only first 20 tiles in gallery (performance)
+      const displayTiles = tiles.slice(0, 20);
+      
+      tileGallery.innerHTML = displayTiles.map((tile, idx) => `
+        <div class="tile-item">
+          <canvas id="thumb-${idx}" width="${tile.canvas.width}" height="${tile.canvas.height}"></canvas>
+          <div class="tile-name">${tile.name}</div>
+          <div class="tile-actions">
+            <button onclick="downloadTile(${idx})">⬇</button>
+          </div>
+        </div>
+      `).join('');
+      
+      if (tiles.length > 20) {
+        tileGallery.innerHTML += `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #aaa; font-size: 12px;">
+            Showing first 20 of ${tiles.length} tiles<br>
+            Use "Download All" to get all tiles
+          </div>
+        `;
+      }
+      
+      // Draw thumbnails
+      displayTiles.forEach((tile, idx) => {
+        const thumbCanvas = document.getElementById(`thumb-${idx}`);
+        if (thumbCanvas) {
+          const thumbCtx = thumbCanvas.getContext('2d');
+          thumbCtx.drawImage(tile.canvas, 0, 0);
+        }
+      });
+      
+      tileCountDisplay.textContent = `${tiles.length} tile${tiles.length !== 1 ? 's' : ''} created`;
+    }
+    
+    // Global functions for buttons
+    window.downloadTile = (idx) => {
+      if (!tiles[idx]) {
+        console.error('Tile not found at index:', idx);
+        return;
+      }
+      downloadCanvas(tiles[idx].canvas, tiles[idx].name);
+    };
+    
+    // Update coordinate display
+    function updateCoordDisplay() {
+      hexXDisplay.textContent = hexX;
+      hexYDisplay.textContent = hexY;
+    }
+    
+    // Update total tiles display
+    function updateTotalTiles() {
+      const total = gridCols * gridRows;
+      totalTilesDisplay.textContent = total;
+    }
+    
+    // Initial render
+    updateCoordDisplay();
+    updateTotalTiles();
+  </script>
+</body>
+</html>

@@ -27,9 +27,6 @@ let grid = null;
 
 const STORAGE_KEY = 'e3_map_editor';
 
-// Battle state
-let _battleActive = false;
-
 // ── View lifecycle ──────────────────────────────────────────
 
 function init(el, _api, _state) {
@@ -41,10 +38,6 @@ function init(el, _api, _state) {
     <div class="hex-editor">
       <div class="hex-editor__toolbar">
         <h2 class="hex-editor__title">⬡ Map Editor</h2>
-        <div class="hex-editor__actions">
-          <button id="map-save" class="btn-sm" title="Karte speichern">Save</button>
-          <button id="map-battle" class="btn-ghost btn-sm" title="Schlacht starten">Battle</button>
-        </div>
       </div>
 
       <div id="map-error-banner" style="display:none;padding:8px 12px;margin:0 0 8px 0;background:#8a3a3a;color:#ffcccc;border-left:4px solid #c85a5a;border-radius:2px;font-size:0.9rem;"></div>
@@ -52,6 +45,7 @@ function init(el, _api, _state) {
       <div class="hex-editor__body">
         <aside class="hex-editor__palette" id="tile-palette"></aside>
         <div class="hex-editor__canvas-wrap" id="canvas-wrap">
+          <button id="map-save" class="btn-sm" style="position:absolute;top:12px;right:12px;z-index:10;" title="Karte speichern">Save</button>
           <canvas id="hex-canvas"></canvas>
         </div>
         <aside class="hex-editor__props" id="tile-props">
@@ -73,6 +67,18 @@ function init(el, _api, _state) {
           </div>
         </aside>
       </div>
+      
+      <!-- Mobile Overlay for Tile Properties -->
+      <div class="tile-overlay" id="tile-overlay" style="display:none;">
+        <div class="tile-overlay__content">
+          <div class="tile-overlay__header">
+            <h3>Tile Properties</h3>
+            <button class="tile-overlay__close" id="tile-overlay-close">✕</button>
+          </div>
+          <div class="tile-overlay__body" id="tile-overlay-body">
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -80,6 +86,7 @@ function init(el, _api, _state) {
 async function enter() {
   _initCanvas();
   _bindToolbar();
+  _bindMobileOverlay();
 
   // Load items from server to get unlocked structures
   try {
@@ -90,11 +97,6 @@ async function enter() {
 
   // Subscribe to item updates
   _unsub.push(eventBus.on('state:items', _buildPalette));
-
-  // Subscribe to battle events (delta-based)
-  _unsub.push(eventBus.on('server:battle_setup', _onBattleSetup));
-  _unsub.push(eventBus.on('server:battle_update', _onBattleUpdate));
-  _unsub.push(eventBus.on('server:battle_summary', _onBattleSummary));
 
   _buildPalette();
 
@@ -113,6 +115,7 @@ async function enter() {
   }
 
   _updateMapInfo();
+  _loadMapBackground();
 }
 
 function leave() {
@@ -168,12 +171,12 @@ function _buildPalette() {
   // Render dynamic structures category (from server)
   const structureIds = Object.keys(structures);
   if (structureIds.length > 0) {
-    const structCat = _createCategoryEl('Türme', structureIds);
+    const structCat = _createCategoryEl('Towers', structureIds);
     palette.appendChild(structCat);
   } else {
     const hint = document.createElement('div');
     hint.className = 'palette-hint';
-    hint.innerHTML = '<em>Keine Türme freigeschaltet.<br>Forschung benötigt!</em>';
+    hint.innerHTML = '<em>No towers unlocked.<br>Research required!</em>';
     palette.appendChild(hint);
   }
 }
@@ -225,6 +228,22 @@ function _setActiveBrush(typeId) {
   container.querySelectorAll('.palette-item').forEach(el => {
     el.classList.toggle('active', el.dataset.tileType === typeId);
   });
+}
+
+// ── Map background ──────────────────────────────────────────
+
+/** Fetch the first available map PNG and apply it as the grid background. */
+async function _loadMapBackground() {
+  try {
+    const res = await fetch('/api/maps');
+    if (!res.ok) return;
+    const { maps } = await res.json();
+    if (maps && maps.length > 0 && grid) {
+      await grid.setMapBackground(maps[0].url);
+    }
+  } catch (e) {
+    console.warn('[Composer] map background not loaded:', e.message);
+  }
 }
 
 // ── Canvas ──────────────────────────────────────────────────
@@ -286,10 +305,51 @@ function _onTileDrop(q, r, tileTypeId) {
   }
 }
 
+// ── Map Reload ──────────────────────────────────────────────
+
+async function _reloadMap() {
+  try {
+    const response = await rest.loadMap();
+    if (response && response.tiles) {
+      grid.fromJSON({ tiles: response.tiles });
+      grid.addVoidNeighbors();
+      grid._centerGrid();
+      grid._dirty = true;
+      _updateMapInfo();
+      console.log('[Composer] Map reloaded from server');
+    }
+  } catch (err) {
+    console.error('[Composer] Failed to reload map:', err);
+    throw err;
+  }
+}
+
 // ── Property Panel ──────────────────────────────────────────
+
+function _bindMobileOverlay() {
+  const closeBtn = container.querySelector('#tile-overlay-close');
+  const overlay = container.querySelector('#tile-overlay');
+  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      overlay.style.display = 'none';
+    });
+  }
+  
+  // Close on backdrop click
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.style.display = 'none';
+      }
+    });
+  }
+}
 
 function _showProperties(q, r, tile) {
   const content = container.querySelector('#props-content');
+  const overlayBody = container.querySelector('#tile-overlay-body');
+  const overlay = container.querySelector('#tile-overlay');
   if (!tile) {
     content.innerHTML = '<span class="props-empty">No tile selected</span>';
     return;
@@ -307,13 +367,38 @@ function _showProperties(q, r, tile) {
       '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
       '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
       '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
-      '<div class="props-row"><span class="label">Shot</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+      '<div class="props-row"><span class="label">Shot Speed</span><span class="value">' + (s.shot_speed || 0) + ' hex/s</span></div>' +
+      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+    if (s.effects && Object.keys(s.effects).length > 0) {
+      const effectsStr = Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ');
+      extraInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' + effectsStr + '</span></div>';
+    }
     if (s.requirements && s.requirements.length > 0) {
       extraInfo += '<div class="props-row"><span class="label">Requires</span><span class="value mono">' + s.requirements.join(', ') + '</span></div>';
     }
   }
 
-  content.innerHTML = 
+  // Buy tile button for void tiles
+  let buyButton = '';
+  if (tile.type === 'void') {
+    const tilePrice = st.summary?.tile_price || 0;
+    const currentGold = st.summary?.resources?.gold || 0;
+    const canAfford = currentGold >= tilePrice;
+    
+    buyButton = 
+      '<div class="props-divider"></div>' +
+      '<div class="props-row">' +
+        '<span class="label">Cost</span>' +
+        '<span class="value" style="color:' + (canAfford ? 'var(--text)' : 'var(--danger)') + '">' +
+          '💰 ' + Math.round(tilePrice) + ' Gold' +
+        '</span>' +
+      '</div>' +
+      '<button id="buy-tile-btn" class="btn" style="width:100%;margin-top:8px;"' + 
+        (canAfford ? '' : ' disabled title="Not enough gold"') + '>Buy Tile</button>' +
+      '<div id="buy-tile-msg" style="margin-top:6px;font-size:12px;text-align:center;"></div>';
+  }
+
+  const propsHTML = 
     '<div class="props-tile">' +
       '<div class="props-row">' +
         '<span class="label">Position</span>' +
@@ -331,23 +416,66 @@ function _showProperties(q, r, tile) {
         '<span class="value mono">' + hexKey(q, r) + '</span>' +
       '</div>' +
       extraInfo +
-      '<div class="props-divider"></div>' +
-      '<label>Change Type' + (tile.type === 'void' ? ' (Locked)' : '') + '</label>' +
-      '<select id="props-type-select" style="margin-top:4px"' + (tile.type === 'void' ? ' disabled' : '') + '>' +
-        Object.values(TILE_TYPES).filter(function(tt) { return tt.id !== 'void'; }).map(function(tt) {
-          return '<option value="' + tt.id + '"' + (tt.id === tile.type ? ' selected' : '') + '>' + tt.label + '</option>';
-        }).join('') +
-      '</select>' +
+      buyButton +
     '</div>';
+  
+  // Update desktop sidebar
+  content.innerHTML = propsHTML;
+  
+  // Update mobile overlay
+  if (overlayBody) {
+    overlayBody.innerHTML = propsHTML;
+    // Show overlay on mobile (will be hidden by CSS on desktop)
+    if (window.innerWidth <= 1100) {
+      overlay.style.display = 'flex';
+    }
+  }
 
-  const select = content.querySelector('#props-type-select');
-  if (!select.disabled) {
-    select.addEventListener('change', function(e) {
-      grid.setTile(q, r, e.target.value);
-      _showProperties(q, r, grid.getTile(q, r));
-      _updateMapInfo();
-      _autoSave();
-    });
+  // Attach buy button handler (works for both desktop sidebar and mobile overlay)
+  const buyHandler = async (btnElement, msgElement) => {
+    btnElement.disabled = true;
+    msgElement.textContent = '';
+    
+    try {
+      const resp = await rest.buyTile(q, r);
+      if (resp.success) {
+        const costText = resp.cost ? ` (${Math.round(resp.cost)} gold)` : '';
+        msgElement.textContent = '✓ Tile purchased!' + costText;
+        msgElement.style.color = 'var(--success)';
+        // Reload summary to update tile_price and gold
+        await rest.getSummary();
+        // Reload the map immediately based on server response
+        await _reloadMap();
+        _showProperties(q, r, grid.getTile(q, r));
+        // Close mobile overlay after successful purchase
+        if (overlay && window.innerWidth <= 1100) {
+          overlay.style.display = 'none';
+        }
+      } else {
+        msgElement.textContent = '✗ ' + (resp.error || 'Failed to buy tile');
+        msgElement.style.color = 'var(--danger)';
+      }
+    } catch (err) {
+      msgElement.textContent = '✗ ' + err.message;
+      msgElement.style.color = 'var(--danger)';
+    } finally {
+      btnElement.disabled = false;
+      setTimeout(() => { msgElement.textContent = ''; }, 3000);
+    }
+  };
+
+  // Bind handler to desktop sidebar button
+  const buyBtn = content.querySelector('#buy-tile-btn');
+  const msgEl = content.querySelector('#buy-tile-msg');
+  if (buyBtn && msgEl) {
+    buyBtn.addEventListener('click', () => buyHandler(buyBtn, msgEl));
+  }
+
+  // Bind handler to mobile overlay button
+  const overlayBuyBtn = overlayBody?.querySelector('#buy-tile-btn');
+  const overlayMsgEl = overlayBody?.querySelector('#buy-tile-msg');
+  if (overlayBuyBtn && overlayMsgEl) {
+    overlayBuyBtn.addEventListener('click', () => buyHandler(overlayBuyBtn, overlayMsgEl));
   }
 }
 
@@ -398,11 +526,6 @@ function _bindToolbar() {
       _flashButton($('map-save'), 'Error!');
       console.error('[Composer] save error:', err.message);
     }
-  });
-
-  $('map-battle').addEventListener('click', function() {
-    // Navigate to battle view — WS connection is managed there
-    window.location.hash = '#battle';
   });
 }
 
@@ -457,62 +580,6 @@ function _autoSave() {
       console.error('[Composer] ✗ Server save failed:', err.message);
     }
   }, 1000);  // Reduced from 2000ms to 1000ms for faster persistence
-}
-
-// ── Battle events (delta-based, Java-style) ─────────────────
-
-function _onBattleSetup(msg) {
-  console.log('[Composer] Battle setup:', msg);
-  grid.clearBattle();
-  _battleActive = true;
-  grid._dirty = true;
-}
-
-function _onBattleUpdate(msg) {
-  if (!msg) return;
-
-  // Spawn new critters (client will autonomously move them along path)
-  if (msg.new_critters && msg.new_critters.length > 0) {
-    for (const c of msg.new_critters) {
-      console.log(
-        '[SPAWN] Critter spawned: cid=%d type=%s speed=%.1f path_len=%d',
-        c.cid, c.iid, c.speed || 0, c.path ? c.path.length : 0
-      );
-      grid.addBattleCritter(c.cid, c.path, c.speed);
-    }
-  }
-
-  // Remove dead critters
-  if (msg.dead_critter_ids && msg.dead_critter_ids.length > 0) {
-    for (const cid of msg.dead_critter_ids) {
-      console.log('[SPAWN] Critter killed: cid=%d', cid);
-      grid.removeBattleCritter(cid);
-    }
-  }
-
-  // Remove finished critters (reached castle)
-  if (msg.finished_critter_ids && msg.finished_critter_ids.length > 0) {
-    for (const cid of msg.finished_critter_ids) {
-      console.log('[SPAWN] Critter finished: cid=%d', cid);
-      grid.removeBattleCritter(cid);
-    }
-  }
-
-  // Shots (visual only — future)
-  if (msg.new_shots && msg.new_shots.length > 0) {
-    console.log('[SPAWN] Shots fired: count=%d', msg.new_shots.length);
-  }
-
-  grid._dirty = true;
-}
-
-function _onBattleSummary(msg) {
-  console.log('[Composer] Battle summary:', msg);
-  _battleActive = false;
-  // Keep critters visible briefly, then clean up
-  setTimeout(() => {
-    grid.clearBattle();
-  }, 1500);
 }
 
 // ── Export ───────────────────────────────────────────────────

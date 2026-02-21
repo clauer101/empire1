@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Goblin Sprite Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+
+    h1 { font-size: 1.4rem; color: #7ecfff; letter-spacing: 2px; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .controls label { font-size: 0.85rem; color: #aaa; }
+
+    .dir-btn {
+      background: #2a2a4a;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+      font-family: monospace;
+      transition: background 0.15s, color 0.15s;
+    }
+    .dir-btn:hover  { background: #3a3a6a; }
+    .dir-btn.active { background: #4466cc; color: #fff; border-color: #7ecfff; }
+
+    input[type=range] { width: 140px; accent-color: #4466cc; }
+    #fps-label { min-width: 5ch; }
+
+    /* ── Main animated canvas ── */
+    #main-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #main-canvas {
+      background: #0d1117;
+      border: 1px solid #333;
+      border-radius: 6px;
+      image-rendering: pixelated;
+    }
+
+    #dir-label {
+      font-size: 0.8rem;
+      color: #7ecfff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── Sheet overview ── */
+    .section-title {
+      font-size: 0.85rem;
+      color: #888;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      align-self: flex-start;
+    }
+
+    #sheet-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    #sheet-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      width: 100%;
+    }
+
+    .frame-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .frame-cell canvas {
+      background: #0d1117;
+      border: 1px solid #2a2a3a;
+      border-radius: 3px;
+      image-rendering: pixelated;
+      width: 100%;
+      height: auto;
+    }
+
+    .frame-cell canvas.current-frame {
+      border-color: #4466cc;
+      box-shadow: 0 0 6px #4466cc88;
+    }
+
+    .frame-label {
+      font-size: 0.65rem;
+      color: #555;
+    }
+
+    .row-label {
+      grid-column: 1 / -1;
+      font-size: 0.7rem;
+      color: #7ecfff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 0 2px;
+      border-top: 1px solid #2a2a3a;
+      text-align: left;
+      width: 100%;
+    }
+    .row-label:first-child { border-top: none; }
+
+    /* ── Selectors ── */
+    #size-select, #file-select {
+      background: #2a2a4a;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-family: monospace;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚔ Goblin Sprite Preview</h1>
+
+<!-- Controls -->
+<div class="controls">
+  <label>Richtung:</label>
+  <button class="dir-btn active" data-dir="forward">▼ Vorne</button>
+  <button class="dir-btn" data-dir="left">◀ Links</button>
+  <button class="dir-btn" data-dir="right">▶ Rechts</button>
+  <button class="dir-btn" data-dir="backward">▲ Hinten</button>
+
+  <label>Sprite:
+    <select id="file-select"><option>Laden…</option></select>
+  </label>
+
+  <label>Größe:
+    <select id="size-select">
+      <option value="64">64 px</option>
+      <option value="128" selected>128 px</option>
+      <option value="192">192 px</option>
+      <option value="256">256 px</option>
+    </select>
+  </label>
+
+  <label>FPS: <span id="fps-label">8</span>
+    <input type="range" id="fps-range" min="1" max="24" value="8" />
+  </label>
+</div>
+
+<!-- Main animated display -->
+<div id="main-wrap">
+  <canvas id="main-canvas" width="192" height="192"></canvas>
+  <div id="dir-label">forward</div>
+</div>
+
+<!-- Sheet overview grid -->
+<div id="sheet-wrap">
+  <div class="section-title">Alle Frames (Sprite Sheet)</div>
+  <div id="sheet-grid"></div>
+</div>
+
+<script type="module">
+  import { Sprite, DIRECTIONS, COLS, ROWS } from '../js/lib/sprite.js';
+
+  // ── Sprite setup ──────────────────────────────────────────
+  let sprite = new Sprite('../tools/goblin.png');
+
+  const mainCanvas = document.getElementById('main-canvas');
+  const mainCtx    = mainCanvas.getContext('2d');
+  const dirLabel   = document.getElementById('dir-label');
+  const fpsRange   = document.getElementById('fps-range');
+  const fpsLabel   = document.getElementById('fps-label');
+  const sizeSelect = document.getElementById('size-select');
+
+  let currentDir = 'forward';
+  let fps        = 8;
+  let displaySize = 128;
+
+  // ── Direction buttons ─────────────────────────────────────
+  document.querySelectorAll('.dir-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDir = btn.dataset.dir;
+      dirLabel.textContent = currentDir;
+    });
+  });
+
+  // ── FPS slider ────────────────────────────────────────────
+  fpsRange.addEventListener('input', () => {
+    fps = parseInt(fpsRange.value);
+    fpsLabel.textContent = fps;
+    sprite.fps = fps;
+  });
+
+  // ── Size selector ─────────────────────────────────────────
+  function updateMainCanvas() {
+    const pad    = 32;
+    const aspect = sprite.frameH / sprite.frameW;
+    mainCanvas.width  = displaySize + pad;
+    mainCanvas.height = Math.round(displaySize * aspect) + pad;
+  }
+
+  sizeSelect.addEventListener('change', () => {
+    displaySize = parseInt(sizeSelect.value);
+    updateMainCanvas();
+  });
+
+  // ── Sheet overview grid ───────────────────────────────────
+  const sheetGrid = document.getElementById('sheet-grid');
+  const DIRECTION_LABELS = ['Vorne', 'Links', 'Rechts', 'Hinten'];
+  const DIRECTION_KEYS   = DIRECTIONS;
+
+  // Pre-create canvases: frameCanvases[row][col]
+  const frameCanvases = [];
+  for (let row = 0; row < ROWS; row++) {
+    frameCanvases[row] = [];
+
+    // Row label
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'row-label';
+    rowLabel.textContent = `Row ${row} — ${DIRECTION_LABELS[row]}`;
+    sheetGrid.appendChild(rowLabel);
+
+    for (let col = 0; col < COLS; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'frame-cell';
+
+      const fc = document.createElement('canvas');
+      fc.width  = 256;
+      fc.height = 256;
+      cell.appendChild(fc);
+
+      const lbl = document.createElement('div');
+      lbl.className = 'frame-label';
+      lbl.textContent = `${col + 1}`;
+      cell.appendChild(lbl);
+
+      sheetGrid.appendChild(cell);
+      frameCanvases[row][col] = fc;
+    }
+  }
+
+  // ── File selector ──────────────────────────────────────────
+  const fileSelect = document.getElementById('file-select');
+
+  async function loadSpriteFiles() {
+    try {
+      const res  = await fetch('/api/sprite-files');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const files = Array.isArray(data.files) ? data.files : [];
+      fileSelect.innerHTML = '';
+      for (const name of files) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (name === 'goblin.png') opt.selected = true;
+        fileSelect.appendChild(opt);
+      }
+    } catch (e) {
+      console.warn('Sprite file list unavailable, using default.', e);
+      fileSelect.innerHTML = '<option value="goblin.png">goblin.png</option>';
+    }
+  }
+
+  async function reloadSprite(filename) {
+    sprite = new Sprite(`../tools/${filename}`);
+    await sprite.load();
+    sprite.fps = fps;
+    updateMainCanvas();
+    // Resize and redraw overview grid
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const fc  = frameCanvases[row][col];
+        fc.width  = sprite.frameW;
+        fc.height = sprite.frameH;
+        const ctx = fc.getContext('2d');
+        sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
+      }
+    }
+  }
+
+  fileSelect.addEventListener('change', () => reloadSprite(fileSelect.value));
+
+  await loadSpriteFiles();
+
+  // ── Load & start ──────────────────────────────────────────
+  await sprite.load();
+
+  // Size main canvas to natural frame aspect ratio
+  updateMainCanvas();
+
+  // Resize and draw all static frames into overview grid
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const fc  = frameCanvases[row][col];
+      fc.width  = sprite.frameW;
+      fc.height = sprite.frameH;
+      const ctx = fc.getContext('2d');
+      sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
+    }
+  }
+
+  // ── Animation loop ────────────────────────────────────────
+  let lastCol = -1;
+
+  function loop(ts) {
+    // Main animated canvas
+    mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    const cx = mainCanvas.width  / 2;
+    const cy = mainCanvas.height / 2;
+    sprite.draw(mainCtx, currentDir, ts, cx, cy, displaySize);
+
+    // Highlight active frame in overview grid
+    const DIRECTION_ROW = { forward: 0, left: 1, right: 2, backward: 3 };
+    const activeRow = DIRECTION_ROW[currentDir];
+    const activeCol = Math.floor((ts / 1000) * fps) % COLS;
+
+    if (activeCol !== lastCol) {
+      // Remove all highlights
+      document.querySelectorAll('.frame-cell canvas').forEach(c =>
+        c.classList.remove('current-frame')
+      );
+      // Highlight active frame
+      if (frameCanvases[activeRow]?.[activeCol]) {
+        frameCanvases[activeRow][activeCol].classList.add('current-frame');
+      }
+      lastCol = activeCol;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>

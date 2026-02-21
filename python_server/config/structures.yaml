@@ -8,6 +8,10 @@
 # max_level: maximum upgrade level
 # effects: special effects (slow, splash_radius, dot, etc.)
 
+# ============================================================
+#   STEINZEIT  (Effort 20 – 200)
+# ============================================================
+
 BASIC_TOWER:
   name: "Basic Tower"
   damage: 1
@@ -18,7 +22,7 @@ BASIC_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [BASE_CAMP]
 
 SLING_TOWER:
   name: "Sling Tower"
@@ -30,7 +34,11 @@ SLING_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [HUNTING, EARTH_WALL, FIRE_PLACE]
+
+# ============================================================
+#   NEOLITHIKUM  (Effort 200 – 1.500)
+# ============================================================
 
 DOUBLE_SLING_TOWER:
   name: "Double Sling Tower"
@@ -42,7 +50,23 @@ DOUBLE_SLING_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [CRAFTSMANSHIP, TOOL_SHOP, MAIN_HOUSE]
+
+SPIKE_TRAP:
+  name: "Spike Trap"
+  damage: 1
+  range: 1
+  reload_time: 3000
+  shot_speed: 1
+  shot_type: "slow"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [CRAFTSMANSHIP, EARTH_WALL, MYSTIC, STONE_CIRCLE]
+
+# ============================================================
+#   BRONZEZEIT  (Effort 1.500 – 8.000)
+# ============================================================
 
 ARROW_TOWER:
   name: "Arrow Tower"
@@ -54,7 +78,7 @@ ARROW_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [HUNTING, BOW_MAKER, POTTERY, SHRINE]
 
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
@@ -66,7 +90,23 @@ ARBELESTE_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [COPPER_BRONZE, WATCH_TOWER, EXCHANGE_POST]
+
+FIRE_TOWER:
+  name: "Fire Tower"
+  damage: 2
+  range: 1
+  reload_time: 2500
+  shot_speed: 1
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [COPPER_BRONZE, BOW_MAKER, SAILING, HARBOR]
+
+# ============================================================
+#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+# ============================================================
 
 CATAPULTS:
   name: "Catapult"
@@ -78,7 +118,23 @@ CATAPULTS:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [MECHANICS, TREADWHEEL_CRANE, MATHMATICS]
+
+BALLISTA_TOWER:
+  name: "Ballista Tower"
+  damage: 3
+  range: 2
+  reload_time: 2500
+  shot_speed: 1
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [IRON, FORGE, CARTOGRAPHY, CARTOGRAPHER]
+
+# ============================================================
+#   MITTELALTER  (Effort 30.000 – 130.000)
+# ============================================================
 
 TAR_TOWER:
   name: "Tar Tower"
@@ -90,7 +146,7 @@ TAR_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [HERBOLOGY, WORK_SHOP, MEDICUS]
 
 COAL_TOWER:
   name: "Coal Tower"
@@ -102,31 +158,7 @@ COAL_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
-
-COLD_TOWER:
-  name: "Cold Tower"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "slow"
-  upgrade_costs: {}
-  max_level: 1
-  effects: {}
-  requirements: []
-
-ICE_TOWER:
-  name: "Ice Tower"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "slow"
-  upgrade_costs: {}
-  max_level: 1
-  effects: {}
-  requirements: []
+  requirements: [IRON, FORGE, MARKET_PLACE]
 
 HEAVY_TOWER:
   name: "Heavy Tower"
@@ -138,7 +170,23 @@ HEAVY_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [IRON, IRON_WORK, LAWS, BOOT_CAMP]
+
+BOILING_OIL:
+  name: "Boiling Oil"
+  damage: 3
+  range: 1
+  reload_time: 2000
+  shot_speed: 1
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [ARCHITECTURE, CITY_WALLS, TOWN_GUARD, SOVEREIGN_GUARD]
+
+# ============================================================
+#   RENAISSANCE  (Effort 130.000 – 500.000)
+# ============================================================
 
 MECHANICAL_BALISTA:
   name: "Mechanical Ballista"
@@ -150,31 +198,7 @@ MECHANICAL_BALISTA:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
-
-FLAME_THROWER:
-  name: "Flame Thrower"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "splash"
-  upgrade_costs: {}
-  max_level: 1
-  effects: {}
-  requirements: []
-
-NAPALM_THROWER:
-  name: "Napalm Thrower"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "splash"
-  upgrade_costs: {}
-  max_level: 1
-  effects: {}
-  requirements: []
+  requirements: [MECHANICS, WORK_SHOP, GUILD]
 
 CANNON_TOWER:
   name: "Cannon Tower"
@@ -186,7 +210,7 @@ CANNON_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [GUNPOWDER, CANNON_MANUFACTORY, PHYSICS, PARADE_GROUND, TRIUMPHAL_ARC]
 
 RIFLE_TOWER:
   name: "Rifle Tower"
@@ -198,7 +222,47 @@ RIFLE_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [GUNPOWDER, GUNSMITH, STRATEGIC_WARFARE, ARCHIVES]
+
+COLD_TOWER:
+  name: "Cold Tower"
+  damage: 1
+  range: 1
+  reload_time: 2000
+  shot_speed: 1
+  shot_type: "slow"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [CHEMISTRY, LABORATORY, SCIENCE, ACADEMY]
+
+ICE_TOWER:
+  name: "Ice Tower"
+  damage: 1
+  range: 1
+  reload_time: 2000
+  shot_speed: 1
+  shot_type: "slow"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [CHEMISTRY, LABORATORY, BOTANIC_GARDENS]
+
+# ============================================================
+#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+# ============================================================
+
+FLAME_THROWER:
+  name: "Flame Thrower"
+  damage: 1
+  range: 1
+  reload_time: 2000
+  shot_speed: 1
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [CHEMISTRY, LABORATORY, HEAVY_EQUIPMENT]
 
 SHOCK_TOWER:
   name: "Shock Tower"
@@ -210,7 +274,7 @@ SHOCK_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [ELECTRICITY, ELECTRIC_FENCE, BALLISTICS]
 
 PARALYZNG_TOWER:
   name: "Paralyzing Tower"
@@ -222,7 +286,23 @@ PARALYZNG_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [ELECTRICITY, ELECTRIC_FENCE, HOSPITAL]
+
+NAPALM_THROWER:
+  name: "Napalm Thrower"
+  damage: 1
+  range: 1
+  reload_time: 2000
+  shot_speed: 1
+  shot_type: "splash"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [CHEMICAL_WARFARE, WMD_SITE, AERO_DYNAMICS, BOMBING_AREA]
+
+# ============================================================
+#   MODERNE  (Effort 2.000.000 – 5.300.000)
+# ============================================================
 
 MG_TOWER:
   name: "MG Tower"
@@ -234,40 +314,80 @@ MG_TOWER:
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [MECHANICAL_ENGINEERING, BARRACKS, DEFENSE_DEPARTMENT]
 
 RAPID_FIRE_MG_BUNKER:
   name: "Rapid Fire MG Bunker"
   damage: 1
   range: 1
-  reload_time: 2000
+  reload_time: 500
+  shot_speed: 3
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [MASS_PRODUCTION, FACTORY, CIVIL_ENGINEERING]
+
+RADAR_TOWER:
+  name: "Radar Tower"
+  damage: 8
+  range: 8
+  reload_time: 2500
   shot_speed: 1
   shot_type: "normal"
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [ELECTRONICS, NAVIGATION_SYSTEM, CRYPTOLOGY, AIRFIELD]
+
+ANTI_AIR_TOWER:
+  name: "Anti-Air Tower"
+  damage: 12
+  range: 5
+  reload_time: 1500
+  shot_speed: 1
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [AVIATION, ECHELON_DEFENSE_FACILITY, ROBO_MANUFACTURE]
+
+LASER_TOWER:
+  name: "Laser Tower"
+  damage: 10
+  range: 6
+  reload_time: 1000
+  shot_speed: 1
+  shot_type: "normal"
+  upgrade_costs: {}
+  max_level: 1
+  effects: {}
+  requirements: [ELECTRONICS, RESEARCH_LAB, NUCLEAR_POWER_PLANT, RESEARCH_VAULT]
+
+# ============================================================
+#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+# ============================================================
 
 SNIPER_TOWER:
   name: "Sniper Tower"
-  damage: 1
-  range: 1
+  damage: 30
+  range: 10
   reload_time: 2000
-  shot_speed: 1
+  shot_speed: 5
   shot_type: "normal"
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [SPECIAL_FORCES, ELITE_ACADEMY, OPTICS, SATELITE_SYSTEMS, INTELLIGENCE_AGENCY]
 
 ROCKET_TOWER:
   name: "Rocket Tower"
-  damage: 1
-  range: 1
-  reload_time: 2000
+  damage: 15
+  range: 6
+  reload_time: 3000
   shot_speed: 1
   shot_type: "splash"
   upgrade_costs: {}
   max_level: 1
   effects: {}
-  requirements: []
+  requirements: [ROCKET_SCIENCE, ROCKET_SILO, NUCLEAR_REACTION, SPACE_CENTER, THE_WORLD_WONDER]

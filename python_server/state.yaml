@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-15T14:33:38'
-  saved_at_unix: 1771162418.5511153
+  saved_at: '2026-02-21T09:17:39'
+  saved_at_unix: 1771661859.4325225
 empires:
 - uid: 100
   name: TestImperium
@@ -38,24 +38,27 @@ empires:
       iid: SLAVE
       slots: 4
       num_critters_spawned: 4
-      next_critter_ms: 2000
+      next_critter_ms: 3000
   spies: []
   bosses: {}
   hex_map:
   - q: 0
     r: 0
-    type: empty
+    type: ARROW_TOWER
   - q: 0
     r: 1
-    type: empty
+    type: path
+  - q: 0
+    r: 2
+    type: spawnpoint
   - q: 1
     r: 0
-    type: empty
+    type: castle
 - uid: 2
   name: Empire1
   resources:
-    gold: 9849.939805841905
-    culture: 10708.695044432328
+    gold: 34657.990434305306
+    culture: 39431.177111763594
     life: 10.0
   buildings:
     INIT: 0.0
@@ -85,10 +88,10 @@ empires:
     RELIGION: 3331.8714257461793
   research_queue: null
   citizens:
-    merchant: 2
+    merchant: 5
     scientist: 3
-    artist: 1
-    free: 4
+    artist: 5
+    free: 0
   effects:
     life_offset: 0.001
     gold_offset: 0.2
@@ -100,20 +103,24 @@ empires:
   max_life: 10.0
   structures: {}
   armies:
-  - aid: 1
+  - aid: 2
     uid: 2
-    name: huhu
+    name: TestArmee
     waves:
     - wave_id: 1
-      iid: SOLDIER
-      slots: 5
-      num_critters_spawned: 0
-      next_critter_ms: 0.0
-    - wave_id: 2
       iid: SLAVE
       slots: 5
       num_critters_spawned: 0
+      next_critter_ms: 2000
+    - wave_id: 1
+      iid: SLAVE
+      slots: 6
+      num_critters_spawned: 0
       next_critter_ms: 0.0
+  - aid: 3
+    uid: 2
+    name: Huhu
+    waves: []
   spies: []
   bosses: {}
   hex_map:
@@ -129,14 +136,20 @@ empires:
   - q: 1
     r: 0
     type: castle
-attacks:
-- attack_id: 1
-  attacker_uid: 2
-  defender_uid: 100
-  army_aid: 1
-  phase: in_battle
-  eta_seconds: 0.0
-  total_eta_seconds: 60.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  - q: 1
+    r: 1
+    type: empty
+  - q: 2
+    r: 0
+    type: empty
+  - q: 3
+    r: 0
+    type: empty
+  - q: 4
+    r: -1
+    type: empty
+  - q: 5
+    r: -2
+    type: empty
+attacks: []
 battles: []

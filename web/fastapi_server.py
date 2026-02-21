@@ -15,7 +15,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, JSONResponse
 from starlette.datastructures import MutableHeaders
 import uvicorn
 
@@ -71,17 +71,105 @@ class NoCacheStaticFiles(StaticFiles):
 
 # Create FastAPI app
 app = FastAPI(title="E3 Web Client", version="1.0.0")
-app.mount(
-    "/",
-    NoCacheStaticFiles(directory=str(WEB_DIR), html=True),
-    name="static"
-)
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok", "service": "E3 Web Client"}
+
+
+@app.get("/api/sprite-files")
+async def list_sprite_files():
+    """List all JPG and PNG files in the tools directory."""
+    tools_dir = WEB_DIR / "tools"
+    files = sorted(
+        f.name
+        for f in tools_dir.iterdir()
+        if f.is_file()
+        and f.suffix.lower() in (".jpg", ".jpeg", ".png")
+        and ".__orig" not in f.stem
+    )
+    return JSONResponse({"files": files})
+
+
+@app.get("/api/maps")
+async def list_maps():
+    """List all PNG map files under assets/sprites/maps/."""
+    maps_dir = WEB_DIR / "assets" / "sprites" / "maps"
+    if not maps_dir.is_dir():
+        return JSONResponse({"maps": []})
+    files = sorted(
+        [{"name": f.name, "url": f"/assets/sprites/maps/{f.name}"}
+         for f in maps_dir.iterdir()
+         if f.is_file() and f.suffix.lower() == ".png"],
+        key=lambda x: x["name"]
+    )
+    return JSONResponse({"maps": files})
+
+
+@app.get("/api/critters")
+async def list_critters():
+    """
+    Scan assets/sprites/critters/ and return a manifest for every critter.
+
+    Each entry has:
+      name   – folder name
+      type   – "gifs" or "spritesheet"
+
+    For "gifs":
+      files  – {"forward": ..., "left": ..., "right": ..., "backward": ...}
+
+    For "spritesheet":
+      file   – relative URL to the PNG (relative to web root)
+    """
+    critters_dir = WEB_DIR / "assets" / "sprites" / "critters"
+    if not critters_dir.is_dir():
+        return JSONResponse({"critters": []})
+
+    # Canonical GIF file names for each direction
+    GIF_NAMES = {
+        "forward":  "front.gif",
+        "left":     "left.gif",
+        "right":    "right.gif",
+        "backward": "back.gif",
+    }
+
+    result = []
+    for d in sorted(critters_dir.iterdir()):
+        if not d.is_dir():
+            continue
+
+        name = d.name
+        base = f"/assets/sprites/critters/{name}"
+
+        # Prefer GIFs when all four are present
+        gif_paths = {dir_: d / fname for dir_, fname in GIF_NAMES.items()}
+        if all(p.exists() for p in gif_paths.values()):
+            result.append({
+                "name": name,
+                "type": "gifs",
+                "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()},
+            })
+            continue
+
+        # Fall back to first PNG sprite sheet found
+        pngs = sorted(f.name for f in d.iterdir() if f.suffix.lower() == ".png")
+        if pngs:
+            result.append({
+                "name": name,
+                "type": "spritesheet",
+                "file": f"{base}/{pngs[0]}",
+            })
+
+    return JSONResponse({"critters": result})
+
+
+app.mount(
+    "/",
+    NoCacheStaticFiles(directory=str(WEB_DIR), html=True),
+    name="static"
+)
 
 
 def main():

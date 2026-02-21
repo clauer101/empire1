@@ -87,11 +87,10 @@ function render(data) {
       <div class="panel">
         <div class="panel-header">Citizens</div>
         ${renderCitizens(data.citizens)}
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">Grow Settlement</div>
-        <div class="panel-row"><span class="label">Next citizen</span><span class="value">${fmt(price)} Culture</span></div>
+        <div class="panel-row" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 4px;">
+          <span class="label">Next citizen</span>
+          <span class="value">${fmt(price)} Culture</span>
+        </div>
         <div class="panel-row"><button id="buy-citizen-btn">Grow Settlement</button></div>
         <div class="panel-row" id="buy-citizen-msg"></div>
       </div>
@@ -341,7 +340,12 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
       if (item?.effects?.[effectOffsetKey] > 0) {
         const offset = item.effects[effectOffsetKey];
         totalOffset += offset;
-        html += `<div class="panel-row"><span class="label">+${offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+        if (resourceType === 'life') {
+          html += `<div class="panel-row"><span class="label">+${offset.toFixed(3)}</span><span class="value">(${item.name || iid})</span></div>`;
+        }else{
+          html += `<div class="panel-row"><span class="label">+${offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+        }
+        
       }
     }
   }
@@ -370,7 +374,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
       if (item?.effects?.[effectModifierKey] > 0) {
         const modifier = item.effects[effectModifierKey];
         totalBuildingModifier += modifier;
-        html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
+        html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
   }

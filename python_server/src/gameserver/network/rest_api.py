@@ -27,6 +27,9 @@ from gameserver.network.rest_models import (
     ArmyRenameRequest,
     AttackRequest,
     BuildRequest,
+    BuyCritterSlotRequest,
+    BuyTileRequest,
+    BuyWaveRequest,
     CitizenDistribution,
     LoginRequest,
     LoginResponse,
@@ -64,19 +67,22 @@ def create_app(services: "Services") -> FastAPI:
     from gameserver.network.handlers import (
         _build_empire_summary,
         _build_session_state,
+        handle_buy_critter_slot_request,
+        handle_buy_tile_request,
+        handle_buy_wave_request,
         handle_change_army,
         handle_change_citizen,
         handle_change_wave,
         handle_citizen_upgrade,
         handle_item_request,
+        handle_map_load_request,
+        handle_map_save_request,
         handle_military_request,
         handle_new_army,
         handle_new_attack,
         handle_new_item,
         handle_new_wave,
         handle_summary_request,
-        handle_map_load_request,
-        handle_map_save_request,
     )
 
     app = FastAPI(title="E3 Game Server", version="1.0.0")
@@ -200,6 +206,12 @@ def create_app(services: "Services") -> FastAPI:
         resp = await handle_map_save_request(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
+    @app.post("/api/map/buy-tile")
+    async def buy_tile(body: BuyTileRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        msg = _stub_message(q=body.q, r=body.r)
+        resp = await handle_buy_tile_request(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
     # =================================================================
     # Army
     # =================================================================
@@ -226,6 +238,18 @@ def create_app(services: "Services") -> FastAPI:
     async def change_wave(aid: int, wave_number: int, body: WaveChangeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         msg = _stub_message(aid=aid, wave_number=wave_number, critter_iid=body.critter_iid, slots=body.slots)
         resp = await handle_change_wave(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
+    @app.post("/api/army/buy-wave")
+    async def buy_wave(body: BuyWaveRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        msg = _stub_message(aid=body.aid)
+        resp = await handle_buy_wave_request(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
+    @app.post("/api/army/buy-critter-slot")
+    async def buy_critter_slot(body: BuyCritterSlotRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        msg = _stub_message(aid=body.aid, wave_number=body.wave_number)
+        resp = await handle_buy_critter_slot_request(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
     # =================================================================

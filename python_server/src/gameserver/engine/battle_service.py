@@ -237,12 +237,15 @@ class BattleService:
     def _step_critters(self, battle: BattleState, dt_ms: float) -> None:
         """Move all critters, handle finish/death."""
         for cid, critter in list(battle.critters.items()):
+            # Move critter first (if alive and not finished yet)
+            if critter.health > 0 and critter.path_progress < 1.0:
+                self._move_critter(battle, critter, dt_ms)
+            
+            # Then check final state once (after movement)
             if critter.health <= 0:
                 self._critter_died(battle, critter)
             elif critter.path_progress >= 1.0:
                 self._critter_finished(battle, critter)
-            else:
-                self._move_critter(battle, critter, dt_ms)
                     
 
 

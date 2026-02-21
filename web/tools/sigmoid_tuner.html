@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sigmoid Function Tuner</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #4fc3f7;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .tuner {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    
+    .tuner h2 {
+      color: #4fc3f7;
+      margin-bottom: 15px;
+      font-size: 18px;
+      border-bottom: 2px solid #0f3460;
+      padding-bottom: 8px;
+    }
+    
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .control label {
+      font-size: 12px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .control input[type="range"] {
+      width: 100%;
+      margin: 4px 0;
+    }
+    
+    .control .value-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f3460;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #4fc3f7;
+    }
+    
+    canvas {
+      width: 100%;
+      height: 200px;
+      background: #0f3460;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .table-container {
+      max-height: 200px;
+      overflow-y: auto;
+      background: #0f3460;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+    }
+    
+    th, td {
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid #16213e;
+    }
+    
+    th {
+      background: #16213e;
+      position: sticky;
+      top: 0;
+      color: #4fc3f7;
+      font-weight: 600;
+    }
+    
+    .copy-section {
+      background: #0f3460;
+      padding: 10px;
+      border-radius: 4px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .copy-code {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #4fc3f7;
+      background: #16213e;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #0f3460;
+    }
+    
+    button {
+      background: #4fc3f7;
+      color: #1a1a2e;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #81d4fa;
+    }
+    
+    button:active {
+      background: #29b6f6;
+    }
+    
+    .not-implemented {
+      opacity: 0.5;
+      pointer-events: none;
+      position: relative;
+    }
+    
+    .not-implemented::after {
+      content: "NOT YET IMPLEMENTED";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎛️ Sigmoid Function Tuner</h1>
+  
+  <div class="container">
+    <!-- Citizen Price -->
+    <div class="tuner">
+      <h2>👥 Citizen Price (Culture)</h2>
+      <div class="controls">
+        <div class="control">
+          <label>MAX Value</label>
+          <input type="range" id="citizen-max" min="1000" max="100000" step="1000" value="50000">
+          <div class="value-display">
+            <span>MAX:</span>
+            <span id="citizen-max-val">50000</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>MIN Value</label>
+          <input type="range" id="citizen-min" min="1" max="2000" step="1" value="100">
+          <div class="value-display">
+            <span>MIN:</span>
+            <span id="citizen-min-val">100</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>SPREAD</label>
+          <input type="range" id="citizen-spread" min="1" max="50" step="0.5" value="15">
+          <div class="value-display">
+            <span>SPREAD:</span>
+            <span id="citizen-spread-val">15</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>STEEP</label>
+          <input type="range" id="citizen-steep" min="1" max="20" step="0.5" value="8">
+          <div class="value-display">
+            <span>STEEP:</span>
+            <span id="citizen-steep-val">8</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="citizen-canvas"></canvas>
+      <div class="table-container">
+        <table id="citizen-table">
+          <thead>
+            <tr><th>#</th><th>Price</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="copy-section">
+        <input type="text" class="copy-code" id="citizen-code" readonly>
+        <button onclick="copyCode('citizen')">Copy</button>
+      </div>
+    </div>
+    
+    <!-- Tile Price -->
+    <div class="tuner">
+      <h2>🗺️ Tile Price (Gold)</h2>
+      <div class="controls">
+        <div class="control">
+          <label>MAX Value</label>
+          <input type="range" id="tile-max" min="1000" max="100000" step="1000" value="47000">
+          <div class="value-display">
+            <span>MAX:</span>
+            <span id="tile-max-val">47000</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>MIN Value</label>
+          <input type="range" id="tile-min" min="1" max="2000" step="1" value="100">
+          <div class="value-display">
+            <span>MIN:</span>
+            <span id="tile-min-val">100</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>SPREAD</label>
+          <input type="range" id="tile-spread" min="1" max="50" step="0.5" value="29">
+          <div class="value-display">
+            <span>SPREAD:</span>
+            <span id="tile-spread-val">29</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>STEEP</label>
+          <input type="range" id="tile-steep" min="1" max="20" step="0.5" value="8.5">
+          <div class="value-display">
+            <span>STEEP:</span>
+            <span id="tile-steep-val">8.5</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="tile-canvas"></canvas>
+      <div class="table-container">
+        <table id="tile-table">
+          <thead>
+            <tr><th>#</th><th>Price</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="copy-section">
+        <input type="text" class="copy-code" id="tile-code" readonly>
+        <button onclick="copyCode('tile')">Copy</button>
+      </div>
+    </div>
+    
+    <!-- Wave Price -->
+    <div class="tuner">
+      <h2>🌊 Wave Price (Gold)</h2>
+      <div class="controls">
+        <div class="control">
+          <label>MAX Value</label>
+          <input type="range" id="wave-max" min="1000" max="100000" step="1000" value="28000">
+          <div class="value-display">
+            <span>MAX:</span>
+            <span id="wave-max-val">28000</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>MIN Value</label>
+          <input type="range" id="wave-min" min="1" max="2000" step="1" value="100">
+          <div class="value-display">
+            <span>MIN:</span>
+            <span id="wave-min-val">100</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>SPREAD</label>
+          <input type="range" id="wave-spread" min="1" max="50" step="0.5" value="12">
+          <div class="value-display">
+            <span>SPREAD:</span>
+            <span id="wave-spread-val">12</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>STEEP</label>
+          <input type="range" id="wave-steep" min="1" max="20" step="0.5" value="7">
+          <div class="value-display">
+            <span>STEEP:</span>
+            <span id="wave-steep-val">7</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="wave-canvas"></canvas>
+      <div class="table-container">
+        <table id="wave-table">
+          <thead>
+            <tr><th>#</th><th>Price</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="copy-section">
+        <input type="text" class="copy-code" id="wave-code" readonly>
+        <button onclick="copyCode('wave')">Copy</button>
+      </div>
+    </div>
+    
+    <!-- Critter Slot Price -->
+    <div class="tuner">
+      <h2>🐛 Critter Slot Price (Gold)</h2>
+      <div class="controls">
+        <div class="control">
+          <label>MAX Value</label>
+          <input type="range" id="critter-max" min="1000" max="100000" step="1000" value="18000">
+          <div class="value-display">
+            <span>MAX:</span>
+            <span id="critter-max-val">18000</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>MIN Value</label>
+          <input type="range" id="critter-min" min="1" max="2000" step="1" value="25">
+          <div class="value-display">
+            <span>MIN:</span>
+            <span id="critter-min-val">25</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>SPREAD</label>
+          <input type="range" id="critter-spread" min="1" max="50" step="0.5" value="15">
+          <div class="value-display">
+            <span>SPREAD:</span>
+            <span id="critter-spread-val">15</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>STEEP</label>
+          <input type="range" id="critter-steep" min="1" max="20" step="0.5" value="6">
+          <div class="value-display">
+            <span>STEEP:</span>
+            <span id="critter-steep-val">6</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="critter-canvas"></canvas>
+      <div class="table-container">
+        <table id="critter-table">
+          <thead>
+            <tr><th>#</th><th>Price</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="copy-section">
+        <input type="text" class="copy-code" id="critter-code" readonly>
+        <button onclick="copyCode('critter')">Copy</button>
+      </div>
+    </div>
+    
+    <!-- Army Price -->
+    <div class="tuner">
+      <h2>⚔️ Army Price (Gold)</h2>
+      <div class="controls">
+        <div class="control">
+          <label>MAX Value</label>
+          <input type="range" id="army-max" min="1000" max="100000" step="1000" value="75000">
+          <div class="value-display">
+            <span>MAX:</span>
+            <span id="army-max-val">75000</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>MIN Value</label>
+          <input type="range" id="army-min" min="1" max="2000" step="1" value="1000">
+          <div class="value-display">
+            <span>MIN:</span>
+            <span id="army-min-val">1000</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>SPREAD</label>
+          <input type="range" id="army-spread" min="1" max="50" step="0.5" value="7">
+          <div class="value-display">
+            <span>SPREAD:</span>
+            <span id="army-spread-val">7</span>
+          </div>
+        </div>
+        <div class="control">
+          <label>STEEP</label>
+          <input type="range" id="army-steep" min="1" max="20" step="0.5" value="6">
+          <div class="value-display">
+            <span>STEEP:</span>
+            <span id="army-steep-val">6</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="army-canvas"></canvas>
+      <div class="table-container">
+        <table id="army-table">
+          <thead>
+            <tr><th>#</th><th>Price</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="copy-section">
+        <input type="text" class="copy-code" id="army-code" readonly>
+        <button onclick="copyCode('army')">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sigmoid function
+    function sigmoid(i, maxv, minv, spread, steep) {
+      return minv + (maxv - minv) / (1 + Math.exp((-7 * i) / spread + steep));
+    }
+    
+    // Initialize tuners
+    const tuners = ['citizen', 'tile', 'wave', 'critter', 'army'];
+    
+    tuners.forEach(name => {
+      const params = ['max', 'min', 'spread', 'steep'];
+      params.forEach(param => {
+        const slider = document.getElementById(`${name}-${param}`);
+        const display = document.getElementById(`${name}-${param}-val`);
+        
+        slider.addEventListener('input', (e) => {
+          display.textContent = e.target.value;
+          update(name);
+        });
+      });
+      
+      update(name);
+    });
+    
+    function getParams(name) {
+      return {
+        max: parseFloat(document.getElementById(`${name}-max`).value),
+        min: parseFloat(document.getElementById(`${name}-min`).value),
+        spread: parseFloat(document.getElementById(`${name}-spread`).value),
+        steep: parseFloat(document.getElementById(`${name}-steep`).value)
+      };
+    }
+    
+    function update(name) {
+      const params = getParams(name);
+      updateCanvas(name, params);
+      updateTable(name, params);
+      updateCode(name, params);
+    }
+    
+    function updateCanvas(name, params) {
+      const canvas = document.getElementById(`${name}-canvas`);
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      
+      ctx.clearRect(0, 0, w, h);
+      
+      // Calculate values for 30 points
+      const points = 30;
+      const values = [];
+      let maxVal = 0;
+      
+      for (let i = 1; i <= points; i++) {
+        const val = sigmoid(i, params.max, params.min, params.spread, params.steep);
+        values.push(val);
+        maxVal = Math.max(maxVal, val);
+      }
+      
+      // Draw grid
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const y = (h / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      
+      // Draw curve
+      ctx.strokeStyle = '#4fc3f7';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      
+      values.forEach((val, i) => {
+        const x = (w / (points - 1)) * i;
+        const y = h - (val / maxVal) * h * 0.9 - h * 0.05;
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      ctx.stroke();
+      
+      // Draw points
+      ctx.fillStyle = '#4fc3f7';
+      values.forEach((val, i) => {
+        const x = (w / (points - 1)) * i;
+        const y = h - (val / maxVal) * h * 0.9 - h * 0.05;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      
+      // Draw labels
+      ctx.fillStyle = '#aaa';
+      ctx.font = `${12 * window.devicePixelRatio}px monospace`;
+      ctx.textAlign = 'left';
+      ctx.fillText(`Max: ${maxVal.toFixed(0)}`, 10, 20);
+      ctx.fillText(`#1: ${values[0].toFixed(1)}`, 10, 40);
+      ctx.textAlign = 'right';
+      ctx.fillText(`#${points}: ${values[points-1].toFixed(1)}`, w - 10, 40);
+    }
+    
+    function updateTable(name, params) {
+      const tbody = document.querySelector(`#${name}-table tbody`);
+      tbody.innerHTML = '';
+      
+      for (let i = 1; i <= 30; i++) {
+        const val = sigmoid(i, params.max, params.min, params.spread, params.steep);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>#${i}</td>
+          <td>${val.toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+      }
+    }
+    
+    function updateCode(name, params) {
+      const code = `maxv, minv, spread, steep = ${Math.round(params.max)}, ${Math.round(params.min)}, ${params.spread}, ${params.steep}`;
+      document.getElementById(`${name}-code`).value = code;
+    }
+    
+    function copyCode(name) {
+      const input = document.getElementById(`${name}-code`);
+      input.select();
+      document.execCommand('copy');
+      
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => {
+        btn.textContent = orig;
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

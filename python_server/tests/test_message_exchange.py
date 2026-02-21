@@ -72,7 +72,7 @@ def _make_empire(uid: int = 100, name: str = "TestEmpire") -> Empire:
     return Empire(
         uid=uid,
         name=name,
-        resources={"gold": 500.0, "culture": 1000.0, "life": 10.0},
+        resources={"gold": 3000.0, "culture": 1000.0, "life": 10.0},
         citizens={"merchant": 3, "scientist": 2, "artist": 1},
         buildings={"farm": 0.0, "library": 0.0, "workshop": 15.5},
         knowledge={"archery": 0.0, "alchemy": 30.0},
@@ -211,7 +211,7 @@ class TestHandleSummaryRequest:
         msg = parse_message({"type": "summary_request", "sender": 100})
         result = await handle_summary_request(msg, sender_uid=100)
 
-        assert result["resources"]["gold"] == 500.0
+        assert result["resources"]["gold"] == 3000.0
         assert result["resources"]["culture"] == 1000.0
 
     @pytest.mark.asyncio

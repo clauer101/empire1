@@ -83,6 +83,7 @@ export class HexGrid {
     this._panStartY = 0;
     this._panOffsetX = 0;
     this._panOffsetY = 0;
+    this._hasPanned = false;
 
     // Touch state (for pinch-to-zoom)
     this._touches = [];
@@ -97,6 +98,14 @@ export class HexGrid {
     // Zoom limits
     this._minZoom = 0.3;  // Will be updated based on map size
     this._maxZoom = 3.0;
+
+    // Map background image
+    /** @type {ImageBitmap|null} Decoded map PNG, shared across all tiles. */
+    this._mapBitmap = null;
+    /** Overall opacity of the map image (0–1). */
+    this.mapAlpha = 1.0;
+    /** Alpha of the tile-type color overlay on top of the map image (0–1). */
+    this.tileOverlayAlpha = 0.28;
 
     // Map bounds (in world coordinates)
     this._mapMinX = 0;
@@ -190,8 +199,6 @@ export class HexGrid {
     const gridH = maxY - minY + this.hexSize * 2;
     const cw = this._logicalWidth  || this.canvas.width;
     const ch = this._logicalHeight || this.canvas.height;
-    this.offsetX = (cw / 2 - (minX + maxX) / 2);
-    this.offsetY = (ch / 2 - (minY + maxY) / 2);
     
     // Store map bounds for pan clamping
     this._mapMinX = minX;
@@ -201,6 +208,13 @@ export class HexGrid {
     
     // Calculate minimum zoom to fit entire map
     this._updateMinZoom(gridW, gridH, cw, ch);
+    
+    // Set zoom to fit map nicely on screen (use calculated min zoom)
+    this.zoom = Math.max(this._minZoom, Math.min(1.5, this._minZoom * 1.1));
+    
+    // Recalculate center with the new zoom
+    this.offsetX = (cw / 2 - (minX + maxX) / 2);
+    this.offsetY = (ch / 2 - (minY + maxY) / 2);
     
     this._dirty = true;
   }
@@ -370,6 +384,13 @@ export class HexGrid {
       this._hasUserInteracted = true;
       const dx = e.clientX - this._panStartX;
       const dy = e.clientY - this._panStartY;
+      
+      // Check if we've actually moved (not just a static click)
+      const panThreshold = 3; // pixels
+      if (Math.abs(dx) > panThreshold || Math.abs(dy) > panThreshold) {
+        this._hasPanned = true;
+      }
+      
       this.offsetX = this._panOffsetX + dx;
       this.offsetY = this._panOffsetY + dy;
       this._clampPanOffset();
@@ -386,9 +407,10 @@ export class HexGrid {
   }
 
   _onMouseDown(e) {
-    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
-      // Middle-click or shift+click → pan
+    if (e.button === 0 || e.button === 1) {
+      // Left-click or middle-click → pan
       this._isPanning = true;
+      this._hasPanned = false;
       this._panStartX = e.clientX;
       this._panStartY = e.clientY;
       this._panOffsetX = this.offsetX;
@@ -431,7 +453,11 @@ export class HexGrid {
   }
 
   _onClick(e) {
-    if (this._isPanning) return;
+    // Don't trigger click if we just finished panning
+    if (this._isPanning || this._hasPanned) {
+      this._hasPanned = false;
+      return;
+    }
     const hex = this._eventToHex(e);
     if (!hex) {
       this.selectedKey = null;
@@ -734,6 +760,32 @@ export class HexGrid {
     this._baseCached = false;
   }
 
+  /**
+   * Load a map PNG and use it as a shared background texture for all hex tiles.
+   * Each tile reveals only the portion of the image that falls under it.
+   *
+   * @param {string|null} url  Absolute or root-relative URL to the PNG, or null to clear.
+   * @returns {Promise<void>}
+   */
+  async setMapBackground(url) {
+    if (this._mapBitmap) {
+      this._mapBitmap.close();
+      this._mapBitmap = null;
+    }
+    if (!url) {
+      this._invalidateBase();
+      this._dirty = true;
+      return;
+    }
+    const blob = await fetch(url).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status} loading map: ${url}`);
+      return r.blob();
+    });
+    this._mapBitmap = await createImageBitmap(blob);
+    this._invalidateBase();
+    this._dirty = true;
+  }
+
   /** Render base layer (tiles + battle path) to cache canvas with current zoom. */
   _renderBase() {
     // Create cache canvas if needed
@@ -787,28 +839,65 @@ export class HexGrid {
       const isHovered = key === this.hoveredKey;
       const isSelected = key === this.selectedKey;
 
-      // Fill
+      // Build hex path (reused for clip + stroke)
       ctx.beginPath();
       ctx.moveTo(corners[0].x, corners[0].y);
       for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
       ctx.closePath();
 
-      if (isSelected) {
-        ctx.fillStyle = '#4fc3f7';
-        ctx.globalAlpha = 0.35;
-        ctx.fill();
+      // Fill — two modes: map-image background or solid color fallback
+      ctx.save();
+      ctx.clip(); // restrict all drawing below to this hex shape
+
+      if (this._mapBitmap && data.type !== 'void') {
+        // ── Map image background ──────────────────────────────
+        // ctx is already transformed: scale(zoom), translate(-minX, -minY).
+        // We always center the image on world (0,0) by computing the
+        // symmetric half-extents from origin, independent of bounding-box
+        // symmetry (which can differ between test page and composer/battle).
+        const halfW = Math.max(Math.abs(minX), Math.abs(maxX));
+        const halfH = Math.max(Math.abs(minY), Math.abs(maxY));
+        ctx.globalAlpha = this.mapAlpha;
+        ctx.drawImage(this._mapBitmap, -halfW, -halfH, halfW * 2, halfH * 2);
         ctx.globalAlpha = 1;
-        ctx.fillStyle = tileType.color;
-        ctx.fill();
-      } else if (isHovered) {
-        ctx.fillStyle = tileType.color;
-        ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fill();
+
+        // Tile-type color overlay so path/spawnpoint/castle still read visually
+        if (this.tileOverlayAlpha > 0) {
+          ctx.fillStyle = tileType.color;
+          ctx.globalAlpha = this.tileOverlayAlpha;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        // Selection / hover highlight on top of image
+        if (isSelected) {
+          ctx.fillStyle = 'rgba(79, 195, 247, 0.40)';
+          ctx.fill();
+        } else if (isHovered) {
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
+          ctx.fill();
+        }
       } else {
-        ctx.fillStyle = tileType.color;
-        ctx.fill();
+        // ── Solid color fallback (void tiles or no map loaded) ──
+        if (isSelected) {
+          ctx.fillStyle = '#4fc3f7';
+          ctx.globalAlpha = 0.35;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = tileType.color;
+          ctx.fill();
+        } else if (isHovered) {
+          ctx.fillStyle = tileType.color;
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.fill();
+        } else {
+          ctx.fillStyle = tileType.color;
+          ctx.fill();
+        }
       }
+
+      ctx.restore(); // remove clip
 
       // Stroke
       ctx.strokeStyle = isSelected ? '#4fc3f7' : isHovered ? '#6a6a8a' : tileType.stroke;

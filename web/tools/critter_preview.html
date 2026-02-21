@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Critter Sprite Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1a1a2e;
+      --surface:  #16213e;
+      --card:     #0f3460;
+      --accent:   #4466cc;
+      --accent2:  #7ecfff;
+      --text:     #e0e0e0;
+      --muted:    #888;
+      --border:   #2a2a4a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: monospace;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "header header"
+        "sidebar main";
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      grid-area: header;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      color: var(--accent2);
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      grid-area: sidebar;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    .critter-btn {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.82rem;
+      padding: 8px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-left: 3px solid transparent;
+      transition: background 0.1s;
+    }
+
+    .critter-btn:hover  { background: var(--border); }
+    .critter-btn.active {
+      border-left-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(68,102,204,0.15);
+    }
+
+    .critter-btn .type-tag {
+      font-size: 0.6rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .type-tag.spritesheet { background: #1a4a1a; color: #7ecf7e; }
+    .type-tag.gifs        { background: #4a1a1a; color: #cf7e7e; }
+
+    /* ── Main area ── */
+    #main {
+      grid-area: main;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    /* ── Controls bar ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .controls label { font-size: 0.83rem; color: var(--muted); }
+
+    .dir-btn {
+      background: var(--border);
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 0.83rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .dir-btn:hover  { background: #3a3a6a; }
+    .dir-btn.active { background: var(--accent); color: #fff; border-color: var(--accent2); }
+
+    input[type=range] { width: 120px; accent-color: var(--accent); }
+    #fps-label { min-width: 4ch; }
+
+    select {
+      background: var(--border);
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-family: monospace;
+      cursor: pointer;
+    }
+
+    /* ── Main display (canvas for sheets, img for GIFs) ── */
+    .canvas-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    #main-canvas {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      image-rendering: pixelated;
+    }
+
+    #main-gif {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      image-rendering: pixelated;
+    }
+
+    .meta-row {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      gap: 16px;
+    }
+    .meta-row span { color: var(--accent2); }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+
+    /* ── Sprite-sheet overview grid ── */
+    #sheet-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 700px;
+    }
+
+    #sheet-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    .row-label {
+      grid-column: 1 / -1;
+      font-size: 0.68rem;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 0 2px;
+      border-top: 1px solid var(--border);
+    }
+    .row-label:first-child { border-top: none; }
+
+    .frame-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .frame-cell canvas {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      image-rendering: pixelated;
+      width: 100%;
+      height: auto;
+    }
+
+    .frame-cell canvas.current-frame {
+      border-color: var(--accent);
+      box-shadow: 0 0 6px #4466cc88;
+    }
+
+    .frame-label {
+      font-size: 0.62rem;
+      color: #555;
+    }
+
+    /* ── GIF overview ── */
+    #gif-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .gif-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .gif-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .gif-cell img {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      image-rendering: pixelated;
+      max-width: 160px;
+      max-height: 160px;
+    }
+
+    .gif-cell.active-dir img {
+      border-color: var(--accent);
+      box-shadow: 0 0 6px #4466cc88;
+    }
+
+    .gif-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Empty / loading states ── */
+    #empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 40px;
+      text-align: center;
+    }
+
+    #loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      color: var(--accent2);
+      font-size: 1.1rem;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #loading-overlay.show { display: flex; }
+  </style>
+</head>
+
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────── -->
+<header>
+  <h1>⚔ Critter Sprite Preview</h1>
+  <span id="critter-count" class="badge">0 critters</span>
+
+  <div class="controls" id="controls" style="display:none">
+    <label>Richtung:</label>
+    <button class="dir-btn active" data-dir="forward">▼ Vorne</button>
+    <button class="dir-btn" data-dir="left">◀ Links</button>
+    <button class="dir-btn" data-dir="right">▶ Rechts</button>
+    <button class="dir-btn" data-dir="backward">▲ Hinten</button>
+
+    <label>Größe:
+      <select id="size-select">
+        <option value="48">48 px</option>
+        <option value="96" selected>96 px</option>
+        <option value="128">128 px</option>
+        <option value="192">192 px</option>
+      </select>
+    </label>
+
+    <label>FPS: <span id="fps-label">8</span>
+      <input type="range" id="fps-range" min="1" max="24" value="8" />
+    </label>
+  </div>
+</header>
+
+<!-- ── Sidebar ────────────────────────────────────────────── -->
+<nav id="sidebar"></nav>
+
+<!-- ── Main area ──────────────────────────────────────────── -->
+<main id="main">
+  <div id="empty">← Critter aus der Liste wählen</div>
+
+  <!-- Main animated display (canvas for sheets, <img> for GIFs) -->
+  <div class="canvas-wrap" id="canvas-wrap" style="display:none">
+    <canvas id="main-canvas" width="160" height="160"></canvas>
+    <img id="main-gif" alt="" />
+    <div class="meta-row" id="meta-row"></div>
+  </div>
+
+  <!-- Sprite-sheet frame grid -->
+  <div id="sheet-wrap" style="display:none">
+    <div class="section-title">Sprite Sheet — alle Frames</div>
+    <div id="sheet-grid"></div>
+  </div>
+
+  <!-- GIF overview -->
+  <div id="gif-wrap">
+    <div class="section-title">GIF-Animationen</div>
+    <div class="gif-row" id="gif-row"></div>
+  </div>
+</main>
+
+<!-- ── Loading overlay ────────────────────────────────────── -->
+<div id="loading-overlay">Lade…</div>
+
+<script type="module">
+import { CritterSprite, DIRECTIONS, DIRECTION_ROW, COLS, ROWS } from '../js/lib/critter_sprite.js';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let critterManifest = [];   // /api/critters response
+let activeSprite    = null; // CritterSprite instance
+let activeEntry     = null; // manifest entry
+let currentDir      = 'forward';
+let fps             = 8;
+let displaySize     = 96;
+let animId          = null;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+
+const sidebar      = document.getElementById('sidebar');
+const countBadge   = document.getElementById('critter-count');
+const controls     = document.getElementById('controls');
+const empty        = document.getElementById('empty');
+const canvasWrap   = document.getElementById('canvas-wrap');
+const mainCanvas   = document.getElementById('main-canvas');
+const mainCtx      = mainCanvas.getContext('2d');
+const mainGif      = document.getElementById('main-gif');
+const metaRow      = document.getElementById('meta-row');
+const sheetWrap    = document.getElementById('sheet-wrap');
+const sheetGrid    = document.getElementById('sheet-grid');
+const gifWrap      = document.getElementById('gif-wrap');
+const gifRow       = document.getElementById('gif-row');
+const loadingOl    = document.getElementById('loading-overlay');
+const fpsRange     = document.getElementById('fps-range');
+const fpsLabel     = document.getElementById('fps-label');
+const sizeSelect   = document.getElementById('size-select');
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDir = btn.dataset.dir;
+    highlightGifDir(currentDir);
+    // For GIF critters: swap to the matching direction gif immediately
+    if (activeSprite?.type === 'gifs') {
+      const img = activeSprite.getImg(currentDir);
+      if (img) mainGif.src = img.src;
+    }
+  });
+});
+
+fpsRange.addEventListener('input', () => {
+  fps = parseInt(fpsRange.value);
+  fpsLabel.textContent = fps;
+  if (activeSprite) activeSprite.fps = fps;
+});
+
+sizeSelect.addEventListener('change', () => {
+  displaySize = parseInt(sizeSelect.value);
+  updateMainCanvasSize();
+});
+
+// ── Fetch manifest ────────────────────────────────────────────────────────────
+
+async function fetchManifest() {
+  const res  = await fetch('/api/critters');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data.critters) ? data.critters : [];
+}
+
+// ── Build sidebar ─────────────────────────────────────────────────────────────
+
+function buildSidebar(manifest) {
+  sidebar.innerHTML = '';
+  for (const entry of manifest) {
+    const btn = document.createElement('button');
+    btn.className = 'critter-btn';
+    btn.dataset.name = entry.name;
+
+    const tag = document.createElement('span');
+    tag.className = `type-tag ${entry.type}`;
+    tag.textContent = entry.type === 'gifs' ? 'GIF' : 'PNG';
+
+    btn.appendChild(document.createTextNode(entry.name));
+    btn.appendChild(tag);
+    btn.addEventListener('click', () => selectCritter(entry, btn));
+    sidebar.appendChild(btn);
+  }
+  countBadge.textContent = `${manifest.length} critters`;
+}
+
+// ── Select & load a critter ───────────────────────────────────────────────────
+
+async function selectCritter(entry, btn) {
+  // Update sidebar highlight
+  document.querySelectorAll('.critter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  loadingOl.classList.add('show');
+
+  try {
+    // Stop previous animation
+    if (animId !== null) { cancelAnimationFrame(animId); animId = null; }
+
+    activeEntry = entry;
+
+    // Build absolute URLs (we're served from the web root)
+    const sprite = CritterSprite.fromManifest(entry, '', fps);
+    activeSprite = sprite;
+    sprite.fps = fps;
+    await sprite.load();
+
+    updateMainCanvasSize();
+    buildOverview(entry, sprite);
+    updateMeta(entry, sprite);
+
+    controls.style.display   = '';
+    empty.style.display      = 'none';
+    canvasWrap.style.display = '';
+
+    if (entry.type === 'gifs') {
+      // GIFs: show <img>, hide canvas — browser animates natively
+      mainCanvas.style.display = 'none';
+      mainGif.style.display    = '';
+      const img = sprite.getImg(currentDir);
+      if (img) mainGif.src = img.src;
+      // Size the gif display to match the selected display size
+      mainGif.style.width  = displaySize + 'px';
+      mainGif.style.height = 'auto';
+    } else {
+      // Sprite sheet: show canvas, hide gif img
+      mainGif.style.display    = 'none';
+      mainCanvas.style.display = '';
+      // Start canvas animation loop
+      requestAnimationFrame(loop);
+    }
+
+  } catch (e) {
+    console.error('Error loading critter:', e);
+    metaRow.innerHTML = `<span style="color:#f55">Error: ${e.message}</span>`;
+  } finally {
+    loadingOl.classList.remove('show');
+  }
+}
+
+// ── Canvas sizing ─────────────────────────────────────────────────────────────
+
+function updateMainCanvasSize() {
+  if (!activeSprite) return;
+  const pad    = 32;
+  const aspect = activeSprite.frameH / (activeSprite.frameW || 1);
+  mainCanvas.width  = displaySize + pad;
+  mainCanvas.height = Math.round(displaySize * aspect) + pad;
+  // Also update gif size if visible
+  if (activeSprite.type === 'gifs') {
+    mainGif.style.width  = displaySize + 'px';
+    mainGif.style.height = 'auto';
+  }
+}
+
+// ── Meta info ─────────────────────────────────────────────────────────────────
+
+function updateMeta(entry, sprite) {
+  metaRow.innerHTML = `
+    Typ: <span>${entry.type}</span>
+    &nbsp;|&nbsp;
+    Frame: <span>${sprite.frameW} × ${sprite.frameH} px</span>
+  `;
+}
+
+// ── Overview (sheet grid  /  gif tiles) ───────────────────────────────────────
+
+function buildOverview(entry, sprite) {
+  if (entry.type === 'spritesheet') {
+    sheetWrap.style.display = '';
+    gifWrap.style.display   = 'none';
+    buildSheetGrid(sprite);
+  } else {
+    sheetWrap.style.display = 'none';
+    gifWrap.style.display   = '';
+    buildGifRow(entry);
+  }
+}
+
+// ── Sprite-sheet grid ─────────────────────────────────────────────────────────
+
+let frameCanvases = [];
+
+function buildSheetGrid(sprite) {
+  sheetGrid.innerHTML = '';
+  frameCanvases = [];
+
+  const LABELS = ['Vorne (↓)', 'Links (←)', 'Rechts (→)', 'Hinten (↑)'];
+
+  for (let row = 0; row < ROWS; row++) {
+    frameCanvases[row] = [];
+
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'row-label';
+    rowLabel.textContent = `${LABELS[row]}`;
+    sheetGrid.appendChild(rowLabel);
+
+    for (let col = 0; col < COLS; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'frame-cell';
+
+      const fc = document.createElement('canvas');
+      fc.width  = sprite.frameW;
+      fc.height = sprite.frameH;
+
+      const ctx = fc.getContext('2d');
+      sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
+
+      const lbl = document.createElement('div');
+      lbl.className = 'frame-label';
+      lbl.textContent = col + 1;
+
+      cell.appendChild(fc);
+      cell.appendChild(lbl);
+      sheetGrid.appendChild(cell);
+      frameCanvases[row][col] = fc;
+    }
+  }
+}
+
+// ── GIF tile row ──────────────────────────────────────────────────────────────
+
+const DIRECTION_LABELS = {
+  forward:  '▼ Vorne',
+  left:     '◀ Links',
+  right:    '▶ Rechts',
+  backward: '▲ Hinten',
+};
+
+function buildGifRow(entry) {
+  gifRow.innerHTML = '';
+
+  for (const dir of DIRECTIONS) {
+    const url = entry.files[dir];
+    const cell = document.createElement('div');
+    cell.className = `gif-cell ${dir === currentDir ? 'active-dir' : ''}`;
+    cell.dataset.dir = dir;
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = dir;
+    img.title = dir;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'gif-label';
+    lbl.textContent = DIRECTION_LABELS[dir];
+
+    cell.appendChild(img);
+    cell.appendChild(lbl);
+    gifRow.appendChild(cell);
+  }
+}
+
+function highlightGifDir(dir) {
+  document.querySelectorAll('.gif-cell').forEach(c => {
+    c.classList.toggle('active-dir', c.dataset.dir === dir);
+  });
+}
+
+// ── Animation loop ────────────────────────────────────────────────────────────
+
+let lastHighlightCol = -1;
+
+function loop(ts) {
+  if (!activeSprite?.ready) { animId = requestAnimationFrame(loop); return; }
+
+  // Draw main canvas
+  mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+  const cx = mainCanvas.width  / 2;
+  const cy = mainCanvas.height / 2;
+  activeSprite.draw(mainCtx, currentDir, ts, cx, cy, displaySize);
+
+  // Highlight active frame in sheet grid
+  if (activeEntry?.type === 'spritesheet') {
+    const activeRow = DIRECTION_ROW[currentDir] ?? 0;
+    const activeCol = Math.floor((ts / 1000) * fps) % COLS;
+
+    if (activeCol !== lastHighlightCol) {
+      document.querySelectorAll('.frame-cell canvas').forEach(c =>
+        c.classList.remove('current-frame'));
+      frameCanvases[activeRow]?.[activeCol]?.classList.add('current-frame');
+      lastHighlightCol = activeCol;
+    }
+  }
+
+  animId = requestAnimationFrame(loop);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+(async () => {
+  try {
+    critterManifest = await fetchManifest();
+    buildSidebar(critterManifest);
+
+    // Auto-select the first critter
+    if (critterManifest.length > 0) {
+      const firstBtn = sidebar.querySelector('.critter-btn');
+      if (firstBtn) firstBtn.click();
+    }
+  } catch (e) {
+    console.error('Failed to load critter manifest:', e);
+    sidebar.innerHTML = `<div style="padding:16px;color:#f55;font-size:0.8rem">
+      Fehler beim Laden: ${e.message}
+    </div>`;
+  }
+})();
+</script>
+</body>
+</html>
