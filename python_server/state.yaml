@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-21T09:17:39'
-  saved_at_unix: 1771661859.4325225
+  saved_at: '2026-02-21T18:14:29'
+  saved_at_unix: 1771694069.0702372
 empires:
 - uid: 100
   name: TestImperium
@@ -57,8 +57,8 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 34657.990434305306
-    culture: 39431.177111763594
+    gold: 6192.031754387789
+    culture: 47472.35979058455
     life: 10.0
   buildings:
     INIT: 0.0
@@ -124,23 +124,53 @@ empires:
   spies: []
   bosses: {}
   hex_map:
+  - q: -1
+    r: 0
+    type: BASIC_TOWER
   - q: 0
     r: 0
-    type: ARROW_TOWER
+    type: DOUBLE_SLING_TOWER
   - q: 0
     r: 1
-    type: path
+    type: empty
   - q: 0
     r: 2
     type: spawnpoint
+  - q: 1
+    r: -1
+    type: SLING_TOWER
+  - q: 1
+    r: -2
+    type: empty
   - q: 1
     r: 0
     type: castle
   - q: 1
     r: 1
+    type: path
+  - q: 10
+    r: -4
+    type: empty
+  - q: 11
+    r: -4
+    type: empty
+  - q: 12
+    r: -5
+    type: empty
+  - q: 13
+    r: -5
+    type: empty
+  - q: 14
+    r: -6
+    type: empty
+  - q: 2
+    r: -1
     type: empty
   - q: 2
     r: 0
+    type: empty
+  - q: 3
+    r: -1
     type: empty
   - q: 3
     r: 0
@@ -148,8 +178,38 @@ empires:
   - q: 4
     r: -1
     type: empty
+  - q: 4
+    r: -2
+    type: empty
+  - q: 4
+    r: 0
+    type: empty
+  - q: 4
+    r: 1
+    type: empty
+  - q: 5
+    r: -1
+    type: empty
   - q: 5
     r: -2
+    type: empty
+  - q: 5
+    r: 0
+    type: empty
+  - q: 5
+    r: 1
+    type: empty
+  - q: 6
+    r: -2
+    type: empty
+  - q: 7
+    r: -2
+    type: empty
+  - q: 8
+    r: -3
+    type: empty
+  - q: 9
+    r: -4
     type: empty
 attacks: []
 battles: []

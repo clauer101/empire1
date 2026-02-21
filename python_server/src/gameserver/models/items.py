@@ -74,6 +74,7 @@ class ItemDetails:
     reload_time_ms: float = 0.0
     shot_speed: float = 0.0
     shot_type: str = "normal"
+    sprite: str | None = None
 
     # Critter
     speed: float = 0.0

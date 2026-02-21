@@ -8240,3 +8240,1723 @@ INFO:     192.168.178.2:50050 - "GET /api/maps HTTP/1.1" 200 OK
 INFO:     192.168.178.2:50050 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
 INFO:     192.168.178.2:50050 - "GET /api/maps HTTP/1.1" 200 OK
 INFO:     192.168.178.2:50050 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49677 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49677 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49678 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49678 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49677 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49681 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49680 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49682 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49679 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49677 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49678 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49682 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49680 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49679 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49681 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49677 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49678 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49682 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49680 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49678 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49687 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49689 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49688 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49697 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49697 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49701 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49701 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64711 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64711 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64712 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64713 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64715 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64714 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64711 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64712 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64713 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64715 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64714 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64711 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64713 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64712 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64714 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64710 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64814 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64814 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64815 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64816 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64817 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64818 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64814 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64816 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64817 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64815 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64818 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64817 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64814 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64816 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64818 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:64811 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [8882]
+10:24:23 [INFO] ============================================================
+10:24:23 [INFO] 🚀 E3 Web Server Starting
+10:24:23 [INFO] ============================================================
+10:24:23 [INFO] 📂 Serving from: /home/pi/e3/web
+10:24:23 [INFO] 🌐 URL:          http://0.0.0.0:8000
+10:24:23 [INFO] 🔧 Mode:         Development (No-Cache)
+10:24:23 [INFO] 🔄 Reload:       Disabled
+10:24:23 [INFO] ============================================================
+10:24:23 [INFO] ℹ️  Press Ctrl+C to stop
+10:24:23 [INFO] ============================================================
+INFO:     Started server process [10622]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:56461 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56464 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56464 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56466 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56467 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56468 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56465 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56464 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56466 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56467 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56465 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56468 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56464 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56466 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56468 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56461 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56496 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56496 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56498 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56497 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56500 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56499 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56496 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56497 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56498 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56499 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56500 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56498 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56497 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56499 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56495 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56495 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56498 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56499 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56496 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56497 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56496 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56495 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56498 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56497 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56499 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56495 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56499 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56498 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:56493 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [10622]
+10:42:08 [INFO] ============================================================
+10:42:08 [INFO] 🚀 E3 Web Server Starting
+10:42:08 [INFO] ============================================================
+10:42:08 [INFO] 📂 Serving from: /home/pi/e3/web
+10:42:08 [INFO] 🌐 URL:          http://0.0.0.0:8000
+10:42:08 [INFO] 🔧 Mode:         Development (No-Cache)
+10:42:08 [INFO] 🔄 Reload:       Disabled
+10:42:08 [INFO] ============================================================
+10:42:08 [INFO] ℹ️  Press Ctrl+C to stop
+10:42:08 [INFO] ============================================================
+INFO:     Started server process [11418]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:55892 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55895 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55895 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55899 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55898 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55897 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55896 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55895 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55898 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55899 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55896 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55897 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55898 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55895 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55899 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55899 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55892 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55903 - "GET /assets/sprites/structures/double_sling_tower/double_sling_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55903 - "GET /assets/sprites/structures/sling_tower/sling_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.47:56134 - "GET /api/empire/items HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:49861 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49861 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49864 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49861 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49864 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49868 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49865 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49866 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49867 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49861 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49864 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49868 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49867 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49865 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49866 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49864 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49861 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49868 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49865 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49867 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49861 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49867 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49861 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52066 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52068 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52066 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49453 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49453 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49454 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49455 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49457 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49456 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49453 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49454 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49455 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49456 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49457 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49454 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49453 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49457 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49456 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49457 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:49450 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55029 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55029 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55030 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55033 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55031 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55032 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55029 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55032 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55031 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55030 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55033 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55029 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55032 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55031 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55030 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55031 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:55026 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58806 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58806 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58808 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58807 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58809 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58810 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58806 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58809 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58807 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58810 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58808 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58806 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58806 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58809 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58809 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58803 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11418]
+10:58:29 [INFO] ============================================================
+10:58:29 [INFO] 🚀 E3 Web Server Starting
+10:58:29 [INFO] ============================================================
+10:58:29 [INFO] 📂 Serving from: /home/pi/e3/web
+10:58:29 [INFO] 🌐 URL:          http://0.0.0.0:8000
+10:58:29 [INFO] 🔧 Mode:         Production
+10:58:29 [INFO] 🔄 Reload:       Disabled
+10:58:29 [INFO] ============================================================
+10:58:29 [INFO] ℹ️  Press Ctrl+C to stop
+10:58:29 [INFO] ============================================================
+INFO:     Started server process [11938]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:51870 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51877 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51877 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51879 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51880 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51881 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51878 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51877 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51879 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51880 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51878 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51877 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51881 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51880 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51879 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51878 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51870 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51886 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51886 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51889 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51888 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51887 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51890 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51886 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51889 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51888 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51887 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51890 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51886 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51889 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51888 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51887 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /assets/sprites/maps/map2.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:51883 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63317 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63317 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63318 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63318 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63317 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63320 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63321 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63322 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63324 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63317 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63322 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63318 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63321 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63320 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63324 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63318 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63322 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63317 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63320 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63324 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63317 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63320 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.2:63333 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63333 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63336 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63336 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63333 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63337 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63338 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63340 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63336 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63333 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63338 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63340 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63337 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63336 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63338 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63333 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63340 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63333 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11938]
+11:29:02 [INFO] ============================================================
+11:29:02 [INFO] 🚀 E3 Web Server Starting
+11:29:02 [INFO] ============================================================
+11:29:02 [INFO] 📂 Serving from: /home/pi/e3/web
+11:29:02 [INFO] 🌐 URL:          http://0.0.0.0:8000
+11:29:02 [INFO] 🔧 Mode:         Development (No-Cache)
+11:29:02 [INFO] 🔄 Reload:       Disabled
+11:29:02 [INFO] ============================================================
+11:29:02 [INFO] ℹ️  Press Ctrl+C to stop
+11:29:02 [INFO] ============================================================
+INFO:     Started server process [12893]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:63351 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63354 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63354 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63356 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63355 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63358 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63357 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63354 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63355 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63356 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63358 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63357 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63354 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63355 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63358 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63351 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63367 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63367 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63371 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63370 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63368 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63369 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63367 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63370 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63371 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63369 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63368 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63371 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63370 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63367 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63368 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63364 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59459 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59459 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59462 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59459 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59462 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59463 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59464 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59465 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59459 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59462 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59463 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59464 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59465 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59459 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59462 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59463 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59465 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59464 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59466 - "GET / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12893]
+11:30:31 [INFO] ============================================================
+11:30:31 [INFO] 🚀 E3 Web Server Starting
+11:30:31 [INFO] ============================================================
+11:30:31 [INFO] 📂 Serving from: /home/pi/e3/web
+11:30:31 [INFO] 🌐 URL:          http://0.0.0.0:8000
+11:30:31 [INFO] 🔧 Mode:         Production
+11:30:31 [INFO] 🔄 Reload:       Disabled
+11:30:31 [INFO] ============================================================
+11:30:31 [INFO] ℹ️  Press Ctrl+C to stop
+11:30:31 [INFO] ============================================================
+INFO:     Started server process [13061]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:59481 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59481 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59481 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59486 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59488 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59485 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59487 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59481 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59486 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59485 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59481 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59488 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59487 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59486 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59485 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59481 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59484 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49709 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49708 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49709 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49712 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49711 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49710 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49710 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49709 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49711 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49712 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49710 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49709 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49711 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49712 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49709 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49711 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49710 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49707 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49711 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59394 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59394 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59395 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59395 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59394 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59398 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59397 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59396 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59399 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59395 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59394 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59399 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59396 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59397 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59398 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59395 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59394 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59398 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59395 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59397 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59396 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59394 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59395 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.2:56066 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.2:56066 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63311 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63311 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.2:63332 - "GET /assets/sprites/structures/double_sling_tower/double_sling_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63342 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63342 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63343 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63344 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63346 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63345 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63342 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63343 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63346 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63344 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63345 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63343 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63342 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63345 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63344 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63345 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.2:63339 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63339 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63356 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63356 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:63356 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49735 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49736 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49735 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49739 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49739 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49739 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49740 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49740 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49740 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49741 - "GET /js/app.js?v=20260214f HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49741 - "GET /js/views/battle.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49742 - "GET /js/views/composer.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49741 - "GET /js/lib/hex_grid.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49742 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49741 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49742 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49741 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49740 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49742 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49741 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49740 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49742 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49741 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49740 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49742 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49741 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49740 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49742 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49741 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49744 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49744 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49745 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49746 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49745 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49746 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49744 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49745 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49746 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49744 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49745 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49746 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49744 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49745 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49746 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49744 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49747 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49747 - "GET /assets/sprites/structures/sling_tower/sling_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49748 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49749 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49749 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49749 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49749 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49749 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49749 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49752 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49752 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49755 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49756 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:59904 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59905 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59905 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59909 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59908 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59910 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59907 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59905 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59909 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59910 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59908 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59907 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59905 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59907 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59908 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59908 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:59904 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:59918 - "GET /assets/sprites/structures/basic_tower/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13061]
+14:30:54 [INFO] ============================================================
+14:30:54 [INFO] 🚀 E3 Web Server Starting
+14:30:54 [INFO] ============================================================
+14:30:54 [INFO] 📂 Serving from: /home/pi/e3/web
+14:30:54 [INFO] 🌐 URL:          http://0.0.0.0:8000
+14:30:54 [INFO] 🔧 Mode:         Development (No-Cache)
+14:30:54 [INFO] 🔄 Reload:       Disabled
+14:30:54 [INFO] ============================================================
+14:30:54 [INFO] ℹ️  Press Ctrl+C to stop
+14:30:54 [INFO] ============================================================
+INFO:     Started server process [17326]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:52735 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52735 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52740 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52735 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52740 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52741 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52742 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52743 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52744 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52735 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52740 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52743 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52742 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52741 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52744 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52735 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52743 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52740 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52742 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52741 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52743 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52742 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52735 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:52742 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49785 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49785 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49786 - "GET /js/app.js?v=20260214f HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49786 - "GET /js/views/battle.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49787 - "GET /js/views/composer.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49786 - "GET /js/lib/hex_grid.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:49787 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49786 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49785 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.2:65277 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65277 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65278 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65277 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65278 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65279 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65281 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65280 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65282 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65277 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65279 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65280 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65281 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65278 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65282 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65277 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65279 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65280 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65278 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65282 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65281 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65278 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65277 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65281 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65282 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65278 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65278 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65278 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65288 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65288 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65291 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65291 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65288 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65294 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65295 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65293 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65292 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65291 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65294 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65288 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65292 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65295 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65293 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65291 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65292 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65294 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65288 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65293 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65295 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65294 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65295 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65293 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65294 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65288 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65294 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65294 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65323 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65327 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65328 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65329 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65330 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65327 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65330 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65328 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65329 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65327 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65329 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65330 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65330 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65326 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65326 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65326 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65330 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65326 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65326 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65323 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65330 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65326 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:65328 - "GET /assets/sprites/structures/basic_tower.png HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17326]
+14:47:00 [INFO] ============================================================
+14:47:00 [INFO] 🚀 E3 Web Server Starting
+14:47:00 [INFO] ============================================================
+14:47:00 [INFO] 📂 Serving from: /home/pi/e3/web
+14:47:00 [INFO] 🌐 URL:          http://0.0.0.0:8000
+14:47:00 [INFO] 🔧 Mode:         Development (No-Cache)
+14:47:00 [INFO] 🔄 Reload:       Disabled
+14:47:00 [INFO] ============================================================
+14:47:00 [INFO] ℹ️  Press Ctrl+C to stop
+14:47:00 [INFO] ============================================================
+INFO:     Started server process [18420]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.2:65348 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65350 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65350 - "GET /css/style.css?v=20260214b HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65353 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65350 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65353 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65354 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65355 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65356 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65357 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65350 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65353 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65357 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65356 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65354 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65355 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65353 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65350 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65354 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65349 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65357 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65356 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65353 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65350 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65356 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65357 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:65353 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49817 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49817 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49818 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49818 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49819 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49818 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49820 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49823 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49824 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49820 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49825 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49825 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49820 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49823 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49824 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49825 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49829 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49829 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49832 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49831 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49830 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49830 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49832 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49831 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49829 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49830 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49829 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49831 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49832 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49830 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49829 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49832 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49830 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49832 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49829 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49837 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49831 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18420]
+15:21:31 [INFO] ============================================================
+15:21:31 [INFO] 🚀 E3 Web Server Starting
+15:21:31 [INFO] ============================================================
+15:21:31 [INFO] 📂 Serving from: /home/pi/e3/web
+15:21:31 [INFO] 🌐 URL:          http://0.0.0.0:8000
+15:21:31 [INFO] 🔧 Mode:         Development (No-Cache)
+15:21:31 [INFO] 🔄 Reload:       Disabled
+15:21:31 [INFO] ============================================================
+15:21:31 [INFO] ℹ️  Press Ctrl+C to stop
+15:21:31 [INFO] ============================================================
+INFO:     Started server process [19211]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.25:49838 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49838 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49839 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49839 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49840 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49839 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49841 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49841 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49841 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49842 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49841 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49844 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49844 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49844 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49845 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49844 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49844 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49845 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49848 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49849 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49844 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49852 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49852 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49853 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49853 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49852 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49853 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49852 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49853 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49859 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49860 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49859 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49860 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49860 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49860 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49863 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49863 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49860 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49859 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49856 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49860 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49859 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49851 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49863 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49867 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49867 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49868 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49868 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49869 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49869 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49875 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49875 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49875 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49876 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49875 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49878 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49878 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49878 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49879 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49878 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49879 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49878 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49879 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49878 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49879 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49881 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49881 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49882 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49882 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49883 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49882 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49887 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49887 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49887 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49888 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49887 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49890 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49890 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49891 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49891 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49892 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49891 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49894 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49896 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49895 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49897 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49894 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49895 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49894 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49897 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49895 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49896 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49894 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49900 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49900 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49900 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49901 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49900 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49903 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49903 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49903 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49904 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49903 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49906 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49910 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49911 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49906 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49909 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49921 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49921 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49923 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49923 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49921 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49923 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49921 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49923 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49921 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49923 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49921 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49923 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49922 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49926 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49926 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49929 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49930 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49926 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49929 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49930 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49926 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49930 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49925 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49926 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49930 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49933 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49929 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49937 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49937 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49938 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49938 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49939 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49938 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49939 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49938 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49937 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49943 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49942 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19211]
+16:28:52 [INFO] ============================================================
+16:28:52 [INFO] 🚀 E3 Web Server Starting
+16:28:52 [INFO] ============================================================
+16:28:52 [INFO] 📂 Serving from: /home/pi/e3/web
+16:28:52 [INFO] 🌐 URL:          http://0.0.0.0:8000
+16:28:52 [INFO] 🔧 Mode:         Development (No-Cache)
+16:28:52 [INFO] 🔄 Reload:       Disabled
+16:28:52 [INFO] ============================================================
+16:28:52 [INFO] ℹ️  Press Ctrl+C to stop
+16:28:52 [INFO] ============================================================
+INFO:     Started server process [20727]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.178.25:49945 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49945 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49946 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49946 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49947 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49946 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49953 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49953 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49953 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49952 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49955 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49955 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49956 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49956 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49957 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49956 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49958 - "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49961 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49960 - "GET /apple-touch-icon.png HTTP/1.1" 404 Not Found
+INFO:     192.168.178.25:49962 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49962 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49962 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49963 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49962 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49962 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49963 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49964 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49965 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49962 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49966 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49966 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49968 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49967 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49968 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49966 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49966 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49968 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49966 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49969 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49968 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49970 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49971 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49972 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49974 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49974 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49975 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49976 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49974 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49976 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49974 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49976 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49974 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49976 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49978 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49979 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49977 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49980 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49983 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49984 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49984 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49984 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49984 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49986 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49985 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49987 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49986 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49987 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49984 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49982 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49983 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49985 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49986 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49995 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49995 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50000 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50001 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49998 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49999 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50002 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50000 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49998 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50002 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49995 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:49999 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50000 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50001 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50008 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50008 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50009 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50010 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50008 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50010 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50008 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50012 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50012 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50019 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50018 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50017 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50016 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50015 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50021 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50021 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50022 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50023 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50021 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50023 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50021 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50023 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50022 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50021 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50022 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50023 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50021 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50028 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50028 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50030 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50029 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50030 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50028 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50028 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50031 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50031 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50036 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50034 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50035 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50037 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50038 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59905 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59906 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59907 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59908 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59909 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:59904 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57478 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57478 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57479 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57479 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57480 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57478 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57483 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57482 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57481 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57479 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57478 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57483 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57480 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57479 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57482 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57481 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57483 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57478 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57481 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57480 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57479 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57481 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57480 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57479 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57483 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57478 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57482 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57481 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57486 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57486 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57489 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57489 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57492 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57491 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57490 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57493 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57486 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57489 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57493 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57491 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57490 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57492 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57486 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57489 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57493 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57491 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57490 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57492 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57486 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57492 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57489 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57493 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57486 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57490 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57491 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57492 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57495 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57495 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57498 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57498 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57495 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57500 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57501 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57499 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57502 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57498 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57495 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57501 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57500 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57502 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57499 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57495 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57498 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57501 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57499 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57502 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57500 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57502 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57500 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57495 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57498 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57501 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57499 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57502 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57507 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57513 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57510 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57512 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57511 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57509 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57507 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57507 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57507 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57510 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57509 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57511 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57512 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:57513 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60985 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60985 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60988 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60988 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60985 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60990 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60989 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60992 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60991 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60988 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60985 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60989 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60992 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60990 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60991 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60988 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60985 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60990 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60992 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60989 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60991 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60992 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60989 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60985 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60990 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60989 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60988 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60991 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60992 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60997 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60997 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61000 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61001 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60998 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60999 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60997 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61001 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60998 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61000 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60999 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60997 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61001 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60998 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61000 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60999 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60998 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61001 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60997 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60999 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61000 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60998 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:60994 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61007 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61007 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61008 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61009 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61010 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61011 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61011 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61007 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61009 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61008 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61010 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61007 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61008 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61011 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61010 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61008 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61010 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61009 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61007 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61011 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61004 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61008 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61021 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61021 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61024 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61021 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61024 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61028 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61025 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61027 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61026 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61024 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61021 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61027 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61026 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61025 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61028 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61021 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61024 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61027 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61025 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61026 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61028 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61026 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61025 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61021 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61027 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61024 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61028 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61025 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61026 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61044 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61045 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61043 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61042 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61043 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61045 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61044 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61042 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61043 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61045 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61045 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61038 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61044 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61042 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61043 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61045 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61041 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61090 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61090 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61093 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61092 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61091 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61094 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61090 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61093 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61092 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61094 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61091 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61090 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61092 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61091 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61090 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61091 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61090 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61094 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61093 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61087 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61092 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61091 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61159 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /js/rest.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61159 - "GET /js/state.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61162 - "GET /js/debug.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61160 - "GET /js/events.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61163 - "GET /js/views/login.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61161 - "GET /js/router.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /js/views/dashboard.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61159 - "GET /js/views/buildings.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61163 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61161 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61162 - "GET /js/views/research.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61160 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /js/views/social.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61159 - "GET /js/views/signup.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61162 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /js/i18n.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61160 - "GET /js/lib/hex.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61163 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61163 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61160 - "GET /assets/sprites/structures/double_sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61162 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61156 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61161 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61159 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61161 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61196 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61197 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61198 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61199 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61197 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50496 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50495 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50498 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50499 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50496 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50508 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50507 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50509 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50510 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50508 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:50516 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50042 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50042 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50043 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50044 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50042 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50044 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50045 - "GET /js/views/army.js HTTP/1.1" 304 Not Modified
+INFO:     192.168.178.25:50045 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50044 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50042 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50045 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50043 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50042 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50048 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50049 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50050 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50051 - "GET /assets/sprites/structures/basic_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50050 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50052 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50053 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50054 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50055 - "GET / HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50055 - "GET /css/style.css?v=20260221a HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50056 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50057 - "GET /js/app.js?v=20260214f HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50055 - "GET /js/views/composer.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50057 - "GET /js/views/army.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50058 - "GET /js/views/battle.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50057 - "GET /js/lib/hex_grid.js HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50058 - "GET /api/maps HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50055 - "GET /assets/sprites/bases/path.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50057 - "GET /assets/sprites/structures/sling_tower.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50058 - "GET /assets/sprites/maps/map.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50059 - "GET /assets/sprites/bases/spawnpoint.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.25:50060 - "GET /assets/sprites/bases/base.webp HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58363 - "GET /tools/critter_preview.html HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58363 - "GET /js/lib/critter_sprite.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58363 - "GET /api/critters HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58363 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:58373 - "GET /tools/critter_preview.html HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58373 - "GET /js/lib/critter_sprite.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58373 - "GET /api/critters HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58375 - "GET /tools/critter_preview.html HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58375 - "GET /js/lib/critter_sprite.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58375 - "GET /api/critters HTTP/1.1" 200 OK
+INFO:     192.168.178.2:58375 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:61257 - "GET /tools/critter_preview.html HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61257 - "GET /js/lib/critter_sprite.js HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61257 - "GET /api/critters HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61257 - "GET /assets/sprites/critters/bowman/bowman.png HTTP/1.1" 200 OK
+INFO:     192.168.178.2:61257 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.178.2:61257 - "GET /assets/sprites/critters/the_king/the_king.png HTTP/1.1" 200 OK

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>E3</title>
   
   <!-- Cache busting for development -->
@@ -14,7 +14,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=20260214b">
+  <link rel="stylesheet" href="css/style.css?v=20260221a">
+  <link rel="preload" as="image" href="/assets/sprites/maps/map.webp">
 </head>
 <body>
 
@@ -66,5 +67,25 @@
   <div id="toast-container"></div>
 
   <script type="module" src="js/app.js?v=20260214f"></script>
+
+  <!-- iOS scroll bounce fix: prevent body from handling touch events >
+  <script>
+    (function () {
+      var appEl = null, navEl = null;
+      function getApp() { return appEl || (appEl = document.getElementById('app')); }
+      function getNav() { return navEl || (navEl = document.getElementById('main-nav')); }
+      document.addEventListener('touchmove', function (e) {
+        var app = getApp(), nav = getNav();
+        var node = e.target;
+        while (node && node !== document.body) {
+          if (node === app) return; // inside #app — allow vertical scroll
+          if (node === nav) return; // inside #main-nav — allow horizontal scroll
+          node = node.parentNode;
+        }
+        // Outside scrollable containers — block body scroll/bounce
+        e.preventDefault();
+      }, { passive: false });
+    })();
+  </script-->
 </body>
 </html>

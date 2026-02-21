@@ -95,14 +95,14 @@ async def list_sprite_files():
 
 @app.get("/api/maps")
 async def list_maps():
-    """List all PNG map files under assets/sprites/maps/."""
+    """List all PNG/WebP map files under assets/sprites/maps/."""
     maps_dir = WEB_DIR / "assets" / "sprites" / "maps"
     if not maps_dir.is_dir():
         return JSONResponse({"maps": []})
     files = sorted(
         [{"name": f.name, "url": f"/assets/sprites/maps/{f.name}"}
          for f in maps_dir.iterdir()
-         if f.is_file() and f.suffix.lower() == ".png"],
+         if f.is_file() and f.suffix.lower() in (".png", ".webp")],
         key=lambda x: x["name"]
     )
     return JSONResponse({"maps": files})

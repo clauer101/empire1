@@ -47,6 +47,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             reload_time_ms=float(attrs.get("reload_time", 0)),
             shot_speed=float(attrs.get("shot_speed", 0)),
             shot_type=attrs.get("shot_type", "normal"),
+            sprite=attrs.get("sprite", None),
             speed=float(attrs.get("speed", 0)),
             health=float(attrs.get("health", 0)),
             armour=float(attrs.get("armour", 0)),
