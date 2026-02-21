@@ -5,20 +5,16 @@
 # requirements: list of prerequisite IIDs (buildings or knowledge)
 # effects: passive effects granted when complete
 
+# ============================================================
+#   STEINZEIT  (Effort 20 – 200)
+# ============================================================
+
 HUNTING:
   name: "Hunting"
   description: "Basic survival skill for acquiring food resources."
   effort: 20
   costs: {}
   requirements: [FIRE_PLACE]
-  effects: {}
-
-CRAFTSMANSHIP:
-  name: "Craftsmanship"
-  description: "Essential skills for building and manufacturing items."
-  effort: 200
-  costs: {}
-  requirements: [HUNTING]
   effects: {}
 
 MYSTIC:
@@ -29,14 +25,6 @@ MYSTIC:
   requirements: [FIRE_PLACE]
   effects: {}
 
-ALPHABET_WRITING:
-  name: "Alphabet & Writing"
-  description: "Development of written language and symbolism."
-  effort: 1500
-  costs: {}
-  requirements: [CRAFTSMANSHIP]
-  effects: {}
-
 DOMESTICATION:
   name: "Domestication"
   description: "Taming wild animals for agricultural and transport purposes."
@@ -45,10 +33,22 @@ DOMESTICATION:
   requirements: [HUNTING]
   effects: {}
 
-COPPER_BRONZE:
-  name: "Copper & Bronze"
-  description: "Metallurgy techniques for bronze age advancement."
-  effort: 2500
+CRAFTSMANSHIP:
+  name: "Craftsmanship"
+  description: "Essential skills for building and manufacturing items."
+  effort: 200
+  costs: {}
+  requirements: [HUNTING]
+  effects: {}
+
+# ============================================================
+#   NEOLITHIKUM  (Effort 200 – 1.500)
+# ============================================================
+
+POTTERY:
+  name: "Pottery"
+  description: "Ceramic crafting for storage and early trade vessels."
+  effort: 600
   costs: {}
   requirements: [CRAFTSMANSHIP]
   effects: {}
@@ -61,6 +61,34 @@ HERBOLOGY:
   requirements: [HUNTING, DOMESTICATION]
   effects: {}
 
+AGRICULTURE:
+  name: "Agriculture"
+  description: "Systematic crop cultivation and farming techniques."
+  effort: 1200
+  costs: {}
+  requirements: [DOMESTICATION, HERBOLOGY]
+  effects: {}
+
+ALPHABET_WRITING:
+  name: "Alphabet & Writing"
+  description: "Development of written language and symbolism."
+  effort: 1500
+  costs: {}
+  requirements: [CRAFTSMANSHIP]
+  effects: {}
+
+# ============================================================
+#   BRONZEZEIT  (Effort 1.500 – 8.000)
+# ============================================================
+
+COPPER_BRONZE:
+  name: "Copper & Bronze"
+  description: "Metallurgy techniques for bronze age advancement."
+  effort: 2500
+  costs: {}
+  requirements: [CRAFTSMANSHIP]
+  effects: {}
+
 RELIGION:
   name: "Religion"
   description: "Organized faith and spiritual institutional systems."
@@ -69,68 +97,20 @@ RELIGION:
   requirements: [MYSTIC, ALPHABET_WRITING]
   effects: {}
 
-CURRENCY:
-  name: "Currency"
-  description: "Development of standardized monetary exchange systems."
-  effort: 6000
+MUSIC:
+  name: "Music"
+  description: "Musical composition and performance arts."
+  effort: 4000
   costs: {}
-  requirements: [COPPER_BRONZE, ALPHABET_WRITING]
+  requirements: [MYSTIC, CRAFTSMANSHIP]
   effects: {}
 
-MECHANICS:
-  name: "Mechanics"
-  description: "Understanding of mechanical systems and machines."
-  effort: 10000
+SAILING:
+  name: "Sailing"
+  description: "Seafaring and coastal navigation techniques."
+  effort: 4000
   costs: {}
   requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
-  effects: {}
-
-ARTS:
-  name: "Arts"
-  description: "Development of music, painting, and creative expression."
-  effort: 8000
-  costs: {}
-  requirements: [MUSIC, ALPHABET_WRITING]
-  effects: {}
-
-DRILL:
-  name: "Drill"
-  description: "Systematic military training and discipline."
-  effort: 7000
-  costs: {}
-  requirements: [HORSEBACK_RIDING, COPPER_BRONZE]
-  effects: {}
-
-CARTOGRAPHY:
-  name: "Cartography"
-  description: "Art of mapmaking and geographic knowledge."
-  effort: 12000
-  costs: {}
-  requirements: [MATHMATICS]
-  effects: {}
-
-IRON:
-  name: "Iron"
-  description: "Iron age metallurgy and production techniques."
-  effort: 15000
-  costs: {}
-  requirements: [COPPER_BRONZE, MECHANICS]
-  effects: {}
-
-MATHMATICS:
-  name: "Mathematics"
-  description: "Mathematical sciences and numerical computation."
-  effort: 11000
-  costs: {}
-  requirements: [ALPHABET_WRITING]
-  effects: {}
-
-ARCHITECTURE:
-  name: "Architecture"
-  description: "Advanced building design and structural engineering."
-  effort: 18000
-  costs: {}
-  requirements: [MATHMATICS, MECHANICS]
   effects: {}
 
 HORSEBACK_RIDING:
@@ -141,12 +121,56 @@ HORSEBACK_RIDING:
   requirements: [DOMESTICATION]
   effects: {}
 
-SCIENCE:
-  name: "Science"
-  description: "Systematic scientific method and research principles."
-  effort: 25000
+CURRENCY:
+  name: "Currency"
+  description: "Development of standardized monetary exchange systems."
+  effort: 6000
   costs: {}
-  requirements: [MATHMATICS, ARCHITECTURE]
+  requirements: [COPPER_BRONZE, ALPHABET_WRITING]
+  effects: {}
+
+DRILL:
+  name: "Drill"
+  description: "Systematic military training and discipline."
+  effort: 7000
+  costs: {}
+  requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
+  effects: {}
+
+# ============================================================
+#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+# ============================================================
+
+ARTS:
+  name: "Arts"
+  description: "Development of music, painting, and creative expression."
+  effort: 8000
+  costs: {}
+  requirements: [MUSIC, ALPHABET_WRITING]
+  effects: {}
+
+MECHANICS:
+  name: "Mechanics"
+  description: "Understanding of mechanical systems and machines."
+  effort: 10000
+  costs: {}
+  requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
+  effects: {}
+
+MATHMATICS:
+  name: "Mathematics"
+  description: "Mathematical sciences and numerical computation."
+  effort: 11000
+  costs: {}
+  requirements: [ALPHABET_WRITING]
+  effects: {}
+
+CARTOGRAPHY:
+  name: "Cartography"
+  description: "Art of mapmaking and geographic knowledge."
+  effort: 12000
+  costs: {}
+  requirements: [MATHMATICS]
   effects: {}
 
 LAWS:
@@ -157,12 +181,56 @@ LAWS:
   requirements: [ALPHABET_WRITING, RELIGION]
   effects: {}
 
-HOLY_WAR:
-  name: "Holy War"
-  description: "Religious warfare doctrine and jihadist concepts."
-  effort: 40000
+IRON:
+  name: "Iron"
+  description: "Iron age metallurgy and production techniques."
+  effort: 15000
   costs: {}
-  requirements: [RELIGION, FANATISM]
+  requirements: [COPPER_BRONZE, MECHANICS]
+  effects: {}
+
+ARCHITECTURE:
+  name: "Architecture"
+  description: "Advanced building design and structural engineering."
+  effort: 18000
+  costs: {}
+  requirements: [MATHMATICS, MECHANICS]
+  effects: {}
+
+PAINTING:
+  name: "Painting"
+  description: "Visual arts and painting techniques for expression."
+  effort: 20000
+  costs: {}
+  requirements: [ARTS]
+  effects: {}
+
+LITRATURE:
+  name: "Literature"
+  description: "Written storytelling and literary arts."
+  effort: 22000
+  costs: {}
+  requirements: [ALPHABET_WRITING, ARTS]
+  effects: {}
+
+SCIENCE:
+  name: "Science"
+  description: "Systematic scientific method and research principles."
+  effort: 25000
+  costs: {}
+  requirements: [MATHMATICS, ARCHITECTURE]
+  effects: {}
+
+# ============================================================
+#   MITTELALTER  (Effort 30.000 – 130.000)
+# ============================================================
+
+COMMAND_CHAIN:
+  name: "Command Chain"
+  description: "Military hierarchy and organizational command structure."
+  effort: 28000
+  costs: {}
+  requirements: [DRILL, LAWS]
   effects: {}
 
 TACTICS:
@@ -181,36 +249,12 @@ FANATISM:
   requirements: [RELIGION, DRILL]
   effects: {}
 
-COMMAND_CHAIN:
-  name: "Command Chain"
-  description: "Military hierarchy and organizational command structure."
-  effort: 28000
+HOLY_WAR:
+  name: "Holy War"
+  description: "Religious warfare doctrine and jihadist concepts."
+  effort: 40000
   costs: {}
-  requirements: [DRILL, LAWS]
-  effects: {}
-
-PAINTING:
-  name: "Painting"
-  description: "Visual arts and painting techniques for expression."
-  effort: 20000
-  costs: {}
-  requirements: [ARTS]
-  effects: {}
-
-MUSIC:
-  name: "Music"
-  description: "Musical composition and performance arts."
-  effort: 4000
-  costs: {}
-  requirements: [MYSTIC, CRAFTSMANSHIP]
-  effects: {}
-
-LITRATURE:
-  name: "Literature"
-  description: "Written storytelling and literary arts."
-  effort: 22000
-  costs: {}
-  requirements: [ALPHABET_WRITING, ARTS]
+  requirements: [RELIGION, FANATISM]
   effects: {}
 
 ECONOMY:
@@ -237,12 +281,12 @@ MONARCHY:
   requirements: [FEUDALISM, COMMAND_CHAIN]
   effects: {}
 
-CONSTITUTION:
-  name: "Constitution"
-  description: "Governmental framework and citizen rights principles."
-  effort: 150000
+GUNPOWDER:
+  name: "Gunpowder"
+  description: "Explosive powder technology for weapons."
+  effort: 70000
   costs: {}
-  requirements: [LAWS, MONARCHY, PRINTING_PRESS]
+  requirements: [IRON, SCIENCE]
   effects: {}
 
 STEEL:
@@ -253,13 +297,9 @@ STEEL:
   requirements: [IRON, MECHANICS]
   effects: {}
 
-STEALTH_SECRECY:
-  name: "Stealth & Secrecy"
-  description: "Clandestine operations and intelligence gathering."
-  effort: 120000
-  costs: {}
-  requirements: [TACTICS, COMMAND_CHAIN]
-  effects: {}
+# ============================================================
+#   RENAISSANCE  (Effort 130.000 – 500.000)
+# ============================================================
 
 PRINTING_PRESS:
   name: "Printing Press"
@@ -269,12 +309,20 @@ PRINTING_PRESS:
   requirements: [MECHANICS, LITRATURE]
   effects: {}
 
-KNO_ARMOUR:
-  name: "Armour"
-  description: "Advanced body protection and defensive equipment."
-  effort: 6055849
+STEALTH_SECRECY:
+  name: "Stealth & Secrecy"
+  description: "Clandestine operations and intelligence gathering."
+  effort: 120000
   costs: {}
-  requirements: [STEEL, MECHANICAL_ENGINEERING]
+  requirements: [TACTICS, COMMAND_CHAIN]
+  effects: {}
+
+CONSTITUTION:
+  name: "Constitution"
+  description: "Governmental framework and citizen rights principles."
+  effort: 150000
+  costs: {}
+  requirements: [LAWS, MONARCHY, PRINTING_PRESS]
   effects: {}
 
 STRATEGIC_WARFARE:
@@ -283,14 +331,6 @@ STRATEGIC_WARFARE:
   effort: 200000
   costs: {}
   requirements: [TACTICS, GUNPOWDER, STEALTH_SECRECY]
-  effects: {}
-
-GUNPOWDER:
-  name: "Gunpowder"
-  description: "Explosive powder technology for weapons."
-  effort: 70000
-  costs: {}
-  requirements: [IRON, SCIENCE]
   effects: {}
 
 PHYSICS:
@@ -317,12 +357,24 @@ MECHANICAL_ENGINEERING:
   requirements: [MECHANICS, PHYSICS, STEEL]
   effects: {}
 
-MEDICINE:
-  name: "Medicine"
-  description: "Advanced medical science and treatment techniques."
-  effort: 19071696
+# ============================================================
+#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+# ============================================================
+
+OPTICS:
+  name: "Optics"
+  description: "Lens crafting, telescopes, and periscopes technology."
+  effort: 550000
   costs: {}
-  requirements: [HERBOLOGY, CHEMISTRY]
+  requirements: [PHYSICS]
+  effects: {}
+
+BALLISTICS:
+  name: "Ballistics"
+  description: "Science of projectile trajectories and artillery."
+  effort: 600000
+  costs: {}
+  requirements: [PHYSICS, GUNPOWDER]
   effects: {}
 
 STEAM_ENGINE:
@@ -333,12 +385,12 @@ STEAM_ENGINE:
   requirements: [MECHANICAL_ENGINEERING, CHEMISTRY]
   effects: {}
 
-COMBUSTION_ENGINE:
-  name: "Combustion Engine"
-  description: "Internal combustion engine technology development."
-  effort: 1000000
+SANITATION:
+  name: "Sanitation"
+  description: "Public hygiene and sanitary infrastructure systems."
+  effort: 750000
   costs: {}
-  requirements: [STEAM_ENGINE, CHEMISTRY]
+  requirements: [CHEMISTRY]
   effects: {}
 
 ELECTRICITY:
@@ -349,12 +401,40 @@ ELECTRICITY:
   requirements: [PHYSICS, CHEMISTRY]
   effects: {}
 
+COMBUSTION_ENGINE:
+  name: "Combustion Engine"
+  description: "Internal combustion engine technology development."
+  effort: 1000000
+  costs: {}
+  requirements: [STEAM_ENGINE, CHEMISTRY]
+  effects: {}
+
+# ============================================================
+#   MODERNE  (Effort 2.000.000 – 50.000.000)
+# ============================================================
+
+KNO_ARMOUR:
+  name: "Armour"
+  description: "Advanced body protection and defensive equipment."
+  effort: 6055849
+  costs: {}
+  requirements: [STEEL, MECHANICAL_ENGINEERING]
+  effects: {}
+
 SOCIAL_SCIENCES:
   name: "Social Sciences"
   description: "Human behavior and societal development studies."
   effort: 16558443
   costs: {}
   requirements: [CONSTITUTION, PRINTING_PRESS]
+  effects: {}
+
+MEDICINE:
+  name: "Medicine"
+  description: "Advanced medical science and treatment techniques."
+  effort: 19071696
+  costs: {}
+  requirements: [HERBOLOGY, CHEMISTRY]
   effects: {}
 
 CRYPTOLOGY:
@@ -388,6 +468,10 @@ ELECTRONICS:
   costs: {}
   requirements: [ELECTRICITY, PHYSICS]
   effects: {}
+
+# ============================================================
+#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+# ============================================================
 
 MASS_PRODUCTION:
   name: "Mass Production"
@@ -492,4 +576,3 @@ COLD_FUSION:
   costs: {}
   requirements: [NUCLEAR_REACTION, PHYSICS]
   effects: {}
-

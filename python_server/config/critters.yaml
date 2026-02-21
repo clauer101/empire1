@@ -9,13 +9,17 @@
 # bonus: resources gained for the attacker per critter
 # spawn_on_death: optional critter IID spawned when this unit dies
 
+# ============================================================
+#   STEINZEIT  (Effort 20 – 200)
+# ============================================================
+
 SLAVE:
   name: "Slave"
   speed: 0.2
   health: 1
   armour: 0
   slots: 1
-  time_between: 2000
+  time_between: 3000
   is_boss: false
   capture: {}
   bonus: {}
@@ -33,12 +37,46 @@ WARRIOR:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [HUNTING]
+
+SCOUT:
+  name: "Scout"
+  speed: 0.3
+  health: 1
+  armour: 0
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [HUNTING]
+
+# ============================================================
+#   NEOLITHIKUM  (Effort 200 – 1.500)
+# ============================================================
+
+CLUBMAN:
+  name: "Clubman"
+  speed: 0.2
+  health: 2
+  armour: 0
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [CRAFTSMANSHIP, TOOL_SHOP, AGRICULTURE, GRANARY]
+
+# ============================================================
+#   BRONZEZEIT  (Effort 1.500 – 8.000)
+# ============================================================
 
 BOWMAN:
   name: "Bowman"
   speed: 0.2
-  health: 2
+  health: 3
   armour: 0
   slots: 1
   time_between: 2000
@@ -46,12 +84,12 @@ BOWMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [CRAFTSMANSHIP, BOW_MAKER, ALPHABET_WRITING, EPIC_DRAWINGS]
 
 SWORDMAN:
   name: "Swordman"
   speed: 0.2
-  health: 2
+  health: 5
   armour: 0
   slots: 1
   time_between: 2000
@@ -59,12 +97,29 @@ SWORDMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [COPPER_BRONZE, SWORD_MAKER, CURRENCY, BULLETIN_BOARD]
+
+CHARIOT:
+  name: "Chariot"
+  speed: 0.25
+  health: 5
+  armour: 0
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [HORSEBACK_RIDING, COPPER_BRONZE, MUSIC, FIELD_HEALER]
+
+# ============================================================
+#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+# ============================================================
 
 PIKENEER:
   name: "Pikeneer"
   speed: 0.2
-  health: 2
+  health: 6
   armour: 0
   slots: 1
   time_between: 2000
@@ -72,12 +127,12 @@ PIKENEER:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [COPPER_BRONZE, TOOL_SHOP, DRILL, CHAPEL]
 
 HORSEMAN_SLOW:
   name: "Heavy Horseman"
   speed: 0.10
-  health: 2
+  health: 8
   armour: 0
   slots: 1
   time_between: 2000
@@ -85,12 +140,12 @@ HORSEMAN_SLOW:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [HORSEBACK_RIDING, STABLES, RACE_COURSE]
 
 HORSEMAN_FAST:
   name: "Light Horseman"
   speed: 0.25
-  health: 2
+  health: 7
   armour: 0
   slots: 1
   time_between: 2000
@@ -98,38 +153,85 @@ HORSEMAN_FAST:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [HORSEBACK_RIDING, STABLES, LIBRARY]
+
+LEGIONARY:
+  name: "Legionary"
+  speed: 0.2
+  health: 8
+  armour: 1
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [IRON, IRON_WORK, LORE_COLLECTION]
+
+# ============================================================
+#   MITTELALTER  (Effort 30.000 – 130.000)
+# ============================================================
 
 CRUSADER:
   name: "Crusader"
   speed: 0.2
-  health: 2
-  armour: 0
+  health: 10
+  armour: 1
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [HOLY_WAR, CHURCH, RELIGION, FANATISM, MONASTERY, CATHEDRAL]
+
+KNIGHT:
+  name: "Knight"
+  speed: 0.15
+  health: 11
+  armour: 1
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [STEEL, STABLES, FEUDALISM, COMMAND_CHAIN, CASTLE, MANOR]
 
 SAMURAI:
   name: "Samurai"
   speed: 0.2
-  health: 2
-  armour: 0
+  health: 12
+  armour: 1
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [TACTICS, FENCING_SCHOOL, ARTS, TEMPLE, MUSEUM]
+
+SIEGE_RAM:
+  name: "Siege Ram"
+  speed: 0.1
+  health: 15
+  armour: 2
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [MECHANICS, TREADWHEEL_CRANE, MONARCHY, TREASURE_CHAMBER, THE_KINGS_LAIR]
+
+# ============================================================
+#   RENAISSANCE  (Effort 130.000 – 500.000)
+# ============================================================
 
 NINJA:
   name: "Ninja"
   speed: 0.25
-  health: 2
+  health: 9
   armour: 0
   slots: 1
   time_between: 2000
@@ -137,165 +239,196 @@ NINJA:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [STEALTH_SECRECY, SECRET_ORDER, PAINTING, THEATER, HIGH_COURT]
 
 MUSKETEER:
   name: "Musketeer"
   speed: 0.2
-  health: 2
-  armour: 0
+  health: 14
+  armour: 1
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [GUNPOWDER, GUNSMITH, LITRATURE, PRINTING_PRESS, UNIVERSITY]
 
 DRAGOONER:
   name: "Dragoon"
   speed: 0.2
-  health: 2
-  armour: 0
+  health: 15
+  armour: 1
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [GUNPOWDER, HORSEBACK_RIDING, GUNSMITH, STABLES, ECONOMY, BANK]
+
+# ============================================================
+#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+# ============================================================
 
 SOLDIER:
   name: "Soldier"
   speed: 0.2
-  health: 2
-  armour: 0
+  health: 18
+  armour: 2
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
-
-CART:
-  name: "Cart"
-  speed: 0.2
-  health: 2
-  armour: 0
-  slots: 1
-  time_between: 2000
-  is_boss: false
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  requirements: []
-
-LARGE_CART:
-  name: "Large Cart"
-  speed: 0.2
-  health: 2
-  armour: 0
-  slots: 1
-  time_between: 2000
-  is_boss: false
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  requirements: []
-
-CARGO:
-  name: "Cargo"
-  speed: 0.2
-  health: 2
-  armour: 0
-  slots: 1
-  time_between: 2000
-  is_boss: false
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  requirements: []
-
-TRANSPORTER:
-  name: "Transporter"
-  speed: 0.2
-  health: 2
-  armour: 0
-  slots: 1
-  time_between: 2000
-  is_boss: false
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  requirements: []
+  requirements: [COMBUSTION_ENGINE, BARRACKS, CONSTITUTION, MILITARY_SERVICE, COURTHOUSE, PARLIAMENT]
 
 MOTORBIKE:
   name: "Motorbike"
   speed: 0.30
-  health: 2
-  armour: 0
+  health: 20
+  armour: 2
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP, SANITATION, EMERGENCY_ROOM]
 
 SMALL_TANK:
   name: "Small Tank"
   speed: 0.2
-  health: 2
-  armour: 0
+  health: 25
+  armour: 3
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [KNO_ARMOUR, FACTORY, STOCK_MARKET, FEDERAL_RESERVE]
 
 SIEGE_TANK:
   name: "Siege Tank"
   speed: 0.10
-  health: 2
-  armour: 0
+  health: 28
+  armour: 4
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [KNO_ARMOUR, FACTORY, EXECUTIVE_CARPOOL, EMPERORS_PALACE, DERIVATIVE_MARKET]
+
+# ============================================================
+#   MODERNE  (Effort 2.000.000 – 5.300.000)
+# ============================================================
 
 SPECOPS:
   name: "Special Ops"
-  speed: 0.2
-  health: 2
-  armour: 0
+  speed: 1
+  health: 30
+  armour: 2
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [SPECIAL_FORCES, ELITE_ACADEMY, SOCIAL_SCIENCES, GLOBALIZATION_STRATEGIES, RECRUITING_OFFICE, CYBER_COMMAND]
 
 HELI:
   name: "Helicopter"
-  speed: 0.30
-  health: 2
-  armour: 0
+  speed: 1.2
+  health: 40
+  armour: 5
   slots: 1
   time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  requirements: []
+  requirements: [AVIATION, HANGAR, MEDICINE, SOCIAL_SECURITY_SYSTEM]
 
-# --- Bosses / Heroes ---
+# ============================================================
+#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+# ============================================================
+
+MECH_WARRIOR:
+  name: "Mech Warrior"
+  speed: 0.8
+  health: 50
+  armour: 6
+  slots: 1
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [BIONICS, MECH_WARRIOR_LAB, COMPUTER_TECHNOLOGY, FIBER_COMPOSITE, COLD_FUSION, FUSION_REACTOR]
+
+# ============================================================
+#   TRANSPORT-EINHEITEN
+# ============================================================
+
+CART:
+  name: "Cart"
+  speed: 0.2
+  health: 4
+  armour: 0
+  slots: 2
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [DOMESTICATION, TOOL_SHOP]
+
+LARGE_CART:
+  name: "Large Cart"
+  speed: 0.2
+  health: 6
+  armour: 0
+  slots: 3
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [DOMESTICATION, STABLES]
+
+CARGO:
+  name: "Cargo"
+  speed: 0.2
+  health: 12
+  armour: 1
+  slots: 4
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [STEAM_ENGINE, RAIL_ROADS, ARTS_GALLERY]
+
+TRANSPORTER:
+  name: "Transporter"
+  speed: 0.2
+  health: 16
+  armour: 1
+  slots: 5
+  time_between: 2000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
+
+# ============================================================
+#   BOSSES / HELDEN
+# ============================================================
 
 THE_SWORDMASTER:
   name: "The Swordmaster"

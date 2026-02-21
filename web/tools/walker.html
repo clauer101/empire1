@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Walker – Swordman</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 { font-size: 1.2rem; color: #7ecfff; letter-spacing: 2px; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .controls label { font-size: 0.85rem; color: #aaa; }
+    input[type=range] { width: 160px; accent-color: #4466cc; }
+    #scale-label { min-width: 4ch; color: #7ecfff; }
+
+    /* ── Arena ── */
+    #arena {
+      flex: 1;
+      width: 100%;
+      max-width: 900px;
+      background: #0d1117;
+      border: 1px solid #333;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Sprite ── */
+    #sprite {
+      position: absolute;
+      image-rendering: pixelated;
+      /* size set via JS */
+    }
+    #sprite img {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Direction indicator ── */
+    #dir-info {
+      font-size: 0.75rem;
+      color: #555;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚔ Swordman Walker</h1>
+
+<div class="controls">
+  <label>Größe: <span id="scale-label">64</span> px
+    <input type="range" id="scale-range" min="16" max="256" value="64" step="4" />
+  </label>
+  <label>Speed:
+    <input type="range" id="speed-range" min="20" max="300" value="80" step="10" />
+    <span id="speed-label">80</span> px/s
+  </label>
+</div>
+
+<div id="arena">
+  <div id="sprite">
+    <img id="gif" src="../assets/sprites/swordman/front.gif" alt="swordman" />
+  </div>
+</div>
+
+<div id="dir-info">dir: front</div>
+
+<script>
+  const arena      = document.getElementById('arena');
+  const sprite     = document.getElementById('sprite');
+  const gif        = document.getElementById('gif');
+  const scaleRange = document.getElementById('scale-range');
+  const scaleLabel = document.getElementById('scale-label');
+  const speedRange = document.getElementById('speed-range');
+  const speedLabel = document.getElementById('speed-label');
+  const dirInfo    = document.getElementById('dir-info');
+
+  const BASE = '../assets/sprites/swordman/';
+
+  let size  = 64;   // rendered px
+  let speed = 80;   // px/s
+
+  // Position (center of sprite)
+  let px = 0, py = 0;
+
+  // Velocity vector
+  let vx = 1, vy = 0.6;   // will be normalized
+
+  let currentDir = 'front';
+  let lastTs = null;
+
+  // ── Helpers ──────────────────────────────────────────────
+
+  function setDir(dir) {
+    if (dir === currentDir) return;
+    currentDir = dir;
+    gif.src = BASE + dir + '.gif';
+    dirInfo.textContent = 'dir: ' + dir;
+  }
+
+  function applySize() {
+    sprite.style.width  = size + 'px';
+    sprite.style.height = size + 'px';
+  }
+
+  function clampAndBounce(aW, aH) {
+    const half = size / 2;
+    let bounced = false;
+
+    if (px - half < 0)      { px = half;      vx = Math.abs(vx);  bounced = true; }
+    if (px + half > aW)     { px = aW - half; vx = -Math.abs(vx); bounced = true; }
+    if (py - half < 0)      { py = half;       vy = Math.abs(vy);  bounced = true; }
+    if (py + half > aH)     { py = aH - half; vy = -Math.abs(vy); bounced = true; }
+
+    return bounced;
+  }
+
+  function dirFromVelocity(vx, vy) {
+    // Dominant axis wins
+    if (Math.abs(vx) >= Math.abs(vy)) {
+      return vx > 0 ? 'right' : 'left';
+    } else {
+      return vy > 0 ? 'front' : 'back';
+    }
+  }
+
+  // ── Controls ─────────────────────────────────────────────
+
+  scaleRange.addEventListener('input', () => {
+    size = parseInt(scaleRange.value);
+    scaleLabel.textContent = size;
+    applySize();
+  });
+
+  speedRange.addEventListener('input', () => {
+    speed = parseInt(speedRange.value);
+    speedLabel.textContent = speed;
+  });
+
+  // ── Init ─────────────────────────────────────────────────
+
+  applySize();
+
+  // Start near center of arena
+  function init() {
+    const aW = arena.clientWidth;
+    const aH = arena.clientHeight;
+    px = aW / 2;
+    py = aH / 2;
+
+    // Normalize initial velocity
+    const len = Math.hypot(vx, vy);
+    vx /= len;
+    vy /= len;
+  }
+
+  // Wait for layout to be ready
+  requestAnimationFrame(() => {
+    init();
+    requestAnimationFrame(loop);
+  });
+
+  // ── Animation loop ────────────────────────────────────────
+
+  function loop(ts) {
+    if (lastTs === null) lastTs = ts;
+    const dt = Math.min((ts - lastTs) / 1000, 0.1); // seconds, cap at 100ms
+    lastTs = ts;
+
+    const aW = arena.clientWidth;
+    const aH = arena.clientHeight;
+
+    px += vx * speed * dt;
+    py += vy * speed * dt;
+
+    clampAndBounce(aW, aH);
+
+    setDir(dirFromVelocity(vx, vy));
+
+    // Offset: top-left corner
+    sprite.style.left = (px - size / 2) + 'px';
+    sprite.style.top  = (py - size / 2) + 'px';
+
+    requestAnimationFrame(loop);
+  }
+</script>
+</body>
+</html>

@@ -5,13 +5,17 @@
 # requirements: list of prerequisite IIDs (buildings or knowledge)
 # effects: passive effects granted when complete
 
+# ============================================================
+#   STEINZEIT  (Effort 20 – 200)
+# ============================================================
+
 BASE_CAMP:
   name: "Base Camp"
   description: "Starting structure. Foundation for all empire development."
   effort: 0
   costs: {}
   requirements: []
-  effects: 
+  effects:
     life_offset: 0.001
 
 FIRE_PLACE:
@@ -20,7 +24,7 @@ FIRE_PLACE:
   effort: 20
   costs: {}
   requirements: [BASE_CAMP]
-  effects: 
+  effects:
     gold_offset: 0.1
 
 STONE_CIRCLE:
@@ -29,7 +33,7 @@ STONE_CIRCLE:
   effort: 50
   costs: {gold: 10}
   requirements: [BASE_CAMP, MYSTIC]
-  effects: 
+  effects:
     culture_offset: 0.1
 
 MAIN_HOUSE:
@@ -49,6 +53,10 @@ EARTH_WALL:
   requirements: [MAIN_HOUSE]
   effects: {}
 
+# ============================================================
+#   NEOLITHIKUM  (Effort 200 – 1.500)
+# ============================================================
+
 TOOL_SHOP:
   name: "Tool Shop"
   description: "Increases construction speed. Requires craftsmanship knowledge."
@@ -67,6 +75,24 @@ SHRINE:
   effects:
     culture_offset: 0.05
 
+GRANARY:
+  name: "Granary"
+  description: "Food storage facility boosting steady income. Requires agriculture."
+  effort: 1000
+  costs: {gold: 200}
+  requirements: [MAIN_HOUSE, AGRICULTURE]
+  effects:
+    gold_offset: 0.08
+
+EPIC_DRAWINGS:
+  name: "Epic Drawings"
+  description: "Boosts culture generation. Requires hunting stories."
+  effort: 1000
+  costs: {gold: 200}
+  requirements: [STONE_CIRCLE, HUNTING]
+  effects:
+    culture_modifier: 0.1
+
 EXCHANGE_POST:
   name: "Exchange Post"
   description: "Boosts gold generation. Requires craftsmanship and trade."
@@ -77,6 +103,10 @@ EXCHANGE_POST:
     gold_modifier: 0.1
     gold_offset: 0.05
 
+# ============================================================
+#   BRONZEZEIT  (Effort 1.500 – 8.000)
+# ============================================================
+
 BOW_MAKER:
   name: "Bow Maker"
   description: "Weapon workshop for ranged combat. Requires hunting knowledge."
@@ -84,15 +114,6 @@ BOW_MAKER:
   costs: {gold: 500}
   requirements: [TOOL_SHOP, HUNTING]
   effects: {}
-
-EPIC_DRAWINGS:
-  name: "Epic Drawings"
-  description: "Boosts culture generation. Requires hunting stories."
-  effort: 1000
-  costs: {gold: 200}
-  requirements: [STONE_CIRCLE, HUNTING]
-  effects:
-    culture_modifier: 0.1
 
 MEDICUS:
   name: "Medicus"
@@ -120,6 +141,15 @@ FIELD_HEALER:
   effects:
     life_offset: 0.02
 
+HARBOR:
+  name: "Harbor"
+  description: "Coastal trade hub for maritime commerce. Requires sailing."
+  effort: 6000
+  costs: {gold: 1200}
+  requirements: [SAILING, EXCHANGE_POST]
+  effects:
+    gold_modifier: 0.1
+
 SWORD_MAKER:
   name: "Sword Maker"
   description: "Weapon workshop for melee combat. Requires metallurgy."
@@ -129,6 +159,19 @@ SWORD_MAKER:
   effects:
     build_speed_modifier: 0.05
 
+# ============================================================
+#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+# ============================================================
+
+BULLETIN_BOARD:
+  name: "Bulletin Board"
+  description: "Communication hub. Requires written language."
+  effort: 10000
+  costs: {gold: 2000}
+  requirements: [MAIN_HOUSE, ALPHABET_WRITING]
+  effects:
+    culture_offset: 0.05
+
 MARKET_PLACE:
   name: "Market Place"
   description: "Major trade hub doubling gold generation with currency."
@@ -137,6 +180,14 @@ MARKET_PLACE:
   requirements: [EXCHANGE_POST, CURRENCY]
   effects:
     gold_modifier: 0.2
+
+BOOT_CAMP:
+  name: "Boot Camp"
+  description: "Military training facility. Requires weapon training."
+  effort: 14000
+  costs: {gold: 2800}
+  requirements: [BOW_MAKER, DRILL]
+  effects: {}
 
 CHAPEL:
   name: "Chapel"
@@ -148,6 +199,14 @@ CHAPEL:
     culture_modifier: 0.15
     culture_offset: 0.1
 
+TOWN_GUARD:
+  name: "Town Guard"
+  description: "Local militia defending settlements. Requires military training."
+  effort: 16000
+  costs: {gold: 3200}
+  requirements: [WATCH_TOWER, DRILL]
+  effects: {}
+
 LIBRARY:
   name: "Library"
   description: "Accelerates research progress. Requires writing knowledge."
@@ -156,23 +215,6 @@ LIBRARY:
   requirements: [BULLETIN_BOARD, ALPHABET_WRITING]
   effects:
     research_speed_modifier: 0.15
-
-BULLETIN_BOARD:
-  name: "Bulletin Board"
-  description: "Communication hub. Requires written language."
-  effort: 10000
-  costs: {gold: 2000}
-  requirements: [MAIN_HOUSE, ALPHABET_WRITING]
-  effects:
-    culture_offset: 0.05
-
-BOOT_CAMP:
-  name: "Boot Camp"
-  description: "Military training facility. Requires weapon training."
-  effort: 14000
-  costs: {gold: 2800}
-  requirements: [BOW_MAKER, DRILL]
-  effects: {}
 
 LORE_COLLECTION:
   name: "Lore Collection"
@@ -201,6 +243,15 @@ TREASURE_CHAMBER:
   effects:
     gold_offset: 0.5
 
+IRON_WORK:
+  name: "Iron Work"
+  description: "Advanced metal processing facility for iron-based construction."
+  effort: 28000
+  costs: {gold: 5600}
+  requirements: [FORGE, IRON]
+  effects:
+    build_speed_modifier: 0.1
+
 CARTOGRAPHER:
   name: "Cartographer"
   description: "Maps territories for exploration and navigation."
@@ -210,22 +261,9 @@ CARTOGRAPHER:
   effects:
     research_speed_modifier: 0.1
 
-TOWN_GUARD:
-  name: "Town Guard"
-  description: "Local militia defending settlements. Requires military training."
-  effort: 16000
-  costs: {gold: 3200}
-  requirements: [WATCH_TOWER, DRILL]
-  effects: {}
-
-IRON_WORK:
-  name: "Iron Work"
-  description: "Advanced metal processing facility for iron-based construction."
-  effort: 28000
-  costs: {gold: 5600}
-  requirements: [FORGE, IRON]
-  effects:
-    build_speed_modifier: 0.1
+# ============================================================
+#   MITTELALTER  (Effort 30.000 – 130.000)
+# ============================================================
 
 WORK_SHOP:
   name: "Work Shop"
@@ -254,40 +292,22 @@ STABLES:
   requirements: [MAIN_HOUSE, HORSEBACK_RIDING]
   effects: {}
 
-CHURCH:
-  name: "Church"
-  description: "Major religious institution. Requires organized faith."
-  effort: 60000
-  costs: {gold: 12000}
-  requirements: [CHAPEL, RELIGION]
-  effects:
-    culture_offset: 0.15
-
-GUILD:
-  name: "Guild"
-  description: "Craftsmen association. Requires advanced economy."
-  effort: 70000
-  costs: {gold: 14000}
-  requirements: [WORK_SHOP, ECONOMY]
-  effects:
-    build_speed_modifier: 0.1
-
-CASTLE:
-  name: "Castle"
-  description: "Imperial stronghold symbol of power and rule."
-  effort: 120000
-  costs: {gold: 24000}
-  requirements: [CITY_WALLS, MONARCHY]
+RACE_COURSE:
+  name: "Race Course"
+  description: "Sports venue for horses. Requires equestrian mastery."
+  effort: 50000
+  costs: {gold: 10000}
+  requirements: [STABLES, HORSEBACK_RIDING]
   effects: {}
 
-MONASTERY:
-  name: "Monastery"
-  description: "Cloistered religious community center."
-  effort: 80000
-  costs: {gold: 16000}
-  requirements: [CHURCH, RELIGION]
+TREADWHEEL_CRANE:
+  name: "Treadwheel Crane"
+  description: "Medieval lifting machine. Assists construction work."
+  effort: 50000
+  costs: {gold: 10000}
+  requirements: [WORK_SHOP, MECHANICS]
   effects:
-    culture_offset: 0.2
+    build_speed_modifier: 0.05
 
 TEMPLE:
   name: "Temple"
@@ -299,6 +319,57 @@ TEMPLE:
     culture_offset: 0.2
     culture_modifier: 0.1
 
+CHURCH:
+  name: "Church"
+  description: "Major religious institution. Requires organized faith."
+  effort: 60000
+  costs: {gold: 12000}
+  requirements: [CHAPEL, RELIGION]
+  effects:
+    culture_offset: 0.15
+
+FENCING_SCHOOL:
+  name: "Fencing School"
+  description: "Advanced combat training. Requires metallurgy and tactics."
+  effort: 65000
+  costs: {gold: 13000}
+  requirements: [SWORD_MAKER, IRON, DRILL]
+  effects: {}
+
+GUILD:
+  name: "Guild"
+  description: "Craftsmen association. Requires advanced economy."
+  effort: 70000
+  costs: {gold: 14000}
+  requirements: [WORK_SHOP, ECONOMY]
+  effects:
+    build_speed_modifier: 0.1
+
+SOVEREIGN_GUARD:
+  name: "Sovereign Guard"
+  description: "Elite military unit. Requires advanced command structure."
+  effort: 75000
+  costs: {gold: 15000}
+  requirements: [TOWN_GUARD, COMMAND_CHAIN]
+  effects: {}
+
+MONASTERY:
+  name: "Monastery"
+  description: "Cloistered religious community center."
+  effort: 80000
+  costs: {gold: 16000}
+  requirements: [CHURCH, RELIGION]
+  effects:
+    culture_offset: 0.2
+
+MANOR:
+  name: "Manor"
+  description: "Noble residence. Requires feudal hierarchy."
+  effort: 85000
+  costs: {gold: 17000}
+  requirements: [TREASURE_CHAMBER, FEUDALISM]
+  effects: {}
+
 BANK:
   name: "Bank"
   description: "Financial institution. Massively boosts gold generation."
@@ -309,22 +380,6 @@ BANK:
     gold_modifier: 0.3
     gold_offset: 1.0
 
-FENCING_SCHOOL:
-  name: "Fencing School"
-  description: "Advanced combat training. Requires metallurgy and tactics."
-  effort: 65000
-  costs: {gold: 13000}
-  requirements: [SWORD_MAKER, IRON, DRILL]
-  effects: {}
-
-MANOR:
-  name: "Manor"
-  description: "Noble residence. Requires feudal hierarchy."
-  effort: 85000
-  costs: {gold: 17000}
-  requirements: [TREASURE_CHAMBER, FEUDALISM]
-  effects: {}
-
 ACADEMY:
   name: "Academy"
   description: "Higher learning institution. Accelerates research significantly."
@@ -334,14 +389,21 @@ ACADEMY:
   effects:
     research_speed_modifier: 0.25
 
-LABORATORY:
-  name: "Laboratory"
-  description: "Scientific research center. Further boosts research speed."
-  effort: 150000
-  costs: {gold: 30000}
-  requirements: [ACADEMY, SCIENCE]
-  effects:
-    research_speed_modifier: 0.3
+CITY_WALLS:
+  name: "City Walls"
+  description: "Massive defensive structure. Requires architecture and iron."
+  effort: 110000
+  costs: {gold: 22000}
+  requirements: [EARTH_WALL, ARCHITECTURE, IRON_WORK]
+  effects: {}
+
+CASTLE:
+  name: "Castle"
+  description: "Imperial stronghold symbol of power and rule."
+  effort: 120000
+  costs: {gold: 24000}
+  requirements: [CITY_WALLS, MONARCHY]
+  effects: {}
 
 MUSEUM:
   name: "Museum"
@@ -353,133 +415,6 @@ MUSEUM:
     culture_modifier: 0.25
     culture_offset: 0.5
 
-RACE_COURSE:
-  name: "Race Course"
-  description: "Sports venue for horses. Requires equestrian mastery."
-  effort: 50000
-  costs: {gold: 10000}
-  requirements: [STABLES, HORSEBACK_RIDING]
-  effects: {}
-
-CITY_WALLS:
-  name: "City Walls"
-  description: "Massive defensive structure. Requires architecture and iron."
-  effort: 110000
-  costs: {gold: 22000}
-  requirements: [EARTH_WALL, ARCHITECTURE, IRON_WORK]
-  effects: {}
-
-SOVEREIGN_GUARD:
-  name: "Sovereign Guard"
-  description: "Elite military unit. Requires advanced command structure."
-  effort: 75000
-  costs: {gold: 15000}
-  requirements: [TOWN_GUARD, COMMAND_CHAIN]
-  effects: {}
-
-CATHEDRAL:
-  name: "Cathedral"
-  description: "Architectural masterpiece and religious center combined."
-  effort: 140000
-  costs: {gold: 28000}
-  requirements: [CHURCH, ARCHITECTURE]
-  effects:
-    culture_offset: 0.2
-
-GUNSMITH:
-  name: "Gunsmith"
-  description: "Firearms manufacturer. Requires gunpowder technology."
-  effort: 200000
-  costs: {gold: 40000}
-  requirements: [FORGE, GUNPOWDER]
-  effects: {}
-
-ARCHIVES:
-  name: "Archives"
-  description: "Document repository. Requires printing technology."
-  effort: 160000
-  costs: {gold: 32000}
-  requirements: [LIBRARY, PRINTING_PRESS]
-  effects:
-    research_speed_modifier: 0.1
-
-BARRACKS:
-  name: "Barracks"
-  description: "Military complex for large army training and deployment."
-  effort: 2000000
-  costs: {gold: 400000}
-  requirements: [DEFENSE_DEPARTMENT, FACTORY]
-  effects: {}
-
-COURTHOUSE:
-  name: "Courthouse"
-  description: "Legal center administering justice and law."
-  effort: 180000
-  costs: {gold: 36000}
-  requirements: [LAWS, ARCHIVES]
-  effects: {}
-
-SECRET_ORDER:
-  name: "Secret Order"
-  description: "Covert intelligence operations. Requires secrecy mastery."
-  effort: 250000
-  costs: {gold: 50000}
-  requirements: [STEALTH_SECRECY, MONASTERY]
-  effects: {}
-
-BOTANIC_GARDENS:
-  name: "Botanic Gardens"
-  description: "Plant research and cultivation. Scientific approach to botany."
-  effort: 220000
-  costs: {gold: 44000}
-  requirements: [HERBOLOGY, ACADEMY]
-  effects: {}
-
-HIGH_COURT:
-  name: "High Court"
-  description: "Supreme judicial authority. Requires constitutional law."
-  effort: 300000
-  costs: {gold: 60000}
-  requirements: [COURTHOUSE, CONSTITUTION]
-  effects: {}
-
-TRIUMPHAL_ARC:
-  name: "Triumphal Arc"
-  description: "Monument to victory and imperial power."
-  effort: 170000
-  costs: {gold: 34000}
-  requirements: [CITY_WALLS, MONARCHY]
-  effects:
-    culture_offset: 0.2
-
-PARLIAMENT:
-  name: "Parliament"
-  description: "Democratic legislative body. Requires constitutional system."
-  effort: 350000
-  costs: {gold: 70000}
-  requirements: [HIGH_COURT, CONSTITUTION]
-  effects:
-    culture_modifier: 0.15
-    gold_modifier: 0.1
-
-STOCK_MARKET:
-  name: "Stock Market"
-  description: "Financial trading hub. Advanced economic institution."
-  effort: 450000
-  costs: {gold: 90000}
-  requirements: [BANK, ECONOMY, PRINTING_PRESS]
-  effects:
-    gold_modifier: 0.15
-
-UNIVERSITY:
-  name: "University"
-  description: "Elite research and education institution combined."
-  effort: 280000
-  costs: {gold: 56000}
-  requirements: [ACADEMY, PRINTING_PRESS, SCIENCE]
-  effects:
-    research_speed_modifier: 0.2
-
 THE_KINGS_LAIR:
   name: "The King's Lair"
   description: "Royal residence and power center. Requires monarchy."
@@ -490,15 +425,53 @@ THE_KINGS_LAIR:
     culture_modifier: 0.15
     gold_offset: 0.1
 
-EMPERORS_PALACE:
-  name: "Emperor's Palace"
-  description: "Ultimate seat of imperial power and authority."
-  effort: 400000
-  costs: {gold: 80000}
-  requirements: [CASTLE, PARLIAMENT]
+# ============================================================
+#   RENAISSANCE  (Effort 130.000 – 500.000)
+# ============================================================
+
+CATHEDRAL:
+  name: "Cathedral"
+  description: "Architectural masterpiece and religious center combined."
+  effort: 140000
+  costs: {gold: 28000}
+  requirements: [CHURCH, ARCHITECTURE]
   effects:
-    culture_modifier: 0.2
-    gold_modifier: 0.2
+    culture_offset: 0.2
+
+LABORATORY:
+  name: "Laboratory"
+  description: "Scientific research center. Further boosts research speed."
+  effort: 150000
+  costs: {gold: 30000}
+  requirements: [ACADEMY, SCIENCE]
+  effects:
+    research_speed_modifier: 0.3
+
+ARCHIVES:
+  name: "Archives"
+  description: "Document repository. Requires printing technology."
+  effort: 160000
+  costs: {gold: 32000}
+  requirements: [LIBRARY, PRINTING_PRESS]
+  effects:
+    research_speed_modifier: 0.1
+
+TRIUMPHAL_ARC:
+  name: "Triumphal Arc"
+  description: "Monument to victory and imperial power."
+  effort: 170000
+  costs: {gold: 34000}
+  requirements: [CITY_WALLS, MONARCHY]
+  effects:
+    culture_offset: 0.2
+
+COURTHOUSE:
+  name: "Courthouse"
+  description: "Legal center administering justice and law."
+  effort: 180000
+  costs: {gold: 36000}
+  requirements: [LAWS, ARCHIVES]
+  effects: {}
 
 PARADE_GROUND:
   name: "Parade Ground"
@@ -506,6 +479,22 @@ PARADE_GROUND:
   effort: 190000
   costs: {gold: 38000}
   requirements: [BOOT_CAMP, COMMAND_CHAIN, SOVEREIGN_GUARD]
+  effects: {}
+
+GUNSMITH:
+  name: "Gunsmith"
+  description: "Firearms manufacturer. Requires gunpowder technology."
+  effort: 200000
+  costs: {gold: 40000}
+  requirements: [FORGE, GUNPOWDER]
+  effects: {}
+
+BOTANIC_GARDENS:
+  name: "Botanic Gardens"
+  description: "Plant research and cultivation. Scientific approach to botany."
+  effort: 220000
+  costs: {gold: 44000}
+  requirements: [HERBOLOGY, ACADEMY]
   effects: {}
 
 CANNON_MANUFACTORY:
@@ -517,12 +506,70 @@ CANNON_MANUFACTORY:
   effects:
     build_speed_modifier: 0.1
 
-VEHICLE_WORKSHOP:
-  name: "Vehicle Workshop"
-  description: "Advanced vehicle manufacturing. Requires mechanical engineering."
-  effort: 800000
-  costs: {gold: 160000}
-  requirements: [MECHANICAL_ENGINEERING, HEAVY_EQUIPMENT]
+SECRET_ORDER:
+  name: "Secret Order"
+  description: "Covert intelligence operations. Requires secrecy mastery."
+  effort: 250000
+  costs: {gold: 50000}
+  requirements: [STEALTH_SECRECY, MONASTERY]
+  effects: {}
+
+UNIVERSITY:
+  name: "University"
+  description: "Elite research and education institution combined."
+  effort: 280000
+  costs: {gold: 56000}
+  requirements: [ACADEMY, PRINTING_PRESS, SCIENCE]
+  effects:
+    research_speed_modifier: 0.2
+
+HIGH_COURT:
+  name: "High Court"
+  description: "Supreme judicial authority. Requires constitutional law."
+  effort: 300000
+  costs: {gold: 60000}
+  requirements: [COURTHOUSE, CONSTITUTION]
+  effects: {}
+
+PARLIAMENT:
+  name: "Parliament"
+  description: "Democratic legislative body. Requires constitutional system."
+  effort: 350000
+  costs: {gold: 70000}
+  requirements: [HIGH_COURT, CONSTITUTION]
+  effects:
+    culture_modifier: 0.15
+    gold_modifier: 0.1
+
+EMPERORS_PALACE:
+  name: "Emperor's Palace"
+  description: "Ultimate seat of imperial power and authority."
+  effort: 400000
+  costs: {gold: 80000}
+  requirements: [CASTLE, PARLIAMENT]
+  effects:
+    culture_modifier: 0.2
+    gold_modifier: 0.2
+
+STOCK_MARKET:
+  name: "Stock Market"
+  description: "Financial trading hub. Advanced economic institution."
+  effort: 450000
+  costs: {gold: 90000}
+  requirements: [BANK, ECONOMY, PRINTING_PRESS]
+  effects:
+    gold_modifier: 0.15
+
+# ============================================================
+#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+# ============================================================
+
+HEAVY_EQUIPMENT:
+  name: "Heavy Equipment"
+  description: "Industrial machinery factory for mass production."
+  effort: 500000
+  costs: {gold: 100000}
+  requirements: [MECHANICAL_ENGINEERING, WORK_SHOP]
   effects:
     build_speed_modifier: 0.2
 
@@ -535,32 +582,30 @@ RAIL_ROADS:
   effects:
     gold_offset: 0.2
 
-TREADWHEEL_CRANE:
-  name: "Treadwheel Crane"
-  description: "Medieval lifting machine. Assists construction work."
-  effort: 50000
-  costs: {gold: 10000}
-  requirements: [WORK_SHOP, MECHANICS]
-  effects:
-    build_speed_modifier: 0.05
-
-HEAVY_EQUIPMENT:
-  name: "Heavy Equipment"
-  description: "Industrial machinery factory for mass production."
-  effort: 500000
-  costs: {gold: 100000}
-  requirements: [MECHANICAL_ENGINEERING, WORK_SHOP]
+VEHICLE_WORKSHOP:
+  name: "Vehicle Workshop"
+  description: "Advanced vehicle manufacturing. Requires mechanical engineering."
+  effort: 800000
+  costs: {gold: 160000}
+  requirements: [MECHANICAL_ENGINEERING, HEAVY_EQUIPMENT]
   effects:
     build_speed_modifier: 0.2
 
-HOSPITAL:
-  name: "Hospital"
-  description: "Modern medical facility. Significantly boosts health."
-  effort: 1700000
-  costs: {gold: 340000}
-  requirements: [FIELD_HEALER, CHEMISTRY, ELECTRICITY]
-  effects:
-    life_offset: 0.05
+DEFENSE_DEPARTMENT:
+  name: "Defense Department"
+  description: "Military command center for strategic defense."
+  effort: 1200000
+  costs: {gold: 240000}
+  requirements: [STRATEGIC_WARFARE, CITY_WALLS, PARLIAMENT]
+  effects: {}
+
+ELECTRIC_FENCE:
+  name: "Electric Fence"
+  description: "Fortified perimeter with electric barriers."
+  effort: 1400000
+  costs: {gold: 280000}
+  requirements: [ELECTRICITY, CITY_WALLS]
+  effects: {}
 
 AIRFIELD:
   name: "Airfield"
@@ -570,6 +615,24 @@ AIRFIELD:
   requirements: [COMBUSTION_ENGINE, HEAVY_EQUIPMENT]
   effects:
     gold_offset: 0.15
+
+HANGAR:
+  name: "Hangar"
+  description: "Aircraft maintenance and storage facility."
+  effort: 1600000
+  costs: {gold: 320000}
+  requirements: [AIRFIELD, MECHANICAL_ENGINEERING]
+  effects:
+    build_speed_modifier: 0.1
+
+HOSPITAL:
+  name: "Hospital"
+  description: "Modern medical facility. Significantly boosts health."
+  effort: 1700000
+  costs: {gold: 340000}
+  requirements: [FIELD_HEALER, CHEMISTRY, ELECTRICITY]
+  effects:
+    life_offset: 0.05
 
 FACTORY:
   name: "Factory"
@@ -581,31 +644,6 @@ FACTORY:
     build_speed_modifier: 0.3
     gold_offset: 0.3
 
-HANGAR:
-  name: "Hangar"
-  description: "Aircraft maintenance and storage facility."
-  effort: 1600000
-  costs: {gold: 320000}
-  requirements: [AIRFIELD, MECHANICAL_ENGINEERING]
-  effects:
-    build_speed_modifier: 0.1
-
-ELECTRIC_FENCE:
-  name: "Electric Fence"
-  description: "Fortified perimeter with electric barriers."
-  effort: 1400000
-  costs: {gold: 280000}
-  requirements: [ELECTRICITY, CITY_WALLS]
-  effects: {}
-
-DEFENSE_DEPARTMENT:
-  name: "Defense Department"
-  description: "Military command center for strategic defense."
-  effort: 1200000
-  costs: {gold: 240000}
-  requirements: [STRATEGIC_WARFARE, CITY_WALLS, PARLIAMENT]
-  effects: {}
-
 EMERGENCY_ROOM:
   name: "Emergency Room"
   description: "Critical care facility in hospitals."
@@ -615,14 +653,17 @@ EMERGENCY_ROOM:
   effects:
     life_offset: 0.03
 
-DERIVATIVE_MARKET:
-  name: "Derivative Market"
-  description: "Advanced financial derivatives trading platform."
-  effort: 3750000
-  costs: {gold: 750000}
-  requirements: [FEDERAL_RESERVE, STOCK_MARKET]
-  effects:
-    gold_modifier: 0.2
+BARRACKS:
+  name: "Barracks"
+  description: "Military complex for large army training and deployment."
+  effort: 2000000
+  costs: {gold: 400000}
+  requirements: [DEFENSE_DEPARTMENT, FACTORY]
+  effects: {}
+
+# ============================================================
+#   MODERNE  (Effort 2.000.000 – 5.300.000)
+# ============================================================
 
 ROCKET_SILO:
   name: "Rocket Silo"
@@ -641,6 +682,14 @@ RESEARCH_VAULT:
   requirements: [UNIVERSITY, LABORATORY, ELECTRICITY]
   effects:
     research_speed_modifier: 0.2
+
+WMD_SITE:
+  name: "WMD Site"
+  description: "Weapons of mass destruction development facility."
+  effort: 2600000
+  costs: {gold: 520000}
+  requirements: [ROCKET_SILO, CHEMISTRY]
+  effects: {}
 
 ARTS_GALLERY:
   name: "Arts Gallery"
@@ -704,6 +753,15 @@ NAVIGATION_SYSTEM:
   effects:
     gold_offset: 0.1
 
+DERIVATIVE_MARKET:
+  name: "Derivative Market"
+  description: "Advanced financial derivatives trading platform."
+  effort: 3750000
+  costs: {gold: 750000}
+  requirements: [FEDERAL_RESERVE, STOCK_MARKET]
+  effects:
+    gold_modifier: 0.2
+
 BOMBING_AREA:
   name: "Bombing Area"
   description: "Aircraft bombing range for military training."
@@ -738,14 +796,6 @@ INTELLIGENCE_AGENCY:
   requirements: [SECRET_ORDER, ECHELON_DEFENSE_FACILITY]
   effects: {}
 
-WMD_SITE:
-  name: "WMD Site"
-  description: "Weapons of mass destruction development facility."
-  effort: 2600000
-  costs: {gold: 520000}
-  requirements: [ROCKET_SILO, CHEMISTRY]
-  effects: {}
-
 MECH_WARRIOR_LAB:
   name: "Mech Warrior Lab"
   description: "Giant robot creation and development facility."
@@ -775,6 +825,10 @@ RECRUITING_OFFICE:
     culture_offset: 0.2
     gold_offset: 0.2
 
+# ============================================================
+#   ZUKUNFT  (Effort 40.000.000 – 80.000.000)
+# ============================================================
+
 THE_WORLD_WONDER:
   name: "The World Wonder"
   type: wonder
@@ -787,3 +841,29 @@ THE_WORLD_WONDER:
     gold_offset: 1.0
     research_speed_modifier: 0.3
 
+SPACE_CENTER:
+  name: "Space Center"
+  description: "Space exploration and orbital research facility."
+  effort: 60000000
+  costs: {gold: 12000000}
+  requirements: [ROCKET_SCIENCE, RESEARCH_LAB]
+  effects:
+    research_speed_modifier: 0.3
+
+CYBER_COMMAND:
+  name: "Cyber Command"
+  description: "Digital warfare and cyber operations headquarters."
+  effort: 70000000
+  costs: {gold: 14000000}
+  requirements: [COMPUTER_TECHNOLOGY, INTELLIGENCE_AGENCY]
+  effects:
+    culture_offset: 0.5
+
+FUSION_REACTOR:
+  name: "Fusion Reactor"
+  description: "Ultimate clean energy source through nuclear fusion."
+  effort: 80000000
+  costs: {gold: 16000000}
+  requirements: [COLD_FUSION, NUCLEAR_POWER_PLANT]
+  effects:
+    gold_offset: 2.0

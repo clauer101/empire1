@@ -13,6 +13,7 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
+let hideCompleted = false;
 
 function init(el, _api, _state) {
   container = el;
@@ -21,15 +22,10 @@ function init(el, _api, _state) {
 
   container.innerHTML = `
     <h2>Buildings</h2>
-    <div class="form-row" style="margin-bottom:16px">
-      <input type="text" id="buildings-filter" placeholder="Filter buildings…" style="max-width:280px">
-    </div>
     <div id="buildings-content">
       <div class="empty-state"><div class="empty-icon">▦</div><p>Loading buildings…</p></div>
     </div>
   `;
-
-  container.querySelector('#buildings-filter').addEventListener('input', () => render());
 }
 
 async function enter() {
@@ -54,7 +50,6 @@ function render() {
   const summary = st.summary;
   if (!items || !summary) return;
 
-  const filter = (container.querySelector('#buildings-filter')?.value || '').toLowerCase();
   const completed = new Set([
     ...(summary.completed_buildings || []),
     ...(summary.completed_research || []),
@@ -62,11 +57,12 @@ function render() {
   const buildQueue = summary.build_queue;  // Only this item is "building"
   const buildings = items.buildings || {};
 
-  const entries = Object.entries(buildings)
-    .filter(([iid, info]) => {
-      const name = (info.name || iid).toLowerCase();
-      return !filter || name.includes(filter) || iid.toLowerCase().includes(filter);
-    });
+  let entries = Object.entries(buildings).reverse();
+  
+  // Filter out completed items if toggle is active
+  if (hideCompleted) {
+    entries = entries.filter(([iid]) => !completed.has(iid));
+  }
 
   if (entries.length === 0) {
     el.innerHTML = '<div class="empty-state"><p>No buildings found</p></div>';
@@ -86,64 +82,75 @@ function render() {
     const remaining = summary.buildings?.[iid] ?? fullEffort;  // If not started, remaining = full effort
     const done = Math.max(0, fullEffort - remaining);
     const progressStr = `${fmtEffort(done)}/${fmtEffort(fullEffort)}`;
+    
+    // Format costs
+    const costsStr = fmtCosts(info.costs, summary);
 
     return `<tr>
-      <td><strong>${info.name || iid}</strong></td>
-      <td style="max-width:250px; font-size:0.9em; color:#666">${info.description || '—'}</td>
-      <td style="font-variant-numeric:tabular-nums">${progressStr}</td>
-      <td>${fmtEffects(info.effects)}</td>
-      <td>${(info.requirements || []).map(r =>
-        `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
-      ).join('') || '—'}</td>
-      <td><span class="${badgeClass}">${badgeText}</span></td>
-      <td>
-        ${status === 'available'
-          ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button><div class="build-msg"></div>`
-          : ''}
+      <td class="col-name" data-label="Name">
+        <div class="item-header" style="display:flex; align-items:flex-start; justify-content:space-between;">
+          <div style="flex:1;">
+            <div><strong>${info.name || iid}</strong></div>
+            <div class="build-msg"></div>
+            <div class="item-description" style="font-size:0.9em; color:#666; margin-top:4px;">${info.description || '—'}</div>
+          </div>
+          <div style="margin-left:12px;">
+            ${status === 'available' 
+              ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button>` 
+              : `<span class="${badgeClass}">${badgeText}</span>`}
+          </div>
+        </div>
+      </td>
+      <td class="col-details" data-label="Details">
+        <div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>
+        <div class="detail-row"><span class="detail-label">Effort:</span> <span style="font-variant-numeric:tabular-nums">${progressStr}</span></div>
+        <div class="detail-row"><span class="detail-label">Effects:</span> ${fmtEffects(info.effects)}</div>
+        <div class="detail-row"><span class="detail-label">Requires:</span> ${(info.requirements || []).map(r =>
+          `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
+        ).join('') || '—'}</div>
       </td>
     </tr>`;
   }).join('');
 
-  el.innerHTML = `<table>
-    <thead><tr><th>Name</th><th>Description</th><th>Effort</th><th>Effects</th><th>Requires</th><th>Status</th><th></th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+  el.innerHTML = `
+    <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      <label class="toggle-switch">
+        <input type="checkbox" id="hide-completed-buildings" ${hideCompleted ? 'checked' : ''}>
+        <span class="toggle-slider"></span>
+      </label>
+      <label for="hide-completed-buildings" style="font-size: 13px; cursor: pointer;">Hide completed</label>
+    </div>
+    <table class="items-table">
+      <thead><tr><th>Name</th><th>Details</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  // Add toggle event listener
+  const toggleCheckbox = el.querySelector('#hide-completed-buildings');
+  if (toggleCheckbox) {
+    toggleCheckbox.addEventListener('change', (e) => {
+      hideCompleted = e.target.checked;
+      render();
+    });
+  }
 
   el.querySelectorAll('.build-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       btn.disabled = true;
-      const msgEl = btn.nextElementSibling;
-      msgEl.textContent = '';
       const iid = btn.dataset.iid;
       const currentRow = btn.closest('tr');
-      const currentStatusCell = currentRow.querySelector('td:nth-child(6)');
-      const currentActionCell = currentRow.querySelector('td:nth-child(7)');
+      const nameCell = currentRow.querySelector('.col-name');
+      const msgEl = nameCell.querySelector('.build-msg');
+      msgEl.textContent = '';
       
       try {
         const resp = await rest.buildItem(iid);
         if (resp.success) {
-          const rows = el.querySelectorAll('tbody tr');
-          
-          // Clear old building status (change from "building" to "available")
-          rows.forEach(row => {
-            const statusSpan = row.querySelector('td:nth-child(6) span');
-            const actionCell = row.querySelector('td:nth-child(7)');
-            if (statusSpan && statusSpan.textContent === 'building') {
-              statusSpan.className = 'badge badge--available';
-              statusSpan.textContent = 'available';
-              // Re-add button
-              const oldIid = row.querySelector('strong').textContent.trim();
-              actionCell.innerHTML = `<button class="btn-sm build-btn" data-iid="${oldIid}">Build</button><div class="build-msg"></div>`;
-            }
-          });
-          
-          // Update current building to "building"
-          currentStatusCell.querySelector('span').className = 'badge badge--in-progress';
-          currentStatusCell.querySelector('span').textContent = 'building';
-          currentActionCell.innerHTML = '';
-          
           msgEl.textContent = '✓ Building started!';
           msgEl.style.color = 'var(--success)';
+          // Fetch fresh summary, which triggers render via event
+          await rest.getSummary();
         } else if (resp.error) {
           msgEl.textContent = `✗ ${resp.error}`;
           msgEl.style.color = 'var(--danger)';
@@ -173,6 +180,30 @@ function fmtEffects(effects) {
   if (!effects || Object.keys(effects).length === 0) return '—';
   return Object.entries(effects)
     .map(([k, v]) => `<span class="badge" style="margin-right:6px">${formatEffect(k, v)}</span>`)
+    .join('');
+}
+
+function fmtCosts(costs, summary) {
+  if (!costs || Object.keys(costs).length === 0) return '—';
+  
+  const currentResources = summary?.resources || {};
+  
+  return Object.entries(costs)
+    .map(([resource, cost]) => {
+      const current = currentResources[resource] || 0;
+      const canAfford = current >= cost;
+      const color = canAfford ? 'var(--text)' : 'var(--danger)';
+      
+      // Format resource name with icon
+      let icon = '';
+      if (resource === 'gold') icon = '💰';
+      else if (resource === 'culture') icon = '📚';
+      else if (resource === 'life') icon = '❤️';
+      
+      const resourceName = resource.charAt(0).toUpperCase() + resource.slice(1);
+      
+      return `<span style="color:${color};margin-right:12px;white-space:nowrap;">${icon} ${Math.round(cost)} ${resourceName}</span>`;
+    })
     .join('');
 }
 

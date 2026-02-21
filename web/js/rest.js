@@ -282,6 +282,16 @@ class RestClient {
     return this._put('/api/map', { tiles });
   }
 
+  /**
+   * Buy a void tile (convert to empty land).
+   * @param {number} q - hex coordinate q
+   * @param {number} r - hex coordinate r
+   * @returns {Promise<object>}
+   */
+  async buyTile(q, r) {
+    return this._post('/api/map/buy-tile', { q, r });
+  }
+
   // ── Army ──────────────────────────────────────────────────
 
   /**
@@ -325,6 +335,25 @@ class RestClient {
     if (critterIid) body.critter_iid = critterIid;
     if (slots !== undefined) body.slots = slots;
     return this._put(`/api/army/${aid}/wave/${waveNumber}`, body);
+  }
+
+  /**
+   * Buy a new wave for an army with gold.
+   * @param {number} aid - army ID
+   * @returns {Promise<object>}
+   */
+  async buyWave(aid) {
+    return this._post('/api/army/buy-wave', { aid });
+  }
+
+  /**
+   * Buy an additional critter slot for a wave with gold.
+   * @param {number} aid - army ID
+   * @param {number} waveNumber - wave index (0-based)
+   * @returns {Promise<object>}
+   */
+  async buyCritterSlot(aid, waveNumber) {
+    return this._post('/api/army/buy-critter-slot', { aid, wave_number: waveNumber });
   }
 
   // ── Attack ────────────────────────────────────────────────
