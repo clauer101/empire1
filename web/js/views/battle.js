@@ -581,7 +581,8 @@ function _registerStructureTileTypes() {
       label: info.name || iid,
       color: colorDef.color,
       stroke: colorDef.stroke,
-      icon: '🗼',
+      icon: null,
+      spriteUrl: info.sprite || null,
       serverData: info,
     });
   }

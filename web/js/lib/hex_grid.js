@@ -6,7 +6,7 @@
  */
 
 import {
-  hexToPixel, pixelToHex, hexCorners, hexKey, parseKey, hexNeighbors,
+  hexToPixel, pixelToHex, hexCorners, hexKey, parseKey, hexNeighbors, hexAStar,
 } from './hex.js';
 
 /** Tile type definitions with visual styling. */
@@ -14,8 +14,8 @@ export const TILE_TYPES = {
   void:        { id: 'void',        label: 'Void',          color: '#161620', stroke: '#1a1a24', icon: null },
   empty:       { id: 'empty',       label: 'Empty',          color: '#1e1e2e', stroke: '#2a2a3a', icon: null },
   path:        { id: 'path',        label: 'Path',          color: '#5c4a32', stroke: '#7a6545', icon: null },
-  spawnpoint:  { id: 'spawnpoint',  label: 'Spawnpoint',    color: '#5a2a2a', stroke: '#8a3a3a', icon: '★' },
-  castle:      { id: 'castle',      label: 'Castle (Target)',   color: '#4a4a1a', stroke: '#7a7a30', icon: '🏰' },
+  spawnpoint:  { id: 'spawnpoint',  label: 'Spawnpoint',    color: '#5a2a2a', stroke: '#8a3a3a', icon: null, spriteUrl: '/assets/sprites/bases/spawnpoint.webp' },
+  castle:      { id: 'castle',      label: 'Castle (Target)',   color: '#4a4a1a', stroke: '#7a7a30', icon: null, spriteUrl: '/assets/sprites/bases/base.webp' },
 };
 
 /**
@@ -124,6 +124,9 @@ export class HexGrid {
     this._baseCanvas = null;
     this._baseCached = false;
     this._tilesVersion = 0;
+
+    // Sprite image cache: url → ImageBitmap | 'loading'
+    this._spriteCache = new Map();
     
     // Resize debouncing
     this._resizeTimeout = null;
@@ -601,7 +604,13 @@ export class HexGrid {
   setTile(q, r, typeId, meta = {}) {
     const key = hexKey(q, r);
     if (!this.tiles.has(key)) return;
+    const prevType = (this.tiles.get(key) || {}).type;
     this.tiles.set(key, { type: typeId, ...meta });
+    // Recompute path whenever a path-relevant tile changes
+    const pathRelevant = new Set(['path', 'spawnpoint', 'castle', 'empty', 'void']);
+    if (pathRelevant.has(typeId) || pathRelevant.has(prevType)) {
+      this._computePath();
+    }
     this._invalidateBase();
     this._dirty = true;
   }
@@ -654,6 +663,7 @@ export class HexGrid {
     this.addVoidNeighbors();
     this.selectedKey = null;
     this._centerGrid();
+    this._computePath();
     this._dirty = true;
   }
 
@@ -694,10 +704,43 @@ export class HexGrid {
     return hexToPixel(q, r, sz);
   }
 
+  /**
+   * Run A* from spawnpoint → castle using path/spawnpoint/castle tiles as walkable.
+   * Stores result in this.battlePath and triggers a base redraw.
+   * Called automatically from fromJSON() and setTile().
+   */
+  _computePath() {
+    // Find spawnpoint and castle tiles
+    let start = null, goal = null;
+    for (const [key, data] of this.tiles) {
+      if (data.type === 'spawnpoint') { const { q, r } = parseKey(key); start = { q, r }; }
+      if (data.type === 'castle')     { const { q, r } = parseKey(key); goal  = { q, r }; }
+    }
+    if (!start || !goal) {
+      // Clear path if endpoints are missing
+      this.battlePath = null;
+      this._invalidateBase();
+      this._dirty = true;
+      return;
+    }
+
+    const walkable = new Set(['path', 'spawnpoint', 'castle']);
+    const path = hexAStar(start, goal, (q, r) => {
+      const tile = this.tiles.get(hexKey(q, r));
+      return tile ? walkable.has(tile.type) : false;
+    });
+
+    this.battlePath = path; // null if no path found
+    if (path) this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
+    this._invalidateBase();
+    this._dirty = true;
+  }
+
   /** Store the battle path for all critters. */
   setBattlePath(path) {
     this.battlePath = path; // [{q,r}, ...]
     this.battleActive = true;
+    this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
     this._invalidateBase();
     this._dirty = true;
   }
@@ -747,15 +790,36 @@ export class HexGrid {
 
   /** Clear all battle state. */
   clearBattle() {
-    this.battlePath = null;
     this.battleCritters.clear();
     this.battleShots.clear();
     this.battleActive = false;
-    this._invalidateBase();
+    // Recompute path from map tiles so path stays visible after battle ends
+    this._computePath();
     this._dirty = true;
   }
 
   /** Mark base layer (tiles + path) as dirty - needs re-render. */
+  /**
+   * Load a sprite URL into _spriteCache; invalidates the base layer when done.
+   * @param {string} url
+   */
+  _ensureSpriteLoaded(url) {
+    if (this._spriteCache.has(url)) return;
+    this._spriteCache.set(url, 'loading');
+    fetch(url)
+      .then(r => r.blob())
+      .then(blob => createImageBitmap(blob))
+      .then(bmp => {
+        this._spriteCache.set(url, bmp);
+        this._invalidateBase();
+        this._dirty = true;
+      })
+      .catch(e => {
+        console.warn('[HexGrid] sprite load failed:', url, e.message);
+        this._spriteCache.delete(url);
+      });
+  }
+
   _invalidateBase() {
     this._baseCached = false;
   }
@@ -828,7 +892,7 @@ export class HexGrid {
 
     const sz = this.hexSize;
 
-    // Draw tiles
+    // ── Pass 1: Tile fills + strokes ─────────────────────────
     for (const [key, data] of this.tiles) {
       const { q, r } = parseKey(key);
       const tileType = getTileType(data.type);
@@ -839,29 +903,22 @@ export class HexGrid {
       const isHovered = key === this.hoveredKey;
       const isSelected = key === this.selectedKey;
 
-      // Build hex path (reused for clip + stroke)
+      // Build hex path
       ctx.beginPath();
       ctx.moveTo(corners[0].x, corners[0].y);
       for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
       ctx.closePath();
 
-      // Fill — two modes: map-image background or solid color fallback
       ctx.save();
-      ctx.clip(); // restrict all drawing below to this hex shape
+      ctx.clip();
 
       if (this._mapBitmap && data.type !== 'void') {
-        // ── Map image background ──────────────────────────────
-        // ctx is already transformed: scale(zoom), translate(-minX, -minY).
-        // We always center the image on world (0,0) by computing the
-        // symmetric half-extents from origin, independent of bounding-box
-        // symmetry (which can differ between test page and composer/battle).
         const halfW = Math.max(Math.abs(minX), Math.abs(maxX));
         const halfH = Math.max(Math.abs(minY), Math.abs(maxY));
         ctx.globalAlpha = this.mapAlpha;
         ctx.drawImage(this._mapBitmap, -halfW, -halfH, halfW * 2, halfH * 2);
         ctx.globalAlpha = 1;
 
-        // Tile-type color overlay so path/spawnpoint/castle still read visually
         if (this.tileOverlayAlpha > 0) {
           ctx.fillStyle = tileType.color;
           ctx.globalAlpha = this.tileOverlayAlpha;
@@ -869,7 +926,6 @@ export class HexGrid {
           ctx.globalAlpha = 1;
         }
 
-        // Selection / hover highlight on top of image
         if (isSelected) {
           ctx.fillStyle = 'rgba(79, 195, 247, 0.40)';
           ctx.fill();
@@ -878,7 +934,6 @@ export class HexGrid {
           ctx.fill();
         }
       } else {
-        // ── Solid color fallback (void tiles or no map loaded) ──
         if (isSelected) {
           ctx.fillStyle = '#4fc3f7';
           ctx.globalAlpha = 0.35;
@@ -897,15 +952,82 @@ export class HexGrid {
         }
       }
 
-      ctx.restore(); // remove clip
+      ctx.restore();
 
-      // Stroke
       ctx.strokeStyle = isSelected ? '#4fc3f7' : isHovered ? '#6a6a8a' : tileType.stroke;
       ctx.lineWidth = isSelected ? 2 : 1;
       ctx.stroke();
+    }
 
-      // Icon / label
-      if (tileType.icon && sz * this.zoom > 12) {
+    // ── Pass 2: Battle path (behind structures) ───────────────
+    if (this.battlePath && this.battlePath.length > 1) {
+      const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
+      const pathW = sz * 0.38; // narrower than hex width
+      const points = this.battlePath.map(p => hexToPixel(p.q, p.r, sz));
+
+      if (pathBmp && pathBmp !== 'loading') {
+        for (let i = 0; i < points.length - 1; i++) {
+          const p1 = points[i];
+          const p2 = points[i + 1];
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          ctx.save();
+          ctx.translate(p1.x, p1.y);
+          ctx.rotate(angle);
+          ctx.drawImage(pathBmp, -pathW * 0.1, -pathW / 2, dist + pathW * 0.2, pathW);
+          ctx.restore();
+        }
+        // Circle joints for smooth corners
+        for (const p of points) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pathW / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(pathBmp, p.x - pathW / 2, p.y - pathW / 2, pathW, pathW);
+          ctx.restore();
+        }
+      } else {
+        // Fallback line while texture loads
+        ctx.strokeStyle = 'rgba(255, 200, 100, 0.45)';
+        ctx.lineWidth = pathW;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
+      }
+    }
+
+    // ── Pass 3: Structure sprites + icons + coord labels ──────
+    for (const [key, data] of this.tiles) {
+      const { q, r } = parseKey(key);
+      const tileType = getTileType(data.type);
+      const { x, y } = hexToPixel(q, r, sz);
+      const corners = hexCorners(x, y, sz);
+
+      // Structure sprite overlay
+      if (tileType.spriteUrl && data.type !== 'void') {
+        const bitmap = this._spriteCache.get(tileType.spriteUrl);
+        if (bitmap && bitmap !== 'loading') {
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(corners[0].x, corners[0].y);
+          for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
+          ctx.closePath();
+          ctx.clip();
+          const spriteSize = sz * 1.5;
+          ctx.drawImage(bitmap, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
+          ctx.restore();
+        } else if (!bitmap) {
+          this._ensureSpriteLoaded(tileType.spriteUrl);
+        }
+      }
+
+      // Icon fallback text
+      if (tileType.icon && !tileType.spriteUrl && sz * this.zoom > 12) {
         ctx.fillStyle = '#ccccdd';
         ctx.font = `${Math.max(10, sz * 0.45)}px sans-serif`;
         ctx.textAlign = 'center';
@@ -913,7 +1035,7 @@ export class HexGrid {
         ctx.fillText(tileType.icon, x, y);
       }
 
-      // Coordinate labels (only when zoomed in enough)
+      // Coordinate labels
       if (sz * this.zoom > 22) {
         ctx.fillStyle = 'rgba(255,255,255,0.2)';
         ctx.font = `${Math.max(7, sz * 0.25)}px monospace`;
@@ -921,20 +1043,6 @@ export class HexGrid {
         ctx.textBaseline = 'bottom';
         ctx.fillText(`${q},${r}`, x, y + sz * 0.75);
       }
-    }
-
-    // Draw battle path
-    if (this.battlePath && this.battlePath.length > 1) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      const start = hexToPixel(this.battlePath[0].q, this.battlePath[0].r, sz);
-      ctx.moveTo(start.x, start.y);
-      for (let i = 1; i < this.battlePath.length; i++) {
-        const { x, y } = hexToPixel(this.battlePath[i].q, this.battlePath[i].r, sz);
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
     }
 
     ctx.restore();

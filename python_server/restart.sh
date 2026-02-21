@@ -16,10 +16,12 @@
 #
 # Optionen:
 #   --state_file <path>             # Benutzerdefinierte State-Datei
+#   --enable-cache                  # Browser-Cache aktivieren (Standard: No-Cache)
 #
 # Beispiele:
 #   ./restart.sh gameserver --state_file state2.yaml
 #   ./restart.sh --state_file custom_state.yaml gameserver start
+#   ./restart.sh webserver --enable-cache
 # ---------------------------------------------------------------
 set -euo pipefail
 
@@ -186,8 +188,12 @@ start_webserver() {
 
     cd "$WEB_DIR"
 
-    # Starte FastAPI Server mit Uvicorn im Hintergrund (mit no-cache für Development)
-    nohup "$VENV" "$WEB_DIR/fastapi_server.py" --port $WEB_PORT --no-cache >> "$WEB_LOG" 2>&1 &
+    # Starte FastAPI Server mit Uvicorn im Hintergrund
+    local cache_flag=""
+    if [[ "$ENABLE_CACHE" == false ]]; then
+        cache_flag="--no-cache"
+    fi
+    nohup "$VENV" "$WEB_DIR/fastapi_server.py" --port $WEB_PORT $cache_flag >> "$WEB_LOG" 2>&1 &
     local pid=$!
     echo "$pid" > "$WEB_PIDFILE"
 
@@ -195,7 +201,11 @@ start_webserver() {
     sleep 3
     if kill -0 "$pid" 2>/dev/null; then
         echo "[OK]   WebServer gestartet (PID: $pid)"
-        echo "       Mode: FastAPI (Development, No-Cache)"
+        if [[ "$ENABLE_CACHE" == true ]]; then
+            echo "       Mode: FastAPI (Production, Cache aktiv)"
+        else
+            echo "       Mode: FastAPI (Development, No-Cache)"
+        fi
         echo "       Log: $WEB_LOG"
         echo "       URL: http://$(hostname -I | awk '{print $1}'):${WEB_PORT}/"
     else
@@ -216,12 +226,17 @@ start_server() {
 # -- Argument-Parsing ------------------------------------------------
 
 STATE_FILE=""       # Benutzerdefinierte State-Datei (optional)
+ENABLE_CACHE=false  # Browser-Cache (Standard: deaktiviert)
 CMD="restart"       # Default command
 SUBCMD=""           # Optional subcommand
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --enable-cache)
+            ENABLE_CACHE=true
+            shift
+            ;;
         --state_file)
             if [[ -z "${2:-}" ]]; then
                 echo "[FEHLER] --state_file erfordert einen Pfad" >&2

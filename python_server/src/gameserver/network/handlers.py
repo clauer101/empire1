@@ -181,6 +181,7 @@ async def handle_item_request(
             "reload_time_ms": item.reload_time_ms,
             "shot_speed": item.shot_speed,
             "shot_type": item.shot_type,
+            "sprite": item.sprite,
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
         }
