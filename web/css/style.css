@@ -394,6 +394,17 @@ tbody tr:last-child td {
 .badge--available   { background: rgba(255,255,255,.06); color: var(--text-dim); }
 .badge--locked      { background: rgba(239,83,80,.1);    color: var(--danger);   }
 
+/* Unlock category badges */
+.badge--unlock-building  { background: rgba(255,193,7,.15);   color: #ffc107; }
+.badge--unlock-knowledge { background: rgba(156,39,176,.2);   color: #ce93d8; }
+.badge--unlock-structure { background: rgba(0,188,212,.15);   color: #4dd0e1; }
+.badge--unlock-critter   { background: rgba(239,83,80,.15);   color: #ef9a9a; }
+/* dim completed unlock badges */
+.badge--unlock-building.badge--completed,
+.badge--unlock-knowledge.badge--completed,
+.badge--unlock-structure.badge--completed,
+.badge--unlock-critter.badge--completed  { opacity: 0.45; }
+
 /* ── Buttons ─────────────────────────────────────────────── */
 button, .btn {
   display: inline-flex;
@@ -885,6 +896,7 @@ label {
   display: flex;
   flex-direction: column;
   padding: 6px;
+  overflow: hidden;
   transition: all .15s;
   cursor: pointer;
 }
@@ -949,6 +961,26 @@ label {
   font-weight: 700;
   cursor: pointer;
   transition: all .15s;
+}
+
+.wave-slots-btn.wave-slots-increase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 4px;
+}
+
+.wave-slots-increase__icon {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wave-slots-increase__price {
+  font-size: 8px;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .wave-slots-btn:hover {
@@ -1965,4 +1997,108 @@ label {
   .battle-summary-card p {
     font-size: 14px;
   }
+}
+
+/* ── Attacks status bar (dashboard) ─────────────────── */
+.attacks-bar-panel { padding-bottom: 6px; }
+
+.attacks-bar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+}
+@media (max-width: 540px) {
+  .attacks-bar-grid { grid-template-columns: 1fr; }
+}
+
+.attack-entry {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  font-size: 0.85em;
+  border-top: 1px solid var(--border-color, #333);
+  gap: 3px;
+}
+.atk-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.atk-progress-wrap {
+  height: 4px;
+  background: var(--border-color, #333);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.atk-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+.atk-progress-travelling { background: #4fc3f7; }
+.atk-progress-in-siege   { background: #ffa726; }
+.atk-progress-in-battle  { background: #e57373; animation: atk-pulse 0.8s ease-in-out infinite alternate; }
+@keyframes atk-pulse {
+  from { opacity: 1; }
+  to   { opacity: 0.45; }
+}
+.attack-in  .atk-icon { color: #e53935; }
+.attack-out .atk-icon { color: #4fc3f7; }
+
+.atk-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atk-cd {
+  color: var(--text-muted, #aaa);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.atk-cd-battle { color: #ffa726; font-weight: bold; }
+
+.phase-tag {
+  font-size: 0.78em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.phase-travelling { background: #1a3a4a; color: #4fc3f7; }
+.phase-siege      { background: #3a2a10; color: #ffa726; }
+.phase-battle     { background: #3a1010; color: #e57373; }
+
+.atk-badge {
+  display: inline-block;
+  font-size: 0.75em;
+  padding: 0 5px;
+  border-radius: 8px;
+  vertical-align: middle;
+  font-weight: bold;
+}
+.atk-badge-in  { background: #e53935; color: #fff; }
+.atk-badge-out { background: #1565c0; color: #fff; }
+
+.atk-empty { padding: 3px 8px; font-size: 0.85em; color: var(--text-muted, #888); }
+
+/* ── Message tab buttons ─────────────────────────────── */
+.tab-btn {
+  background: var(--panel-bg, #1e1e2e);
+  border: 1px solid var(--border-color, #444);
+  color: var(--text-muted, #aaa);
+  padding: 4px 14px;
+  border-radius: var(--radius, 4px);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.15s;
+}
+.tab-btn:hover {
+  background: var(--hover-bg, #2a2a3e);
+}
+.active-tab {
+  background: var(--accent-dim, #1a3a4a);
+  border-color: var(--accent, #4fc3f7);
+  color: var(--accent, #4fc3f7);
+  font-weight: bold;
 }

@@ -1,0 +1,8 @@
+messages:
+- id: 1
+  from_uid: 100
+  to_uid: 2
+  body_b64: aHVodQ==
+  sent_at: '2026-02-22T05:18:17'
+  read: true
+next_id: 2

@@ -117,3 +117,8 @@ class AttackRequest(BaseModel):
     target_uid: int = 0
     opponent_name: str = ""
     army_aid: int = 0
+
+
+class SendMessageRequest(BaseModel):
+    to_uid: int
+    body: str

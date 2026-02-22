@@ -86,3 +86,4 @@ class ItemDetails:
     capture: dict[str, float] = field(default_factory=dict)
     bonus: dict[str, float] = field(default_factory=dict)
     spawn_on_death: dict[str, int] = field(default_factory=dict)
+    scale: float = 1.0

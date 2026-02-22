@@ -39,6 +39,11 @@ SLOT_ADDER_PER_LEVEL = "slot_adder_per_level"
 TRAVEL_TIME_MODIFIER = "travel_time_modifier"
 SIEGE_TIME_OFFSET = "siege_time_offset"
 SIEGE_TIME_MODIFIER = "siege_time_modifier"
+# Directional travel/siege offsets (stored in milliseconds on the empire)
+OUTGOING_TRAVEL_TIME_OFFSET = "outgoing_travel_time_offset"  # attacker: added to travel time
+INCOMING_TRAVEL_TIME_OFFSET = "incoming_travel_time_offset"  # defender: subtracted from travel time
+OUTGOING_SIEGE_TIME_OFFSET = "outgoing_siege_time_offset"    # attacker: added to siege time
+INCOMING_SIEGE_TIME_OFFSET = "incoming_siege_time_offset"    # defender: subtracted from siege time
 
 # -- Battle / Defense ----------------------------------------------------
 WAVE_DELAY_OFFSET = "wave_delay_offset"

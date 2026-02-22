@@ -16,6 +16,8 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
+/** @type {Array|null} cached empire list */
+let _empiresData = null;
 
 function init(el, _api, _state) {
   container = el;
@@ -48,11 +50,15 @@ function enter() {
   if (!st.items) {
     rest.getItems().catch(err => console.error('[dashboard] getItems failed:', err));
   }
+
+  // Load empire rankings
+  refreshEmpires();
 }
 
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
+  _empiresData = null;
 }
 
 async function refresh() {
@@ -62,6 +68,18 @@ async function refresh() {
   } catch (err) {
     container.querySelector('#dashboard-content').innerHTML =
       `<div class="error-msg">Failed to load: ${err.message}</div>`;
+  }
+}
+
+async function refreshEmpires() {
+  try {
+    const resp = await rest.getEmpires();
+    _empiresData = resp.empires || [];
+    const sec = container.querySelector('#empires-section');
+    if (sec) sec.innerHTML = renderEmpiresSection(_empiresData);
+    bindEmpiresEvents();
+  } catch (err) {
+    console.error('[dashboard] getEmpires failed:', err);
   }
 }
 
@@ -91,7 +109,7 @@ function render(data) {
           <span class="label">Next citizen</span>
           <span class="value">${fmt(price)} Culture</span>
         </div>
-        <div class="panel-row"><button id="buy-citizen-btn">Grow Settlement</button></div>
+        ${(r.culture ?? 0) >= price ? `<div class="panel-row"><button id="buy-citizen-btn">Grow Settlement</button></div>` : ''}
         <div class="panel-row" id="buy-citizen-msg"></div>
       </div>
 
@@ -126,6 +144,14 @@ function render(data) {
       </div>
 
     </div>
+
+    <div id="attacks-bar" style="margin-top:12px">
+      ${renderAttacksBar(data)}
+    </div>
+
+    <div id="empires-section" style="margin-top:8px">
+      ${renderEmpiresSection(_empiresData)}
+    </div>
   `;
   const btn = el.querySelector('#buy-citizen-btn');
   if (btn) {
@@ -138,6 +164,7 @@ function render(data) {
         if (resp.success) {
           msgEl.textContent = '✓ Citizen acquired!';
           msgEl.style.color = 'var(--success)';
+          await new Promise(r => setTimeout(r, 2000));
           await refresh();
         } else if (resp.error) {
           msgEl.textContent = `✗ ${resp.error}`;
@@ -191,6 +218,19 @@ function render(data) {
     };
   });
   // citizenPrice entfernt, Preis kommt vom Backend
+
+  // Bind empire list events (attack buttons, refresh)
+  bindEmpiresEvents();
+
+  // Bind incoming attack clicks
+  el.querySelectorAll('.attack-in-clickable').forEach(entry => {
+    entry.addEventListener('click', () => {
+      const attackId = parseInt(entry.dataset.attackId, 10);
+      const attackerUid = parseInt(entry.dataset.attackerUid, 10);
+      st.pendingIncomingAttack = { attack_id: attackId, attacker_uid: attackerUid };
+      window.location.hash = '#battle';
+    });
+  });
 }
 
 function renderCitizens(citizens) {
@@ -391,6 +431,99 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   return html;
 }
 
+// ── Attacks status bar ───────────────────────────────────
+
+function _resolveEmpireName(uid) {
+  if (_empiresData) {
+    const e = _empiresData.find(x => x.uid === uid);
+    if (e) return e.name;
+  }
+  return `#${uid}`;
+}
+
+function _fmtSecs(s) {
+  if (s == null || s < 0) return '—';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+const PHASE_LABEL = {
+  travelling: { text: 'travelling', cls: 'phase-travelling' },
+  in_siege:   { text: 'siege',      cls: 'phase-siege' },
+  in_battle:  { text: 'battle',     cls: 'phase-battle' },
+};
+
+function _attackEntry(a, direction) {
+  const pInfo = PHASE_LABEL[a.phase] || { text: a.phase, cls: '' };
+  const otherUid  = direction === 'in' ? a.attacker_uid : a.defender_uid;
+  const empName   = _resolveEmpireName(otherUid);
+  const icon      = direction === 'in' ? '⚠' : '→';
+
+  let countdown = '';
+  let pct = 0;
+  if (a.phase === 'travelling') {
+    countdown = `<span class="atk-cd">${_fmtSecs(a.eta_seconds)}</span>`;
+    pct = a.total_eta_seconds > 0
+      ? Math.round((1 - a.eta_seconds / a.total_eta_seconds) * 100)
+      : 0;
+  } else if (a.phase === 'in_siege') {
+    countdown = `<span class="atk-cd">${_fmtSecs(a.siege_remaining_seconds)}</span>`;
+    pct = a.total_siege_seconds > 0
+      ? Math.round((1 - a.siege_remaining_seconds / a.total_siege_seconds) * 100)
+      : 0;
+  } else if (a.phase === 'in_battle') {
+    countdown = `<span class="atk-cd atk-cd-battle">⚔ battle!</span>`;
+    pct = 100;
+  }
+  pct = Math.max(0, Math.min(100, pct));
+
+  return `
+    <div class="attack-entry attack-${direction}${direction === 'in' ? ' attack-in-clickable' : ''}" ${direction === 'in' ? `data-attack-id="${a.attack_id}" data-attacker-uid="${a.attacker_uid}" title="Click to open battle view" style="cursor:pointer"` : ''}>
+      <div class="atk-row">
+        <span class="atk-icon">${icon}</span>
+        <span class="atk-name">${empName}</span>
+        <span class="phase-tag ${pInfo.cls}">${pInfo.text}</span>
+        ${countdown}
+      </div>
+      <div class="atk-progress-wrap">
+        <div class="atk-progress-bar atk-progress-${a.phase.replace('_','-')}" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+}
+
+function renderAttacksBar(data) {
+  const incoming = (data.attacks_incoming || []);
+  const outgoing = (data.attacks_outgoing || []);
+
+  const inRows  = incoming.length
+    ? incoming.map(a => _attackEntry(a, 'in')).join('')
+    : '<div class="atk-empty">No active attacks</div>';
+  const outRows = outgoing.length
+    ? outgoing.map(a => _attackEntry(a, 'out')).join('')
+    : '<div class="atk-empty">No active attacks</div>';
+
+  const inHeader  = `Incoming${incoming.length ? ` <span class="atk-badge atk-badge-in">${incoming.length}</span>` : ''}`;
+  const outHeader = `Outgoing${outgoing.length ? ` <span class="atk-badge atk-badge-out">${outgoing.length}</span>` : ''}`;
+
+  return `
+    <div class="panel attacks-bar-panel">
+      <div class="attacks-bar-grid">
+        <div>
+          <div class="panel-header">${inHeader}</div>
+          ${inRows}
+        </div>
+        <div>
+          <div class="panel-header">${outHeader}</div>
+          ${outRows}
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderEffects(effects) {
   if (!effects || Object.keys(effects).length === 0) {
     return '<div class="panel-row"><span class="value">—</span></div>';
@@ -398,6 +531,68 @@ function renderEffects(effects) {
   return Object.entries(effects)
     .map(([k, v]) => `<div class="panel-row"><span class="label">${formatEffect(k, v)}</span><span class="value"></span></div>`)
     .join('');
+}
+
+function renderEmpiresSection(empires) {
+  if (!empires) {
+    return `<div class="panel"><div class="panel-header">Known Empires <button id="empires-refresh-btn" style="float:right;font-size:11px;padding:2px 6px;">↻</button></div><div class="panel-row"><span class="value">Loading…</span></div></div>`;
+  }
+  if (empires.length === 0) {
+    return `<div class="panel"><div class="panel-header">Known Empires <button id="empires-refresh-btn" style="float:right;font-size:11px;padding:2px 6px;">↻</button></div><div class="panel-row"><span class="value">—</span></div></div>`;
+  }
+
+  const rows = empires.map((e, i) => `
+    <div class="panel-row" style="display:grid;grid-template-columns:24px 1fr 90px 56px 46px;gap:6px;align-items:center;">
+      <span style="color:#888;font-size:0.85em;">${i + 1}</span>
+      <span class="label" style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent, #4fc3f7)' : 'inherit'};">${e.name}${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.85em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</span>
+      <span class="value" style="color:#ffa726;">${fmtNumber(e.culture)} ✦</span>
+      ${e.is_self
+        ? '<span></span><span></span>'
+        : `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>
+           <button class="msg-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;">✉</button>`
+      }
+    </div>
+  `).join('');
+
+  return `
+    <div class="panel">
+      <div class="panel-header">Known Empires <button id="empires-refresh-btn" style="float:right;font-size:11px;padding:2px 6px;">↻</button></div>
+      <div style="display:grid;grid-template-columns:24px 1fr 90px 56px 46px;gap:6px;padding:4px 8px;font-size:0.78em;color:#888;border-bottom:1px solid var(--border-color);">
+        <span>#</span><span>Name</span><span>Culture</span><span></span><span></span>
+      </div>
+      ${rows}
+    </div>
+  `;
+}
+
+function bindEmpiresEvents() {
+  const sec = container.querySelector('#empires-section');
+  if (!sec) return;
+
+  const refreshBtn = sec.querySelector('#empires-refresh-btn');
+  if (refreshBtn) refreshBtn.onclick = () => refreshEmpires();
+
+  sec.querySelectorAll('.attack-btn').forEach(btn => {
+    btn.onclick = () => onAttackClick(btn);
+  });
+
+  sec.querySelectorAll('.msg-btn').forEach(btn => {
+    btn.onclick = () => onMessageClick(btn);
+  });
+}
+
+function onMessageClick(btn) {
+  const targetUid = parseInt(btn.dataset.uid, 10);
+  const targetName = btn.dataset.name;
+  st.pendingMessageTarget = { uid: targetUid, name: targetName };
+  window.location.hash = '#social';
+}
+
+async function onAttackClick(btn) {
+  const targetUid = parseInt(btn.dataset.uid, 10);
+  const targetName = btn.dataset.name;
+  st.pendingAttackTarget = { uid: targetUid, name: targetName };
+  window.location.hash = '#army';
 }
 
 function fmt(n) {

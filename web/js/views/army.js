@@ -32,6 +32,8 @@ function init(el, _api, _state) {
 
   container.innerHTML = `
     <h2>Army Composer</h2>
+
+    <div id="attack-target-banner" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(229,57,53,0.15);border:1px solid var(--danger,#e53935);border-radius:var(--radius);color:var(--danger,#e53935);font-weight:bold;"></div>
     
     <!-- ── Create Army Header ──────────────────────────── -->
     <div class="panel" style="margin-bottom:24px">
@@ -71,6 +73,28 @@ async function enter() {
     await rest.getMilitary();
   } catch (err) {
     console.error('Failed to load military data:', err);
+  }
+
+  // Pre-fill target inputs if navigated here from the empire list
+  if (st.pendingAttackTarget) {
+    const { uid, name } = st.pendingAttackTarget;
+    st.pendingAttackTarget = null;
+    // Fill all target-uid inputs with the empire name and scroll to first one
+    const inputs = container.querySelectorAll('.target-uid-input');
+    inputs.forEach(inp => { inp.value = name || uid; });
+    if (inputs.length > 0) {
+      inputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      inputs[0].focus();
+    }
+    // Show a banner so the user knows what the pre-filled target is
+    const banner = container.querySelector('#attack-target-banner');
+    if (banner) {
+      banner.textContent = `⚔ Ziel: ${name} (ID ${uid})`;
+      banner.style.display = '';
+    }
+  } else {
+    const banner = container.querySelector('#attack-target-banner');
+    if (banner) banner.style.display = 'none';
   }
 }
 
@@ -346,32 +370,38 @@ async function onDecreaseSlots(e) {
 async function onAttackOpponent(e) {
   const btn = e.currentTarget;
   const aid = parseInt(btn.getAttribute('data-aid'), 10);
-  
+
   const inputId = `target-uid-${aid}`;
   const input = container.querySelector(`#${inputId}`);
-  const targetUidStr = input.value.trim();
+  const query = input.value.trim();
 
-  if (!targetUidStr) {
-    showMessage(input, 'Please enter target Empire ID', 'error');
+  if (!query) {
+    showMessage(input, 'Bitte Ziel-Empire eingeben (Name oder ID)', 'error');
     return;
   }
 
-  const targetUid = parseInt(targetUidStr, 10);
-  if (isNaN(targetUid) || targetUid < 1) {
-    showMessage(input, 'Invalid Empire ID (must be ≥ 1)', 'error');
+  btn.disabled = true;
+  let targetUid, targetName;
+  try {
+    ({ uid: targetUid, name: targetName } = await rest.resolveEmpire(query));
+  } catch (err) {
+    showMessage(input, err.message, 'error');
+    btn.disabled = false;
     return;
   }
 
   try {
     const resp = await rest.attackOpponent(targetUid, aid);
     if (resp.success) {
-      showMessage(input, `Attack launched! ETA: ${Math.round(resp.eta_seconds)}s`, 'success');
+      showMessage(input, `⚔ Angriff auf ${targetName} gestartet! ETA: ${Math.round(resp.eta_seconds)}s`, 'success');
     } else {
-      showMessage(input, `Attack failed: ${resp.error}`, 'error');
+      showMessage(input, `✗ ${resp.error || 'Angriff fehlgeschlagen'}`, 'error');
     }
   } catch (err) {
     console.error('Failed to launch attack:', err);
-    showMessage(input, 'Network error', 'error');
+    showMessage(input, 'Netzwerkfehler', 'error');
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -382,6 +412,11 @@ function renderArmies(data) {
     return;
   }
 
+  // Preserve target-uid input values before re-render
+  const savedTargets = {};
+  el.querySelectorAll('.target-uid-input').forEach(inp => {
+    if (inp.value) savedTargets[inp.dataset.aid] = inp.value;
+  });
 
   // Store available critters
   _availableCritters = data.available_critters || [];
@@ -407,7 +442,7 @@ function renderArmies(data) {
         </button>
       </div>
       <div class="army-attack-row">
-        <input type="number" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Target Empire ID" data-aid="${a.aid}" min="1" />
+        <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" />
         <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack">⚔ Attack</button>
       </div>
       <div class="waves-container">
@@ -429,17 +464,14 @@ function renderArmies(data) {
                 </select>
               </div>
               <div class="wave-tile-body">
-                <button class="wave-slots-btn wave-slots-decrease" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}" title="Remove critter" ${(w.slots || 0) <= 1 ? 'disabled' : ''}>-</button>
                 <div class="wave-tile-count">${w.slots || 0}</div>
-                <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}" 
+                <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}"
                   title="${canAffordSlot ? `Add critter (${Math.round(nextSlotPrice)} gold)` : `Not enough gold (${Math.round(nextSlotPrice)} needed)`}"
-                  style="position:relative;${canAffordSlot ? '' : 'opacity:0.5;cursor:not-allowed;'}"
+                  ${canAffordSlot ? '' : 'style="opacity:0.5;cursor:not-allowed;"'}
                   data-price="${Math.round(nextSlotPrice)}"
                   data-can-afford="${canAffordSlot}">
-                  <span style="font-size:16px;">+</span>
-                  <span style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;color:${canAffordSlot ? 'var(--text)' : 'var(--danger)'};">
-                    💰${Math.round(nextSlotPrice)}
-                  </span>
+                  <span class="wave-slots-increase__icon">+</span>
+                  <span class="wave-slots-increase__price" style="color:${canAffordSlot ? 'var(--text)' : 'var(--danger)'};">💰${Math.round(nextSlotPrice)}</span>
                 </button>
               </div>
               ${w.spawn_interval_ms ? `<div class="wave-tile-footer"><span class="wave-time">${w.spawn_interval_ms}ms</span></div>` : ''}
@@ -481,13 +513,15 @@ function renderArmies(data) {
     btn.addEventListener('click', (e) => onIncreaseSlots(e));
   });
 
-  el.querySelectorAll('.wave-slots-decrease').forEach(btn => {
-    btn.addEventListener('click', (e) => onDecreaseSlots(e));
-  });
-
   // Attach attack button listeners
   el.querySelectorAll('.army-attack-btn').forEach(btn => {
     btn.addEventListener('click', (e) => onAttackOpponent(e));
+  });
+
+  // Restore target-uid values that were present before re-render
+  Object.entries(savedTargets).forEach(([aid, val]) => {
+    const inp = el.querySelector(`.target-uid-input[data-aid="${aid}"]`);
+    if (inp) inp.value = val;
   });
 }
 

@@ -14,7 +14,7 @@
 
 BASIC_TOWER:
   name: "Basic Tower"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -27,7 +27,7 @@ BASIC_TOWER:
 
 SLING_TOWER:
   name: "Sling Tower"
-  sprite: "assets/sprites/structures/sling_tower.webp"
+  sprite: "assets/sprites/structures/sling_tower/sling_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -44,7 +44,7 @@ SLING_TOWER:
 
 DOUBLE_SLING_TOWER:
   name: "Double Sling Tower"
-  sprite: "assets/sprites/structures/double_sling_tower.webp"
+  sprite: "assets/sprites/structures/double_sling_tower/double_sling_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -57,7 +57,7 @@ DOUBLE_SLING_TOWER:
 
 SPIKE_TRAP:
   name: "Spike Trap"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 1
   range: 1
   reload_time: 3000
@@ -74,7 +74,7 @@ SPIKE_TRAP:
 
 ARROW_TOWER:
   name: "Arrow Tower"
-  sprite: "assets/sprites/structures/arrow_tower.webp"
+  sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -87,7 +87,7 @@ ARROW_TOWER:
 
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
-  sprite: "assets/sprites/structures/arbeleste_tower.webp"
+  sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -100,7 +100,7 @@ ARBELESTE_TOWER:
 
 FIRE_TOWER:
   name: "Fire Tower"
-  sprite: "assets/sprites/structures/torch_tower.webp"
+  sprite: "assets/sprites/structures/torch_tower/torch_tower.webp"
   damage: 2
   range: 1
   reload_time: 2500
@@ -117,7 +117,7 @@ FIRE_TOWER:
 
 CATAPULTS:
   name: "Catapult"
-  sprite: "assets/sprites/structures/catapults.webp"
+  sprite: "assets/sprites/structures/catapults/catapults.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -130,7 +130,7 @@ CATAPULTS:
 
 BALLISTA_TOWER:
   name: "Ballista Tower"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 3
   range: 2
   reload_time: 2500
@@ -147,7 +147,7 @@ BALLISTA_TOWER:
 
 TAR_TOWER:
   name: "Tar Tower"
-  sprite: "assets/sprites/structures/tar_tower.webp"
+  sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -160,7 +160,7 @@ TAR_TOWER:
 
 COAL_TOWER:
   name: "Coal Tower"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -173,7 +173,7 @@ COAL_TOWER:
 
 HEAVY_TOWER:
   name: "Heavy Tower"
-  sprite: "assets/sprites/structures/heavy_tower.webp"
+  sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -186,7 +186,7 @@ HEAVY_TOWER:
 
 BOILING_OIL:
   name: "Boiling Oil"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 3
   range: 1
   reload_time: 2000
@@ -203,7 +203,7 @@ BOILING_OIL:
 
 MECHANICAL_BALISTA:
   name: "Mechanical Ballista"
-  sprite: "assets/sprites/structures/mechanical_ballista.webp"
+  sprite: "assets/sprites/structures/mechanical_ballista/mechanical_ballista.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -216,7 +216,7 @@ MECHANICAL_BALISTA:
 
 CANNON_TOWER:
   name: "Cannon Tower"
-  sprite: "assets/sprites/structures/cannon_tower.webp"
+  sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -229,7 +229,7 @@ CANNON_TOWER:
 
 RIFLE_TOWER:
   name: "Rifle Tower"
-  sprite: "assets/sprites/structures/rifle_tower.webp"
+  sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -242,7 +242,7 @@ RIFLE_TOWER:
 
 COLD_TOWER:
   name: "Cold Tower"
-  sprite: "assets/sprites/structures/cold_tower.webp"
+  sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -255,7 +255,7 @@ COLD_TOWER:
 
 ICE_TOWER:
   name: "Ice Tower"
-  sprite: "assets/sprites/structures/ice_tower.webp"
+  sprite: "assets/sprites/structures/ice_tower/ice_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -272,7 +272,7 @@ ICE_TOWER:
 
 FLAME_THROWER:
   name: "Flame Thrower"
-  sprite: "assets/sprites/structures/flame_thrower.webp"
+  sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -285,7 +285,7 @@ FLAME_THROWER:
 
 SHOCK_TOWER:
   name: "Shock Tower"
-  sprite: "assets/sprites/structures/shock_tower.webp"
+  sprite: "assets/sprites/structures/shock_tower/shock_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -298,7 +298,7 @@ SHOCK_TOWER:
 
 PARALYZNG_TOWER:
   name: "Paralyzing Tower"
-  sprite: "assets/sprites/structures/paralyzing_tower.webp"
+  sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -311,7 +311,7 @@ PARALYZNG_TOWER:
 
 NAPALM_THROWER:
   name: "Napalm Thrower"
-  sprite: "assets/sprites/structures/napalm_tower.webp"
+  sprite: "assets/sprites/structures/napalm_tower/napalm_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -328,7 +328,7 @@ NAPALM_THROWER:
 
 MG_TOWER:
   name: "MG Tower"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 1
   range: 1
   reload_time: 2000
@@ -341,7 +341,7 @@ MG_TOWER:
 
 RAPID_FIRE_MG_BUNKER:
   name: "Rapid Fire MG Bunker"
-  sprite: "assets/sprites/structures/rapid_mg_tower.webp"
+  sprite: "assets/sprites/structures/rapid_mg_tower/rapid_mg_tower.webp"
   damage: 1
   range: 1
   reload_time: 500
@@ -354,7 +354,7 @@ RAPID_FIRE_MG_BUNKER:
 
 RADAR_TOWER:
   name: "Radar Tower"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 8
   range: 8
   reload_time: 2500
@@ -367,7 +367,7 @@ RADAR_TOWER:
 
 ANTI_AIR_TOWER:
   name: "Anti-Air Tower"
-  sprite: "assets/sprites/structures/basic_tower.webp"
+  sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 12
   range: 5
   reload_time: 1500
@@ -380,7 +380,7 @@ ANTI_AIR_TOWER:
 
 LASER_TOWER:
   name: "Laser Tower"
-  sprite: "assets/sprites/structures/sniper_tower.webp"
+  sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
   damage: 10
   range: 6
   reload_time: 1000
@@ -397,7 +397,7 @@ LASER_TOWER:
 
 SNIPER_TOWER:
   name: "Sniper Tower"
-  sprite: "assets/sprites/structures/sniper_tower.webp"
+  sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
   damage: 30
   range: 10
   reload_time: 2000
@@ -410,7 +410,7 @@ SNIPER_TOWER:
 
 ROCKET_TOWER:
   name: "Rocket Tower"
-  sprite: "assets/sprites/structures/rocket_tower.webp"
+  sprite: "assets/sprites/structures/rocket_tower/rocket_tower.webp"
   damage: 15
   range: 6
   reload_time: 3000

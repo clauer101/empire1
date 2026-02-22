@@ -167,6 +167,7 @@ def _serialize_critter(c: Critter) -> dict[str, Any]:
         "level": c.level,
         "xp": c.xp,
         "is_boss": c.is_boss,
+        "scale": c.scale,
     }
 
 

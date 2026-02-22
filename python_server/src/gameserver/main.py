@@ -42,6 +42,7 @@ from gameserver.network.auth import AuthService
 from gameserver.network.router import Router
 from gameserver.network.server import Server
 from gameserver.persistence.database import Database
+from gameserver.persistence.message_store import MessageStore
 from gameserver.persistence.state_load import RestoredState, load_state
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus
@@ -59,6 +60,7 @@ DEFAULT_ITEMS_PATH = "config"
 DEFAULT_MAP_PATH = "config/maps/default.yaml"
 DEFAULT_AI_PATH = "config/ai_templates.yaml"
 DEFAULT_DB_PATH = "gameserver.db"
+DEFAULT_MESSAGES_PATH = "messages.yaml"
 DEFAULT_DEBUG_PORT = 9000
 
 # ---------------------------------------------------------------------------
@@ -99,6 +101,7 @@ class Services:
     router: Optional[Router] = None
     server: Optional[Server] = None
     database: Optional[Database] = None
+    message_store: Optional[MessageStore] = None
     debug_dashboard: Optional[DebugDashboard] = None
 
 
@@ -222,6 +225,9 @@ def create_services(config: Configuration, database: Database) -> Services:
     router = Router()
     server = Server(router, port=gc.ws_port)
 
+    message_store = MessageStore(DEFAULT_MESSAGES_PATH)
+    message_store.load()
+
     log.info("  all services created")
 
     svc = Services(
@@ -239,6 +245,7 @@ def create_services(config: Configuration, database: Database) -> Services:
         router=router,
         server=server,
         database=database,
+        message_store=message_store,
     )
 
     # Debug dashboard (references services, so created last)
@@ -423,11 +430,9 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
             services.empire_service.register(empire)
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
-        # Restore attacks
-        for attack in saved_state.attacks:
-            services.attack_service._attacks.append(attack)
+        # Restore attacks (also advances the ID counter)
         if saved_state.attacks:
-            log.info("Restored %d attacks from saved state", len(saved_state.attacks))
+            services.attack_service.restore_attacks(saved_state.attacks)
     else:
         _add_test_empire(services)
 

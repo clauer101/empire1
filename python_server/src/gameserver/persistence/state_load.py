@@ -213,6 +213,7 @@ def _deserialize_critter(d: dict[str, Any]) -> Critter:
         level=d.get("level", 1),
         xp=d.get("xp", 0.0),
         is_boss=d.get("is_boss", False),
+        scale=float(d.get("scale", 1.0)),
     )
 
 

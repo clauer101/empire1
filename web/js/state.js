@@ -33,6 +33,15 @@ class StateStore {
     /** @type {object|null} Last military_response */
     this.military = null;
 
+    /** @type {{ uid: number, name: string }|null} pending attack target set by dashboard */
+    this.pendingAttackTarget = null;
+
+    /** @type {{ uid: number, name: string }|null} pending message target set by dashboard */
+    this.pendingMessageTarget = null;
+
+    /** @type {{ attack_id: number, attacker_uid: number }|null} incoming attack to watch in battle view */
+    this.pendingIncomingAttack = null;
+
     /** @type {boolean} */
     this.connected = false;
   }

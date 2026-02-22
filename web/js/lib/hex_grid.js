@@ -8,6 +8,7 @@
 import {
   hexToPixel, pixelToHex, hexCorners, hexKey, parseKey, hexNeighbors, hexAStar,
 } from './hex.js';
+import { CritterSprite } from './critter_sprite.js';
 
 /** Tile type definitions with visual styling. */
 export const TILE_TYPES = {
@@ -127,6 +128,11 @@ export class HexGrid {
 
     // Sprite image cache: url → ImageBitmap | 'loading'
     this._spriteCache = new Map();
+
+    // Critter sprite cache: iid (lowercase) → CritterSprite | 'loading'
+    this._critterSprites = new Map();
+    // Manifest promise — fetched once
+    this._manifestPromise = null;
     
     // Resize debouncing
     this._resizeTimeout = null;
@@ -685,6 +691,57 @@ export class HexGrid {
     loop(performance.now());
   }
 
+  // ── Critter sprite management ──────────────────────────────
+
+  /** Fetch /api/critters manifest once, return Map<name, entry>. */
+  _loadManifest() {
+    if (this._manifestPromise) return this._manifestPromise;
+    this._manifestPromise = fetch('/api/critters')
+      .then(r => r.json())
+      .then(data => {
+        const map = new Map();
+        for (const entry of (data.critters || [])) map.set(entry.name, entry);
+        return map;
+      })
+      .catch(e => { console.warn('[HexGrid] critter manifest load failed:', e); return new Map(); });
+    return this._manifestPromise;
+  }
+
+  /**
+   * Load and cache a CritterSprite for the given IID.
+   * IID is matched case-insensitively against manifest names.
+   */
+  _ensureCritterSprite(iid) {
+    const key = iid.toLowerCase();
+    if (this._critterSprites.has(key)) return;
+    this._critterSprites.set(key, 'loading');
+    this._loadManifest().then(manifest => {
+      const entry = manifest.get(key);
+      if (!entry) { this._critterSprites.delete(key); return; }
+      const sprite = CritterSprite.fromManifest(entry);
+      sprite.load()
+        .then(() => { this._critterSprites.set(key, sprite); })
+        .catch(e => { console.warn('[HexGrid] critter sprite load failed:', key, e); this._critterSprites.delete(key); });
+    });
+  }
+
+  /**
+   * Determine movement direction at path_progress by sampling two nearby points.
+   * Returns 'forward' | 'backward' | 'left' | 'right'.
+   */
+  _getCritterDirection(path_progress) {
+    if (!this.battlePath || this.battlePath.length < 2) return 'forward';
+    const sz = this.hexSize;
+    const delta = 1 / ((this.battlePath.length - 1) * 4); // ~quarter-segment step
+    const p1 = this._getCritterPixelPos(path_progress, sz);
+    const p2 = this._getCritterPixelPos(Math.min(path_progress + delta, 1.0), sz);
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return 'forward';
+    if (Math.abs(dy) >= Math.abs(dx)) return dy > 0 ? 'forward' : 'backward';
+    return dx > 0 ? 'right' : 'left';
+  }
+
   /** Get interpolated pixel position of a critter along battlePath. */
   _getCritterPixelPos(path_progress, sz) {
     if (!this.battlePath || this.battlePath.length < 2) return { x: 0, y: 0 };
@@ -747,7 +804,7 @@ export class HexGrid {
 
   /** Update or add a critter with server data. */
   updateBattleCritter(data) {
-    // data: { cid, iid, path_progress, health, max_health, slow_remaining_ms, burn_remaining_ms }
+    // data: { cid, iid, path_progress, health, max_health, slow_remaining_ms, burn_remaining_ms, scale }
     this.battleCritters.set(data.cid, {
       iid: data.iid,
       path_progress: data.path_progress,
@@ -755,6 +812,7 @@ export class HexGrid {
       max_health: data.max_health,
       slow_remaining_ms: data.slow_remaining_ms || 0,
       burn_remaining_ms: data.burn_remaining_ms || 0,
+      scale: data.scale ?? 1.0,
     });
     this.battleActive = true;
     // No need to set dirty - continuous rendering during battle
@@ -1053,43 +1111,45 @@ export class HexGrid {
   _renderCritters() {
     const ctx = this.ctx;
     const sz = this.hexSize;
+    const ts = performance.now();
 
-    // Draw battle critters (transform already applied by _render)
     for (const [cid, critter] of this.battleCritters) {
+      const critterScale = critter.scale ?? 1.0;
+      // Base size at scale=1: sz*0.467 (2/3 of sz*0.7), then multiplied by critter scale
+      const spriteSize = sz * 0.467 * critterScale;
       const { x, y } = this._getCritterPixelPos(critter.path_progress, sz);
+      const spriteKey = critter.iid.toLowerCase();
+      const sprite = this._critterSprites.get(spriteKey);
 
-      // Color by critter type: soldier=blue, slave=red
-      const color = critter.iid.includes('soldier') ? '#4488ff' : '#ff4444';
-      const strokeColor = critter.iid.includes('soldier') ? '#2266dd' : '#dd2222';
+      if (sprite && sprite !== 'loading') {
+        // ── Sprite animation ──────────────────────────────
+        const dir = this._getCritterDirection(critter.path_progress);
+        sprite.draw(ctx, dir, ts, x, y, spriteSize);
+      } else {
+        // ── Fallback: coloured circle ────────────────────
+        if (!sprite) this._ensureCritterSprite(critter.iid);
+        const color = critter.iid.toLowerCase().includes('soldier') ? '#4488ff' : '#ff4444';
+        const strokeColor = critter.iid.toLowerCase().includes('soldier') ? '#2266dd' : '#dd2222';
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, sz * 0.3 * critterScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
 
-      // Filled circle
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, sz * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // Draw health bar if critter has health data and is damaged
-      if (critter.health != null && critter.max_health != null && critter.health < critter.max_health) {
-        const barWidth = sz * 0.6;
+      // ── Health bar ────────────────────────────────────
+      if (critter.health != null && critter.max_health != null) {
+        const barWidth = sz * 0.7;
         const barHeight = sz * 0.08;
         const barX = x - barWidth / 2;
-        const barY = y - sz * 0.5; // Above the critter
-        
-        // Health percentage
+        const barY = y - spriteSize / 2 - barHeight - 2;
         const healthPercent = Math.max(0, Math.min(1, critter.health / critter.max_health));
-        
-        // Background (lost health) - dark red
         ctx.fillStyle = '#331111';
         ctx.fillRect(barX, barY, barWidth, barHeight);
-        
-        // Foreground (remaining health) - green
         ctx.fillStyle = '#44ff44';
         ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-        
-        // Border
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         ctx.strokeRect(barX, barY, barWidth, barHeight);

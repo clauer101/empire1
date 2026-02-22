@@ -57,6 +57,23 @@ function render() {
   const researchQueue = summary.research_queue;  // Only this item is "researching"
   const knowledge = items.knowledge || {};
 
+  // Build reverse-requirement map across all item categories
+  const categoryItems = {
+    building: items.buildings || {},
+    knowledge: items.knowledge || {},
+    structure: items.structures || {},
+    critter: items.critters || {},
+  };
+  const unlocksMap = {};
+  for (const [category, catItems] of Object.entries(categoryItems)) {
+    for (const [depIid, depInfo] of Object.entries(catItems)) {
+      for (const req of (depInfo.requirements || [])) {
+        if (!unlocksMap[req]) unlocksMap[req] = [];
+        unlocksMap[req].push({ iid: depIid, name: depInfo.name || depIid, category });
+      }
+    }
+  }
+
   let entries = Object.entries(knowledge).reverse();
   
   // Filter out completed items if toggle is active
@@ -105,8 +122,8 @@ function render() {
         <div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>
         <div class="detail-row"><span class="detail-label">Effort:</span> <span style="font-variant-numeric:tabular-nums">${progressStr}</span></div>
         <div class="detail-row"><span class="detail-label">Effects:</span> ${fmtEffects(info.effects)}</div>
-        <div class="detail-row"><span class="detail-label">Requires:</span> ${(info.requirements || []).map(r =>
-          `<span class="badge ${completed.has(r) ? 'badge--completed' : 'badge--locked'}" style="margin-right:4px">${r}</span>`
+        <div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u =>
+          `<span class="badge badge--unlock-${u.category} ${completed.has(u.iid) ? 'badge--completed' : ''}" style="margin-right:4px">${u.name}</span>`
         ).join('') || '—'}</div>
       </td>
     </tr>`;

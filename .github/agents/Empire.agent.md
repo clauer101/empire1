@@ -51,3 +51,9 @@ Relevant entrypoints:
 
 ## Venv used inb this project
 The project uses a venv located at /home/pi/e3/.venv. To activate the venv, run `source /home/pi/e3/.venv/bin/activate`.
+
+## Running all tests
+To run all tests use
+´´´bash
+cd /home/pi/e3/python_server && PYTHONPATH=src /home/pi/e3/.venv/bin/python -m pytest tests/ -q --tb=short 2>&1 | tail -20
+´´´

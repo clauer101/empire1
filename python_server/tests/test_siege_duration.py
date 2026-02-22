@@ -10,6 +10,10 @@ from gameserver.util.events import EventBus
 from gameserver.util import effects
 
 
+ATTACKER_UID = 1
+DEFENDER_UID = 100
+
+
 @pytest.fixture
 def services():
     """Create minimal services for testing."""
@@ -19,20 +23,21 @@ def services():
     gc.base_siege_offset = 30.0
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
     attack_service = AttackService(event_bus, gc, empire_service)
+    # Register a plain attacker empire (no effects) used by all tests
+    attacker = Empire(uid=ATTACKER_UID, name="Attacker")
+    empire_service.register(attacker)
     return attack_service, empire_service
 
 
 def test_siege_duration_default_no_effects(services):
     """Siege duration with no defender effects should use base value."""
     attack_service, empire_service = services
-    
-    # Create defender with no effects
-    defender = Empire(uid=100, name="Defender")
+
+    defender = Empire(uid=DEFENDER_UID, name="Defender")
     empire_service.register(defender)
-    
-    # Calculate siege duration
-    duration = attack_service._calculate_siege_duration(100)
-    
+
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+
     # Should be base value (30.0 + 30.0 * 0.0 = 30.0)
     assert duration == 30.0
 
@@ -40,53 +45,48 @@ def test_siege_duration_default_no_effects(services):
 def test_siege_duration_with_offset_only(services):
     """Siege duration with only SIEGE_TIME_OFFSET effect."""
     attack_service, empire_service = services
-    
-    # Create defender with SIEGE_TIME_OFFSET effect
-    defender = Empire(uid=100, name="Defender")
+
+    defender = Empire(uid=DEFENDER_UID, name="Defender")
     defender.effects[effects.SIEGE_TIME_OFFSET] = 45.0
     empire_service.register(defender)
-    
-    # Calculate siege duration: 45.0 + 45.0 * 0.0 = 45.0
-    duration = attack_service._calculate_siege_duration(100)
+
+    # 45.0 + 45.0 * 0.0 = 45.0
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
     assert duration == 45.0
 
 
 def test_siege_duration_with_offset_and_modifier(services):
     """Siege duration with both SIEGE_TIME_OFFSET and SIEGE_TIME_MODIFIER effects."""
     attack_service, empire_service = services
-    
-    # Create defender with both effects
-    defender = Empire(uid=100, name="Defender")
+
+    defender = Empire(uid=DEFENDER_UID, name="Defender")
     defender.effects[effects.SIEGE_TIME_OFFSET] = 40.0
     defender.effects[effects.SIEGE_TIME_MODIFIER] = 0.5  # +50%
     empire_service.register(defender)
-    
-    # Calculate: 40.0 + (40.0 * 0.5) = 40.0 + 20.0 = 60.0
-    duration = attack_service._calculate_siege_duration(100)
+
+    # 40.0 + (40.0 * 0.5) = 60.0
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
     assert duration == 60.0
 
 
 def test_siege_duration_with_negative_modifier(services):
     """Siege duration with negative SIEGE_TIME_MODIFIER (faster siege)."""
     attack_service, empire_service = services
-    
-    # Create defender with negative modifier
-    defender = Empire(uid=100, name="Defender")
+
+    defender = Empire(uid=DEFENDER_UID, name="Defender")
     defender.effects[effects.SIEGE_TIME_OFFSET] = 30.0
     defender.effects[effects.SIEGE_TIME_MODIFIER] = -0.3  # -30%
     empire_service.register(defender)
-    
-    # Calculate: 30.0 + (30.0 * -0.3) = 30.0 - 9.0 = 21.0
-    duration = attack_service._calculate_siege_duration(100)
+
+    # 30.0 + (30.0 * -0.3) = 21.0
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
     assert duration == 21.0
 
 
 def test_siege_duration_nonexistent_defender(services):
-    """Siege duration for nonexistent defender should use base value."""
+    """Siege duration for nonexistent defender should fall back to base value."""
     attack_service, empire_service = services
-    
-    # Calculate for nonexistent defender
-    duration = attack_service._calculate_siege_duration(999)
-    
-    # Should fall back to base value
+
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, 999)
+
     assert duration == 30.0

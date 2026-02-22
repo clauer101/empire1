@@ -51,7 +51,8 @@ EARTH_WALL:
   effort: 150
   costs: {gold: 30}
   requirements: [MAIN_HOUSE]
-  effects: {}
+  effects:
+    incoming_siege_time_offset: 3600
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 200 – 1.500)

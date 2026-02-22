@@ -186,11 +186,20 @@ async def handle_item_request(
             "effects": dict(item.effects),
         }
 
+    # Critters — available based on research
+    critters = {}
+    for item in up.available_items(ItemType.CRITTER, completed):
+        critters[item.iid] = {
+            "name": item.name,
+            "requirements": list(item.requirements),
+        }
+
     return {
         "type": "item_response",
         "buildings": buildings,
         "knowledge": knowledge,
         "structures": structures,
+        "critters": critters,
     }
 
 

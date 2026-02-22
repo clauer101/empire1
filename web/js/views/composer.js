@@ -46,6 +46,7 @@ function init(el, _api, _state) {
         <aside class="hex-editor__palette" id="tile-palette"></aside>
         <div class="hex-editor__canvas-wrap" id="canvas-wrap">
           <button id="map-save" class="btn-sm" style="position:absolute;top:12px;right:12px;z-index:10;" title="Karte speichern">Save</button>
+          <span id="map-unsaved" style="display:none;position:absolute;top:14px;right:72px;z-index:10;font-size:11px;color:#e8a838;font-weight:600;letter-spacing:0.03em;">● unsaved</span>
           <canvas id="hex-canvas"></canvas>
         </div>
         <aside class="hex-editor__props" id="tile-props">
@@ -153,7 +154,7 @@ function _buildPalette() {
       color: colorDef.color,
       stroke: colorDef.stroke,
       icon: null,
-      spriteUrl: info.sprite || null,
+      spriteUrl: info.sprite ? '/' + info.sprite : null,
       serverData: info,
     });
   }
@@ -218,6 +219,21 @@ function _createCategoryEl(catName, typeIds) {
 }
 
 let _activeBrush = null;
+let _isDirty = false;
+
+function _markDirty() {
+  if (!_isDirty) {
+    _isDirty = true;
+    const ind = container.querySelector('#map-unsaved');
+    if (ind) ind.style.display = 'inline';
+  }
+}
+
+function _clearDirty() {
+  _isDirty = false;
+  const ind = container.querySelector('#map-unsaved');
+  if (ind) ind.style.display = 'none';
+}
 
 function _setActiveBrush(typeId) {
   if (_activeBrush === typeId) {
@@ -287,9 +303,9 @@ function _initializeMap() {
 function _onTileClick(q, r, tile) {
   if (_activeBrush && _activeBrush !== 'void') {
     grid.setTile(q, r, _activeBrush);
-    grid.addVoidNeighbors();
     _updateMapInfo();
-    _autoSave();
+    _markDirty();
+    return; // painting — don't open the properties overlay
   }
   _showProperties(q, r, grid.getTile(q, r));
 }
@@ -300,9 +316,8 @@ function _onTileHover(_q, _r) {
 
 function _onTileDrop(q, r, tileTypeId) {
   if (tileTypeId !== 'void') {
-    grid.addVoidNeighbors();
     _updateMapInfo();
-    _autoSave();
+    _markDirty();
   }
 }
 
@@ -522,6 +537,7 @@ function _bindToolbar() {
       }
       
       _flashButton($('map-save'), 'Saved!');
+      _clearDirty();
     } catch (err) {
       _showMapError(err.message);
       _flashButton($('map-save'), 'Error!');

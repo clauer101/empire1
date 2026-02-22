@@ -59,12 +59,20 @@ debug.setToastCallback((text, type) => showToast(text, type));
 
 // ── Incoming attack alarm on nav-brand ──────────────────────
 const navBrand = document.getElementById('nav-brand');
+const navMsgBadge = document.getElementById('nav-msg-badge');
 eventBus.on('state:summary', (data) => {
   const hasIncoming = data && Array.isArray(data.attacks_incoming) && data.attacks_incoming.length > 0;
   navBrand.classList.toggle('alarm', hasIncoming);
   navBrand.title = hasIncoming
     ? `⚠ ${data.attacks_incoming.length} incoming attack(s)!`
     : 'E3';
+
+  // Unread messages badge
+  const unread = data?.unread_messages || 0;
+  if (navMsgBadge) {
+    navMsgBadge.textContent = unread > 9 ? '9+' : String(unread);
+    navMsgBadge.style.display = unread > 0 ? '' : 'none';
+  }
 });
 
 // ── Summary polling (every 5s while authenticated) ─────────

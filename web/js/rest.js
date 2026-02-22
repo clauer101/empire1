@@ -237,6 +237,92 @@ class RestClient {
     return resp;
   }
 
+  /**
+   * Get all known empires sorted by culture points.
+   * @returns {Promise<{empires: Array<{uid:number, name:string, culture:number, is_self:boolean}>}>}
+   */
+  async getEmpires() {
+    return this._get('/api/empires');
+  }
+
+  /**
+   * Resolve an empire name or UID string to a numeric UID.
+   * Accepts:
+   *   - a numeric string  → parsed directly as UID
+   *   - a text string     → matched case-insensitively against empire name
+   *                         or username from the empire list
+   * @param {string} query
+   * @returns {Promise<{uid: number, name: string}>}
+   * @throws {Error} if not found
+   */
+  async resolveEmpire(query) {
+    const q = query.trim();
+    if (!q) throw new Error('Kein Empfänger angegeben.');
+
+    // Pure number → treat as UID directly
+    if (/^\d+$/.test(q)) {
+      const uid = parseInt(q, 10);
+      // Try to get the display name from the empire list
+      try {
+        const resp = await this.getEmpires();
+        const found = (resp.empires || []).find(e => e.uid === uid);
+        return { uid, name: found ? found.name : `UID ${uid}` };
+      } catch (_) {
+        return { uid, name: `UID ${uid}` };
+      }
+    }
+
+    // Text → search by empire name or username
+    const resp = await this.getEmpires();
+    const empires = resp.empires || [];
+    const ql = q.toLowerCase();
+    const match =
+      empires.find(e => e.name.toLowerCase() === ql) ||
+      empires.find(e => (e.username || '').toLowerCase() === ql) ||
+      empires.find(e => e.name.toLowerCase().startsWith(ql)) ||
+      empires.find(e => (e.username || '').toLowerCase().startsWith(ql));
+    if (!match) throw new Error(`Kein Empire gefunden: "${q}"`);
+    return { uid: match.uid, name: match.name };
+  }
+
+  // ── Messages ──────────────────────────────────────────────
+
+  /**
+   * Fetch inbox + sent messages for the current player.
+   * @returns {Promise<{inbox: Array, sent: Array, unread: number}>}
+   */
+  async getMessages() {
+    return this._get('/api/messages');
+  }
+
+  /**
+   * Send a message to another player.
+   * @param {number} toUid
+   * @param {string} body
+   * @returns {Promise<{success: boolean, message?: object, error?: string}>}
+   */
+  async sendMessage(toUid, body) {
+    return this._post('/api/messages', { to_uid: toUid, body });
+  }
+
+  /**
+   * Mark a message as read.
+   * @param {number} msgId
+   * @returns {Promise<{success: boolean}>}
+   */
+  async markMessageRead(msgId) {
+    return this._post(`/api/messages/${msgId}/read`, {});
+  }
+
+  /**
+   * Immediately end siege phase for an incoming attack (defender only).
+   * @param {number} attackId
+   * @returns {Promise<{success: boolean, attack_id?: number, phase?: string, error?: string}>}
+   */
+  async skipSiege(attackId) {
+    return this._post(`/api/attack/${attackId}/skip-siege`, {});
+  }
+
   // ── Building / Research ───────────────────────────────────
 
   /**
