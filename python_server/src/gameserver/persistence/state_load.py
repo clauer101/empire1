@@ -222,7 +222,7 @@ def _deserialize_critter_wave(d: dict[str, Any]) -> CritterWave:
         wave_id=d["wave_id"],
         iid=d.get("iid", "SLAVE"),
         slots=d.get("slots", 0),
-        num_critters_spawned=d.get("num_critters_spawned", 0),
+        num_critters_spawned=d.get("num_critters_spawned", d.get("critters_spawned", 0)),
         next_critter_ms=d.get("next_critter_ms", 0.0),
     )
 

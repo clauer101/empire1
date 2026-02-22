@@ -24,6 +24,32 @@ function init(el, _api, _state) {
   api = _api;
   st = _state;
 
+  // Inject responsive grid style once
+  if (!document.getElementById('dashboard-grid-style')) {
+    const s = document.createElement('style');
+    s.id = 'dashboard-grid-style';
+    s.textContent = `
+      .dashboard-4col{display:grid;gap:8px;grid-template-columns:repeat(4,1fr)}
+      .dashboard-2col{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
+      @media(max-width:700px){.dashboard-4col,.dashboard-2col{grid-template-columns:1fr}}
+      .csl-wrap{padding:4px 0 8px}
+      .csl-track{position:relative;height:18px;border-radius:9px;overflow:visible;margin:8px 4px}
+      .csl-seg{position:absolute;top:0;height:100%;transition:left .1s,width .1s}
+      .csl-seg:first-child{border-radius:9px 0 0 9px}
+      .csl-seg:last-child{border-radius:0 9px 9px 0}
+      .csl-merchant{background:#4fc3f7}
+      .csl-scientist{background:#ffa726}
+      .csl-artist{background:#81c784}
+      .csl-handle{position:absolute;top:50%;width:18px;height:18px;margin-top:-9px;margin-left:-9px;border-radius:50%;background:#fff;border:2px solid #555;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.5);z-index:2;touch-action:none}
+      .csl-handle:active{cursor:grabbing;border-color:var(--accent,#4fc3f7)}
+      .csl-labels{display:flex;justify-content:space-between;font-size:0.82em;margin-top:4px;padding:0 4px}
+      .csl-lbl{display:flex;flex-direction:column;align-items:center;gap:1px}
+      .csl-lbl span{color:#bbb;font-size:0.9em}
+      .csl-lbl strong{font-size:1.1em}
+    `;
+    document.head.appendChild(s);
+  }
+
   container.innerHTML = `
     <h2>Empire Dashboard</h2>
     <div id="dashboard-content">
@@ -93,17 +119,15 @@ function render(data) {
 
   const price = data.citizen_price;
   el.innerHTML = `
-    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:8px;">
+    <div class="dashboard-2col">
 
       <div class="panel">
         <div class="panel-header">Resources</div>
-        <div class="panel-row"><span class="label">Gold</span><span class="value">${fmt(r.gold)}</span></div>
-        <div class="panel-row"><span class="label">Culture</span><span class="value">${fmt(r.culture)}</span></div>
-        <div class="panel-row"><span class="label">Life</span><span class="value">${fmt(r.life ?? data.life ?? 0)} / ${fmt(data.max_life ?? 0)}</span></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">Citizens</div>
+        <div class="panel-row"><span class="label">🪙 Gold</span><span class="value">${fmt(r.gold)}</span></div>
+        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)}</span></div>
+        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${fmt(r.life ?? data.life ?? 0)} / ${fmt(data.max_life ?? 0)}</span></div>
+        <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
+        <div class="panel-header" style="margin-bottom:4px">Citizens</div>
         ${renderCitizens(data.citizens)}
         <div class="panel-row" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 4px;">
           <span class="label">Next citizen</span>
@@ -112,6 +136,68 @@ function render(data) {
         ${(r.culture ?? 0) >= price ? `<div class="panel-row"><button id="buy-citizen-btn">Grow Settlement</button></div>` : ''}
         <div class="panel-row" id="buy-citizen-msg"></div>
       </div>
+
+      <div class="panel">
+        <div class="panel-header">Incoming</div>
+        ${(() => {
+          const inc = data.attacks_incoming || [];
+          if (!inc.length) return `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
+          return inc.map(a => _attackEntry(a, 'in')).join('');
+        })()}
+
+        <div class="panel-header" style="margin-top:8px">Outgoing</div>
+        ${(() => {
+          const out = data.attacks_outgoing || [];
+          if (!out.length) return `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
+          return out.map(a => _attackEntry(a, 'out')).join('');
+        })()}
+
+        <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
+        <div class="panel-header">Research</div>
+        ${(() => {
+          const iid = data.research_queue;
+          if (!iid) return `<div style="color:#666;font-size:0.85em;padding:2px 0">idle</div>`;
+          const remaining = data.knowledge?.[iid] ?? 0;
+          const effort = st?.items?.knowledge?.[iid]?.effort || 0;
+          const itemName = st?.items?.knowledge?.[iid]?.name || iid;
+          // Research speed: 1 + research_speed_modifier + scientists * citizen_effect
+          const scientistBonus = (data.citizens?.scientist || 0) * (data.citizen_effect || 0);
+          const researchMultiplier = 1 + (data.effects?.research_speed_modifier || 0) + scientistBonus;
+          const wallSecs = researchMultiplier > 0 ? remaining / researchMultiplier : remaining;
+          const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
+          return `
+            <div class="panel-row"><span class="label">${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
+            <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
+              <div style="background:#ffa726;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
+            </div>`;
+        })()}
+
+        <div class="panel-header" style="margin-top:6px">Building</div>
+        ${(() => {
+          const iid = data.build_queue;
+          if (!iid) return `<div style="color:#666;font-size:0.85em;padding:2px 0">idle</div>`;
+          const remaining = data.buildings?.[iid] ?? 0;
+          const effort = st?.items?.buildings?.[iid]?.effort || 0;
+          const itemName = st?.items?.buildings?.[iid]?.name || iid;
+          // Build speed: 1 + build_speed_modifier (no citizen effect)
+          const buildMultiplier = 1 + (data.effects?.build_speed_modifier || 0);
+          const wallSecs = buildMultiplier > 0 ? remaining / buildMultiplier : remaining;
+          const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
+          return `
+            <div class="panel-row"><span class="label">${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
+            <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
+              <div style="background:#4fc3f7;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
+            </div>`;
+        })()}
+      </div>
+
+    </div>
+
+    <div id="empires-section" style="margin-top:8px">
+      ${renderEmpiresSection(_empiresData)}
+    </div>
+
+    <div class="dashboard-4col" style="margin-top:8px;">
 
       <div class="panel">
         <div class="panel-header">Production Modifiers</div>
@@ -133,24 +219,6 @@ function render(data) {
         ${renderResourceIncome('life', data.effects, data.citizens, data.citizen_effect, 0, data.completed_buildings, st.items)}
       </div>
 
-      <div class="panel">
-        <div class="panel-header">Military</div>
-        <div class="panel-row"><span class="label">Armies</span><span class="value">${data.army_count ?? 0}</span></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">Artefacts</div>
-        <div class="panel-row"><span class="value">${(data.artefacts || []).join(', ') || '—'}</span></div>
-      </div>
-
-    </div>
-
-    <div id="attacks-bar" style="margin-top:12px">
-      ${renderAttacksBar(data)}
-    </div>
-
-    <div id="empires-section" style="margin-top:8px">
-      ${renderEmpiresSection(_empiresData)}
     </div>
   `;
   const btn = el.querySelector('#buy-citizen-btn');
@@ -178,45 +246,9 @@ function render(data) {
     };
   }
   
-  // Handle citizen +/- buttons
-  const citizenBtns = el.querySelectorAll('.citizen-btn');
-  citizenBtns.forEach(btn => {
-    btn.onclick = async () => {
-      const role = btn.dataset.role;
-      const isMinus = btn.classList.contains('citizen-minus');
-      
-      // Ensure all roles are initialized
-      const currentDistribution = {
-        merchant: data.citizens?.merchant || 0,
-        scientist: data.citizens?.scientist || 0,
-        artist: data.citizens?.artist || 0,
-      };
-      
-      if (isMinus) {
-        if (currentDistribution[role] > 0) {
-          currentDistribution[role]--;
-        } else {
-          return; // Can't go below 0
-        }
-      } else {
-        currentDistribution[role]++;
-      }
-      
-      try {
-        btn.disabled = true;
-        const resp = await rest.changeCitizen(currentDistribution);
-        if (resp.success) {
-          await refresh();
-        } else if (resp.error) {
-          console.error('[dashboard] change_citizen failed:', resp.error);
-        }
-      } catch (err) {
-        console.error('[dashboard] change_citizen error:', err);
-      } finally {
-        btn.disabled = false;
-      }
-    };
-  });
+  // Replace old citizen-btn handler with slider init
+  _initCitizenSlider(el, data);
+
   // citizenPrice entfernt, Preis kommt vom Backend
 
   // Bind empire list events (attack buttons, refresh)
@@ -234,37 +266,150 @@ function render(data) {
 }
 
 function renderCitizens(citizens) {
-  if (!citizens || Object.keys(citizens).length === 0) {
-    return '<div class="panel-row"><span class="value">—</span></div>';
-  }
-  return Object.entries(citizens)
-    .map(([k, v]) => {
-      if (k === 'free') {
-        // Free citizens: read-only, no buttons
-        return `
-          <div class="panel-row" style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="label">${k}</span>
-            <span class="value" style="color: #999;">${v}</span>
-          </div>
-        `;
-      }
-      // Regular roles: show +/- buttons
-      return `
-        <div class="panel-row" style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="label">${k}</span>
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <button class="citizen-btn citizen-minus" data-role="${k}" style="padding: 2px 6px; font-size: 12px;">−</button>
-            <span class="value" style="min-width: 24px; text-align: center;">${v}</span>
-            <button class="citizen-btn citizen-plus" data-role="${k}" style="padding: 2px 6px; font-size: 12px;">+</button>
-          </div>
-        </div>
-      `;
-    })
-    .join('');
+  if (!citizens) return '<div class="panel-row"><span class="value">—</span></div>';
+  const m = citizens.merchant || 0;
+  const s = citizens.scientist || 0;
+  const a = citizens.artist || 0;
+  const total = m + s + a;
+  if (total === 0) return '<div class="panel-row"><span class="value" style="color:#666;">No citizens yet</span></div>';
+  const p1 = total > 0 ? (m / total * 100).toFixed(2) : 33.33;
+  const p2 = total > 0 ? ((m + s) / total * 100).toFixed(2) : 66.66;
+  return `
+    <div class="csl-wrap" data-merchant="${m}" data-scientist="${s}" data-artist="${a}" data-total="${total}">
+      <div class="csl-track">
+        <div class="csl-seg csl-merchant" style="left:0;width:${p1}%"></div>
+        <div class="csl-seg csl-scientist" style="left:${p1}%;width:${(p2-p1).toFixed(2)}%"></div>
+        <div class="csl-seg csl-artist" style="left:${p2}%;width:${(100-p2).toFixed(2)}%"></div>
+        <div class="csl-handle" id="csl-h1" style="left:${p1}%"></div>
+        <div class="csl-handle" id="csl-h2" style="left:${p2}%"></div>
+      </div>
+      <div class="csl-labels">
+        <div class="csl-lbl"><span>🫂 Merchant</span><strong id="csl-lbl-m">${m}</strong></div>
+        <div class="csl-lbl"><span>🔭 Scientist</span><strong id="csl-lbl-s">${s}</strong></div>
+        <div class="csl-lbl"><span>🎨 Artist</span><strong id="csl-lbl-a">${a}</strong></div>
+      </div>
+    </div>
+  `;
 }
 
-function renderProduction(label, items) {
-  if (!items || typeof items !== 'object' || Object.keys(items).length === 0) {
+function _initCitizenSlider(el, data) {
+  const wrap = el.querySelector('.csl-wrap');
+  if (!wrap) return;
+
+  const total = parseInt(wrap.dataset.total, 10);
+  if (total < 1) return;
+
+  const track = wrap.querySelector('.csl-track');
+  const h1 = wrap.querySelector('#csl-h1');
+  const h2 = wrap.querySelector('#csl-h2');
+  const segM = wrap.querySelector('.csl-merchant');
+  const segS = wrap.querySelector('.csl-scientist');
+  const segA = wrap.querySelector('.csl-artist');
+  const lblM = wrap.querySelector('#csl-lbl-m');
+  const lblS = wrap.querySelector('#csl-lbl-s');
+  const lblA = wrap.querySelector('#csl-lbl-a');
+
+  // Current state (integer steps out of total)
+  let steps1 = parseInt(wrap.dataset.merchant, 10); // left handle = merchant count
+  let steps2 = steps1 + parseInt(wrap.dataset.scientist, 10); // right handle = merchant+scientist
+
+  function pct(steps) { return (steps / total * 100).toFixed(2) + '%'; }
+
+  function updateDOM() {
+    const p1 = steps1 / total * 100;
+    const p2 = steps2 / total * 100;
+    h1.style.left = p1.toFixed(2) + '%';
+    h2.style.left = p2.toFixed(2) + '%';
+    segM.style.width = p1.toFixed(2) + '%';
+    segS.style.left  = p1.toFixed(2) + '%';
+    segS.style.width = (p2 - p1).toFixed(2) + '%';
+    segA.style.left  = p2.toFixed(2) + '%';
+    segA.style.width = (100 - p2).toFixed(2) + '%';
+    lblM.textContent = steps1;
+    lblS.textContent = steps2 - steps1;
+    lblA.textContent = total - steps2;
+    // When handles overlap, raise the contextually correct one:
+    // at far left (all artists) h2 should be on top so user can drag right
+    // at far right (all merchants) h1 should be on top so user can drag left
+    // in the middle with overlap, h1 on top (left drag is more natural)
+    if (steps1 === steps2) {
+      h1.style.zIndex = steps1 >= total ? '3' : '3';
+      h2.style.zIndex = steps2 <= 0    ? '4' : '2';
+    } else {
+      h1.style.zIndex = '2';
+      h2.style.zIndex = '2';
+    }
+  }
+
+  let _sendTimer = null;
+  function scheduleApiCall() {
+    clearTimeout(_sendTimer);
+    _sendTimer = setTimeout(async () => {
+      const dist = { merchant: steps1, scientist: steps2 - steps1, artist: total - steps2 };
+      try {
+        const resp = await rest.changeCitizen(dist);
+        if (resp.success) refresh();
+        else if (resp.error) console.error('[citizen-slider]', resp.error);
+      } catch (e) { console.error('[citizen-slider]', e); }
+    }, 300);
+  }
+
+  function dragHandle(handle, isH1, e) {
+    e.preventDefault();
+    const rect = track.getBoundingClientRect();
+    const startX = e.touches ? e.touches[0].clientX : e.clientX;
+
+    // When both handles are at the same position we can't know ahead of time
+    // which one to move. Defer the decision to the first pixel of movement:
+    //   drag left  → move h1 (shrink merchants / grow artists)
+    //   drag right → move h2 (shrink artists  / grow merchants)
+    const overlapping = steps1 === steps2;
+    let resolved = overlapping ? null : isH1; // null = not yet decided
+
+    function onMove(ev) {
+      const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+
+      // Resolve direction on first move while handles overlap
+      if (resolved === null) {
+        const dx = clientX - startX;
+        if (dx === 0) return; // no movement yet
+        resolved = dx < 0; // true = isH1, false = isH2
+      }
+
+      const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const raw = Math.round(frac * total);
+      if (resolved) {
+        steps1 = Math.max(0, Math.min(steps2, raw));
+      } else {
+        steps2 = Math.max(steps1, Math.min(total, raw));
+      }
+      updateDOM();
+      scheduleApiCall();
+    }
+
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+
+  h1.addEventListener('mousedown',  e => dragHandle(h1, true,  e));
+  h1.addEventListener('touchstart', e => dragHandle(h1, true,  e), { passive: false });
+  h2.addEventListener('mousedown',  e => dragHandle(h2, false, e));
+  h2.addEventListener('touchstart', e => dragHandle(h2, false, e), { passive: false });
+
+  // Set initial z-indices in case handles already overlap on first render
+  updateDOM();
+}
+
+function renderProduction(label, items) {  if (!items || typeof items !== 'object' || Object.keys(items).length === 0) {
     return `<div class="panel-row"><span class="label">${label}</span><span class="value">idle</span></div>`;
   }
   // Show only the first (current) item
@@ -446,7 +591,7 @@ function _fmtSecs(s) {
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = Math.floor(s % 60);
-  if (h > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
   if (m > 0) return `${m}m ${sec}s`;
   return `${sec}s`;
 }

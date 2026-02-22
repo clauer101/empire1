@@ -46,14 +46,15 @@ starting_resources:
 
 # Maximum life points for a new empire
 starting_max_life: 10.0
+restore_life_after_loss_offset: 1.0
 
 # -- Travel & Siege ------------------------------------------
 
-# Base attack travel time in seconds (~90 minutes)
-base_travel_offset: 3600.0
+# Base attack travel time in seconds (~15 minutes)
+base_travel_offset: 900.0
 
 # Base siege duration in seconds (before defender modifiers)
-base_siege_offset: 30.0
+base_siege_offset: 3600.0
 
 # -- Army & Waves --------------------------------------------
 
@@ -68,8 +69,16 @@ default_spawn_interval_ms: 500.0
 
 # -- Battle strategy -----------------------------------------
 
-# Floor for knowledge theft percentage on battle loss
+# Range for knowledge theft percentage on battle loss
+max_lose_knowledge: 0.15
 min_lose_knowledge: 0.03
+
+# Range of culture loss on battle defeat (as a fraction of defender's culture)
+min_lose_culture: 0.01
+max_lose_culture: 0.05
+
+# Chance of stealing an artefact on battle loss (if defender has any)
+artefact_steal_chance: 0.33
 
 # -- Spy costs -----------------------------------------------
 

@@ -74,12 +74,15 @@ class ItemDetails:
     reload_time_ms: float = 0.0
     shot_speed: float = 0.0
     shot_type: str = "normal"
+    shot_sprite: str = ""  # Sprite URL for the projectile visual
     sprite: str | None = None
 
     # Critter
     speed: float = 0.0
     health: float = 0.0
     armour: float = 0.0
+    value: float = 0.0  # Gold awarded to defender on kill
+    critter_damage: float = 1.0  # Life damage dealt to defender on reaching castle
     slots: int = 1
     time_between_ms: float = 500.0
     is_boss: bool = False

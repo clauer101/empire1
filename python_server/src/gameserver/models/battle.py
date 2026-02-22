@@ -78,6 +78,10 @@ class BattleState:
     attacker_gains: dict[int, dict[str, float]] = field(default_factory=dict)
     defender_losses: dict[str, float] = field(default_factory=dict)
 
+    # Critters removed since last broadcast: [{cid, reason, path_progress}]
+    # reason: "died" | "reached"
+    removed_critters: list[dict] = field(default_factory=list)
+
     # Configuration (set at battle creation time)
     broadcast_interval_ms: float = 250.0  # Configurable from game.yaml
 

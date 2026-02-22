@@ -53,6 +53,7 @@ EARTH_WALL:
   requirements: [MAIN_HOUSE]
   effects:
     incoming_siege_time_offset: 3600
+    restore_life_after_loss: 5
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 200 – 1.500)

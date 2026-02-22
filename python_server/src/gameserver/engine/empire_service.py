@@ -280,12 +280,15 @@ class EmpireService:
         pass
 
     def upgrade_citizen(self, empire: Empire) -> Optional[str]:
-        """Add one new free citizen. Returns error message or None."""
+        """Add one new citizen as an artist. Returns error message or None."""
+        # Migrate any legacy free citizens to artist
+        if empire.citizens.get("free", 0) > 0:
+            empire.citizens["artist"] = empire.citizens.get("artist", 0) + empire.citizens.pop("free")
         n = sum(empire.citizens.values())
         price = self._citizen_price(n + 1)
         if empire.resources.get("culture", 0.0) < price:
             return f"Not enough culture (need {price:.1f}, have {empire.resources.get('culture', 0.0):.1f})"
-        empire.citizens["free"] = empire.citizens.get("free", 0) + 1
+        empire.citizens["artist"] = empire.citizens.get("artist", 0) + 1
         return None
 
     def _citizen_price(self, i: int) -> float:
@@ -335,9 +338,13 @@ class EmpireService:
         """
         # Valid citizen roles
         valid_roles = {"merchant", "scientist", "artist"}
-        
-        # Get current total
-        current_total = sum(empire.citizens.values())
+
+        # Migrate any legacy free citizens to artist first
+        if empire.citizens.get("free", 0) > 0:
+            empire.citizens["artist"] = empire.citizens.get("artist", 0) + empire.citizens.pop("free")
+
+        # Get current total (exclude free if still present from old state)
+        current_total = sum(v for k, v in empire.citizens.items() if k != "free")
         
         # Validate all keys are valid roles
         for role in distribution.keys():
@@ -349,12 +356,11 @@ class EmpireService:
             if not isinstance(count, int) or count < 0:
                 return f"Citizen count must be non-negative integer: {role}={count}"
         
-        # Validate total doesn't exceed current
+        # Validate total matches exactly
         new_total = sum(distribution.values())
-        if new_total > current_total:
-            return f"Too many citizens assigned (max {current_total}, got {new_total})"
+        if new_total != current_total:
+            return f"Total must equal current citizens (expected {current_total}, got {new_total})"
         
-        # Apply new distribution + calculate "free"
-        empire.citizens = distribution
-        empire.citizens["free"] = current_total - new_total
+        # Apply new distribution (no free citizens)
+        empire.citizens = {k: v for k, v in distribution.items()}
         return None

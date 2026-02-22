@@ -861,6 +861,25 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
         time_since_start_s = 0
     status = attack.phase.value
     
+    # Build wave_info for first unstarted wave
+    svc_items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    wave_info = None
+    if attacking_army and attacking_army.waves:
+        total_waves = len(attacking_army.waves)
+        for i, w in enumerate(attacking_army.waves):
+            if w.num_critters_spawned == 0:
+                item = svc_items.get(w.iid)
+                critter_name = item.name if item else w.iid
+                wave_info = {
+                    "wave_index": i + 1,
+                    "total_waves": total_waves,
+                    "iid": w.iid,
+                    "critter_name": critter_name,
+                    "slots": w.slots,
+                    "next_critter_ms": max(0.0, w.next_critter_ms),
+                }
+                break
+
     # Send battle status update
     status_msg = {
         "type": "battle_status",
@@ -871,6 +890,7 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
         "attacker_uid": attack.attacker_uid,
         "attacker_name": attacker_empire.name,
         "time_since_start_s": time_since_start_s,
+        "wave_info": wave_info,
     }
     
     if svc.server:
@@ -946,6 +966,7 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
                     reload_time_ms=getattr(item, "reload_time", 2000.0),
                     shot_speed=getattr(item, "shot_speed", 1.0),
                     shot_type=getattr(item, "shot_type", "normal"),
+                    shot_sprite=getattr(item, "shot_sprite", ""),
                     effects=getattr(item, "effects", {}),
                 )
                 structures_dict[structure_sid] = structure
@@ -1737,17 +1758,27 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
     """Wrapper for the async battle loop with cleanup and resource transfer.
     
     After battle completes:
-    1. Applies resource transfers to empires
-    2. Marks the attack as FINISHED
-    3. Cleans up the battle from active battles
+    1. Computes loot (if defender lost)
+    2. Applies resource transfers to empires
+    3. Sends battle_summary with loot info
+    4. Marks the attack as FINISHED
+    5. Cleans up the battle from active battles
     """
     svc = _svc()
     
     try:
         await battle_svc.run_battle(battle, send_fn, broadcast_interval_ms)
         
-        # Battle finished - apply resource transfers
+        # Battle finished - compute loot and apply resource transfers
         log.info("[battle] bid=%d complete: attacker_wins=%s", bid, not battle.defender_won)
+        
+        # Compute and apply loot if defender lost
+        loot: dict = {}
+        if battle.defender_won is False:
+            loot = _compute_and_apply_loot(battle, svc)
+        
+        # Send battle summary with loot info
+        await battle_svc.send_summary(battle, send_fn, loot)
         
         # Mark attack as FINISHED so it gets removed from _attacks list
         from gameserver.models.attack import AttackPhase
@@ -1763,21 +1794,108 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         _active_battles.pop(battle.defender.uid, None)
 
 
+def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
+    """Compute and apply loot on defender loss.
+    
+    Returns a loot dict with details of what was stolen:
+    {
+        "knowledge": {"iid": str, "name": str, "pct": float, "amount": float} | None,
+        "culture": float,
+        "artefact": str | None,
+    }
+    """
+    import random as _random
+    
+    defender = battle.defender
+    attacker = battle.attacker
+    if not defender or not attacker:
+        return {}
+    
+    cfg = svc.game_config
+    items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    
+    loot: dict = {"knowledge": None, "culture": 0.0, "artefact": None, "life_restored": 0.0}
+    
+    # ── 1. Knowledge theft ───────────────────────────────────────────────
+    # Find knowledge defender has (in any state) that attacker doesn't have yet
+    stealable_iids = [
+        iid for iid in defender.knowledge
+        if iid not in attacker.knowledge
+    ]
+    if stealable_iids:
+        chosen_iid = _random.choice(stealable_iids)
+        item = items.get(chosen_iid)
+        effort = item.effort if item else 0.0
+        min_pct = getattr(cfg, 'min_lose_knowledge', 0.03) if cfg else 0.03
+        max_pct = getattr(cfg, 'max_lose_knowledge', 0.15) if cfg else 0.15
+        pct = _random.uniform(min_pct, max_pct)
+        gain = effort * pct
+        # Credit attacker with culture (only in resources, NOT in attacker_gains
+        # — it is displayed separately via loot["knowledge"]).
+        attacker.resources["culture"] = attacker.resources.get("culture", 0.0) + gain
+        loot["knowledge"] = {
+            "iid": chosen_iid,
+            "name": item.name if item else chosen_iid,
+            "pct": round(pct * 100, 1),
+            "amount": round(gain, 1),
+        }
+        log.info("[LOOT] Knowledge stolen from uid=%d: %s (%.1f%% of effort %.0f = %.1f culture)",
+                 defender.uid, chosen_iid, pct * 100, effort, gain)
+    
+    # ── 2. Culture theft ────────────────────────────────────────────────
+    min_c = getattr(cfg, 'min_lose_culture', 0.01) if cfg else 0.01
+    max_c = getattr(cfg, 'max_lose_culture', 0.05) if cfg else 0.05
+    pct_culture = _random.uniform(min_c, max_c)
+    culture_pool = defender.resources.get("culture", 0.0)
+    culture_stolen = round(culture_pool * pct_culture, 2)
+    if culture_stolen > 0:
+        defender.resources["culture"] = max(0.0, culture_pool - culture_stolen)
+        attacker.resources["culture"] = attacker.resources.get("culture", 0.0) + culture_stolen
+        battle.defender_losses["culture"] = (
+            battle.defender_losses.get("culture", 0.0) + culture_stolen
+        )
+        loot["culture"] = culture_stolen
+        log.info("[LOOT] Culture stolen from uid=%d: %.1f (%.1f%%)",
+                 defender.uid, culture_stolen, pct_culture * 100)
+    
+    # ── 3. Artefact steal ───────────────────────────────────────────────
+    artefact_chance = getattr(cfg, 'artefact_steal_chance', 0.33) if cfg else 0.33
+    if defender.artefacts and _random.random() < artefact_chance:
+        stolen_artefact = _random.choice(defender.artefacts)
+        defender.artefacts.remove(stolen_artefact)
+        attacker.artefacts.append(stolen_artefact)
+        loot["artefact"] = stolen_artefact
+        log.info("[LOOT] Artefact stolen from uid=%d: %s", defender.uid, stolen_artefact)
+
+    # ── 4. Restore life after loss ──────────────────────────────────────
+    from gameserver.util.effects import RESTORE_LIFE_AFTER_LOSS_OFFSET
+    base_restore = getattr(cfg, 'restore_life_after_loss_offset', 1.0) if cfg else 1.0
+    effect_restore = defender.effects.get(RESTORE_LIFE_AFTER_LOSS_OFFSET, 0.0)
+    total_restore = base_restore + effect_restore
+    current_life = defender.resources.get("life", 0.0)
+    max_life = getattr(defender, 'max_life', 10.0)
+    life_restored = min(total_restore, max(0.0, max_life - current_life))
+    if life_restored > 0:
+        defender.resources["life"] = current_life + life_restored
+        loot["life_restored"] = round(life_restored, 2)
+        log.info("[LOOT] Life restored to uid=%d: %.2f (base=%.1f + effect=%.1f)",
+                 defender.uid, life_restored, base_restore, effect_restore)
+
+    return loot
+
+
 def _create_attack_phase_handler() -> Callable:
     """Create a handler for AttackPhaseChanged events.
     
     Broadcasts the phase update as a push message to interested clients.
     """
-    def _on_attack_phase_changed(event: "AttackPhaseChanged") -> None:
-        """Sync handler that broadcasts phase change to clients."""
-        import asyncio
+    async def _async_phase_changed(event: "AttackPhaseChanged") -> None:
+        """Async: broadcast phase change and immediately push battle_status to observers."""
         svc = _svc()
-        
-        # Extract client sessions that care (attacker or defender)
+
         attacker_uid = event.attacker_uid
         defender_uid = event.defender_uid
-        
-        # Build the push message
+
         push_msg = {
             "type": "attack_phase_changed",
             "attack_id": event.attack_id,
@@ -1786,13 +1904,32 @@ def _create_attack_phase_handler() -> Callable:
             "army_aid": event.army_aid,
             "new_phase": event.new_phase,
         }
-        
-        # Send to attacker using the server's send_to() method
+
         if svc.server:
-            asyncio.create_task(svc.server.send_to(attacker_uid, push_msg))
-            asyncio.create_task(svc.server.send_to(defender_uid, push_msg))
+            await svc.server.send_to(attacker_uid, push_msg)
+            await svc.server.send_to(defender_uid, push_msg)
             log.debug("[push] Sent attack_phase_changed: id=%d phase=%s to uids=%d,%d",
                       event.attack_id, event.new_phase, attacker_uid, defender_uid)
+
+        # Immediately push battle_status (with wave_info) to all registered observers
+        # so they don't have to wait up to 1 s for the next periodic tick.
+        attack = None
+        for a in svc.attack_service.get_all():
+            if a.attack_id == event.attack_id:
+                attack = a
+                break
+        if attack and hasattr(attack, '_observers') and attack._observers:
+            for observer_uid in list(attack._observers):
+                try:
+                    await _send_battle_state_to_observer(attack, observer_uid)
+                except Exception as exc:
+                    log.exception("Failed to push battle_status on phase change to uid=%d: %s",
+                                  observer_uid, exc)
+
+    def _on_attack_phase_changed(event: "AttackPhaseChanged") -> None:
+        """Sync handler that broadcasts phase change to clients."""
+        import asyncio
+        asyncio.create_task(_async_phase_changed(event))
     
     return _on_attack_phase_changed
 
@@ -1923,6 +2060,7 @@ def _create_battle_start_handler() -> Callable:
                         reload_time_ms=getattr(item, "reload_time", 2000.0),
                         shot_speed=getattr(item, "shot_speed", 1.0),
                         shot_type=getattr(item, "shot_type", "normal"),
+                        shot_sprite=getattr(item, "shot_sprite", ""),
                         effects=getattr(item, "effects", {}),
                     )
                     structures_dict[structure_sid] = structure
@@ -2087,6 +2225,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
                     reload_time_ms=getattr(item, "reload_time", 2000.0),
                     shot_speed=getattr(item, "shot_speed", 1.0),
                     shot_type=getattr(item, "shot_type", "normal"),
+                    shot_sprite=getattr(item, "shot_sprite", ""),
                     effects=getattr(item, "effects", {}),
                 )
                 structures_dict[structure_sid] = structure

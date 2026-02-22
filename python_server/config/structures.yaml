@@ -20,6 +20,7 @@ BASIC_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -33,6 +34,7 @@ SLING_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -50,6 +52,7 @@ DOUBLE_SLING_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -63,6 +66,7 @@ SPIKE_TRAP:
   reload_time: 3000
   shot_speed: 1
   shot_type: "slow"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -80,6 +84,7 @@ ARROW_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -93,6 +98,7 @@ ARBELESTE_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -106,6 +112,7 @@ FIRE_TOWER:
   reload_time: 2500
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -123,6 +130,7 @@ CATAPULTS:
   reload_time: 2000
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -136,6 +144,7 @@ BALLISTA_TOWER:
   reload_time: 2500
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -153,6 +162,7 @@ TAR_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "slow"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -166,6 +176,7 @@ COAL_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -179,6 +190,7 @@ HEAVY_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -192,6 +204,7 @@ BOILING_OIL:
   reload_time: 2000
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -209,6 +222,7 @@ MECHANICAL_BALISTA:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -222,6 +236,7 @@ CANNON_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -235,6 +250,7 @@ RIFLE_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -248,6 +264,7 @@ COLD_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "slow"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -261,6 +278,7 @@ ICE_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "slow"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -278,6 +296,7 @@ FLAME_THROWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -291,6 +310,7 @@ SHOCK_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -304,6 +324,7 @@ PARALYZNG_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "stun"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -317,6 +338,7 @@ NAPALM_THROWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -334,6 +356,7 @@ MG_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -347,6 +370,7 @@ RAPID_FIRE_MG_BUNKER:
   reload_time: 500
   shot_speed: 3
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -360,6 +384,7 @@ RADAR_TOWER:
   reload_time: 2500
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -373,6 +398,7 @@ ANTI_AIR_TOWER:
   reload_time: 1500
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -386,6 +412,7 @@ LASER_TOWER:
   reload_time: 1000
   shot_speed: 1
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -403,6 +430,7 @@ SNIPER_TOWER:
   reload_time: 2000
   shot_speed: 5
   shot_type: "normal"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}
@@ -416,6 +444,7 @@ ROCKET_TOWER:
   reload_time: 3000
   shot_speed: 1
   shot_type: "splash"
+  shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   effects: {}

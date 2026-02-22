@@ -34,12 +34,17 @@ empires:
       iid: WARRIOR
       slots: 6
       next_critter_ms: 0.0
-      critters_spawned: 0
+      num_critters_spawned: 0
     - wave_id: 2
       iid: SLAVE
       slots: 4
       next_critter_ms: 15000.0
-      critters_spawned: 0
+      num_critters_spawned: 0
+    - wave_id: 3
+      iid: WARRIOR
+      slots: 4
+      next_critter_ms: 30000.0
+      num_critters_spawned: 0
   spies: []
   bosses: {}
   hex_map:
@@ -89,10 +94,9 @@ empires:
     RELIGION: 3331.8714257461793
   research_queue: null
   citizens:
-    merchant: 2
-    scientist: 3
-    artist: 1
-    free: 4
+    merchant: 0
+    scientist: 0
+    artist: 0
   effects:
     life_offset: 0.001
     gold_offset: 0.2

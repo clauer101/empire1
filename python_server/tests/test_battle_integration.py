@@ -287,3 +287,112 @@ class TestBattleIntegration:
         assert 1 not in battle.critters, "Critter should be removed"
         assert defender.resources["life"] == initial_life - 1.0, "Life should decrease by 1"
         assert battle.defender_losses.get("life", 0.0) == 1.0, "Defender losses should track life"
+
+
+class TestCritterKillGoldReward:
+    """Tests that the defender receives gold when a critter is killed."""
+
+    def _make_battle(self, critter_value: float, defender_gold: float = 0.0) -> tuple:
+        service = BattleService()
+        defender = Empire(uid=1, name="Defender")
+        defender.resources["gold"] = defender_gold
+
+        critter = Critter(
+            cid=1,
+            iid="orc",
+            health=1.0,
+            max_health=1.0,
+            speed=0.2,
+            value=critter_value,
+            path=[HexCoord(0, 0), HexCoord(1, 0)],
+            path_progress=0.5,
+        )
+        battle = BattleState(
+            bid=1,
+            defender=defender,
+            attacker=None,
+            critters={1: critter},
+        )
+        return service, battle, defender, critter
+
+    def test_defender_receives_gold_on_kill(self):
+        """Killing a critter awards its value as gold to the defender."""
+        service, battle, defender, critter = self._make_battle(critter_value=5.0, defender_gold=10.0)
+
+        service._critter_died(battle, critter)
+
+        assert defender.resources["gold"] == pytest.approx(15.0), \
+            "Defender should receive critter.value gold on kill"
+
+    def test_critter_removed_after_kill(self):
+        """Critter is removed from battle after dying."""
+        service, battle, defender, critter = self._make_battle(critter_value=3.0)
+
+        service._critter_died(battle, critter)
+
+        assert 1 not in battle.critters, "Dead critter must be removed from battle"
+
+    def test_kill_reason_recorded_in_removed_critters(self):
+        """removed_critters list records reason='died' after a kill."""
+        service, battle, defender, critter = self._make_battle(critter_value=2.0)
+
+        service._critter_died(battle, critter)
+
+        assert len(battle.removed_critters) == 1
+        entry = battle.removed_critters[0]
+        assert entry["cid"] == 1
+        assert entry["reason"] == "died"
+
+    def test_zero_value_critter_awards_no_gold(self):
+        """A critter with value=0 awards no gold."""
+        service, battle, defender, critter = self._make_battle(critter_value=0.0, defender_gold=100.0)
+
+        service._critter_died(battle, critter)
+
+        assert defender.resources["gold"] == pytest.approx(100.0), \
+            "Gold should be unchanged for value=0 critter"
+
+    def test_multiple_kills_accumulate_gold(self):
+        """Gold accumulates correctly across multiple critter kills."""
+        service = BattleService()
+        defender = Empire(uid=1, name="Defender")
+        defender.resources["gold"] = 0.0
+
+        path = [HexCoord(0, 0), HexCoord(1, 0)]
+        critters = {
+            i: Critter(cid=i, iid="orc", health=1.0, max_health=1.0,
+                       speed=0.2, value=float(i) * 2, path=path, path_progress=0.5)
+            for i in range(1, 4)  # values: 2, 4, 6 → total 12
+        }
+        battle = BattleState(bid=1, defender=defender, attacker=None, critters=critters)
+
+        for critter in list(critters.values()):
+            service._critter_died(battle, critter)
+
+        assert defender.resources["gold"] == pytest.approx(12.0), \
+            "Gold should accumulate: 2+4+6=12"
+
+    def test_reaching_goal_does_not_award_gold(self):
+        """A critter that reaches the goal (escaped) does not award gold."""
+        service = BattleService()
+        defender = Empire(uid=1, name="Defender")
+        defender.resources["gold"] = 50.0
+        defender.resources["life"] = 10.0
+
+        critter = Critter(
+            cid=1,
+            iid="orc",
+            health=5.0,
+            max_health=5.0,
+            speed=0.2,
+            value=10.0,
+            path=[HexCoord(0, 0), HexCoord(1, 0)],
+            path_progress=0.99,
+        )
+        battle = BattleState(bid=1, defender=defender, attacker=None, critters={1: critter})
+
+        service._step_critters(battle, 200.0)  # moves to >= 1.0 → triggers _critter_finished
+
+        assert defender.resources["gold"] == pytest.approx(50.0), \
+            "Escaped critter should not award gold"
+        assert defender.resources["life"] < 10.0, "Life should decrease (critter reached goal)"

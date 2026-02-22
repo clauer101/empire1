@@ -131,8 +131,7 @@ class BattleService:
                 await self._broadcast(battle, send_fn)
 
             if battle.is_finished:
-                await self._send_summary(battle, send_fn)
-                break
+                break  # Caller (_run_battle_task) sends summary after computing loot
 
             await asyncio.sleep(0.015)
 
@@ -147,10 +146,6 @@ class BattleService:
         battle.elapsed_ms += dt_ms
         battle.broadcast_timer_ms -= dt_ms
         self._check_finished(battle)
-        
-        if battle.elapsed_ms > 30000:  # Safety check to prevent infinite battles during testing
-            for critter in battle.critters.values():
-                critter.health = 0  # Force end of battle
         
         # Log active critter count periodically
         #if battle.elapsed_ms % 1000 < dt_ms:  # Every ~1 second
@@ -423,6 +418,8 @@ class BattleService:
                 speed=getattr(item, 'speed', 0.15) if item else 0.15,
                 armour=getattr(item, 'armour', 0.0) if item else 0.0,
                 scale=getattr(item, 'scale', 1.0) if item else 1.0,
+                value=getattr(item, 'value', getattr(item, 'health', 1.0)) if item else 1.0,
+                damage=getattr(item, 'critter_damage', 1.0) if item else 1.0,
             )
             critters.append(critter)
             critters_spawned += 1
@@ -468,8 +465,8 @@ class BattleService:
         if battle.elapsed_ms < battle.MIN_KEEP_ALIVE_MS:
             return
         
-        # Check if defender has 0 life
-        if battle.defender and battle.defender.resources.get("life", 0) <= 0:
+        # Check if defender has lost all life (< 1.0 accounts for fractional offsets like life_offset)
+        if battle.defender and battle.defender.resources.get("life", 0) < 1.0:
             battle.is_finished = True
             battle.keep_alive = False
             battle.defender_won = False  # defender lost all life
@@ -500,11 +497,12 @@ class BattleService:
         
         Attacker gains the capture resources, defender loses life.
         """
+        battle.removed_critters.append({"cid": critter.cid, "reason": "reached", "path_progress": critter.path_progress, "damage": critter.damage})
         # Remove critter from battle
         del battle.critters[critter.cid]
         
-        # Calculate damage to defender (default 1 life per critter, or from capture dict)
-        life_damage = critter.capture.get("life", 1.0)
+        # Calculate damage to defender from critter.damage field
+        life_damage = critter.damage
         
         # Apply damage to defender
         if battle.defender:
@@ -533,11 +531,20 @@ class BattleService:
     def _critter_died(self, battle: BattleState, critter: Critter) -> None:
         """Handle critter killed by tower.
         
-        Defender gains the bonus resources. Spawns replacement critters if configured.
+        Defender gains gold equal to the critter's value.
         """
+        battle.removed_critters.append({"cid": critter.cid, "reason": "died", "path_progress": critter.path_progress, "value": critter.value})
         del battle.critters[critter.cid]
-        log.info("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f", 
-                 critter.cid, critter.iid, critter.path_progress)    
+
+        # Award gold to defender
+        if battle.defender and critter.value > 0:
+            gold = battle.defender.resources.get("gold", 0.0)
+            battle.defender.resources["gold"] = gold + critter.value
+            log.info("[KILLED] Critter cid=%d (%s) killed — defender awarded %.1f gold (total: %.1f)",
+                     critter.cid, critter.iid, critter.value, battle.defender.resources["gold"])
+        else:
+            log.info("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f",
+                     critter.cid, critter.iid, critter.path_progress)    
        
 
 
@@ -566,39 +573,77 @@ class BattleService:
         # Build shot snapshot for all pending shots
         shot_updates = []
         for shot in battle.pending_shots:
+            src_struct = battle.structures.get(shot.source_sid)
             shot_updates.append({
                 "source_sid": shot.source_sid,
                 "target_cid": shot.target_cid,
                 "shot_type": shot.shot_type,
+                "shot_sprite": src_struct.shot_sprite if src_struct else "",
                 "path_progress": shot.path_progress,
                 "origin_q": shot.origin.q if shot.origin else 0,
                 "origin_r": shot.origin.r if shot.origin else 0,
             })
         
+        defender_life = battle.defender.resources.get("life", 0) if battle.defender else 0
+        defender_max_life = battle.defender.max_life if battle.defender else 10
+
+        # Wave info — first wave that hasn't started spawning yet
+        wave_info = None
+        if battle.army and battle.army.waves:
+            total_waves = len(battle.army.waves)
+            for i, w in enumerate(battle.army.waves):
+                if w.num_critters_spawned == 0:
+                    item = self._items_by_iid.get(w.iid)
+                    critter_name = item.name if item else w.iid
+                    wave_info = {
+                        "wave_index": i + 1,
+                        "total_waves": total_waves,
+                        "iid": w.iid,
+                        "critter_name": critter_name,
+                        "slots": w.slots,
+                        "spawned": 0,
+                        "next_critter_ms": max(0.0, w.next_critter_ms),
+                    }
+                    break
+
         msg: dict[str, Any] = {
             "type": "battle_update",
             "bid": battle.bid,
             "elapsed_ms": battle.elapsed_ms,
             "critters": critter_updates,
             "shots": shot_updates,
+            "removed_critters": battle.removed_critters,
+            "defender_life": defender_life,
+            "defender_max_life": defender_max_life,
+            "wave_info": wave_info,
         }
         
         # Send to all observers
         for uid in battle.observer_uids:
             await send_fn(uid, msg)
+        
+        # Clear removed_critters after broadcast
+        battle.removed_critters = []
 
-    async def _send_summary(
+    async def send_summary(
         self,
         battle: BattleState,
         send_fn: Callable[[int, dict[str, Any]], Awaitable[bool]],
+        loot: dict | None = None,
     ) -> None:
-        """Send battle_summary when battle ends."""
+        """Send battle_summary when battle ends.
+        
+        Args:
+            loot: Optional loot dict computed after battle ends (only on defender loss).
+                  Shape: {knowledge, culture, artefact}
+        """
         msg: dict[str, Any] = {
             "type": "battle_summary",
             "bid": battle.bid,
             "defender_won": battle.defender_won or False,
             "attacker_gains": dict(battle.attacker_gains),  # Dict of {uid: {resource: amount}}
             "defender_losses": dict(battle.defender_losses),
+            "loot": loot or {},
         }
         for uid in battle.observer_uids:
             await send_fn(uid, msg)
