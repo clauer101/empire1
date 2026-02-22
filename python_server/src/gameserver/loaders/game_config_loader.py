@@ -66,6 +66,10 @@ class GameConfig:
 
     # -- Battle strategy ---------------------------------------------
     min_lose_knowledge: float = 0.03
+    max_lose_knowledge: float = 0.15
+    min_lose_culture: float = 0.01
+    max_lose_culture: float = 0.05
+    artefact_steal_chance: float = 0.33
 
     # -- Spy costs ---------------------------------------------------
     spy_costs: SpyCosts = field(default_factory=SpyCosts)

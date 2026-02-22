@@ -78,6 +78,11 @@ export class HexGrid {
     this.battleShots = new Map();
     this.battleActive = false;
 
+    // Defender castle health bar
+    this._defenderLife = null;
+    this._defenderMaxLife = null;
+    this._castlePos = null;  // {q, r} of castle tile
+
     // Pan state
     this._isPanning = false;
     this._panStartX = 0;
@@ -771,7 +776,7 @@ export class HexGrid {
     let start = null, goal = null;
     for (const [key, data] of this.tiles) {
       if (data.type === 'spawnpoint') { const { q, r } = parseKey(key); start = { q, r }; }
-      if (data.type === 'castle')     { const { q, r } = parseKey(key); goal  = { q, r }; }
+      if (data.type === 'castle')     { const { q, r } = parseKey(key); goal  = { q, r }; this._castlePos = { q, r }; }
     }
     if (!start || !goal) {
       // Clear path if endpoints are missing
@@ -824,6 +829,45 @@ export class HexGrid {
     this._dirty = true;
   }
 
+  /** Update the defender's castle life for the health bar. */
+  setDefenderLives(life, maxLife) {
+    this._defenderLife = life;
+    this._defenderMaxLife = maxLife;
+    this._dirty = true;
+  }
+
+  /** Draw a health bar above the castle tile for defender life. */
+  _renderCastleHealthBar() {
+    if (!this._castlePos || this._defenderLife == null || !this._defenderMaxLife) return;
+    const ctx = this.ctx;
+    const sz = this.hexSize;
+    const { x, y } = hexToPixel(this._castlePos.q, this._castlePos.r, sz);
+
+    const barWidth = sz * 0.95;
+    const barHeight = sz * 0.10;
+    const barX = x - barWidth / 2;
+    const barY = y - sz * 0.75;
+    const lifePercent = Math.max(0, Math.min(1, this._defenderLife / this._defenderMaxLife));
+
+    // Background
+    ctx.fillStyle = '#3b0000';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    // Fill — color shifts red→green based on life
+    const hue = Math.round(lifePercent * 120);
+    ctx.fillStyle = `hsl(${hue}, 90%, 45%)`;
+    ctx.fillRect(barX, barY, barWidth * lifePercent, barHeight);
+    // Border
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barWidth, barHeight);
+    // Label: "N / M"
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(8, sz * 0.2)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${Math.floor(this._defenderLife)} / ${Math.round(this._defenderMaxLife)}`, x, barY - 1);
+  }
+
   /** Update or add a shot with server data. */
   updateBattleShot(data) {
     // data: { source_sid, target_cid, shot_type, path_progress, origin_q, origin_r }
@@ -835,10 +879,14 @@ export class HexGrid {
       return;
     }
     
+    const shotSpriteUrl = data.shot_sprite ? '/' + data.shot_sprite : null;
+    if (shotSpriteUrl) this._ensureSpriteLoaded(shotSpriteUrl);
+
     this.battleShots.set(shot_id, {
       source_sid: data.source_sid,
       target_cid: data.target_cid,
       shot_type: data.shot_type,
+      shot_sprite: shotSpriteUrl,
       path_progress: data.path_progress,
       origin_q: data.origin_q,
       origin_r: data.origin_r,
@@ -1121,10 +1169,13 @@ export class HexGrid {
       const spriteKey = critter.iid.toLowerCase();
       const sprite = this._critterSprites.get(spriteKey);
 
+      // Offset draw position upward so feet (bottom of sprite) sit on hex center
+      const drawY = y - spriteSize / 2;
+
       if (sprite && sprite !== 'loading') {
         // ── Sprite animation ──────────────────────────────
         const dir = this._getCritterDirection(critter.path_progress);
-        sprite.draw(ctx, dir, ts, x, y, spriteSize);
+        sprite.draw(ctx, dir, ts, x, drawY, spriteSize);
       } else {
         // ── Fallback: coloured circle ────────────────────
         if (!sprite) this._ensureCritterSprite(critter.iid);
@@ -1132,7 +1183,7 @@ export class HexGrid {
         const strokeColor = critter.iid.toLowerCase().includes('soldier') ? '#2266dd' : '#dd2222';
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(x, y, sz * 0.3 * critterScale, 0, Math.PI * 2);
+        ctx.arc(x, drawY, sz * 0.3 * critterScale, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 2;
@@ -1144,7 +1195,7 @@ export class HexGrid {
         const barWidth = sz * 0.7;
         const barHeight = sz * 0.08;
         const barX = x - barWidth / 2;
-        const barY = y - spriteSize / 2 - barHeight - 2;
+        const barY = drawY - spriteSize / 2 - barHeight - 2;
         const healthPercent = Math.max(0, Math.min(1, critter.health / critter.max_health));
         ctx.fillStyle = '#331111';
         ctx.fillRect(barX, barY, barWidth, barHeight);
@@ -1185,8 +1236,30 @@ export class HexGrid {
     // Draw battle shots (transform already applied by _render)
     for (const [shot_id, shot] of this.battleShots) {
       const { x, y } = this._getShotPixelPos(shot, sz);
-      
-      // Shot appearance based on shot_type
+
+      // --- Sprite rendering (rotated toward target) ---
+      if (shot.shot_sprite) {
+        const bmp = this._spriteCache.get(shot.shot_sprite);
+        if (bmp && bmp !== 'loading') {
+          // Compute direction angle from origin to current target position
+          const originPos = hexToPixel(shot.origin_q, shot.origin_r, sz);
+          const targetCritter = this.battleCritters.get(shot.target_cid);
+          let angle = 0;
+          if (targetCritter) {
+            const targetPos = this._getCritterPixelPos(targetCritter.path_progress, sz);
+            angle = Math.atan2(targetPos.y - originPos.y, targetPos.x - originPos.x);
+          }
+          const spriteSize = sz * 0.55;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+          ctx.drawImage(bmp, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+          ctx.restore();
+          continue;
+        }
+      }
+
+      // --- Fallback: colored dot ---
       // shot_type: 0=NORMAL, 1=SLOW, 2=BURN, 3=SPLASH
       let color, glowColor;
       switch (shot.shot_type) {
@@ -1206,17 +1279,17 @@ export class HexGrid {
           color = '#f1c40f';
           glowColor = 'rgba(241, 196, 15, 0.4)';
       }
-      
+
       // Draw glow
       ctx.shadowBlur = sz * 0.4;
       ctx.shadowColor = glowColor;
-      
+
       // Draw projectile
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(x, y, sz * 0.15, 0, Math.PI * 2);
       ctx.fill();
-      
+
       // Reset shadow
       ctx.shadowBlur = 0;
     }
@@ -1264,6 +1337,11 @@ export class HexGrid {
     // Draw critters on top
     if (this.battleCritters.size > 0) {
       this._renderCritters();
+    }
+
+    // Draw castle health bar above all critters
+    if (this.battleActive && this._castlePos) {
+      this._renderCastleHealthBar();
     }
 
     ctx.restore();

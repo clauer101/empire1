@@ -2042,6 +2042,38 @@ label {
   from { opacity: 1; }
   to   { opacity: 0.45; }
 }
+
+/* ── Flying HUD icons (coin / heart) ─────────────────────── */
+.fly-wrap {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  animation: fly-up 1s ease-out forwards;
+  z-index: 50;
+}
+.fly-icon {
+  width: 32px;
+  height: 32px;
+  image-rendering: auto;
+  display: block;
+}
+.fly-label {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fdd835;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  line-height: 1;
+}
+@keyframes fly-up {
+  0%   { transform: translate(-50%, -50%)         scale(1);    opacity: 1; }
+  60%  { transform: translate(-50%, calc(-50% - 30px)) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, calc(-50% - 55px)) scale(0.9);  opacity: 0; }
+}
 .attack-in  .atk-icon { color: #e53935; }
 .attack-out .atk-icon { color: #4fc3f7; }
 

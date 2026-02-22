@@ -61,6 +61,8 @@ class Critter:
     capture: dict[str, float] = field(default_factory=dict)
     bonus: dict[str, float] = field(default_factory=dict)
     spawn_on_death: dict[str, int] = field(default_factory=dict)
+    value: float = 0.0   # Gold awarded to defender on kill
+    damage: float = 1.0  # Life damage dealt to defender on reaching castle
 
     # Status effects
     slow_remaining_ms: float = 0.0

@@ -17,6 +17,8 @@ SLAVE:
   name: "Slave"
   speed: 0.2
   health: 1
+  value: 1
+  damage: 1
   armour: 0
   slots: 1
   time_between: 3000
@@ -31,6 +33,8 @@ WARRIOR:
   name: "Warrior"
   speed: 0.2
   health: 2
+  value: 2
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -45,6 +49,8 @@ SCOUT:
   name: "Scout"
   speed: 0.3
   health: 1
+  value: 1
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -63,6 +69,8 @@ CLUBMAN:
   name: "Clubman"
   speed: 0.2
   health: 2
+  value: 2
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -81,6 +89,8 @@ BOWMAN:
   name: "Bowman"
   speed: 0.2
   health: 3
+  value: 3
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -95,6 +105,8 @@ SWORDMAN:
   name: "Swordman"
   speed: 0.2
   health: 5
+  value: 5
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -109,6 +121,8 @@ CHARIOT:
   name: "Chariot"
   speed: 0.25
   health: 5
+  value: 5
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -127,6 +141,8 @@ PIKENEER:
   name: "Pikeneer"
   speed: 0.2
   health: 6
+  value: 6
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -141,6 +157,8 @@ HORSEMAN_SLOW:
   name: "Heavy Horseman"
   speed: 0.10
   health: 8
+  value: 8
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -155,6 +173,8 @@ HORSEMAN_FAST:
   name: "Light Horseman"
   speed: 0.25
   health: 7
+  value: 7
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -169,6 +189,8 @@ LEGIONARY:
   name: "Legionary"
   speed: 0.2
   health: 8
+  value: 8
+  damage: 1
   armour: 1
   slots: 1
   time_between: 2000
@@ -187,6 +209,8 @@ CRUSADER:
   name: "Crusader"
   speed: 0.2
   health: 10
+  value: 10
+  damage: 1
   armour: 1
   slots: 1
   time_between: 2000
@@ -201,6 +225,8 @@ KNIGHT:
   name: "Knight"
   speed: 0.15
   health: 11
+  value: 11
+  damage: 1
   armour: 1
   slots: 1
   time_between: 2000
@@ -215,6 +241,8 @@ SAMURAI:
   name: "Samurai"
   speed: 0.2
   health: 12
+  value: 12
+  damage: 1
   armour: 1
   slots: 1
   time_between: 2000
@@ -229,6 +257,8 @@ SIEGE_RAM:
   name: "Siege Ram"
   speed: 0.1
   health: 15
+  value: 15
+  damage: 1
   armour: 2
   slots: 1
   time_between: 2000
@@ -247,6 +277,8 @@ NINJA:
   name: "Ninja"
   speed: 0.25
   health: 9
+  value: 9
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -261,6 +293,8 @@ MUSKETEER:
   name: "Musketeer"
   speed: 0.2
   health: 14
+  value: 14
+  damage: 1
   armour: 1
   slots: 1
   time_between: 2000
@@ -275,6 +309,8 @@ DRAGOONER:
   name: "Dragoon"
   speed: 0.2
   health: 15
+  value: 15
+  damage: 1
   armour: 1
   slots: 1
   time_between: 2000
@@ -293,6 +329,8 @@ SOLDIER:
   name: "Soldier"
   speed: 0.2
   health: 18
+  value: 18
+  damage: 1
   armour: 2
   slots: 1
   time_between: 2000
@@ -307,6 +345,8 @@ MOTORBIKE:
   name: "Motorbike"
   speed: 0.30
   health: 20
+  value: 20
+  damage: 1
   armour: 2
   slots: 1
   time_between: 2000
@@ -321,6 +361,8 @@ SMALL_TANK:
   name: "Small Tank"
   speed: 0.2
   health: 25
+  value: 25
+  damage: 1
   armour: 3
   slots: 1
   time_between: 2000
@@ -335,6 +377,8 @@ SIEGE_TANK:
   name: "Siege Tank"
   speed: 0.10
   health: 28
+  value: 28
+  damage: 1
   armour: 4
   slots: 1
   time_between: 2000
@@ -353,6 +397,8 @@ SPECOPS:
   name: "Special Ops"
   speed: 1
   health: 30
+  value: 30
+  damage: 1
   armour: 2
   slots: 1
   time_between: 2000
@@ -367,6 +413,8 @@ HELI:
   name: "Helicopter"
   speed: 1.2
   health: 40
+  value: 40
+  damage: 1
   armour: 5
   slots: 1
   time_between: 2000
@@ -385,6 +433,8 @@ MECH_WARRIOR:
   name: "Mech Warrior"
   speed: 0.8
   health: 50
+  value: 50
+  damage: 1
   armour: 6
   slots: 1
   time_between: 2000
@@ -403,6 +453,8 @@ CART:
   name: "Cart"
   speed: 0.2
   health: 4
+  value: 4
+  damage: 1
   armour: 0
   slots: 2
   time_between: 2000
@@ -417,6 +469,8 @@ LARGE_CART:
   name: "Large Cart"
   speed: 0.2
   health: 6
+  value: 6
+  damage: 1
   armour: 0
   slots: 3
   time_between: 2000
@@ -431,6 +485,8 @@ CARGO:
   name: "Cargo"
   speed: 0.2
   health: 12
+  value: 12
+  damage: 1
   armour: 1
   slots: 4
   time_between: 2000
@@ -445,6 +501,8 @@ TRANSPORTER:
   name: "Transporter"
   speed: 0.2
   health: 16
+  value: 16
+  damage: 1
   armour: 1
   slots: 5
   time_between: 2000
@@ -463,6 +521,8 @@ THE_SWORDMASTER:
   name: "The Swordmaster"
   speed: 0.2
   health: 2
+  value: 2
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -477,6 +537,8 @@ THE_KING:
   name: "The King"
   speed: 0.2
   health: 2
+  value: 2
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000
@@ -491,6 +553,8 @@ THE_GENERAL:
   name: "The General"
   speed: 0.2
   health: 2
+  value: 2
+  damage: 1
   armour: 0
   slots: 1
   time_between: 2000

@@ -39,11 +39,12 @@ SLOT_ADDER_PER_LEVEL = "slot_adder_per_level"
 TRAVEL_TIME_MODIFIER = "travel_time_modifier"
 SIEGE_TIME_OFFSET = "siege_time_offset"
 SIEGE_TIME_MODIFIER = "siege_time_modifier"
-# Directional travel/siege offsets (stored in milliseconds on the empire)
+# Directional travel/siege offsets (stored in seconds on the empire)
 OUTGOING_TRAVEL_TIME_OFFSET = "outgoing_travel_time_offset"  # attacker: added to travel time
 INCOMING_TRAVEL_TIME_OFFSET = "incoming_travel_time_offset"  # defender: subtracted from travel time
 OUTGOING_SIEGE_TIME_OFFSET = "outgoing_siege_time_offset"    # attacker: added to siege time
 INCOMING_SIEGE_TIME_OFFSET = "incoming_siege_time_offset"    # defender: subtracted from siege time
+RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately restore life after losing a battle
 
 # -- Battle / Defense ----------------------------------------------------
 WAVE_DELAY_OFFSET = "wave_delay_offset"
@@ -55,6 +56,9 @@ CAPTURE_CULTURE = "capture_culture"
 LOSE_KNOWLEDGE = "lose_knowledge"
 LOSE_ARTEFACT = "lose_artefact"
 DESTROY_WONDER_PERCENT = "destroy_wonder_percent"
+CULTURE_STEAL_MODIFIER = "culture_steal_modifier"
+ARTEFACT_STEAL_CHANCE_MODIFIER = "artefact_steal_chance_modifier"
+KNOWLEDGE_STEAL_MODIFIER = "knowledge_steal_modifier"
 
 # -- Spy -----------------------------------------------------------------
 SPY_DISGUISE_CHANCE = "spy_disguise_chance"

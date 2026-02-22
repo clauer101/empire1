@@ -181,9 +181,9 @@ function render(snap) {
         ? `<span class="bar-outer" style="width:80px"><span class="bar-inner" style="width:${(e.life/e.max_life*100).toFixed(0)}%;background:var(--red)"></span></span> ${e.life}/${e.max_life}`
         : `${e.life}`;
       html += renderCard(`&#x1f3f0; ${e.name || 'Empire'} (uid ${uid})`, [
-        ['Gold', val(res.gold || 0)],
-        ['Culture', val(res.culture || 0)],
-        ['Life', lifeBar],
+        ['🪙 Gold', val(res.gold || 0)],
+        ['🎭 Culture', val(res.culture || 0)],
+        ['❤️ Life', lifeBar],
         ['Citizens', citStr],
         ['Buildings', buildList],
         ['Research', knowList],

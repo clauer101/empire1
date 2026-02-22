@@ -181,6 +181,15 @@ function _handleWsMessage(msg) {
       break;
     case 'attack_phase_changed':
       _addDebugLog(`Phase changed: attack_id=${msg.attack_id} → ${msg.new_phase}`);
+      // If entering siege and we don't have an attack ID yet, capture it now
+      if (msg.new_phase === 'in_siege' && !_pendingAttackId && msg.attack_id != null) {
+        _pendingAttackId = msg.attack_id;
+      }
+      // Sync state and refresh the fight-now button immediately
+      if (msg.new_phase) {
+        _battleState.phase = msg.new_phase;
+        _updateStatusFromBattleMsg();
+      }
       break;
     default:
       // Ignore non-battle messages
@@ -228,18 +237,12 @@ let _battleState = {
   defender_name: '',
   attacker_uids: [],
   attacker_name: '',
-  wave_count: 0,
   elapsed_ms: 0,
   is_finished: false,
   defender_won: null,
   phase: 'waiting',
-  current_wave: null,
-  current_wave_id: -1,  // Track wave_id to detect wave changes
-  next_wave: null,
-  total_waves: 0,
   time_since_start_s: 0,
-  current_wave_spawned: 0,  // Track critters spawned in current wave
-  next_wave_countdown_ms: 0,  // Time until next wave
+  wave_info: null,  // { wave_index, total_waves, iid, critter_name, slots, spawned, next_critter_ms }
 };
 
 // Debug log buffer
@@ -655,6 +658,9 @@ function _onBattleStatus(msg) {
   _battleState.attacker_uid = msg.attacker_uid;
   _battleState.attacker_name = msg.attacker_name || 'Unknown';
   _battleState.time_since_start_s = msg.time_since_start_s || 0;
+  if ('wave_info' in msg) {
+    _battleState.wave_info = msg.wave_info;
+  }
   
   // Update status display
   _updateStatusFromBattleMsg();
@@ -672,12 +678,12 @@ function _onBattleSetup(msg) {
     defender_name: '',
     attacker_uids: msg.attacker_uids || [],
     attacker_name: '',
-    wave_count: 0,
     elapsed_ms: 0,
     is_finished: false,
     defender_won: null,
     phase: 'waiting',
     time_since_start_s: 0,
+    wave_info: null,
   };
 
   // Clear previous battle
@@ -719,6 +725,35 @@ function _onBattleSetup(msg) {
   _updateStatus('Battle starting...');
 }
 
+// ── Flying HUD Icons ────────────────────────────────────────
+
+/**
+ * Spawn a flying icon image at CSS pixel coords (cx, cy) relative to #canvas-wrap.
+ * Optional label (e.g. gold amount) is shown below the icon.
+ * The element animates upward and fades out over 1 second, then removes itself.
+ */
+function _spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
+  const wrap = container.querySelector('#canvas-wrap');
+  if (!wrap) return;
+  const div = document.createElement('div');
+  div.className = 'fly-wrap';
+  div.style.left = cx + 'px';
+  div.style.top  = cy + 'px';
+  const img = document.createElement('img');
+  img.src = imgSrc;
+  img.className = 'fly-icon';
+  div.appendChild(img);
+  if (label != null) {
+    const span = document.createElement('span');
+    span.className = 'fly-label';
+    if (labelColor) span.style.color = labelColor;
+    span.textContent = (typeof label === 'string' && label.startsWith('-')) ? label : '+' + label;
+    div.appendChild(span);
+  }
+  wrap.appendChild(div);
+  div.addEventListener('animationend', () => div.remove());
+}
+
 function _onBattleUpdate(msg) {
   if (!msg) return;
 
@@ -735,6 +770,27 @@ function _onBattleUpdate(msg) {
     for (const cid of grid.battleCritters.keys()) {
       if (!activeCids.has(cid)) {
         grid.removeBattleCritter(cid);
+      }
+    }
+
+    // Spawn flying icons for critters removed this tick (server-reported reason)
+    if (msg.removed_critters && Array.isArray(msg.removed_critters)) {
+      for (const rc of msg.removed_critters) {
+        if (rc.reason === 'died') {
+          // Critter killed — coin at its last position
+          const raw = grid._getCritterPixelPos(rc.path_progress, grid.hexSize);
+          const cx = raw.x * grid.zoom + grid.offsetX;
+          const cy = raw.y * grid.zoom + grid.offsetY;
+          const goldLabel = rc.value != null ? Math.round(rc.value) : null;
+          _spawnFlyingIcon('/assets/sprites/hud/flying_coin.webp', cx, cy, goldLabel);
+        } else if (rc.reason === 'reached') {
+          // Critter reached castle — heart at end of path
+          const raw = grid._getCritterPixelPos(1.0, grid.hexSize);
+          const cx = raw.x * grid.zoom + grid.offsetX;
+          const cy = raw.y * grid.zoom + grid.offsetY;
+          const dmgLabel = rc.damage != null ? `-${Math.round(rc.damage)}` : null;
+          _spawnFlyingIcon('/assets/sprites/hud/flying_hearth.webp', cx, cy, dmgLabel, '#ef5350');
+        }
       }
     }
     
@@ -763,7 +819,13 @@ function _onBattleUpdate(msg) {
       }
     }
   }
+    if (msg.defender_life != null) {
+      grid.setDefenderLives(msg.defender_life, msg.defender_max_life);
+    }
 
+    if ('wave_info' in msg) {
+      _battleState.wave_info = msg.wave_info;
+    }
   grid._dirty = true;
   // Status is updated by battle_status messages, not by battle_update
 }
@@ -848,20 +910,17 @@ function _updateStatusFromBattleMsg() {
   // Update next wave with countdown
   const nextWaveEl = container.querySelector('#battle-next-wave');
   if (nextWaveEl) {
-    if (_battleState.current_wave) {
-      // Show current wave being spawned
-      const w = _battleState.current_wave;
-      const spawned = _battleState.current_wave_spawned;
-      const total = w.slots;
-      nextWaveEl.textContent = `${w.critter_iid} (${spawned}/${total})`;
-    } else if (_battleState.next_wave) {
-      // Show next wave with countdown
-      const w = _battleState.next_wave;
-      const countdown = _battleState.next_wave_countdown_ms;
-      const timeStr = countdown > 0 ? ` in ${_formatTime(countdown)}` : '';
-      nextWaveEl.textContent = `${w.critter_iid} x${w.slots}${timeStr}`;
+    const wi = _battleState.wave_info;
+    if (wi) {
+      // During siege, time_since_start_s is negative (= -siege_remaining_s)
+      const siegeRemainingMs = _battleState.time_since_start_s < 0
+        ? -_battleState.time_since_start_s * 1000 : 0;
+      const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
+      const timeStr = totalCountdownSec > 0 ? ` in ${totalCountdownSec}s` : ' now';
+      nextWaveEl.textContent =
+        `${wi.slots} ${wi.critter_name} (Wave ${wi.wave_index} / ${wi.total_waves}) spawning${timeStr}`;
     } else {
-      nextWaveEl.textContent = 'done';
+      nextWaveEl.textContent = _battleState.phase === 'in_battle' ? 'All waves done' : '-';
     }
   }
   
@@ -891,29 +950,65 @@ function _showSummary(msg) {
   title.textContent = won ? '🎉 Victory!' : '💀 Defeat';
   title.style.color = won ? 'var(--green, #4caf50)' : 'var(--red, #d32f2f)';
 
-  let html = '<div style="text-align:center;margin-top:16px">';
+  const myUid = st?.auth?.uid;
+  const isDefender = myUid != null && myUid == _battleState.defender_uid;
 
+  let html = '<div style="margin-top:8px">';
+
+  // Outcome sentence
   if (won) {
-    html += '<p>You successfully defended your empire!</p>';
+    html += '<p style="text-align:center">You successfully defended your empire!</p>';
   } else {
-    html += '<p>Your defenses were overrun...</p>';
+    html += '<p style="text-align:center">Your defenses were overrun...</p>';
   }
 
-  // Losses/Gains
-  if (msg.defender_losses) {
-    html += '<div style="margin-top:16px"><strong>Losses:</strong><ul style="list-style:none;padding:0">';
-    for (const [res, val] of Object.entries(msg.defender_losses)) {
-      html += `<li>${res}: ${Math.round(val)}</li>`;
+  // ── Loot section (only on defender loss) ──────────────────────────
+  const loot = msg.loot || {};
+  const hasLoot = loot.knowledge || loot.culture > 0 || loot.artefact;
+
+  if (!won) {
+    const items = st?.items || {};
+    const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
+    const liSt = `style="padding:3px 0"`;
+    const mutedSt = `style="padding:3px 0;color:var(--muted,#888)"`;
+
+    // ── Section 1: Stolen from you (culture + artefact) ──
+    html += `<div ${sep}>`;
+    html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🗡 Stolen from you</strong>`;
+    html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
+    if (loot.culture > 0) {
+      html += `<li ${liSt}>🎭 Culture: <strong>-${Math.round(loot.culture)}</strong></li>`;
+    } else {
+      html += `<li ${mutedSt}>🎭 Culture: –</li>`;
+    }
+    if (loot.artefact) {
+      const artefactName = items?.artefacts?.[loot.artefact]?.name || loot.artefact;
+      html += `<li ${liSt}>⚗️ Artefact: <strong>${artefactName}</strong></li>`;
+    } else {
+      html += `<li ${mutedSt}>⚗️ Artefact: –</li>`;
+    }
+    html += '</ul></div>';
+
+    // ── Section 2: The attacker gets (knowledge) ──
+    html += `<div ${sep}>`;
+    html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🎓 The Attacker gets</strong>`;
+    html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
+    if (loot.knowledge) {
+      const kn = loot.knowledge;
+      html += `<li ${liSt}>📖 ${kn.pct}% of <strong>${kn.name}</strong> → +${kn.amount} 🧪</li>`;
+    } else {
+      html += `<li ${mutedSt}>📖 Knowledge: –</li>`;
     }
     html += '</ul></div>';
   }
 
-  if (msg.attacker_gains && Object.keys(msg.attacker_gains).length > 0) {
-    html += '<div style="margin-top:16px"><strong>Attacker Gains:</strong><ul style="list-style:none;padding:0">';
-    for (const [uid, gains] of Object.entries(msg.attacker_gains)) {
-      html += `<li>Player ${uid}: ${JSON.stringify(gains)}</li>`;
-    }
-    html += '</ul></div>';
+  // ── Section 3: Life restored (always shown after a loss) ──
+  if (!won && loot.life_restored > 0) {
+    const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
+    html += `<div ${sep}>`;
+    html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">❤️ Life Restored after Battle</strong>`;
+    html += `<p style="margin:5px 0 0 0">+${loot.life_restored}</p>`;
+    html += `</div>`;
   }
 
   html += '</div>';

@@ -38,6 +38,7 @@ class Structure:
     reload_time_ms: float
     shot_speed: float
     shot_type: str = "normal"
+    shot_sprite: str = ""  # Sprite URL for the projectile visual
     effects: dict[str, float] = field(default_factory=dict)
 
     # Transient battle state
