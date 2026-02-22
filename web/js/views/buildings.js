@@ -13,7 +13,7 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
-let hideCompleted = false;
+let hideCompleted = true;
 
 function init(el, _api, _state) {
   container = el;
@@ -94,12 +94,17 @@ function render() {
     const badgeClass = `badge badge--${status}`;
     const badgeText = status === 'in-progress' ? 'building' : status;
 
-    // Calculate progress: full_effort - remaining = done
+    // Calculate wall-clock duration with empire effects
+    // Build speed: 1 + build_speed_modifier
     const fullEffort = info.effort;
     const remaining = summary.buildings?.[iid] ?? fullEffort;  // If not started, remaining = full effort
-    const done = Math.max(0, fullEffort - remaining);
-    const progressStr = `${fmtEffort(done)}/${fmtEffort(fullEffort)}`;
-    
+    const buildMultiplier = 1 + (summary.effects?.build_speed_modifier || 0);
+    const totalSecs  = buildMultiplier > 0 ? fullEffort / buildMultiplier : fullEffort;
+    const remainSecs = buildMultiplier > 0 ? remaining  / buildMultiplier : remaining;
+    const durationStr = status === 'in-progress'
+      ? `${fmtSecs(remainSecs)} remaining / ${fmtSecs(totalSecs)}`
+      : fmtSecs(totalSecs);
+
     // Format costs
     const costsStr = fmtCosts(info.costs, summary);
 
@@ -120,7 +125,7 @@ function render() {
       </td>
       <td class="col-details" data-label="Details">
         <div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>
-        <div class="detail-row"><span class="detail-label">Effort:</span> <span style="font-variant-numeric:tabular-nums">${progressStr}</span></div>
+        <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums">${durationStr}</span></div>
         <div class="detail-row"><span class="detail-label">Effects:</span> ${fmtEffects(info.effects)}</div>
         <div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u =>
           `<span class="badge badge--unlock-${u.category} ${completed.has(u.iid) ? 'badge--completed' : ''}" style="margin-right:4px">${u.name}</span>`
@@ -222,6 +227,16 @@ function fmtCosts(costs, summary) {
       return `<span style="color:${color};margin-right:12px;white-space:nowrap;">${icon} ${Math.round(cost)} ${resourceName}</span>`;
     })
     .join('');
+}
+
+function fmtSecs(s) {
+  if (s == null || s < 0) return '—';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
 }
 
 export default {

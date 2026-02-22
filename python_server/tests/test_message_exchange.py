@@ -405,7 +405,7 @@ class TestFireAndForgetHandlers:
 
     @pytest.mark.asyncio
     async def test_change_citizen_returns_response(self):
-        msg = parse_message({"type": "change_citizen", "sender": 100, "citizens": {"merchant": 2}})
+        msg = parse_message({"type": "change_citizen", "sender": 100, "citizens": {"merchant": 2, "scientist": 2, "artist": 2}})
         result = await handle_change_citizen(msg, sender_uid=100)
         assert result is not None
         assert result["type"] == "change_citizen_response"

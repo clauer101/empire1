@@ -138,7 +138,7 @@ attacks:
   defender_uid: 2
   army_aid: 1
   phase: travelling
-  eta_seconds: 10.0
+  eta_seconds: 1
   total_eta_seconds: 230.0
   siege_remaining_seconds: 120.0
   total_siege_seconds: 120.0

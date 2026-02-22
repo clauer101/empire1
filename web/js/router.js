@@ -15,7 +15,7 @@
  *   router.register(dashboardView);
  *   router.register(loginView);
  *   router.start();                // reads current hash, activates view
- *   router.navigate('dashboard');  // programmatic navigation
+ *   router.navigate('status');  // programmatic navigation
  */
 
 class Router {
@@ -106,9 +106,9 @@ class Router {
       return;
     }
 
-    // If already on login and authenticated, go to dashboard
+    // If already on login and authenticated, go to status
     if (routeId === 'login' && this._state.auth.authenticated) {
-      this.navigate('dashboard');
+      this.navigate('status');
       return;
     }
 
