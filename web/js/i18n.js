@@ -12,6 +12,12 @@ export const dict = {
   life_offset: 'Increases life energy by a fixed amount',
   build_speed_modifier: 'Accelerates building construction by a multiplier',
   research_speed_modifier: 'Accelerates research by a multiplier',
+  incoming_siege_time_offset: 'Increases siege time of incoming armies by a fixed amount',
+  outgoing_siege_time_offset: 'Decreases siege time of outgoing armies by a fixed amount',
+  incoming_travel_time_offset: 'Increases travel time of incoming armies by a fixed amount',
+  outgoing_travel_time_offset: 'Decreases travel time of outgoing armies by a fixed amount',
+  wave_delay_offset: 'Decreases delay between battle waves by a fixed amount',
+  wave_delay_modifier: 'Decreases delay between battle waves by a multiplier',
 
   // Common UI labels
   effort: 'Effort',

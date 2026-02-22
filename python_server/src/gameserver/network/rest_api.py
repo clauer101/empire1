@@ -34,6 +34,7 @@ from gameserver.network.rest_models import (
     LoginRequest,
     LoginResponse,
     MapSaveBody,
+    SendMessageRequest,
     SignupRequest,
     SignupResponse,
     WaveChangeRequest,
@@ -148,6 +149,8 @@ def create_app(services: "Services") -> FastAPI:
     async def get_summary(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         msg = _stub_message()
         resp = await handle_summary_request(msg, uid)
+        if resp and services.message_store:
+            resp["unread_messages"] = services.message_store.unread_count(uid)
         return resp or {"error": "No data"}
 
     @app.get("/api/empire/items")
@@ -161,6 +164,26 @@ def create_app(services: "Services") -> FastAPI:
         msg = _stub_message()
         resp = await handle_military_request(msg, uid)
         return resp or {"error": "No data"}
+
+    @app.get("/api/empires")
+    async def list_empires(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Return all known empires sorted by culture points descending."""
+        # Build uid → username map from DB
+        uid_to_user: dict[int, str] = {}
+        if services.database is not None:
+            for row in await services.database.list_users():
+                uid_to_user[row["uid"]] = row["username"]
+        empires = []
+        for empire in services.empire_service.all_empires.values():
+            empires.append({
+                "uid": empire.uid,
+                "name": empire.name,
+                "username": uid_to_user.get(empire.uid, ""),
+                "culture": round(empire.resources.get("culture", 0.0), 1),
+                "is_self": empire.uid == uid,
+            })
+        empires.sort(key=lambda e: e["culture"], reverse=True)
+        return {"empires": empires}
 
     # =================================================================
     # Building / Research
@@ -261,6 +284,69 @@ def create_app(services: "Services") -> FastAPI:
         msg = _stub_message(target_uid=body.target_uid, opponent_name=body.opponent_name, army_aid=body.army_aid)
         resp = await handle_new_attack(msg, uid)
         return resp or {"success": False, "error": "No response"}
+
+    @app.post("/api/attack/{attack_id}/skip-siege")
+    async def skip_siege(attack_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Immediately end the siege phase — only callable by the defender."""
+        result = services.attack_service.skip_siege(attack_id, uid)
+        if isinstance(result, str):
+            return {"success": False, "error": result}
+        return {"success": True, "attack_id": result.attack_id, "phase": result.phase.value}
+
+    # =================================================================
+    # Messages
+    # =================================================================
+
+    @app.post("/api/messages")
+    async def send_message(body: SendMessageRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Send a message to another player."""
+        if not body.body.strip():
+            return {"success": False, "error": "Message body cannot be empty"}
+        if body.to_uid == uid:
+            return {"success": False, "error": "Cannot send message to yourself"}
+        msg = services.message_store.send(from_uid=uid, to_uid=body.to_uid, body=body.body.strip())
+        return {"success": True, "message": msg}
+
+    @app.get("/api/messages")
+    async def get_messages(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Return inbox + sent messages for the current player."""
+        # 1. Empire names from live game state (most accurate)
+        uid_to_name: dict[int, str] = {
+            e.uid: e.name
+            for e in services.empire_service.all_empires.values()
+        }
+        # 2. Fill gaps with DB usernames / empire_name
+        if services.database is not None:
+            for row in await services.database.list_users():
+                if row["uid"] not in uid_to_name:
+                    uid_to_name[row["uid"]] = (
+                        row.get("empire_name") or row.get("username") or f"UID {row['uid']}"
+                    )
+
+        def _name(u: int) -> str:
+            return uid_to_name.get(u) or f"UID {u}"
+
+        inbox = services.message_store.get_inbox(uid)
+        sent = services.message_store.get_sent(uid)
+        unread = services.message_store.unread_count(uid)
+
+        def _annotate(m: dict) -> dict:
+            return {
+                **m,
+                "from_name": _name(m["from_uid"]),
+                "to_name":   _name(m["to_uid"]),
+            }
+        return {
+            "inbox": [_annotate(m) for m in inbox],
+            "sent":  [_annotate(m) for m in sent],
+            "unread": unread,
+        }
+
+    @app.post("/api/messages/{msg_id}/read")
+    async def mark_read(msg_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Mark a message as read."""
+        ok = services.message_store.mark_read(uid, msg_id)
+        return {"success": ok}
 
     # =================================================================
     # WebSocket proxy — /ws on the same port as REST

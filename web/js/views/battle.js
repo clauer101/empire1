@@ -34,6 +34,9 @@ let _unsub = [];
 /** @type {HexGrid|null} */
 let grid = null;
 
+/** @type {number|null} attack_id of the pending incoming attack (set from dashboard) */
+let _pendingAttackId = null;
+
 // ── Battle WebSocket ────────────────────────────────────────
 
 /** @type {WebSocket|null} */
@@ -322,6 +325,9 @@ function init(el, _api, _state) {
             <span class="value" id="battle-next-wave">-</span>
           </div>
         </div>
+        <div class="battle-status__item" id="fight-now-item" style="display:none;grid-column: 1 / -1;">
+          <button id="fight-now-btn" style="width:100%;background:var(--danger,#e53935);border:none;color:#fff;padding:8px 16px;border-radius:var(--radius,4px);font-size:1em;font-weight:bold;cursor:pointer;letter-spacing:0.5px;">⚔ Fight now!</button>
+        </div>
       </div>
 
       <!-- Battle Body (Canvas + Props Panel) -->
@@ -375,6 +381,36 @@ function init(el, _api, _state) {
   container.querySelector('#summary-close').addEventListener('click', () => {
     container.querySelector('#battle-summary').style.display = 'none';
     window.location.hash = '#dashboard';
+  });
+
+  // Bind Fight now! button (visible only during in_siege when navigated from dashboard)
+  container.querySelector('#fight-now-btn').addEventListener('click', async () => {
+    const btn = container.querySelector('#fight-now-btn');
+    if (!_pendingAttackId) return;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    try {
+      const resp = await rest.skipSiege(_pendingAttackId);
+      if (resp.success) {
+        btn.textContent = '✓ Siege ended!';
+        setTimeout(() => {
+          btn.textContent = '⚔ Fight now!';
+          btn.disabled = false;
+        }, 3000);
+      } else {
+        btn.textContent = `✗ ${resp.error || 'Error'}`;
+        setTimeout(() => {
+          btn.textContent = '⚔ Fight now!';
+          btn.disabled = false;
+        }, 2500);
+      }
+    } catch (err) {
+      btn.textContent = '✗ Request failed';
+      setTimeout(() => {
+        btn.textContent = '⚔ Fight now!';
+        btn.disabled = false;
+      }, 2500);
+    }
   });
 
   // Bind tower overlay
@@ -476,6 +512,12 @@ async function enter() {
   _updateDebugPanel();  // Initialize debug panel visibility
   _initCanvas();
 
+  // Check if navigated from dashboard for a specific incoming attack
+  if (st.pendingIncomingAttack) {
+    _pendingAttackId = st.pendingIncomingAttack.attack_id;
+    st.pendingIncomingAttack = null;
+  }
+
   // Subscribe to items for structure tile types
   _unsub.push(eventBus.on('state:items', _registerStructureTileTypes));
 
@@ -518,6 +560,7 @@ async function enter() {
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
+  _pendingAttackId = null;
   if (grid) {
     grid.destroy();
     grid = null;
@@ -582,9 +625,16 @@ function _registerStructureTileTypes() {
       color: colorDef.color,
       stroke: colorDef.stroke,
       icon: null,
-      spriteUrl: info.sprite || null,
+      spriteUrl: info.sprite ? '/' + info.sprite : null,
       serverData: info,
     });
+  }
+
+  // Invalidate the base cache so tiles re-render with the correct tile types.
+  // This is needed when items arrive after the map has already been rendered.
+  if (grid) {
+    grid._invalidateBase();
+    grid._dirty = true;
   }
 }
 
@@ -787,7 +837,14 @@ function _updateStatusFromBattleMsg() {
     statusText = '✓ Complete';
   }
   _updateStatus(statusText);
-  
+
+  // Show/hide Fight now! button (only during siege, only when navigated from dashboard)
+  const fightNowItem = container.querySelector('#fight-now-item');
+  if (fightNowItem) {
+    const showFightNow = _pendingAttackId !== null && _battleState.phase === 'in_siege';
+    fightNowItem.style.display = showFightNow ? '' : 'none';
+  }
+
   // Update next wave with countdown
   const nextWaveEl = container.querySelector('#battle-next-wave');
   if (nextWaveEl) {

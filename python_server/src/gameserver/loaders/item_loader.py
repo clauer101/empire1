@@ -57,6 +57,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             capture=attrs.get("capture", {}),
             bonus=attrs.get("bonus", {}),
             spawn_on_death=attrs.get("spawn_on_death", {}),
+            scale=float(attrs.get("scale", 1.0)),
         ))
     return items
 

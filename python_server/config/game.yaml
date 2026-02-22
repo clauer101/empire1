@@ -50,7 +50,7 @@ starting_max_life: 10.0
 # -- Travel & Siege ------------------------------------------
 
 # Base attack travel time in seconds (~90 minutes)
-base_travel_offset: 5400.0
+base_travel_offset: 3600.0
 
 # Base siege duration in seconds (before defender modifiers)
 base_siege_offset: 30.0

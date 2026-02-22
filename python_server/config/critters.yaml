@@ -24,6 +24,7 @@ SLAVE:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 0.8
   requirements: []
 
 WARRIOR:
@@ -37,6 +38,7 @@ WARRIOR:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [HUNTING]
 
 SCOUT:
@@ -50,6 +52,7 @@ SCOUT:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [HUNTING]
 
 # ============================================================
@@ -67,6 +70,7 @@ CLUBMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [CRAFTSMANSHIP, TOOL_SHOP, AGRICULTURE, GRANARY]
 
 # ============================================================
@@ -84,6 +88,7 @@ BOWMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [CRAFTSMANSHIP, BOW_MAKER, ALPHABET_WRITING, EPIC_DRAWINGS]
 
 SWORDMAN:
@@ -97,6 +102,7 @@ SWORDMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [COPPER_BRONZE, SWORD_MAKER, CURRENCY, BULLETIN_BOARD]
 
 CHARIOT:
@@ -110,6 +116,7 @@ CHARIOT:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [HORSEBACK_RIDING, COPPER_BRONZE, MUSIC, FIELD_HEALER]
 
 # ============================================================
@@ -127,6 +134,7 @@ PIKENEER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [COPPER_BRONZE, TOOL_SHOP, DRILL, CHAPEL]
 
 HORSEMAN_SLOW:
@@ -140,6 +148,7 @@ HORSEMAN_SLOW:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [HORSEBACK_RIDING, STABLES, RACE_COURSE]
 
 HORSEMAN_FAST:
@@ -153,6 +162,7 @@ HORSEMAN_FAST:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [HORSEBACK_RIDING, STABLES, LIBRARY]
 
 LEGIONARY:
@@ -166,6 +176,7 @@ LEGIONARY:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [IRON, IRON_WORK, LORE_COLLECTION]
 
 # ============================================================
@@ -183,6 +194,7 @@ CRUSADER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [HOLY_WAR, CHURCH, RELIGION, FANATISM, MONASTERY, CATHEDRAL]
 
 KNIGHT:
@@ -196,6 +208,7 @@ KNIGHT:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [STEEL, STABLES, FEUDALISM, COMMAND_CHAIN, CASTLE, MANOR]
 
 SAMURAI:
@@ -209,6 +222,7 @@ SAMURAI:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [TACTICS, FENCING_SCHOOL, ARTS, TEMPLE, MUSEUM]
 
 SIEGE_RAM:
@@ -222,6 +236,7 @@ SIEGE_RAM:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [MECHANICS, TREADWHEEL_CRANE, MONARCHY, TREASURE_CHAMBER, THE_KINGS_LAIR]
 
 # ============================================================
@@ -239,6 +254,7 @@ NINJA:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [STEALTH_SECRECY, SECRET_ORDER, PAINTING, THEATER, HIGH_COURT]
 
 MUSKETEER:
@@ -252,6 +268,7 @@ MUSKETEER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [GUNPOWDER, GUNSMITH, LITRATURE, PRINTING_PRESS, UNIVERSITY]
 
 DRAGOONER:
@@ -265,6 +282,7 @@ DRAGOONER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [GUNPOWDER, HORSEBACK_RIDING, GUNSMITH, STABLES, ECONOMY, BANK]
 
 # ============================================================
@@ -282,6 +300,7 @@ SOLDIER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [COMBUSTION_ENGINE, BARRACKS, CONSTITUTION, MILITARY_SERVICE, COURTHOUSE, PARLIAMENT]
 
 MOTORBIKE:
@@ -295,6 +314,7 @@ MOTORBIKE:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP, SANITATION, EMERGENCY_ROOM]
 
 SMALL_TANK:
@@ -308,6 +328,7 @@ SMALL_TANK:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [KNO_ARMOUR, FACTORY, STOCK_MARKET, FEDERAL_RESERVE]
 
 SIEGE_TANK:
@@ -321,6 +342,7 @@ SIEGE_TANK:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [KNO_ARMOUR, FACTORY, EXECUTIVE_CARPOOL, EMPERORS_PALACE, DERIVATIVE_MARKET]
 
 # ============================================================
@@ -338,6 +360,7 @@ SPECOPS:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [SPECIAL_FORCES, ELITE_ACADEMY, SOCIAL_SCIENCES, GLOBALIZATION_STRATEGIES, RECRUITING_OFFICE, CYBER_COMMAND]
 
 HELI:
@@ -351,6 +374,7 @@ HELI:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [AVIATION, HANGAR, MEDICINE, SOCIAL_SECURITY_SYSTEM]
 
 # ============================================================
@@ -368,6 +392,7 @@ MECH_WARRIOR:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [BIONICS, MECH_WARRIOR_LAB, COMPUTER_TECHNOLOGY, FIBER_COMPOSITE, COLD_FUSION, FUSION_REACTOR]
 
 # ============================================================
@@ -385,6 +410,7 @@ CART:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [DOMESTICATION, TOOL_SHOP]
 
 LARGE_CART:
@@ -398,6 +424,7 @@ LARGE_CART:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [DOMESTICATION, STABLES]
 
 CARGO:
@@ -411,6 +438,7 @@ CARGO:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [STEAM_ENGINE, RAIL_ROADS, ARTS_GALLERY]
 
 TRANSPORTER:
@@ -424,6 +452,7 @@ TRANSPORTER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 # ============================================================
@@ -441,6 +470,7 @@ THE_SWORDMASTER:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: []
 
 THE_KING:
@@ -454,6 +484,7 @@ THE_KING:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: []
 
 THE_GENERAL:
@@ -467,4 +498,5 @@ THE_GENERAL:
   capture: {}
   bonus: {}
   spawn_on_death: null
+  scale: 1
   requirements: []

@@ -68,6 +68,9 @@ class Critter:
     burn_remaining_ms: float = 0.0
     burn_dps: float = 0.0
 
+    # Visual scale (from ItemDetails.scale)
+    scale: float = 1.0
+
     # Boss fields
     level: int = 1
     xp: float = 0.0

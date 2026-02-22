@@ -422,6 +422,7 @@ class BattleService:
                 max_health=getattr(item, 'health', 1.0) if item else 1.0,
                 speed=getattr(item, 'speed', 0.15) if item else 0.15,
                 armour=getattr(item, 'armour', 0.0) if item else 0.0,
+                scale=getattr(item, 'scale', 1.0) if item else 1.0,
             )
             critters.append(critter)
             critters_spawned += 1
@@ -559,6 +560,7 @@ class BattleService:
                 "path_progress": critter.path_progress,
                 "slow_remaining_ms": max(0, critter.slow_remaining_ms),
                 "burn_remaining_ms": max(0, critter.burn_remaining_ms),
+                "scale": critter.scale,
             })
         
         # Build shot snapshot for all pending shots
