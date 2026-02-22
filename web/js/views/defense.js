@@ -37,6 +37,11 @@ let grid = null;
 /** @type {number|null} attack_id of the pending incoming attack (set from dashboard) */
 let _pendingAttackId = null;
 
+// ── Palette / Map Editor State ──────────────────────────────
+let _activeBrush = null;
+let _isDirtyPath = false;
+let _autoSaveTimer = null;
+
 // ── Battle WebSocket ────────────────────────────────────────
 
 /** @type {WebSocket|null} */
@@ -112,8 +117,8 @@ function _wsConnect() {
     _addDebugLog(`🔴 WS closed (code=${ev.code} reason=${ev.reason || 'none'})`);
 
     if (!_wsIntentionalClose) {
-      // Auto-reconnect after 2s if not intentionally closed
-      _wsReconnectTimer = setTimeout(() => _wsConnect(), 2000);
+      // Auto-reconnect after 2s only if an attack is still active
+      _wsReconnectTimer = setTimeout(() => _connectWsIfNeeded(), 2000);
     }
     _ws = null;
   });
@@ -125,8 +130,34 @@ function _wsConnect() {
 }
 
 /**
- * Close the battle WebSocket intentionally (no auto-reconnect).
+ * Show/hide the battle status info rows depending on whether an attack is active.
  */
+function _updateBattleStatusVisibility(visible) {
+  const info = container?.querySelector('#battle-status-info');
+  if (info) info.style.display = visible ? 'contents' : 'none';
+}
+
+/**
+ * Connect the WS only when there is an active (siege/battle) attack.
+ * Called on enter() and again whenever the phase changes.
+ */
+function _connectWsIfNeeded() {
+  const ACTIVE_PHASES = ['in_siege', 'in_battle'];
+  const summary = st.summary || {};
+  const allAttacks = [...(summary.attacks_incoming || []), ...(summary.attacks_outgoing || [])];
+  const hasActiveAttack = _pendingAttackId != null
+    || allAttacks.some(a => ACTIVE_PHASES.includes(a.phase));
+
+  _updateBattleStatusVisibility(hasActiveAttack);
+
+  if (hasActiveAttack) {
+    _wsConnect();
+  } else {
+    _addDebugLog('No active attack — WS not connected');
+  }
+}
+
+
 function _wsDisconnect() {
   _wsIntentionalClose = true;
   if (_wsConnectTimeout) {
@@ -179,6 +210,9 @@ function _handleWsMessage(msg) {
     case 'battle_status':
       _onBattleStatus(msg);
       break;
+    case 'structure_update':
+      _onStructureUpdate(msg);
+      break;
     case 'attack_phase_changed':
       _addDebugLog(`Phase changed: attack_id=${msg.attack_id} → ${msg.new_phase}`);
       // If entering siege and we don't have an attack ID yet, capture it now
@@ -224,7 +258,7 @@ function _onVisibilityChange() {
   } else if (document.visibilityState === 'visible') {
     if (!_wsConnected && !_wsIntentionalClose) {
       _addDebugLog('📱 Screen on → reconnecting WS');
-      _wsConnect();
+      _connectWsIfNeeded();
     }
   }
 }
@@ -293,11 +327,12 @@ function init(el, _api, _state) {
   container.innerHTML = `
     <div class="battle-view">
       <div class="battle-header">
-        <h2 class="battle-title">⚔ Battle</h2>
+        <h2 class="battle-title">⚔ Defense</h2>
       </div>
 
       <!-- Battle Status Panel -->
       <div class="battle-status" id="battle-status">
+        <div id="battle-status-info" style="display:none;grid-column:1/-1;display:none;">
         <div class="battle-status__item" style="grid-column: 1 / -1;">
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
             <div>
@@ -328,15 +363,21 @@ function init(el, _api, _state) {
             <span class="value" id="battle-next-wave">-</span>
           </div>
         </div>
+        </div>
         <div class="battle-status__item" id="fight-now-item" style="display:none;grid-column: 1 / -1;">
           <button id="fight-now-btn" style="width:100%;background:var(--danger,#e53935);border:none;color:#fff;padding:8px 16px;border-radius:var(--radius,4px);font-size:1em;font-weight:bold;cursor:pointer;letter-spacing:0.5px;">⚔ Fight now!</button>
         </div>
       </div>
 
-      <!-- Battle Body (Canvas + Props Panel) -->
+      <!-- Battle Body (Palette + Canvas + Props Panel) -->
+      <div id="map-error-banner" style="display:none;padding:6px 12px;margin:0;background:#8a3a3a;color:#ffcccc;border-left:4px solid #c85a5a;border-radius:2px;font-size:0.85rem;flex-shrink:0;"></div>
       <div class="battle-view__body">
+        <!-- Tile Palette (left) -->
+        <aside class="battle-palette" id="tile-palette"></aside>
+
         <!-- Canvas Container -->
         <div class="battle-canvas-wrap" id="canvas-wrap">
+          <button id="map-save" style="display:none;position:absolute;top:8px;right:8px;z-index:10;font-size:11px;padding:3px 10px;" title="Save path layout">💾 Save</button>
           <canvas id="battle-canvas"></canvas>
         </div>
 
@@ -383,10 +424,10 @@ function init(el, _api, _state) {
   // Bind summary close button
   container.querySelector('#summary-close').addEventListener('click', () => {
     container.querySelector('#battle-summary').style.display = 'none';
-    window.location.hash = '#dashboard';
+    window.location.hash = '#status';
   });
 
-  // Bind Fight now! button (visible only during in_siege when navigated from dashboard)
+  // Bind Fight now! button (visible during in_siege when an incoming attack is tracked)
   container.querySelector('#fight-now-btn').addEventListener('click', async () => {
     const btn = container.querySelector('#fight-now-btn');
     if (!_pendingAttackId) return;
@@ -416,6 +457,9 @@ function init(el, _api, _state) {
     }
   });
 
+  // Bind Save button (path editor)
+  container.querySelector('#map-save').addEventListener('click', _saveMap);
+
   // Bind tower overlay
   _bindTowerOverlay();
 }
@@ -440,22 +484,80 @@ function _bindTowerOverlay() {
   }
 }
 
-function _showTowerDetails(q, r, tile) {
+function _showTileDetails(q, r, tile) {
   const overlayBody = container.querySelector('#tower-overlay-body');
   const overlay = container.querySelector('#tower-overlay');
   const propsContent = container.querySelector('#tower-props-content');
-  
-  if (!tile) {
-    return;
-  }
+
+  if (!tile) return;
 
   const t = getTileType(tile.type);
 
-  // Build tower info from server data
+  // ── Buy-tile button for void tiles ──────────────────────
+  if (tile.type === 'void') {
+    const tilePrice = st.summary?.tile_price || 0;
+    const currentGold = st.summary?.resources?.gold || 0;
+    const canAfford = currentGold >= tilePrice;
+    const buyHTML =
+      '<div class="props-tile">' +
+        '<div class="props-row"><span class="label">Position</span><span class="value mono">' + q + ', ' + r + '</span></div>' +
+        '<div class="props-row"><span class="label">Type</span><span class="value">Void</span></div>' +
+        '<div class="props-divider"></div>' +
+        '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + (canAfford ? 'var(--text)' : 'var(--danger)') + '">' +
+          '\ud83d\udcb0 ' + Math.round(tilePrice) + ' Gold</span></div>' +
+        '<button id="buy-tile-btn" class="btn" style="width:100%;margin-top:8px;"' +
+          (canAfford ? '' : ' disabled title="Not enough gold"') + '>Buy Tile</button>' +
+        '<div id="buy-tile-msg" style="margin-top:6px;font-size:12px;text-align:center;"></div>' +
+      '</div>';
+
+    if (propsContent) propsContent.innerHTML = buyHTML;
+    if (overlayBody) {
+      overlayBody.innerHTML = buyHTML;
+      if (window.innerWidth <= 1100) overlay.style.display = 'flex';
+    }
+
+    const buyHandler = async (btnEl, msgEl) => {
+      btnEl.disabled = true;
+      msgEl.textContent = '';
+      try {
+        const resp = await rest.buyTile(q, r);
+        if (resp.success) {
+          msgEl.textContent = '\u2713 Tile purchased!';
+          msgEl.style.color = 'var(--success)';
+          await rest.getSummary();
+          // Reload map from server then auto-save (tile purchase already persists on server)
+          const response = await rest.loadMap();
+          if (response && response.tiles) {
+            grid.fromJSON({ tiles: response.tiles });
+            grid.addVoidNeighbors();
+            grid._dirty = true;
+          }
+          if (overlay && window.innerWidth <= 1100) overlay.style.display = 'none';
+        } else {
+          msgEl.textContent = '\u2717 ' + (resp.error || 'Failed to buy tile');
+          msgEl.style.color = 'var(--danger)';
+          btnEl.disabled = false;
+        }
+      } catch (err) {
+        msgEl.textContent = '\u2717 ' + err.message;
+        msgEl.style.color = 'var(--danger)';
+        btnEl.disabled = false;
+      }
+    };
+    [propsContent, overlayBody].forEach(root => {
+      if (!root) return;
+      const b = root.querySelector('#buy-tile-btn');
+      const m = root.querySelector('#buy-tile-msg');
+      if (b && m) b.addEventListener('click', () => buyHandler(b, m));
+    });
+    return;
+  }
+
+  // ── Tower tile info ──────────────────────────────────────
   let towerInfo = '';
   if (t.serverData) {
     const s = t.serverData;
-    towerInfo = 
+    towerInfo =
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Tower Stats</div>' +
       '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
@@ -464,49 +566,32 @@ function _showTowerDetails(q, r, tile) {
       '<div class="props-row"><span class="label">Shot Speed</span><span class="value">' + (s.shot_speed || 0) + ' hex/s</span></div>' +
       '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
     if (s.effects && Object.keys(s.effects).length > 0) {
-      const effectsStr = Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ');
-      towerInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' + effectsStr + '</span></div>';
+      towerInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' +
+        Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ') + '</span></div>';
     }
     if (s.requirements && s.requirements.length > 0) {
       towerInfo += '<div class="props-row"><span class="label">Requires</span><span class="value" style="font-size:10px;">' + s.requirements.join(', ') + '</span></div>';
     }
-  } else {
-    // Not a tower tile, don't show anything
+  } else if (!['path', 'castle', 'spawnpoint', 'empty'].includes(tile.type)) {
+    // Unknown structure tile — don't show details
     return;
   }
 
-  const detailsHTML = 
+  const detailsHTML =
     '<div class="props-tile">' +
-      '<div class="props-row">' +
-        '<span class="label">Position</span>' +
-        '<span class="value mono">' + q + ', ' + r + '</span>' +
-      '</div>' +
-      '<div class="props-row">' +
-        '<span class="label">Type</span>' +
-        '<span class="value">' +
-          '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
-          t.label +
-        '</span>' +
-      '</div>' +
-      '<div class="props-row">' +
-        '<span class="label">Key</span>' +
-        '<span class="value mono">' + hexKey(q, r) + '</span>' +
-      '</div>' +
+      '<div class="props-row"><span class="label">Position</span><span class="value mono">' + q + ', ' + r + '</span></div>' +
+      '<div class="props-row"><span class="label">Type</span><span class="value">' +
+        '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
+        t.label +
+      '</span></div>' +
+      '<div class="props-row"><span class="label">Key</span><span class="value mono">' + hexKey(q, r) + '</span></div>' +
       towerInfo +
     '</div>';
-  
-  // Update desktop props panel
-  if (propsContent) {
-    propsContent.innerHTML = detailsHTML;
-  }
-  
-  // Update mobile overlay
+
+  if (propsContent) propsContent.innerHTML = detailsHTML;
   if (overlayBody) {
     overlayBody.innerHTML = detailsHTML;
-    // Show overlay only on mobile
-    if (window.innerWidth <= 1100) {
-      overlay.style.display = 'flex';
-    }
+    if (window.innerWidth <= 1100) overlay.style.display = 'flex';
   }
 }
 
@@ -521,8 +606,23 @@ async function enter() {
     st.pendingIncomingAttack = null;
   }
 
+  // If no attack id set (navigated via menu), auto-pick the nearest incoming attack.
+  // Prefer an attack already in_siege, otherwise take the one with the smallest eta.
+  if (_pendingAttackId == null) {
+    const incoming = st.summary?.attacks_incoming || [];
+    const siegeAttack = incoming.find(a => a.phase === 'in_siege');
+    if (siegeAttack) {
+      _pendingAttackId = siegeAttack.attack_id;
+    } else if (incoming.length > 0) {
+      const nearest = incoming.reduce((a, b) => (a.eta_seconds <= b.eta_seconds ? a : b));
+      _pendingAttackId = nearest.attack_id;
+    }
+  }
+
   // Subscribe to items for structure tile types
-  _unsub.push(eventBus.on('state:items', _registerStructureTileTypes));
+  _unsub.push(eventBus.on('state:items', () => { _registerStructureTileTypes(); _buildPalette(); }));
+  // Connect WS if an attack becomes active while on this view
+  _unsub.push(eventBus.on('state:summary', () => { if (!_wsConnected) _connectWsIfNeeded(); }));
 
   // Load items to get structure tiles (via REST)
   try {
@@ -532,6 +632,7 @@ async function enter() {
   }
 
   _registerStructureTileTypes();
+  _buildPalette();
 
   // Load map from server (like composer)
   try {
@@ -546,8 +647,8 @@ async function enter() {
     console.warn('[Battle] could not load map from server:', err.message);
   }
 
-  // Connect battle WebSocket
-  _wsConnect();
+  // Connect battle WebSocket only if an attack is active
+  _connectWsIfNeeded();
 
   // Listen for mobile screen on/off
   document.addEventListener('visibilitychange', _onVisibilityChange);
@@ -564,6 +665,9 @@ function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
   _pendingAttackId = null;
+  _activeBrush = null;
+  _isDirtyPath = false;
+  clearTimeout(_autoSaveTimer);
   if (grid) {
     grid.destroy();
     grid = null;
@@ -597,9 +701,30 @@ function _initCanvas() {
     cols: 6,
     rows: 6,
     hexSize: 28,
-    onTileClick: (q, r, tile) => _showTowerDetails(q, r, tile),
+    onTileClick: (q, r, tile) => {
+      if (_activeBrush && _activeBrush !== 'void') {
+        const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
+        const existingType = (tile || grid.getTile(q, r))?.type;
+        const brushIsPath = PATH_TYPES.includes(_activeBrush);
+        const replacesPath = PATH_TYPES.includes(existingType);
+        grid.setTile(q, r, _activeBrush);
+        if (brushIsPath || replacesPath) { _markPathDirty(); }
+        else { _autoSave(); }
+        return;
+      }
+      _showTileDetails(q, r, tile || grid.getTile(q, r));
+    },
     onTileHover: null,
-    onTileDrop: null,
+    onTileDrop: (q, r, tileTypeId) => {
+      if (tileTypeId !== 'void') {
+        const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
+        const existingType = grid.getTile(q, r)?.type;
+        const brushIsPath = PATH_TYPES.includes(tileTypeId);
+        const replacesPath = PATH_TYPES.includes(existingType);
+        if (brushIsPath || replacesPath) { _markPathDirty(); }
+        else { _autoSave(); }
+      }
+    },
   });
 
   // Set explicit dimensions for full canvas area
@@ -639,9 +764,147 @@ function _registerStructureTileTypes() {
     grid._invalidateBase();
     grid._dirty = true;
   }
+  // Rebuild palette whenever items load/update
+  _buildPalette();
 }
 
-// ── Battle Events ───────────────────────────────────────────
+// ── Palette ─────────────────────────────────────────────────
+
+function _updatePalettePathVisibility() {
+  const pathSec = container.querySelector('#palette-path-section');
+  if (!pathSec) return;
+  const inBattle = _battleState.phase === 'in_battle';
+  pathSec.style.display = inBattle ? 'none' : '';
+}
+
+function _buildPalette() {
+  const palette = container.querySelector('#tile-palette');
+  if (!palette) return;
+
+  palette.innerHTML = '';
+
+  // ── Path Section ───────────────────────────────────────
+  const pathSection = document.createElement('div');
+  pathSection.id = 'palette-path-section';
+  pathSection.innerHTML = '<div class="palette-cat-label">Path</div>';
+  for (const typeId of ['castle', 'spawnpoint', 'path']) {
+    pathSection.appendChild(_createPaletteItem(typeId));
+  }
+  palette.appendChild(pathSection);
+
+  // ── Towers Section ─────────────────────────────────────
+  const towerSection = document.createElement('div');
+  towerSection.innerHTML = '<div class="palette-cat-label">Towers</div>';
+  const structureIds = Object.keys((st.items || {}).structures || {});
+  if (structureIds.length > 0) {
+    for (const iid of structureIds) {
+      towerSection.appendChild(_createPaletteItem(iid));
+    }
+  } else {
+    const hint = document.createElement('div');
+    hint.className = 'palette-hint';
+    hint.textContent = 'No towers unlocked';
+    towerSection.appendChild(hint);
+  }
+  palette.appendChild(towerSection);
+
+  // Restore active brush highlight after rebuild
+  if (_activeBrush) {
+    palette.querySelectorAll('.palette-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.tileType === _activeBrush);
+    });
+  }
+
+  _updatePalettePathVisibility();
+}
+
+function _createPaletteItem(typeId) {
+  const t = getTileType(typeId);
+  const item = document.createElement('div');
+  item.className = 'palette-item palette-item--compact';
+  item.dataset.tileType = typeId;
+  item.draggable = true;
+  item.title = t.label;
+  item.innerHTML =
+    '<span class="palette-swatch" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
+    '<span class="palette-label">' + t.label + '</span>';
+  item.addEventListener('click', () => _setActiveBrush(typeId));
+  item.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/tile-type', typeId);
+    e.dataTransfer.effectAllowed = 'copy';
+    item.classList.add('dragging');
+  });
+  item.addEventListener('dragend', () => item.classList.remove('dragging'));
+  return item;
+}
+
+function _setActiveBrush(typeId) {
+  if (_activeBrush === typeId) {
+    _activeBrush = null;
+    container.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
+    return;
+  }
+  _activeBrush = typeId;
+  container.querySelectorAll('.palette-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.tileType === typeId);
+  });
+}
+
+function _markPathDirty() {
+  _isDirtyPath = true;
+  const btn = container.querySelector('#map-save');
+  if (btn) btn.style.display = '';
+}
+
+function _clearPathDirty() {
+  _isDirtyPath = false;
+  const btn = container.querySelector('#map-save');
+  if (btn) btn.style.display = 'none';
+}
+
+async function _saveMap() {
+  const btn = container.querySelector('#map-save');
+  const errBanner = container.querySelector('#map-error-banner');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving\u2026'; }
+  if (errBanner) errBanner.style.display = 'none';
+  try {
+    const data = grid.toJSON();
+    const resp = await rest.saveMap(data.tiles || {});
+    if (resp && resp.success === false) {
+      const msg = resp.error || 'Save failed';
+      console.error('[Battle] Map save failed:', msg);
+      if (errBanner) { errBanner.textContent = '\u274c ' + msg; errBanner.style.display = 'block'; }
+      if (btn) { btn.textContent = '\u2717 Error'; btn.style.color = 'var(--danger)'; setTimeout(() => { btn.textContent = '\ud83d\udcbe Save'; btn.style.color = ''; btn.disabled = false; }, 2000); }
+    } else {
+      _clearPathDirty();
+      if (errBanner) errBanner.style.display = 'none';
+      if (btn) { btn.textContent = '\u2713 Saved'; btn.style.color = 'var(--success)'; setTimeout(() => { btn.textContent = '\ud83d\udcbe Save'; btn.style.color = ''; btn.disabled = false; }, 1200); }
+    }
+  } catch (err) {
+    const msg = err.message || 'Network error';
+    console.error('[Battle] _saveMap error:', err);
+    if (errBanner) { errBanner.textContent = '\u274c ' + msg; errBanner.style.display = 'block'; }
+    if (btn) { btn.textContent = '\u2717 Error'; btn.style.color = 'var(--danger)'; setTimeout(() => { btn.textContent = '\ud83d\udcbe Save'; btn.style.color = ''; btn.disabled = false; }, 2000); }
+  }
+}
+
+async function _autoSave() {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(async () => {
+    try {
+      const data = grid.toJSON();
+      const resp = await rest.saveMap(data.tiles || {});
+      if (resp && resp.success === false) {
+        console.warn('[Battle] Auto-save rejected:', resp.error);
+      } else {
+        console.log('[Battle] Auto-saved');
+      }
+    } catch (err) {
+      console.error('[Battle] Auto-save error:', err);
+    }
+  }, 800);
+}
+
 
 function _onBattleStatus(msg) {
   if (!msg) return;
@@ -664,6 +927,7 @@ function _onBattleStatus(msg) {
   
   // Update status display
   _updateStatusFromBattleMsg();
+  _updatePalettePathVisibility();
 }
 
 function _onBattleSetup(msg) {
@@ -721,6 +985,9 @@ function _onBattleSetup(msg) {
   grid.battleActive = true;
   grid._dirty = true;
 
+  // Update palette — hide Path section while battle is active
+  _updatePalettePathVisibility();
+
   // Update status
   _updateStatus('Battle starting...');
 }
@@ -752,6 +1019,35 @@ function _spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
   }
   wrap.appendChild(div);
   div.addEventListener('animationend', () => div.remove());
+}
+
+function _onStructureUpdate(msg) {
+  if (!msg || !Array.isArray(msg.structures) || !grid) return;
+  _addDebugLog(`🏗 Structure update: ${msg.structures.length} towers`);
+
+  const NON_STRUCTURE = new Set(['path', 'castle', 'spawnpoint', 'empty', 'void', 'blocked']);
+
+  // Clear existing structure tiles (keep path/castle/spawn)
+  for (const [key, tile] of grid.tiles) {
+    if (!NON_STRUCTURE.has(tile.type)) {
+      const [q, r] = key.split(',').map(Number);
+      grid.setTile(q, r, 'empty');
+    }
+  }
+
+  // Place all structures from the server snapshot
+  for (const s of msg.structures) {
+    grid.setTile(s.q, s.r, s.iid);
+    const key = hexKey(s.q, s.r);
+    const tile = grid.tiles.get(key);
+    if (tile) {
+      tile.sid = s.sid;
+      tile.structure_data = s;
+    }
+  }
+
+  grid._invalidateBase();
+  grid._dirty = true;
 }
 
 function _onBattleUpdate(msg) {
@@ -1019,8 +1315,8 @@ function _showSummary(msg) {
 // ── Export ──────────────────────────────────────────────────
 
 export default {
-  id: 'battle',
-  title: 'Battle',
+  id: 'defense',
+  title: 'Defense',
   init,
   enter,
   leave,

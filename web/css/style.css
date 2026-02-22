@@ -102,13 +102,13 @@ html, body {
   color: var(--text-bright);
 }
 
-#main-nav .nav-brand.alarm {
-  animation: brand-alarm 1s ease-in-out infinite;
+#main-nav a.alarm {
+  animation: nav-link-alarm 1s ease-in-out infinite;
 }
 
-@keyframes brand-alarm {
-  0%, 100% { color: var(--accent); text-shadow: none; }
-  50% { color: #ff4444; text-shadow: 0 0 12px rgba(255, 68, 68, .6); }
+@keyframes nav-link-alarm {
+  0%, 100% { color: var(--text-muted, #aaa); background: transparent; }
+  50% { color: #ff4444; background: rgba(255, 68, 68, .15); text-shadow: 0 0 8px rgba(255, 68, 68, .5); }
 }
 
 #main-nav .ws-status {
@@ -1808,13 +1808,50 @@ label {
   font-family: var(--mono);
 }
 
-/* Battle Body (Canvas + Props Layout) */
+/* Battle Body (Palette + Canvas + Props Layout) */
 .battle-view__body {
   display: grid;
-  grid-template-columns: 1fr 200px;
+  grid-template-columns: 110px 1fr 200px;
   gap: 8px;
   flex: 1;
   min-height: 0;
+}
+
+/* Compact tile palette in battle view */
+.battle-palette {
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  padding: 6px 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.palette-cat-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  padding: 4px 4px 2px;
+}
+
+/* Compact variant used in battle palette */
+.palette-item--compact {
+  padding: 3px 4px;
+  gap: 5px;
+  font-size: 11px;
+}
+.palette-item--compact .palette-swatch {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.palette-item--compact .palette-label {
+  font-size: 10px;
+  line-height: 1.2;
 }
 
 .battle-canvas-wrap {
@@ -1927,10 +1964,42 @@ label {
 /* Battle View: Hide props panel on mobile (use overlay instead) */
 @media (max-width: 1100px) {
   .battle-view__body {
-    grid-template-columns: 1fr;
+    grid-template-columns: 90px 1fr;
   }
   .battle-view__props {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .battle-view__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  /* Palette sits above canvas as a horizontal scrolling strip */
+  .battle-palette {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 6px;
+    gap: 4px;
+  }
+  .battle-palette > div {
+    display: contents; /* flatten category wrappers into the flex row */
+  }
+  .palette-cat-label { display: none; }
+  .palette-item--compact {
+    flex-direction: column;
+    align-items: center;
+    min-width: 44px;
+    padding: 4px 4px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .palette-item--compact .palette-label {
+    font-size: 9px;
+    white-space: nowrap;
   }
 }
 

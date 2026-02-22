@@ -51,7 +51,7 @@ function init(el, _api, _state) {
   }
 
   container.innerHTML = `
-    <h2>Empire Dashboard</h2>
+    <h2>Empire Status</h2>
     <div id="dashboard-content">
       <div class="empty-state"><div class="empty-icon">◈</div><p>Loading empire data…</p></div>
     </div>
@@ -260,7 +260,7 @@ function render(data) {
       const attackId = parseInt(entry.dataset.attackId, 10);
       const attackerUid = parseInt(entry.dataset.attackerUid, 10);
       st.pendingIncomingAttack = { attack_id: attackId, attacker_uid: attackerUid };
-      window.location.hash = '#battle';
+      window.location.hash = '#defense';
     });
   });
 }
@@ -680,10 +680,10 @@ function renderEffects(effects) {
 
 function renderEmpiresSection(empires) {
   if (!empires) {
-    return `<div class="panel"><div class="panel-header">Known Empires <button id="empires-refresh-btn" style="float:right;font-size:11px;padding:2px 6px;">↻</button></div><div class="panel-row"><span class="value">Loading…</span></div></div>`;
+    return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">Loading…</span></div></div>`;
   }
   if (empires.length === 0) {
-    return `<div class="panel"><div class="panel-header">Known Empires <button id="empires-refresh-btn" style="float:right;font-size:11px;padding:2px 6px;">↻</button></div><div class="panel-row"><span class="value">—</span></div></div>`;
+    return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">—</span></div></div>`;
   }
 
   const rows = empires.map((e, i) => `
@@ -693,15 +693,15 @@ function renderEmpiresSection(empires) {
       <span class="value" style="color:#ffa726;">${fmtNumber(e.culture)} ✦</span>
       ${e.is_self
         ? '<span></span><span></span>'
-        : `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>
-           <button class="msg-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;">✉</button>`
+        : `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);display:inline-flex;align-items:center;justify-content:center;">⚔</button>
+           <button class="msg-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;display:inline-flex;align-items:center;justify-content:center;">✉</button>`
       }
     </div>
   `).join('');
 
   return `
     <div class="panel">
-      <div class="panel-header">Known Empires <button id="empires-refresh-btn" style="float:right;font-size:11px;padding:2px 6px;">↻</button></div>
+      <div class="panel-header">Known Empires</div>
       <div style="display:grid;grid-template-columns:24px 1fr 90px 56px 46px;gap:6px;padding:4px 8px;font-size:0.78em;color:#888;border-bottom:1px solid var(--border-color);">
         <span>#</span><span>Name</span><span>Culture</span><span></span><span></span>
       </div>
@@ -713,9 +713,6 @@ function renderEmpiresSection(empires) {
 function bindEmpiresEvents() {
   const sec = container.querySelector('#empires-section');
   if (!sec) return;
-
-  const refreshBtn = sec.querySelector('#empires-refresh-btn');
-  if (refreshBtn) refreshBtn.onclick = () => refreshEmpires();
 
   sec.querySelectorAll('.attack-btn').forEach(btn => {
     btn.onclick = () => onAttackClick(btn);
@@ -745,8 +742,8 @@ function fmt(n) {
 }
 
 export default {
-  id: 'dashboard',
-  title: 'Dashboard',
+  id: 'status',
+  title: 'Status',
   init,
   enter,
   leave,

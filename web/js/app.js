@@ -2,7 +2,7 @@
  * App bootstrap — wires together Router, views, status sidebar.
  *
  * Economy communication goes through REST (rest.js).
- * WebSocket is only used on the battle page (managed by battle.js).
+ * WebSocket is only used on the defense page (managed by defense.js).
  */
 
 import { rest } from './rest.js';
@@ -12,12 +12,11 @@ import { Router } from './router.js';
 import { debug } from './debug.js';
 
 import loginView   from './views/login.js';
-import dashView    from './views/dashboard.js';
+import dashView    from './views/status.js';
 import buildView   from './views/buildings.js';
 import resView     from './views/research.js';
-import compView    from './views/composer.js';
 import armyView    from './views/army.js';
-import battleView  from './views/battle.js';
+import battleView  from './views/defense.js';
 import socialView  from './views/social.js';
 import signupView  from './views/signup.js';
 
@@ -37,7 +36,7 @@ eventBus.on('rest:unauthorized', () => {
 });
 
 // ── Register views ─────────────────────────────────────────
-[loginView, signupView, dashView, buildView, resView, compView, armyView, battleView, socialView]
+[loginView, signupView, dashView, buildView, resView, armyView, battleView, socialView]
   .forEach(v => router.register(v));
 
 // ── Toast notifications for push messages ──────────────────
@@ -57,15 +56,17 @@ function showToast(text, type = 'message') {
 // ── Register debug toast callback ──────────────────────────
 debug.setToastCallback((text, type) => showToast(text, type));
 
-// ── Incoming attack alarm on nav-brand ──────────────────────
-const navBrand = document.getElementById('nav-brand');
+// ── Incoming attack alarm on dashboard nav link ──────────────
 const navMsgBadge = document.getElementById('nav-msg-badge');
+const navDashboard = document.getElementById('nav-dashboard');
+const navDefense = document.getElementById('nav-defense');
 eventBus.on('state:summary', (data) => {
-  const hasIncoming = data && Array.isArray(data.attacks_incoming) && data.attacks_incoming.length > 0;
-  navBrand.classList.toggle('alarm', hasIncoming);
-  navBrand.title = hasIncoming
-    ? `⚠ ${data.attacks_incoming.length} incoming attack(s)!`
-    : 'E3';
+  const incoming = data?.attacks_incoming || [];
+  const hasIncoming = incoming.length > 0;
+  const hasActive = incoming.some(a => a.phase === 'in_siege' || a.phase === 'in_battle');
+
+  if (navDashboard) navDashboard.classList.toggle('alarm', hasIncoming && !hasActive);
+  if (navDefense)   navDefense.classList.toggle('alarm', hasActive);
 
   // Unread messages badge
   const unread = data?.unread_messages || 0;
@@ -116,7 +117,7 @@ eventBus.on('state:auth', (auth) => {
     navAuth.href = '#login';
   }
   if (auth.authenticated && router.currentRoute() === 'login') {
-    const target = router.pendingRoute || 'dashboard';
+    const target = router.pendingRoute || 'status';
     router.pendingRoute = null;
     router.navigate(target);
   }
@@ -147,6 +148,6 @@ debugToggle.addEventListener('click', () => {
     console.warn('[app] REST auto-login failed:', err.message);
   }
 
-  // 2. Activate router (no WS needed — battle view manages its own)
+  // 2. Activate router (no WS needed — defense view manages its own)
   router.start();
 })();

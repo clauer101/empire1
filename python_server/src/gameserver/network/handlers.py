@@ -1503,7 +1503,36 @@ async def handle_map_save_request(
     tile_count = len(tiles)
     empire.hex_map = tiles
     log.info(f"Map saved for empire {empire.name} (uid={target_uid}): {tile_count} tiles")
-    
+
+    # ── Sync structures into active battle (if one is running) ──────
+    battle = _active_battles.get(target_uid)
+    if battle is not None:
+        items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
+        new_sids = _sync_battle_structures(battle, tiles, items_dict)
+        if new_sids:
+            log.info("[map_save] Synced %d new/changed structures into active battle bid=%d",
+                     len(new_sids), battle.bid)
+            # Broadcast updated structure list to all observers
+            structure_update_msg = {
+                "type": "structure_update",
+                "bid": battle.bid,
+                "structures": [
+                    {
+                        "sid": s.sid,
+                        "iid": s.iid,
+                        "q": s.position.q,
+                        "r": s.position.r,
+                        "damage": s.damage,
+                        "range": s.range,
+                    }
+                    for s in battle.structures.values()
+                ],
+            }
+            if svc.server:
+                import asyncio
+                for uid in battle.observer_uids:
+                    asyncio.create_task(svc.server.send_to(uid, structure_update_msg))
+
     return {
         "type": "map_save_response",
         "success": True,
@@ -1754,6 +1783,77 @@ _active_battles: dict[int, "BattleState"] = {}  # uid → BattleState
 _next_bid: int = 1
 
 
+def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict) -> list[int]:
+    """Sync battle.structures from the current tile map.
+
+    Adds towers that were placed after battle started, removes towers that
+    were demolished, and leaves untouched towers (same iid at same position)
+    intact so their reload timers and targeting state survive.
+
+    Returns list of newly added SIDs.
+    """
+    from gameserver.models.structure import Structure
+    from gameserver.models.hex import HexCoord
+
+    NON_STRUCTURE = {"empty", "path", "spawnpoint", "castle", "blocked", "void"}
+
+    # Build lookup: (q, r) → existing Structure
+    pos_to_struct: dict[tuple[int, int], Structure] = {
+        (s.position.q, s.position.r): s for s in battle.structures.values()
+    }
+
+    # Build lookup: (q, r) → tile_type for all structure tiles in new map
+    new_pos_types: dict[tuple[int, int], str] = {}
+    for tile_key, tile_type in tiles.items():
+        if tile_type not in NON_STRUCTURE:
+            q, r = map(int, tile_key.split(","))
+            new_pos_types[(q, r)] = tile_type
+
+    # Remove structures whose tile was removed or replaced
+    sids_to_remove = [
+        s.sid for s in battle.structures.values()
+        if (s.position.q, s.position.r) not in new_pos_types
+           or new_pos_types[(s.position.q, s.position.r)] != s.iid
+    ]
+    for sid in sids_to_remove:
+        s = battle.structures.pop(sid)
+        log.info("[sync_structures] Removed structure sid=%d iid=%s at (%d,%d)",
+                 s.sid, s.iid, s.position.q, s.position.r)
+
+    # Add new structures (positions not yet in battle or replaced above)
+    existing_pos: set[tuple[int, int]] = {
+        (s.position.q, s.position.r) for s in battle.structures.values()
+    }
+    next_sid = max(battle.structures.keys(), default=0) + 1
+    new_sids: list[int] = []
+
+    for (q, r), tile_type in new_pos_types.items():
+        if (q, r) in existing_pos:
+            continue  # Already present and correct iid
+        item = items_dict.get(tile_type)
+        if not item:
+            continue
+        structure = Structure(
+            sid=next_sid,
+            iid=tile_type,
+            position=HexCoord(q, r),
+            damage=getattr(item, "damage", 1.0),
+            range=getattr(item, "range", 1),
+            reload_time_ms=getattr(item, "reload_time", 2000.0),
+            shot_speed=getattr(item, "shot_speed", 1.0),
+            shot_type=getattr(item, "shot_type", "normal"),
+            shot_sprite=getattr(item, "shot_sprite", ""),
+            effects=getattr(item, "effects", {}),
+        )
+        battle.structures[next_sid] = structure
+        new_sids.append(next_sid)
+        log.info("[sync_structures] Added structure sid=%d iid=%s at (%d,%d)",
+                 next_sid, tile_type, q, r)
+        next_sid += 1
+
+    return new_sids
+
+
 async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleService", send_fn, broadcast_interval_ms: float = 250.0) -> None:
     """Wrapper for the async battle loop with cleanup and resource transfer.
     
@@ -1914,7 +2014,7 @@ def _create_attack_phase_handler() -> Callable:
         # Immediately push battle_status (with wave_info) to all registered observers
         # so they don't have to wait up to 1 s for the next periodic tick.
         attack = None
-        for a in svc.attack_service.get_all():
+        for a in svc.attack_service.get_all_attacks():
             if a.attack_id == event.attack_id:
                 attack = a
                 break

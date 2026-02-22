@@ -55,7 +55,7 @@ async function onLogin() {
   try {
     const resp = await rest.login(user, pwd);
     if (resp.success) {
-      window.location.hash = '#dashboard';
+      window.location.hash = '#status';
     } else {
       errEl.textContent = resp.reason || 'Login failed';
       errEl.hidden = false;
