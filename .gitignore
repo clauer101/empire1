@@ -2,5 +2,6 @@ __pycache__
 .venv
 .vscode
 .pytest_cache
+*.log
 java_implementation
 plans
