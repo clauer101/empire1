@@ -13,7 +13,7 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
-let hideCompleted = true;
+let hideCompleted = null; // null = auto: computed on first render
 
 function init(el, _api, _state) {
   container = el;
@@ -42,6 +42,7 @@ async function enter() {
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
+  hideCompleted = null; // reset so next visit re-evaluates the default
 }
 
 function render() {
@@ -57,25 +58,34 @@ function render() {
   const researchQueue = summary.research_queue;  // Only this item is "researching"
   const knowledge = items.knowledge || {};
 
-  // Build reverse-requirement map across all item categories
-  const categoryItems = {
-    building: items.buildings || {},
-    knowledge: items.knowledge || {},
-    structure: items.structures || {},
-    critter: items.critters || {},
-  };
+  // Build reverse-requirement map from full catalog (includes locked items)
+  const catalog = items.catalog || {};
+  // Fallback to per-category items for name lookup when not in catalog
+  const _allByIid = Object.assign(
+    {},
+    items.buildings || {},
+    items.knowledge || {},
+    items.structures || {},
+    items.critters || {},
+  );
   const unlocksMap = {};
-  for (const [category, catItems] of Object.entries(categoryItems)) {
-    for (const [depIid, depInfo] of Object.entries(catItems)) {
-      for (const req of (depInfo.requirements || [])) {
-        if (!unlocksMap[req]) unlocksMap[req] = [];
-        unlocksMap[req].push({ iid: depIid, name: depInfo.name || depIid, category });
-      }
+  for (const [depIid, depInfo] of Object.entries(catalog)) {
+    const category = depInfo.item_type || 'knowledge';
+    const name = depInfo.name || _allByIid[depIid]?.name || depIid;
+    for (const req of (depInfo.requirements || [])) {
+      if (!unlocksMap[req]) unlocksMap[req] = [];
+      unlocksMap[req].push({ iid: depIid, name, category });
     }
   }
 
   let entries = Object.entries(knowledge).reverse();
-  
+
+  // Auto-default: hide completed only when 5+ knowledge items are done
+  if (hideCompleted === null) {
+    const completedKnowledgeCount = Object.keys(knowledge).filter(iid => completed.has(iid)).length;
+    hideCompleted = completedKnowledgeCount >= 5;
+  }
+
   // Filter out completed items if toggle is active
   if (hideCompleted) {
     entries = entries.filter(([iid]) => !completed.has(iid));
@@ -95,11 +105,11 @@ function render() {
     const badgeText = status === 'in-progress' ? 'researching' : status;
 
     // Calculate wall-clock duration with empire effects
-    // Research speed: 1 + research_speed_modifier + scientists * citizen_effect
+    // Research speed: (base_research_speed + research_speed_offset) * (1 + research_speed_modifier + n_scientists * citizen_effect)
     const fullEffort = info.effort;
     const remaining = summary.knowledge?.[iid] ?? fullEffort;  // If not started, remaining = full effort
     const scientistBonus = (summary.citizens?.scientist || 0) * (summary.citizen_effect || 0);
-    const researchMultiplier = 1 + (summary.effects?.research_speed_modifier || 0) + scientistBonus;
+    const researchMultiplier = ((summary.base_research_speed ?? 1) + (summary.effects?.research_speed_offset || 0)) * (1 + (summary.effects?.research_speed_modifier || 0) + scientistBonus);
     const totalSecs  = researchMultiplier > 0 ? fullEffort / researchMultiplier : fullEffort;
     const remainSecs = researchMultiplier > 0 ? remaining  / researchMultiplier : remaining;
 

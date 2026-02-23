@@ -1,12 +1,13 @@
-"""Tests for directional travel- and siege-time modifiers.
+"""Tests for travel- and siege-time offsets.
 
 Effects tested:
-  outgoing_travel_time_offset  – attacker effect, subtracted from travel time
-  incoming_travel_time_offset  – defender effect, added to travel time
-  outgoing_siege_time_offset   – attacker effect, subtracted from siege time
-  incoming_siege_time_offset   – defender effect, added to siege time
+  TRAVEL_TIME_OFFSET  – attacker effect; added to base travel time.
+                        Negative value = faster travel.
+                        Formula: eta = max(1, base + offset)
 
-All values are in seconds.
+  SIEGE_TIME_OFFSET   – defender effect; added to base siege time.
+                        Positive value = longer siege.
+                        Formula: siege = max(1, base + offset)
 """
 
 import pytest
@@ -22,7 +23,7 @@ from gameserver.util.events import EventBus
 ATTACKER_UID = 1
 DEFENDER_UID = 2
 BASE_TRAVEL = 100.0   # seconds
-BASE_SIEGE = 30.0     # seconds
+BASE_SIEGE  = 30.0    # seconds
 
 
 # ---------------------------------------------------------------------------
@@ -77,57 +78,38 @@ class TestTravelTimeModifiers:
     def test_base_travel_time_no_effects(self, svc):
         """No effects → ETA equals base travel time."""
         attack = _start(svc)
-        assert attack.eta_seconds == BASE_TRAVEL
+        assert attack.eta_seconds == pytest.approx(BASE_TRAVEL)
 
-    def test_outgoing_travel_reduces_eta(self, svc):
-        """outgoing_travel_time_offset on attacker shortens travel time."""
+    def test_attacker_offset_reduces_eta(self, svc):
+        """Negative TRAVEL_TIME_OFFSET on attacker shortens travel time."""
         attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_TRAVEL_TIME_OFFSET] = 20.0
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_OFFSET] = -20.0
 
         attack = _start(svc)
-        # 100 - 20 = 80
+        # 100 + (-20) = 80
         assert attack.eta_seconds == pytest.approx(80.0)
 
-    def test_incoming_travel_increases_eta(self, svc):
-        """incoming_travel_time_offset on defender lengthens travel time."""
+    def test_attacker_offset_increases_eta(self, svc):
+        """Positive TRAVEL_TIME_OFFSET on attacker lengthens travel time."""
         attack_service, empire_service = svc
-        empire_service.get(DEFENDER_UID).effects[fx.INCOMING_TRAVEL_TIME_OFFSET] = 15.0
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_OFFSET] = 15.0
 
         attack = _start(svc)
         # 100 + 15 = 115
         assert attack.eta_seconds == pytest.approx(115.0)
 
-    def test_both_travel_offsets_combined(self, svc):
-        """outgoing and incoming offsets applied together."""
+    def test_attacker_offset_clamped_to_one(self, svc):
+        """ETA is clamped to minimum 1.0 s even with large negative offset."""
         attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_TRAVEL_TIME_OFFSET] = 30.0
-        empire_service.get(DEFENDER_UID).effects[fx.INCOMING_TRAVEL_TIME_OFFSET] = 10.0
-
-        attack = _start(svc)
-        # 100 - 30 + 10 = 80
-        assert attack.eta_seconds == pytest.approx(80.0)
-
-    def test_outgoing_larger_than_base_clamped_to_one(self, svc):
-        """ETA is clamped to minimum 1.0 s even when offset exceeds base."""
-        attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_TRAVEL_TIME_OFFSET] = 500.0
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_OFFSET] = -500.0
 
         attack = _start(svc)
         assert attack.eta_seconds == pytest.approx(1.0)
 
-    def test_outgoing_travel_does_not_affect_defender_empire(self, svc):
-        """outgoing_travel_time_offset on the *defender* has no effect."""
+    def test_defender_offset_does_not_affect_travel(self, svc):
+        """TRAVEL_TIME_OFFSET on the *defender* has no effect on ETA."""
         attack_service, empire_service = svc
-        # Wrong empire — should be ignored
-        empire_service.get(DEFENDER_UID).effects[fx.OUTGOING_TRAVEL_TIME_OFFSET] = 50.0
-
-        attack = _start(svc)
-        assert attack.eta_seconds == pytest.approx(BASE_TRAVEL)
-
-    def test_incoming_travel_does_not_affect_attacker_empire(self, svc):
-        """incoming_travel_time_offset on the *attacker* has no effect."""
-        attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.INCOMING_TRAVEL_TIME_OFFSET] = 50.0
+        empire_service.get(DEFENDER_UID).effects[fx.TRAVEL_TIME_OFFSET] = -50.0
 
         attack = _start(svc)
         assert attack.eta_seconds == pytest.approx(BASE_TRAVEL)
@@ -138,80 +120,54 @@ class TestTravelTimeModifiers:
 # ===========================================================================
 
 class TestSiegeTimeModifiers:
-    def test_base_siege_time_no_directional_effects(self, svc):
-        """No directional effects → siege equals base siege time."""
+    def test_base_siege_time_no_effects(self, svc):
+        """No effects → siege equals base siege time."""
         attack_service, _ = svc
         duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
         assert duration == pytest.approx(BASE_SIEGE)
 
-    def test_outgoing_siege_reduces_duration(self, svc):
-        """outgoing_siege_time_offset on attacker shortens siege."""
+    def test_defender_offset_increases_duration(self, svc):
+        """Positive SIEGE_TIME_OFFSET on defender lengthens siege."""
         attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_SIEGE_TIME_OFFSET] = 10.0
+        empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = 15.0
 
         duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-        # 30 - 10 = 20
-        assert duration == pytest.approx(20.0)
+        # 30 + 15 = 45
+        assert duration == pytest.approx(45.0)
 
-    def test_incoming_siege_increases_duration(self, svc):
-        """incoming_siege_time_offset on defender lengthens siege."""
+    def test_defender_offset_reduces_duration(self, svc):
+        """Negative SIEGE_TIME_OFFSET on defender shortens siege."""
         attack_service, empire_service = svc
-        empire_service.get(DEFENDER_UID).effects[fx.INCOMING_SIEGE_TIME_OFFSET] = 12.0
+        empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = -15.0
 
         duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-        # 30 + 12 = 42
-        assert duration == pytest.approx(42.0)
+        # 30 - 15 = 15
+        assert duration == pytest.approx(15.0)
 
-    def test_both_siege_offsets_combined(self, svc):
-        """outgoing and incoming siege offsets applied together."""
-        attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_SIEGE_TIME_OFFSET] = 8.0
-        empire_service.get(DEFENDER_UID).effects[fx.INCOMING_SIEGE_TIME_OFFSET] = 5.0
-
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-        # 30 - 8 + 5 = 27
-        assert duration == pytest.approx(27.0)
-
-    def test_directional_offsets_combine_with_existing_modifier(self, svc):
-        """Directional offsets stack correctly with SIEGE_TIME_OFFSET + MODIFIER."""
-        attack_service, empire_service = svc
-        # Existing effects on defender
-        empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = 40.0
-        empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_MODIFIER] = 0.5  # +50%
-        # Directional effects
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_SIEGE_TIME_OFFSET] = 5.0
-        empire_service.get(DEFENDER_UID).effects[fx.INCOMING_SIEGE_TIME_OFFSET] = 3.0
-
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-        # base = 40 + 40*0.5 = 60; directional: 60 - 5 + 3 = 58
-        assert duration == pytest.approx(58.0)
-
-    def test_outgoing_siege_clamped_to_one(self, svc):
+    def test_siege_clamped_to_one(self, svc):
         """Siege duration is clamped to minimum 1.0 s."""
         attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.OUTGOING_SIEGE_TIME_OFFSET] = 1000.0
+        empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = -500.0
 
         duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
         assert duration == pytest.approx(1.0)
 
-    def test_outgoing_siege_on_defender_has_no_effect(self, svc):
-        """outgoing_siege_time_offset on the *defender* is ignored."""
+    def test_attacker_offset_does_not_affect_siege(self, svc):
+        """SIEGE_TIME_OFFSET on the *attacker* has no effect on siege duration."""
         attack_service, empire_service = svc
-        empire_service.get(DEFENDER_UID).effects[fx.OUTGOING_SIEGE_TIME_OFFSET] = 50.0
-
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-        assert duration == pytest.approx(BASE_SIEGE)
-
-    def test_incoming_siege_on_attacker_has_no_effect(self, svc):
-        """incoming_siege_time_offset on the *attacker* is ignored."""
-        attack_service, empire_service = svc
-        empire_service.get(ATTACKER_UID).effects[fx.INCOMING_SIEGE_TIME_OFFSET] = 50.0
+        empire_service.get(ATTACKER_UID).effects[fx.SIEGE_TIME_OFFSET] = 300.0
 
         duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
         assert duration == pytest.approx(BASE_SIEGE)
 
     def test_unknown_attacker_siege_uses_base(self, svc):
-        """If attacker UID is unknown, outgoing adjustment is skipped gracefully."""
-        attack_service, empire_service = svc
+        """If attacker UID is unknown, base siege time is used."""
+        attack_service, _ = svc
         duration = attack_service._calculate_siege_duration(9999, DEFENDER_UID)
+        assert duration == pytest.approx(BASE_SIEGE)
+
+    def test_unknown_defender_siege_uses_base(self, svc):
+        """If defender UID is unknown, base siege time is used."""
+        attack_service, _ = svc
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, 9999)
         assert duration == pytest.approx(BASE_SIEGE)

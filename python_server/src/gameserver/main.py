@@ -33,7 +33,7 @@ from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.game_loop import GameLoop
 from gameserver.engine.statistics import StatisticsService
 from gameserver.engine.upgrade_provider import UpgradeProvider
-from gameserver.loaders.ai_loader import load_ai_templates
+from gameserver.loaders.ai_loader import load_ai_templates, load_ai_waves
 from gameserver.loaders.item_loader import load_items
 from gameserver.loaders.map_loader import load_map
 from gameserver.models.items import ItemDetails
@@ -45,7 +45,7 @@ from gameserver.persistence.database import Database
 from gameserver.persistence.message_store import MessageStore
 from gameserver.persistence.state_load import RestoredState, load_state
 from gameserver.persistence.state_save import save_state
-from gameserver.util.events import EventBus
+from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire
 from gameserver.debug.dashboard import DebugDashboard
 from gameserver.network.handlers import register_all_handlers
@@ -75,6 +75,7 @@ class Configuration:
     items: list = field(default_factory=list)
     hex_map: Optional[HexMap] = None
     ai_templates: dict = field(default_factory=dict)
+    ai_waves: list = field(default_factory=list)
     game: GameConfig = field(default_factory=GameConfig)
 
 
@@ -150,10 +151,15 @@ def load_configuration(
     ai_templates = load_ai_templates(ai_path)
     log.info("  ai_templates: %d entries from %s", len(ai_templates), ai_path)
 
+    ai_waves_path = os.path.join(config_dir, "ai_waves.yaml")
+    ai_waves = load_ai_waves(ai_waves_path)
+    log.info("  ai_waves:     %d hardcoded entries from %s", len(ai_waves), ai_waves_path)
+
     game_cfg = load_game_config()
     log.info("  game_config:  loaded")
 
-    return Configuration(items=items, hex_map=hex_map, ai_templates=ai_templates, game=game_cfg)
+    return Configuration(items=items, hex_map=hex_map, ai_templates=ai_templates,
+                         ai_waves=ai_waves, game=game_cfg)
 
 
 # ===================================================================
@@ -216,10 +222,11 @@ def create_services(config: Configuration, database: Database) -> Services:
     battle_service = BattleService(items=upgrade_provider.items)
     attack_service = AttackService(event_bus, gc, empire_service)
     army_service = ArmyService(upgrade_provider, event_bus)
-    ai_service = AIService(upgrade_provider, config.ai_templates)
+    ai_service = AIService(upgrade_provider, config.ai_templates,
+                            game_config=gc, hardcoded_waves=config.ai_waves)
     statistics = StatisticsService()
 
-    game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc)
+    game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc, ai_service=ai_service)
 
     auth_service = AuthService(database, gc)
     router = Router()
@@ -272,16 +279,25 @@ def wire_events(services: Services) -> None:
     bus = services.event_bus
 
     # Battle outcomes → empire
-    bus.on("BattleFinished", lambda evt: services.empire_service.on_battle_finished(evt)
+    bus.on(BattleFinished, lambda evt: services.empire_service.on_battle_finished(evt)
            if hasattr(services.empire_service, "on_battle_finished") else None)
 
     # Attack arrival → battle
-    bus.on("AttackArrived", lambda evt: services.battle_service.on_attack_arrived(evt)
+    bus.on(AttackArrived, lambda evt: services.battle_service.on_attack_arrived(evt)
            if hasattr(services.battle_service, "on_attack_arrived") else None)
 
     # Item completed → statistics
-    bus.on("ItemCompleted", lambda evt: services.statistics.on_item_completed(evt)
+    bus.on(ItemCompleted, lambda evt: services.statistics.on_item_completed(evt)
            if hasattr(services.statistics, "on_item_completed") else None)
+
+    # Item completed → AI scripted wave triggers
+    if services.ai_service is not None:
+        _ai = services.ai_service
+        _emp = services.empire_service
+        _atk = services.attack_service
+        bus.on(ItemCompleted, lambda evt: _ai.on_item_completed(
+            evt.empire_uid, _emp, _atk
+        ))
 
     log.info("  event handlers registered")
 
@@ -435,6 +451,13 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
             services.attack_service.restore_attacks(saved_state.attacks)
     else:
         _add_test_empire(services)
+
+    # Pre-register AI empire so it's visible from the start
+    from gameserver.engine.ai_service import AI_UID
+    if services.empire_service.get(AI_UID) is None:
+        ai_empire = Empire(uid=AI_UID, name="AI")
+        services.empire_service.register(ai_empire)
+        log.info("AI empire pre-registered (uid=%d)", AI_UID)
 
     # 6. Start network
     await start_network(services)

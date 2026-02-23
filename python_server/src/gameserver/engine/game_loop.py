@@ -19,11 +19,13 @@ import time
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from gameserver.engine.ai_service import AIService
     from gameserver.engine.attack_service import AttackService
     from gameserver.engine.empire_service import EmpireService
     from gameserver.engine.statistics import StatisticsService
     from gameserver.loaders.game_config_loader import GameConfig
     from gameserver.util.events import EventBus
+
 
 
 class GameLoop:
@@ -43,11 +45,13 @@ class GameLoop:
         attack_service: AttackService,
         statistics: StatisticsService,
         game_config: GameConfig | None = None,
+        ai_service: AIService | None = None,
     ) -> None:
         self._events = event_bus
         self._empires = empire_service
         self._attacks = attack_service
         self._stats = statistics
+        self._ai = ai_service
         self._running = False
         self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
 
@@ -118,3 +122,5 @@ class GameLoop:
 
         # 4. Update statistics
         # TODO: self._stats.update()
+
+        # 5. Scripted AI attacks are triggered via ItemCompleted events, not polled.

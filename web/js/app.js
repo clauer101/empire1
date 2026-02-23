@@ -43,6 +43,11 @@ eventBus.on('rest:unauthorized', () => {
 eventBus.on('quick_message', (data) => showToast(data.message || data.text || JSON.stringify(data)));
 eventBus.on('notification',  (data) => showToast(data.message || data.text || JSON.stringify(data)));
 
+// ── Item completed: immediately refresh items + summary ────
+eventBus.on('server:item_completed', () => {
+  Promise.all([rest.getSummary(), rest.getItems()]).catch(() => {});
+});
+
 function showToast(text, type = 'message') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -78,17 +83,33 @@ eventBus.on('state:summary', (data) => {
 
 // ── Summary polling (every 5s while authenticated) ─────────
 let _pollTimer = null;
+let _prevCompletedCount = -1;
 
 function startPolling() {
   if (_pollTimer) return;
   _pollTimer = setInterval(async () => {
     if (!state.auth.authenticated) return;
-    try { await rest.getSummary(); } catch (_) { /* ignore */ }
+    try {
+      const summary = await rest.getSummary();
+      const count = ((summary?.completed_buildings ?? []).length)
+                  + ((summary?.completed_research  ?? []).length);
+      // First poll: just record baseline, don't fetch yet
+      if (_prevCompletedCount === -1) {
+        _prevCompletedCount = count;
+        return;
+      }
+      // If any new item completed since last poll → refresh item catalog
+      if (count > _prevCompletedCount) {
+        rest.getItems().catch(() => {});
+      }
+      _prevCompletedCount = count;
+    } catch (_) { /* ignore */ }
   }, 5000);
 }
 
 function stopPolling() {
   if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  _prevCompletedCount = -1;
 }
 
 eventBus.on('state:auth', (auth) => {

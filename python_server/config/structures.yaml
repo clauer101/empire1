@@ -23,8 +23,9 @@ BASIC_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 100}
   effects: {}
-  requirements: [BASE_CAMP]
+  requirements: [HUNTING]
 
 SLING_TOWER:
   name: "Sling Tower"
@@ -37,8 +38,9 @@ SLING_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 150}
   effects: {}
-  requirements: [HUNTING, EARTH_WALL, FIRE_PLACE]
+  requirements: [EARTH_WALL]
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 200 – 1.500)
@@ -55,6 +57,7 @@ DOUBLE_SLING_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 300}
   effects: {}
   requirements: [CRAFTSMANSHIP, TOOL_SHOP, MAIN_HOUSE]
 
@@ -69,8 +72,9 @@ SPIKE_TRAP:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 350}
   effects: {}
-  requirements: [CRAFTSMANSHIP, EARTH_WALL, MYSTIC, STONE_CIRCLE]
+  requirements: [EARTH_WALL]
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)
@@ -87,8 +91,9 @@ ARROW_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 600}
   effects: {}
-  requirements: [HUNTING, BOW_MAKER, POTTERY, SHRINE]
+  requirements: [BOW_MAKER]
 
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
@@ -101,6 +106,7 @@ ARBELESTE_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 800}
   effects: {}
   requirements: [COPPER_BRONZE, WATCH_TOWER, EXCHANGE_POST]
 
@@ -115,8 +121,9 @@ FIRE_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 1000}
   effects: {}
-  requirements: [COPPER_BRONZE, BOW_MAKER, SAILING, HARBOR]
+  requirements: [COPPER_BRONZE, BOW_MAKER]
 
 # ============================================================
 #   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
@@ -133,6 +140,7 @@ CATAPULTS:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 2000}
   effects: {}
   requirements: [MECHANICS, TREADWHEEL_CRANE, MATHMATICS]
 
@@ -147,6 +155,7 @@ BALLISTA_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 2500}
   effects: {}
   requirements: [IRON, FORGE, CARTOGRAPHY, CARTOGRAPHER]
 
@@ -165,6 +174,7 @@ TAR_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 4000}
   effects: {}
   requirements: [HERBOLOGY, WORK_SHOP, MEDICUS]
 
@@ -179,6 +189,7 @@ COAL_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 4500}
   effects: {}
   requirements: [IRON, FORGE, MARKET_PLACE]
 
@@ -193,6 +204,7 @@ HEAVY_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 5000}
   effects: {}
   requirements: [IRON, IRON_WORK, LAWS, BOOT_CAMP]
 
@@ -207,6 +219,7 @@ BOILING_OIL:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 7000}
   effects: {}
   requirements: [ARCHITECTURE, CITY_WALLS, TOWN_GUARD, SOVEREIGN_GUARD]
 
@@ -225,6 +238,7 @@ MECHANICAL_BALISTA:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 12000}
   effects: {}
   requirements: [MECHANICS, WORK_SHOP, GUILD]
 
@@ -239,6 +253,7 @@ CANNON_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 18000}
   effects: {}
   requirements: [GUNPOWDER, CANNON_MANUFACTORY, PHYSICS, PARADE_GROUND, TRIUMPHAL_ARC]
 
@@ -253,6 +268,7 @@ RIFLE_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 15000}
   effects: {}
   requirements: [GUNPOWDER, GUNSMITH, STRATEGIC_WARFARE, ARCHIVES]
 
@@ -267,6 +283,7 @@ COLD_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 13000}
   effects: {}
   requirements: [CHEMISTRY, LABORATORY, SCIENCE, ACADEMY]
 
@@ -281,6 +298,7 @@ ICE_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 14000}
   effects: {}
   requirements: [CHEMISTRY, LABORATORY, BOTANIC_GARDENS]
 
@@ -299,6 +317,7 @@ FLAME_THROWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 35000}
   effects: {}
   requirements: [CHEMISTRY, LABORATORY, HEAVY_EQUIPMENT]
 
@@ -313,6 +332,7 @@ SHOCK_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 45000}
   effects: {}
   requirements: [ELECTRICITY, ELECTRIC_FENCE, BALLISTICS]
 
@@ -327,6 +347,7 @@ PARALYZNG_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 50000}
   effects: {}
   requirements: [ELECTRICITY, ELECTRIC_FENCE, HOSPITAL]
 
@@ -341,6 +362,7 @@ NAPALM_THROWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 70000}
   effects: {}
   requirements: [CHEMICAL_WARFARE, WMD_SITE, AERO_DYNAMICS, BOMBING_AREA]
 
@@ -359,6 +381,7 @@ MG_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 100000}
   effects: {}
   requirements: [MECHANICAL_ENGINEERING, BARRACKS, DEFENSE_DEPARTMENT]
 
@@ -373,6 +396,7 @@ RAPID_FIRE_MG_BUNKER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 150000}
   effects: {}
   requirements: [MASS_PRODUCTION, FACTORY, CIVIL_ENGINEERING]
 
@@ -387,6 +411,7 @@ RADAR_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 250000}
   effects: {}
   requirements: [ELECTRONICS, NAVIGATION_SYSTEM, CRYPTOLOGY, AIRFIELD]
 
@@ -401,6 +426,7 @@ ANTI_AIR_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 350000}
   effects: {}
   requirements: [AVIATION, ECHELON_DEFENSE_FACILITY, ROBO_MANUFACTURE]
 
@@ -415,6 +441,7 @@ LASER_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 400000}
   effects: {}
   requirements: [ELECTRONICS, RESEARCH_LAB, NUCLEAR_POWER_PLANT, RESEARCH_VAULT]
 
@@ -433,6 +460,7 @@ SNIPER_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 800000}
   effects: {}
   requirements: [SPECIAL_FORCES, ELITE_ACADEMY, OPTICS, SATELITE_SYSTEMS, INTELLIGENCE_AGENCY]
 
@@ -447,5 +475,6 @@ ROCKET_TOWER:
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
+  costs: {gold: 1000000}
   effects: {}
   requirements: [ROCKET_SCIENCE, ROCKET_SILO, NUCLEAR_REACTION, SPACE_CENTER, THE_WORLD_WONDER]

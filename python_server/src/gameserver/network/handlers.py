@@ -176,6 +176,7 @@ async def handle_item_request(
         structures[item.iid] = {
             "name": item.name,
             "description": item.description,
+            "costs": dict(item.costs),
             "damage": item.damage,
             "range": item.range,
             "reload_time_ms": item.reload_time_ms,
@@ -194,12 +195,23 @@ async def handle_item_request(
             "requirements": list(item.requirements),
         }
 
+    # Full catalog — ALL items regardless of requirements, used by client
+    # for "Required for" reverse-dependency mapping across the entire tech tree.
+    catalog = {}
+    for item in up.items.values():
+        catalog[item.iid] = {
+            "name": item.name,
+            "item_type": item.item_type.value,
+            "requirements": list(item.requirements),
+        }
+
     return {
         "type": "item_response",
         "buildings": buildings,
         "knowledge": knowledge,
         "structures": structures,
         "critters": critters,
+        "catalog": catalog,
     }
 
 
@@ -1342,6 +1354,8 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
         "citizen_effect": svc.empire_service._citizen_effect,
         "base_gold": svc.empire_service._base_gold,
         "base_culture": svc.empire_service._base_culture,
+        "base_build_speed": svc.empire_service._base_build_speed,
+        "base_research_speed": svc.empire_service._base_research_speed,
         "max_life": empire.max_life,
         "effects": dict(empire.effects),
         "artefacts": list(empire.artefacts),
@@ -1483,6 +1497,13 @@ async def handle_map_save_request(
         )
     if spawnpoint_count < 1:
         errors.append("Map must contain at least 1 spawnpoint")
+
+    # Void tiles must not be overwritten
+    old_tiles_for_void = empire.hex_map or {}
+    for tile_key, tile_type in tiles.items():
+        if tile_type != 'void' and old_tiles_for_void.get(tile_key) == 'void':
+            errors.append(f"Cannot place '{tile_type}' on a void tile at {tile_key}")
+            break
     
     # Check path connectivity (only if basic requirements are met)
     if not errors and not _has_path_from_spawn_to_castle(tiles):
@@ -1498,6 +1519,36 @@ async def handle_map_save_request(
             "success": False,
             "error": "; ".join(errors),
         }
+
+    # -- Structure cost check ----------------------------------------
+    from gameserver.models.items import ItemType as _ItemType
+    structure_iids = {
+        item.iid
+        for item in svc.upgrade_provider.get_by_type(_ItemType.STRUCTURE)
+    }
+    old_tiles = empire.hex_map or {}
+    total_gold_cost = 0.0
+    for tile_key, tile_type in tiles.items():
+        if tile_type in structure_iids:
+            old_type = old_tiles.get(tile_key)
+            if old_type != tile_type:
+                # New or changed structure tile — charge placement cost
+                item = svc.upgrade_provider.get(tile_type)
+                if item:
+                    total_gold_cost += item.costs.get("gold", 0.0)
+    if total_gold_cost > 0:
+        current_gold = empire.resources.get("gold", 0.0)
+        if current_gold < total_gold_cost:
+            return {
+                "type": "map_save_response",
+                "success": False,
+                "error": f"Not enough gold (need {total_gold_cost:.0f}, have {current_gold:.0f})",
+            }
+        empire.resources["gold"] -= total_gold_cost
+        log.info(
+            "Empire %d: deducted %.0f gold for new structure placement",
+            target_uid, total_gold_cost,
+        )
 
     # -- Persist -----------------------------------------------------
     tile_count = len(tiles)
@@ -1862,7 +1913,8 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
     2. Applies resource transfers to empires
     3. Sends battle_summary with loot info
     4. Marks the attack as FINISHED
-    5. Cleans up the battle from active battles
+    5. Logs AI_ATTACK outcome and adapts AI parameters (if AI-initiated)
+    6. Cleans up the battle from active battles
     """
     svc = _svc()
     
@@ -1882,10 +1934,20 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         
         # Mark attack as FINISHED so it gets removed from _attacks list
         from gameserver.models.attack import AttackPhase
-        attack = svc.attack_service.get(bid)
+        attack = svc.attack_service.get(battle.attack_id)
         if attack:
             attack.phase = AttackPhase.FINISHED
-            log.info("[battle] Attack %d marked as FINISHED", bid)
+            log.info("[battle] Attack %d marked as FINISHED (bid=%d)", battle.attack_id, bid)
+        else:
+            log.warning("[battle] Could not find attack_id=%d to mark FINISHED (bid=%d)", battle.attack_id, bid)
+
+        # ── AI-ATTACK outcome logging & parameter adaptation ─────────────
+        from gameserver.engine.ai_service import AI_UID
+        if (svc.ai_service is not None
+                and battle.attacker is not None
+                and battle.attacker.uid == AI_UID
+                and battle.attack_id is not None):
+            svc.ai_service.on_battle_result(battle.attack_id, battle)
         
     except Exception:
         import traceback
@@ -1982,6 +2044,24 @@ def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
                  defender.uid, life_restored, base_restore, effect_restore)
 
     return loot
+
+
+def _create_item_completed_handler() -> Callable:
+    """Push an item_completed message to the owning player when a build/research finishes."""
+    async def _async_item_completed(event: "ItemCompleted") -> None:
+        svc = _svc()
+        if svc.server:
+            await svc.server.send_to(event.empire_uid, {
+                "type": "item_completed",
+                "iid": event.iid,
+            })
+            log.debug("[push] item_completed iid=%s uid=%d", event.iid, event.empire_uid)
+
+    def _on_item_completed(event: "ItemCompleted") -> None:
+        import asyncio
+        asyncio.create_task(_async_item_completed(event))
+
+    return _on_item_completed
 
 
 def _create_attack_phase_handler() -> Callable:
@@ -2375,6 +2455,17 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         await svc.server.send_to(attacker_uid, setup_msg)
         await svc.server.send_to(defender_uid, setup_msg)
     
+    # ── Initialise wave timers ────────────────────────────────────────
+    # Wave i starts at (i+1) × initial_wave_delay_ms (no player effects).
+    _initial_delay_ms = (
+        svc.game_config.initial_wave_delay_ms
+        if svc.game_config and hasattr(svc.game_config, "initial_wave_delay_ms")
+        else 15000.0
+    )
+    for _i, _wave in enumerate(attacking_army.waves):
+        _wave.next_critter_ms = int((_i + 1) * _initial_delay_ms)
+        _wave.num_critters_spawned = 0  # reset spawn count on battle start
+
     # ── Launch battle loop ───────────────────────────────
     items = svc.upgrade_provider.items if svc.upgrade_provider else {}
     battle_svc = BattleService(items=items)
@@ -2447,11 +2538,12 @@ def register_all_handlers(services: Services) -> None:
     router.register("battle_next_wave_request", handle_battle_next_wave)
 
     # -- Battle event handlers (internal) --------------------------------
-    from gameserver.util.events import BattleStartRequested, AttackPhaseChanged, BattleObserverBroadcast
+    from gameserver.util.events import BattleStartRequested, AttackPhaseChanged, BattleObserverBroadcast, ItemCompleted
     if services.event_bus:
         services.event_bus.on(BattleStartRequested, _create_battle_start_handler())
         services.event_bus.on(AttackPhaseChanged, _create_attack_phase_handler())
         services.event_bus.on(BattleObserverBroadcast, _create_battle_observer_broadcast_handler())
+        services.event_bus.on(ItemCompleted, _create_item_completed_handler())
 
     # -- Social / Messaging ----------------------------------------------
     router.register("notification_request", handle_notification_request)

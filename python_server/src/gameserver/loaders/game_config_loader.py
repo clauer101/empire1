@@ -48,23 +48,29 @@ class GameConfig:
     base_gold_per_sec: float = 1.0
     base_culture_per_sec: float = 0.5
     citizen_effect: float = 0.03
+    base_build_speed: float = 1.0
+    base_research_speed: float = 1.0
 
     # -- New empire defaults -----------------------------------------
     starting_resources: Dict[str, float] = field(default_factory=lambda: {
         "gold": 0.0, "culture": 0.0, "life": 10.0,
     })
     starting_max_life: float = 10.0
+    restore_life_after_loss_offset: float = 1.0
 
     # -- Travel & Siege ----------------------------------------------
-    base_travel_offset: float = 5400.0
-    base_siege_offset: float = 30.0
+    base_travel_offset: float = 300.0
+    base_siege_offset: float = 900.0
 
     # -- Army & Waves ------------------------------------------------
     waves_per_level: float = 1.0
     slot_adder_per_ai_level: float = 2.0
-    default_spawn_interval_ms: float = 500.0
+    default_spawn_interval_ms: float = 2000.0
 
-    # -- Battle strategy ---------------------------------------------
+    # -- AI attack schedule ------------------------------------------
+    ai_travel_seconds: float = 30.0
+
+    # -- Battle strategy / loot --------------------------------------
     min_lose_knowledge: float = 0.03
     max_lose_knowledge: float = 0.15
     min_lose_culture: float = 0.01

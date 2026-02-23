@@ -15,7 +15,9 @@ RESTORE_LIFE = "restore_life"
 
 # -- Building & Research -------------------------------------------------
 BUILD_SPEED_MODIFIER = "build_speed_modifier"
+BUILD_SPEED_OFFSET = "build_speed_offset"
 RESEARCH_SPEED_MODIFIER = "research_speed_modifier"
+RESEARCH_SPEED_OFFSET = "research_speed_offset"
 
 # -- Structure / Tower ---------------------------------------------------
 DAMAGE_MODIFIER = "damage_modifier"
@@ -36,14 +38,9 @@ SLOT_OFFSET = "slot_offset"
 SLOT_ADDER_PER_LEVEL = "slot_adder_per_level"
 
 # -- Travel & Siege ------------------------------------------------------
-TRAVEL_TIME_MODIFIER = "travel_time_modifier"
-SIEGE_TIME_OFFSET = "siege_time_offset"
-SIEGE_TIME_MODIFIER = "siege_time_modifier"
-# Directional travel/siege offsets (stored in seconds on the empire)
-OUTGOING_TRAVEL_TIME_OFFSET = "outgoing_travel_time_offset"  # attacker: added to travel time
-INCOMING_TRAVEL_TIME_OFFSET = "incoming_travel_time_offset"  # defender: subtracted from travel time
-OUTGOING_SIEGE_TIME_OFFSET = "outgoing_siege_time_offset"    # attacker: added to siege time
-INCOMING_SIEGE_TIME_OFFSET = "incoming_siege_time_offset"    # defender: subtracted from siege time
+TRAVEL_TIME_OFFSET = "travel_time_offset"  # only attacker can modify this
+SIEGE_TIME_OFFSET = "siege_time_offset"  # only defender can modify this
+
 RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately restore life after losing a battle
 
 # -- Battle / Defense ----------------------------------------------------

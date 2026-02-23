@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-23T18:17:51'
-  saved_at_unix: 1771867071.8761923
+  saved_at: '2026-02-22T18:48:24'
+  saved_at_unix: 1771782504.0582988
 empires:
 - uid: 100
   name: TestImperium
@@ -65,21 +65,18 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 95.0
-    culture: 0.0
+    gold: 100
+    culture: 0
     life: 10.0
-  buildings:
-    BASE_CAMP: 0.0
-  build_queue: null
-  knowledge: {}
-  research_queue: null
+  buildings: []
+  build_queue: None
+  knowledge: []
+  research_queue: None
   citizens:
     merchant: 0
     scientist: 0
     artist: 0
-  effects:
-    life_offset: 0.001
-    siege_time_offset: 180.0
+  effects: []
   artefacts: []
   max_life: 10.0
   structures: {}
@@ -95,28 +92,5 @@ empires:
     type: spawnpoint
   - q: 1
     r: 0
-    type: empty
-- uid: 0
-  name: AI
-  resources:
-    gold: 0.0
-    culture: 0.0
-    life: 10.0
-  buildings: {}
-  build_queue: null
-  knowledge: {}
-  research_queue: null
-  citizens:
-    merchant: 0
-    scientist: 0
-    artist: 0
-  effects: {}
-  artefacts: []
-  max_life: 10.0
-  structures: {}
-  armies: []
-  spies: []
-  bosses: {}
-  hex_map: []
 attacks: []
 battles: []

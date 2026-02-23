@@ -13,7 +13,7 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
-let hideCompleted = true;
+let hideCompleted = null; // null = auto: computed on first render
 
 function init(el, _api, _state) {
   container = el;
@@ -42,6 +42,7 @@ async function enter() {
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
+  hideCompleted = null; // reset so next visit re-evaluates the default
 }
 
 function render() {
@@ -57,25 +58,34 @@ function render() {
   const buildQueue = summary.build_queue;  // Only this item is "building"
   const buildings = items.buildings || {};
 
-  // Build reverse-requirement map across all item categories
-  const categoryItems = {
-    building: items.buildings || {},
-    knowledge: items.knowledge || {},
-    structure: items.structures || {},
-    critter: items.critters || {},
-  };
+  // Build reverse-requirement map from full catalog (includes locked items)
+  const catalog = items.catalog || {};
+  // Fallback to per-category items for name lookup when not in catalog
+  const _allByIid = Object.assign(
+    {},
+    items.buildings || {},
+    items.knowledge || {},
+    items.structures || {},
+    items.critters || {},
+  );
   const unlocksMap = {};
-  for (const [category, catItems] of Object.entries(categoryItems)) {
-    for (const [depIid, depInfo] of Object.entries(catItems)) {
-      for (const req of (depInfo.requirements || [])) {
-        if (!unlocksMap[req]) unlocksMap[req] = [];
-        unlocksMap[req].push({ iid: depIid, name: depInfo.name || depIid, category });
-      }
+  for (const [depIid, depInfo] of Object.entries(catalog)) {
+    const category = depInfo.item_type || 'building';
+    const name = depInfo.name || _allByIid[depIid]?.name || depIid;
+    for (const req of (depInfo.requirements || [])) {
+      if (!unlocksMap[req]) unlocksMap[req] = [];
+      unlocksMap[req].push({ iid: depIid, name, category });
     }
   }
 
   let entries = Object.entries(buildings).reverse();
-  
+
+  // Auto-default: hide completed only when 5+ buildings are done
+  if (hideCompleted === null) {
+    const completedBuildingCount = Object.keys(buildings).filter(iid => completed.has(iid)).length;
+    hideCompleted = completedBuildingCount >= 5;
+  }
+
   // Filter out completed items if toggle is active
   if (hideCompleted) {
     entries = entries.filter(([iid]) => !completed.has(iid));
@@ -94,11 +104,10 @@ function render() {
     const badgeClass = `badge badge--${status}`;
     const badgeText = status === 'in-progress' ? 'building' : status;
 
-    // Calculate wall-clock duration with empire effects
-    // Build speed: 1 + build_speed_modifier
+    // Build speed: (base_build_speed + build_speed_offset) * (1 + build_speed_modifier)
     const fullEffort = info.effort;
     const remaining = summary.buildings?.[iid] ?? fullEffort;  // If not started, remaining = full effort
-    const buildMultiplier = 1 + (summary.effects?.build_speed_modifier || 0);
+    const buildMultiplier = ((summary.base_build_speed ?? 1) + (summary.effects?.build_speed_offset || 0)) * (1 + (summary.effects?.build_speed_modifier || 0));
     const totalSecs  = buildMultiplier > 0 ? fullEffort / buildMultiplier : fullEffort;
     const remainSecs = buildMultiplier > 0 ? remaining  / buildMultiplier : remaining;
     const durationStr = status === 'in-progress'

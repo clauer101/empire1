@@ -557,9 +557,13 @@ function _showTileDetails(q, r, tile) {
   let towerInfo = '';
   if (t.serverData) {
     const s = t.serverData;
+    const _goldCost = s.costs?.gold;
+    const _currentGold = st.summary?.resources?.gold || 0;
+    const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
     towerInfo =
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Tower Stats</div>' +
+      (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
       '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
       '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
       '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
@@ -705,6 +709,7 @@ function _initCanvas() {
       if (_activeBrush && _activeBrush !== 'void') {
         const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
         const existingType = (tile || grid.getTile(q, r))?.type;
+        if (existingType === 'void') return;  // cannot build on void tiles
         const brushIsPath = PATH_TYPES.includes(_activeBrush);
         const replacesPath = PATH_TYPES.includes(existingType);
         grid.setTile(q, r, _activeBrush);
@@ -719,6 +724,7 @@ function _initCanvas() {
       if (tileTypeId !== 'void') {
         const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
         const existingType = grid.getTile(q, r)?.type;
+        if (existingType === 'void') return;  // cannot build on void tiles
         const brushIsPath = PATH_TYPES.includes(tileTypeId);
         const replacesPath = PATH_TYPES.includes(existingType);
         if (brushIsPath || replacesPath) { _markPathDirty(); }
@@ -825,9 +831,14 @@ function _createPaletteItem(typeId) {
   item.dataset.tileType = typeId;
   item.draggable = true;
   item.title = t.label;
+  const _palGoldCost = t.serverData?.costs?.gold;
+  const _palCurrentGold = st.summary?.resources?.gold || 0;
+  const _palCostHtml = _palGoldCost
+    ? ' <span style="font-size:10px;color:' + (_palCurrentGold >= _palGoldCost ? 'var(--success,#4caf50)' : 'var(--danger)') + '">💰' + Math.round(_palGoldCost).toLocaleString() + '</span>'
+    : '';
   item.innerHTML =
     '<span class="palette-swatch" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
-    '<span class="palette-label">' + t.label + '</span>';
+    '<span class="palette-label">' + t.label + _palCostHtml + '</span>';
   item.addEventListener('click', () => _setActiveBrush(typeId));
   item.addEventListener('dragstart', e => {
     e.dataTransfer.setData('text/tile-type', typeId);
@@ -1134,11 +1145,15 @@ function _onBattleSummary(msg) {
   _battleState.is_finished = true;
   _battleState.defender_won = msg.defender_won || false;
   _battleState.active = false;
+  _battleState.phase = 'finished';
 
   // Keep critters visible briefly, then clean up
   setTimeout(() => {
     grid.clearBattle();
   }, 1500);
+
+  // Restore base palette (castle / path) now that battle is over
+  _updatePalettePathVisibility();
 
   // Show summary overlay
   _showSummary(msg);
@@ -1212,9 +1227,9 @@ function _updateStatusFromBattleMsg() {
       const siegeRemainingMs = _battleState.time_since_start_s < 0
         ? -_battleState.time_since_start_s * 1000 : 0;
       const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
-      const timeStr = totalCountdownSec > 0 ? ` in ${totalCountdownSec}s` : ' now';
+      const timeStr = totalCountdownSec > 0 ? `${totalCountdownSec}s` : 'now';
       nextWaveEl.textContent =
-        `${wi.slots} ${wi.critter_name} (Wave ${wi.wave_index} / ${wi.total_waves}) spawning${timeStr}`;
+        `Wave (${wi.wave_index}/${wi.total_waves}): ${wi.slots} ${wi.critter_name}, eta: ${timeStr}`;
     } else {
       nextWaveEl.textContent = _battleState.phase === 'in_battle' ? 'All waves done' : '-';
     }

@@ -17,7 +17,7 @@ SLAVE:
   name: "Slave"
   speed: 0.2
   health: 1
-  value: 1
+  value: 2
   damage: 1
   armour: 0
   slots: 1
@@ -33,7 +33,7 @@ WARRIOR:
   name: "Warrior"
   speed: 0.2
   health: 2
-  value: 2
+  value: 3
   damage: 1
   armour: 0
   slots: 1
@@ -49,7 +49,7 @@ SCOUT:
   name: "Scout"
   speed: 0.3
   health: 1
-  value: 1
+  value: 2
   damage: 1
   armour: 0
   slots: 1
@@ -69,7 +69,7 @@ CLUBMAN:
   name: "Clubman"
   speed: 0.2
   health: 2
-  value: 2
+  value: 4
   damage: 1
   armour: 0
   slots: 1
@@ -79,7 +79,7 @@ CLUBMAN:
   bonus: {}
   spawn_on_death: null
   scale: 1
-  requirements: [CRAFTSMANSHIP, TOOL_SHOP, AGRICULTURE, GRANARY]
+  requirements: [CRAFTSMANSHIP, GRANARY]
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)
@@ -89,7 +89,7 @@ BOWMAN:
   name: "Bowman"
   speed: 0.2
   health: 3
-  value: 3
+  value: 4
   damage: 1
   armour: 0
   slots: 1

@@ -74,6 +74,7 @@ export class HexGrid {
     // battleCritters: cid → { iid, path_progress, health, max_health, slow_remaining_ms, burn_remaining_ms }
     // battleShots: shot_id → { source_sid, target_cid, shot_type, path_progress, origin_q, origin_r }
     this.battlePath = null;
+    this._partialReachable = null;
     this.battleCritters = new Map();
     this.battleShots = new Map();
     this.battleActive = false;
@@ -227,8 +228,9 @@ export class HexGrid {
     this.zoom = Math.max(this._minZoom, Math.min(1.5, this._minZoom * 1.1));
     
     // Recalculate center with the new zoom
-    this.offsetX = (cw / 2 - (minX + maxX) / 2);
-    this.offsetY = (ch / 2 - (minY + maxY) / 2);
+    // screen_x = offsetX + world_x * zoom  → center: offsetX = cw/2 - worldCenter * zoom
+    this.offsetX = cw / 2 - (minX + maxX) / 2 * this.zoom;
+    this.offsetY = ch / 2 - (minY + maxY) / 2 * this.zoom;
     
     this._dirty = true;
   }
@@ -267,32 +269,32 @@ export class HexGrid {
   }
 
   _clampPanOffset() {
-    // Prevent map from being pushed completely out of viewport
+    // Prevent map from being pushed completely out of viewport.
+    // Screen position of a world point wx: screen_x = offsetX + wx * zoom
     const cw = this._logicalWidth || this.canvas.width;
     const ch = this._logicalHeight || this.canvas.height;
-    
-    // Calculate map bounds in screen space (with current zoom)
-    const mapScreenMinX = this._mapMinX * this.zoom;
-    const mapScreenMaxX = this._mapMaxX * this.zoom;
-    const mapScreenMinY = this._mapMinY * this.zoom;
-    const mapScreenMaxY = this._mapMaxY * this.zoom;
-    const mapScreenW = mapScreenMaxX - mapScreenMinX + this.hexSize * 2 * this.zoom;
-    const mapScreenH = mapScreenMaxY - mapScreenMinY + this.hexSize * 2 * this.zoom;
-    
-    // Allow some overshoot (50% of visible area)
-    const overshoot = 0.5;
-    const overshootX = cw * overshoot;
-    const overshootY = ch * overshoot;
-    
-    // Clamp offsetX: map must be at least partially visible
-    // offsetX range: from showing only right edge to showing only left edge
-    const minOffsetX = -mapScreenW + overshootX;
-    const maxOffsetX = cw - overshootX;
+
+    // One hex radius of extra padding so the edge tile is fully visible
+    const pad = this.hexSize * this.zoom;
+
+    // Allow some overshoot (50% of visible area) so the map stays grabbable
+    const overshootX = cw * 0.5;
+    const overshootY = ch * 0.5;
+
+    // Clamp offsetX:
+    //   right edge of map must remain >= -overshootX  (don't scroll map fully off left)
+    //     offsetX + (_mapMaxX + hexSize) * zoom >= -overshootX
+    //     → minOffsetX = -overshootX - (_mapMaxX + hexSize) * zoom
+    //   left edge of map must remain <= cw + overshootX  (don't scroll map fully off right)
+    //     offsetX + (_mapMinX - hexSize) * zoom <= cw + overshootX
+    //     → maxOffsetX = cw + overshootX - (_mapMinX - hexSize) * zoom
+    const minOffsetX = -overshootX - (this._mapMaxX + this.hexSize) * this.zoom;
+    const maxOffsetX =  cw + overshootX - (this._mapMinX - this.hexSize) * this.zoom;
     this.offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, this.offsetX));
-    
-    // Clamp offsetY: map must be at least partially visible
-    const minOffsetY = -mapScreenH + overshootY;
-    const maxOffsetY = ch - overshootY;
+
+    // Clamp offsetY (same logic for Y axis)
+    const minOffsetY = -overshootY - (this._mapMaxY + this.hexSize) * this.zoom;
+    const maxOffsetY =  ch + overshootY - (this._mapMinY - this.hexSize) * this.zoom;
     this.offsetY = Math.max(minOffsetY, Math.min(maxOffsetY, this.offsetY));
   }
 
@@ -781,6 +783,7 @@ export class HexGrid {
     if (!start || !goal) {
       // Clear path if endpoints are missing
       this.battlePath = null;
+      this._partialReachable = null;
       this._invalidateBase();
       this._dirty = true;
       return;
@@ -793,7 +796,19 @@ export class HexGrid {
     });
 
     this.battlePath = path; // null if no path found
-    if (path) this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
+    if (path) {
+      this._partialReachable = null;
+      this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
+    } else {
+      // No full path found — collect ALL walkable tiles so the user can
+      // see every path segment (connected or disconnected) on the map.
+      this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
+      const allWalkable = new Set();
+      for (const [key, data] of this.tiles) {
+        if (walkable.has(data.type)) allWalkable.add(key);
+      }
+      this._partialReachable = allWalkable.size > 0 ? allWalkable : null;
+    }
     this._invalidateBase();
     this._dirty = true;
   }
@@ -1066,6 +1081,61 @@ export class HexGrid {
     }
 
     // ── Pass 2: Battle path (behind structures) ───────────────
+    // Pass 2a: Partial reachable overlay (when no full path exists)
+    if (!this.battlePath && this._partialReachable && this._partialReachable.size > 1) {
+      const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
+      const pathW = sz * 0.38;
+      const visitedEdges = new Set();
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      for (const key of this._partialReachable) {
+        const { q, r } = parseKey(key);
+        const p1 = hexToPixel(q, r, sz);
+        for (const nb of hexNeighbors(q, r)) {
+          const nKey = hexKey(nb.q, nb.r);
+          if (!this._partialReachable.has(nKey)) continue;
+          const edgeKey = key < nKey ? key + '|' + nKey : nKey + '|' + key;
+          if (visitedEdges.has(edgeKey)) continue;
+          visitedEdges.add(edgeKey);
+          const p2 = hexToPixel(nb.q, nb.r, sz);
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          if (pathBmp && pathBmp !== 'loading') {
+            ctx.save();
+            ctx.translate(p1.x, p1.y);
+            ctx.rotate(angle);
+            ctx.drawImage(pathBmp, -pathW * 0.1, -pathW / 2, dist + pathW * 0.2, pathW);
+            ctx.restore();
+          } else {
+            ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)';
+            ctx.lineWidth = pathW;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        }
+      }
+      // Joints
+      for (const key of this._partialReachable) {
+        const { q, r } = parseKey(key);
+        const p = hexToPixel(q, r, sz);
+        if (pathBmp && pathBmp !== 'loading') {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pathW / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(pathBmp, p.x - pathW / 2, p.y - pathW / 2, pathW, pathW);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+
     if (this.battlePath && this.battlePath.length > 1) {
       const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
       const pathW = sz * 0.38; // narrower than hex width
