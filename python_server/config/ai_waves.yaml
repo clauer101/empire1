@@ -1,0 +1,59 @@
+# ============================================================
+# AI Hardcoded Wave Definitions
+# ============================================================
+# Each entry defines an army the AI will send when the
+# defender matches ALL trigger conditions.
+#
+# Entries are evaluated IN ORDER.  The LAST matching entry
+# wins  (most-specific entries should go last).
+# If no entry matches, the adaptive heuristic is used.
+#
+# ── Trigger fields (all optional, default = always true) ────
+#   buildings:   list of building IIDs that must ALL be
+#                completed by the defender (remaining_effort == 0)
+#   knowledge:   list of knowledge IIDs that must ALL be
+#                completed by the defender
+#   gold_min:    defender must have at least this much gold
+#   culture_min: defender must have at least this much culture
+#
+# ── Army fields ─────────────────────────────────────────────
+#   critter:  critter IID (matched case-insensitively)
+#   slots:    number of critters in this wave
+#
+# ── Example ─────────────────────────────────────────────────
+# waves:
+#   - name: "early goblin raid"
+#     trigger:
+#       buildings: []
+#       knowledge: []
+#       gold_min: 0
+#       culture_min: 0
+#     army:
+#       - critter: GOBLIN
+#         slots: 5
+#
+#   - name: "orc assault after smithy"
+#     trigger:
+#       buildings: [SMITHY]
+#       knowledge: []
+#       gold_min: 0
+#       culture_min: 0
+#     army:
+#       - critter: ORC
+#         slots: 8
+#       - critter: GOBLIN
+#         slots: 3
+#
+# ============================================================
+
+waves:
+  - name: "early raid"
+    trigger:
+      buildings: [FIRE_PLACE]
+      knowledge: []
+      gold_min: 0
+      culture_min: 0
+    army:
+      - critter: SLAVE
+        slots: 5
+

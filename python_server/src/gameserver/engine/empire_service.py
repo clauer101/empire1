@@ -46,10 +46,14 @@ class EmpireService:
             self._base_gold = game_config.base_gold_per_sec
             self._base_culture = game_config.base_culture_per_sec
             self._citizen_effect = game_config.citizen_effect
+            self._base_build_speed = game_config.base_build_speed
+            self._base_research_speed = game_config.base_research_speed
         else:
             self._base_gold = 1.0
             self._base_culture = 0.5
             self._citizen_effect = 0.03
+            self._base_build_speed = 1.0
+            self._base_research_speed = 1.0
 
     # -- Empire registry -------------------------------------------------
 
@@ -131,14 +135,18 @@ class EmpireService:
             empire.build_queue = None
             return
 
-        # Build speed modifier
-        speed = 1.0 + empire.get_effect("build_speed_modifier", 0.0)
+        # Build speed: (base + offset) * (1 + modifier)
+        speed = (self._base_build_speed + empire.get_effect("build_speed_offset", 0.0)) * (1.0 + empire.get_effect("build_speed_modifier", 0.0))
         remaining -= dt * speed
         if remaining <= 0:
             remaining = 0.0
             empire.build_queue = None
             self._apply_effects(empire, iid)
+            empire.buildings[iid] = remaining
             log.info("Empire %d: building %s completed", empire.uid, iid)
+            from gameserver.util.events import ItemCompleted
+            self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
+            return
         empire.buildings[iid] = remaining
 
     def _progress_knowledge(self, empire: Empire, dt: float) -> None:
@@ -152,16 +160,19 @@ class EmpireService:
             empire.research_queue = None
             return
 
-        # Scientist bonus + research speed modifier
+        # Research speed: (base + offset) * (1 + modifier + n_scientists * citizen_effect)
         scientist_count = empire.citizens.get("scientist", 0)
-        speed = 1.0 + scientist_count * self._citizen_effect
-        speed += empire.get_effect("research_speed_modifier", 0.0)
+        speed = (self._base_research_speed + empire.get_effect("research_speed_offset", 0.0)) * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self._citizen_effect)
         remaining -= dt * speed
         if remaining <= 0:
             remaining = 0.0
             empire.research_queue = None
             self._apply_effects(empire, iid)
+            empire.knowledge[iid] = remaining
             log.info("Empire %d: knowledge %s completed", empire.uid, iid)
+            from gameserver.util.events import ItemCompleted
+            self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
+            return
         empire.knowledge[iid] = remaining
 
     # -- Effects ---------------------------------------------------------
@@ -294,7 +305,7 @@ class EmpireService:
     def _citizen_price(self, i: int) -> float:
         # sigmoid(i, MAX=60000, MIN=66, SPREAD=13, STEEP=8)
         import math
-        maxv, minv, spread, steep = 50000, 100, 15, 8
+        maxv, minv, spread, steep = 50000, 100, 14, 7.5
         return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
     
     def _tile_price(self, i: int) -> float:

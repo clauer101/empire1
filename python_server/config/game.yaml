@@ -20,7 +20,7 @@ broadcast_interval_ms: 250.0
 min_keep_alive_ms: 10000.0
 
 # Delay before the first wave is dispatched in a battle (ms)
-initial_wave_delay_ms: 0.0
+initial_wave_delay_ms: 15000.0
 
 # Flight time for splash sub-shots (ms)
 splash_flight_ms: 500.0
@@ -36,6 +36,12 @@ base_culture_per_sec: 0.0
 # Per-citizen modifier for resource / research generation
 citizen_effect: 0.03
 
+# Base build speed (multiplier, before build_speed_modifier effects)
+base_build_speed: 1.0
+
+# Base research speed (multiplier, before research_speed_modifier and scientist bonuses)
+base_research_speed: 0.7
+
 # -- New empire defaults -------------------------------------
 
 # Starting resources for a freshly created empire
@@ -50,11 +56,16 @@ restore_life_after_loss_offset: 1.0
 
 # -- Travel & Siege ------------------------------------------
 
-# Base attack travel time in seconds (~15 minutes)
-base_travel_offset: 900.0
+# Base attack travel time in seconds (~5 minutes)
+base_travel_offset: 300.0
 
 # Base siege duration in seconds (before defender modifiers)
-base_siege_offset: 3600.0
+base_siege_offset: 300.0
+
+# -- AI attack schedule --------------------------------------
+
+# Travel time for AI attacks (seconds)
+ai_travel_seconds: 60.0
 
 # -- Army & Waves --------------------------------------------
 
@@ -65,7 +76,7 @@ waves_per_level: 1.0
 slot_adder_per_ai_level: 2.0
 
 # Default time between individual critter spawns in a wave (ms)
-default_spawn_interval_ms: 500.0
+default_spawn_interval_ms: 2000.0
 
 # -- Battle strategy -----------------------------------------
 

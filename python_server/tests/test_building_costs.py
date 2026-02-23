@@ -46,21 +46,21 @@ class TestBuildingCostDeduction:
         """Costs should be deducted when starting a new building."""
         initial_gold = empire_with_gold.resources["gold"]
         
-        # Start building FIRE_PLACE (free building, no costs)
+        # Start building FIRE_PLACE (costs 20 gold)
         result = service.build_item(empire_with_gold, "FIRE_PLACE")
         
         # Should succeed
         assert result is None, f"Expected success but got error: {result}"
         
-        # No cost should be deducted
-        assert empire_with_gold.resources["gold"] == initial_gold, \
-            f"Expected no gold deduction for free building, but got {initial_gold - empire_with_gold.resources['gold']} deducted"
+        # 20 gold should be deducted
+        assert empire_with_gold.resources["gold"] == initial_gold - 20, \
+            f"Expected 20 gold deducted for FIRE_PLACE, but got {initial_gold - empire_with_gold.resources['gold']} deducted"
 
     def test_cost_not_deducted_on_resume(self, service, empire_with_gold):
         """Costs should NOT be deducted when resuming a paused building."""
         initial_gold = empire_with_gold.resources["gold"]
         
-        # Start building FIRE_PLACE (free, costs 0 gold)
+        # Start building FIRE_PLACE (costs 20 gold)
         service.build_item(empire_with_gold, "FIRE_PLACE")
         gold_after_first = empire_with_gold.resources["gold"]
         
@@ -73,40 +73,36 @@ class TestBuildingCostDeduction:
         gold_after_resume = empire_with_gold.resources["gold"]
         
         # Gold should NOT have changed from resuming (no costs on resume)
-        # Flow: 100000 - 0 (FIRE_PLACE first start) + 100 + 100 - 0 (no cost on resume)
-        # = 100200
-        assert gold_after_resume == 100200, \
-            f"Expected 100200 gold (no cost on resume), got {gold_after_resume}"
+        # Flow: 100000 - 20 (FIRE_PLACE first start) + 100 + 100 - 0 (no cost on resume)
+        # = 100180
+        assert gold_after_resume == 100180, \
+            f"Expected 100180 gold (no cost on resume), got {gold_after_resume}"
 
     def test_insufficient_gold_blocks_build(self, service, empire_with_gold):
         """Building with costs should fail if insufficient gold."""
-        # Use STONE_CIRCLE which costs 10 gold (but requires MYSTIC)
-        # First, complete the MYSTIC requirement
-        from gameserver.loaders.item_loader import load_items
-        items = load_items("config")
-        up = service._upgrades
-        
-        # For this test, just check that a building without costs always succeeds
-        # FIRE_PLACE has no costs, so it should always succeed even with 0 gold
+        # FIRE_PLACE costs 20 gold — set gold below that
         empire_with_gold.resources["gold"] = 0.0
         
         result = service.build_item(empire_with_gold, "FIRE_PLACE")
         
-        # Should succeed because FIRE_PLACE is free
-        assert result is None, f"Free building should always succeed, got error: {result}"
+        # Should fail because not enough gold
+        assert result is not None, "Expected error when gold is insufficient"
+        assert "gold" in result.lower(), f"Expected gold error, got: {result}"
+        
+        # With exactly enough gold it should succeed
+        empire_with_gold.resources["gold"] = 20.0
+        result2 = service.build_item(empire_with_gold, "FIRE_PLACE")
+        assert result2 is None, f"Expected success with exact gold, got: {result2}"
 
     def test_multiple_costs_deducted_correctly(self, service, empire_with_gold):
-        """Free buildings should have no cost deduction."""
+        """Each building deducts its own gold cost."""
         initial_gold = empire_with_gold.resources["gold"]
         
-        # Build FIRE_PLACE (costs 0 gold)
+        # Build FIRE_PLACE (costs 20 gold)
         service.build_item(empire_with_gold, "FIRE_PLACE")
         gold_after_first = empire_with_gold.resources["gold"]
         cost_one = initial_gold - gold_after_first
-        assert cost_one == 0, f"FIRE_PLACE should cost 0 gold, got {cost_one}"
-        
-        # Gold should remain unchanged
-        assert empire_with_gold.resources["gold"] == initial_gold
+        assert cost_one == 20, f"FIRE_PLACE should cost 20 gold, got {cost_one}"
         
         # Mark FIRE_PLACE complete and build MAIN_HOUSE (costs 500 gold)
         empire_with_gold.buildings["FIRE_PLACE"] = 0.0  # Mark completed
@@ -134,12 +130,13 @@ class TestBuildingCostDeduction:
         """Ensure building state is set correctly after cost deduction."""
         initial_gold = empire_with_gold.resources["gold"]
         
-        # Start FIRE_PLACE (free building, no cost deduction)
+        # Start FIRE_PLACE (costs 20 gold)
         service.build_item(empire_with_gold, "FIRE_PLACE")
         
         # Check that:
-        # 1. Cost was NOT deducted (because FIRE_PLACE is free)
-        assert empire_with_gold.resources["gold"] == initial_gold
+        # 1. Cost WAS deducted (FIRE_PLACE costs 20)
+        assert empire_with_gold.resources["gold"] == initial_gold - 20, \
+            f"Expected 20 gold deducted, got {initial_gold - empire_with_gold.resources['gold']}"
         
         # 2. Building effort was set
         assert "FIRE_PLACE" in empire_with_gold.buildings
@@ -147,49 +144,48 @@ class TestBuildingCostDeduction:
             "Building effort should be set to positive value"
 
     def test_cost_scaling_with_effort(self, service, empire_with_gold):
-        """Verify free buildings have no cost regardless of effort."""
-        # FIRE_PLACE: effort 20, cost 0 (free)
+        """Verify building costs are deducted correctly."""
+        # FIRE_PLACE: effort 120, cost 20 gold
         initial_gold = empire_with_gold.resources["gold"]
         service.build_item(empire_with_gold, "FIRE_PLACE")
         cost1 = initial_gold - empire_with_gold.resources["gold"]
-        assert cost1 == 0, f"FIRE_PLACE should cost 0 gold, got {cost1}"
+        assert cost1 == 20, f"FIRE_PLACE should cost 20 gold, got {cost1}"
         
-        # Now mark FIRE_PLACE as complete and try another building
-        # Reset for a fresh building (MAIN_HOUSE requires FIRE_PLACE, which we completed)
+        # Now mark FIRE_PLACE as complete and try MAIN_HOUSE
         empire_with_gold.resources["gold"] = initial_gold
         empire_with_gold.buildings["FIRE_PLACE"] = 0.0  # Mark as completed
         
-        # MAIN_HOUSE: effort 100, cost 500
+        # MAIN_HOUSE: effort 1000, cost 500 gold
         service.build_item(empire_with_gold, "MAIN_HOUSE")
         cost2 = initial_gold - empire_with_gold.resources["gold"]
-        # Just verify cost was deducted (doesn't need to match formula exactly)
         assert cost2 == 500, f"MAIN_HOUSE should cost 500 gold, got {cost2}"
 
     def test_gold_exactly_required_succeeds(self, service, empire_with_gold):
-        """Free building should succeed regardless of gold amount."""
-        # Set gold to 0 to test free building
-        empire_with_gold.resources["gold"] = 0.0
+        """Building should succeed when gold equals exact cost."""
+        # FIRE_PLACE costs exactly 20 gold
+        empire_with_gold.resources["gold"] = 20.0
         
         result = service.build_item(empire_with_gold, "FIRE_PLACE")
         
-        # Should succeed (FIRE_PLACE is free)
-        assert result is None, f"Expected success with free building, got: {result}"
+        # Should succeed with exact amount
+        assert result is None, f"Expected success with exact gold, got: {result}"
         
-        # Gold should remain 0
+        # Gold should be 0 after deduction
         assert empire_with_gold.resources["gold"] == 0.0
 
     def test_gold_insufficient_by_one_fails(self, service, empire_with_gold):
-        """Free building should succeed even with minimal gold."""
-        # Set gold to minimal amount
-        empire_with_gold.resources["gold"] = 0.1
+        """Building should fail when gold is one short of required cost."""
+        # FIRE_PLACE costs 20 gold — set to 19 (one short)
+        empire_with_gold.resources["gold"] = 19.0
         
         result = service.build_item(empire_with_gold, "FIRE_PLACE")
         
-        # Should succeed (free building)
-        assert result is None, f"Expected success for free building, got: {result}"
+        # Should fail (1 gold short)
+        assert result is not None, "Expected failure when 1 gold short"
+        assert "gold" in result.lower(), f"Expected gold error, got: {result}"
         
-        # Gold should remain unchanged
-        assert abs(empire_with_gold.resources["gold"] - 0.1) < 0.01
+        # Gold should remain unchanged at 19
+        assert abs(empire_with_gold.resources["gold"] - 19.0) < 0.01
 
 
 class TestRequirementsAndCosts:

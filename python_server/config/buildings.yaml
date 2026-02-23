@@ -12,17 +12,18 @@
 BASE_CAMP:
   name: "Base Camp"
   description: "Starting structure. Foundation for all empire development."
-  effort: 0
-  costs: {}
+  effort: 30  # was 30
+  costs: {gold: 5}
   requirements: []
   effects:
     life_offset: 0.001
+    siege_time_offset: 180.0
 
 FIRE_PLACE:
   name: "Fire Place"
   description: "Generates gold resources. Small but reliable income."
-  effort: 20
-  costs: {}
+  effort: 60  # was 60
+  costs: {gold: 20}
   requirements: [BASE_CAMP]
   effects:
     gold_offset: 0.1
@@ -30,8 +31,8 @@ FIRE_PLACE:
 STONE_CIRCLE:
   name: "Stone Circle"
   description: "Generates culture resources. Requires mystical knowledge."
-  effort: 50
-  costs: {gold: 10}
+  effort: 350
+  costs: {gold: 50}
   requirements: [BASE_CAMP, MYSTIC]
   effects:
     culture_offset: 0.1
@@ -39,7 +40,7 @@ STONE_CIRCLE:
 MAIN_HOUSE:
   name: "Main House"
   description: "Basic residential structure. Requires gold investment."
-  effort: 100
+  effort: 1000
   costs: {"gold": 500}
   requirements: [FIRE_PLACE]
   effects:
@@ -48,8 +49,8 @@ MAIN_HOUSE:
 EARTH_WALL:
   name: "Earth Wall"
   description: "Defensive structure protecting empire from attacks."
-  effort: 150
-  costs: {gold: 30}
+  effort: 1500
+  costs: {gold: 300}
   requirements: [MAIN_HOUSE]
   effects:
     incoming_siege_time_offset: 3600
@@ -62,17 +63,17 @@ EARTH_WALL:
 TOOL_SHOP:
   name: "Tool Shop"
   description: "Increases construction speed. Requires craftsmanship knowledge."
-  effort: 500
-  costs: {gold: 100}
+  effort: 3500
+  costs: {gold: 200}
   requirements: [MAIN_HOUSE, CRAFTSMANSHIP]
   effects:
-    build_speed_modifier: 0.1
+    build_speed_modifier: 0.5
 
 SHRINE:
   name: "Shrine"
   description: "Religious structure. Foundation for spiritual buildings."
-  effort: 800
-  costs: {gold: 160}
+  effort: 4800
+  costs: {gold: 260}
   requirements: [STONE_CIRCLE, MYSTIC]
   effects:
     culture_offset: 0.05
@@ -80,8 +81,8 @@ SHRINE:
 GRANARY:
   name: "Granary"
   description: "Food storage facility boosting steady income. Requires agriculture."
-  effort: 1000
-  costs: {gold: 200}
+  effort: 5000
+  costs: {gold: 400}
   requirements: [MAIN_HOUSE, AGRICULTURE]
   effects:
     gold_offset: 0.08
@@ -89,16 +90,16 @@ GRANARY:
 EPIC_DRAWINGS:
   name: "Epic Drawings"
   description: "Boosts culture generation. Requires hunting stories."
-  effort: 1000
-  costs: {gold: 200}
+  effort: 5000
+  costs: {gold: 400}
   requirements: [STONE_CIRCLE, HUNTING]
   effects:
-    culture_modifier: 0.1
+    culture_offset: 0.1
 
 EXCHANGE_POST:
   name: "Exchange Post"
   description: "Boosts gold generation. Requires craftsmanship and trade."
-  effort: 1500
+  effort: 7500
   costs: {gold: 300}
   requirements: [MAIN_HOUSE, CRAFTSMANSHIP]
   effects:

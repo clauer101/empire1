@@ -42,43 +42,41 @@ def test_siege_duration_default_no_effects(services):
     assert duration == 30.0
 
 
-def test_siege_duration_with_offset_only(services):
-    """Siege duration with only SIEGE_TIME_OFFSET effect."""
+def test_siege_duration_with_modifier_only(services):
+    """Siege duration with positive SIEGE_TIME_OFFSET (additive)."""
     attack_service, empire_service = services
 
     defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = 45.0
+    defender.effects[effects.SIEGE_TIME_OFFSET] = 15.0
     empire_service.register(defender)
 
-    # 45.0 + 45.0 * 0.0 = 45.0
+    # 30 + 15 = 45
     duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
     assert duration == 45.0
 
 
-def test_siege_duration_with_offset_and_modifier(services):
-    """Siege duration with both SIEGE_TIME_OFFSET and SIEGE_TIME_MODIFIER effects."""
+def test_siege_duration_with_doubled_modifier(services):
+    """Siege duration when SIEGE_TIME_OFFSET equals the base (doubles it)."""
     attack_service, empire_service = services
 
     defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = 40.0
-    defender.effects[effects.SIEGE_TIME_MODIFIER] = 0.5  # +50%
+    defender.effects[effects.SIEGE_TIME_OFFSET] = 30.0  # same as base
     empire_service.register(defender)
 
-    # 40.0 + (40.0 * 0.5) = 60.0
+    # 30 + 30 = 60
     duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
     assert duration == 60.0
 
 
 def test_siege_duration_with_negative_modifier(services):
-    """Siege duration with negative SIEGE_TIME_MODIFIER (faster siege)."""
+    """Siege duration with negative SIEGE_TIME_OFFSET (faster siege)."""
     attack_service, empire_service = services
 
     defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = 30.0
-    defender.effects[effects.SIEGE_TIME_MODIFIER] = -0.3  # -30%
+    defender.effects[effects.SIEGE_TIME_OFFSET] = -9.0
     empire_service.register(defender)
 
-    # 30.0 + (30.0 * -0.3) = 21.0
+    # 30 - 9 = 21
     duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
     assert duration == 21.0
 

@@ -6,13 +6,13 @@
 # effects: passive effects granted when complete
 
 # ============================================================
-#   STEINZEIT  (Effort 20 – 200)
+#   STEINZEIT  (Effort 60 – 500)
 # ============================================================
 
 HUNTING:
   name: "Hunting"
   description: "Basic survival skill for acquiring food resources."
-  effort: 20
+  effort: 180
   costs: {}
   requirements: [FIRE_PLACE]
   effects: {}
@@ -20,43 +20,47 @@ HUNTING:
 MYSTIC:
   name: "Mystic"
   description: "Understanding of spiritual and mystical phenomena."
-  effort: 100
+  effort: 180
   costs: {}
   requirements: [FIRE_PLACE]
-  effects: {}
+  effects:
+    research_speed_offset: 0.3
 
 DOMESTICATION:
   name: "Domestication"
   description: "Taming wild animals for agricultural and transport purposes."
-  effort: 150
+  effort: 450
   costs: {}
   requirements: [HUNTING]
-  effects: {}
+  effects:
+    culture_offset: 0.1
 
 CRAFTSMANSHIP:
   name: "Craftsmanship"
   description: "Essential skills for building and manufacturing items."
-  effort: 200
+  effort: 300
   costs: {}
-  requirements: [HUNTING]
-  effects: {}
+  requirements: [HUNTING, MYSTIC]
+  effects:
+    build_speed_modifier: 0.5
 
 # ============================================================
-#   NEOLITHIKUM  (Effort 200 – 1.500)
+#   NEOLITHIKUM  (Effort 800 – 1.500)
 # ============================================================
 
 POTTERY:
   name: "Pottery"
   description: "Ceramic crafting for storage and early trade vessels."
-  effort: 600
+  effort: 800
   costs: {}
   requirements: [CRAFTSMANSHIP]
-  effects: {}
+  effects:
+    gold_offset: 0.05
 
 HERBOLOGY:
   name: "Herbology"
   description: "Study of plants for medicine and healing purposes."
-  effort: 800
+  effort: 1200
   costs: {}
   requirements: [HUNTING, DOMESTICATION]
   effects: {}
@@ -64,7 +68,7 @@ HERBOLOGY:
 AGRICULTURE:
   name: "Agriculture"
   description: "Systematic crop cultivation and farming techniques."
-  effort: 1200
+  effort: 1400
   costs: {}
   requirements: [DOMESTICATION, HERBOLOGY]
   effects: {}
@@ -75,7 +79,8 @@ ALPHABET_WRITING:
   effort: 1500
   costs: {}
   requirements: [CRAFTSMANSHIP]
-  effects: {}
+  effects:
+    research_speed_modifier: 0.8
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)

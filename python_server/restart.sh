@@ -28,7 +28,7 @@ set -euo pipefail
 # -- Konfiguration ------------------------------------------------
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BASE_DIR="$(dirname "$PROJECT_DIR")"
-VENV="/home/pi/e3/.venv/bin/python"
+VENV="$BASE_DIR/.venv/bin/python"
 MODULE="gameserver.main"
 PIDFILE="$PROJECT_DIR/.gameserver.pid"
 LOG="$PROJECT_DIR/gameserver.log"
