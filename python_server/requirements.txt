@@ -6,3 +6,6 @@ msgpack>=1.0
 fastapi>=0.100
 uvicorn>=0.20
 pyjwt>=2.0
+pytest_asyncio
+httpx
+pytest

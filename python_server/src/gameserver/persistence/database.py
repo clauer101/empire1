@@ -55,10 +55,10 @@ class Database:
     # -- User operations -------------------------------------------------
 
     async def get_user(self, username: str) -> dict | None:
-        """Look up a user by username."""
+        """Look up a user by username (case-insensitive)."""
         assert self._conn is not None
         async with self._conn.execute(
-            "SELECT uid, username, password_hash, email, empire_name FROM users WHERE username = ?",
+            "SELECT uid, username, password_hash, email, empire_name FROM users WHERE LOWER(username) = LOWER(?)",
             (username,),
         ) as cursor:
             row = await cursor.fetchone()

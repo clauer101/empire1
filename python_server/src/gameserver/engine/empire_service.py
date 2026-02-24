@@ -303,10 +303,9 @@ class EmpireService:
         return None
 
     def _citizen_price(self, i: int) -> float:
-        # sigmoid(i, MAX=60000, MIN=66, SPREAD=13, STEEP=8)
-        import math
-        maxv, minv, spread, steep = 50000, 100, 14, 7.5
-        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+        # f(x) = u + (i * y) * (i + z)^v
+        u, y, z, v = 34, 1, 1.5, 2.25
+        return u + (i * y) * (i + z) ** v
     
     def _tile_price(self, i: int) -> float:
         # sigmoid(i, MAX=30000, MIN=10, SPREAD=5, STEEP=5)

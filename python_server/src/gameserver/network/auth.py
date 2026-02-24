@@ -39,7 +39,7 @@ class AuthService:
 
     async def login(self, username: str, password: str) -> int | None:
         """Authenticate a user. Returns UID on success, None on failure."""
-        user = await self._db.get_user(username)
+        user = await self._db.get_user(username.strip().lower())
         if user is None:
             log.info("Login failed — unknown user: %s", username)
             return None

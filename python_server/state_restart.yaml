@@ -65,7 +65,7 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 100
+    gold: 300
     culture: 0
     life: 10.0
   buildings: []

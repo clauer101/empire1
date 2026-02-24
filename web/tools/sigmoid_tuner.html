@@ -189,38 +189,38 @@
   <div class="container">
     <!-- Citizen Price -->
     <div class="tuner">
-      <h2>👥 Citizen Price (Culture)</h2>
+      <h2>👥 Citizen Price (Culture) — f(x) = u + (i * y) * (i + z)^v</h2>
       <div class="controls">
         <div class="control">
-          <label>MAX Value</label>
-          <input type="range" id="citizen-max" min="1000" max="100000" step="1000" value="50000">
+          <label>U (base offset)</label>
+          <input type="range" id="citizen-u" min="0" max="100" step="1" value="0">
           <div class="value-display">
-            <span>MAX:</span>
-            <span id="citizen-max-val">50000</span>
+            <span>U:</span>
+            <span id="citizen-u-val">0</span>
           </div>
         </div>
         <div class="control">
-          <label>MIN Value</label>
-          <input type="range" id="citizen-min" min="1" max="2000" step="1" value="100">
+          <label>Y (scale)</label>
+          <input type="range" id="citizen-y" min="0" max="10" step="0.1" value="2">
           <div class="value-display">
-            <span>MIN:</span>
-            <span id="citizen-min-val">100</span>
+            <span>Y:</span>
+            <span id="citizen-y-val">2</span>
           </div>
         </div>
         <div class="control">
-          <label>SPREAD</label>
-          <input type="range" id="citizen-spread" min="1" max="50" step="0.5" value="15">
+          <label>Z (offset)</label>
+          <input type="range" id="citizen-z" min="0" max="20" step="0.5" value="2">
           <div class="value-display">
-            <span>SPREAD:</span>
-            <span id="citizen-spread-val">15</span>
+            <span>Z:</span>
+            <span id="citizen-z-val">2</span>
           </div>
         </div>
         <div class="control">
-          <label>STEEP</label>
-          <input type="range" id="citizen-steep" min="1" max="20" step="0.5" value="8">
+          <label>V (exponent)</label>
+          <input type="range" id="citizen-v" min="0.1" max="5" step="0.05" value="1.6">
           <div class="value-display">
-            <span>STEEP:</span>
-            <span id="citizen-steep-val">8</span>
+            <span>V:</span>
+            <span id="citizen-v-val">1.6</span>
           </div>
         </div>
       </div>
@@ -454,9 +454,25 @@
       return minv + (maxv - minv) / (1 + Math.exp((-7 * i) / spread + steep));
     }
     
+    // f(x) = u + (i * y) * (i + z)^v  — used for citizen price
+    function powerDecay(i, u, y, z, v) {
+      return u + (i * y) * Math.pow(i + z, v);
+    }
+
     // Initialize tuners
-    const tuners = ['citizen', 'tile', 'wave', 'critter', 'army'];
+    const tuners = ['tile', 'wave', 'critter', 'army'];
     
+    // Citizen tuner uses u/y/z/v params
+    ['u', 'y', 'z', 'v'].forEach(param => {
+      const slider = document.getElementById(`citizen-${param}`);
+      const display = document.getElementById(`citizen-${param}-val`);
+      slider.addEventListener('input', (e) => {
+        display.textContent = e.target.value;
+        updateCitizen();
+      });
+    });
+    updateCitizen();
+
     tuners.forEach(name => {
       const params = ['max', 'min', 'spread', 'steep'];
       params.forEach(param => {
@@ -472,6 +488,66 @@
       update(name);
     });
     
+    function getCitizenParams() {
+      return {
+        u: parseFloat(document.getElementById('citizen-u').value),
+        y: parseFloat(document.getElementById('citizen-y').value),
+        z: parseFloat(document.getElementById('citizen-z').value),
+        v: parseFloat(document.getElementById('citizen-v').value),
+      };
+    }
+
+    function updateCitizen() {
+      const p = getCitizenParams();
+      updateCanvasCitizen(p);
+      updateTableCitizen(p);
+      document.getElementById('citizen-code').value =
+        `u, y, z, v = ${Math.round(p.u)}, ${Math.round(p.y)}, ${p.z}, ${p.v}`;
+    }
+
+    function updateCanvasCitizen(p) {
+      const canvas = document.getElementById('citizen-canvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.clearRect(0, 0, w, h);
+      const points = 30;
+      const values = Array.from({length: points}, (_, i) => powerDecay(i + 1, p.u, p.y, p.z, p.v));
+      const maxVal = Math.max(...values);
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const y = (h / 5) * i;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 3; ctx.beginPath();
+      values.forEach((val, i) => {
+        const x = (w / (points - 1)) * i;
+        const y = h - (val / maxVal) * h * 0.9 - h * 0.05;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = '#4fc3f7';
+      values.forEach((val, i) => {
+        const x = (w / (points - 1)) * i;
+        const y = h - (val / maxVal) * h * 0.9 - h * 0.05;
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = '#aaa'; ctx.font = `${12 * window.devicePixelRatio}px monospace`;
+      ctx.textAlign = 'left';  ctx.fillText(`#1: ${values[0].toFixed(1)}`, 10, 20);
+      ctx.textAlign = 'right'; ctx.fillText(`#${points}: ${values[points-1].toFixed(1)}`, w - 10, 20);
+    }
+
+    function updateTableCitizen(p) {
+      const tbody = document.querySelector('#citizen-table tbody');
+      tbody.innerHTML = '';
+      for (let i = 1; i <= 30; i++) {
+        const val = powerDecay(i, p.u, p.y, p.z, p.v);
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>#${i}</td><td>${val.toFixed(2)}</td>`;
+        tbody.appendChild(row);
+      }
+    }
+
     function getParams(name) {
       return {
         max: parseFloat(document.getElementById(`${name}-max`).value),

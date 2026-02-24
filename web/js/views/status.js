@@ -616,6 +616,14 @@ function _resolveEmpireName(uid) {
   return `#${uid}`;
 }
 
+function _resolveEmpireUsername(uid) {
+  if (_empiresData) {
+    const e = _empiresData.find(x => x.uid === uid);
+    if (e) return e.username || '';
+  }
+  return '';
+}
+
 function _fmtSecs(s) {
   if (s == null || s < 0) return '—';
   const h = Math.floor(s / 3600);
@@ -635,7 +643,13 @@ const PHASE_LABEL = {
 function _attackEntry(a, direction) {
   const pInfo = PHASE_LABEL[a.phase] || { text: a.phase, cls: '' };
   const otherUid  = direction === 'in' ? a.attacker_uid : a.defender_uid;
-  const empName   = _resolveEmpireName(otherUid);
+  const rawName   = direction === 'in'
+    ? (a.army_name || _resolveEmpireName(otherUid))
+    : _resolveEmpireName(otherUid);
+  const username  = direction === 'in'
+    ? (a.attacker_username || _resolveEmpireUsername(otherUid))
+    : _resolveEmpireUsername(otherUid);
+  const empName   = username ? `${rawName} (${username})` : rawName;
   const icon      = direction === 'in' ? '⚠' : '→';
 
   let countdown = '';

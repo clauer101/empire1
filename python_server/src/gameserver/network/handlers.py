@@ -264,12 +264,26 @@ async def handle_military_request(
         })
 
     # Ongoing attacks
+    _uid_to_username: dict[int, str] = {}
+    if svc.database is not None:
+        for _urow in await svc.database.list_users():
+            _uid_to_username[_urow["uid"]] = _urow["username"]
+
     def _attack_dto(a):
+        _att_emp = svc.empire_service.get(a.attacker_uid)
+        _army_name = ""
+        if _att_emp:
+            for _arm in _att_emp.armies:
+                if _arm.aid == a.army_aid:
+                    _army_name = _arm.name
+                    break
         return {
             "attack_id": a.attack_id,
             "attacker_uid": a.attacker_uid,
             "defender_uid": a.defender_uid,
             "army_aid": a.army_aid,
+            "army_name": _army_name,
+            "attacker_username": _uid_to_username.get(a.attacker_uid, ""),
             "phase": a.phase.value,
             "eta_seconds": round(a.eta_seconds, 1),
             "total_eta_seconds": round(a.total_eta_seconds, 1),
@@ -892,6 +906,14 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
                 }
                 break
 
+    # Resolve attacker username from DB
+    attacker_username = ""
+    if svc.database is not None:
+        for _urow3 in await svc.database.list_users():
+            if _urow3["uid"] == attack.attacker_uid:
+                attacker_username = _urow3["username"]
+                break
+
     # Send battle status update
     status_msg = {
         "type": "battle_status",
@@ -901,6 +923,8 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
         "defender_name": defender_empire.name,
         "attacker_uid": attack.attacker_uid,
         "attacker_name": attacker_empire.name,
+        "attacker_army_name": attacking_army.name if attacking_army else "",
+        "attacker_username": attacker_username,
         "time_since_start_s": time_since_start_s,
         "wave_info": wave_info,
     }
@@ -1307,11 +1331,20 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
 
     # Ongoing attacks
     def _attack_dto(a):
+        _att_emp = svc.empire_service.get(a.attacker_uid)
+        _army_name = ""
+        if _att_emp:
+            for _arm in _att_emp.armies:
+                if _arm.aid == a.army_aid:
+                    _army_name = _arm.name
+                    break
         return {
             "attack_id": a.attack_id,
             "attacker_uid": a.attacker_uid,
             "defender_uid": a.defender_uid,
             "army_aid": a.army_aid,
+            "army_name": _army_name,
+            "attacker_username": "",  # resolved client-side from empires list
             "phase": a.phase.value,
             "eta_seconds": round(a.eta_seconds, 1),
             "total_eta_seconds": round(a.total_eta_seconds, 1),

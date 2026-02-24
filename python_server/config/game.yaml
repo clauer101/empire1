@@ -46,7 +46,7 @@ base_research_speed: 0.7
 
 # Starting resources for a freshly created empire
 starting_resources:
-  gold: 0.0
+  gold: 300.0
   culture: 0.0
   life: 10.0
 

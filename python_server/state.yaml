@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-02-23T18:17:51'
-  saved_at_unix: 1771867071.8761923
+  saved_at: '2026-02-24T05:20:06'
+  saved_at_unix: 1771910406.2592592
 empires:
 - uid: 100
   name: TestImperium
@@ -22,7 +22,7 @@ empires:
     scientist: 0
     artist: 0
   effects:
-    incoming_siege_time_offset: 3600.0
+    incoming_siege_time_offset: 1800.0
     restore_life_after_loss: 5.0
   artefacts: []
   max_life: 10.0
@@ -65,21 +65,29 @@ empires:
 - uid: 2
   name: Empire1
   resources:
-    gold: 95.0
-    culture: 0.0
-    life: 10.0
+    gold: 49.57962937560991
+    culture: 11.115870127599921
+    life: 5.325359736704992
   buildings:
     BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    STONE_CIRCLE: 0.0
   build_queue: null
-  knowledge: {}
-  research_queue: null
+  knowledge:
+    MYSTIC: 0.0
+    HUNTING: 0.0
+    DOMESTICATION: 196.7003074430031
+  research_queue: DOMESTICATION
   citizens:
     merchant: 0
     scientist: 0
     artist: 0
   effects:
     life_offset: 0.001
-    siege_time_offset: 180.0
+    siege_time_offset: 120.0
+    gold_offset: 0.1
+    research_speed_offset: 0.3
+    culture_offset: 0.1
   artefacts: []
   max_life: 10.0
   structures: {}
@@ -92,9 +100,15 @@ empires:
     type: castle
   - q: 0
     r: 1
+    type: path
+  - q: 0
+    r: 2
     type: spawnpoint
   - q: 1
     r: 0
+    type: empty
+  - q: 1
+    r: 1
     type: empty
 - uid: 0
   name: AI
@@ -114,9 +128,41 @@ empires:
   artefacts: []
   max_life: 10.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 10000
+    uid: 0
+    name: Early Barbarians Raid
+    waves:
+    - wave_id: 1
+      iid: SLAVE
+      slots: 5
+      num_critters_spawned: 5
+      next_critter_ms: 3000
+  - aid: 10001
+    uid: 0
+    name: Barbarians
+    waves:
+    - wave_id: 1
+      iid: WARRIOR
+      slots: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SCOUT
+      slots: 6
+      num_critters_spawned: 0
+      next_critter_ms: 15000
   spies: []
   bosses: {}
   hex_map: []
-attacks: []
+attacks:
+- attack_id: 2
+  attacker_uid: 0
+  defender_uid: 2
+  army_aid: 10001
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 60.0
+  siege_remaining_seconds: 9.531576172001223
+  total_siege_seconds: 420.0
 battles: []

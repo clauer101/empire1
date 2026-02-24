@@ -144,7 +144,7 @@ function render() {
       <td class="col-details" data-label="Details">
         <div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>
         <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums">${durationStr}</span></div>
-        <div class="detail-row"><span class="detail-label">Effects:</span> ${fmtEffects(info.effects)}</div>
+        <div class="detail-row"><span class="detail-label">Effects:</span>${fmtEffects(info.effects)}</div>
         <div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u =>
           `<span class="badge badge--unlock-${u.category} ${completed.has(u.iid) ? 'badge--completed' : ''}" style="margin-right:4px">${u.name}</span>`
         ).join('') || '—'}</div>
@@ -217,10 +217,11 @@ function fmtEffort(n) {
 }
 
 function fmtEffects(effects) {
-  if (!effects || Object.keys(effects).length === 0) return '—';
-  return Object.entries(effects)
-    .map(([k, v]) => `<span class="badge" style="margin-right:6px">${formatEffect(k, v)}</span>`)
+  if (!effects || Object.keys(effects).length === 0) return ' —';
+  const items = Object.entries(effects)
+    .map(([k, v]) => `<li>${formatEffect(k, v)}</li>`)
     .join('');
+  return `<ul class="effects-list">${items}</ul>`;
 }
 
 function fmtCosts(costs, summary) {
