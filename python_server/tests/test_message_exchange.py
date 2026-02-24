@@ -64,6 +64,7 @@ def _make_services(empire: Optional[Empire] = None) -> Any:
     svc.empire_service = empire_service
     svc.attack_service = attack_service
     svc.router = router
+    svc.database = None
     return svc
 
 

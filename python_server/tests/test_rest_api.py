@@ -80,6 +80,7 @@ def _make_services(empire: Optional[Empire] = None) -> Any:
     svc.router = router
     svc.auth_service = auth_service
     svc.game_config = None
+    svc.database = None
     svc.server = MagicMock()
     return svc
 

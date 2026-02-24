@@ -21,7 +21,7 @@ SLAVE:
   damage: 1
   armour: 0
   slots: 1
-  time_between: 3000
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -47,7 +47,7 @@ WARRIOR:
 
 SCOUT:
   name: "Scout"
-  speed: 0.3
+  speed: 0.8
   health: 1
   value: 2
   damage: 1
@@ -58,7 +58,7 @@ SCOUT:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 2
   requirements: [HUNTING]
 
 # ============================================================
@@ -71,7 +71,7 @@ CLUBMAN:
   health: 2
   value: 4
   damage: 1
-  armour: 0
+  armour: 0.5
   slots: 1
   time_between: 2000
   is_boss: false
@@ -103,11 +103,11 @@ BOWMAN:
 
 SWORDMAN:
   name: "Swordman"
-  speed: 0.2
+  speed: 0.3
   health: 5
   value: 5
   damage: 1
-  armour: 0
+  armour: 1
   slots: 1
   time_between: 2000
   is_boss: false

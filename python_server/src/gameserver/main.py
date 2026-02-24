@@ -296,7 +296,7 @@ def wire_events(services: Services) -> None:
         _emp = services.empire_service
         _atk = services.attack_service
         bus.on(ItemCompleted, lambda evt: _ai.on_item_completed(
-            evt.empire_uid, _emp, _atk
+            evt.empire_uid, evt.iid, _emp, _atk
         ))
 
     log.info("  event handlers registered")
@@ -341,8 +341,8 @@ async def start_network(services: Services) -> None:
     rest_server = uvicorn.Server(config)
     # Store reference for shutdown
     services._rest_server = rest_server
-    # Start as background task (non-blocking)
-    asyncio.create_task(rest_server.serve())
+    # Start as background task (non-blocking); keep task ref for clean await on shutdown
+    services._rest_task = asyncio.create_task(rest_server.serve())
     log.info("  REST API listening on http://0.0.0.0:%d", rest_port)
 
     # Start debug dashboard
@@ -397,8 +397,14 @@ async def start_game_loop(services: Services) -> None:
         await services.server.stop()
         log.info("  WebSocket server stopped")
     rest_server = getattr(services, "_rest_server", None)
+    rest_task = getattr(services, "_rest_task", None)
     if rest_server is not None:
         rest_server.should_exit = True
+        if rest_task is not None:
+            try:
+                await asyncio.wait_for(rest_task, timeout=5.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
         log.info("  REST API server stopped")
     if services.debug_dashboard is not None:
         await services.debug_dashboard.stop()

@@ -150,44 +150,28 @@ class AIService:
         self._history: deque[bool] = deque(maxlen=self._params.history_window)
         # Pending battles: attack_id → {defender_uid, army_summary}
         self._pending: dict[int, dict] = {}
-        # Fired hardcoded waves per empire: empire_uid → set of wave names
-        self._fired_waves: dict[int, set[str]] = {}
 
     # -- Public API --------------------------------------------------------
 
     def on_item_completed(
         self,
         empire_uid: int,
+        iid: str,
         empire_service: "EmpireService",
         attack_service: "AttackService",
     ) -> None:
         """Called once when an empire completes a building or research item.
 
-        Finds the last hardcoded wave whose trigger is now satisfied AND has
-        not already been fired for this empire, then dispatches it.  Each
-        named wave fires at most once per empire.
+        Finds every hardcoded wave whose trigger list contains *iid* AND
+        whose full trigger conditions are now satisfied, then dispatches them.
         """
         empire = empire_service.get(empire_uid)
         if empire is None:
             return
 
-        # Don't pile a second AI attack on top of an ongoing one
-        active_defenders = {info["defender_uid"] for info in self._pending.values()}
-        if empire_uid in active_defenders:
-            log.debug(
-                "[AI_ATTACK] Skipping trigger check for empire %d: attack in flight",
-                empire_uid,
-            )
-            return
-
-        fired = self._fired_waves.get(empire_uid, set())
-        result = self._match_unfired_wave(empire, fired)
-        if result is None:
-            return
-
-        army, wave_name = result
-        self._fired_waves.setdefault(empire_uid, set()).add(wave_name)
-        self._send_army(empire_uid, empire, empire_service, attack_service, army)
+        matches = self._match_waves_for_item(empire, iid)
+        for army in matches:
+            self._send_army(empire_uid, empire, empire_service, attack_service, army)
 
     def trigger_attacks(
         self,
@@ -364,80 +348,68 @@ class AIService:
         total = building_score + research_score + culture_score + tile_score
         return max(total, 500.0)   # Floor so new players still get attacked
 
-    def _match_unfired_wave(
+    def _match_waves_for_item(
         self,
         empire: "Empire",
-        exclude_names: "set[str]",
-    ) -> "tuple[Army, str] | None":
-        """Return (Army, wave_name) for the last matching hardcoded entry
-        whose name is NOT in *exclude_names*.  Returns None if nothing matches.
+        completed_iid: str,
+    ) -> "list[Army]":
+        """Return all Army entries whose trigger list contains *completed_iid*
+        AND whose full trigger conditions are met.
         """
         if not self._hardcoded_waves:
-            return None
+            return []
 
         from gameserver.models.army import Army, CritterWave
 
-        completed_buildings: set[str] = {
-            iid for iid, r in empire.buildings.items() if r == 0.0
-        }
-        completed_knowledge: set[str] = {
-            iid for iid, r in empire.knowledge.items() if r == 0.0
-        }
-        gold = empire.resources.get("gold", 0.0)
-        culture = empire.resources.get("culture", 0.0)
+        total_citizens = sum(empire.citizens.values())
 
-        last_match = None
+        results = []
         for entry in self._hardcoded_waves:
             name = entry.get("name", "")
-            if name in exclude_names:
-                continue
+
             trigger = entry.get("trigger") or {}
-            req_buildings = trigger.get("buildings") or []
-            req_knowledge = trigger.get("knowledge") or []
-            gold_min = trigger.get("gold_min", 0)
-            culture_min = trigger.get("culture_min", 0)
+            req_items   = trigger.get("items") or []
+            citizen_min = trigger.get("citizen", 999)
 
-            if not all(b in completed_buildings for b in req_buildings):
+            # The completed item must appear in the trigger list
+            iid_upper = completed_iid.upper()
+            in_items = iid_upper in [x.upper() for x in req_items]
+            citizen_trigger = total_citizens >= citizen_min
+
+            if not (in_items or citizen_trigger):
                 continue
-            if not all(k in completed_knowledge for k in req_knowledge):
+
+            army_def = entry.get("army") or []
+            if not army_def:
                 continue
-            if gold < gold_min or culture < culture_min:
-                continue
-            last_match = entry
 
-        if last_match is None:
-            return None
+            waves: list[CritterWave] = []
+            for i, wave_def in enumerate(army_def):
+                critter_iid = wave_def.get("critter", "")
+                slots = wave_def.get("slots", 1)
+                waves.append(CritterWave(
+                    wave_id=i + 1,
+                    iid=critter_iid.upper() if critter_iid else critter_iid,
+                    slots=int(slots),
+                    num_critters_spawned=0,
+                    next_critter_ms=0,
+                ))
 
-        army_def = last_match.get("army") or []
-        if not army_def:
-            return None
+            initial_delay_ms = (
+                self._game_config.initial_wave_delay_ms if self._game_config else 15000.0
+            )
+            for i, wave in enumerate(waves):
+                wave.next_critter_ms = int(i * initial_delay_ms)
 
-        waves: list[CritterWave] = []
-        for i, wave_def in enumerate(army_def):
-            critter_iid = wave_def.get("critter", "")
-            slots = wave_def.get("slots", 1)
-            waves.append(CritterWave(
-                wave_id=i + 1,
-                iid=critter_iid.upper() if critter_iid else critter_iid,
-                slots=int(slots),
-                num_critters_spawned=0,
-                next_critter_ms=0,
-            ))
+            aid = self._next_army_aid
+            self._next_army_aid += 1
+            log.info(
+                "[AI_ATTACK] Wave '%s' triggered by iid=%s for empire=%s",
+                name, completed_iid, empire.uid,
+            )
+            results.append(Army(aid=aid, uid=AI_UID, name=name, waves=waves))
 
-        initial_delay_ms = (
-            self._game_config.initial_wave_delay_ms if self._game_config else 15000.0
-        )
-        for i, wave in enumerate(waves):
-            wave.next_critter_ms = int(i * initial_delay_ms)
-
-        aid = self._next_army_aid
-        self._next_army_aid += 1
-        wave_name = last_match.get("name", "Hardcoded Attack")
-        log.info(
-            "[AI_ATTACK] Using hardcoded wave '%s' for defender uid=%s",
-            wave_name, empire.uid,
-        )
-        return Army(aid=aid, uid=AI_UID, name=wave_name, waves=waves), wave_name
+        return results
 
     def _match_hardcoded_wave(self, empire: "Empire") -> "Army | None":
         """Return a hardcoded Army if any wave entry's trigger conditions are met.
@@ -453,28 +425,15 @@ class AIService:
         from gameserver.models.army import Army, CritterWave
         from gameserver.util import effects as fx
 
-        completed_buildings: set[str] = {
-            iid for iid, r in empire.buildings.items() if r == 0.0
+        completed_all: set[str] = {
+            iid for iid, r in {**empire.buildings, **empire.knowledge}.items() if r == 0.0
         }
-        completed_knowledge: set[str] = {
-            iid for iid, r in empire.knowledge.items() if r == 0.0
-        }
-        gold = empire.resources.get("gold", 0.0)
-        culture = empire.resources.get("culture", 0.0)
-
         last_match = None
         for entry in self._hardcoded_waves:
             trigger = entry.get("trigger") or {}
-            req_buildings = trigger.get("buildings") or []
-            req_knowledge = trigger.get("knowledge") or []
-            gold_min = trigger.get("gold_min", 0)
-            culture_min = trigger.get("culture_min", 0)
+            req_items = trigger.get("items") or []
 
-            if not all(b in completed_buildings for b in req_buildings):
-                continue
-            if not all(k in completed_knowledge for k in req_knowledge):
-                continue
-            if gold < gold_min or culture < culture_min:
+            if not all(x in completed_all for x in req_items):
                 continue
             last_match = entry
 

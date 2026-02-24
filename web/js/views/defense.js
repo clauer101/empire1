@@ -625,8 +625,8 @@ async function enter() {
 
   // Subscribe to items for structure tile types
   _unsub.push(eventBus.on('state:items', () => { _registerStructureTileTypes(); _buildPalette(); }));
-  // Connect WS if an attack becomes active while on this view
-  _unsub.push(eventBus.on('state:summary', () => { if (!_wsConnected) _connectWsIfNeeded(); }));
+  // Rebuild palette when gold changes so unaffordable towers gray out immediately
+  _unsub.push(eventBus.on('state:summary', () => { _buildPalette(); if (!_wsConnected) _connectWsIfNeeded(); }));
 
   // Load items to get structure tiles (via REST)
   try {
@@ -712,9 +712,18 @@ function _initCanvas() {
         if (existingType === 'void') return;  // cannot build on void tiles
         const brushIsPath = PATH_TYPES.includes(_activeBrush);
         const replacesPath = PATH_TYPES.includes(existingType);
+        if (_activeBrush === 'spawnpoint') _clearExistingSpawnpoint(q, r);
         grid.setTile(q, r, _activeBrush);
         if (brushIsPath || replacesPath) { _markPathDirty(); }
-        else { _autoSave(); }
+        else {
+          // Optimistically deduct cost so palette grays out immediately
+          const _cost = getTileType(_activeBrush)?.serverData?.costs?.gold || 0;
+          if (_cost && st.summary?.resources) {
+            st.summary.resources.gold = Math.max(0, (st.summary.resources.gold || 0) - _cost);
+          }
+          _buildPalette();
+          _autoSave();
+        }
         return;
       }
       _showTileDetails(q, r, tile || grid.getTile(q, r));
@@ -727,8 +736,17 @@ function _initCanvas() {
         if (existingType === 'void') return;  // cannot build on void tiles
         const brushIsPath = PATH_TYPES.includes(tileTypeId);
         const replacesPath = PATH_TYPES.includes(existingType);
+        if (tileTypeId === 'spawnpoint') _clearExistingSpawnpoint(q, r);
         if (brushIsPath || replacesPath) { _markPathDirty(); }
-        else { _autoSave(); }
+        else {
+          // Optimistically deduct cost so palette grays out immediately
+          const _cost = getTileType(tileTypeId)?.serverData?.costs?.gold || 0;
+          if (_cost && st.summary?.resources) {
+            st.summary.resources.gold = Math.max(0, (st.summary.resources.gold || 0) - _cost);
+          }
+          _buildPalette();
+          _autoSave();
+        }
       }
     },
   });
@@ -783,6 +801,17 @@ function _updatePalettePathVisibility() {
   pathSec.style.display = inBattle ? 'none' : '';
 }
 
+function _clearExistingSpawnpoint(excludeQ, excludeR) {
+  if (!grid) return;
+  for (const [key, data] of grid.tiles) {
+    if (data.type === 'spawnpoint') {
+      const [sq, sr] = key.split(',').map(Number);
+      if (sq === excludeQ && sr === excludeR) continue;
+      grid.setTile(sq, sr, 'empty');
+    }
+  }
+}
+
 function _buildPalette() {
   const palette = container.querySelector('#tile-palette');
   if (!palette) return;
@@ -833,13 +862,22 @@ function _createPaletteItem(typeId) {
   item.title = t.label;
   const _palGoldCost = t.serverData?.costs?.gold;
   const _palCurrentGold = st.summary?.resources?.gold || 0;
+  const _canAfford = !_palGoldCost || _palCurrentGold >= _palGoldCost;
+  if (!_canAfford) {
+    item.classList.add('palette-item--disabled');
+    item.draggable = false;
+    item.title = t.label + ' (Not enough gold: need ' + Math.round(_palGoldCost).toLocaleString() + ')';
+  }
   const _palCostHtml = _palGoldCost
-    ? ' <span style="font-size:10px;color:' + (_palCurrentGold >= _palGoldCost ? 'var(--success,#4caf50)' : 'var(--danger)') + '">💰' + Math.round(_palGoldCost).toLocaleString() + '</span>'
+    ? ' <span style="font-size:10px;color:' + (_canAfford ? 'var(--success,#4caf50)' : 'var(--danger)') + '">💰' + Math.round(_palGoldCost).toLocaleString() + '</span>'
     : '';
   item.innerHTML =
     '<span class="palette-swatch" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
     '<span class="palette-label">' + t.label + _palCostHtml + '</span>';
-  item.addEventListener('click', () => _setActiveBrush(typeId));
+  item.addEventListener('click', () => {
+    if (item.classList.contains('palette-item--disabled')) return;
+    _setActiveBrush(typeId);
+  });
   item.addEventListener('dragstart', e => {
     e.dataTransfer.setData('text/tile-type', typeId);
     e.dataTransfer.effectAllowed = 'copy';
@@ -931,6 +969,8 @@ function _onBattleStatus(msg) {
   _battleState.defender_name = msg.defender_name || 'Unknown';
   _battleState.attacker_uid = msg.attacker_uid;
   _battleState.attacker_name = msg.attacker_name || 'Unknown';
+  _battleState.attacker_army_name = msg.attacker_army_name || '';
+  _battleState.attacker_username = msg.attacker_username || '';
   _battleState.time_since_start_s = msg.time_since_start_s || 0;
   if ('wave_info' in msg) {
     _battleState.wave_info = msg.wave_info;
@@ -953,6 +993,8 @@ function _onBattleSetup(msg) {
     defender_name: '',
     attacker_uids: msg.attacker_uids || [],
     attacker_name: '',
+    attacker_army_name: '',
+    attacker_username: '',
     elapsed_ms: 0,
     is_finished: false,
     defender_won: null,
@@ -1198,7 +1240,11 @@ function _updateStatusFromBattleMsg() {
   const attackerEl = container.querySelector('#battle-attacker');
   
   if (defenderEl) defenderEl.textContent = _battleState.defender_name || '-';
-  if (attackerEl) attackerEl.textContent = _battleState.attacker_name || '-';
+  if (attackerEl) {
+    const armyName = _battleState.attacker_army_name || _battleState.attacker_name || '-';
+    const username = _battleState.attacker_username;
+    attackerEl.textContent = username ? `${armyName} (${username})` : armyName;
+  }
   
   // Update phase
   let statusText = 'Waiting...';

@@ -13,8 +13,7 @@
 #                completed by the defender (remaining_effort == 0)
 #   knowledge:   list of knowledge IIDs that must ALL be
 #                completed by the defender
-#   gold_min:    defender must have at least this much gold
-#   culture_min: defender must have at least this much culture
+#   citizen:    defender must have at least this much citizens of ANY type
 #
 # ── Army fields ─────────────────────────────────────────────
 #   critter:  critter IID (matched case-insensitively)
@@ -26,8 +25,7 @@
 #     trigger:
 #       buildings: []
 #       knowledge: []
-#       gold_min: 0
-#       culture_min: 0
+#       citizen: 0
 #     army:
 #       - critter: GOBLIN
 #         slots: 5
@@ -36,8 +34,7 @@
 #     trigger:
 #       buildings: [SMITHY]
 #       knowledge: []
-#       gold_min: 0
-#       culture_min: 0
+#       citizen: 0
 #     army:
 #       - critter: ORC
 #         slots: 8
@@ -47,13 +44,50 @@
 # ============================================================
 
 waves:
-  - name: "early raid"
+  - name: "Early Barbarians Raid"
     trigger:
-      buildings: [FIRE_PLACE]
-      knowledge: []
-      gold_min: 0
-      culture_min: 0
+      items: [FIRE_PLACE]
     army:
       - critter: SLAVE
+        slots: 8
+
+  - name: "Barbarians"
+    trigger:
+      items: [SHRINE, DOMESTICATION, MYSTIC, GRANARY]
+    army:
+      - critter: WARRIOR
+        slots: 3
+      - critter: SCOUT
+        slots: 6
+
+  - name: "Wild Barbarians"
+    trigger:
+      items: [POTTERY, CRAFTMANSHIP, GRANARY]
+    army:
+      - critter: SLAVE
+        slots: 10
+      - critter: SCOUT
+        slots: 6
+
+  - name: "Rude Barbarians"
+    trigger:
+      items: [EARTH_WALL, ALPHABET_WRITING, HERBOLOGY, EPIC_DRAWINGS]
+    army:
+      - critter: CLUBMAN
+        slots: 5
+      - critter: SCOUT
+        slots: 10
+      - critter: SWORDMAN
+        slots: 3
+
+  - name: "Angry Barbarians"
+    trigger:
+      items: [HORSEBACK_RIDING, EXCHANGE_POST]
+    army:
+      - critter: CLUBMAN
+        slots: 10
+      - critter: SCOUT
+        slots: 10
+      - critter: SWORDMAN
         slots: 5
 

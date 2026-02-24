@@ -328,6 +328,19 @@ tbody tr:last-child td {
   margin-right: 6px;
 }
 
+ul.effects-list {
+  margin: 2px 0 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+ul.effects-list li {
+  margin: 0;
+  padding: 0;
+}
+
 /* responsive mobile layout for items table */
 @media (max-width: 900px) {
   .items-table thead {
@@ -1482,6 +1495,14 @@ label {
 
 .palette-item.dragging {
   opacity: .5;
+}
+
+.palette-item--disabled,
+.palette-item--disabled:hover {
+  opacity: .4;
+  cursor: not-allowed;
+  background: transparent;
+  filter: grayscale(0.6);
 }
 
 .palette-swatch {

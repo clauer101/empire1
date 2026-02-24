@@ -12,7 +12,7 @@
 HUNTING:
   name: "Hunting"
   description: "Basic survival skill for acquiring food resources."
-  effort: 180
+  effort: 200
   costs: {}
   requirements: [FIRE_PLACE]
   effects: {}
@@ -20,7 +20,7 @@ HUNTING:
 MYSTIC:
   name: "Mystic"
   description: "Understanding of spiritual and mystical phenomena."
-  effort: 180
+  effort: 240
   costs: {}
   requirements: [FIRE_PLACE]
   effects:
