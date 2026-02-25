@@ -44,6 +44,11 @@ function init(el, _api, _state) {
           <input type="password" id="signup-pwd2" autocomplete="new-password" placeholder="Repeat password">
         </div>
         <button id="signup-btn" style="width:100%;justify-content:center">Sign Up</button>
+        <p class="dsgvo-notice">
+          Mit der Registrierung werden Name und E-Mail-Adresse zur Verwaltung
+          deines Kontos verarbeitet (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO).
+          <a href="/datenschutz.html" target="_blank" rel="noopener">Mehr erfahren</a>
+        </p>
         <p class="form-footer">Already have an account? <a href="#login">Log in</a></p>
       </div>
     </div>
