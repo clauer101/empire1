@@ -42,18 +42,14 @@ class EmpireService:
         self._empires: dict[int, Empire] = {}  # uid → Empire
 
         # Game balance constants (fall back to defaults if no config)
-        if game_config is not None:
-            self._base_gold = game_config.base_gold_per_sec
-            self._base_culture = game_config.base_culture_per_sec
-            self._citizen_effect = game_config.citizen_effect
-            self._base_build_speed = game_config.base_build_speed
-            self._base_research_speed = game_config.base_research_speed
-        else:
-            self._base_gold = 1.0
-            self._base_culture = 0.5
-            self._citizen_effect = 0.03
-            self._base_build_speed = 1.0
-            self._base_research_speed = 1.0
+        from gameserver.loaders.game_config_loader import GameConfig as _GC
+        _gc = game_config if game_config is not None else _GC()
+        self._gc = _gc
+        self._base_gold = _gc.base_gold_per_sec
+        self._base_culture = _gc.base_culture_per_sec
+        self._citizen_effect = _gc.citizen_effect
+        self._base_build_speed = _gc.base_build_speed
+        self._base_research_speed = _gc.base_research_speed
 
     # -- Empire registry -------------------------------------------------
 
@@ -303,36 +299,29 @@ class EmpireService:
         return None
 
     def _citizen_price(self, i: int) -> float:
-        # f(x) = u + (i * y) * (i + z)^v
-        u, y, z, v = 34, 1, 1.5, 2.25
-        return u + (i * y) * (i + z) ** v
-    
-    def _tile_price(self, i: int) -> float:
-        # sigmoid(i, MAX=30000, MIN=10, SPREAD=5, STEEP=5)
+        p = self._gc.prices.citizen
+        return p.u + (i * p.y) * (i + p.z) ** p.v
+
+    @staticmethod
+    def _sigmoid(i: int, maxv: float, minv: float, spread: float, steep: float) -> float:
         import math
-        maxv, minv, spread, steep = 47000, 100, 29, 8.5
         return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+
+    def _tile_price(self, i: int) -> float:
+        p = self._gc.prices.tile
+        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
 
     def _wave_price(self, i: int) -> float:
-        # Price for adding the i-th wave to an army
-        # sigmoid(i, MAX=8000, MIN=50, SPREAD=12, STEEP=7)
-        import math
-        maxv, minv, spread, steep = 28000, 100, 12, 7
-        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
-    
+        p = self._gc.prices.wave
+        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
+
     def _critter_slot_price(self, i: int) -> float:
-        # Price for adding the i-th critter slot to a wave
-        # sigmoid(i, MAX=3000, MIN=20, SPREAD=15, STEEP=6)
-        import math
-        maxv, minv, spread, steep = 13000, 25, 23, 7
-        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+        p = self._gc.prices.critter_slot
+        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
 
     def _army_price(self, i: int) -> float:
-        # Price for creating the i-th army
-        # sigmoid(i, MAX=15000, MIN=100, SPREAD=10, STEEP=6)
-        import math
-        maxv, minv, spread, steep = 75000, 1000, 7, 6
-        return minv + (maxv - minv) / (1 + math.exp((-7 * i) / spread + steep))
+        p = self._gc.prices.army
+        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
 
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:

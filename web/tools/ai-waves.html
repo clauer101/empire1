@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Wave Definitions</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #22222f;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --danger:      #ef5350;
+      --success:     #66bb6a;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+
+    #save-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      padding: 7px 18px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #save-btn:hover { opacity: 0.85; }
+    #save-btn:disabled { opacity: 0.4; cursor: default; }
+
+    #save-status {
+      font-size: 12px;
+      min-width: 120px;
+    }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+
+    /* ── Layout ── */
+    #content {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Era section ── */
+    .era-section { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+    .era-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface);
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .era-header:hover { background: var(--surface-hover); }
+
+    .era-arrow { font-size: 10px; color: var(--text-dim); transition: transform 0.2s; }
+    .era-section.collapsed .era-arrow { transform: rotate(-90deg); }
+
+    .era-name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .era-info { font-size: 0.75rem; color: var(--text-dim); }
+    .era-count {
+      margin-left: auto;
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 11px;
+    }
+
+    .era-body {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .era-section.collapsed .era-body { display: none; }
+
+    /* ── Wave row ── */
+    .wave-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .wave-row:last-child { border-bottom: none; }
+
+    .wave-main {
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wave-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .wave-name-input {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      width: 240px;
+      border-bottom: 1px solid transparent;
+      padding: 1px 2px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .wave-name-input:focus { border-bottom-color: var(--accent); }
+
+    .travel-label { color: var(--text-dim); font-size: 11px; }
+
+    .travel-input {
+      background: var(--surface-alt);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3px 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      width: 60px;
+      text-align: right;
+      outline: none;
+    }
+    .travel-input:focus { border-color: var(--accent); }
+
+    /* ── Trigger chips ── */
+    .trigger-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .trigger-label { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+    .trigger-chip {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--warning);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip-del {
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 10px;
+      line-height: 1;
+      padding: 0 1px;
+      background: none;
+      border: none;
+    }
+    .chip-del:hover { color: var(--danger); }
+
+    .trigger-add-input {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2px 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      width: 130px;
+      outline: none;
+      text-transform: uppercase;
+    }
+    .trigger-add-input:focus { border-color: var(--accent); }
+    .trigger-add-input::placeholder { color: var(--text-dim); text-transform: none; }
+
+    /* ── Army units ── */
+    .army-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .army-label { color: var(--text-dim); font-size: 11px; }
+
+    .unit-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 3px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 6px;
+      min-width: 90px;
+    }
+
+    .unit-tile-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .unit-tile-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .unit-select {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      outline: none;
+      cursor: pointer;
+      flex: 1;
+      min-width: 0;
+    }
+    .unit-select option { background: var(--surface-alt); }
+
+    .slot-btn {
+      background: var(--surface);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .slot-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+    .slot-count {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .unit-del {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+    .unit-del:hover { color: var(--danger); }
+
+    .add-unit-btn {
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-unit-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .era-rand-btn {
+      margin-left: 8px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .era-rand-btn:hover { border-color: var(--warning); color: var(--warning); }
+
+    .era-time-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 8px;
+    }
+    .era-time-label { color: var(--text-dim); font-size: 11px; }
+    .era-time-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text-dim);
+      font-size: 13px;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .era-time-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Wave actions (right column) ── */
+    .wave-actions {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+      gap: 4px;
+      border-left: 1px solid var(--border);
+    }
+
+    .del-wave-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 4px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .del-wave-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Add wave button ── */
+    .add-wave-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-size: 12px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      align-self: flex-start;
+      margin: 8px 14px;
+    }
+    .add-wave-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Uncovered items bar ── */
+    .uncovered-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      padding: 5px 14px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .uncovered-label {
+      color: var(--text-dim);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .uncovered-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      cursor: default;
+    }
+
+    /* ── Difficulty badge ── */
+    .diff-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Loading ── */
+    #loading {
+      color: var(--text-dim);
+      text-align: center;
+      padding: 60px;
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>AI Wave Definitions</h1>
+  <span id="save-status"></span>
+  <button id="save-btn" disabled>Speichern</button>
+</div>
+
+<div id="content">
+  <div id="loading">Lade Daten…</div>
+</div>
+
+<script>
+const ERA_ORDER = [
+  "Steinzeit", "Neolithikum", "Bronzezeit", "Eisenzeit",
+  "Mittelalter", "Renaissance", "Industrialisierung", "Moderne", "Zukunft"
+];
+
+const ERA_INFO = {
+  "Steinzeit":          "Effort 20 – 1.500",
+  "Neolithikum":        "Effort 800 – 7.500",
+  "Bronzezeit":         "Effort 2.500 – 8.000",
+  "Eisenzeit":          "Effort 8.000 – 30.000",
+  "Mittelalter":        "Effort 28.000 – 130.000",
+  "Renaissance":        "Effort 100.000 – 500.000",
+  "Industrialisierung": "Effort 500.000 – 2.000.000",
+  "Moderne":            "Effort 2.000.000 – 5.300.000",
+  "Zukunft":            "Effort 40.000.000 – 100.000.000",
+};
+
+// All known critters in era order
+const ERA_CRITTERS = {
+  "Steinzeit":          ["SLAVE", "WARRIOR", "SCOUT"],
+  "Neolithikum":        ["CLUBMAN", "SCOUT", "WARRIOR"],
+  "Bronzezeit":         ["BOWMAN", "SWORDMAN", "CHARIOT"],
+  "Eisenzeit":          ["PIKENEER", "HORSEMAN_FAST", "HORSEMAN_SLOW", "LEGIONARY"],
+  "Mittelalter":        ["CRUSADER", "KNIGHT", "SAMURAI", "SIEGE_RAM"],
+  "Renaissance":        ["NINJA", "MUSKETEER", "DRAGOONER"],
+  "Industrialisierung": ["SOLDIER", "MOTORBIKE", "SMALL_TANK", "SIEGE_TANK"],
+  "Moderne":            ["SPECOPS", "HELI"],
+  "Zukunft":            ["MECH_WARRIOR", "THE_GENERAL"],
+};
+
+const ALL_CRITTERS = [
+  "SLAVE","WARRIOR","SCOUT",
+  "CLUBMAN",
+  "BOWMAN","SWORDMAN","CHARIOT",
+  "PIKENEER","HORSEMAN_FAST","HORSEMAN_SLOW","LEGIONARY",
+  "CRUSADER","KNIGHT","SAMURAI","SIEGE_RAM",
+  "NINJA","MUSKETEER","DRAGOONER",
+  "SOLDIER","MOTORBIKE","SMALL_TANK","SIEGE_TANK",
+  "SPECOPS","HELI",
+  "MECH_WARRIOR","THE_GENERAL",
+];
+
+const CRITTER_STATS = {
+  SLAVE:         { speed: 0.2,  health: 1,  armour: 0   },
+  WARRIOR:       { speed: 0.2,  health: 2,  armour: 0   },
+  SCOUT:         { speed: 0.8,  health: 1,  armour: 0   },
+  CLUBMAN:       { speed: 0.2,  health: 2,  armour: 0.5 },
+  BOWMAN:        { speed: 0.2,  health: 3,  armour: 0   },
+  SWORDMAN:      { speed: 0.3,  health: 5,  armour: 1   },
+  CHARIOT:       { speed: 0.25, health: 5,  armour: 0   },
+  PIKENEER:      { speed: 0.2,  health: 6,  armour: 0   },
+  HORSEMAN_SLOW: { speed: 0.10, health: 8,  armour: 0   },
+  HORSEMAN_FAST: { speed: 0.25, health: 7,  armour: 0   },
+  LEGIONARY:     { speed: 0.2,  health: 8,  armour: 1   },
+  CRUSADER:      { speed: 0.2,  health: 10, armour: 1   },
+  KNIGHT:        { speed: 0.15, health: 11, armour: 1   },
+  SAMURAI:       { speed: 0.2,  health: 12, armour: 1   },
+  SIEGE_RAM:     { speed: 0.1,  health: 15, armour: 2   },
+  NINJA:         { speed: 0.25, health: 9,  armour: 0   },
+  MUSKETEER:     { speed: 0.2,  health: 14, armour: 1   },
+  DRAGOONER:     { speed: 0.2,  health: 15, armour: 1   },
+  SOLDIER:       { speed: 0.2,  health: 18, armour: 2   },
+  MOTORBIKE:     { speed: 0.30, health: 20, armour: 2   },
+  SMALL_TANK:    { speed: 0.2,  health: 25, armour: 3   },
+  SIEGE_TANK:    { speed: 0.10, health: 28, armour: 4   },
+  SPECOPS:       { speed: 1.0,  health: 30, armour: 2   },
+  HELI:          { speed: 1.2,  health: 40, armour: 5   },
+  MECH_WARRIOR:  { speed: 0.8,  health: 50, armour: 6   },
+  THE_GENERAL:   { speed: 1.0,  health: 60, armour: 8   },
+};
+
+function calcDifficulty(army) {
+  let score = 0;
+  for (const w of (army.waves || [])) {
+    const s = CRITTER_STATS[w.critter];
+    if (!s) continue;
+    score += w.slots * s.health * (1 + s.armour) * (1 + s.speed);
+  }
+  return Math.round(score);
+}
+
+function renderDiffBadge(badge, army) {
+  const score = calcDifficulty(army);
+  badge.textContent = `⚔ ${score}`;
+  badge.style.color = score < 100 ? 'var(--success)' : score < 800 ? 'var(--warning)' : 'var(--danger)';
+}
+
+let armies = [];     // flat array of army definitions, each with era field
+let eraItems = {};   // {era: [iid, ...]} from buildings + knowledge
+let dirty = false;
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function markDirty() {
+  dirty = true;
+  document.getElementById('save-btn').disabled = false;
+  document.getElementById('save-status').textContent = '';
+  document.getElementById('save-status').className = '';
+}
+
+function critterOptions(selected) {
+  return ALL_CRITTERS.map(c =>
+    `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`
+  ).join('');
+}
+
+// ── Render ───────────────────────────────────────────────────
+
+function renderAll() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  // Group by era
+  const groups = {};
+  ERA_ORDER.forEach(e => groups[e] = []);
+  armies.forEach((a, i) => {
+    const era = a.era || 'Steinzeit';
+    if (!groups[era]) groups[era] = [];
+    groups[era].push({ army: a, idx: i });
+  });
+
+  ERA_ORDER.forEach(era => {
+    const items = groups[era];
+
+    const section = document.createElement('div');
+    section.className = 'era-section';
+    section.dataset.era = era;
+
+    section.innerHTML = `
+      <div class="era-header">
+        <span class="era-arrow">&#9660;</span>
+        <span class="era-name">${era}</span>
+        <span class="era-info">${ERA_INFO[era] || ''}</span>
+        <span class="era-count">${items.length} Armeen</span>
+        <div class="era-time-ctrl" title="Travel-Zeit aller Armeen anpassen">
+          <span class="era-time-label">Travel</span>
+          <button class="era-time-btn" data-field="travel_time" data-delta="-30">−</button>
+          <button class="era-time-btn" data-field="travel_time" data-delta="30">+</button>
+        </div>
+        <div class="era-time-ctrl" title="Siege-Zeit aller Armeen anpassen">
+          <span class="era-time-label">Siege</span>
+          <button class="era-time-btn" data-field="siege_time" data-delta="-30">−</button>
+          <button class="era-time-btn" data-field="siege_time" data-delta="30">+</button>
+        </div>
+        <button class="era-rand-btn" title="Allen Armeen eine zufällige Wave hinzufügen">⚄ Wave für alle</button>
+      </div>
+      <div class="era-body"></div>
+    `;
+
+    const header = section.querySelector('.era-header');
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('.era-rand-btn, .era-time-btn, .era-time-ctrl')) return;
+      section.classList.toggle('collapsed');
+    });
+
+    section.querySelectorAll('.era-time-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.field;
+        const delta = parseInt(btn.dataset.delta);
+        items.forEach(({ army }) => {
+          const cur = army[field] ?? 0;
+          army[field] = Math.max(0, cur + delta);
+        });
+        markDirty();
+        renderAll();
+      });
+    });
+
+    section.querySelector('.era-rand-btn').addEventListener('click', () => {
+      const pool = ERA_CRITTERS[era] || ALL_CRITTERS;
+      items.forEach(({ army }) => {
+        const critter = pool[Math.floor(Math.random() * pool.length)];
+        if (!army.waves) army.waves = [];
+        army.waves.push({ critter, slots: (army.waves.length + 1) * 2 });
+      });
+      markDirty();
+      renderAll();
+    });
+
+    const body = section.querySelector('.era-body');
+
+    // Uncovered items bar
+    const allEraItems = eraItems[era] || [];
+    if (allEraItems.length > 0) {
+      const usedItems = new Set();
+      items.forEach(({ army }) => {
+        (army.trigger?.items || []).forEach(it => usedItems.add(it));
+      });
+      const uncovered = allEraItems.filter(iid => !usedItems.has(iid));
+      if (uncovered.length > 0) {
+        const bar = document.createElement('div');
+        bar.className = 'uncovered-bar';
+        const lbl = document.createElement('span');
+        lbl.className = 'uncovered-label';
+        lbl.textContent = 'Kein Trigger:';
+        bar.appendChild(lbl);
+        uncovered.forEach(iid => {
+          const chip = document.createElement('span');
+          chip.className = 'uncovered-chip';
+          chip.textContent = iid;
+          bar.appendChild(chip);
+        });
+        body.appendChild(bar);
+      }
+    }
+
+    items.forEach(({ army, idx }) => {
+      body.appendChild(buildArmyRow(army, idx));
+    });
+
+    // Add army button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-wave-btn';
+    addBtn.textContent = '+ Neue Army';
+    addBtn.addEventListener('click', () => addArmy(era));
+    body.appendChild(addBtn);
+
+    content.appendChild(section);
+  });
+}
+
+function buildArmyRow(army, idx) {
+  const row = document.createElement('div');
+  row.className = 'wave-row';
+  row.dataset.idx = idx;
+
+  // ── Main column ──
+  const main = document.createElement('div');
+  main.className = 'wave-main';
+
+  // Top: name + travel time
+  const top = document.createElement('div');
+  top.className = 'wave-top';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'wave-name-input';
+  nameInput.value = army.name || '';
+  nameInput.addEventListener('input', () => { army.name = nameInput.value; markDirty(); });
+  top.appendChild(nameInput);
+
+  const tLabel = document.createElement('span');
+  tLabel.className = 'travel-label';
+  tLabel.textContent = 'Travel:';
+  top.appendChild(tLabel);
+
+  const tInput = document.createElement('input');
+  tInput.type = 'number';
+  tInput.className = 'travel-input';
+  tInput.value = army.travel_time ?? '';
+  tInput.min = 0;
+  tInput.step = 30;
+  tInput.addEventListener('input', () => { army.travel_time = parseInt(tInput.value) || 0; markDirty(); });
+  top.appendChild(tInput);
+
+  const tSec = document.createElement('span');
+  tSec.className = 'travel-label';
+  tSec.textContent = 's';
+  top.appendChild(tSec);
+
+  const sLabel = document.createElement('span');
+  sLabel.className = 'travel-label';
+  sLabel.textContent = 'Siege:';
+  top.appendChild(sLabel);
+
+  const sInput = document.createElement('input');
+  sInput.type = 'number';
+  sInput.className = 'travel-input';
+  sInput.value = army.siege_time ?? '';
+  sInput.min = 0;
+  sInput.step = 30;
+  sInput.addEventListener('input', () => { army.siege_time = parseInt(sInput.value) || 0; markDirty(); });
+  top.appendChild(sInput);
+
+  const sSec = document.createElement('span');
+  sSec.className = 'travel-label';
+  sSec.textContent = 's';
+  top.appendChild(sSec);
+
+  const diffBadge = document.createElement('span');
+  diffBadge.className = 'diff-badge';
+  renderDiffBadge(diffBadge, army);
+  top.appendChild(diffBadge);
+
+  main.appendChild(top);
+
+  // Trigger row
+  main.appendChild(buildTriggerRow(army));
+
+  // Waves (critter/slot units) row
+  const refreshDiff = () => renderDiffBadge(diffBadge, army);
+  main.appendChild(buildWavesRow(army, refreshDiff));
+
+  row.appendChild(main);
+
+  // ── Actions column ──
+  const actions = document.createElement('div');
+  actions.className = 'wave-actions';
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'del-wave-btn';
+  delBtn.textContent = 'Löschen';
+  delBtn.addEventListener('click', () => {
+    armies.splice(idx, 1);
+    markDirty();
+    renderAll();
+  });
+  actions.appendChild(delBtn);
+
+  row.appendChild(actions);
+  return row;
+}
+
+function buildTriggerRow(army) {
+  const row = document.createElement('div');
+  row.className = 'trigger-row';
+
+  const label = document.createElement('span');
+  label.className = 'trigger-label';
+  label.textContent = 'Trigger:';
+  row.appendChild(label);
+
+  const items = army.trigger?.items || [];
+
+  function rebuildChips() {
+    row.querySelectorAll('.trigger-chip').forEach(c => c.remove());
+    items.forEach((item, ci) => {
+      const chip = document.createElement('span');
+      chip.className = 'trigger-chip';
+      chip.innerHTML = `${item}<button class="chip-del" title="Entfernen">&times;</button>`;
+      chip.querySelector('.chip-del').addEventListener('click', () => {
+        items.splice(ci, 1);
+        if (!army.trigger) army.trigger = {};
+        army.trigger.items = items;
+        markDirty();
+        rebuildChips();
+      });
+      row.insertBefore(chip, addInput);
+    });
+  }
+
+  const addInput = document.createElement('input');
+  addInput.type = 'text';
+  addInput.className = 'trigger-add-input';
+  addInput.placeholder = 'Item hinzufügen…';
+  addInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = addInput.value.trim().toUpperCase().replace(/,/g, '');
+      if (val) {
+        if (!army.trigger) army.trigger = {};
+        if (!army.trigger.items) army.trigger.items = [];
+        army.trigger.items.push(val);
+        addInput.value = '';
+        markDirty();
+        rebuildChips();
+      }
+    }
+  });
+  row.appendChild(addInput);
+
+  rebuildChips();
+  return row;
+}
+
+function buildWavesRow(army, refreshDiff) {
+  const row = document.createElement('div');
+  row.className = 'army-row';
+
+  const label = document.createElement('span');
+  label.className = 'army-label';
+  label.textContent = 'Waves:';
+  row.appendChild(label);
+
+  const units = army.waves || [];
+
+  function rebuildUnits() {
+    row.querySelectorAll('.unit-tile').forEach(t => t.remove());
+    units.forEach((unit, ui) => {
+      const tile = document.createElement('div');
+      tile.className = 'unit-tile';
+
+      // Top row: critter select + delete button
+      const top = document.createElement('div');
+      top.className = 'unit-tile-top';
+
+      const sel = document.createElement('select');
+      sel.className = 'unit-select';
+      sel.innerHTML = critterOptions(unit.critter);
+      sel.addEventListener('change', () => { unit.critter = sel.value; markDirty(); refreshDiff?.(); });
+
+      const del = document.createElement('button');
+      del.className = 'unit-del';
+      del.title = 'Wave entfernen';
+      del.textContent = '✕';
+      del.addEventListener('click', () => {
+        units.splice(ui, 1);
+        army.waves = units;
+        markDirty();
+        rebuildUnits();
+        refreshDiff?.();
+      });
+
+      top.append(sel, del);
+
+      // Bottom row: − count +
+      const bottom = document.createElement('div');
+      bottom.className = 'unit-tile-bottom';
+
+      const minus = document.createElement('button');
+      minus.className = 'slot-btn';
+      minus.textContent = '−';
+      minus.addEventListener('click', () => {
+        if (unit.slots > 1) { unit.slots--; count.textContent = unit.slots; markDirty(); refreshDiff?.(); }
+      });
+
+      const count = document.createElement('span');
+      count.className = 'slot-count';
+      count.textContent = unit.slots;
+
+      const plus = document.createElement('button');
+      plus.className = 'slot-btn';
+      plus.textContent = '+';
+      plus.addEventListener('click', () => {
+        unit.slots++; count.textContent = unit.slots; markDirty(); refreshDiff?.();
+      });
+
+      bottom.append(minus, count, plus);
+      tile.append(top, bottom);
+      row.insertBefore(tile, addWaveBtn);
+    });
+  }
+
+  const addWaveBtn = document.createElement('button');
+  addWaveBtn.className = 'add-unit-btn';
+  addWaveBtn.textContent = '+ Wave';
+  addWaveBtn.addEventListener('click', () => {
+    const pool = ERA_CRITTERS[army.era] || ALL_CRITTERS;
+    const critter = pool[Math.floor(Math.random() * pool.length)];
+    units.push({ critter, slots: (units.length + 1) * 2 });
+    army.waves = units;
+    markDirty();
+    rebuildUnits();
+    refreshDiff?.();
+  });
+  row.appendChild(addWaveBtn);
+
+
+  rebuildUnits();
+  return row;
+}
+
+// ── Add army ────────────────────────────────────────────────
+
+function addArmy(era) {
+  // Insert after the last army with same era
+  let insertAt = armies.length;
+  for (let i = armies.length - 1; i >= 0; i--) {
+    if (armies[i].era === era) { insertAt = i + 1; break; }
+  }
+  armies.splice(insertAt, 0, {
+    era,
+    name: 'New Army',
+    travel_time: 120,
+    trigger: { items: [] },
+    waves: [{ critter: 'SLAVE', slots: 5 }],
+  });
+  markDirty();
+  renderAll();
+}
+
+// ── Save ────────────────────────────────────────────────────
+
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-btn');
+  const status = document.getElementById('save-status');
+  btn.disabled = true;
+  status.textContent = 'Speichert…';
+  status.className = '';
+
+  try {
+    const res = await fetch('/api/ai-waves', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ waves: armies }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      status.textContent = 'Gespeichert!';
+      status.className = 'ok';
+      dirty = false;
+    } else {
+      throw new Error(data.error || 'Fehler');
+    }
+  } catch (e) {
+    status.textContent = `Fehler: ${e.message}`;
+    status.className = 'err';
+    btn.disabled = false;
+  }
+  setTimeout(() => { status.textContent = ''; status.className = ''; }, 3000);
+});
+
+// ── Load ────────────────────────────────────────────────────
+
+(async () => {
+  try {
+    const [wavesRes, itemsRes] = await Promise.all([
+      fetch('/api/ai-waves'),
+      fetch('/api/era-items'),
+    ]);
+    const wavesData = await wavesRes.json();
+    const itemsData = await itemsRes.json();
+    armies   = wavesData.waves || [];
+    eraItems = itemsData.eras  || {};
+    document.getElementById('loading').remove();
+    renderAll();
+  } catch (e) {
+    document.getElementById('loading').textContent = `Fehler: ${e.message}`;
+  }
+})();
+</script>
+</body>
+</html>

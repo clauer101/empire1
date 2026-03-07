@@ -266,6 +266,16 @@ function render(data) {
       window.location.hash = '#defense';
     });
   });
+
+  // Bind outgoing watch entries (spectate defender's battle)
+  el.querySelectorAll('.atk-watch-entry').forEach(entry => {
+    entry.addEventListener('click', () => {
+      const attackId = parseInt(entry.dataset.attackId, 10);
+      const defenderUid = parseInt(entry.dataset.defenderUid, 10);
+      st.pendingSpectateAttack = { attack_id: attackId, defender_uid: defenderUid };
+      window.location.hash = '#defense';
+    });
+  });
 }
 
 function renderCitizens(citizens) {
@@ -650,7 +660,14 @@ function _attackEntry(a, direction) {
     ? (a.attacker_username || _resolveEmpireUsername(otherUid))
     : _resolveEmpireUsername(otherUid);
   const empName   = username ? `${rawName} (${username})` : rawName;
-  const icon      = direction === 'in' ? '⚠' : '→';
+
+  const showWatch = direction === 'out' && (a.phase === 'in_siege' || a.phase === 'in_battle');
+
+  // For outgoing attacks in siege/battle: the whole entry is clickable (spectate)
+  const outClickable = showWatch;
+  const outDataAttrs = outClickable
+    ? `data-attack-id="${a.attack_id}" data-defender-uid="${a.defender_uid}" title="Watch battle" style="cursor:pointer"`
+    : '';
 
   let countdown = '';
   let pct = 0;
@@ -670,8 +687,11 @@ function _attackEntry(a, direction) {
   }
   pct = Math.max(0, Math.min(100, pct));
 
+  // Icon: ⚠ for incoming, 👁 for watchable outgoing, → otherwise
+  const icon = direction === 'in' ? '⚠' : (showWatch ? '👁' : '→');
+
   return `
-    <div class="attack-entry attack-${direction}${direction === 'in' ? ' attack-in-clickable' : ''}" ${direction === 'in' ? `data-attack-id="${a.attack_id}" data-attacker-uid="${a.attacker_uid}" title="Click to open battle view" style="cursor:pointer"` : ''}>
+    <div class="attack-entry attack-${direction}${direction === 'in' ? ' attack-in-clickable' : ''}${outClickable ? ' atk-watch-entry' : ''}" ${direction === 'in' ? `data-attack-id="${a.attack_id}" data-attacker-uid="${a.attacker_uid}" title="Click to open battle view" style="cursor:pointer"` : outDataAttrs}>
       <div class="atk-row">
         <span class="atk-icon">${icon}</span>
         <span class="atk-name">${empName}</span>

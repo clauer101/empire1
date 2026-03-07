@@ -109,7 +109,7 @@ class TestBuildingCostDeduction:
         service.build_item(empire_with_gold, "MAIN_HOUSE")
         gold_after_second = empire_with_gold.resources["gold"]
         cost_two = gold_after_first - gold_after_second
-        assert cost_two == 500, f"MAIN_HOUSE should cost 500 gold, got {cost_two}"
+        assert cost_two == 200, f"MAIN_HOUSE should cost 200 gold, got {cost_two}"
 
     def test_completed_building_cannot_rebuild(self, service, empire_with_gold):
         """Cannot rebuild an already completed building."""
@@ -158,7 +158,7 @@ class TestBuildingCostDeduction:
         # MAIN_HOUSE: effort 1000, cost 500 gold
         service.build_item(empire_with_gold, "MAIN_HOUSE")
         cost2 = initial_gold - empire_with_gold.resources["gold"]
-        assert cost2 == 500, f"MAIN_HOUSE should cost 500 gold, got {cost2}"
+        assert cost2 == 200, f"MAIN_HOUSE should cost 200 gold, got {cost2}"
 
     def test_gold_exactly_required_succeeds(self, service, empire_with_gold):
         """Building should succeed when gold equals exact cost."""

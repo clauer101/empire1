@@ -100,6 +100,41 @@ spy_costs:
   attacks: 5000
   artefacts: 10000
 
+# -- Prices --------------------------------------------------
+
+prices:
+  citizen:
+    # Formula: u + (i * y) * (i + z)^v
+    u: 34
+    y: 1
+    z: 1.5
+    v: 3.3
+
+  tile:
+    # Sigmoid: minv + (maxv - minv) / (1 + exp((-7 * i) / spread + steep))
+    maxv: 47000
+    minv: 100
+    spread: 29
+    steep: 8.5
+
+  wave:
+    maxv: 28000
+    minv: 100
+    spread: 12
+    steep: 7
+
+  critter_slot:
+    maxv: 13000
+    minv: 25
+    spread: 23
+    steep: 7
+
+  army:
+    maxv: 75000
+    minv: 1000
+    spread: 7
+    steep: 6
+
 # -- Auth validation -----------------------------------------
 
 min_username_length: 2

@@ -176,6 +176,7 @@ class AttackService:
         defender_uid: int,
         army: Army,
         travel_seconds: float = 30.0,
+        siege_seconds: float | None = None,
     ) -> Attack | str:
         """Launch an AI attack against *defender_uid* using a pre-built army.
 
@@ -201,7 +202,7 @@ class AttackService:
             phase=AttackPhase.TRAVELLING,
             eta_seconds=travel_seconds,
             total_eta_seconds=travel_seconds,
-            # siege set to 0: computed at TRAVELLING→IN_SIEGE from defender effects
+            override_siege_seconds=siege_seconds,
         )
         self._next_attack_id += 1
         self._attacks.append(attack)
@@ -231,11 +232,17 @@ class AttackService:
                 )
                 attack.phase = AttackPhase.IN_SIEGE
 
-                # Always compute siege duration at transition using defender's
-                # current effects (INCOMING_SIEGE_TIME_OFFSET, etc.)
-                siege_duration = self._calculate_siege_duration(
-                    attack.attacker_uid, attack.defender_uid
-                )
+                # Use explicit siege_seconds as base if set, otherwise use config base;
+                # always apply defender's SIEGE_TIME_OFFSET on top.
+                if attack.override_siege_seconds is not None:
+                    siege_duration = self._calculate_siege_duration(
+                        attack.attacker_uid, attack.defender_uid,
+                        base_override=float(attack.override_siege_seconds),
+                    )
+                else:
+                    siege_duration = self._calculate_siege_duration(
+                        attack.attacker_uid, attack.defender_uid
+                    )
                 attack.siege_remaining_seconds = siege_duration
                 attack.total_siege_seconds = siege_duration
                     
@@ -319,20 +326,24 @@ class AttackService:
 
     # -- Helpers ---------------------------------------------------------
 
-    def _calculate_siege_duration(self, attacker_uid: int, defender_uid: int) -> float:
+    def _calculate_siege_duration(
+        self,
+        attacker_uid: int,
+        defender_uid: int,
+        base_override: float | None = None,
+    ) -> float:
         """Calculate siege duration at TRAVELLING→IN_SIEGE transition.
 
         Formula:
-            result = max(1.0, base_siege_offset + defender.SIEGE_TIME_OFFSET)
+            result = max(1.0, base + defender.SIEGE_TIME_OFFSET)
 
-        The same base applies for both AI and player attackers so that the
-        defender's SIEGE_TIME_OFFSET effects are meaningful regardless of who
-        is attacking.  Computed fresh each time so buildings completed during
-        travel are reflected.
+        where base is base_override (from ai_waves siege_time) if provided,
+        otherwise self._base_siege_offset from game config.
+        Computed fresh each time so buildings completed during travel are reflected.
         """
         from gameserver.util import effects as fx
 
-        base = self._base_siege_offset
+        base = base_override if base_override is not None else self._base_siege_offset
 
         if not self._empire_service:
             return base
@@ -348,7 +359,8 @@ class AttackService:
         offset = defender.get_effect(fx.SIEGE_TIME_OFFSET, 0.0)
         result = max(1.0, base + offset)
         log.debug(
-            "Siege duration %d→%d: %.1fs (base_siege=%.1f, defender_offset=%.3f)",
-            attacker_uid, defender_uid, result, base, offset,
+            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f)",
+            attacker_uid, defender_uid, result, base,
+            " [override]" if base_override is not None else "", offset,
         )
         return result

@@ -26,17 +26,17 @@
 set -euo pipefail
 
 # -- Konfiguration ------------------------------------------------
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BASE_DIR="$(dirname "$PROJECT_DIR")"
-VENV="$BASE_DIR/.venv/bin/python"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON_SERVER_DIR="$SCRIPT_DIR/python_server"
+VENV="$SCRIPT_DIR/.venv/bin/python"
 MODULE="gameserver.main"
-PIDFILE="$PROJECT_DIR/.gameserver.pid"
-LOG="$PROJECT_DIR/gameserver.log"
+PIDFILE="$PYTHON_SERVER_DIR/.gameserver.pid"
+LOG="$PYTHON_SERVER_DIR/gameserver.log"
 
 # WebServer-Konfiguration
-WEB_DIR="$BASE_DIR/web"
-WEB_PIDFILE="$PROJECT_DIR/.webserver.pid"
-WEB_LOG="$PROJECT_DIR/webserver.log"
+WEB_DIR="$SCRIPT_DIR/web"
+WEB_PIDFILE="$PYTHON_SERVER_DIR/.webserver.pid"
+WEB_LOG="$PYTHON_SERVER_DIR/webserver.log"
 WEB_PORT="8000"
 
 # Timeouts (Sekunden)
@@ -141,13 +141,12 @@ stop_server() {
 }
 
 start_gameserver() {
-    local state_file="${1:-state.yaml}"  # State-Datei als Parameter, default "state.yaml"
+    local state_file="${1:-state.yaml}"
     echo "[INFO] Starte GameServer …"
     echo "       State-Datei: $state_file"
-    cd "$PROJECT_DIR"
+    cd "$PYTHON_SERVER_DIR"
 
     # Starte im Hintergrund, leite Ausgabe in Log um
-    # Übergebe --state_file Parameter wenn nicht die Standard-State-Datei
     if [[ "$state_file" != "state.yaml" ]]; then
         PYTHONPATH=src nohup "$VENV" -m "$MODULE" --state_file "$state_file" >> "$LOG" 2>&1 &
     else
@@ -161,7 +160,7 @@ start_gameserver() {
     if kill -0 "$pid" 2>/dev/null; then
         echo "[OK]   GameServer gestartet (PID: $pid)"
         echo "       Log: $LOG"
-        echo "       Dashboard: http://$(hostname -I | awk '{print $1}'):9000/"
+        echo "       DevTools: http://$(hostname -I | awk '{print $1}'):${WEB_PORT}/tools"
         echo "       WebSocket: ws://$(hostname -I | awk '{print $1}'):8765/"
     else
         echo "[FEHLER] GameServer konnte nicht gestartet werden." >&2
@@ -173,14 +172,12 @@ start_gameserver() {
 
 start_webserver() {
     echo "[INFO] Starte WebServer (FastAPI + Uvicorn) …"
-    
-    # Prüfe ob das Web-Verzeichnis existiert
+
     if [[ ! -d "$WEB_DIR" ]]; then
         echo "[FEHLER] WebServer-Verzeichnis nicht gefunden: $WEB_DIR" >&2
         return 1
     fi
 
-    # Prüfe ob FastAPI Server existiert
     if [[ ! -f "$WEB_DIR/fastapi_server.py" ]]; then
         echo "[FEHLER] fastapi_server.py nicht gefunden: $WEB_DIR/fastapi_server.py" >&2
         return 1
@@ -188,7 +185,6 @@ start_webserver() {
 
     cd "$WEB_DIR"
 
-    # Starte FastAPI Server mit Uvicorn im Hintergrund
     local cache_flag=""
     if [[ "$ENABLE_CACHE" == false ]]; then
         cache_flag="--no-cache"
@@ -197,7 +193,6 @@ start_webserver() {
     local pid=$!
     echo "$pid" > "$WEB_PIDFILE"
 
-    # Kurz warten und prüfen ob der Prozess lebt
     sleep 3
     if kill -0 "$pid" 2>/dev/null; then
         echo "[OK]   WebServer gestartet (PID: $pid)"
@@ -225,12 +220,11 @@ start_server() {
 
 # -- Argument-Parsing ------------------------------------------------
 
-STATE_FILE=""       # Benutzerdefinierte State-Datei (optional)
-ENABLE_CACHE=false  # Browser-Cache (Standard: deaktiviert)
-CMD="restart"       # Default command
-SUBCMD=""           # Optional subcommand
+STATE_FILE=""
+ENABLE_CACHE=false
+CMD="restart"
+SUBCMD=""
 
-# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --enable-cache)
@@ -246,7 +240,6 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         *)
-            # Non-option argument
             if [[ -z "$CMD" ]] || [[ "$CMD" == "restart" ]]; then
                 CMD="$1"
             elif [[ -z "$SUBCMD" ]]; then
@@ -286,7 +279,6 @@ case "$CMD" in
         ;;
     gameserver)
         if [[ -n "$SUBCMD" ]]; then
-            # Subcommand gegeben: gameserver stop/start
             case "$SUBCMD" in
                 stop)
                     echo "========================================"
@@ -315,7 +307,6 @@ case "$CMD" in
                     ;;
             esac
         else
-            # Kein Subcommand: Neustart
             echo "========================================"
             echo " Restart GameServer"
             echo " $(date '+%Y-%m-%d %H:%M:%S')"
@@ -329,7 +320,6 @@ case "$CMD" in
         ;;
     webserver)
         if [[ -n "$SUBCMD" ]]; then
-            # Subcommand gegeben: webserver stop/start
             case "$SUBCMD" in
                 stop)
                     echo "========================================"
@@ -358,7 +348,6 @@ case "$CMD" in
                     ;;
             esac
         else
-            # Kein Subcommand: Neustart
             echo "========================================"
             echo " Restart WebServer"
             echo " $(date '+%Y-%m-%d %H:%M:%S')"

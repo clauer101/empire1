@@ -54,6 +54,18 @@ class Database:
 
     # -- User operations -------------------------------------------------
 
+    async def get_user_by_uid(self, uid: int) -> dict | None:
+        """Look up a user by UID."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, username, email, empire_name FROM users WHERE uid = ?",
+            (uid,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {"uid": row[0], "username": row[1], "email": row[2], "empire_name": row[3]}
+
     async def get_user(self, username: str) -> dict | None:
         """Look up a user by username (case-insensitive)."""
         assert self._conn is not None

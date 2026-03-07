@@ -189,10 +189,10 @@ class BattleService:
             log.debug("[SHOT] Shot %d->%d missed (target not found)", shot.source_sid, shot.target_cid)
             return
         
-        # Apply base damage (reduced by armour for non-burn damage)
+        # Apply base damage (reduced by armour for non-burn damage, minimum 0.5)
         damage = shot.damage
         if shot.shot_type != DamageType.BURN:
-            damage = max(0.0, damage - critter.armour)
+            damage = max(0.5, damage - critter.armour)
         
         critter.health -= damage
         log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)", 

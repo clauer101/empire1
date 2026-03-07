@@ -170,8 +170,8 @@ class AIService:
             return
 
         matches = self._match_waves_for_item(empire, iid)
-        for army in matches:
-            self._send_army(empire_uid, empire, empire_service, attack_service, army)
+        for army, travel_s, siege_s in matches:
+            self._send_army(empire_uid, empire, empire_service, attack_service, army, travel_s, siege_s)
 
     def trigger_attacks(
         self,
@@ -237,6 +237,29 @@ class AIService:
             _params_summary(self._params),
         )
 
+    def cleanup_inactive_armies(
+        self,
+        empire_service: "EmpireService",
+        attack_service: "AttackService",
+    ) -> None:
+        """Remove AI armies that have no active (non-FINISHED) attack."""
+        from gameserver.models.attack import AttackPhase
+
+        ai_empire = empire_service.get(AI_UID)
+        if not ai_empire:
+            return
+
+        active_aids = {
+            a.army_aid
+            for a in attack_service.get_all_attacks()
+            if a.attacker_uid == AI_UID and a.phase != AttackPhase.FINISHED
+        }
+        before = len(ai_empire.armies)
+        ai_empire.armies = [a for a in ai_empire.armies if a.aid in active_aids]
+        removed = before - len(ai_empire.armies)
+        if removed:
+            log.info("[AI] Cleaned up %d inactive AI armies", removed)
+
     # -- Internals ---------------------------------------------------------
 
     def _send_army(
@@ -246,6 +269,8 @@ class AIService:
         empire_service: EmpireService,
         attack_service: AttackService,
         army: Army,
+        travel_seconds: float | None = None,
+        siege_seconds: float | None = None,
     ) -> None:
         """Register *army* with the AI empire and dispatch the attack."""
         from gameserver.models.empire import Empire as EmpireModel
@@ -255,7 +280,7 @@ class AIService:
             ai_empire = EmpireModel(uid=AI_UID, name="AI")
             empire_service.register(ai_empire)
 
-        ai_empire.armies = [a for a in ai_empire.armies if a.aid != army.aid]
+        self.cleanup_inactive_armies(empire_service, attack_service)
         ai_empire.armies.append(army)
 
         army_summary = {
@@ -269,12 +294,17 @@ class AIService:
             army_summary,
         )
 
-        travel_s = self._game_config.ai_travel_seconds if self._game_config else 30.0
+        travel_s = (
+            travel_seconds
+            if travel_seconds is not None
+            else (self._game_config.ai_travel_seconds if self._game_config else 30.0)
+        )
 
         attack = attack_service.start_ai_attack(
             defender_uid=defender_uid,
             army=army,
             travel_seconds=travel_s,
+            siege_seconds=siege_seconds,
         )
         if isinstance(attack, str):
             log.error("[AI_ATTACK] FAILED to start attack: %s", attack)
@@ -294,20 +324,22 @@ class AIService:
     ) -> None:
         """Generate an adaptive army and dispatch it (used by trigger_attacks)."""
         player_power = self._assess_player(empire)
-        army = self._build_army(empire, player_power)
-        if not army:
+        result = self._build_army(empire, player_power)
+        if not result:
             log.warning(
                 "[AI_ATTACK] No critters available for defender=%d — skipping",
                 defender_uid,
             )
             return
+        army, travel_s, siege_s = result
         log.info(
             "[AI_ATTACK] adaptive army for defender=%d power=%.1f params=%s",
             defender_uid, player_power, _params_summary(self._params),
         )
         self._send_army(defender_uid=defender_uid, empire=empire,
                         empire_service=empire_service,
-                        attack_service=attack_service, army=army)
+                        attack_service=attack_service, army=army,
+                        travel_seconds=travel_s, siege_seconds=siege_s)
 
     def _assess_player(self, empire: Empire) -> float:
         """Compute a scalar 'player power' score from the empire's current state.
@@ -352,7 +384,8 @@ class AIService:
         self,
         empire: "Empire",
         completed_iid: str,
-    ) -> "list[Army]":
+    ) -> "list[tuple[Army, float, float | None]]":
+        """Return (Army, travel_seconds, siege_seconds) triples matching the completed item."""
         """Return all Army entries whose trigger list contains *completed_iid*
         AND whose full trigger conditions are met.
         """
@@ -379,7 +412,7 @@ class AIService:
             if not (in_items or citizen_trigger):
                 continue
 
-            army_def = entry.get("army") or []
+            army_def = entry.get("waves") or []
             if not army_def:
                 continue
 
@@ -403,22 +436,22 @@ class AIService:
 
             aid = self._next_army_aid
             self._next_army_aid += 1
-            log.info(
-                "[AI_ATTACK] Wave '%s' triggered by iid=%s for empire=%s",
-                name, completed_iid, empire.uid,
+            travel_s = float(entry.get("travel_time", 0) or 0) or (
+                self._game_config.ai_travel_seconds if self._game_config else 30.0
             )
-            results.append(Army(aid=aid, uid=AI_UID, name=name, waves=waves))
+            raw_siege = entry.get("siege_time", 0) or 0
+            siege_s: float | None = float(raw_siege) if raw_siege else None
+            log.info(
+                "[AI_ATTACK] Wave '%s' triggered by iid=%s for empire=%s travel=%.0fs siege=%s",
+                name, completed_iid, empire.uid, travel_s, siege_s,
+            )
+            results.append((Army(aid=aid, uid=AI_UID, name=name, waves=waves), travel_s, siege_s))
 
         return results
 
-    def _match_hardcoded_wave(self, empire: "Empire") -> "Army | None":
-        """Return a hardcoded Army if any wave entry's trigger conditions are met.
-
-        Iterates ``self._hardcoded_waves`` in order; the *last* entry whose
-        trigger is fully satisfied wins (so more-specific entries should come
-        later in the YAML).  Returns ``None`` when no entry matches or the
-        list is empty.
-        """
+    def _match_hardcoded_wave(self, empire: "Empire") -> "tuple[Army, float, float | None] | None":
+        """Return (Army, travel_seconds, siege_seconds) for the last matching hardcoded wave entry,
+        or None if no entry matches."""
         if not self._hardcoded_waves:
             return None
 
@@ -440,7 +473,7 @@ class AIService:
         if last_match is None:
             return None
 
-        army_def = last_match.get("army") or []
+        army_def = last_match.get("waves") or []
         if not army_def:
             return None
 
@@ -466,10 +499,15 @@ class AIService:
         aid = self._next_army_aid
         self._next_army_aid += 1
         name = last_match.get("name", "Hardcoded Attack")
-        log.info("[AI_ATTACK] Using hardcoded wave '%s' for defender uid=%s", name, empire.uid)
-        return Army(aid=aid, uid=AI_UID, name=name, waves=waves)
+        travel_s = float(last_match.get("travel_time", 0) or 0) or (
+            self._game_config.ai_travel_seconds if self._game_config else 30.0
+        )
+        raw_siege = last_match.get("siege_time", 0) or 0
+        siege_s: float | None = float(raw_siege) if raw_siege else None
+        log.info("[AI_ATTACK] Using hardcoded wave '%s' for defender uid=%s travel=%.0fs siege=%s", name, empire.uid, travel_s, siege_s)
+        return Army(aid=aid, uid=AI_UID, name=name, waves=waves), travel_s, siege_s
 
-    def _build_army(self, empire: Empire, player_power: float) -> Army | None:
+    def _build_army(self, empire: Empire, player_power: float) -> "tuple[Army, float, float | None] | None":
         """Construct an Army scaled to player_power using the heuristic."""
         from gameserver.models.army import Army, CritterWave
         from gameserver.models.items import ItemType
@@ -477,7 +515,7 @@ class AIService:
         # ── Check hardcoded waves first ───────────────────────────────────
         matched = self._match_hardcoded_wave(empire)
         if matched is not None:
-            return matched
+            return matched[0], matched[1], matched[2]
 
         p = self._params
         budget = player_power * p.power_multiplier
@@ -568,7 +606,8 @@ class AIService:
         for i, wave in enumerate(waves):
             wave.next_critter_ms = int(i * initial_delay_ms)  # first wave zero delay
 
-        return Army(aid=aid, uid=AI_UID, name="AI Assault", waves=waves)
+        travel_s = self._game_config.ai_travel_seconds if self._game_config else 30.0
+        return Army(aid=aid, uid=AI_UID, name="AI Assault", waves=waves), travel_s, None
 
     # -- Legacy stubs (kept for API compatibility) -------------------------
 

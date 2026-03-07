@@ -47,7 +47,6 @@ from gameserver.persistence.state_load import RestoredState, load_state
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire
-from gameserver.debug.dashboard import DebugDashboard
 from gameserver.network.handlers import register_all_handlers
 from gameserver.loaders.game_config_loader import GameConfig, load_game_config
 
@@ -61,7 +60,6 @@ DEFAULT_MAP_PATH = "config/maps/default.yaml"
 DEFAULT_AI_PATH = "config/ai_templates.yaml"
 DEFAULT_DB_PATH = "gameserver.db"
 DEFAULT_MESSAGES_PATH = "messages.yaml"
-DEFAULT_DEBUG_PORT = 9000
 
 # ---------------------------------------------------------------------------
 # Container for all loaded configuration
@@ -103,7 +101,6 @@ class Services:
     server: Optional[Server] = None
     database: Optional[Database] = None
     message_store: Optional[MessageStore] = None
-    debug_dashboard: Optional[DebugDashboard] = None
 
 
 # ===================================================================
@@ -255,9 +252,6 @@ def create_services(config: Configuration, database: Database) -> Services:
         message_store=message_store,
     )
 
-    # Debug dashboard (references services, so created last)
-    svc.debug_dashboard = DebugDashboard(svc, port=gc.debug_port)
-
     return svc
 
 
@@ -345,9 +339,6 @@ async def start_network(services: Services) -> None:
     services._rest_task = asyncio.create_task(rest_server.serve())
     log.info("  REST API listening on http://0.0.0.0:%d", rest_port)
 
-    # Start debug dashboard
-    if services.debug_dashboard is not None:
-        await services.debug_dashboard.start()
 
 
 # ===================================================================
@@ -406,9 +397,6 @@ async def start_game_loop(services: Services) -> None:
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
         log.info("  REST API server stopped")
-    if services.debug_dashboard is not None:
-        await services.debug_dashboard.stop()
-        log.info("  debug dashboard stopped")
     if services.database is not None:
         await services.database.close()
         log.info("  database closed")
@@ -455,6 +443,11 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
         # Restore attacks (also advances the ID counter)
         if saved_state.attacks:
             services.attack_service.restore_attacks(saved_state.attacks)
+        # Remove AI armies that have no active attack in the restored state
+        if services.ai_service is not None:
+            services.ai_service.cleanup_inactive_armies(
+                services.empire_service, services.attack_service
+            )
     else:
         _add_test_empire(services)
 
