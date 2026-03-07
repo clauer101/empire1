@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Server Status</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #20202e;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #conn-status { font-size: 12px; font-family: var(--mono); }
+    #conn-status.ok  { color: var(--success); }
+    #conn-status.err { color: var(--danger); }
+    #last-update { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+    /* ── Layout ── */
+    #content {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 8px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 0.75rem;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-header .badge {
+      background: var(--bg); color: var(--text-dim);
+      border-radius: 10px; padding: 1px 8px;
+      font-size: 11px; font-weight: 400;
+    }
+
+    /* ── Stats row ── */
+    .stats-row { display: flex; flex-wrap: wrap; }
+    .stat {
+      flex: 1; min-width: 130px;
+      padding: 14px 18px;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 1.5rem; font-family: var(--mono); color: var(--accent); font-weight: 700; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; padding: 7px 12px;
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-alt);
+      white-space: nowrap;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-size: 12px;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-hover); }
+
+    /* ── Empire expand ── */
+    .empire-row { cursor: pointer; }
+    .empire-detail {
+      display: none;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .empire-detail.open { display: table-row; }
+    .empire-detail td { padding: 0; }
+    .detail-inner {
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .detail-section { display: flex; flex-direction: column; gap: 5px; }
+    .detail-title {
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .detail-row {
+      display: flex; justify-content: space-between; gap: 8px;
+      font-family: var(--mono); font-size: 11px;
+    }
+    .detail-key { color: var(--text-dim); }
+    .detail-val { color: var(--text); text-align: right; }
+    .detail-val.wip { color: var(--warning); }
+    .detail-val.done { color: var(--success); }
+
+    .chip {
+      display: inline-block;
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: 3px; padding: 1px 5px;
+      font-family: var(--mono); font-size: 10px;
+      color: var(--text-dim); margin: 1px 2px 1px 0;
+    }
+    .chip.done { color: var(--success); border-color: #2a4a2a; background: #0d1f0d; }
+    .chip.wip  { color: var(--warning); border-color: #4a3a0a; background: #1f1a05; }
+    .chip.army { color: var(--accent);  border-color: #0a2a4a; background: #05101f; }
+    .chip.art  { color: #ce93d8;        border-color: #3a1a4a; background: #1a0d1f; }
+
+    /* ── Status dots ── */
+    .dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; margin-right: 5px; flex-shrink: 0;
+    }
+    .dot.online  { background: var(--success); box-shadow: 0 0 4px var(--success); }
+    .dot.offline { background: #3a3a4a; }
+
+    /* ── Life bar ── */
+    .bar-outer {
+      background: var(--bg); border-radius: 3px;
+      height: 5px; width: 60px;
+      display: inline-block; vertical-align: middle; overflow: hidden;
+    }
+    .bar-inner { height: 100%; border-radius: 3px; background: var(--success); }
+
+    /* ── Phase badge ── */
+    .phase {
+      display: inline-block; padding: 2px 6px;
+      border-radius: 3px; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .phase.travelling { background: #0a1f30; color: var(--accent); }
+    .phase.in_siege   { background: #2a1a0a; color: var(--warning); }
+    .phase.in_battle  { background: #2a0a0a; color: var(--danger); }
+    .phase.finished   { background: #0a1f0a; color: var(--success); }
+
+    /* ── Progress bar (attacks) ── */
+    .prog-outer {
+      background: var(--bg); border-radius: 3px;
+      height: 4px; width: 80px;
+      display: inline-block; vertical-align: middle; overflow: hidden;
+    }
+    .prog-inner { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .prog-travel  { background: var(--accent); }
+    .prog-siege   { background: var(--warning); }
+    .prog-battle  { background: var(--danger); }
+
+    .expand-arrow {
+      font-size: 10px; color: var(--text-dim);
+      transition: transform 0.2s; margin-right: 6px;
+    }
+    .open-arrow { transform: rotate(90deg); }
+
+    #no-attacks {
+      padding: 18px 14px; color: var(--text-dim); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>Server Status</h1>
+  <span id="conn-status">Connecting…</span>
+  <span id="last-update"></span>
+</div>
+
+<div id="content">
+
+  <!-- Overview stats -->
+  <div class="card">
+    <div class="card-header">Overview</div>
+    <div class="stats-row">
+      <div class="stat">
+        <span class="stat-label">Connections</span>
+        <span class="stat-value" id="stat-conn">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Empires</span>
+        <span class="stat-value" id="stat-emp">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Active Attacks</span>
+        <span class="stat-value" id="stat-atk">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empires -->
+  <div class="card">
+    <div class="card-header">
+      Empires
+      <span class="badge" id="emp-count">0</span>
+      <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">click row to expand</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>User</th>
+          <th>Empire</th>
+          <th>Culture</th>
+          <th>Gold</th>
+          <th>Life</th>
+          <th>Citizens</th>
+          <th>Buildings</th>
+          <th>Knowledge</th>
+          <th>Armies</th>
+          <th>Queue</th>
+        </tr>
+      </thead>
+      <tbody id="empires-body">
+        <tr><td colspan="11" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Attacks -->
+  <div class="card">
+    <div class="card-header">
+      Active Attacks
+      <span class="badge" id="atk-count">0</span>
+    </div>
+    <table id="atk-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Attacker</th>
+          <th>Defender</th>
+          <th>Phase</th>
+          <th>Travel</th>
+          <th>Siege</th>
+        </tr>
+      </thead>
+      <tbody id="attacks-body"></tbody>
+    </table>
+    <div id="no-attacks" style="display:none">No active attacks.</div>
+  </div>
+
+</div>
+
+<script>
+const GS_BASE = `${location.protocol}//${location.hostname}:8080`;
+
+function fmtSec(s) {
+  if (s === undefined || s === null) return '—';
+  s = Math.round(s);
+  if (s <= 0) return '0s';
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), r = s % 60;
+  if (m < 60) return m + 'm ' + (r ? r + 's' : '');
+  const h = Math.floor(m / 60), rm = m % 60;
+  return h + 'h ' + (rm ? rm + 'm' : '');
+}
+
+function pct(val, total) {
+  return total > 0 ? Math.max(0, Math.min(100, Math.round((val / total) * 100))) : 0;
+}
+
+// ── Empire detail HTML ────────────────────────────────────────────
+function buildDetailHTML(e) {
+  // Resources
+  let resRows = Object.entries(e.resources).map(([k, v]) =>
+    `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`
+  ).join('');
+
+  // Citizens
+  let citRows = Object.entries(e.citizens).filter(([,v]) => v > 0).map(([k, v]) =>
+    `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`
+  ).join('') || '<span style="color:var(--text-dim);font-size:11px">none</span>';
+
+  // Buildings
+  let bldgDone = e.buildings_done.map(iid =>
+    `<span class="chip done">${iid}</span>`
+  ).join('');
+  let bldgWip = Object.entries(e.buildings_wip).map(([iid, v]) =>
+    `<span class="chip wip">${iid} ${v}</span>`
+  ).join('');
+
+  // Knowledge
+  let knowDone = e.knowledge_done.map(iid =>
+    `<span class="chip done">${iid}</span>`
+  ).join('');
+  let knowWip = Object.entries(e.knowledge_wip).map(([iid, v]) =>
+    `<span class="chip wip">${iid} ${v}</span>`
+  ).join('');
+
+  // Armies
+  let armyHTML = e.armies.length === 0
+    ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
+    : e.armies.map(a => {
+        const waves = a.waves.map(w => `${w.iid}×${w.slots}`).join(', ');
+        return `<div class="detail-row">
+          <span class="detail-key">${a.name || 'Army ' + a.aid}</span>
+          <span class="detail-val" style="font-size:10px;color:var(--text-dim)">${waves}</span>
+        </div>`;
+      }).join('');
+
+  // Artefacts
+  let artHTML = e.artefacts.length === 0
+    ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
+    : e.artefacts.map(a => `<span class="chip art">${a}</span>`).join('');
+
+  return `<div class="detail-inner">
+    <div class="detail-section">
+      <div class="detail-title">Resources</div>
+      ${resRows}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Citizens</div>
+      ${citRows}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Buildings (${e.buildings_done.length} done, ${Object.keys(e.buildings_wip).length} in progress)</div>
+      ${bldgDone}${bldgWip || ''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Knowledge (${e.knowledge_done.length} done, ${Object.keys(e.knowledge_wip).length} in progress)</div>
+      ${knowDone}${knowWip || ''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Armies (${e.armies.length})</div>
+      ${armyHTML}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Artefacts</div>
+      ${artHTML}
+    </div>
+  </div>`;
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderEmpires(empires) {
+  document.getElementById('emp-count').textContent = empires.length;
+  const tbody = document.getElementById('empires-body');
+
+  if (!empires.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
+    return;
+  }
+
+  // Preserve open rows across refreshes
+  const openUids = new Set(
+    [...tbody.querySelectorAll('.empire-detail.open')].map(r => parseInt(r.dataset.uid))
+  );
+
+  tbody.innerHTML = '';
+
+  empires.forEach(e => {
+    const lifePct = e.max_life > 0
+      ? Math.round((e.resources.life / e.max_life) * 100) : 0;
+    const culture = e.resources.culture ?? 0;
+    const gold = e.resources.gold ?? 0;
+    const totalCit = Object.values(e.citizens).reduce((a, b) => a + b, 0);
+    const queueStr = [
+      e.build_queue    ? `🔨 ${e.build_queue}` : '',
+      e.research_queue ? `🔬 ${e.research_queue}` : '',
+    ].filter(Boolean).join(' ') || '—';
+
+    const isOpen = openUids.has(e.uid);
+
+    const mainRow = document.createElement('tr');
+    mainRow.className = 'empire-row';
+    mainRow.dataset.uid = e.uid;
+    mainRow.innerHTML = `
+      <td><span class="expand-arrow ${isOpen ? 'open-arrow' : ''}">▶</span><span class="dot ${e.online ? 'online' : 'offline'}"></span></td>
+      <td>${e.username || '—'}</td>
+      <td style="color:var(--accent)">${e.name}</td>
+      <td>${culture.toLocaleString()}</td>
+      <td>${gold.toLocaleString()}</td>
+      <td>
+        <span class="bar-outer"><span class="bar-inner" style="width:${lifePct}%"></span></span>
+        <span style="color:var(--text-dim);margin-left:5px">${e.resources.life}/${e.max_life}</span>
+      </td>
+      <td>${totalCit}</td>
+      <td>${e.buildings_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.buildings_done.length + Object.keys(e.buildings_wip).length}</span></td>
+      <td>${e.knowledge_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.knowledge_done.length + Object.keys(e.knowledge_wip).length}</span></td>
+      <td>${e.armies.length}</td>
+      <td style="color:var(--text-dim);font-size:11px">${queueStr}</td>
+    `;
+
+    const detailRow = document.createElement('tr');
+    detailRow.className = `empire-detail${isOpen ? ' open' : ''}`;
+    detailRow.dataset.uid = e.uid;
+    const detailTd = document.createElement('td');
+    detailTd.colSpan = 11;
+    detailTd.innerHTML = buildDetailHTML(e);
+    detailRow.appendChild(detailTd);
+
+    mainRow.addEventListener('click', () => {
+      const arrow = mainRow.querySelector('.expand-arrow');
+      if (detailRow.classList.toggle('open')) {
+        arrow.classList.add('open-arrow');
+      } else {
+        arrow.classList.remove('open-arrow');
+      }
+    });
+
+    tbody.appendChild(mainRow);
+    tbody.appendChild(detailRow);
+  });
+}
+
+function renderAttacks(attacks) {
+  document.getElementById('atk-count').textContent = attacks.length;
+  const tbody = document.getElementById('attacks-body');
+  const noAtk = document.getElementById('no-attacks');
+
+  if (!attacks.length) {
+    tbody.innerHTML = '';
+    noAtk.style.display = 'block';
+    return;
+  }
+  noAtk.style.display = 'none';
+
+  tbody.innerHTML = attacks.map(a => {
+    const travelPct  = a.phase === 'travelling' ? pct(a.total_eta_s - a.eta_s, a.total_eta_s) : 100;
+    const siegePct   = a.phase === 'in_siege'   ? pct(a.total_siege_s - a.siege_s, a.total_siege_s) : (a.phase === 'in_battle' || a.phase === 'finished' ? 100 : 0);
+    const travelBar  = `<span class="prog-outer"><span class="prog-inner prog-travel" style="width:${travelPct}%"></span></span>`;
+    const siegeBar   = a.siege_s > 0
+      ? `<span class="prog-outer"><span class="prog-inner prog-siege" style="width:${siegePct}%"></span></span>`
+      : '';
+
+    const isAI = a.attacker_uid === 0;
+    const attackerStyle = isAI ? 'color:var(--danger)' : '';
+
+    return `<tr>
+      <td style="color:var(--text-dim)">${a.id}</td>
+      <td style="${attackerStyle}">${a.attacker}</td>
+      <td>${a.defender}</td>
+      <td><span class="phase ${a.phase}">${a.phase.replace('_', ' ')}</span></td>
+      <td>${travelBar} <span style="color:var(--text-dim);font-size:11px">${fmtSec(a.eta_s)}</span></td>
+      <td>${siegeBar} <span style="color:var(--text-dim);font-size:11px">${fmtSec(a.siege_s)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Poll ──────────────────────────────────────────────────────────
+async function poll() {
+  const connEl = document.getElementById('conn-status');
+  const lastEl = document.getElementById('last-update');
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/status`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+
+    document.getElementById('stat-conn').textContent = d.connections ?? '—';
+    document.getElementById('stat-emp').textContent  = d.empire_count ?? '—';
+    document.getElementById('stat-atk').textContent  = d.attacks?.length ?? '—';
+
+    renderEmpires(d.empires || []);
+    renderAttacks(d.attacks || []);
+
+    connEl.textContent = '● Connected';
+    connEl.className = 'ok';
+    lastEl.textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    connEl.textContent = '✗ ' + e.message;
+    connEl.className = 'err';
+  }
+}
+
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>

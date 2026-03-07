@@ -3,41 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Goblin Sprite Preview</title>
+  <title>Sprite Tools</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #1a1a2e;
+      background: #0d0d14;
       color: #e0e0e0;
       font-family: monospace;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
-      padding: 32px 16px;
-      min-height: 100vh;
+      flex-direction: row;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    h1 { font-size: 1.4rem; color: #7ecfff; letter-spacing: 2px; }
+    h2 { font-size: 1.2rem; color: #7ecfff; letter-spacing: 2px; flex-shrink: 0; }
 
-    /* ── Controls ── */
-    .controls {
+    /* ── LEFT: Sprite Preview ── */
+    #panel-sprite {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 16px;
+      width: 50%;
+      overflow-y: auto;
+      border-right: 1px solid #2a2a4a;
+    }
+
+    .sprite-controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       justify-content: center;
     }
-
-    .controls label { font-size: 0.85rem; color: #aaa; }
+    .sprite-controls label { font-size: 0.85rem; color: #aaa; }
+    .sprite-controls input[type=range] { width: 120px; accent-color: #4466cc; }
+    #fps-label { min-width: 5ch; }
 
     .dir-btn {
       background: #2a2a4a;
       color: #ccc;
       border: 1px solid #444;
       border-radius: 4px;
-      padding: 6px 16px;
+      padding: 5px 12px;
       cursor: pointer;
       font-family: monospace;
       transition: background 0.15s, color 0.15s;
@@ -45,15 +55,21 @@
     .dir-btn:hover  { background: #3a3a6a; }
     .dir-btn.active { background: #4466cc; color: #fff; border-color: #7ecfff; }
 
-    input[type=range] { width: 140px; accent-color: #4466cc; }
-    #fps-label { min-width: 5ch; }
+    #size-select, #critter-select {
+      background: #2a2a4a;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-family: monospace;
+      cursor: pointer;
+    }
 
-    /* ── Main animated canvas ── */
     #main-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     #main-canvas {
@@ -63,6 +79,14 @@
       image-rendering: pixelated;
     }
 
+    #main-img {
+      background: #0d1117;
+      border: 1px solid #333;
+      border-radius: 6px;
+      image-rendering: pixelated;
+      display: none;
+    }
+
     #dir-label {
       font-size: 0.8rem;
       color: #7ecfff;
@@ -70,9 +94,8 @@
       text-transform: uppercase;
     }
 
-    /* ── Sheet overview ── */
     .section-title {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #888;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -85,14 +108,14 @@
       align-items: center;
       gap: 6px;
       width: 100%;
-      max-width: 600px;
     }
 
     #sheet-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 4px;
-      width: 100%;
+      width: fit-content;
+      margin: 0 auto;
     }
 
     .frame-cell {
@@ -102,7 +125,7 @@
       gap: 2px;
     }
 
-    .frame-cell canvas {
+    .frame-cell canvas, .frame-cell img {
       background: #0d1117;
       border: 1px solid #2a2a3a;
       border-radius: 3px;
@@ -116,10 +139,7 @@
       box-shadow: 0 0 6px #4466cc88;
     }
 
-    .frame-label {
-      font-size: 0.65rem;
-      color: #555;
-    }
+    .frame-label { font-size: 0.65rem; color: #555; }
 
     .row-label {
       grid-column: 1 / -1;
@@ -134,234 +154,399 @@
     }
     .row-label:first-child { border-top: none; }
 
-    /* ── Selectors ── */
-    #size-select, #file-select {
-      background: #2a2a4a;
-      color: #ccc;
-      border: 1px solid #444;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-family: monospace;
-      cursor: pointer;
+    /* ── RIGHT: Walker ── */
+    #panel-walker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 16px;
+      width: 50%;
+      overflow: hidden;
+    }
+
+    .walker-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .walker-controls label { font-size: 0.85rem; color: #aaa; }
+    .walker-controls input[type=range] { width: 140px; accent-color: #4466cc; }
+    #scale-label { min-width: 4ch; color: #7ecfff; }
+
+    #arena {
+      flex: 1;
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #333;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #walker-sprite {
+      position: absolute;
+      image-rendering: pixelated;
+    }
+    #walker-sprite img, #walker-sprite canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    #dir-info {
+      font-size: 0.75rem;
+      color: #555;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
+<script src="nav.js"></script>
 
-<h1>⚔ Goblin Sprite Preview</h1>
+<!-- ── LEFT: Sprite Preview ── -->
+<div id="panel-sprite">
+  <h2 id="panel-title">Critter Preview</h2>
 
-<!-- Controls -->
-<div class="controls">
-  <label>Richtung:</label>
-  <button class="dir-btn active" data-dir="forward">▼ Vorne</button>
-  <button class="dir-btn" data-dir="left">◀ Links</button>
-  <button class="dir-btn" data-dir="right">▶ Rechts</button>
-  <button class="dir-btn" data-dir="backward">▲ Hinten</button>
+  <div class="sprite-controls">
+    <label>Critter:
+      <select id="critter-select"><option>Laden…</option></select>
+    </label>
 
-  <label>Sprite:
-    <select id="file-select"><option>Laden…</option></select>
-  </label>
+    <label>Richtung:</label>
+    <button class="dir-btn active" data-dir="forward">&#9660; Vorne</button>
+    <button class="dir-btn" data-dir="left">&#9664; Links</button>
+    <button class="dir-btn" data-dir="right">&#9654; Rechts</button>
+    <button class="dir-btn" data-dir="backward">&#9650; Hinten</button>
 
-  <label>Größe:
-    <select id="size-select">
-      <option value="64">64 px</option>
-      <option value="128" selected>128 px</option>
-      <option value="192">192 px</option>
-      <option value="256">256 px</option>
-    </select>
-  </label>
+    <label>Größe:
+      <select id="size-select">
+        <option value="64">64 px</option>
+        <option value="128" selected>128 px</option>
+        <option value="192">192 px</option>
+        <option value="256">256 px</option>
+      </select>
+    </label>
 
-  <label>FPS: <span id="fps-label">8</span>
-    <input type="range" id="fps-range" min="1" max="24" value="8" />
-  </label>
+    <label>FPS: <span id="fps-label">8</span>
+      <input type="range" id="fps-range" min="1" max="24" value="8" />
+    </label>
+  </div>
+
+  <div id="main-wrap">
+    <canvas id="main-canvas" width="160" height="160"></canvas>
+    <img id="main-img" alt="" />
+    <div id="dir-label">forward</div>
+  </div>
+
+  <div id="sheet-wrap">
+    <div class="section-title" id="sheet-title">Alle Frames</div>
+    <div id="sheet-grid"></div>
+  </div>
 </div>
 
-<!-- Main animated display -->
-<div id="main-wrap">
-  <canvas id="main-canvas" width="192" height="192"></canvas>
-  <div id="dir-label">forward</div>
-</div>
+<!-- ── RIGHT: Walker ── -->
+<div id="panel-walker">
+  <h2 id="walker-title">Walker</h2>
 
-<!-- Sheet overview grid -->
-<div id="sheet-wrap">
-  <div class="section-title">Alle Frames (Sprite Sheet)</div>
-  <div id="sheet-grid"></div>
+  <div class="walker-controls">
+    <label>Größe: <span id="scale-label">64</span> px
+      <input type="range" id="scale-range" min="16" max="256" value="64" step="4" />
+    </label>
+    <label>Speed:
+      <input type="range" id="speed-range" min="20" max="300" value="80" step="10" />
+      <span id="speed-label">80</span> px/s
+    </label>
+  </div>
+
+  <div id="arena">
+    <div id="walker-sprite">
+      <img    id="walker-img"    alt="" style="display:none" />
+      <canvas id="walker-canvas" style="display:none"></canvas>
+    </div>
+  </div>
+
+  <div id="dir-info">dir: forward</div>
 </div>
 
 <script type="module">
-  import { Sprite, DIRECTIONS, COLS, ROWS } from '../js/lib/sprite.js';
+import { Sprite, DIRECTIONS, COLS, ROWS } from '../js/lib/sprite.js';
 
-  // ── Sprite setup ──────────────────────────────────────────
-  let sprite = new Sprite('../tools/goblin.png');
+// ── State ──────────────────────────────────────────────────────
+let critterData    = [];
+let currentCritter = null;
+let sprite         = null;
+let currentDir     = 'forward';
+let fps            = 8;
+let displaySize    = 128;
 
-  const mainCanvas = document.getElementById('main-canvas');
-  const mainCtx    = mainCanvas.getContext('2d');
-  const dirLabel   = document.getElementById('dir-label');
-  const fpsRange   = document.getElementById('fps-range');
-  const fpsLabel   = document.getElementById('fps-label');
-  const sizeSelect = document.getElementById('size-select');
+let walkerSize  = 64;
+let walkerSpeed = 80;
+let px = 0, py = 0;
+let vx = 1, vy = 0.6;
+let lastTs     = null;
+let walkerDir  = 'forward';
 
-  let currentDir = 'forward';
-  let fps        = 8;
-  let displaySize = 128;
+// ── DOM refs ───────────────────────────────────────────────────
+const critterSelect = document.getElementById('critter-select');
+const mainCanvas    = document.getElementById('main-canvas');
+const mainImg       = document.getElementById('main-img');
+const mainCtx       = mainCanvas.getContext('2d');
+const dirLabel      = document.getElementById('dir-label');
+const fpsRange      = document.getElementById('fps-range');
+const fpsLabel      = document.getElementById('fps-label');
+const sizeSelect    = document.getElementById('size-select');
+const sheetGrid     = document.getElementById('sheet-grid');
+const sheetTitle    = document.getElementById('sheet-title');
+const arena         = document.getElementById('arena');
+const walkerEl      = document.getElementById('walker-sprite');
+const walkerImg     = document.getElementById('walker-img');
+const walkerCanvas  = document.getElementById('walker-canvas');
+const walkerCtx     = walkerCanvas.getContext('2d');
+const scaleRange    = document.getElementById('scale-range');
+const scaleLabel    = document.getElementById('scale-label');
+const speedRange    = document.getElementById('speed-range');
+const speedLabel    = document.getElementById('speed-label');
+const dirInfo       = document.getElementById('dir-info');
 
-  // ── Direction buttons ─────────────────────────────────────
-  document.querySelectorAll('.dir-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentDir = btn.dataset.dir;
-      dirLabel.textContent = currentDir;
+// ── Direction buttons ──────────────────────────────────────────
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDir = btn.dataset.dir;
+    dirLabel.textContent = currentDir;
+    if (currentCritter?.type === 'gifs') {
+      mainImg.src = currentCritter.files[currentDir];
+    }
+  });
+});
+
+fpsRange.addEventListener('input', () => {
+  fps = parseInt(fpsRange.value);
+  fpsLabel.textContent = fps;
+  if (sprite) sprite.fps = fps;
+});
+
+sizeSelect.addEventListener('change', () => {
+  displaySize = parseInt(sizeSelect.value);
+  if (currentCritter?.type === 'spritesheet' && sprite) updateMainCanvasSize();
+  else applyGifSize();
+});
+
+scaleRange.addEventListener('input', () => {
+  walkerSize = parseInt(scaleRange.value);
+  scaleLabel.textContent = walkerSize;
+  applyWalkerSize();
+});
+
+speedRange.addEventListener('input', () => {
+  walkerSpeed = parseInt(speedRange.value);
+  speedLabel.textContent = walkerSpeed;
+});
+
+critterSelect.addEventListener('change', () => {
+  const c = critterData.find(c => c.name === critterSelect.value);
+  if (c) selectCritter(c);
+});
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('/api/critters');
+    const data = await res.json();
+    critterData = data.critters || [];
+    critterSelect.innerHTML = '';
+    critterData.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name + (c.type === 'gifs' ? '' : ' [sheet]');
+      critterSelect.appendChild(opt);
     });
-  });
-
-  // ── FPS slider ────────────────────────────────────────────
-  fpsRange.addEventListener('input', () => {
-    fps = parseInt(fpsRange.value);
-    fpsLabel.textContent = fps;
-    sprite.fps = fps;
-  });
-
-  // ── Size selector ─────────────────────────────────────────
-  function updateMainCanvas() {
-    const pad    = 32;
-    const aspect = sprite.frameH / sprite.frameW;
-    mainCanvas.width  = displaySize + pad;
-    mainCanvas.height = Math.round(displaySize * aspect) + pad;
+    if (critterData.length > 0) await selectCritter(critterData[0]);
+  } catch (e) {
+    console.error('Failed to load critters:', e);
   }
+}
 
-  sizeSelect.addEventListener('change', () => {
-    displaySize = parseInt(sizeSelect.value);
-    updateMainCanvas();
+// ── Select critter ─────────────────────────────────────────────
+async function selectCritter(c) {
+  currentCritter = c;
+  document.getElementById('panel-title').textContent = c.name;
+  document.getElementById('walker-title').textContent = c.name + ' Walker';
+
+  if (c.type === 'gifs') {
+    await switchToGif(c);
+  } else {
+    await switchToSheet(c);
+  }
+  updateWalker(c);
+}
+
+// ── GIF mode (left panel) ──────────────────────────────────────
+async function switchToGif(c) {
+  mainCanvas.style.display = 'none';
+  mainImg.style.display    = 'block';
+  mainImg.src              = c.files[currentDir];
+  applyGifSize();
+
+  sheetTitle.textContent = 'Alle Richtungen';
+  sheetGrid.innerHTML    = '';
+  sheetGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+
+  [['forward','Vorne'],['left','Links'],['right','Rechts'],['backward','Hinten']].forEach(([dir, lbl]) => {
+    const cell = document.createElement('div');
+    cell.className = 'frame-cell';
+    const img = document.createElement('img');
+    img.src = c.files[dir];
+    img.alt = dir;
+    const label = document.createElement('div');
+    label.className = 'frame-label';
+    label.textContent = lbl;
+    cell.append(img, label);
+    sheetGrid.appendChild(cell);
   });
+}
 
-  // ── Sheet overview grid ───────────────────────────────────
-  const sheetGrid = document.getElementById('sheet-grid');
-  const DIRECTION_LABELS = ['Vorne', 'Links', 'Rechts', 'Hinten'];
-  const DIRECTION_KEYS   = DIRECTIONS;
+function applyGifSize() {
+  mainImg.style.width  = displaySize + 'px';
+  mainImg.style.height = displaySize + 'px';
+}
 
-  // Pre-create canvases: frameCanvases[row][col]
-  const frameCanvases = [];
+// ── Spritesheet mode (left panel) ─────────────────────────────
+async function switchToSheet(c) {
+  mainCanvas.style.display = 'block';
+  mainImg.style.display    = 'none';
+
+  sprite = new Sprite(c.file);
+  await sprite.load();
+  sprite.fps = fps;
+  updateMainCanvasSize();
+
+  sheetTitle.textContent = 'Alle Frames (Sprite Sheet)';
+  sheetGrid.innerHTML    = '';
+  sheetGrid.style.gridTemplateColumns = `repeat(${COLS}, max-content)`;
+
+  const DIR_LABELS = ['Vorne', 'Links', 'Rechts', 'Hinten'];
   for (let row = 0; row < ROWS; row++) {
-    frameCanvases[row] = [];
-
-    // Row label
     const rowLabel = document.createElement('div');
     rowLabel.className = 'row-label';
-    rowLabel.textContent = `Row ${row} — ${DIRECTION_LABELS[row]}`;
+    rowLabel.textContent = `Row ${row} — ${DIR_LABELS[row]}`;
     sheetGrid.appendChild(rowLabel);
-
     for (let col = 0; col < COLS; col++) {
       const cell = document.createElement('div');
       cell.className = 'frame-cell';
-
-      const fc = document.createElement('canvas');
-      fc.width  = 256;
-      fc.height = 256;
-      cell.appendChild(fc);
-
-      const lbl = document.createElement('div');
-      lbl.className = 'frame-label';
-      lbl.textContent = `${col + 1}`;
-      cell.appendChild(lbl);
-
-      sheetGrid.appendChild(cell);
-      frameCanvases[row][col] = fc;
-    }
-  }
-
-  // ── File selector ──────────────────────────────────────────
-  const fileSelect = document.getElementById('file-select');
-
-  async function loadSpriteFiles() {
-    try {
-      const res  = await fetch('/api/sprite-files');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const files = Array.isArray(data.files) ? data.files : [];
-      fileSelect.innerHTML = '';
-      for (const name of files) {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        if (name === 'goblin.png') opt.selected = true;
-        fileSelect.appendChild(opt);
-      }
-    } catch (e) {
-      console.warn('Sprite file list unavailable, using default.', e);
-      fileSelect.innerHTML = '<option value="goblin.png">goblin.png</option>';
-    }
-  }
-
-  async function reloadSprite(filename) {
-    sprite = new Sprite(`../tools/${filename}`);
-    await sprite.load();
-    sprite.fps = fps;
-    updateMainCanvas();
-    // Resize and redraw overview grid
-    for (let row = 0; row < ROWS; row++) {
-      for (let col = 0; col < COLS; col++) {
-        const fc  = frameCanvases[row][col];
-        fc.width  = sprite.frameW;
-        fc.height = sprite.frameH;
-        const ctx = fc.getContext('2d');
-        sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
-      }
-    }
-  }
-
-  fileSelect.addEventListener('change', () => reloadSprite(fileSelect.value));
-
-  await loadSpriteFiles();
-
-  // ── Load & start ──────────────────────────────────────────
-  await sprite.load();
-
-  // Size main canvas to natural frame aspect ratio
-  updateMainCanvas();
-
-  // Resize and draw all static frames into overview grid
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = 0; col < COLS; col++) {
-      const fc  = frameCanvases[row][col];
+      const fc  = document.createElement('canvas');
       fc.width  = sprite.frameW;
       fc.height = sprite.frameH;
+      fc.style.width    = (sprite.frameW * 2) + 'px';
+      fc.style.maxWidth = '100%';
       const ctx = fc.getContext('2d');
       sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
+      const lbl = document.createElement('div');
+      lbl.className = 'frame-label';
+      lbl.textContent = col + 1;
+      cell.append(fc, lbl);
+      sheetGrid.appendChild(cell);
     }
   }
+}
 
-  // ── Animation loop ────────────────────────────────────────
-  let lastCol = -1;
+function updateMainCanvasSize() {
+  const pad    = 32;
+  const aspect = sprite.frameH / sprite.frameW;
+  mainCanvas.width  = displaySize + pad;
+  mainCanvas.height = Math.round(displaySize * aspect) + pad;
+}
 
-  function loop(ts) {
-    // Main animated canvas
+// ── Walker ─────────────────────────────────────────────────────
+function updateWalker(c) {
+  if (c.type === 'gifs') {
+    walkerImg.style.display    = 'block';
+    walkerCanvas.style.display = 'none';
+    walkerImg.src = c.files[walkerDir] || c.files['forward'];
+  } else {
+    walkerImg.style.display    = 'none';
+    walkerCanvas.style.display = 'block';
+  }
+  applyWalkerSize();
+}
+
+function applyWalkerSize() {
+  const aspect = (sprite && currentCritter?.type === 'spritesheet')
+    ? sprite.frameH / sprite.frameW : 1;
+  const walkerH = Math.round(walkerSize * aspect);
+  walkerEl.style.width  = walkerSize + 'px';
+  walkerEl.style.height = walkerH    + 'px';
+  if (currentCritter?.type === 'spritesheet') {
+    walkerCanvas.width  = walkerSize;
+    walkerCanvas.height = walkerH;
+  }
+}
+
+function dirFromVelocity(vx, vy) {
+  if (Math.abs(vx) >= Math.abs(vy)) return vx > 0 ? 'right' : 'left';
+  return vy > 0 ? 'forward' : 'backward';
+}
+
+// ── Render loops ───────────────────────────────────────────────
+function spriteLoop(ts) {
+  if (currentCritter?.type === 'spritesheet' && sprite) {
     mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    const cx = mainCanvas.width  / 2;
-    const cy = mainCanvas.height / 2;
-    sprite.draw(mainCtx, currentDir, ts, cx, cy, displaySize);
+    sprite.draw(mainCtx, currentDir, ts, mainCanvas.width / 2, mainCanvas.height / 2, displaySize);
+  }
+  requestAnimationFrame(spriteLoop);
+}
 
-    // Highlight active frame in overview grid
-    const DIRECTION_ROW = { forward: 0, left: 1, right: 2, backward: 3 };
-    const activeRow = DIRECTION_ROW[currentDir];
-    const activeCol = Math.floor((ts / 1000) * fps) % COLS;
+function walkerLoop(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.1);
+  lastTs = ts;
 
-    if (activeCol !== lastCol) {
-      // Remove all highlights
-      document.querySelectorAll('.frame-cell canvas').forEach(c =>
-        c.classList.remove('current-frame')
-      );
-      // Highlight active frame
-      if (frameCanvases[activeRow]?.[activeCol]) {
-        frameCanvases[activeRow][activeCol].classList.add('current-frame');
-      }
-      lastCol = activeCol;
+  const aW = arena.clientWidth;
+  const aH = arena.clientHeight;
+
+  px += vx * walkerSpeed * dt;
+  py += vy * walkerSpeed * dt;
+
+  const half = walkerSize / 2;
+  if (px - half < 0)  { px = half;      vx =  Math.abs(vx); }
+  if (px + half > aW) { px = aW - half; vx = -Math.abs(vx); }
+  if (py - half < 0)  { py = half;      vy =  Math.abs(vy); }
+  if (py + half > aH) { py = aH - half; vy = -Math.abs(vy); }
+
+  const newDir = dirFromVelocity(vx, vy);
+  if (newDir !== walkerDir) {
+    walkerDir = newDir;
+    if (currentCritter?.type === 'gifs') {
+      walkerImg.src = currentCritter.files[walkerDir];
     }
-
-    requestAnimationFrame(loop);
+    dirInfo.textContent = 'dir: ' + walkerDir;
   }
 
-  requestAnimationFrame(loop);
+  if (currentCritter?.type === 'spritesheet' && sprite) {
+    walkerCtx.clearRect(0, 0, walkerCanvas.width, walkerCanvas.height);
+    sprite.draw(walkerCtx, walkerDir, ts, walkerCanvas.width / 2, walkerCanvas.height / 2, walkerSize);
+  }
+
+  walkerEl.style.left = (px - half) + 'px';
+  walkerEl.style.top  = (py - half) + 'px';
+  requestAnimationFrame(walkerLoop);
+}
+
+// ── Start ──────────────────────────────────────────────────────
+await init();
+requestAnimationFrame(spriteLoop);
+requestAnimationFrame(() => {
+  px = arena.clientWidth  / 2;
+  py = arena.clientHeight / 2;
+  const len = Math.hypot(vx, vy);
+  vx /= len;
+  vy /= len;
+  requestAnimationFrame(walkerLoop);
+});
 </script>
 </body>
 </html>

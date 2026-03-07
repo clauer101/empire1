@@ -65,7 +65,10 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     """
     state_file = Path(path)
     if not state_file.exists():
-        log.info("No state file found at %s", path)
+        if path != DEFAULT_STATE_PATH:
+            log.error("No state file found at %s (path was explicitly provided)", path)
+        else:
+            log.info("No state file found at %s", path)
         return None
 
     try:

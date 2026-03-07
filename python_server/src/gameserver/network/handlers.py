@@ -1408,6 +1408,32 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
     }
 
 
+def _create_empire_for_new_user(uid: int, username: str, empire_name: str) -> None:
+    """Create and register a fresh Empire for a newly signed-up user.
+
+    Starting resources and max_life are taken from game_config so that
+    changes to game.yaml are reflected without touching handler code.
+    Called by both the WebSocket handler and the REST signup endpoint.
+    """
+    from gameserver.models.empire import Empire
+    svc = _svc()
+    starting_res = dict(svc.game_config.starting_resources) if svc.game_config else {"gold": 0.0, "culture": 0.0, "life": 10.0}
+    starting_max_life = svc.game_config.starting_max_life if svc.game_config else 10.0
+    empire = Empire(
+        uid=uid,
+        name=empire_name or f"{username}'s Empire",
+        buildings={"INIT": 0.0},
+        resources=starting_res,
+        max_life=starting_max_life,
+        hex_map={
+            "0,0": "castle",
+            "0,1": "spawnpoint",
+            "1,0": "empty",
+        },
+    )
+    svc.empire_service.register(empire)
+
+
 async def handle_signup(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
@@ -1421,14 +1447,7 @@ async def handle_signup(
     result = await svc.auth_service.signup(username, password, email, empire_name)
     if isinstance(result, int):
         log.info("Signup success: user=%s uid=%d", username, result)
-        # Create empire for the new user — INIT is auto-completed (effort 0)
-        from gameserver.models.empire import Empire
-        empire = Empire(
-            uid=result,
-            name=empire_name or f"{username}'s Empire",
-            buildings={"INIT": 0.0},
-        )
-        svc.empire_service.register(empire)
+        _create_empire_for_new_user(result, username, empire_name)
         return {
             "type": "signup_response",
             "success": True,
@@ -1981,6 +2000,10 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                 and battle.attacker.uid == AI_UID
                 and battle.attack_id is not None):
             svc.ai_service.on_battle_result(battle.attack_id, battle)
+
+        # ── Remove finished AI armies from state ──────────────────────────
+        if svc.ai_service is not None:
+            svc.ai_service.cleanup_inactive_armies(svc.empire_service, svc.attack_service)
         
     except Exception:
         import traceback

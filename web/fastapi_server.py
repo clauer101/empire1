@@ -10,14 +10,169 @@ Usage:
 """
 
 import argparse
+import json
 import logging
+import re
 from pathlib import Path
 
-from fastapi import FastAPI
+import yaml
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response, JSONResponse
 from starlette.datastructures import MutableHeaders
 import uvicorn
+
+AI_WAVES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "ai_waves.yaml"
+GAME_CONFIG_PATH = Path(__file__).parent.parent / "python_server" / "config" / "game.yaml"
+BUILDINGS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "buildings.yaml"
+KNOWLEDGE_PATH = Path(__file__).parent.parent / "python_server" / "config" / "knowledge.yaml"
+
+_ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
+
+_ERA_PATTERNS = [
+    ("Steinzeit",          re.compile(r'#\s+STEINZEIT')),
+    ("Neolithikum",        re.compile(r'#\s+NEOLITHIKUM')),
+    ("Bronzezeit",         re.compile(r'#\s+BRONZEZEIT')),
+    ("Eisenzeit",          re.compile(r'#\s+EISENZEIT')),
+    ("Mittelalter",        re.compile(r'#\s+MITTELALTER')),
+    ("Renaissance",        re.compile(r'#\s+RENAISSANCE')),
+    ("Industrialisierung", re.compile(r'#\s+INDUSTRIALIS')),
+    ("Moderne",            re.compile(r'#\s+MODERNE')),
+    ("Zukunft",            re.compile(r'#\s+ZUKUNFT')),
+]
+
+_ERA_INFO = {
+    "Steinzeit":          "Effort 20 – 1.500",
+    "Neolithikum":        "Effort 800 – 7.500",
+    "Bronzezeit":         "Effort 2.500 – 8.000",
+    "Eisenzeit":          "Effort 8.000 – 30.000",
+    "Mittelalter":        "Effort 28.000 – 130.000",
+    "Renaissance":        "Effort 100.000 – 500.000",
+    "Industrialisierung": "Effort 500.000 – 2.000.000",
+    "Moderne":            "Effort 2.000.000 – 5.300.000",
+    "Zukunft":            "Effort 40.000.000 – 100.000.000",
+}
+
+_ERA_ORDER = list(_ERA_INFO.keys())
+
+
+def _parse_ai_waves():
+    """Read ai_waves.yaml, annotate each wave with its era."""
+    raw = AI_WAVES_PATH.read_text(encoding="utf-8")
+    data = yaml.safe_load(raw)
+    waves = data.get("armies", [])
+
+    current_era = "Steinzeit"
+    wave_eras: list[str] = []
+    for line in raw.split("\n"):
+        for era_name, pattern in _ERA_PATTERNS:
+            if pattern.search(line):
+                current_era = era_name
+                break
+        if line.strip().startswith("- name:"):
+            wave_eras.append(current_era)
+
+    result = []
+    for i, wave in enumerate(waves):
+        era = wave_eras[i] if i < len(wave_eras) else "Unbekannt"
+        result.append({**wave, "era": era})
+    return result
+
+
+def _parse_era_items() -> dict:
+    """Return {era_name: [iid, ...]} from buildings.yaml + knowledge.yaml."""
+    result: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
+    for path in (BUILDINGS_PATH, KNOWLEDGE_PATH):
+        raw = path.read_text(encoding="utf-8")
+        current_era = "Steinzeit"
+        for line in raw.split("\n"):
+            for era_name, pattern in _ERA_PATTERNS:
+                if pattern.search(line):
+                    current_era = era_name
+                    break
+            m = _ITEM_IID_RE.match(line)
+            if m:
+                result.setdefault(current_era, []).append(m.group(1))
+    return result
+
+
+def _write_ai_waves(waves_with_era: list[dict]) -> str:
+    """Serialize waves back to YAML preserving era comment headers."""
+    header = (
+        "# ============================================================\n"
+        "# AI Hardcoded Wave Definitions\n"
+        "# ============================================================\n"
+        "# Each entry defines an army the AI will send when the\n"
+        "# defender matches ALL trigger conditions.\n"
+        "#\n"
+        "# Entries are evaluated IN ORDER.  The LAST matching entry\n"
+        "# wins  (most-specific entries should go last).\n"
+        "# If no entry matches, the adaptive heuristic is used.\n"
+        "#\n"
+        "# ── Trigger fields (all optional, default = always true) ────\n"
+        "#   items:    list of building/knowledge IIDs that must ALL be\n"
+        "#             completed by the defender (remaining_effort == 0)\n"
+        "#   citizen:  defender must have at least this many citizens\n"
+        "#\n"
+        "# ── Wave fields ─────────────────────────────────────────────\n"
+        "#   critter:  critter IID (matched case-insensitively)\n"
+        "#   slots:    number of critters in this wave\n"
+        "#\n"
+        "# ── Optional top-level fields ───────────────────────────────\n"
+        "#   travel_time: travel duration in seconds before the attack\n"
+        "#                arrives (overrides ai_travel_seconds from\n"
+        "#                game.yaml).  Omit to use the default.\n"
+        "#\n"
+        "# ── Progression overview ────────────────────────────────────\n"
+        "#   Steinzeit      →  SLAVE / WARRIOR / SCOUT\n"
+        "#   Neolithikum    →  CLUBMAN / SCOUT / WARRIOR\n"
+        "#   Bronzezeit     →  BOWMAN / SWORDMAN / CHARIOT\n"
+        "#   Eisenzeit      →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
+        "#   Mittelalter    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
+        "#   Renaissance    →  NINJA / MUSKETEER / DRAGOONER\n"
+        "#   Industrialis.  →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
+        "#   Moderne        →  SPECOPS / HELI\n"
+        "#   Zukunft        →  MECH_WARRIOR\n"
+        "# ============================================================\n"
+        "\n"
+        "armies:\n"
+    )
+
+    # Group by era, preserving insertion order
+    groups: dict[str, list] = {}
+    for w in waves_with_era:
+        era = w.get("era", "Unbekannt")
+        groups.setdefault(era, []).append(w)
+
+    lines = [header]
+    for era in _ERA_ORDER:
+        if era not in groups:
+            continue
+        info = _ERA_INFO.get(era, "")
+        lines.append(f"  # {'─' * 58}")
+        lines.append(f"  #   {era.upper()}  ({info})")
+        lines.append(f"  # {'─' * 58}")
+        lines.append("")
+        for w in groups[era]:
+            lines.append(f"  - name: {json.dumps(w['name'], ensure_ascii=False)}")
+            if "travel_time" in w:
+                lines.append(f"    travel_time: {int(w['travel_time'])}")
+            if "siege_time" in w:
+                lines.append(f"    siege_time: {int(w['siege_time'])}")
+            if "trigger" in w:
+                trig = w["trigger"]
+                lines.append("    trigger:")
+                if "items" in trig:
+                    items_str = ", ".join(trig["items"])
+                    lines.append(f"      items: [{items_str}]")
+                if "citizen" in trig:
+                    lines.append(f"      citizen: {trig['citizen']}")
+            lines.append("    waves:")
+            for unit in w.get("waves", []):
+                lines.append(f"      - critter: {unit['critter']}")
+                lines.append(f"        slots: {unit['slots']}")
+            lines.append("")
+    return "\n".join(lines)
 
 # Setup logging
 logging.basicConfig(
@@ -77,6 +232,66 @@ app = FastAPI(title="E3 Web Client", version="1.0.0")
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok", "service": "E3 Web Client"}
+
+
+
+@app.get("/api/ai-waves")
+async def get_ai_waves():
+    """Return all AI wave definitions annotated with era."""
+    try:
+        waves = _parse_ai_waves()
+        return JSONResponse({"waves": waves})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.get("/api/era-items")
+async def get_era_items():
+    """Return all building/knowledge IIDs grouped by era."""
+    try:
+        return JSONResponse({"eras": _parse_era_items()})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/ai-waves")
+async def save_ai_waves(request: Request):
+    """Save updated AI wave definitions back to the YAML file."""
+    try:
+        body = await request.json()
+        waves = body.get("waves", [])
+        yaml_text = _write_ai_waves(waves)
+        AI_WAVES_PATH.write_text(yaml_text, encoding="utf-8")
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.get("/api/prices")
+async def get_prices():
+    """Return the prices section from game.yaml."""
+    try:
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        return JSONResponse(raw.get("prices", {}))
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/prices")
+async def save_prices(request: Request):
+    """Update the prices section in game.yaml (patch only the prices block)."""
+    try:
+        prices = await request.json()
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        raw["prices"] = prices
+        # Dump back preserving order — use yaml.dump with default_flow_style=False
+        GAME_CONFIG_PATH.write_text(
+            yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
 
 
 @app.get("/api/sprite-files")

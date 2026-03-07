@@ -18,7 +18,7 @@ import json
 import logging
 from typing import Any, TYPE_CHECKING
 
-from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from gameserver.network.jwt_auth import create_token, get_current_uid
@@ -130,14 +130,8 @@ def create_app(services: "Services") -> FastAPI:
             body.username, body.password, body.email, body.empire_name,
         )
         if isinstance(result, int):
-            # Create empire
-            from gameserver.models.empire import Empire
-            empire = Empire(
-                uid=result,
-                name=body.empire_name or f"{body.username}'s Empire",
-                buildings={"INIT": 0.0},
-            )
-            services.empire_service.register(empire)
+            from gameserver.network.handlers import _create_empire_for_new_user
+            _create_empire_for_new_user(result, body.username, body.empire_name)
             return {"success": True, "uid": result, "reason": ""}
         return {"success": False, "uid": 0, "reason": result}
 
@@ -175,6 +169,8 @@ def create_app(services: "Services") -> FastAPI:
                 uid_to_user[row["uid"]] = row["username"]
         empires = []
         for empire in services.empire_service.all_empires.values():
+            if empire.uid == 0:  # skip AI empire
+                continue
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -347,6 +343,150 @@ def create_app(services: "Services") -> FastAPI:
         """Mark a message as read."""
         ok = services.message_store.mark_read(uid, msg_id)
         return {"success": ok}
+
+    # =================================================================
+    # Admin / Dev status — no auth required
+    # =================================================================
+
+    ADMIN_USERNAME = "eem"
+
+    async def require_admin(uid: int = Depends(get_current_uid)) -> int:
+        if services.database is not None:
+            user = await services.database.get_user_by_uid(uid)
+            if user is None or user.get("username", "").lower() != ADMIN_USERNAME:
+                raise HTTPException(status_code=403, detail="Admin only")
+        return uid
+
+    @app.get("/api/admin/status")
+    async def admin_status(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Unauthenticated overview for dev tools."""
+        uid_to_user: dict[int, str] = {}
+        if services.database is not None:
+            for row in await services.database.list_users():
+                uid_to_user[row["uid"]] = row["username"]
+
+        connected_uids: list[int] = (
+            services.server.connected_uids if services.server else []
+        )
+
+        empires_out = []
+        for empire in services.empire_service.all_empires.values():
+            if empire.uid == 0:
+                continue
+
+            buildings_done = [iid for iid, v in empire.buildings.items() if v == 0.0]
+            buildings_wip  = {iid: round(v, 1) for iid, v in empire.buildings.items() if v != 0.0}
+            knowledge_done = [iid for iid, v in empire.knowledge.items() if v == 0.0]
+            knowledge_wip  = {iid: round(v, 1) for iid, v in empire.knowledge.items() if v != 0.0}
+
+            armies_out = []
+            for army in empire.armies:
+                armies_out.append({
+                    "aid": army.aid,
+                    "name": army.name,
+                    "waves": [
+                        {"iid": w.iid, "slots": w.slots}
+                        for w in army.waves
+                    ],
+                })
+
+            empires_out.append({
+                "uid": empire.uid,
+                "name": empire.name,
+                "username": uid_to_user.get(empire.uid, ""),
+                "online": empire.uid in connected_uids,
+                "resources": {k: round(v, 1) for k, v in empire.resources.items()},
+                "max_life": round(empire.max_life, 1),
+                "citizens": empire.citizens,
+                "artefacts": empire.artefacts,
+                "build_queue": empire.build_queue,
+                "research_queue": empire.research_queue,
+                "buildings_done": buildings_done,
+                "buildings_wip": buildings_wip,
+                "knowledge_done": knowledge_done,
+                "knowledge_wip": knowledge_wip,
+                "armies": armies_out,
+            })
+        empires_out.sort(key=lambda e: e["resources"].get("culture", 0), reverse=True)
+
+        attacks_out = []
+        for atk in services.attack_service.get_all_attacks():
+            attacker_name = uid_to_user.get(atk.attacker_uid, f"uid:{atk.attacker_uid}")
+            if atk.attacker_uid == 0:
+                attacker_name = "AI"
+            attacks_out.append({
+                "id": atk.attack_id,
+                "attacker_uid": atk.attacker_uid,
+                "attacker": attacker_name,
+                "defender": uid_to_user.get(atk.defender_uid, f"uid:{atk.defender_uid}"),
+                "phase": atk.phase.value,
+                "eta_s": round(atk.eta_seconds, 0),
+                "total_eta_s": round(atk.total_eta_seconds, 0),
+                "siege_s": round(atk.siege_remaining_seconds, 0),
+                "total_siege_s": round(atk.total_siege_seconds, 0),
+            })
+
+        return {
+            "connections": len(connected_uids),
+            "connected_uids": connected_uids,
+            "empire_count": len(empires_out),
+            "empires": empires_out,
+            "attacks": attacks_out,
+        }
+
+    @app.get("/api/admin/users")
+    async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict]:
+        """List all user accounts (no password hashes)."""
+        if services.database is None:
+            return []
+        return await services.database.list_users()
+
+    @app.delete("/api/admin/users/{username}")
+    async def admin_delete_user(username: str, _uid: int = Depends(require_admin)) -> dict:
+        """Delete a user account by username."""
+        if services.database is None:
+            return {"ok": False, "error": "no database"}
+        deleted = await services.database.delete_user(username)
+        return {"ok": deleted}
+
+    @app.post("/api/admin/users")
+    async def admin_create_user(body: dict, _uid: int = Depends(require_admin)) -> dict:
+        """Create a user account. Body: {username, password, email?, empire_name?}"""
+        if services.database is None:
+            return {"ok": False, "error": "no database"}
+        import bcrypt
+        pw = body.get("password", "")
+        if not pw or not body.get("username"):
+            return {"ok": False, "error": "username and password required"}
+        pw_hash = bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+        try:
+            uid = await services.database.create_user(
+                username=body["username"],
+                password_hash=pw_hash,
+                email=body.get("email", ""),
+                empire_name=body.get("empire_name", ""),
+            )
+            return {"ok": True, "uid": uid}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    @app.put("/api/admin/users/{username}/password")
+    async def admin_reset_password(username: str, body: dict, _uid: int = Depends(require_admin)) -> dict:
+        """Reset a user's password. Body: {password}"""
+        if services.database is None:
+            return {"ok": False, "error": "no database"}
+        import bcrypt
+        pw = body.get("password", "")
+        if not pw:
+            return {"ok": False, "error": "password required"}
+        pw_hash = bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+        assert services.database._conn is not None
+        async with services.database._conn.execute(
+            "UPDATE users SET password_hash = ? WHERE username = ?", (pw_hash, username)
+        ) as cur:
+            updated = cur.rowcount > 0
+        await services.database._conn.commit()
+        return {"ok": updated}
 
     # =================================================================
     # WebSocket proxy — /ws on the same port as REST

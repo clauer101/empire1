@@ -15,7 +15,7 @@ set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$SCRIPT_DIR"
+PROJECT_ROOT="$SCRIPT_DIR/python_server"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -24,7 +24,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Activate virtual environment if it exists
-VENV_PATH="$PROJECT_ROOT/../.venv"
+VENV_PATH="$SCRIPT_DIR/.venv"
 if [ -d "$VENV_PATH" ]; then
     echo -e "${BLUE}Activating virtual environment...${NC}"
     source "$VENV_PATH/bin/activate"
@@ -86,11 +86,11 @@ if pytest $VERBOSE $COV_OPTS $PYTEST_OPTS; then
     EXIT_CODE=$?
     echo ""
     echo -e "${GREEN}✓ All tests passed!${NC}"
-    
+
     if [[ "$COV_OPTS" == *"html"* ]]; then
-        echo -e "${GREEN}✓ HTML coverage report generated in: htmlcov/index.html${NC}"
+        echo -e "${GREEN}✓ HTML coverage report generated in: $PROJECT_ROOT/htmlcov/index.html${NC}"
     fi
-    
+
     exit 0
 else
     EXIT_CODE=$?

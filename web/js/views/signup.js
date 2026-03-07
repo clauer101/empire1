@@ -34,6 +34,7 @@ function init(el, _api, _state) {
         <div class="form-group">
           <label for="signup-email">Email</label>
           <input type="email" id="signup-email" placeholder="you@example.com">
+          <small class="field-hint">Used for account recovery only — I will never send you any emails.</small>
         </div>
         <div class="form-group">
           <label for="signup-pwd">Password</label>
@@ -45,9 +46,9 @@ function init(el, _api, _state) {
         </div>
         <button id="signup-btn" style="width:100%;justify-content:center">Sign Up</button>
         <p class="dsgvo-notice">
-          Mit der Registrierung werden Name und E-Mail-Adresse zur Verwaltung
-          deines Kontos verarbeitet (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO).
-          <a href="/datenschutz.html" target="_blank" rel="noopener">Mehr erfahren</a>
+          By registering, your name and e-mail address will be processed to
+          manage your account (Art.&nbsp;6(1)(b) GDPR).
+          <a href="/dsgvo.html" target="_blank" rel="noopener">More info</a>
         </p>
         <p class="form-footer">Already have an account? <a href="#login">Log in</a></p>
       </div>

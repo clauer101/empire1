@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dev Tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      background: #0d1117; color: #c9d1d9;
+      min-height: 100vh;
+      padding: 48px 24px 32px;
+    }
+    h1 { color: #58a6ff; font-size: 1.4rem; margin-bottom: 6px; }
+    .subtitle { color: #484f58; font-size: 0.85rem; margin-bottom: 32px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      max-width: 960px;
+    }
+
+    .tool-card {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 20px 22px; text-decoration: none; color: inherit;
+      transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .tool-card:hover {
+      border-color: #58a6ff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(88,166,255,0.12);
+    }
+
+    .tool-icon { font-size: 1.8rem; }
+    .tool-name { font-size: 1rem; color: #58a6ff; font-weight: bold; }
+    .tool-desc { font-size: 0.78rem; color: #8b949e; line-height: 1.5; }
+    .tool-tag {
+      display: inline-block; background: #21262d; color: #58a6ff;
+      border-radius: 3px; padding: 1px 7px; font-size: 0.7rem;
+      margin-top: 4px; align-self: flex-start;
+    }
+    .tool-tag.server { color: #3fb950; }
+
+    .section-label {
+      font-size: 0.7rem; color: #484f58; letter-spacing: 1px;
+      text-transform: uppercase; margin: 24px 0 10px;
+      max-width: 960px;
+    }
+    .section-label:first-of-type { margin-top: 0; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<h1>🔧 Dev Tools</h1>
+<p class="subtitle">Entwickler-Werkzeuge für das Empire-Projekt</p>
+
+<div class="section-label">Debug &amp; Server</div>
+<div class="grid">
+  <a class="tool-card" href="status.html">
+    <span class="tool-icon">📊</span>
+    <span class="tool-name">Server Status</span>
+    <span class="tool-desc">Live-Übersicht: Verbindungen, alle Empires, Leben, Kultur, Bürger und aktive Angriffe.</span>
+    <span class="tool-tag server">via Port 8080</span>
+  </a>
+  <a class="tool-card" href="database.html">
+    <span class="tool-icon">🗄️</span>
+    <span class="tool-name">Database Admin</span>
+    <span class="tool-desc">User-Accounts verwalten: anlegen, löschen, Passwort zurücksetzen.</span>
+    <span class="tool-tag server">via Port 8080</span>
+  </a>
+</div>
+
+<div class="section-label">Grafik &amp; Sprites</div>
+<div class="grid">
+  <a class="tool-card" href="sprite.html">
+    <span class="tool-icon">⚔</span>
+    <span class="tool-name">Sprite Vorschau</span>
+    <span class="tool-desc">Sprite-Sheets animieren, Richtungen wechseln, FPS und Größe tunen. Alle Frames als Übersicht.</span>
+    <span class="tool-tag">Lokal</span>
+  </a>
+</div>
+
+<div class="section-label">Balancing</div>
+<div class="grid">
+  <a class="tool-card" href="ai-waves.html">
+    <span class="tool-icon">🌊</span>
+    <span class="tool-name">AI Wave Composer</span>
+    <span class="tool-desc">Angriffswellen pro Zeitalter definieren, Trigger setzen, Travel- und Siege-Zeit konfigurieren.</span>
+    <span class="tool-tag server">via API</span>
+  </a>
+  <a class="tool-card" href="sigmoid_tuner.html">
+    <span class="tool-icon">🎛️</span>
+    <span class="tool-name">Sigmoid Tuner</span>
+    <span class="tool-desc">Preiskurven für Bürger, Tiles, Wellen und Critter interaktiv kalibrieren. Werte kopierbereit.</span>
+    <span class="tool-tag">Lokal</span>
+  </a>
+</div>
+
+</body>
+</html>

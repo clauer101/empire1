@@ -47,4 +47,5 @@ class Attack:
     total_eta_seconds: float = 5400.0  # initial ETA for progress calculation
     siege_remaining_seconds: float = 0.0
     total_siege_seconds: float = 30.0  # initial siege duration for progress calculation
+    override_siege_seconds: float | None = None  # if set, skips dynamic calculation
 

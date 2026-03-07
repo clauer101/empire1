@@ -1,8 +1,20 @@
 messages:
 - id: 1
   from_uid: 100
-  to_uid: 2
+  to_uid: 4
   body_b64: aHVodQ==
   sent_at: '2026-02-22T05:18:17'
   read: true
-next_id: 2
+- id: 2
+  from_uid: 4
+  to_uid: 3
+  body_b64: TGllc3QgZHUgaGllciBtaXQ/
+  sent_at: '2026-03-06T20:26:18'
+  read: true
+- id: 3
+  from_uid: 3
+  to_uid: 4
+  body_b64: amE=
+  sent_at: '2026-03-06T21:19:09'
+  read: true
+next_id: 4

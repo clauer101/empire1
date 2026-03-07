@@ -13,7 +13,7 @@
     
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #1a1a2e;
+      background: #0d0d14;
       color: #eee;
       padding: 20px;
     }
@@ -184,6 +184,7 @@
   </style>
 </head>
 <body>
+<script src="nav.js"></script>
   <h1>🎛️ Sigmoid Function Tuner</h1>
   
   <div class="container">
@@ -235,7 +236,7 @@
       </div>
       <div class="copy-section">
         <input type="text" class="copy-code" id="citizen-code" readonly>
-        <button onclick="copyCode('citizen')">Copy</button>
+        <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
     
@@ -287,7 +288,7 @@
       </div>
       <div class="copy-section">
         <input type="text" class="copy-code" id="tile-code" readonly>
-        <button onclick="copyCode('tile')">Copy</button>
+        <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
     
@@ -339,7 +340,7 @@
       </div>
       <div class="copy-section">
         <input type="text" class="copy-code" id="wave-code" readonly>
-        <button onclick="copyCode('wave')">Copy</button>
+        <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
     
@@ -391,7 +392,7 @@
       </div>
       <div class="copy-section">
         <input type="text" class="copy-code" id="critter-code" readonly>
-        <button onclick="copyCode('critter')">Copy</button>
+        <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
     
@@ -443,7 +444,7 @@
       </div>
       <div class="copy-section">
         <input type="text" class="copy-code" id="army-code" readonly>
-        <button onclick="copyCode('army')">Copy</button>
+        <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
   </div>
@@ -653,18 +654,68 @@
       document.getElementById(`${name}-code`).value = code;
     }
     
-    function copyCode(name) {
-      const input = document.getElementById(`${name}-code`);
-      input.select();
-      document.execCommand('copy');
-      
-      const btn = event.target;
-      const orig = btn.textContent;
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => {
-        btn.textContent = orig;
-      }, 1500);
+    async function saveAll() {
+      const prices = {
+        citizen: getCitizenParams(),
+        tile:    { maxv: getParams('tile').max,    minv: getParams('tile').min,    spread: getParams('tile').spread,    steep: getParams('tile').steep },
+        wave:    { maxv: getParams('wave').max,    minv: getParams('wave').min,    spread: getParams('wave').spread,    steep: getParams('wave').steep },
+        critter_slot: { maxv: getParams('critter').max, minv: getParams('critter').min, spread: getParams('critter').spread, steep: getParams('critter').steep },
+        army:    { maxv: getParams('army').max,    minv: getParams('army').min,    spread: getParams('army').spread,    steep: getParams('army').steep },
+      };
+      // citizen uses u/y/z/v keys
+      prices.citizen = { u: prices.citizen.u, y: prices.citizen.y, z: prices.citizen.z, v: prices.citizen.v };
+
+      const btns = document.querySelectorAll('button');
+      btns.forEach(b => { if (b.textContent.includes('Save')) { b.textContent = '…'; b.disabled = true; } });
+      try {
+        const r = await fetch('/api/prices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(prices),
+        });
+        const data = await r.json();
+        const msg = data.success ? '✓ Saved!' : ('✗ ' + (data.error || 'Error'));
+        btns.forEach(b => { if (b.disabled) { b.textContent = msg; b.disabled = false; } });
+        setTimeout(() => btns.forEach(b => { if (b.textContent === msg) b.textContent = 'Save to game.yaml'; }), 2000);
+      } catch (e) {
+        btns.forEach(b => { if (b.disabled) { b.textContent = '✗ Failed'; b.disabled = false; } });
+        setTimeout(() => btns.forEach(b => { if (b.textContent === '✗ Failed') b.textContent = 'Save to game.yaml'; }), 2000);
+      }
     }
+
+    async function loadPrices() {
+      try {
+        const r = await fetch('/api/prices');
+        const p = await r.json();
+        if (p.citizen) {
+          const c = p.citizen;
+          const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) { el.value = val; document.getElementById(id + '-val').textContent = val; }
+          };
+          set('citizen-u', c.u ?? 34); set('citizen-y', c.y ?? 1);
+          set('citizen-z', c.z ?? 1.5); set('citizen-v', c.v ?? 3.3);
+          updateCitizen();
+        }
+        const setSigmoid = (name, d) => {
+          if (!d) return;
+          const set = (param, val) => {
+            const el = document.getElementById(`${name}-${param}`);
+            if (el) { el.value = val; document.getElementById(`${name}-${param}-val`).textContent = val; }
+          };
+          set('max', d.maxv); set('min', d.minv); set('spread', d.spread); set('steep', d.steep);
+          update(name);
+        };
+        setSigmoid('tile', p.tile);
+        setSigmoid('wave', p.wave);
+        setSigmoid('critter', p.critter_slot);
+        setSigmoid('army', p.army);
+      } catch (e) {
+        console.warn('Could not load prices from server:', e);
+      }
+    }
+
+    loadPrices();
   </script>
 </body>
 </html>

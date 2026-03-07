@@ -36,6 +36,8 @@ let grid = null;
 
 /** @type {number|null} attack_id of the pending incoming attack (set from dashboard) */
 let _pendingAttackId = null;
+/** @type {number|null} defender_uid when spectating an outgoing attack */
+let _spectateDefenderUid = null;
 
 // ── Palette / Map Editor State ──────────────────────────────
 let _activeBrush = null;
@@ -96,7 +98,7 @@ function _wsConnect() {
     _updateWsIndicator(true);
 
     // Register for battle updates
-    _sendWs({ type: 'battle_register', target_uid: st.summary?.uid });
+    _sendWs({ type: 'battle_register', target_uid: _spectateDefenderUid ?? st.summary?.uid });
   });
 
   ws.addEventListener('message', (ev) => {
@@ -170,7 +172,7 @@ function _wsDisconnect() {
   }
   if (_ws) {
     // Unregister from battle before closing
-    _sendWs({ type: 'battle_unregister', target_uid: st.summary?.uid });
+    _sendWs({ type: 'battle_unregister', target_uid: _spectateDefenderUid ?? st.summary?.uid });
     _ws.close(1000, 'leaving-battle');
     _ws = null;
     _wsConnected = false;
@@ -194,26 +196,37 @@ function _sendWs(msg) {
  * Handle incoming WS message — dispatch battle events.
  */
 function _handleWsMessage(msg) {
+  // Only process battle messages that belong to the currently subscribed defender.
+  // The backend pushes attack_phase_changed / battle_status directly to both
+  // attacker and defender UIDs for every attack they are involved in, so we
+  // must ignore messages for attacks we are not currently watching.
+  const relevantDefender = _spectateDefenderUid ?? st.summary?.uid;
+
   switch (msg.type) {
     case 'welcome':
       _addDebugLog(`WS welcome: guest_uid=${msg.temp_uid}`);
       break;
     case 'battle_setup':
+      if (msg.defender_uid !== relevantDefender) break;
       _onBattleSetup(msg);
       break;
     case 'battle_update':
+      if (msg.defender_uid !== undefined && msg.defender_uid !== relevantDefender) break;
       _onBattleUpdate(msg);
       break;
     case 'battle_summary':
+      if (msg.defender_uid !== undefined && msg.defender_uid !== relevantDefender) break;
       _onBattleSummary(msg);
       break;
     case 'battle_status':
+      if (msg.defender_uid !== relevantDefender) break;
       _onBattleStatus(msg);
       break;
     case 'structure_update':
       _onStructureUpdate(msg);
       break;
     case 'attack_phase_changed':
+      if (msg.defender_uid !== relevantDefender) break;
       _addDebugLog(`Phase changed: attack_id=${msg.attack_id} → ${msg.new_phase}`);
       // If entering siege and we don't have an attack ID yet, capture it now
       if (msg.new_phase === 'in_siege' && !_pendingAttackId && msg.attack_id != null) {
@@ -604,6 +617,30 @@ async function enter() {
   _updateDebugPanel();  // Initialize debug panel visibility
   _initCanvas();
 
+  // Reset battle state so stale data from a previous session is never shown
+  _battleState = {
+    active: false,
+    bid: null,
+    defender_uid: null,
+    defender_name: '',
+    attacker_uids: [],
+    attacker_name: '',
+    elapsed_ms: 0,
+    is_finished: false,
+    defender_won: null,
+    phase: 'waiting',
+    time_since_start_s: 0,
+    wave_info: null,
+  };
+  _updateStatusFromBattleMsg();
+
+  // Check if navigated from status view to spectate an outgoing battle
+  if (st.pendingSpectateAttack) {
+    _pendingAttackId = st.pendingSpectateAttack.attack_id;
+    _spectateDefenderUid = st.pendingSpectateAttack.defender_uid;
+    st.pendingSpectateAttack = null;
+  }
+
   // Check if navigated from dashboard for a specific incoming attack
   if (st.pendingIncomingAttack) {
     _pendingAttackId = st.pendingIncomingAttack.attack_id;
@@ -638,17 +675,38 @@ async function enter() {
   _registerStructureTileTypes();
   _buildPalette();
 
-  // Load map from server (like composer)
-  try {
-    const response = await rest.loadMap();
-    if (response && response.tiles) {
-      grid.fromJSON({ tiles: response.tiles });
-      grid.addVoidNeighbors();
-      grid._centerGrid();
-      console.log('[Battle] Map loaded from server');
+  if (_spectateDefenderUid != null) {
+    // Spectating: hide palette and props panel, give canvas full width, update title
+    const palette = container.querySelector('#tile-palette');
+    if (palette) palette.style.display = 'none';
+    const props = container.querySelector('#tower-props');
+    if (props) props.style.display = 'none';
+    const body = container.querySelector('.battle-view__body');
+    if (body) body.style.gridTemplateColumns = '1fr';
+    const titleEl = container.querySelector('.battle-title');
+    if (titleEl) titleEl.textContent = '👁 Spectating...';
+  } else {
+    // Own defense: ensure palette and props are visible
+    const palette = container.querySelector('#tile-palette');
+    if (palette) palette.style.display = '';
+    const props = container.querySelector('#tower-props');
+    if (props) props.style.display = '';
+    const body = container.querySelector('.battle-view__body');
+    if (body) body.style.gridTemplateColumns = '';
+    const titleEl = container.querySelector('.battle-title');
+    if (titleEl) titleEl.textContent = '⚔ Defense';
+    // Load own map from server
+    try {
+      const response = await rest.loadMap();
+      if (response && response.tiles) {
+        grid.fromJSON({ tiles: response.tiles });
+        grid.addVoidNeighbors();
+        grid._centerGrid();
+        console.log('[Battle] Map loaded from server');
+      }
+    } catch (err) {
+      console.warn('[Battle] could not load map from server:', err.message);
     }
-  } catch (err) {
-    console.warn('[Battle] could not load map from server:', err.message);
   }
 
   // Connect battle WebSocket only if an attack is active
@@ -669,6 +727,7 @@ function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
   _pendingAttackId = null;
+  _spectateDefenderUid = null;
   _activeBrush = null;
   _isDirtyPath = false;
   clearTimeout(_autoSaveTimer);
@@ -1041,6 +1100,12 @@ function _onBattleSetup(msg) {
   // Update palette — hide Path section while battle is active
   _updatePalettePathVisibility();
 
+  // Update title with defender name when spectating
+  if (_spectateDefenderUid != null) {
+    const titleEl = container.querySelector('.battle-title');
+    if (titleEl && msg.defender_name) titleEl.textContent = `\u{1F441} ${msg.defender_name}`;
+  }
+
   // Update status
   _updateStatus('Battle starting...');
 }
@@ -1257,10 +1322,10 @@ function _updateStatusFromBattleMsg() {
   }
   _updateStatus(statusText);
 
-  // Show/hide Fight now! button (only during siege, only when navigated from dashboard)
+  // Show/hide Fight now! button (only during siege, only when defending — not spectating)
   const fightNowItem = container.querySelector('#fight-now-item');
   if (fightNowItem) {
-    const showFightNow = _pendingAttackId !== null && _battleState.phase === 'in_siege';
+    const showFightNow = _pendingAttackId !== null && _battleState.phase === 'in_siege' && _spectateDefenderUid == null;
     fightNowItem.style.display = showFightNow ? '' : 'none';
   }
 

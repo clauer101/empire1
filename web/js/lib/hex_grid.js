@@ -686,12 +686,20 @@ export class HexGrid {
     const loop = (timestamp) => {
       // During battle, always render for smooth animations
       // Otherwise only render when dirty flag is set
-      if (this.battleCritters.size > 0) {
-        this._render();
-        this._dirty = false;
-      } else if (this._dirty) {
-        this._render();
-        this._dirty = false;
+      try {
+        if (this.battleCritters.size > 0) {
+          this._render();
+          this._dirty = false;
+        } else if (this._dirty) {
+          this._render();
+          this._dirty = false;
+        }
+      } catch (err) {
+        // Never let a render error kill the loop (e.g. drawImage with 0-sized canvas
+        // throws DOMException on Chrome/Windows — without this catch the loop dies
+        // permanently and the canvas stays black forever).
+        console.warn('[HexGrid] render error (non-fatal):', err);
+        this._dirty = true;  // force re-attempt next frame
       }
       this._rafId = requestAnimationFrame(loop);
     };
@@ -973,6 +981,9 @@ export class HexGrid {
 
   /** Render base layer (tiles + battle path) to cache canvas with current zoom. */
   _renderBase() {
+    // Nothing to render yet — leave the cached flag false so we retry next frame.
+    if (this.tiles.size === 0) return;
+
     // Create cache canvas if needed
     if (!this._baseCanvas) {
       this._baseCanvas = document.createElement('canvas');
@@ -1385,7 +1396,9 @@ export class HexGrid {
     ctx.translate(this.offsetX, this.offsetY);
 
     // Draw cached base layer (already zoomed)
-    if (this._baseCanvas) {
+    // Guard: a 0-sized canvas (e.g. when tiles map is empty) would throw a
+    // DOMException on Chrome — skip drawing until dimensions are valid.
+    if (this._baseCanvas && this._baseCanvas.width > 0 && this._baseCanvas.height > 0) {
       const scale = 1 / dpr;
       ctx.drawImage(
         this._baseCanvas,

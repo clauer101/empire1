@@ -19,6 +19,34 @@ DEFAULT_GAME_CONFIG_PATH = "config/game.yaml"
 
 
 @dataclass
+class CitizenPrice:
+    """Parameters for citizen upgrade price formula: u + (i*y) * (i+z)^v"""
+    u: float = 34.0
+    y: float = 1.0
+    z: float = 1.5
+    v: float = 3.3
+
+
+@dataclass
+class SigmoidPrice:
+    """Parameters for sigmoid price formula."""
+    maxv: float = 10000.0
+    minv: float = 100.0
+    spread: float = 10.0
+    steep: float = 7.0
+
+
+@dataclass
+class Prices:
+    """Purchase price parameters for all buyable items."""
+    citizen: CitizenPrice = field(default_factory=CitizenPrice)
+    tile: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=47000, minv=100, spread=29, steep=8.5))
+    wave: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=28000, minv=100, spread=12, steep=7))
+    critter_slot: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=13000, minv=25, spread=23, steep=7))
+    army: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=75000, minv=1000, spread=7, steep=6))
+
+
+@dataclass
 class SpyCosts:
     """Gold costs for spy operations."""
     defense: int = 500
@@ -77,6 +105,9 @@ class GameConfig:
     max_lose_culture: float = 0.05
     artefact_steal_chance: float = 0.33
 
+    # -- Prices ------------------------------------------------------
+    prices: Prices = field(default_factory=Prices)
+
     # -- Spy costs ---------------------------------------------------
     spy_costs: SpyCosts = field(default_factory=SpyCosts)
 
@@ -91,7 +122,6 @@ class GameConfig:
     ws_ping_interval: int = 30
     ws_ping_timeout: int = 10
     ws_max_message_size: int = 1_048_576
-    debug_port: int = 9000
 
     # -- Server UIDs -------------------------------------------------
     uid_game_server: int = 0
@@ -120,8 +150,22 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
     spy_raw = raw.pop("spy_costs", None)
     spy = SpyCosts(**spy_raw) if isinstance(spy_raw, dict) else SpyCosts()
 
+    # Handle nested prices
+    prices_raw = raw.pop("prices", None)
+    if isinstance(prices_raw, dict):
+        citizen_raw = prices_raw.get("citizen", {})
+        prices = Prices(
+            citizen=CitizenPrice(**citizen_raw) if isinstance(citizen_raw, dict) else CitizenPrice(),
+            tile=SigmoidPrice(**prices_raw["tile"]) if "tile" in prices_raw else SigmoidPrice(maxv=47000, minv=100, spread=29, steep=8.5),
+            wave=SigmoidPrice(**prices_raw["wave"]) if "wave" in prices_raw else SigmoidPrice(maxv=28000, minv=100, spread=12, steep=7),
+            critter_slot=SigmoidPrice(**prices_raw["critter_slot"]) if "critter_slot" in prices_raw else SigmoidPrice(maxv=13000, minv=25, spread=23, steep=7),
+            army=SigmoidPrice(**prices_raw["army"]) if "army" in prices_raw else SigmoidPrice(maxv=75000, minv=1000, spread=7, steep=6),
+        )
+    else:
+        prices = Prices()
+
     # Build config from flat keys + nested spy_costs
-    cfg = GameConfig(spy_costs=spy, **{
+    cfg = GameConfig(spy_costs=spy, prices=prices, **{
         k: v for k, v in raw.items()
         if k in GameConfig.__dataclass_fields__
     })
