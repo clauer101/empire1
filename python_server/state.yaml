@@ -1,20 +1,18 @@
 meta:
   version: 1
-  saved_at: '2026-03-14T21:45:39'
-  saved_at_unix: 1773524739.2661154
+  saved_at: '2026-03-14T21:46:39'
+  saved_at_unix: 1773524799.6561766
 empires:
 - uid: 4
   name: Empire1
   resources:
-    gold: 303.0027500812955
+    gold: 295.0
     culture: 0.0
     life: 10.0
   buildings:
     BASE_CAMP: 0.0
-    FIRE_PLACE: 0.0
   build_queue: null
-  knowledge:
-    HUNTING: 0.0
+  knowledge: {}
   research_queue: null
   citizens:
     merchant: 0
@@ -23,7 +21,6 @@ empires:
   effects:
     life_offset: 0.001
     siege_time_offset: 120.0
-    gold_offset: 0.1
   artefacts: []
   max_life: 10.0
   structures: {}
