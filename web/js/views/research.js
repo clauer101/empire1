@@ -21,7 +21,7 @@ function init(el, _api, _state) {
   st = _state;
 
   container.innerHTML = `
-    <h2>Research</h2>
+    <h2 class="battle-title">🔬 Research<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
     <div id="research-content">
       <div class="empty-state"><div class="empty-icon">◉</div><p>Loading research…</p></div>
     </div>
@@ -78,7 +78,11 @@ function render() {
     }
   }
 
-  let entries = Object.entries(knowledge).reverse();
+  const totalCost = (info) => Object.values(info.costs || {}).reduce((s, v) => s + v, 0);
+  let entries = Object.entries(knowledge).sort(([, a], [, b]) => totalCost(a) - totalCost(b));
+  if (researchQueue) {
+    entries.sort(([a], [b]) => (b === researchQueue) - (a === researchQueue));
+  }
 
   // Auto-default: hide completed only when 5+ knowledge items are done
   if (hideCompleted === null) {
@@ -107,7 +111,8 @@ function render() {
     // Calculate wall-clock duration with empire effects
     // Research speed: (base_research_speed + research_speed_offset) * (1 + research_speed_modifier + n_scientists * citizen_effect)
     const fullEffort = info.effort;
-    const remaining = summary.knowledge?.[iid] ?? fullEffort;  // If not started, remaining = full effort
+    const stored = summary.knowledge?.[iid];
+    const remaining = (stored != null && stored < fullEffort) ? stored : fullEffort;
     const scientistBonus = (summary.citizens?.scientist || 0) * (summary.citizen_effect || 0);
     const researchMultiplier = ((summary.base_research_speed ?? 1) + (summary.effects?.research_speed_offset || 0)) * (1 + (summary.effects?.research_speed_modifier || 0) + scientistBonus);
     const totalSecs  = researchMultiplier > 0 ? fullEffort / researchMultiplier : fullEffort;
@@ -115,10 +120,8 @@ function render() {
 
     // Duration string: "X remaining / Y total" while in progress, just "Y" otherwise
     let durationStr;
-    if (status === 'in-progress') {
+    if (status === 'in-progress' || (status === 'available' && remaining < fullEffort)) {
       durationStr = `${fmtSecs(remainSecs)} remaining / ${fmtSecs(totalSecs)}`;
-    } else if (status === 'completed') {
-      durationStr = `${fmtSecs(totalSecs)}`;
     } else {
       durationStr = fmtSecs(totalSecs);
     }

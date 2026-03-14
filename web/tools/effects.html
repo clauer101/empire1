@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Effects Overview</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="nav.js" defer></script>
+  <style>
+    body { background: var(--bg); color: var(--text); font-family: var(--font); padding: 0; margin: 0; min-height: 100vh; overflow-y: auto; }
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+    .effect-block { margin-bottom: 28px; }
+    .effect-header {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      margin-bottom: 8px; cursor: pointer; user-select: none;
+    }
+    .effect-header:hover { background: var(--surface-hover); }
+    .effect-key { font-family: monospace; font-size: 13px; color: var(--accent); font-weight: 700; flex: 1; }
+    .effect-count { font-size: 11px; color: var(--text-dim); background: var(--surface); border-radius: 10px; padding: 2px 8px; }
+    .effect-chevron { color: var(--text-dim); font-size: 12px; transition: transform .2s; }
+    .effect-header.open .effect-chevron { transform: rotate(90deg); }
+    .effect-items { display: none; }
+    .effect-items.open { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; padding: 0 4px 4px; }
+    .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+    .item-name { font-size: 13px; font-weight: 600; }
+    .item-meta { display: flex; justify-content: space-between; align-items: center; }
+    .item-id { font-family: monospace; font-size: 10px; color: var(--text-dim); }
+    .item-value { font-size: 12px; color: var(--success, #4caf50); font-weight: 700; }
+    .item-type-b { font-size: 10px; color: var(--accent-dim); }
+    .item-type-k { font-size: 10px; color: var(--warning, #ff9800); }
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-bar input { flex: 1; min-width: 200px; background: var(--surface-alt); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 12px; font-size: 13px; }
+    .toggle-all { font-size: 12px; color: var(--accent); cursor: pointer; white-space: nowrap; }
+    .toggle-all:hover { text-decoration: underline; }
+    h1 { font-size: 18px; font-weight: 700; color: var(--accent); margin: 0 0 20px; padding-bottom: 10px; border-bottom: 2px solid var(--accent-dim); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <h1>⚡ Effects Overview</h1>
+  <div class="filter-bar">
+    <input type="text" id="filter" placeholder="Filter by effect, item name or ID…">
+    <span class="toggle-all" id="toggle-all">Expand all</span>
+  </div>
+  <div id="effects-root"></div>
+</div>
+<script>
+const EFFECT_LABELS = {
+  life_offset: 'Life Regen / tick',
+  max_life_modifier: 'Max Life +',
+  siege_time_offset: 'Siege Time (defender gets) +s',
+  restore_life_after_loss: 'Life Restored after Loss',
+  gold_offset: 'Gold / tick',
+  gold_modifier: 'Gold Multiplier',
+  culture_offset: 'Culture / tick',
+  culture_modifier: 'Culture Multiplier',
+  build_speed_modifier: 'Build Speed Multiplier',
+  build_speed_offset: 'Build Speed +',
+  research_speed_modifier: 'Research Speed Multiplier',
+  research_speed_offset: 'Research Speed +',
+  travel_time_offset: 'Travel Time Offset',
+  wave_delay_offset: 'Wave Delay +',
+  wave_delay_modifier: 'Wave Delay Multiplier',
+  restore_life_after_loss_offset: 'Life Restored after Loss (offset)',
+};
+
+let DATA = {};
+let currentFilter = '';
+
+function fmt(v) {
+  if (typeof v === 'number') return v % 1 === 0 ? String(v) : String(Math.round(v * 1000) / 1000);
+  return String(v);
+}
+
+function buildData(catalog) {
+  const effects = {};
+  for (const [iid, item] of Object.entries(catalog.buildings || {})) {
+    for (const [eff, val] of Object.entries(item.effects || {})) {
+      (effects[eff] = effects[eff] || []).push({ id: iid, name: item.name, type: 'building', value: val });
+    }
+  }
+  for (const [iid, item] of Object.entries(catalog.knowledge || {})) {
+    for (const [eff, val] of Object.entries(item.effects || {})) {
+      (effects[eff] = effects[eff] || []).push({ id: iid, name: item.name, type: 'knowledge', value: val });
+    }
+  }
+  return effects;
+}
+
+function render(filter) {
+  const root = document.getElementById('effects-root');
+  const q = (filter || '').toLowerCase();
+  root.innerHTML = '';
+  for (const [eff, items] of Object.entries(DATA)) {
+    const matched = items.filter(it =>
+      !q || eff.includes(q) || it.name.toLowerCase().includes(q) || it.id.toLowerCase().includes(q)
+    );
+    if (!matched.length) continue;
+    const block = document.createElement('div');
+    block.className = 'effect-block';
+    const hdr = document.createElement('div');
+    hdr.className = 'effect-header';
+    hdr.innerHTML =
+      '<span class="effect-key">' + eff + '</span>' +
+      '<span style="font-size:11px;color:var(--text-dim);flex:1;padding-left:8px">' + (EFFECT_LABELS[eff] || '') + '</span>' +
+      '<span class="effect-count">' + matched.length + ' items</span>' +
+      '<span class="effect-chevron">&#9658;</span>';
+    const list = document.createElement('div');
+    list.className = 'effect-items';
+    matched.forEach(it => {
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      card.innerHTML =
+        '<span class="item-name">' + it.name + '</span>' +
+        '<div class="item-meta"><span class="item-id">' + it.id + '</span><span class="item-value">+' + fmt(it.value) + '</span></div>' +
+        '<span class="' + (it.type === 'building' ? 'item-type-b' : 'item-type-k') + '">' +
+          (it.type === 'building' ? '🏗 Building' : '🔬 Knowledge') + '</span>';
+      list.appendChild(card);
+    });
+    hdr.addEventListener('click', () => { hdr.classList.toggle('open'); list.classList.toggle('open'); });
+    if (q) { hdr.classList.add('open'); list.classList.add('open'); }
+    block.appendChild(hdr);
+    block.appendChild(list);
+    root.appendChild(block);
+  }
+}
+
+async function load() {
+  const root = document.getElementById('effects-root');
+  root.innerHTML = '<div style="color:var(--text-dim);padding:20px">Loading…</div>';
+  const token = localStorage.getItem('e3_jwt_token');
+  try {
+    const res = await fetch('/api/admin/catalog', { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DATA = buildData(await res.json());
+    render(currentFilter);
+  } catch (e) {
+    root.innerHTML = '<div style="color:var(--danger);padding:20px">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+document.getElementById('filter').addEventListener('input', e => { currentFilter = e.target.value; render(currentFilter); });
+
+let allOpen = false;
+document.getElementById('toggle-all').addEventListener('click', () => {
+  allOpen = !allOpen;
+  document.getElementById('toggle-all').textContent = allOpen ? 'Collapse all' : 'Expand all';
+  document.querySelectorAll('.effect-header').forEach(h => h.classList.toggle('open', allOpen));
+  document.querySelectorAll('.effect-items').forEach(l => l.classList.toggle('open', allOpen));
+});
+
+load();
+</script>
+</body>
+</html>

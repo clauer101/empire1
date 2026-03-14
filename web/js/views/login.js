@@ -19,7 +19,7 @@ function init(el, _api, _state) {
   container.innerHTML = `
     <div class="login-wrapper">
       <div class="login-card">
-        <h2>Login</h2>
+        <h2 class="battle-title">🔑 Login</h2>
         <div id="login-error" class="error-msg" hidden></div>
         <div class="form-group">
           <label for="login-user">Username</label>

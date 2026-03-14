@@ -21,7 +21,7 @@ function init(el, _api, _state) {
   st = _state;
 
   container.innerHTML = `
-    <h2>Buildings</h2>
+    <h2 class="battle-title">🏗 Buildings<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
     <div id="buildings-content">
       <div class="empty-state"><div class="empty-icon">▦</div><p>Loading buildings…</p></div>
     </div>
@@ -78,7 +78,11 @@ function render() {
     }
   }
 
-  let entries = Object.entries(buildings).reverse();
+  const totalCost = (info) => Object.values(info.costs || {}).reduce((s, v) => s + v, 0);
+  let entries = Object.entries(buildings).sort(([, a], [, b]) => totalCost(a) - totalCost(b));
+  if (buildQueue) {
+    entries.sort(([a], [b]) => (b === buildQueue) - (a === buildQueue));
+  }
 
   // Auto-default: hide completed only when 5+ buildings are done
   if (hideCompleted === null) {
@@ -106,11 +110,12 @@ function render() {
 
     // Build speed: (base_build_speed + build_speed_offset) * (1 + build_speed_modifier)
     const fullEffort = info.effort;
-    const remaining = summary.buildings?.[iid] ?? fullEffort;  // If not started, remaining = full effort
+    const stored = summary.buildings?.[iid];
+    const remaining = (stored != null && stored < fullEffort) ? stored : fullEffort;
     const buildMultiplier = ((summary.base_build_speed ?? 1) + (summary.effects?.build_speed_offset || 0)) * (1 + (summary.effects?.build_speed_modifier || 0));
     const totalSecs  = buildMultiplier > 0 ? fullEffort / buildMultiplier : fullEffort;
     const remainSecs = buildMultiplier > 0 ? remaining  / buildMultiplier : remaining;
-    const durationStr = status === 'in-progress'
+    const durationStr = status === 'in-progress' || (status === 'available' && remaining < fullEffort)
       ? `${fmtSecs(remainSecs)} remaining / ${fmtSecs(totalSecs)}`
       : fmtSecs(totalSecs);
 

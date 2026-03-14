@@ -14,7 +14,7 @@ import { CritterSprite } from './critter_sprite.js';
 export const TILE_TYPES = {
   void:        { id: 'void',        label: 'Void',          color: '#161620', stroke: '#1a1a24', icon: null },
   empty:       { id: 'empty',       label: 'Empty',          color: '#1e1e2e', stroke: '#2a2a3a', icon: null },
-  path:        { id: 'path',        label: 'Path',          color: '#5c4a32', stroke: '#7a6545', icon: null },
+  path:        { id: 'path',        label: 'Path',          color: '#5c4a32', stroke: '#7a6545', icon: null, spriteUrl: '/assets/sprites/bases/path.webp' },
   spawnpoint:  { id: 'spawnpoint',  label: 'Spawnpoint',    color: '#5a2a2a', stroke: '#8a3a3a', icon: null, spriteUrl: '/assets/sprites/bases/spawnpoint.webp' },
   castle:      { id: 'castle',      label: 'Castle (Target)',   color: '#4a4a1a', stroke: '#7a7a30', icon: null, spriteUrl: '/assets/sprites/bases/base.webp' },
 };
@@ -101,6 +101,9 @@ export class HexGrid {
     this._tapStartY = 0;
     this._tapStartTime = 0;
     this._hasMoved = false;
+
+    // Deduplication: prevent double-fire from touch + synthetic click
+    this._lastTileClickTime = 0;
 
     // Zoom limits
     this._minZoom = 0.3;  // Will be updated based on map size
@@ -468,6 +471,13 @@ export class HexGrid {
     this._dirty = true;
   }
 
+  _fireTileClick(q, r, tile) {
+    const now = Date.now();
+    if (now - this._lastTileClickTime < 400) return;
+    this._lastTileClickTime = now;
+    if (this.onTileClick) this.onTileClick(q, r, tile);
+  }
+
   _onClick(e) {
     // Don't trigger click if we just finished panning
     if (this._isPanning || this._hasPanned) {
@@ -483,10 +493,7 @@ export class HexGrid {
     const key = hexKey(hex.q, hex.r);
     this.selectedKey = key;
     this._dirty = true;
-    if (this.onTileClick) {
-      const tile = this.tiles.get(key);
-      this.onTileClick(hex.q, hex.r, tile);
-    }
+    this._fireTileClick(hex.q, hex.r, this.tiles.get(key));
   }
 
   // ── Touch handlers (mobile support) ────────────────────────
@@ -579,10 +586,10 @@ export class HexGrid {
           const key = hexKey(hex.q, hex.r);
           this.selectedKey = key;
           this._dirty = true;
-          if (this.onTileClick) {
-            const tile = this.tiles.get(key);
-            this.onTileClick(hex.q, hex.r, tile);
-          }
+          this._fireTileClick(hex.q, hex.r, this.tiles.get(key));
+          // Block any subsequent synthetic click from the browser
+          this._hasPanned = true;
+          setTimeout(() => { this._hasPanned = false; }, 500);
         }
       }
     }
@@ -1195,8 +1202,8 @@ export class HexGrid {
       const { x, y } = hexToPixel(q, r, sz);
       const corners = hexCorners(x, y, sz);
 
-      // Structure sprite overlay
-      if (tileType.spriteUrl && data.type !== 'void') {
+      // Structure sprite overlay (path is rendered separately in Pass 2)
+      if (tileType.spriteUrl && data.type !== 'void' && data.type !== 'path') {
         const bitmap = this._spriteCache.get(tileType.spriteUrl);
         if (bitmap && bitmap !== 'loading') {
           ctx.save();
@@ -1253,6 +1260,26 @@ export class HexGrid {
       // Offset draw position upward so feet (bottom of sprite) sit on hex center
       const drawY = y - spriteSize / 2;
 
+      // ── Status effect glow (drawn behind sprite) ──────────
+      if (critter.slow_remaining_ms > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#4fc3f7';
+        ctx.beginPath();
+        ctx.arc(x, drawY, spriteSize * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      if (critter.burn_remaining_ms > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.2 + 0.15 * Math.sin(ts * 0.008);
+        ctx.fillStyle = '#ff5500';
+        ctx.beginPath();
+        ctx.arc(x, drawY, spriteSize * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       if (sprite && sprite !== 'loading') {
         // ── Sprite animation ──────────────────────────────
         const dir = this._getCritterDirection(critter.path_progress);
@@ -1285,6 +1312,17 @@ export class HexGrid {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+        // ── Status effect icons ──────────────────────────────
+        const statusIcons = [];
+        if (critter.burn_remaining_ms > 0) statusIcons.push('🔥');
+        if (critter.slow_remaining_ms > 0) statusIcons.push('❄');
+        if (statusIcons.length) {
+          ctx.font = `${Math.round(sz * 0.22)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(statusIcons.join(''), x, barY - 1);
+        }
       }
     }
   }

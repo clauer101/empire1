@@ -1,97 +1,20 @@
 meta:
   version: 1
-  saved_at: '2026-02-11T04:57:57'
-  saved_at_unix: 1770782277.0483575
+  saved_at: '2026-03-14T17:25:17'
+  saved_at_unix: 1773509117.0441272
 empires:
-- uid: 100
-  name: TestImperium
-  resources:
-    gold: 29738.74192695728
-    culture: 14434.247256965082
-    life: 10.0
-  buildings:
-    EARTH_WALL: 0.0
-    farm: 0.0
-    library: 0.0
-  build_queue: null
-  knowledge:
-    archery: 0.0
-  research_queue: null
-  citizens:
-    merchant: 2
-    scientist: 1
-    artist: 1
-  effects: {}
-  artefacts: []
-  max_life: 10.0
-  structures: {}
-  armies:
-  - aid: 1
-    uid: 2
-    name: test
-    waves:
-    - wave_id: 1
-      iid: WARRIOR
-      slots: 6
-      next_critter_ms: 0.0
-      num_critters_spawned: 0
-    - wave_id: 2
-      iid: SLAVE
-      slots: 4
-      next_critter_ms: 15000.0
-      num_critters_spawned: 0
-    - wave_id: 3
-      iid: WARRIOR
-      slots: 4
-      next_critter_ms: 30000.0
-      num_critters_spawned: 0
-  spies: []
-  bosses: {}
-  hex_map:
-  - q: 0
-    r: 0
-    type: ARROW_TOWER
-  - q: 0
-    r: 1
-    type: path
-  - q: 0
-    r: 2
-    type: spawnpoint
-  - q: 1
-    r: 0
-    type: castle
-- uid: 2
+- uid: 4
   name: Empire1
   resources:
-    gold: 7724.148018577762
-    culture: 8637.880630976846
+    gold: 32735.86436225354
+    culture: 0.0
     life: 10.0
   buildings:
-    INIT: 0.0
     BASE_CAMP: 0.0
     FIRE_PLACE: 0.0
-    MAIN_HOUSE: 0.0
-    EARTH_WALL: 0.0
-    STONE_CIRCLE: 0.0
-    SHRINE: 0.0
-    EPIC_DRAWINGS: 0.0
-    EXCHANGE_POST: 0.0
-    TOOL_SHOP: 0.0
-    BOW_MAKER: 0.0
-    MEDICUS: 3637.5278055969998
-    BULLETIN_BOARD: 0.0
   build_queue: null
   knowledge:
     HUNTING: 0.0
-    MYSTIC: 0.0
-    CRAFTSMANSHIP: 0.0
-    DOMESTICATION: 0.0
-    HORSEBACK_RIDING: 0.0
-    MUSIC: 3994.840608282842
-    HERBOLOGY: 0.0
-    ALPHABET_WRITING: 0.0
-    COPPER_BRONZE: 0.0
-    RELIGION: 3331.8714257461793
   research_queue: null
   citizens:
     merchant: 0
@@ -99,47 +22,128 @@ empires:
     artist: 0
   effects:
     life_offset: 0.001
-    gold_offset: 0.2
-    culture_offset: 0.2
-    culture_modifier: 0.1
-    gold_modifier: 0.1
-    build_speed_modifier: 0.1
+    siege_time_offset: 120.0
+    gold_offset: 0.1
   artefacts: []
   max_life: 10.0
   structures: {}
-  armies:
-  - aid: 2
-    uid: 2
-    name: TestArmee
-    waves:
-    - wave_id: 1
-      iid: SLAVE
-      slots: 1
-      num_critters_spawned: 0
-      next_critter_ms: 2000
+  armies: []
   spies: []
   bosses: {}
   hex_map:
   - q: 0
     r: 0
-    type: BASIC_TOWER
+    type: castle
   - q: 0
     r: 1
     type: path
   - q: 0
     r: 2
+    type: path
+  - q: 0
+    r: 3
     type: spawnpoint
   - q: 1
     r: 0
+    type: BASIC_TOWER
+  - q: 1
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 2
+    type: BASIC_TOWER
+- uid: 3
+  name: Bikini Bottom
+  resources:
+    gold: 300.0
+    culture: 0.0
+    life: 10.0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: 0
+    r: 0
+    type: spawnpoint
+  - q: 0
+    r: 1
+    type: path
+  - q: 1
+    r: 0
     type: castle
+- uid: 100
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 0.0
+    life: 0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map: []
+- uid: 0
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 0.0
+    life: 10.0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies:
+  - aid: 10000
+    uid: 0
+    name: Early Barbarians Raid
+    waves:
+    - wave_id: 1
+      iid: CART
+      slots: 5
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  spies: []
+  bosses: {}
+  hex_map: []
 attacks:
 - attack_id: 1
-  attacker_uid: 100
-  defender_uid: 2
-  army_aid: 1
+  attacker_uid: 0
+  defender_uid: 4
+  army_aid: 10000
   phase: travelling
-  eta_seconds: 1
-  total_eta_seconds: 230.0
-  siege_remaining_seconds: 120.0
-  total_siege_seconds: 120.0
+  eta_seconds: 1.0
+  total_eta_seconds: 120.0
+  siege_remaining_seconds: 30.0
+  total_siege_seconds: 30.0
 battles: []

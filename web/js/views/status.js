@@ -52,7 +52,7 @@ function init(el, _api, _state) {
   }
 
   container.innerHTML = `
-    <h2>Empire Status</h2>
+    <h2 class="battle-title">🏰 Empire Status<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
     <div id="dashboard-content">
       <div class="empty-state"><div class="empty-icon">◈</div><p>Loading empire data…</p></div>
     </div>
@@ -126,7 +126,7 @@ function render(data) {
         <div class="panel-header">Resources</div>
         <div class="panel-row"><span class="label">🪙 Gold</span><span class="value">${fmt(r.gold)}</span></div>
         <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)}</span></div>
-        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${fmt(r.life ?? data.life ?? 0)} / ${fmt(data.max_life ?? 0)}</span></div>
+        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)}</span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
         <div class="panel-header" style="margin-bottom:4px">Citizens</div>
         ${renderCitizens(data.citizens)}
@@ -553,10 +553,11 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   }
 
   // Base amount (only show if > 0)
+  baseAmount = baseAmount ?? 0;
   if (baseAmount > 0) {
     html += `<div class="panel-row"><span class="label">+${baseAmount.toFixed(2)}</span><span class="value">(base)</span></div>`;
   }
-  
+
   // Building effects
   let totalOffset = baseAmount;
   if (completedBuildings && items?.buildings) {

@@ -9,7 +9,6 @@
  *     Row 2 → right
  *     Row 3 → backward (away from viewer)
  *     Each row has 4 animation frames.
- *     Near-white background is keyed out automatically.
  *
  *  2. GIF set — four separate animated GIFs:
  *       front.gif  → forward
@@ -54,29 +53,11 @@ export const DIRECTION_ROW = {
 /** Ordered direction names (matches row 0-3). */
 export const DIRECTIONS = ['forward', 'left', 'right', 'backward'];
 
-/** Near-white background keying parameters (for sprite sheets). */
-const BG_R = 252, BG_G = 252, BG_B = 252, BG_TOL = 20;
-
-// ─── Background removal (sprite sheets) ────────────────────────────────────
-
-function removeBackground(imageData) {
-  const d = imageData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    if (
-      Math.abs(d[i]     - BG_R) <= BG_TOL &&
-      Math.abs(d[i + 1] - BG_G) <= BG_TOL &&
-      Math.abs(d[i + 2] - BG_B) <= BG_TOL
-    ) {
-      d[i + 3] = 0;
-    }
-  }
-}
-
 // ─── Sprite-sheet backend ────────────────────────────────────────────────────
 
 /**
- * Load a sprite-sheet PNG, key out the near-white background, and return the
- * processed sheet as a single OffscreenCanvas together with per-frame dimensions.
+ * Load a sprite-sheet PNG and return the sheet as a single OffscreenCanvas
+ * together with per-frame dimensions.
  *
  * We intentionally avoid slicing the sheet into individual ImageBitmaps because
  * createImageBitmap(offscreenCanvas) transfers the underlying bitmap in Chromium,
@@ -98,15 +79,10 @@ async function loadSheetFrames(url) {
   const frameW = Math.floor(img.width  / COLS);
   const frameH = Math.floor(img.height / ROWS);
 
-  // Draw the full sheet onto a single OffscreenCanvas so we can manipulate pixels
+  // Draw the full sheet onto a single OffscreenCanvas
   const sheet = new OffscreenCanvas(img.width, img.height);
   const ctx   = sheet.getContext('2d');
   ctx.drawImage(img, 0, 0);
-
-  // Key out near-white background in-place
-  const raw = ctx.getImageData(0, 0, img.width, img.height);
-  removeBackground(raw);
-  ctx.putImageData(raw, 0, 0);
 
   // Free the source ImageBitmap — we no longer need it
   img.close();

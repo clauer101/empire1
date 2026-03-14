@@ -61,11 +61,29 @@ function showToast(text, type = 'message') {
 // ── Register debug toast callback ──────────────────────────
 debug.setToastCallback((text, type) => showToast(text, type));
 
+// ── Gold display in page title ──────────────────────────────
+let _lastResources = null;
+
+function _fmtRes(val, digits = 0) {
+  const v = val ?? 0;
+  return v >= 1000 ? (Math.floor(v / 100) / 10) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
+}
+
+function _updateTitleResources(r) {
+  appEl.querySelectorAll('.title-gold').forEach(el => { el.textContent = '🪙 ' + _fmtRes(r.gold); });
+  appEl.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(r.culture); });
+  appEl.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 1); });
+}
+
 // ── Incoming attack alarm on dashboard nav link ──────────────
 const navMsgBadge = document.getElementById('nav-msg-badge');
 const navDashboard = document.getElementById('nav-dashboard');
 const navDefense = document.getElementById('nav-defense');
 eventBus.on('state:summary', (data) => {
+  if (data?.resources) {
+    _lastResources = data.resources;
+    _updateTitleResources(data.resources);
+  }
   const incoming = data?.attacks_incoming || [];
   const hasIncoming = incoming.length > 0;
   const hasActive = incoming.some(a => a.phase === 'in_siege' || a.phase === 'in_battle');

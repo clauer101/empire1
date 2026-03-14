@@ -180,6 +180,7 @@ class EmpireService:
             empire.effects[key] = empire.effects.get(key, 0.0) + value
         if effects:
             log.info("Empire %d: applied effects for %s: %s", empire.uid, iid, effects)
+        self._recalculate_max_life(empire)
 
     def recalculate_effects(self, empire: Empire) -> None:
         """Rebuild empire effects from all completed buildings and knowledge.
@@ -198,7 +199,13 @@ class EmpireService:
                 effects = self._upgrades.get_effects(iid)
                 for key, value in effects.items():
                     empire.effects[key] = empire.effects.get(key, 0.0) + value
+        self._recalculate_max_life(empire)
         log.info("Empire %d: recalculated effects → %s", empire.uid, empire.effects)
+
+    def _recalculate_max_life(self, empire: Empire) -> None:
+        """Update empire.max_life based on the max_life_modifier effect."""
+        base = getattr(self._gc, "starting_max_life", 10.0)
+        empire.max_life = base + empire.effects.get("max_life_modifier", 0.0)
 
     # -- Actions ---------------------------------------------------------
 

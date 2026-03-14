@@ -303,7 +303,6 @@ def _deserialize_shot(d: dict[str, Any]) -> Shot:
         damage=d["damage"],
         target_cid=d["target_cid"],
         source_sid=d["source_sid"],
-        shot_type=d.get("shot_type", 0),
         effects=dict(d.get("effects", {})),
         flight_remaining_ms=d.get("flight_remaining_ms", 0.0),
         origin=origin,

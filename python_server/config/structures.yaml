@@ -3,7 +3,6 @@
 # range: attack range in hex fields
 # reload_time: ms between shots
 # shot_speed: projectile speed in hex/s
-# shot_type: normal, splash, slow, poison, etc.
 # upgrade_costs: cost to upgrade to next level
 # max_level: maximum upgrade level
 # effects: special effects (slow, splash_radius, dot, etc.)
@@ -19,12 +18,11 @@ BASIC_TOWER:
   range: 1
   reload_time: 2000
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 100}
-  effects: {}
+  effects: {burn_duration: 2000, burn_dps: 1}   # burns for 0.5 dps over 2s
   requirements: [HUNTING]
 
 SLING_TOWER:
@@ -32,9 +30,8 @@ SLING_TOWER:
   sprite: "assets/sprites/structures/sling_tower/sling_tower.webp"
   damage: 1
   range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "normal"
+  reload_time: 1800
+  shot_speed: 1.2
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -49,11 +46,10 @@ SLING_TOWER:
 DOUBLE_SLING_TOWER:
   name: "Double Sling Tower"
   sprite: "assets/sprites/structures/double_sling_tower/double_sling_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "normal"
+  damage: 2
+  range: 2
+  reload_time: 1600
+  shot_speed: 1.4
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -64,16 +60,15 @@ DOUBLE_SLING_TOWER:
 SPIKE_TRAP:
   name: "Spike Trap"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
-  damage: 1
+  damage: 2
   range: 1
   reload_time: 3000
-  shot_speed: 1
-  shot_type: "slow"
+  shot_speed: 0.7
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 350}
-  effects: {}
+  effects: {slow_duration: 2000, slow_ratio: 0.3}   # slows to 30% speed for 1s
   requirements: [EARTH_WALL]
 
 # ============================================================
@@ -83,11 +78,10 @@ SPIKE_TRAP:
 ARROW_TOWER:
   name: "Arrow Tower"
   sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
+  damage: 2
+  range: 2
+  reload_time: 1700
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -98,11 +92,10 @@ ARROW_TOWER:
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
   sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
-  damage: 1
+  damage: 4
   range: 1
-  reload_time: 2000
+  reload_time: 2500
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -113,16 +106,15 @@ ARBELESTE_TOWER:
 FIRE_TOWER:
   name: "Fire Tower"
   sprite: "assets/sprites/structures/torch_tower/torch_tower.webp"
-  damage: 2
+  damage: 0
   range: 1
   reload_time: 2500
   shot_speed: 1
-  shot_type: "splash"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 1000}
-  effects: {}
+  effects: {burn_duration: 3000, burn_dps: 2.0}    # burns for 2 dps over 3s
   requirements: [COPPER_BRONZE, BOW_MAKER]
 
 # ============================================================
@@ -132,11 +124,10 @@ FIRE_TOWER:
 CATAPULTS:
   name: "Catapult"
   sprite: "assets/sprites/structures/catapults/catapults.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
+  damage: 7
+  range: 2
+  reload_time: 3500
   shot_speed: 1
-  shot_type: "splash"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -147,11 +138,10 @@ CATAPULTS:
 BALLISTA_TOWER:
   name: "Ballista Tower"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
-  damage: 3
+  damage: 6
   range: 2
   reload_time: 2500
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -166,26 +156,24 @@ BALLISTA_TOWER:
 TAR_TOWER:
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
-  damage: 1
+  damage: 2
   range: 1
-  reload_time: 2000
+  reload_time: 3000
   shot_speed: 1
-  shot_type: "slow"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 4000}
-  effects: {}
+  effects: {slow_duration: 4000, slow_ratio: 0.4}   # slows to 40% speed for 4s
   requirements: [HERBOLOGY, WORK_SHOP, MEDICUS]
 
 COAL_TOWER:
   name: "Coal Tower"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
-  damage: 1
-  range: 1
+  damage: 6
+  range: 1.5
   reload_time: 2000
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -196,11 +184,10 @@ COAL_TOWER:
 HEAVY_TOWER:
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
-  damage: 1
+  damage: 12
   range: 1
-  reload_time: 2000
+  reload_time: 3600
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -211,16 +198,15 @@ HEAVY_TOWER:
 BOILING_OIL:
   name: "Boiling Oil"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
-  damage: 3
+  damage: 2
   range: 1
-  reload_time: 2000
+  reload_time: 3000
   shot_speed: 1
-  shot_type: "splash"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 7000}
-  effects: {}
+  effects: {burn_duration: 5000, burn_dps: 3.0}    # burns for 3 dps over 5s
   requirements: [ARCHITECTURE, CITY_WALLS, TOWN_GUARD, SOVEREIGN_GUARD]
 
 # ============================================================
@@ -230,11 +216,10 @@ BOILING_OIL:
 MECHANICAL_BALISTA:
   name: "Mechanical Ballista"
   sprite: "assets/sprites/structures/mechanical_ballista/mechanical_ballista.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
+  damage: 7
+  range: 2
+  reload_time: 1400
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -245,11 +230,10 @@ MECHANICAL_BALISTA:
 CANNON_TOWER:
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
+  damage: 18
+  range: 2
+  reload_time: 3800
   shot_speed: 1
-  shot_type: "splash"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -260,11 +244,10 @@ CANNON_TOWER:
 RIFLE_TOWER:
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "normal"
+  damage: 10
+  range: 1.5
+  reload_time: 1600
+  shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -275,31 +258,29 @@ RIFLE_TOWER:
 COLD_TOWER:
   name: "Cold Tower"
   sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "slow"
+  damage: 3
+  range: 2
+  reload_time: 1000
+  shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 13000}
-  effects: {}
+  effects: {slow_duration: 3000, slow_ratio: 0.5}   # slows to 50% speed for 3s
   requirements: [CHEMISTRY, LABORATORY, SCIENCE, ACADEMY]
 
 ICE_TOWER:
   name: "Ice Tower"
   sprite: "assets/sprites/structures/ice_tower/ice_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "slow"
+  damage: 4
+  range: 3
+  reload_time: 3000
+  shot_speed: 2
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 14000}
-  effects: {}
+  effects: {slow_duration: 3500, slow_ratio: 0.1}   # slows to 30% speed for 4s
   requirements: [CHEMISTRY, LABORATORY, BOTANIC_GARDENS]
 
 # ============================================================
@@ -309,26 +290,24 @@ ICE_TOWER:
 FLAME_THROWER:
   name: "Flame Thrower"
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
-  damage: 1
+  damage: 3
   range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "splash"
+  reload_time: 1800
+  shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 35000}
-  effects: {}
+  effects: {burn_duration: 4000, burn_dps: 6}    # burns for 4 dps over 4s
   requirements: [CHEMISTRY, LABORATORY, HEAVY_EQUIPMENT]
 
 SHOCK_TOWER:
   name: "Shock Tower"
   sprite: "assets/sprites/structures/shock_tower/shock_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "normal"
+  damage: 18
+  range: 2
+  reload_time: 2500
+  shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -339,26 +318,24 @@ SHOCK_TOWER:
 PARALYZNG_TOWER:
   name: "Paralyzing Tower"
   sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
+  damage: 6
+  range: 2
+  reload_time: 3000
   shot_speed: 1
-  shot_type: "stun"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 50000}
-  effects: {}
+  effects: {slow_duration: 2000, slow_ratio: 0}   # stun: stops completely for 3s
   requirements: [ELECTRICITY, ELECTRIC_FENCE, HOSPITAL]
 
 NAPALM_THROWER:
   name: "Napalm Thrower"
   sprite: "assets/sprites/structures/napalm_tower/napalm_tower.webp"
-  damage: 1
+  damage: 22
   range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "splash"
+  reload_time: 2500
+  shot_speed: 2
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -373,11 +350,10 @@ NAPALM_THROWER:
 MG_TOWER:
   name: "MG Tower"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 2000
-  shot_speed: 1
-  shot_type: "normal"
+  damage: 11
+  range: 2
+  reload_time: 1000
+  shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -388,11 +364,10 @@ MG_TOWER:
 RAPID_FIRE_MG_BUNKER:
   name: "Rapid Fire MG Bunker"
   sprite: "assets/sprites/structures/rapid_mg_tower/rapid_mg_tower.webp"
-  damage: 1
-  range: 1
-  reload_time: 500
+  damage: 7
+  range: 2
+  reload_time: 700
   shot_speed: 3
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -405,24 +380,22 @@ RADAR_TOWER:
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 8
   range: 8
-  reload_time: 2500
+  reload_time: 800
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   costs: {gold: 250000}
   effects: {}
-  requirements: [ELECTRONICS, NAVIGATION_SYSTEM, CRYPTOLOGY, AIRFIELD]
+  requirements: [ELECTRONICS, SATELITE_SYSTEMS]
 
 ANTI_AIR_TOWER:
   name: "Anti-Air Tower"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
-  damage: 12
+  damage: 14
   range: 5
   reload_time: 1500
   shot_speed: 1
-  shot_type: "normal"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -433,11 +406,10 @@ ANTI_AIR_TOWER:
 LASER_TOWER:
   name: "Laser Tower"
   sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
-  damage: 10
+  damage: 16
   range: 6
-  reload_time: 1000
-  shot_speed: 1
-  shot_type: "normal"
+  reload_time: 1500
+  shot_speed: 10
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -452,11 +424,10 @@ LASER_TOWER:
 SNIPER_TOWER:
   name: "Sniper Tower"
   sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
-  damage: 30
+  damage: 60
   range: 10
-  reload_time: 2000
-  shot_speed: 5
-  shot_type: "normal"
+  reload_time: 4000
+  shot_speed: 10
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -467,11 +438,10 @@ SNIPER_TOWER:
 ROCKET_TOWER:
   name: "Rocket Tower"
   sprite: "assets/sprites/structures/rocket_tower/rocket_tower.webp"
-  damage: 15
+  damage: 50
   range: 6
   reload_time: 3000
   shot_speed: 1
-  shot_type: "splash"
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
