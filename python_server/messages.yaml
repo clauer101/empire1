@@ -17,4 +17,46 @@ messages:
   body_b64: amE=
   sent_at: '2026-03-06T21:19:09'
   read: true
-next_id: 4
+- id: 4
+  from_uid: 4
+  to_uid: 3
+  body_b64: RHUgaGFzdCBnZXNlaGVuLCBkYXNzIGR1IGF1Y2ggZGVpbiBDYXN0bGUgdW5kIGRlbiBXZWcgw6RuZGVybiBrYW5uc3Q/
+  sent_at: '2026-03-08T10:16:38'
+  read: true
+- id: 5
+  from_uid: 3
+  to_uid: 4
+  body_b64: RGVyIEFudHdvcnQgYnV0dG9uIHR1dCBub2NoIG5pY2h0cyA6KSBOZWluIGhhYiBpY2ggbmljaHQgaWNoIHdlacOfIGdhciBuaWNodCB3YXMgaWNoIGltIGthbXBmbW9kdXMgbWFjaGVuIG11c3MuLiBpY2ggYmF1IGVpbmZhY2ggZ3JhZCDDvGJlcmFsbCBuIHR1cm0gZHJhdWYgb2huZSBzaW5uIHVuZCB2ZXJzdGFuZCA6RA==
+  sent_at: '2026-03-08T10:55:46'
+  read: true
+- id: 6
+  from_uid: 3
+  to_uid: 4
+  body_b64: a2FubnN0IGR1IGlyZ2VuZHdpZSBtYWwgbiBob3ZlciBvZGVyIGJlc2NocmVpYnVuZ3N0ZXh0IGhpbnp1ZsO8Z2VuIHdhcyBkaWUgdMO8cm1lIGdlbmF1IGvDtm5uZW4/
+  sent_at: '2026-03-08T11:56:29'
+  read: true
+- id: 7
+  from_uid: 4
+  to_uid: 3
+  body_b64: UmVwbHkgZ2VodCBqZXR6dA==
+  sent_at: '2026-03-11T05:12:04'
+  read: true
+- id: 8
+  from_uid: 3
+  to_uid: 4
+  body_b64: cGVyZmVrdCA6RA==
+  sent_at: '2026-03-11T12:22:54'
+  read: true
+- id: 9
+  from_uid: 0
+  to_uid: 4
+  body_b64: W3Rvb19lYXN5XSBBcm15OiBFYXJseSBCYXJiYXJpYW5zIFJhaWQgKHJlcG9ydGVkIGJ5IFVJRCA0KQ==
+  sent_at: '2026-03-14T21:37:56'
+  read: true
+- id: 10
+  from_uid: 0
+  to_uid: 4
+  body_b64: W3Rvb19oYXJkXSBBcm15OiBFYXJseSBCYXJiYXJpYW5zIFJhaWQgKHJlcG9ydGVkIGJ5IFVJRCA0KQ==
+  sent_at: '2026-03-14T21:42:35'
+  read: false
+next_id: 11

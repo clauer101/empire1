@@ -12,6 +12,7 @@ CULTURE_OFFSET = "culture_offset"
 LIFE_MODIFIER = "life_modifier"
 LIFE_OFFSET = "life_offset"
 RESTORE_LIFE = "restore_life"
+MAX_LIFE_MODIFIER = "max_life_modifier"
 
 # -- Building & Research -------------------------------------------------
 BUILD_SPEED_MODIFIER = "build_speed_modifier"

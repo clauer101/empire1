@@ -2,17 +2,12 @@
 
 import pytest
 from gameserver.models.shot import Shot
-from gameserver.models.critter import DamageType
 
 
 class TestShot:
     def test_shot_creation(self):
         s = Shot(damage=10, target_cid=1, source_sid=1, flight_remaining_ms=500)
         assert s.flight_remaining_ms == 500
-
-    def test_shot_default_type(self):
-        s = Shot(damage=5, target_cid=1, source_sid=1)
-        assert s.shot_type == DamageType.NORMAL
 
     def test_shot_with_effects(self):
         s = Shot(

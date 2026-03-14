@@ -35,6 +35,7 @@ from gameserver.network.rest_models import (
     LoginResponse,
     MapSaveBody,
     SendMessageRequest,
+    BattleFeedbackRequest,
     SignupRequest,
     SignupResponse,
     WaveChangeRequest,
@@ -344,6 +345,16 @@ def create_app(services: "Services") -> FastAPI:
         ok = services.message_store.mark_read(uid, msg_id)
         return {"success": ok}
 
+    @app.post("/api/battle-feedback")
+    async def battle_feedback(body: BattleFeedbackRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Send AI battle difficulty feedback as a message from AI (UID 0) to admin (UID 4)."""
+        AI_UID = 0
+        ADMIN_UID = 4
+        text = f"[{body.rating}] Army: {body.army_name} (reported by UID {uid})"
+        msg = services.message_store.send(from_uid=AI_UID, to_uid=ADMIN_UID, body=text)
+        return {"success": True, "message": msg}
+
+
     # =================================================================
     # Admin / Dev status — no auth required
     # =================================================================
@@ -487,6 +498,25 @@ def create_app(services: "Services") -> FastAPI:
             updated = cur.rowcount > 0
         await services.database._conn.commit()
         return {"ok": updated}
+
+    @app.get("/api/admin/catalog")
+    async def admin_catalog(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return full item catalog (buildings + knowledge) with effects."""
+        from gameserver.models.items import ItemType
+        up = services.empire_service._upgrades if services.empire_service else None
+        if up is None:
+            return {"buildings": {}, "knowledge": {}}
+        buildings, knowledge = {}, {}
+        for iid, item in up.items.items():
+            entry = {
+                "name": item.name,
+                "effects": dict(item.effects),
+            }
+            if item.item_type == ItemType.BUILDING:
+                buildings[iid] = entry
+            elif item.item_type == ItemType.KNOWLEDGE:
+                knowledge[iid] = entry
+        return {"buildings": buildings, "knowledge": knowledge}
 
     # =================================================================
     # WebSocket proxy — /ws on the same port as REST

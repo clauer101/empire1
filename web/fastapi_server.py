@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 
 import yaml
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response, JSONResponse
 from starlette.datastructures import MutableHeaders
@@ -26,6 +26,8 @@ AI_WAVES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "ai_
 GAME_CONFIG_PATH = Path(__file__).parent.parent / "python_server" / "config" / "game.yaml"
 BUILDINGS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "buildings.yaml"
 KNOWLEDGE_PATH = Path(__file__).parent.parent / "python_server" / "config" / "knowledge.yaml"
+CRITTERS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "critters.yaml"
+STRUCTURES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "structures.yaml"
 
 _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
 
@@ -294,6 +296,265 @@ async def save_prices(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+def _parse_items_full(path: Path) -> list[dict]:
+    """Parse buildings/knowledge YAML → list of items annotated with era."""
+    raw = path.read_text(encoding="utf-8")
+    data = yaml.safe_load(raw) or {}
+    iid_to_era: dict[str, str] = {}
+    current_era = "Steinzeit"
+    for line in raw.split("\n"):
+        for era_name, pattern in _ERA_PATTERNS:
+            if pattern.search(line):
+                current_era = era_name
+                break
+        m = _ITEM_IID_RE.match(line)
+        if m:
+            iid_to_era[m.group(1)] = current_era
+    result = []
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        result.append({
+            "iid": iid,
+            "era": iid_to_era.get(iid, "Steinzeit"),
+            "name": item.get("name", iid),
+            "effort": item.get("effort", 0),
+            "costs": item.get("costs", {}),
+            "requirements": item.get("requirements", []),
+            "effects": item.get("effects", {}),
+        })
+    return result
+
+
+def _save_efforts(path: Path, updates: dict) -> None:
+    """Patch effort values in a YAML file, preserving all comments."""
+    lines = path.read_text(encoding="utf-8").split("\n")
+    result = []
+    current_iid = None
+    effort_done = False
+    for line in lines:
+        m = _ITEM_IID_RE.match(line)
+        if m:
+            current_iid = m.group(1)
+            effort_done = False
+            result.append(line)
+            continue
+        if current_iid in updates and not effort_done:
+            em = re.match(r'^(\s+effort:\s*)\d+(.*)', line)
+            if em:
+                line = f"{em.group(1)}{int(updates[current_iid])}{em.group(2)}"
+                effort_done = True
+        result.append(line)
+    path.write_text("\n".join(result), encoding="utf-8")
+
+
+@app.get("/api/buildings")
+async def get_buildings():
+    return JSONResponse(_parse_items_full(BUILDINGS_PATH))
+
+
+@app.get("/api/knowledge")
+async def get_knowledge():
+    return JSONResponse(_parse_items_full(KNOWLEDGE_PATH))
+
+
+@app.post("/api/buildings")
+async def save_buildings(request: Request):
+    try:
+        updates = await request.json()  # {iid: effort, ...}
+        _save_efforts(BUILDINGS_PATH, updates)
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/knowledge")
+async def save_knowledge(request: Request):
+    try:
+        updates = await request.json()
+        _save_efforts(KNOWLEDGE_PATH, updates)
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+def _parse_critters(path: Path) -> list[dict]:
+    """Parse critters.yaml → list of critter stats annotated with era."""
+    raw = path.read_text(encoding="utf-8")
+    data = yaml.safe_load(raw) or {}
+    iid_to_era: dict[str, str] = {}
+    current_era = "Steinzeit"
+    for line in raw.split("\n"):
+        for era_name, pattern in _ERA_PATTERNS:
+            if pattern.search(line):
+                current_era = era_name
+                break
+        m = _ITEM_IID_RE.match(line)
+        if m:
+            iid_to_era[m.group(1)] = current_era
+    result = []
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        result.append({
+            "iid": iid, "era": iid_to_era.get(iid, "Steinzeit"),
+            "name": item.get("name", iid),
+            "speed": item.get("speed", 0), "health": item.get("health", 1),
+            "value": item.get("value", 0), "damage": item.get("damage", 1),
+            "armour": item.get("armour", 0), "slots": item.get("slots", 1),
+            "time_between": item.get("time_between", 2000),
+            "is_boss": item.get("is_boss", False),
+            "scale": item.get("scale", 1),
+            "requirements": item.get("requirements", []),
+            "animation": item.get("animation", ""),
+        })
+    return result
+
+
+def _parse_structures(path: Path) -> list[dict]:
+    """Parse structures.yaml → list of tower stats annotated with era."""
+    raw = path.read_text(encoding="utf-8")
+    data = yaml.safe_load(raw) or {}
+    iid_to_era: dict[str, str] = {}
+    current_era = "Steinzeit"
+    for line in raw.split("\n"):
+        for era_name, pattern in _ERA_PATTERNS:
+            if pattern.search(line):
+                current_era = era_name
+                break
+        m = _ITEM_IID_RE.match(line)
+        if m:
+            iid_to_era[m.group(1)] = current_era
+    result = []
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        result.append({
+            "iid": iid, "era": iid_to_era.get(iid, "Steinzeit"),
+            "name": item.get("name", iid),
+            "damage": item.get("damage", 0), "range": item.get("range", 1),
+            "reload_time": item.get("reload_time", 2000),
+            "shot_speed": item.get("shot_speed", 1),
+            "shot_type": item.get("shot_type", "normal"),
+            "effects": item.get("effects") or {},
+            "sprite": item.get("sprite", ""),
+            "costs": item.get("costs", {}),
+            "requirements": item.get("requirements", []),
+        })
+    return result
+
+
+@app.get("/api/critter-stats")
+async def get_critter_stats():
+    return JSONResponse(_parse_critters(CRITTERS_PATH))
+
+
+def _patch_yaml_inplace(path: Path, changes: dict) -> None:
+    """Update YAML scalar values in-place, preserving comments and formatting.
+
+    changes = { TOP_LEVEL_KEY: { field: new_value, ... } }
+    Dot-notation supported for nested fields (e.g. 'costs.gold').
+    Only the value portion of matching lines is replaced; all other content
+    (comments, blank lines, era blocks) is left untouched.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+
+    # Locate top-level key start lines (e.g. "SLAVE:", "BASIC_TOWER:")
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+    key_positions: dict[str, int] = {}
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            key_positions[m.group(1)] = i
+
+    sorted_positions = sorted(key_positions.values())
+
+    def block_end(start: int) -> int:
+        for pos in sorted_positions:
+            if pos > start:
+                return pos
+        return len(lines)
+
+    def fmt(v) -> str:
+        if isinstance(v, bool):
+            return "true" if v else "false"
+        if isinstance(v, int):
+            return str(v)
+        if isinstance(v, float):
+            return str(int(v)) if v == int(v) else f"{v:.10g}"
+        return str(v)
+
+    for iid, fields in changes.items():
+        if iid not in key_positions:
+            continue
+        start = key_positions[iid]
+        end   = block_end(start)
+
+        for field, value in fields.items():
+            if '.' in field:
+                # Dot-notation: update a key inside an inline dict on one line
+                # e.g. "effects.burn_dps" → matches "  effects: {...burn_dps: OLD...}"
+                parent, child = field.split('.', 1)
+                dot_re = re.compile(
+                    r'^(\s+' + re.escape(parent) + r':\s*\{[^}]*\b'
+                    + re.escape(child) + r':\s*)([^,}]+)(.*)$'
+                )
+                for j in range(start + 1, end):
+                    m = dot_re.match(lines[j].rstrip("\r\n"))
+                    if m:
+                        eol = "\n" if lines[j].endswith("\n") else ""
+                        lines[j] = m.group(1) + fmt(value) + m.group(3) + eol
+                        break
+                continue
+            field_re = re.compile(
+                r'^(\s+' + re.escape(field) + r':\s*).*$'
+            )
+            for j in range(start + 1, end):
+                m = field_re.match(lines[j].rstrip("\r\n"))
+                if m:
+                    eol = "\n" if lines[j].endswith("\n") else ""
+                    lines[j] = m.group(1) + fmt(value) + eol
+                    break
+
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+@app.patch("/api/critter-stats")
+async def patch_critter_stats(changes: dict = Body(...)):
+    """Update critters.yaml in-place. Body: { IID: { field: value } }"""
+    _patch_yaml_inplace(CRITTERS_PATH, changes)
+    return {"ok": True}
+
+
+@app.get("/api/structure-stats")
+async def get_structure_stats():
+    return JSONResponse(_parse_structures(STRUCTURES_PATH))
+
+
+@app.patch("/api/structure-stats")
+async def patch_structure_stats(changes: dict = Body(...)):
+    """Update structures.yaml in-place. Body: { IID: { field: value } }"""
+    _patch_yaml_inplace(STRUCTURES_PATH, changes)
+    return {"ok": True}
+
+
+@app.get("/api/admin/catalog")
+async def get_catalog():
+    """Return full item catalog (buildings + knowledge) with effects — no auth needed on web port."""
+    def _load(path):
+        import yaml
+        with open(path) as f:
+            raw = yaml.safe_load(f) or {}
+        return {
+            iid: {"name": item.get("name", iid), "effects": item.get("effects") or {}}
+            for iid, item in raw.items()
+        }
+    return JSONResponse({
+        "buildings": _load(BUILDINGS_PATH),
+        "knowledge": _load(KNOWLEDGE_PATH),
+    })
+
+
 @app.get("/api/sprite-files")
 async def list_sprite_files():
     """List all JPG and PNG files in the tools directory."""
@@ -368,13 +629,13 @@ async def list_critters():
             })
             continue
 
-        # Fall back to first PNG sprite sheet found
-        pngs = sorted(f.name for f in d.iterdir() if f.suffix.lower() == ".png")
-        if pngs:
+        # Fall back to first PNG/WebP sprite sheet found
+        sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp"))
+        if sheets:
             result.append({
                 "name": name,
                 "type": "spritesheet",
-                "file": f"{base}/{pngs[0]}",
+                "file": f"{base}/{sheets[0]}",
             })
 
     return JSONResponse({"critters": result})

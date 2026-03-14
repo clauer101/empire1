@@ -154,7 +154,7 @@
     }
     .row-label:first-child { border-top: none; }
 
-    /* ── RIGHT: Walker ── */
+    /* ── RIGHT: Direction previews ── */
     #panel-walker {
       display: flex;
       flex-direction: column;
@@ -162,7 +162,7 @@
       gap: 10px;
       padding: 20px 16px;
       width: 50%;
-      overflow: hidden;
+      overflow-y: auto;
     }
 
     .walker-controls {
@@ -175,31 +175,34 @@
     .walker-controls input[type=range] { width: 140px; accent-color: #4466cc; }
     #scale-label { min-width: 4ch; color: #7ecfff; }
 
-    #arena {
-      flex: 1;
+    #dir-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
       width: 100%;
+    }
+
+    .dir-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
       background: #0d1117;
-      border: 1px solid #333;
-      border-radius: 8px;
-      position: relative;
-      overflow: hidden;
+      border: 1px solid #2a2a3a;
+      border-radius: 6px;
+      padding: 12px 8px;
     }
 
-    #walker-sprite {
-      position: absolute;
+    .dir-canvas, .dir-img {
       image-rendering: pixelated;
-    }
-    #walker-sprite img, #walker-sprite canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      image-rendering: pixelated;
+      max-width: 100%;
     }
 
-    #dir-info {
-      font-size: 0.75rem;
-      color: #555;
-      flex-shrink: 0;
+    .dir-cell-label {
+      font-size: 0.7rem;
+      color: #7ecfff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
   </style>
 </head>
@@ -247,28 +250,38 @@
   </div>
 </div>
 
-<!-- ── RIGHT: Walker ── -->
+<!-- ── RIGHT: Direction previews ── -->
 <div id="panel-walker">
-  <h2 id="walker-title">Walker</h2>
+  <h2 id="walker-title">Alle Richtungen</h2>
 
   <div class="walker-controls">
     <label>Größe: <span id="scale-label">64</span> px
       <input type="range" id="scale-range" min="16" max="256" value="64" step="4" />
     </label>
-    <label>Speed:
-      <input type="range" id="speed-range" min="20" max="300" value="80" step="10" />
-      <span id="speed-label">80</span> px/s
-    </label>
   </div>
 
-  <div id="arena">
-    <div id="walker-sprite">
-      <img    id="walker-img"    alt="" style="display:none" />
-      <canvas id="walker-canvas" style="display:none"></canvas>
+  <div id="dir-grid">
+    <div class="dir-cell">
+      <canvas class="dir-canvas" data-dir="forward"></canvas>
+      <img class="dir-img" data-dir="forward" alt="forward" style="display:none">
+      <div class="dir-cell-label">Vorne</div>
+    </div>
+    <div class="dir-cell">
+      <canvas class="dir-canvas" data-dir="left"></canvas>
+      <img class="dir-img" data-dir="left" alt="left" style="display:none">
+      <div class="dir-cell-label">Links</div>
+    </div>
+    <div class="dir-cell">
+      <canvas class="dir-canvas" data-dir="right"></canvas>
+      <img class="dir-img" data-dir="right" alt="right" style="display:none">
+      <div class="dir-cell-label">Rechts</div>
+    </div>
+    <div class="dir-cell">
+      <canvas class="dir-canvas" data-dir="backward"></canvas>
+      <img class="dir-img" data-dir="backward" alt="backward" style="display:none">
+      <div class="dir-cell-label">Hinten</div>
     </div>
   </div>
-
-  <div id="dir-info">dir: forward</div>
 </div>
 
 <script type="module">
@@ -281,13 +294,7 @@ let sprite         = null;
 let currentDir     = 'forward';
 let fps            = 8;
 let displaySize    = 128;
-
-let walkerSize  = 64;
-let walkerSpeed = 80;
-let px = 0, py = 0;
-let vx = 1, vy = 0.6;
-let lastTs     = null;
-let walkerDir  = 'forward';
+let walkerSize     = 64;
 
 // ── DOM refs ───────────────────────────────────────────────────
 const critterSelect = document.getElementById('critter-select');
@@ -300,16 +307,14 @@ const fpsLabel      = document.getElementById('fps-label');
 const sizeSelect    = document.getElementById('size-select');
 const sheetGrid     = document.getElementById('sheet-grid');
 const sheetTitle    = document.getElementById('sheet-title');
-const arena         = document.getElementById('arena');
-const walkerEl      = document.getElementById('walker-sprite');
-const walkerImg     = document.getElementById('walker-img');
-const walkerCanvas  = document.getElementById('walker-canvas');
-const walkerCtx     = walkerCanvas.getContext('2d');
 const scaleRange    = document.getElementById('scale-range');
 const scaleLabel    = document.getElementById('scale-label');
-const speedRange    = document.getElementById('speed-range');
-const speedLabel    = document.getElementById('speed-label');
-const dirInfo       = document.getElementById('dir-info');
+
+// dir-grid canvases and imgs keyed by direction
+const dirCanvases = {};
+const dirImgs     = {};
+document.querySelectorAll('.dir-canvas').forEach(c => { dirCanvases[c.dataset.dir] = c; });
+document.querySelectorAll('.dir-img').forEach(i  => { dirImgs[i.dataset.dir]    = i; });
 
 // ── Direction buttons ──────────────────────────────────────────
 document.querySelectorAll('.dir-btn').forEach(btn => {
@@ -340,11 +345,6 @@ scaleRange.addEventListener('input', () => {
   walkerSize = parseInt(scaleRange.value);
   scaleLabel.textContent = walkerSize;
   applyWalkerSize();
-});
-
-speedRange.addEventListener('input', () => {
-  walkerSpeed = parseInt(speedRange.value);
-  speedLabel.textContent = walkerSpeed;
 });
 
 critterSelect.addEventListener('change', () => {
@@ -461,34 +461,34 @@ function updateMainCanvasSize() {
   mainCanvas.height = Math.round(displaySize * aspect) + pad;
 }
 
-// ── Walker ─────────────────────────────────────────────────────
+// ── Direction grid helpers ──────────────────────────────────────
+function applyWalkerSize() {
+  if (!sprite || currentCritter?.type !== 'spritesheet') return;
+  const aspect = sprite.frameH / sprite.frameW;
+  const h = Math.round(walkerSize * aspect);
+  for (const canvas of Object.values(dirCanvases)) {
+    canvas.width  = walkerSize;
+    canvas.height = h;
+    canvas.style.width  = walkerSize + 'px';
+    canvas.style.height = h + 'px';
+  }
+}
+
 function updateWalker(c) {
   if (c.type === 'gifs') {
-    walkerImg.style.display    = 'block';
-    walkerCanvas.style.display = 'none';
-    walkerImg.src = c.files[walkerDir] || c.files['forward'];
+    for (const dir of ['forward', 'left', 'right', 'backward']) {
+      dirCanvases[dir].style.display = 'none';
+      dirImgs[dir].style.display     = 'block';
+      dirImgs[dir].src               = c.files[dir] || '';
+      dirImgs[dir].style.width       = walkerSize + 'px';
+    }
   } else {
-    walkerImg.style.display    = 'none';
-    walkerCanvas.style.display = 'block';
+    for (const dir of ['forward', 'left', 'right', 'backward']) {
+      dirCanvases[dir].style.display = 'block';
+      dirImgs[dir].style.display     = 'none';
+    }
+    applyWalkerSize();
   }
-  applyWalkerSize();
-}
-
-function applyWalkerSize() {
-  const aspect = (sprite && currentCritter?.type === 'spritesheet')
-    ? sprite.frameH / sprite.frameW : 1;
-  const walkerH = Math.round(walkerSize * aspect);
-  walkerEl.style.width  = walkerSize + 'px';
-  walkerEl.style.height = walkerH    + 'px';
-  if (currentCritter?.type === 'spritesheet') {
-    walkerCanvas.width  = walkerSize;
-    walkerCanvas.height = walkerH;
-  }
-}
-
-function dirFromVelocity(vx, vy) {
-  if (Math.abs(vx) >= Math.abs(vy)) return vx > 0 ? 'right' : 'left';
-  return vy > 0 ? 'forward' : 'backward';
 }
 
 // ── Render loops ───────────────────────────────────────────────
@@ -496,57 +496,19 @@ function spriteLoop(ts) {
   if (currentCritter?.type === 'spritesheet' && sprite) {
     mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
     sprite.draw(mainCtx, currentDir, ts, mainCanvas.width / 2, mainCanvas.height / 2, displaySize);
+
+    for (const [dir, canvas] of Object.entries(dirCanvases)) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      sprite.draw(ctx, dir, ts, canvas.width / 2, canvas.height / 2, walkerSize);
+    }
   }
   requestAnimationFrame(spriteLoop);
-}
-
-function walkerLoop(ts) {
-  if (lastTs === null) lastTs = ts;
-  const dt = Math.min((ts - lastTs) / 1000, 0.1);
-  lastTs = ts;
-
-  const aW = arena.clientWidth;
-  const aH = arena.clientHeight;
-
-  px += vx * walkerSpeed * dt;
-  py += vy * walkerSpeed * dt;
-
-  const half = walkerSize / 2;
-  if (px - half < 0)  { px = half;      vx =  Math.abs(vx); }
-  if (px + half > aW) { px = aW - half; vx = -Math.abs(vx); }
-  if (py - half < 0)  { py = half;      vy =  Math.abs(vy); }
-  if (py + half > aH) { py = aH - half; vy = -Math.abs(vy); }
-
-  const newDir = dirFromVelocity(vx, vy);
-  if (newDir !== walkerDir) {
-    walkerDir = newDir;
-    if (currentCritter?.type === 'gifs') {
-      walkerImg.src = currentCritter.files[walkerDir];
-    }
-    dirInfo.textContent = 'dir: ' + walkerDir;
-  }
-
-  if (currentCritter?.type === 'spritesheet' && sprite) {
-    walkerCtx.clearRect(0, 0, walkerCanvas.width, walkerCanvas.height);
-    sprite.draw(walkerCtx, walkerDir, ts, walkerCanvas.width / 2, walkerCanvas.height / 2, walkerSize);
-  }
-
-  walkerEl.style.left = (px - half) + 'px';
-  walkerEl.style.top  = (py - half) + 'px';
-  requestAnimationFrame(walkerLoop);
 }
 
 // ── Start ──────────────────────────────────────────────────────
 await init();
 requestAnimationFrame(spriteLoop);
-requestAnimationFrame(() => {
-  px = arena.clientWidth  / 2;
-  py = arena.clientHeight / 2;
-  const len = Math.hypot(vx, vy);
-  vx /= len;
-  vy /= len;
-  requestAnimationFrame(walkerLoop);
-});
 </script>
 </body>
 </html>

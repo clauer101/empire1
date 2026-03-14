@@ -23,72 +23,9 @@
     return localStorage.getItem('e3_dev_user') === ADMIN_USER;
   }
 
-  function showLoginOverlay() {
-    document.documentElement.style.background = '#0d0d14';
-    document.body.innerHTML = `
-      <style>
-        body { background:#0d0d14; margin:0; display:flex; align-items:center; justify-content:center; min-height:100vh;
-               font-family:'Inter','Segoe UI',system-ui,sans-serif; font-size:13px; color:#e0e0e6; }
-        .login-box { background:#14141f; border:1px solid #2a2a3a; border-radius:8px; padding:32px 36px; width:320px; }
-        .login-box h2 { color:#4fc3f7; font-size:1rem; letter-spacing:1px; margin-bottom:24px; text-align:center; }
-        label { display:flex; flex-direction:column; gap:4px; font-size:11px; color:#9999a8; margin-bottom:12px; }
-        input { background:#1a1a28; border:1px solid #2a2a3a; border-radius:6px; color:#e0e0e6;
-                font-size:12px; padding:8px 10px; outline:none; width:100%; }
-        input:focus { border-color:#4fc3f7; }
-        button { width:100%; background:#4fc3f7; color:#0d0d14; font-weight:600; font-size:13px;
-                 border:none; border-radius:6px; padding:9px; cursor:pointer; margin-top:6px; }
-        button:hover { opacity:.85; }
-        #err { color:#ef5350; font-size:12px; text-align:center; min-height:18px; margin-top:10px; }
-      </style>
-      <div class="login-box">
-        <h2>DEV TOOLS LOGIN</h2>
-        <label>Username<input id="g-user" type="text" autocomplete="username" /></label>
-        <label>Password<input id="g-pw" type="password" autocomplete="current-password" /></label>
-        <button id="g-btn">Login</button>
-        <div id="err"></div>
-      </div>
-    `;
-
-    const userInput = document.getElementById('g-user');
-    const pwInput   = document.getElementById('g-pw');
-    const btn       = document.getElementById('g-btn');
-    const err       = document.getElementById('err');
-
-    async function doLogin() {
-      err.textContent = '';
-      btn.disabled = true;
-      btn.textContent = '…';
-      try {
-        const resp = await fetch(GAMESERVER + '/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: userInput.value.trim(), password: pwInput.value }),
-        });
-        const data = await resp.json();
-        if (!data.success) { err.textContent = data.reason || 'Login fehlgeschlagen'; return; }
-        const enteredUser = userInput.value.trim().toLowerCase();
-        if (enteredUser !== ADMIN_USER) { err.textContent = `Kein Zugriff (nur für ${ADMIN_USER}).`; return; }
-        localStorage.setItem('e3_jwt_token', data.token);
-        localStorage.setItem('e3_dev_user', enteredUser);
-        location.reload();
-      } catch (e) {
-        err.textContent = 'Gameserver nicht erreichbar.';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Login';
-      }
-    }
-
-    btn.addEventListener('click', doLogin);
-    pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-    userInput.addEventListener('keydown', e => { if (e.key === 'Enter') pwInput.focus(); });
-    userInput.focus();
-  }
-
   if (!isAuthorized()) {
-    if (document.body) { showLoginOverlay(); }
-    else { document.addEventListener('DOMContentLoaded', showLoginOverlay); }
-    return; // stop rest of nav.js
+    window.location.replace('/#login');
+    return;
   }
   // ────────────────────────────────────────────────────────────────────────────
 
@@ -97,8 +34,11 @@
     { name: '📊 Status',   href: 'status.html' },
     { name: '⚔ Sprite',   href: 'sprite.html' },
     { name: '🌊 AI Waves', href: 'ai-waves.html' },
+    { name: '⏱ Effort',   href: 'effort-tuner.html' },
     { name: '🗄️ Database', href: 'database.html' },
     { name: '🎛️ Sigmoid', href: 'sigmoid_tuner.html' },
+    { name: '⚡ Effects',  href: 'effects.html' },
+    { name: '⚖ Balance',  href: 'balance.html' },
   ];
 
   const current = window.location.pathname.split('/').pop() || 'index.html';

@@ -31,7 +31,7 @@ function init(el, _api, _state) {
   st = _state;
 
   container.innerHTML = `
-    <h2>Army Composer</h2>
+    <h2 class="battle-title">🗡 Army Composer<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
 
     <div id="attack-target-banner" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(229,57,53,0.15);border:1px solid var(--danger,#e53935);border-radius:var(--radius);color:var(--danger,#e53935);font-weight:bold;"></div>
     
@@ -405,6 +405,18 @@ async function onAttackOpponent(e) {
   }
 }
 
+/**
+ * How many critters will spawn in a wave given its slot capacity
+ * and the slot cost of the selected critter type.
+ * @param {number} waveSlots - Total slot capacity of the wave
+ * @param {number} critterSlots - Slot cost per critter (default 1)
+ * @returns {number}
+ */
+function critterCountInWave(waveSlots, critterSlots = 1) {
+  if (!critterSlots || critterSlots < 1) return waveSlots;
+  return Math.floor(waveSlots / critterSlots);
+}
+
 function renderArmies(data) {
   const el = container.querySelector('#army-list');
   if (!data) {
@@ -451,6 +463,9 @@ function renderArmies(data) {
             // Calculate slot price for this specific wave
             const nextSlotPrice = calculateCritterSlotPrice((w.slots || 0) + 1);
             const canAffordSlot = currentGold >= nextSlotPrice;
+            const selectedCritter = _availableCritters.find(c => c.iid === w.iid);
+            const critterSlotCost = selectedCritter?.slots || 1;
+            const numCritters = critterCountInWave(w.slots || 0, critterSlotCost);
             return `
             <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
               <div class="wave-tile-header">
@@ -464,7 +479,10 @@ function renderArmies(data) {
                 </select>
               </div>
               <div class="wave-tile-body">
-                <div class="wave-tile-count">${w.slots || 0}</div>
+                <div class="wave-tile-count-block">
+                  <div class="wave-tile-count">${numCritters}</div>
+                  <div class="wave-tile-slots-label" title="Wave slot capacity">${w.slots || 0} slots</div>
+                </div>
                 <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}"
                   title="${canAffordSlot ? `Add critter (${Math.round(nextSlotPrice)} gold)` : `Not enough gold (${Math.round(nextSlotPrice)} needed)`}"
                   ${canAffordSlot ? '' : 'style="opacity:0.5;cursor:not-allowed;"'}

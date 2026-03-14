@@ -21,7 +21,7 @@ function init(el, _api, _state) {
   container.innerHTML = `
     <div class="login-wrapper">
       <div class="login-card">
-        <h2>Create Account</h2>
+        <h2 class="battle-title">✨ Create Account</h2>
         <div id="signup-error" class="error-msg" hidden></div>
         <div class="form-group">
           <label for="signup-empire">Empire Name</label>
@@ -32,7 +32,7 @@ function init(el, _api, _state) {
           <input type="text" id="signup-user" autocomplete="username" placeholder="Choose a username" maxlength="20">
         </div>
         <div class="form-group">
-          <label for="signup-email">Email</label>
+          <label for="signup-email">Email <span style="color:var(--text-dim)">(optional)</span></label>
           <input type="email" id="signup-email" placeholder="you@example.com">
           <small class="field-hint">Used for account recovery only — I will never send you any emails.</small>
         </div>
@@ -46,7 +46,7 @@ function init(el, _api, _state) {
         </div>
         <button id="signup-btn" style="width:100%;justify-content:center">Sign Up</button>
         <p class="dsgvo-notice">
-          By registering, your name and e-mail address will be processed to
+          By registering, your name and (optional) e-mail address will be processed to
           manage your account (Art.&nbsp;6(1)(b) GDPR).
           <a href="/dsgvo.html" target="_blank" rel="noopener">More info</a>
         </p>
@@ -79,8 +79,7 @@ async function onSignup() {
   // ── Client-side validation ──────────────────────────────
   if (!empire) { showError('Empire name is required'); return; }
   if (!user)   { showError('Username is required'); return; }
-  if (!email)  { showError('Email is required'); return; }
-  if (!EMAIL_RE.test(email)) { showError('Invalid email format'); return; }
+  if (email && !EMAIL_RE.test(email)) { showError('Invalid email format'); return; }
   if (!pwd)    { showError('Password is required'); return; }
   if (pwd.length < 4) { showError('Password must be at least 4 characters'); return; }
   if (pwd !== pwd2) { showError('Passwords do not match'); return; }

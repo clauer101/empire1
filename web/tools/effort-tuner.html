@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Effort Tuner</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #22222f;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --purple:      #ab47bc;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #save-status { font-size: 12px; min-width: 100px; }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+
+    .tab-bar { display: flex; gap: 2px; margin: 0 20px; }
+    .tab-btn {
+      padding: 8px 20px; border: none; cursor: pointer;
+      background: var(--surface-alt); color: var(--text-dim);
+      border-radius: var(--radius) var(--radius) 0 0; font-size: 13px;
+      border: 1px solid var(--border); border-bottom: none;
+      transition: color .15s, background .15s;
+    }
+    .tab-btn.active { background: var(--bg); color: var(--accent); border-bottom: 1px solid var(--bg); }
+
+    #content { max-width: 1100px; margin: 0 auto; padding: 16px 16px 60px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* era section */
+    .era-section { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .era-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; background: var(--surface);
+      cursor: pointer; user-select: none; border-bottom: 1px solid var(--border);
+    }
+    .era-header:hover { background: var(--surface-hover); }
+    .era-arrow { font-size: 10px; color: var(--text-dim); transition: transform .2s; }
+    .era-section.collapsed .era-arrow { transform: rotate(-90deg); }
+    .era-name { font-weight: 700; font-size: .85rem; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+    .era-info { font-size: .75rem; color: var(--text-dim); }
+    .era-count { margin-left: auto; background: var(--surface-alt); color: var(--text-dim); border-radius: 10px; padding: 2px 8px; font-size: 11px; }
+    .era-body { background: var(--bg); }
+    .era-section.collapsed .era-body { display: none; }
+
+    /* bulk buttons */
+    .bulk-btns { display: flex; gap: 4px; margin-left: 8px; }
+    .bulk-btn {
+      background: none; border: 1px solid var(--border); border-radius: 3px;
+      color: var(--text-dim); font-size: 11px; padding: 2px 7px; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .bulk-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* item row */
+    .item-row {
+      display: grid; grid-template-columns: 1fr auto;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-row.has-build-boost  { border-left: 3px solid var(--success); }
+    .item-row.has-research-boost { border-left: 3px solid var(--purple); }
+    .item-row.has-both { border-left: 3px solid var(--warning); }
+
+    .item-main { padding: 9px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .item-name { font-weight: 600; font-size: 13px; }
+    .item-iid { font-family: var(--mono); font-size: 10px; color: var(--text-dim); background: var(--surface-alt); border-radius: 3px; padding: 1px 5px; }
+
+    .effect-badge {
+      font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+      font-family: var(--mono); border: 1px solid;
+    }
+    .badge-build    { color: var(--success); border-color: var(--success); background: rgba(102,187,106,.1); }
+    .badge-research { color: var(--purple);  border-color: var(--purple);  background: rgba(171,71,188,.1); }
+    .badge-other    { color: var(--text-dim); border-color: var(--border); background: transparent; }
+
+    .effort-row { display: flex; align-items: center; gap: 6px; }
+    .effort-label { color: var(--text-dim); font-size: 11px; }
+    .effort-input {
+      background: var(--surface-alt); color: var(--accent);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 7px; font-family: var(--mono); font-size: 12px;
+      width: 100px; text-align: right; outline: none;
+    }
+    .effort-input:focus { border-color: var(--accent); }
+
+    /* detail panel */
+    .item-detail-btn {
+      padding: 8px 12px; display: flex; align-items: center; justify-content: center;
+      border-left: 1px solid var(--border); cursor: pointer;
+      color: var(--text-dim); font-size: 14px; background: none; border-top: none; border-right: none; border-bottom: none;
+      transition: color .15s, background .15s;
+    }
+    .item-detail-btn:hover { color: var(--accent); background: var(--surface-hover); }
+    .item-detail-btn.open { color: var(--accent); }
+
+    .item-detail {
+      display: none; padding: 10px 14px;
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .item-detail.visible { display: block; }
+    .detail-title { color: var(--text-dim); font-size: 11px; margin-bottom: 8px; letter-spacing: .5px; text-transform: uppercase; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+    .detail-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 8px 10px;
+    }
+    .detail-card-label { color: var(--text-dim); font-size: 10px; margin-bottom: 3px; }
+    .detail-card-value { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+    .detail-card-value.fast { color: var(--success); }
+    .detail-card-value.slow { color: var(--warning); }
+    .detail-speed { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    button.save-btn {
+      background: var(--accent); color: #000; border: none;
+      border-radius: var(--radius); padding: 7px 18px;
+      font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity .15s;
+    }
+    button.save-btn:hover { opacity: .85; }
+    button.save-btn:disabled { opacity: .4; cursor: default; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>Effort Tuner</h1>
+  <span id="save-status"></span>
+  <button class="save-btn" id="save-btn" disabled>Speichern</button>
+</div>
+
+<div style="padding: 10px 20px 0; max-width:1100px; margin: 0 auto;">
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-buildings" onclick="setTab('buildings')">🏗 Buildings</button>
+    <button class="tab-btn" id="tab-knowledge" onclick="setTab('knowledge')">🔬 Knowledge</button>
+  </div>
+</div>
+
+<div id="content">
+  <div id="loading" style="color:var(--text-dim);text-align:center;padding:60px">Lade Daten…</div>
+</div>
+
+<script>
+const ERA_ORDER = [
+  "Steinzeit","Neolithikum","Bronzezeit","Eisenzeit",
+  "Mittelalter","Renaissance","Industrialisierung","Moderne","Zukunft"
+];
+
+const BASE_BUILD_SPEED    = 1.0;
+const BASE_RESEARCH_SPEED = 0.7;
+
+let buildings = [];
+let knowledge = [];
+let _tab = 'buildings';
+let dirty = false;
+
+// ── Speed effect keys ─────────────────────────────────────────
+const BUILD_EFFECTS    = ['build_speed_modifier','build_speed_offset'];
+const RESEARCH_EFFECTS = ['research_speed_modifier','research_speed_offset'];
+
+function hasEffect(item, keys) { return keys.some(k => item.effects && item.effects[k]); }
+
+// ── Accumulated speed up to (not including) the given era ─────
+function calcCumulativeSpeed(era, isResearch) {
+  const items = isResearch ? knowledge : buildings;
+  const eraIdx = ERA_ORDER.indexOf(era);
+  let offset = 0, modifier = 0;
+  const base = isResearch ? BASE_RESEARCH_SPEED : BASE_BUILD_SPEED;
+  const offsetKey  = isResearch ? 'research_speed_offset'   : 'build_speed_offset';
+  const modKey     = isResearch ? 'research_speed_modifier' : 'build_speed_modifier';
+
+  // Sum effects from all previous epochs (fully "built" assumption)
+  for (const item of items) {
+    if (ERA_ORDER.indexOf(item.era) < eraIdx) {
+      offset   += item.effects?.[offsetKey]  ?? 0;
+      modifier += item.effects?.[modKey]     ?? 0;
+    }
+  }
+  return (base + offset) * (1 + modifier);
+}
+
+// Also include items within the same era (worst → best progression)
+function calcSpeedWithinEra(era, isResearch, includeCount) {
+  const items = isResearch ? knowledge : buildings;
+  const eraIdx = ERA_ORDER.indexOf(era);
+  const base = isResearch ? BASE_RESEARCH_SPEED : BASE_BUILD_SPEED;
+  const offsetKey  = isResearch ? 'research_speed_offset'   : 'build_speed_offset';
+  const modKey     = isResearch ? 'research_speed_modifier' : 'build_speed_modifier';
+  let offset = 0, modifier = 0;
+
+  let sameEraCount = 0;
+  for (const item of items) {
+    const iIdx = ERA_ORDER.indexOf(item.era);
+    if (iIdx < eraIdx) {
+      offset += item.effects?.[offsetKey] ?? 0;
+      modifier += item.effects?.[modKey] ?? 0;
+    } else if (iIdx === eraIdx && sameEraCount < includeCount) {
+      offset += item.effects?.[offsetKey] ?? 0;
+      modifier += item.effects?.[modKey] ?? 0;
+      sameEraCount++;
+    }
+  }
+  return (base + offset) * (1 + modifier);
+}
+
+// ── Format seconds ─────────────────────────────────────────────
+function fmtTime(s) {
+  if (s < 60)  return `${s.toFixed(0)}s`;
+  if (s < 3600) return `${Math.floor(s/60)}m ${(s%60).toFixed(0)}s`;
+  return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
+}
+
+// ── Tab ───────────────────────────────────────────────────────
+function setTab(tab) {
+  _tab = tab;
+  document.getElementById('tab-buildings').classList.toggle('active', tab === 'buildings');
+  document.getElementById('tab-knowledge').classList.toggle('active', tab === 'knowledge');
+  renderAll();
+}
+
+// ── Dirty ────────────────────────────────────────────────────
+function markDirty() {
+  dirty = true;
+  document.getElementById('save-btn').disabled = false;
+  const st = document.getElementById('save-status');
+  st.textContent = ''; st.className = '';
+}
+
+// ── Render ───────────────────────────────────────────────────
+function renderAll() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  const items = _tab === 'buildings' ? buildings : knowledge;
+  const isResearch = _tab === 'knowledge';
+
+  const groups = {};
+  ERA_ORDER.forEach(e => groups[e] = []);
+  items.forEach(it => { (groups[it.era] || (groups[it.era] = [])).push(it); });
+
+  ERA_ORDER.forEach(era => {
+    const eraItems = groups[era] || [];
+
+    const section = document.createElement('div');
+    section.className = 'era-section';
+
+    const speedBefore = calcCumulativeSpeed(era, isResearch);
+
+    section.innerHTML = `
+      <div class="era-header">
+        <span class="era-arrow">&#9660;</span>
+        <span class="era-name">${era}</span>
+        <span class="era-info" style="margin-left:4px;font-size:.72rem;color:var(--text-dim)">
+          speed before: <b style="color:var(--accent);font-family:var(--mono)">${speedBefore.toFixed(2)}x</b>
+        </span>
+        <span class="era-count">${eraItems.length}</span>
+        <div class="bulk-btns">
+          <button class="bulk-btn" data-era="${era}" data-pct="-5">−5%</button>
+          <button class="bulk-btn" data-era="${era}" data-pct="5">+5%</button>
+        </div>
+      </div>
+      <div class="era-body"></div>
+    `;
+
+    section.querySelector('.era-header').addEventListener('click', e => {
+      if (e.target.closest('.bulk-btns')) return;
+      section.classList.toggle('collapsed');
+    });
+
+    section.querySelectorAll('.bulk-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pct = parseFloat(btn.dataset.pct) / 100;
+        eraItems.forEach(it => {
+          it.effort = Math.max(1, Math.round(it.effort * (1 + pct)));
+        });
+        markDirty();
+        renderAll();
+      });
+    });
+
+    const body = section.querySelector('.era-body');
+
+    eraItems.forEach((item, idx) => {
+      const hasBuild    = hasEffect(item, BUILD_EFFECTS);
+      const hasResearch = hasEffect(item, RESEARCH_EFFECTS);
+      const rowClass    = hasBuild && hasResearch ? 'has-both' : hasBuild ? 'has-build-boost' : hasResearch ? 'has-research-boost' : '';
+
+      const row = document.createElement('div');
+      row.className = `item-row ${rowClass}`;
+
+      // Effect badges
+      const badges = [];
+      if (item.effects) {
+        for (const [k, v] of Object.entries(item.effects)) {
+          const cls = BUILD_EFFECTS.includes(k) ? 'badge-build' : RESEARCH_EFFECTS.includes(k) ? 'badge-research' : 'badge-other';
+          badges.push(`<span class="effect-badge ${cls}">${k.replace(/_modifier|_offset/,'').replace(/_/g,' ')}: +${(v*100).toFixed(0)}%</span>`);
+        }
+      }
+
+      row.innerHTML = `
+        <div class="item-main">
+          <div class="item-top">
+            <span class="item-name">${item.name}</span>
+            <span class="item-iid">${item.iid}</span>
+            ${badges.join('')}
+          </div>
+          <div class="effort-row">
+            <span class="effort-label">Effort:</span>
+            <button class="bulk-btn item-pct-btn" data-pct="-5">−5%</button>
+            <input class="effort-input" type="number" min="1" step="1" value="${item.effort}" data-iid="${item.iid}" />
+            <button class="bulk-btn item-pct-btn" data-pct="5">+5%</button>
+            <span class="effort-label">${fmtTime(item.effort / speedBefore)} @ ${speedBefore.toFixed(2)}x</span>
+          </div>
+        </div>
+        <button class="item-detail-btn" title="Zeitschätzung">⏱</button>
+      `;
+
+      const input = row.querySelector('.effort-input');
+      const timeLabel = () => row.querySelector('.effort-label:last-of-type');
+      input.addEventListener('input', () => {
+        const v = parseInt(input.value);
+        if (v > 0) { item.effort = v; markDirty(); }
+        timeLabel().textContent = `${fmtTime(item.effort / speedBefore)} @ ${speedBefore.toFixed(2)}x`;
+      });
+      row.querySelectorAll('.item-pct-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pct = parseFloat(btn.dataset.pct) / 100;
+          item.effort = Math.max(1, Math.round(item.effort * (1 + pct)));
+          input.value = item.effort;
+          timeLabel().textContent = `${fmtTime(item.effort / speedBefore)} @ ${speedBefore.toFixed(2)}x`;
+          markDirty();
+        });
+      });
+
+      // Detail panel
+      const detail = document.createElement('div');
+      detail.className = 'item-detail';
+      detail.innerHTML = buildDetailHTML(item, era, isResearch);
+
+      const detailBtn = row.querySelector('.item-detail-btn');
+      detailBtn.addEventListener('click', () => {
+        const open = detail.classList.toggle('visible');
+        detailBtn.classList.toggle('open', open);
+        if (open) detail.innerHTML = buildDetailHTML(item, era, isResearch);
+      });
+
+      body.appendChild(row);
+      body.appendChild(detail);
+    });
+
+    content.appendChild(section);
+  });
+}
+
+function buildDetailHTML(item, era, isResearch) {
+  const speedBefore = calcCumulativeSpeed(era, isResearch);
+  const speedFull   = calcSpeedWithinEra(era, isResearch, 9999); // all same-era items
+  const rawTime     = item.effort / (isResearch ? BASE_RESEARCH_SPEED : BASE_BUILD_SPEED);
+  const timeBefore  = item.effort / speedBefore;
+  const timeFull    = item.effort / speedFull;
+
+  const req = (item.requirements || []).length > 0
+    ? item.requirements.map(r => `<code style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">${r}</code>`).join(' ')
+    : '<span style="color:var(--text-dim)">—</span>';
+
+  return `
+    <div class="detail-title">Zeitschätzung (Effort = ${item.effort.toLocaleString()})</div>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <div class="detail-card-label">Basiszeit (speed 1.0x)</div>
+        <div class="detail-card-value slow">${fmtTime(rawTime)}</div>
+        <div class="detail-speed">speed: 1.0x</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-card-label">Alle Vorepochen-Items gebaut</div>
+        <div class="detail-card-value ${speedBefore > 1.5 ? 'fast' : ''}">${fmtTime(timeBefore)}</div>
+        <div class="detail-speed">speed: ${speedBefore.toFixed(3)}x</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-card-label">Alle Items dieser+Vorepochen gebaut</div>
+        <div class="detail-card-value fast">${fmtTime(timeFull)}</div>
+        <div class="detail-speed">speed: ${speedFull.toFixed(3)}x</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-dim)">
+      Anforderungen: ${req}
+    </div>
+  `;
+}
+
+// ── Save ─────────────────────────────────────────────────────
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-btn');
+  const st  = document.getElementById('save-status');
+  btn.disabled = true; st.textContent = 'Speichert…'; st.className = '';
+  try {
+    const items = _tab === 'buildings' ? buildings : knowledge;
+    const updates = {};
+    items.forEach(it => { updates[it.iid] = it.effort; });
+    const endpoint = _tab === 'buildings' ? '/api/buildings' : '/api/knowledge';
+    const r = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    const data = await r.json();
+    if (data.success) { st.textContent = 'Gespeichert!'; st.className = 'ok'; dirty = false; }
+    else throw new Error(data.error || 'Fehler');
+  } catch (e) {
+    st.textContent = `Fehler: ${e.message}`; st.className = 'err';
+    btn.disabled = false;
+  }
+  setTimeout(() => { st.textContent = ''; st.className = ''; }, 3000);
+});
+
+// ── Load ─────────────────────────────────────────────────────
+(async () => {
+  try {
+    const [bRes, kRes] = await Promise.all([
+      fetch('/api/buildings'),
+      fetch('/api/knowledge'),
+    ]);
+    buildings = await bRes.json();
+    knowledge = await kRes.json();
+    document.getElementById('loading').remove();
+    renderAll();
+  } catch (e) {
+    document.getElementById('loading').textContent = `Fehler: ${e.message}`;
+  }
+})();
+</script>
+</body>
+</html>

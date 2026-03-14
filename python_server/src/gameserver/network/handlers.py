@@ -261,6 +261,7 @@ async def handle_military_request(
         available_critters.append({
             "iid": critter.iid,
             "name": critter.name,
+            "slots": critter.slots,
         })
 
     # Ongoing attacks

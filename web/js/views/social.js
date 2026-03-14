@@ -22,7 +22,7 @@ function init(el, _api, _state) {
 
 function _renderShell() {
   container.innerHTML = `
-    <h2>Messages</h2>
+    <h2 class="battle-title">💬 Messages<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
 
     <div class="panel" style="margin-bottom:12px">
       <div class="panel-header">New Message</div>
@@ -180,16 +180,32 @@ function renderMessages(data) {
     const unreadDot = (isInbox && !m.read)
       ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent,#4fc3f7);margin-right:6px;"></span>'
       : '';
+    const replyBtn = isInbox
+      ? `<button data-reply-uid="${m.from_uid}" data-reply-name="${escAttr(counterpart)}" style="font-size:0.72em;padding:1px 6px;line-height:1.4;max-height:22px;background:transparent;border:1px solid var(--accent,#4fc3f7);color:var(--accent,#4fc3f7);border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0;">↩ Reply</button>`
+      : '';
     return `
       <div class="panel" style="margin-bottom:6px;padding:8px 12px;${!m.read && isInbox ? 'border-left:3px solid var(--accent,#4fc3f7);' : ''}" data-msg-id="${m.id}">
-        <div style="display:flex;justify-content:space-between;font-size:0.82em;color:#888;margin-bottom:4px;">
-          <span>${unreadDot}${counterpartLabel}</span>
-          <span>${m.sent_at || ''}</span>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:0.82em;color:#888;margin-bottom:4px;">
+          <span style="display:flex;align-items:center;">${unreadDot}${counterpartLabel}</span>
+          <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span>${m.sent_at || ''}</span>
+            ${replyBtn}
+          </span>
         </div>
         <div style="word-break:break-word;">${escHtml(m.body)}</div>
       </div>
     `;
   }).join('');
+
+  el.querySelectorAll('[data-reply-uid]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.replyName;
+      const targetInput = document.getElementById('msg-target-uid');
+      const bodyInput   = document.getElementById('msg-body');
+      if (targetInput) { targetInput.value = name; targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      if (bodyInput)   { bodyInput.value = ''; bodyInput.focus(); }
+    });
+  });
 
   // Mark unread inbox messages as read when viewed
   if (_tab === 'inbox') {
@@ -205,6 +221,10 @@ function renderMessages(data) {
     const badge = document.getElementById('nav-msg-badge');
     if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
   }
+}
+
+function escAttr(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
 function escHtml(str) {

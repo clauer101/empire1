@@ -257,7 +257,6 @@ def _serialize_shot(shot: Shot) -> dict[str, Any]:
         "damage": shot.damage,
         "target_cid": shot.target_cid,
         "source_sid": shot.source_sid,
-        "shot_type": shot.shot_type,
         "effects": dict(shot.effects),
         "flight_remaining_ms": shot.flight_remaining_ms,
         "origin": _hex(shot.origin) if shot.origin else None,

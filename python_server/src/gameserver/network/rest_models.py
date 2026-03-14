@@ -122,3 +122,8 @@ class AttackRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     to_uid: int
     body: str
+
+
+class BattleFeedbackRequest(BaseModel):
+    army_name: str
+    rating: str  # "too_easy" or "too_hard"

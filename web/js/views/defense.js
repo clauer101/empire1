@@ -339,9 +339,7 @@ function init(el, _api, _state) {
 
   container.innerHTML = `
     <div class="battle-view">
-      <div class="battle-header">
-        <h2 class="battle-title">⚔ Defense</h2>
-      </div>
+      <h2 class="battle-title">⚔ Defense<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
 
       <!-- Battle Status Panel -->
       <div class="battle-status" id="battle-status">
@@ -391,6 +389,7 @@ function init(el, _api, _state) {
         <!-- Canvas Container -->
         <div class="battle-canvas-wrap" id="canvas-wrap">
           <button id="map-save" style="display:none;position:absolute;top:8px;right:8px;z-index:10;font-size:11px;padding:3px 10px;" title="Save path layout">💾 Save</button>
+          <button id="map-info-btn" style="display:none;position:absolute;top:8px;left:8px;z-index:10;width:28px;height:28px;background:rgba(0,0,0,0.65);border:1px solid var(--border);color:var(--text);border-radius:50%;cursor:pointer;font-size:14px;line-height:1;" title="Tower info">ℹ</button>
           <canvas id="battle-canvas"></canvas>
         </div>
 
@@ -480,13 +479,24 @@ function init(el, _api, _state) {
 function _bindTowerOverlay() {
   const closeBtn = container.querySelector('#tower-overlay-close');
   const overlay = container.querySelector('#tower-overlay');
-  
+
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       overlay.style.display = 'none';
     });
   }
-  
+
+  // Info button (mobile): show details for active brush
+  const infoBtn = container.querySelector('#map-info-btn');
+  if (infoBtn) {
+    infoBtn.addEventListener('click', () => {
+      if (_activeBrush) {
+        _showTypeDetails(_activeBrush);
+        overlay.style.display = 'flex';
+      }
+    });
+  }
+
   // Close on backdrop click
   if (overlay) {
     overlay.addEventListener('click', (e) => {
@@ -603,6 +613,8 @@ function _showTileDetails(q, r, tile) {
       '</span></div>' +
       '<div class="props-row"><span class="label">Key</span><span class="value mono">' + hexKey(q, r) + '</span></div>' +
       towerInfo +
+      '<div class="props-divider"></div>' +
+      '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile</button>' +
     '</div>';
 
   if (propsContent) propsContent.innerHTML = detailsHTML;
@@ -610,6 +622,21 @@ function _showTileDetails(q, r, tile) {
     overlayBody.innerHTML = detailsHTML;
     if (window.innerWidth <= 1100) overlay.style.display = 'flex';
   }
+
+  const _doEmpty = () => {
+    grid.setTile(q, r, 'empty');
+    _markPathDirty();
+    _autoSave();
+    // Close overlay on mobile
+    if (overlay && window.innerWidth <= 1100) overlay.style.display = 'none';
+    // Clear props panel on desktop
+    if (propsContent) propsContent.innerHTML = '';
+  };
+  [propsContent, overlayBody].forEach(root => {
+    if (!root) return;
+    const b = root.querySelector('#empty-tile-btn');
+    if (b) b.addEventListener('click', _doEmpty);
+  });
 }
 
 async function enter() {
@@ -755,6 +782,22 @@ async function _loadMapBackground() {
   }
 }
 
+let _mapErrorTimeout = null;
+function _showMapError(msg) {
+  const wrap = container.querySelector('#canvas-wrap');
+  if (!wrap) return;
+  let el = wrap.querySelector('.map-error-msg');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'map-error-msg';
+    wrap.insertBefore(el, wrap.firstChild);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(_mapErrorTimeout);
+  _mapErrorTimeout = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
 function _initCanvas() {
   const wrap = container.querySelector('#canvas-wrap');
   const canvas = container.querySelector('#battle-canvas');
@@ -769,6 +812,10 @@ function _initCanvas() {
         const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
         const existingType = (tile || grid.getTile(q, r))?.type;
         if (existingType === 'void') return;  // cannot build on void tiles
+        if (existingType !== 'empty') {
+          _showMapError('Only empty tiles can be built on. Use 🗑 Empty Tile first.');
+          return;
+        }
         const brushIsPath = PATH_TYPES.includes(_activeBrush);
         const replacesPath = PATH_TYPES.includes(existingType);
         if (_activeBrush === 'spawnpoint') _clearExistingSpawnpoint(q, r);
@@ -889,7 +936,7 @@ function _buildPalette() {
   // ── Towers Section ─────────────────────────────────────
   const towerSection = document.createElement('div');
   towerSection.innerHTML = '<div class="palette-cat-label">Towers</div>';
-  const structureIds = Object.keys((st.items || {}).structures || {});
+  const structureIds = Object.keys((st.items || {}).structures || {}).reverse();
   if (structureIds.length > 0) {
     for (const iid of structureIds) {
       towerSection.appendChild(_createPaletteItem(iid));
@@ -912,6 +959,46 @@ function _buildPalette() {
   _updatePalettePathVisibility();
 }
 
+function _showTypeDetails(typeId) {
+  const t = getTileType(typeId);
+  const overlayBody = container.querySelector('#tower-overlay-body');
+  const overlay     = container.querySelector('#tower-overlay');
+  const propsContent = container.querySelector('#tower-props-content');
+
+  const s = t.serverData;
+  const _currentGold = st.summary?.resources?.gold || 0;
+  const _spriteThumb = t.spriteUrl
+    ? '<span style="display:inline-block;width:28px;height:28px;background:' + t.color + ';border:1px solid ' + t.stroke + ';border-radius:4px;background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;vertical-align:middle;margin-right:6px;"></span>'
+    : '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + ';"></span>';
+  let html = '<div class="props-tile">' +
+    '<div class="props-row"><span class="label">Type</span><span class="value" style="display:flex;align-items:center;">' +
+      _spriteThumb + t.label +
+    '</span></div>';
+
+  if (s) {
+    const _goldCost = s.costs?.gold;
+    const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
+    html += '<div class="props-divider"></div>' +
+      '<div class="props-section-label">Tower Stats</div>' +
+      (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
+      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
+      '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
+      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
+      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+    if (s.effects && Object.keys(s.effects).length > 0) {
+      html += '<div class="props-row"><span class="label">Effects</span><span class="value">' +
+        Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ') + '</span></div>';
+    }
+    if (s.requirements && s.requirements.length > 0) {
+      html += '<div class="props-row"><span class="label">Requires</span><span class="value" style="font-size:10px;">' + s.requirements.join(', ') + '</span></div>';
+    }
+  }
+  html += '</div>';
+
+  if (propsContent) propsContent.innerHTML = html;
+  if (overlayBody) overlayBody.innerHTML = html;
+}
+
 function _createPaletteItem(typeId) {
   const t = getTileType(typeId);
   const item = document.createElement('div');
@@ -928,14 +1015,19 @@ function _createPaletteItem(typeId) {
     item.title = t.label + ' (Not enough gold: need ' + Math.round(_palGoldCost).toLocaleString() + ')';
   }
   const _palCostHtml = _palGoldCost
-    ? ' <span style="font-size:10px;color:' + (_canAfford ? 'var(--success,#4caf50)' : 'var(--danger)') + '">💰' + Math.round(_palGoldCost).toLocaleString() + '</span>'
+    ? '<span class="palette-cost' + (_canAfford ? '' : ' unaffordable') + '">💰' + Math.round(_palGoldCost).toLocaleString() + '</span>'
     : '';
+  const _spriteStyle = t.spriteUrl
+    ? 'background:' + t.color + ';border-color:' + t.stroke + ';background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;'
+    : 'background:' + t.color + ';border-color:' + t.stroke + ';';
   item.innerHTML =
-    '<span class="palette-swatch" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
-    '<span class="palette-label">' + t.label + _palCostHtml + '</span>';
+    '<span class="palette-swatch" style="' + _spriteStyle + '"></span>' +
+    '<span class="palette-label">' + t.label + '</span>' +
+    _palCostHtml;
   item.addEventListener('click', () => {
     if (item.classList.contains('palette-item--disabled')) return;
     _setActiveBrush(typeId);
+    if (window.innerWidth > 1100) _showTypeDetails(typeId);
   });
   item.addEventListener('dragstart', e => {
     e.dataTransfer.setData('text/tile-type', typeId);
@@ -950,12 +1042,14 @@ function _setActiveBrush(typeId) {
   if (_activeBrush === typeId) {
     _activeBrush = null;
     container.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
-    return;
+  } else {
+    _activeBrush = typeId;
+    container.querySelectorAll('.palette-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.tileType === typeId);
+    });
   }
-  _activeBrush = typeId;
-  container.querySelectorAll('.palette-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.tileType === typeId);
-  });
+  const infoBtn = container.querySelector('#map-info-btn');
+  if (infoBtn) infoBtn.style.display = (_activeBrush && window.innerWidth <= 1100) ? '' : 'none';
 }
 
 function _markPathDirty() {
@@ -1435,6 +1529,35 @@ function _showSummary(msg) {
 
   html += '</div>';
   content.innerHTML = html;
+
+  // ── AI-Feedback buttons (only for AI attacks) ──────────────────────
+  const feedbackRow = container.querySelector('#summary-feedback-row');
+  if (feedbackRow) feedbackRow.remove();
+
+  if (msg.attacker_uid === 0 && msg.army_name) {
+    const row = document.createElement('div');
+    row.id = 'summary-feedback-row';
+    row.style.cssText = 'display:flex;gap:8px;margin-top:12px;justify-content:center;';
+    row.innerHTML = `
+      <button id="feedback-easy" style="background:var(--green,#388e3c);color:#fff;border:none;padding:6px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;">✓ Too Easy</button>
+      <button id="feedback-hard" style="background:var(--red,#d32f2f);color:#fff;border:none;padding:6px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;">✗ Too Hard</button>
+    `;
+    content.appendChild(row);
+
+    const sendFeedback = async (rating) => {
+      row.querySelectorAll('button').forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+      try {
+        await rest.battleFeedback(msg.army_name, rating);
+      } catch (e) {
+        console.warn('[feedback] failed:', e);
+      }
+      row.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">✓ Feedback sent</span>';
+    };
+
+    row.querySelector('#feedback-easy').addEventListener('click', () => sendFeedback('too_easy'));
+    row.querySelector('#feedback-hard').addEventListener('click', () => sendFeedback('too_hard'));
+  }
+
   overlay.style.display = 'flex';
 }
 

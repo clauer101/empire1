@@ -38,6 +38,8 @@ class GameLoop:
         statistics: Service for scoring and rankings.
     """
 
+    STATE_SAVE_INTERVAL_S: float = 60.0
+
     def __init__(
         self,
         event_bus: EventBus,
@@ -54,6 +56,7 @@ class GameLoop:
         self._ai = ai_service
         self._running = False
         self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
+        self._save_every_n_ticks = max(1, int(self.STATE_SAVE_INTERVAL_S / self._step_interval))
 
         # --- Debug / monitoring counters ---
         self.tick_count: int = 0
@@ -78,6 +81,8 @@ class GameLoop:
             elapsed_ms = (time.monotonic() - t0) * 1000
 
             self.tick_count += 1
+            if self.tick_count % self._save_every_n_ticks == 0:
+                asyncio.ensure_future(self._save_state())
             self.last_tick_dt = dt
             self.last_tick_duration_ms = elapsed_ms
             self._tick_duration_sum += elapsed_ms
@@ -99,6 +104,19 @@ class GameLoop:
     def stop(self) -> None:
         """Signal the game loop to stop."""
         self._running = False
+
+    async def _save_state(self) -> None:
+        """Persist game state to YAML (called periodically from the loop)."""
+        from gameserver.persistence.state_save import save_state
+        import logging as _log
+        try:
+            await save_state(
+                empires=self._empires.all_empires,
+                attacks=self._attacks.get_all_attacks(),
+                battles=[],
+            )
+        except Exception:
+            _log.getLogger(__name__).exception("Periodic state save failed")
 
     def _step(self, dt: float) -> None:
         """One tick of the game loop."""

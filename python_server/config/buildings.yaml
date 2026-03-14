@@ -53,8 +53,8 @@ EARTH_WALL:
   costs: {gold: 300}
   requirements: [BASE_CAMP]
   effects:
-    incoming_siege_time_offset: 1800
-    restore_life_after_loss: 5
+    siege_time_offset: 1800
+    restore_life_after_loss: 1
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 200 – 1.500)
@@ -95,6 +95,7 @@ EPIC_DRAWINGS:
   requirements: [HUNTING]
   effects:
     culture_offset: 0.1
+    research_speed_modifier: 0.15
 
 EXCHANGE_POST:
   name: "Exchange Post"
@@ -124,8 +125,9 @@ MEDICUS:
   effort: 4000
   costs: {gold: 800}
   requirements: [HERBOLOGY]
-  effects:
-    life_offset: 0.01
+  effects:    
+    max_life_modifier: 2
+    restore_life_after_loss: 2
 
 WATCH_TOWER:
   name: "Watch Tower"
@@ -133,7 +135,8 @@ WATCH_TOWER:
   effort: 5000
   costs: {gold: 1000}
   requirements: [COPPER_BRONZE]
-  effects: {}
+  effects: 
+    siege_time_offset: 900
 
 FIELD_HEALER:
   name: "Field Healer"
@@ -143,6 +146,7 @@ FIELD_HEALER:
   requirements: [HERBOLOGY]
   effects:
     life_offset: 0.02
+    restore_life_after_loss: 2
 
 HARBOR:
   name: "Harbor"
@@ -152,6 +156,7 @@ HARBOR:
   requirements: [SAILING]
   effects:
     gold_modifier: 0.1
+    build_speed_modifier: 0.15
 
 SWORD_MAKER:
   name: "Sword Maker"
@@ -208,7 +213,8 @@ TOWN_GUARD:
   effort: 16000
   costs: {gold: 3200}
   requirements: [DRILL]
-  effects: {}
+  effects: 
+    siege_time_offset: 1800
 
 LIBRARY:
   name: "Library"
@@ -217,7 +223,7 @@ LIBRARY:
   costs: {gold: 3600}
   requirements: [ALPHABET_WRITING]
   effects:
-    research_speed_modifier: 0.15
+    research_speed_modifier: 0.35
 
 LORE_COLLECTION:
   name: "Lore Collection"
@@ -321,6 +327,7 @@ TEMPLE:
   effects:
     culture_offset: 0.2
     culture_modifier: 0.1
+    research_speed_modifier: 0.1
 
 CHURCH:
   name: "Church"
@@ -354,7 +361,8 @@ SOVEREIGN_GUARD:
   effort: 75000
   costs: {gold: 15000}
   requirements: [COMMAND_CHAIN]
-  effects: {}
+  effects: 
+    siege_time_offset: 1800
 
 MONASTERY:
   name: "Monastery"
@@ -364,6 +372,7 @@ MONASTERY:
   requirements: [RELIGION]
   effects:
     culture_offset: 0.2
+    research_speed_modifier: 0.2
 
 MANOR:
   name: "Manor"
@@ -398,7 +407,8 @@ CITY_WALLS:
   effort: 110000
   costs: {gold: 22000}
   requirements: [ARCHITECTURE]
-  effects: {}
+  effects: 
+    siege_time_offset: 3600
 
 CASTLE:
   name: "Castle"
@@ -474,7 +484,8 @@ COURTHOUSE:
   effort: 180000
   costs: {gold: 36000}
   requirements: [LAWS]
-  effects: {}
+  effects:
+    build_speed_modifier: 0.1
 
 PARADE_GROUND:
   name: "Parade Ground"
@@ -520,24 +531,25 @@ SECRET_ORDER:
 UNIVERSITY:
   name: "University"
   description: "Elite research and education institution combined."
-  effort: 280000
+  effort: 252700
   costs: {gold: 56000}
   requirements: [PRINTING_PRESS, SCIENCE]
   effects:
-    research_speed_modifier: 0.2
+    research_speed_modifier: 0.4
 
 HIGH_COURT:
   name: "High Court"
   description: "Supreme judicial authority. Requires constitutional law."
-  effort: 300000
+  effort: 257213
   costs: {gold: 60000}
   requirements: [CONSTITUTION]
-  effects: {}
+  effects: 
+    build_speed_modifier: 0.4
 
 PARLIAMENT:
   name: "Parliament"
   description: "Democratic legislative body. Requires constitutional system."
-  effort: 350000
+  effort: 285077
   costs: {gold: 70000}
   requirements: [CONSTITUTION]
   effects:
@@ -547,7 +559,7 @@ PARLIAMENT:
 EMPERORS_PALACE:
   name: "Emperor's Palace"
   description: "Ultimate seat of imperial power and authority."
-  effort: 400000
+  effort: 279335
   costs: {gold: 80000}
   requirements: [MONARCHY]
   effects:
@@ -557,7 +569,7 @@ EMPERORS_PALACE:
 STOCK_MARKET:
   name: "Stock Market"
   description: "Financial trading hub. Advanced economic institution."
-  effort: 450000
+  effort: 314252
   costs: {gold: 90000}
   requirements: [ECONOMY, PRINTING_PRESS]
   effects:
@@ -570,7 +582,7 @@ STOCK_MARKET:
 HEAVY_EQUIPMENT:
   name: "Heavy Equipment"
   description: "Industrial machinery factory for mass production."
-  effort: 500000
+  effort: 457497
   costs: {gold: 100000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
@@ -579,7 +591,7 @@ HEAVY_EQUIPMENT:
 RAIL_ROADS:
   name: "Rail Roads"
   description: "Steam-powered transportation network."
-  effort: 750000
+  effort: 487702
   costs: {gold: 150000}
   requirements: [STEAM_ENGINE]
   effects:
@@ -588,7 +600,7 @@ RAIL_ROADS:
 VEHICLE_WORKSHOP:
   name: "Vehicle Workshop"
   description: "Advanced vehicle manufacturing. Requires mechanical engineering."
-  effort: 800000
+  effort: 495443
   costs: {gold: 160000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
@@ -597,23 +609,25 @@ VEHICLE_WORKSHOP:
 DEFENSE_DEPARTMENT:
   name: "Defense Department"
   description: "Military command center for strategic defense."
-  effort: 1200000
+  effort: 528153
   costs: {gold: 240000}
   requirements: [STRATEGIC_WARFARE]
   effects: {}
+    
 
 ELECTRIC_FENCE:
   name: "Electric Fence"
   description: "Fortified perimeter with electric barriers."
-  effort: 1400000
+  effort: 616179
   costs: {gold: 280000}
   requirements: [ELECTRICITY]
-  effects: {}
+  effects: 
+    siege_time_offset: 3600
 
 AIRFIELD:
   name: "Airfield"
   description: "Airport for aircraft. Requires combustion engines."
-  effort: 1500000
+  effort: 566030
   costs: {gold: 300000}
   requirements: [COMBUSTION_ENGINE]
   effects:
@@ -622,7 +636,7 @@ AIRFIELD:
 HANGAR:
   name: "Hangar"
   description: "Aircraft maintenance and storage facility."
-  effort: 1600000
+  effort: 573579
   costs: {gold: 320000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
@@ -631,35 +645,38 @@ HANGAR:
 HOSPITAL:
   name: "Hospital"
   description: "Modern medical facility. Significantly boosts health."
-  effort: 1700000
+  effort: 609426
   costs: {gold: 340000}
   requirements: [CHEMISTRY, ELECTRICITY]
   effects:
     life_offset: 0.05
+    max_life_modifier: 10
 
 FACTORY:
   name: "Factory"
   description: "Industrial production center. Requires steam power."
-  effort: 1800000
+  effort: 553243
   costs: {gold: 360000}
   requirements: [STEAM_ENGINE]
   effects:
-    build_speed_modifier: 0.3
+    build_speed_modifier: 0.6
     gold_offset: 0.3
 
 EMERGENCY_ROOM:
   name: "Emergency Room"
   description: "Critical care facility in hospitals."
-  effort: 1900000
+  effort: 583979
   costs: {gold: 380000}
   requirements: [ELECTRICITY]
   effects:
     life_offset: 0.03
+    max_life_modifier: 5
+    restore_life_after_loss: 5
 
 BARRACKS:
   name: "Barracks"
   description: "Military complex for large army training and deployment."
-  effort: 2000000
+  effort: 554780
   costs: {gold: 400000}
   requirements: [STRATEGIC_WARFARE]
   effects: {}
@@ -671,7 +688,7 @@ BARRACKS:
 ROCKET_SILO:
   name: "Rocket Silo"
   description: "Launch facility for chemical rockets."
-  effort: 2500000
+  effort: 917762
   costs: {gold: 500000}
   requirements: [CHEMISTRY]
   effects:
@@ -680,16 +697,16 @@ ROCKET_SILO:
 RESEARCH_VAULT:
   name: "Research Vault"
   description: "Secure research storage. Requires advanced technology."
-  effort: 2500000
+  effort: 917762
   costs: {gold: 500000}
   requirements: [ELECTRICITY]
   effects:
-    research_speed_modifier: 0.2
+    research_speed_modifier: 0.4
 
 WMD_SITE:
   name: "WMD Site"
   description: "Weapons of mass destruction development facility."
-  effort: 2600000
+  effort: 909023
   costs: {gold: 520000}
   requirements: [CHEMISTRY]
   effects: {}
@@ -697,7 +714,7 @@ WMD_SITE:
 ARTS_GALLERY:
   name: "Arts Gallery"
   description: "Elite art exhibition and commerce facility."
-  effort: 3100000
+  effort: 891674
   costs: {gold: 620000}
   requirements: [PAINTING]
   effects:
@@ -706,24 +723,25 @@ ARTS_GALLERY:
 RESEARCH_LAB:
   name: "Research Lab"
   description: "High-tech scientific research facility."
-  effort: 3200000
+  effort: 795107
   costs: {gold: 640000}
   requirements: [SCIENCE]
   effects:
-    research_speed_modifier: 0.25
+    research_speed_modifier: 0.4
 
 ECHELON_DEFENSE_FACILITY:
   name: "Echelon Defense Facility"
   description: "Classified military surveillance and defense complex."
-  effort: 3200000
+  effort: 795107
   costs: {gold: 640000}
   requirements: [STEALTH_SECRECY]
-  effects: {}
+  effects: 
+    siege_time_offset: 3600
 
 FEDERAL_RESERVE:
   name: "Federal Reserve"
   description: "Central banking institution controlling monetary policy."
-  effort: 3250000
+  effort: 769078
   costs: {gold: 650000}
   requirements: [ECONOMY]
   effects:
@@ -732,7 +750,7 @@ FEDERAL_RESERVE:
 SOCIAL_SECURITY_SYSTEM:
   name: "Social Security System"
   description: "Public welfare infrastructure supporting citizens."
-  effort: 3250000
+  effort: 769078
   costs: {gold: 650000}
   requirements: [CONSTITUTION]
   effects:
@@ -741,7 +759,7 @@ SOCIAL_SECURITY_SYSTEM:
 EXECUTIVE_CARPOOL:
   name: "Executive Carpool"
   description: "Luxury transportation for elite leadership."
-  effort: 3350000
+  effort: 792742
   costs: {gold: 670000}
   requirements: [COMBUSTION_ENGINE]
   effects:
@@ -750,7 +768,7 @@ EXECUTIVE_CARPOOL:
 NAVIGATION_SYSTEM:
   name: "Navigation System"
   description: "Satellite-based positioning infrastructure."
-  effort: 3500000
+  effort: 828236
   costs: {gold: 700000}
   requirements: [ELECTRICITY]
   effects:
@@ -759,7 +777,7 @@ NAVIGATION_SYSTEM:
 DERIVATIVE_MARKET:
   name: "Derivative Market"
   description: "Advanced financial derivatives trading platform."
-  effort: 3750000
+  effort: 887397
   costs: {gold: 750000}
   requirements: [ECONOMY]
   effects:
@@ -768,7 +786,7 @@ DERIVATIVE_MARKET:
 BOMBING_AREA:
   name: "Bombing Area"
   description: "Aircraft bombing range for military training."
-  effort: 4000000
+  effort: 946558
   costs: {gold: 800000}
   requirements: [STRATEGIC_WARFARE]
   effects: {}
@@ -776,7 +794,7 @@ BOMBING_AREA:
 NUCLEAR_POWER_PLANT:
   name: "Nuclear Power Plant"
   description: "Clean energy generation through nuclear fission."
-  effort: 4000000
+  effort: 946558
   costs: {gold: 800000}
   requirements: [ELECTRICITY]
   effects:
@@ -785,7 +803,7 @@ NUCLEAR_POWER_PLANT:
 ROBO_MANUFACTURE:
   name: "Robo Manufacture"
   description: "Automated robotic assembly and manufacturing."
-  effort: 4000000
+  effort: 946558
   costs: {gold: 800000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
@@ -794,7 +812,7 @@ ROBO_MANUFACTURE:
 INTELLIGENCE_AGENCY:
   name: "Intelligence Agency"
   description: "Covert operations and espionage headquarters."
-  effort: 4250000
+  effort: 1005717
   costs: {gold: 850000}
   requirements: [STEALTH_SECRECY]
   effects: {}
@@ -802,7 +820,7 @@ INTELLIGENCE_AGENCY:
 MECH_WARRIOR_LAB:
   name: "Mech Warrior Lab"
   description: "Giant robot creation and development facility."
-  effort: 5000000
+  effort: 1183197
   costs: {gold: 1000000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
@@ -811,7 +829,7 @@ MECH_WARRIOR_LAB:
 ELITE_ACADEMY:
   name: "Elite Academy"
   description: "Ultimate officer training and leadership development."
-  effort: 5000000
+  effort: 1183197
   costs: {gold: 1000000}
   requirements: [COMMAND_CHAIN]
   effects:
@@ -821,7 +839,7 @@ ELITE_ACADEMY:
 RECRUITING_OFFICE:
   name: "Recruiting Office"
   description: "Massive military recruitment and conscription center."
-  effort: 5300000
+  effort: 1254190
   costs: {gold: 1060000}
   requirements: [STRATEGIC_WARFARE]
   effects:
@@ -836,36 +854,36 @@ THE_WORLD_WONDER:
   name: "The World Wonder"
   type: wonder
   description: "Ultimate achievement combining science, culture and power."
-  effort: 40000000
+  effort: 2638829
   costs: {gold: 8000000}
-  requirements: [COLD_FUSION]
+  requirements: [NUCLEAR_REACTION]
   effects:
     culture_offset: 1.0
     gold_offset: 1.0
-    research_speed_modifier: 0.3
+    research_speed_modifier: 1.0
 
 SPACE_CENTER:
   name: "Space Center"
   description: "Space exploration and orbital research facility."
-  effort: 60000000
+  effort: 1979123
   costs: {gold: 12000000}
-  requirements: [ROCKET_SCIENCE]
+  requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
-    research_speed_modifier: 0.3
+    research_speed_modifier: 2.0
 
 CYBER_COMMAND:
   name: "Cyber Command"
   description: "Digital warfare and cyber operations headquarters."
-  effort: 70000000
+  effort: 1979123
   costs: {gold: 14000000}
   requirements: [COMPUTER_TECHNOLOGY]
   effects:
-    culture_offset: 0.5
+    culture_offset: 2.0
 
 FUSION_REACTOR:
   name: "Fusion Reactor"
   description: "Ultimate clean energy source through nuclear fusion."
-  effort: 80000000
+  effort: 1979123
   costs: {gold: 16000000}
   requirements: [COLD_FUSION]
   effects:

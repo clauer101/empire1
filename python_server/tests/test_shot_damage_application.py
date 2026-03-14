@@ -3,7 +3,7 @@
 import pytest
 from gameserver.engine.battle_service import BattleService
 from gameserver.models.battle import BattleState
-from gameserver.models.critter import Critter, DamageType
+from gameserver.models.critter import Critter
 from gameserver.models.shot import Shot
 from gameserver.models.hex import HexCoord
 
@@ -115,7 +115,6 @@ class TestShotDamageApplication:
             damage=10.0,
             target_cid=100,
             source_sid=1,
-            shot_type=DamageType.NORMAL,
             flight_remaining_ms=10.0,
             origin=HexCoord(0, 0),
         )
@@ -150,8 +149,7 @@ class TestShotDamageApplication:
             damage=5.0,
             target_cid=100,
             source_sid=1,
-            shot_type=DamageType.COLD,
-            effects={"slow_target": 0.5, "slow_target_duration": 2.0},  # 50% speed for 2s
+            effects={"slow_ratio": 0.5, "slow_duration": 2000.0},  # 50% speed for 2000ms
             flight_remaining_ms=10.0,
             origin=HexCoord(0, 0),
         )
@@ -190,8 +188,7 @@ class TestShotDamageApplication:
             damage=5.0,
             target_cid=100,
             source_sid=1,
-            shot_type=DamageType.BURN,
-            effects={"burn_target_dps": 2.0, "burn_target_duration": 3.0},  # 2 dps for 3s
+            effects={"burn_dps": 2.0, "burn_duration": 3000.0},  # 2 dps for 3000ms
             flight_remaining_ms=10.0,
             origin=HexCoord(0, 0),
         )

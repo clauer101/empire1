@@ -1,225 +1,21 @@
 meta:
   version: 1
-  saved_at: '2026-03-07T20:02:36'
-  saved_at_unix: 1772913756.978462
+  saved_at: '2026-03-14T21:45:39'
+  saved_at_unix: 1773524739.2661154
 empires:
-- uid: 100
-  name: TestImperium
-  resources:
-    gold: 29755.74192695728
-    culture: 14434.247256965082
-    life: 5.0
-  buildings:
-    EARTH_WALL: 0.0
-    farm: 0.0
-    library: 0.0
-  build_queue: null
-  knowledge:
-    archery: 0.0
-  research_queue: null
-  citizens:
-    merchant: 0
-    scientist: 0
-    artist: 0
-  effects:
-    incoming_siege_time_offset: 1800.0
-    restore_life_after_loss: 5.0
-  artefacts: []
-  max_life: 10.0
-  structures: {}
-  armies:
-  - aid: 1
-    uid: 2
-    name: test
-    waves:
-    - wave_id: 1
-      iid: WARRIOR
-      slots: 6
-      num_critters_spawned: 6
-      next_critter_ms: 2000
-    - wave_id: 2
-      iid: SLAVE
-      slots: 4
-      num_critters_spawned: 4
-      next_critter_ms: 3000
-    - wave_id: 3
-      iid: WARRIOR
-      slots: 4
-      num_critters_spawned: 4
-      next_critter_ms: 2000
-  spies: []
-  bosses: {}
-  hex_map:
-  - q: 0
-    r: 0
-    type: ARROW_TOWER
-  - q: 0
-    r: 1
-    type: path
-  - q: 0
-    r: 2
-    type: spawnpoint
-  - q: 1
-    r: 0
-    type: castle
-- uid: 0
-  name: AI
-  resources:
-    gold: 0.0
-    culture: 56072.12998450995
-    life: 10.0
-  buildings: {}
-  build_queue: null
-  knowledge: {}
-  research_queue: null
-  citizens:
-    merchant: 0
-    scientist: 0
-    artist: 0
-  effects: {}
-  artefacts: []
-  max_life: 10.0
-  structures: {}
-  armies:
-  - aid: 10000
-    uid: 0
-    name: Early Barbarians Raid
-    waves:
-    - wave_id: 1
-      iid: SLAVE
-      slots: 6
-      num_critters_spawned: 0
-      next_critter_ms: 0
-  spies: []
-  bosses: {}
-  hex_map: []
-- uid: 3
-  name: Bikini Bottom
-  resources:
-    gold: 39484.99129805023
-    culture: 66505.44993126826
-    life: 10.0
-  buildings:
-    INIT: 0.0
-    BASE_CAMP: 0.0
-    FIRE_PLACE: 0.0
-    EARTH_WALL: 0.0
-    MAIN_HOUSE: 0.0
-    BOW_MAKER: 0.0
-    EPIC_DRAWINGS: 0.0
-    STABLES: 0.0
-    GRANARY: 0.0
-    STONE_CIRCLE: 0.0
-    TOOL_SHOP: 0.0
-    MEDICUS: 0.0
-    SHRINE: 0.0
-    WATCH_TOWER: 0.0
-    EXCHANGE_POST: 0.0
-    FIELD_HEALER: 0.0
-    CHURCH: 0.0
-  build_queue: null
-  knowledge:
-    HUNTING: 0.0
-    DOMESTICATION: 0.0
-    HORSEBACK_RIDING: 0.0
-    HERBOLOGY: 0.0
-    AGRICULTURE: 0.0
-    MYSTIC: 0.0
-    CRAFTSMANSHIP: 0.0
-    POTTERY: 0.0
-    ALPHABET_WRITING: 0.0
-    COPPER_BRONZE: 0.0
-    RELIGION: 0.0
-    SAILING: 0.0
-    MUSIC: 0.0
-    LAWS: 0.0
-  research_queue: null
-  citizens:
-    merchant: 0
-    scientist: 14
-    artist: 10
-  effects:
-    life_offset: 0.031
-    siege_time_offset: 120.0
-    gold_offset: 0.33
-    incoming_siege_time_offset: 1800.0
-    restore_life_after_loss: 5.0
-    culture_offset: 0.5
-    build_speed_modifier: 1.0
-    gold_modifier: 0.1
-    research_speed_offset: 0.3
-    research_speed_modifier: 0.8
-  artefacts: []
-  max_life: 10.0
-  structures: {}
-  armies:
-  - aid: 1
-    uid: 3
-    name: Schnecken-Schrecken
-    waves:
-    - wave_id: 1
-      iid: THE_KING
-      slots: 2
-      num_critters_spawned: 2
-      next_critter_ms: 2000
-    - wave_id: 2
-      iid: THE_SWORDMASTER
-      slots: 2
-      num_critters_spawned: 2
-      next_critter_ms: 2000
-    - wave_id: 3
-      iid: THE_GENERAL
-      slots: 2
-      num_critters_spawned: 2
-      next_critter_ms: 2000
-  spies: []
-  bosses: {}
-  hex_map:
-  - q: -1
-    r: 0
-    type: empty
-  - q: -1
-    r: 1
-    type: empty
-  - q: 0
-    r: -1
-    type: empty
-  - q: 0
-    r: 0
-    type: castle
-  - q: 0
-    r: 1
-    type: SLING_TOWER
-  - q: 1
-    r: -1
-    type: DOUBLE_SLING_TOWER
-  - q: 1
-    r: 0
-    type: spawnpoint
-  - q: 1
-    r: 1
-    type: ARROW_TOWER
-  - q: 2
-    r: -1
-    type: SPIKE_TRAP
-  - q: 2
-    r: 0
-    type: FIRE_TOWER
 - uid: 4
   name: Empire1
   resources:
-    gold: 84.6095291229999
+    gold: 303.0027500812955
     culture: 0.0
     life: 10.0
   buildings:
-    INIT: 0.0
     BASE_CAMP: 0.0
     FIRE_PLACE: 0.0
-    MAIN_HOUSE: 924.9236376789995
-  build_queue: MAIN_HOUSE
+  build_queue: null
   knowledge:
-    HUNTING: 143.9434406726998
-  research_queue: HUNTING
+    HUNTING: 0.0
+  research_queue: null
   citizens:
     merchant: 0
     scientist: 0
@@ -240,18 +36,84 @@ empires:
     type: castle
   - q: 0
     r: 1
-    type: spawnpoint
+    type: path
   - q: 1
     r: 0
-    type: empty
-attacks:
-- attack_id: 1
-  attacker_uid: 0
-  defender_uid: 4
-  army_aid: 10000
-  phase: travelling
-  eta_seconds: 22.90370452100069
-  total_eta_seconds: 120.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+    type: spawnpoint
+- uid: 3
+  name: Bikini Bottom
+  resources:
+    gold: 300.0
+    culture: 0.0
+    life: 10.0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: 0
+    r: 0
+    type: spawnpoint
+  - q: 0
+    r: 1
+    type: path
+  - q: 1
+    r: 0
+    type: castle
+- uid: 100
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 0.0
+    life: 0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map: []
+- uid: 0
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 0.0
+    life: 10.0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map: []
+attacks: []
 battles: []

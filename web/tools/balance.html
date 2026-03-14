@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Balance Overview</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #22222f;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --purple:      #ab47bc;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #load-status { font-size: 12px; color: var(--text-dim); }
+
+    #content { max-width: 1400px; margin: 0 auto; padding: 16px 16px 60px; display: flex; flex-direction: column; gap: 10px; }
+
+    .era-section { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .era-header {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      background: var(--surface-alt); cursor: pointer; user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .era-header:hover { background: var(--surface-hover); }
+    .era-header .arrow { transition: transform .2s; font-size: 10px; color: var(--text-dim); }
+    .era-header.collapsed .arrow { transform: rotate(-90deg); }
+    .era-name { font-weight: 700; color: var(--accent); flex: 1; }
+    .era-info { font-size: 11px; color: var(--text-dim); }
+    .era-body { padding: 12px; }
+    .era-body.hidden { display: none; }
+
+    .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .column-header { font-weight: 700; font-size: 13px; color: var(--accent); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+    .unit-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .unit-card:hover { border-color: var(--accent); }
+    .unit-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+    .unit-iid { font-size: 10px; color: var(--text-dim); font-family: var(--mono); margin-left: 6px; }
+    .card-body { display: flex; gap: 10px; }
+    .card-sprite { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; border-radius: 4px; background: rgba(255,255,255,0.03); }
+    .card-sprite.critter-sprite-canvas { image-rendering: pixelated; }
+    .card-info { flex: 1; min-width: 0; }
+    .stats-row { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 6px 0; font-size: 12px; }
+    .stat { display: flex; align-items: center; gap: 3px; }
+    .stat-label { color: var(--text-dim); }
+    .stat-value { font-family: var(--mono); font-weight: 600; }
+
+    .tag {
+      display: inline-block; padding: 1px 6px; border-radius: 3px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .tag-speed-slow   { background: rgba(239,83,80,0.2); color: var(--danger); }
+    .tag-speed-normal { background: rgba(255,167,38,0.2); color: var(--warning); }
+    .tag-speed-fast   { background: rgba(102,187,106,0.2); color: var(--success); }
+    .tag-armour-none   { background: rgba(153,153,168,0.15); color: var(--text-dim); }
+    .tag-armour-light  { background: rgba(79,195,247,0.2); color: var(--accent); }
+    .tag-armour-medium { background: rgba(171,71,188,0.2); color: var(--purple); }
+    .tag-armour-heavy  { background: rgba(255,167,38,0.2); color: var(--warning); }
+    .tag-normal  { background: rgba(224,224,230,0.1); color: var(--text); }
+    .tag-splash  { background: rgba(255,167,38,0.2); color: var(--warning); }
+    .tag-slow    { background: rgba(79,195,247,0.2); color: var(--accent); }
+    .tag-stun    { background: rgba(171,71,188,0.2); color: var(--purple); }
+
+    .reqs-line { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+    .req-tag {
+      font-size: 9px; font-family: var(--mono); padding: 1px 4px; border-radius: 3px;
+      background: rgba(224,224,230,0.07); color: var(--text-dim); letter-spacing: 0.3px;
+    }
+    .effort-line { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    .effort-val { font-family: var(--mono); color: var(--warning); }
+
+    .counter-line { font-size: 11px; margin-top: 4px; }
+    .counter-tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: rgba(102,187,106,0.15); color: var(--success); margin-right: 4px; }
+
+    .warning-banner {
+      background: rgba(239,83,80,0.1); border: 1px solid var(--danger); border-radius: var(--radius);
+      padding: 8px 12px; margin-top: 10px; font-size: 12px; color: var(--danger);
+    }
+
+    .summary-row {
+      display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px;
+      border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim);
+    }
+
+    .boss-section, .transport-section { margin-top: 10px; }
+    .minor-header { font-size: 11px; color: var(--text-dim); cursor: pointer; user-select: none; }
+    .minor-header:hover { color: var(--accent); }
+    .minor-body.hidden { display: none; }
+
+    .dps-bar-bg {
+      height: 4px; background: var(--border); border-radius: 2px; margin-top: 3px; width: 100%;
+    }
+    .dps-bar {
+      height: 4px; border-radius: 2px; background: var(--accent); transition: width .3s;
+    }
+
+    .role-scores { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .role-bar-row { display: flex; align-items: center; gap: 5px; }
+    .role-bar-label { width: 62px; font-size: 9px; color: var(--text-dim); text-align: right; flex-shrink: 0; letter-spacing: 0.3px; font-family: var(--mono); }
+    .role-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+    .role-bar-fill { height: 4px; border-radius: 2px; background: var(--text-dim); }
+    .role-bar-val { width: 30px; font-size: 9px; text-align: right; color: var(--text-dim); font-family: var(--mono); }
+    .role-bar-row.best .role-bar-label { color: var(--accent); font-weight: 700; }
+    .role-bar-row.best .role-bar-val   { color: var(--accent); }
+    .role-bar-row.best .role-bar-fill  { background: var(--accent); }
+    .role-bar-normal .role-bar-fill  { background: #4fc3f7; }
+    .role-bar-fast   .role-bar-fill  { background: #66bb6a; }
+    .role-bar-tank   .role-bar-fill  { background: #ffa726; }
+    .role-bar-transport .role-bar-fill { background: #ab47bc; }
+
+    .stat-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-dim);
+      font-size: 11px; width: 14px; height: 14px; cursor: pointer; border-radius: 2px;
+      display: inline-flex; align-items: center; justify-content: center; padding: 0;
+      flex-shrink: 0; line-height: 1;
+    }
+    .stat-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .stat-val { font-family: var(--mono); font-weight: 600; min-width: 34px; text-align: center; display: inline-block; }
+    .stat-val.changed { color: var(--warning); }
+
+    #save-btn {
+      padding: 5px 14px; border-radius: var(--radius); border: 1px solid var(--success);
+      background: rgba(102,187,106,0.15); color: var(--success); cursor: pointer;
+      font-size: 12px; font-weight: 600;
+    }
+    #save-btn:hover { background: rgba(102,187,106,0.3); }
+    #save-btn:disabled { opacity: 0.5; cursor: default; }
+
+    @media (max-width: 768px) {
+      .balance-grid { grid-template-columns: 1fr; }
+      #content { padding: 8px 8px 40px; }
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>Balance Overview</h1>
+  <span id="load-status">Lade...</span>
+  <button id="save-btn" style="display:none">Speichern</button>
+</div>
+
+<div id="content">
+  <div id="loading" style="text-align:center;padding:40px;color:var(--text-dim)">Lade Daten...</div>
+</div>
+
+<script>
+(async function() {
+  const ERA_ORDER = [
+    "Steinzeit","Neolithikum","Bronzezeit","Eisenzeit",
+    "Mittelalter","Renaissance","Industrialisierung","Moderne","Zukunft"
+  ];
+  const ERA_EXTRA = ["Transport-Einheiten","Bosses / Helden"];
+
+  const statusEl = document.getElementById('load-status');
+  const contentEl = document.getElementById('content');
+  const saveBtn   = document.getElementById('save-btn');
+
+  // ── Edit tracking ──
+  const critterChanges = {};  // { IID: { field: value } }
+  const towerChanges   = {};
+  const liveVals       = {};  // key = "critter-IID-field" → current value
+
+  const CRITTER_FIELDS = {
+    health:       { label: 'HP',       step: 1,    min: 1    },
+    speed:        { label: 'Speed',    step: 0.05, min: 0.05 },
+    armour:       { label: 'Armour',   step: 0.5,  min: 0    },
+    damage:       { label: 'Dmg',      step: 1,    min: 0    },
+    value:        { label: 'Value',    step: 1,    min: 0    },
+    time_between: { label: 'Interval', step: 100,  min: 100  },
+  };
+  const TOWER_FIELDS = {
+    damage:      { label: 'Dmg',        step: 1,    min: 0   },
+    range:       { label: 'Range',      step: 0.5,  min: 0.5 },
+    reload_time: { label: 'Reload',     step: 100,  min: 100 },
+    shot_speed:  { label: 'Shot Speed', step: 0.1,  min: 0.1 },
+    'effects.burn_dps':      { label: 'Burn DPS',    step: 0.5,  min: 0 },
+    'effects.burn_duration': { label: 'Burn ms',     step: 500,  min: 0 },
+    'effects.slow_ratio':    { label: 'Slow Ratio',  step: 0.05, min: 0 },
+    'effects.slow_duration': { label: 'Slow ms',     step: 500,  min: 0 },
+  };
+
+  function fmtVal(v, step) {
+    if (step >= 1) return String(Math.round(v));
+    return parseFloat(v.toFixed(step >= 0.1 ? 1 : 2)).toString();
+  }
+
+  function editStat(iid, type, field, value) {
+    const cfg = type === 'critter' ? CRITTER_FIELDS[field] : TOWER_FIELDS[field];
+    if (!cfg) return `<span class="stat"><span class="stat-label">${field}</span> <span class="stat-value">${value}</span></span>`;
+    const key = `${type}-${iid}-${field}`;
+    liveVals[key] = value;
+    const display = fmtVal(value, cfg.step);
+    return `<span class="stat">
+      <span class="stat-label">${cfg.label}</span>
+      <button class="stat-btn" data-iid="${iid}" data-type="${type}" data-field="${field}" data-dir="-1">−</button>
+      <span class="stat-val" data-key="${key}">${display}</span>
+      <button class="stat-btn" data-iid="${iid}" data-type="${type}" data-field="${field}" data-dir="1">+</button>
+    </span>`;
+  }
+
+  function updateSaveBtn() {
+    const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length;
+    saveBtn.style.display = n > 0 ? '' : 'none';
+    saveBtn.textContent = `Speichern (${n})`;
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    try {
+      const reqs = [];
+      if (Object.keys(critterChanges).length)
+        reqs.push(fetch('/api/critter-stats',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(critterChanges) }));
+      if (Object.keys(towerChanges).length)
+        reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(towerChanges) }));
+      const results = await Promise.all(reqs);
+      for (const r of results) if (!r.ok) throw new Error(await r.text());
+      for (const k of Object.keys(critterChanges)) delete critterChanges[k];
+      for (const k of Object.keys(towerChanges))   delete towerChanges[k];
+      document.querySelectorAll('.stat-val.changed').forEach(el => el.classList.remove('changed'));
+      saveBtn.textContent = 'Gespeichert ✓';
+      saveBtn.style.display = '';
+      setTimeout(() => { saveBtn.style.display = 'none'; }, 2000);
+    } catch(e) {
+      saveBtn.textContent = 'Fehler: ' + e.message;
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  // ── Fetch all data ──
+  let buildings, knowledge, critters, structures;
+  try {
+    const [bRes, kRes, cRes, sRes] = await Promise.all([
+      fetch('/api/buildings').then(r => r.json()),
+      fetch('/api/knowledge').then(r => r.json()),
+      fetch('/api/critter-stats').then(r => r.json()),
+      fetch('/api/structure-stats').then(r => r.json()),
+    ]);
+    buildings = bRes; knowledge = kRes; critters = cRes; structures = sRes;
+    statusEl.textContent = `${critters.length} Critters, ${structures.length} Towers`;
+  } catch(e) {
+    statusEl.textContent = 'Fehler: ' + e.message;
+    return;
+  }
+
+  // ── Build tech tree DAG ──
+  const techTree = {};
+  for (const item of [...buildings, ...knowledge]) {
+    techTree[item.iid] = { effort: item.effort || 0, requirements: item.requirements || [] };
+  }
+
+  const _effortMemo = {};
+  function cumulativeEffort(requirements) {
+    const key = requirements.slice().sort().join(',');
+    if (_effortMemo[key] !== undefined) return _effortMemo[key];
+    let total = 0;
+    const visited = new Set();
+    const stack = [...requirements];
+    while (stack.length) {
+      const iid = stack.pop();
+      if (visited.has(iid)) continue;
+      visited.add(iid);
+      const node = techTree[iid];
+      if (!node) continue;
+      total += node.effort;
+      for (const req of node.requirements) {
+        if (!visited.has(req)) stack.push(req);
+      }
+    }
+    _effortMemo[key] = total;
+    return total;
+  }
+
+  // ── Role-score normalization ──
+  function makeNorm(arr) {
+    const min = Math.min(...arr), max = Math.max(...arr);
+    const range = max - min || 1;
+    return v => (v - min) / range;
+  }
+
+  const normHealth    = makeNorm(critters.map(c => c.health       || 0));
+  const normSpeed     = makeNorm(critters.map(c => c.speed        || 0));
+  const normArmour    = makeNorm(critters.map(c => c.armour       || 0));
+  const normSlots     = makeNorm(critters.map(c => c.slots        || 1));
+  // time_between inverted: smaller interval = faster attacks = better
+  const normTBInv     = (() => {
+    const arr = critters.map(c => c.time_between || 2000);
+    const min = Math.min(...arr), max = Math.max(...arr), range = max - min || 1;
+    return v => 1 - ((v - min) / range);
+  })();
+
+  // Max possible per role: normal=4, fast=4, tank=4, transport=4
+  const ROLE_MAX = 4;
+
+  function roleScores(c) {
+    return {
+      normal:    normHealth(c.health)*2 + normSpeed(c.speed)    + normArmour(c.armour),
+      fast:      normHealth(c.health)   + normSpeed(c.speed)*2  + normTBInv(c.time_between || 2000),
+      tank:      normArmour(c.armour)*2 + normHealth(c.health)*2,
+      transport: normHealth(c.health)   + normSlots(c.slots)*2  + normArmour(c.armour),
+    };
+  }
+
+  // Lookup for non-editable fields (e.g. slots) needed by role score
+  const critterMap = Object.fromEntries(critters.map(c => [c.iid, c]));
+
+  function updateRoleBars(iid) {
+    const container = contentEl.querySelector(`.role-scores[data-iid="${iid}"]`);
+    if (!container) return;
+    const orig = critterMap[iid];
+    if (!orig) return;
+    const pseudo = {
+      health:       liveVals[`critter-${iid}-health`]       ?? orig.health,
+      speed:        liveVals[`critter-${iid}-speed`]        ?? orig.speed,
+      armour:       liveVals[`critter-${iid}-armour`]       ?? orig.armour,
+      time_between: liveVals[`critter-${iid}-time_between`] ?? orig.time_between,
+      slots:        orig.slots,
+    };
+    const scores   = roleScores(pseudo);
+    const bestRole = Object.entries(scores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+    for (const [key, score] of Object.entries(scores)) {
+      const pct = Math.round(score / ROLE_MAX * 100);
+      const row = container.querySelector(`.role-bar-row[data-role="${key}"]`);
+      if (!row) continue;
+      row.querySelector('.role-bar-fill').style.width = pct + '%';
+      row.querySelector('.role-bar-val').textContent  = pct + '%';
+      row.classList.toggle('best', key === bestRole);
+    }
+  }
+
+  // ── Classification helpers ──
+  function classifySpeed(s) {
+    if (s <= 0.15) return 'slow';
+    if (s <= 0.3) return 'normal';
+    return 'fast';
+  }
+  function classifyArmour(a) {
+    if (a <= 0) return 'none';
+    if (a <= 1) return 'light';
+    if (a <= 3) return 'medium';
+    return 'heavy';
+  }
+  function dps(tower) { return tower.damage / (tower.reload_time / 1000); }
+  function fmtNum(n) { return n >= 1000 ? (n/1000).toFixed(1) + 'k' : String(Math.round(n)); }
+
+  // ── Group by era ──
+  function groupByEra(arr) {
+    const m = {};
+    for (const e of ERA_ORDER) m[e] = [];
+    for (const item of arr) {
+      const era = ERA_ORDER.includes(item.era) ? item.era : 'Steinzeit';
+      m[era].push(item);
+    }
+    return m;
+  }
+
+  const combatCritters = critters.filter(c => !c.is_boss && c.slots <= 1);
+  const transportCritters = critters.filter(c => c.slots > 1);
+  const bossCritters = critters.filter(c => c.is_boss);
+
+  const crittersByEra = groupByEra(combatCritters);
+  const towersByEra = groupByEra(structures);
+
+  // ── Counter-pair logic ──
+  function findCounters(eraCritters, availableTowers) {
+    const pairs = [];
+    for (const c of eraCritters) {
+      const sc = classifySpeed(c.speed);
+      const ac = classifyArmour(c.armour);
+      for (const t of availableTowers) {
+        const efx = t.effects || {};
+        const isSlow  = ('slow_duration' in efx);
+        const isStun  = ('slow_ratio' in efx) && efx.slow_ratio === 0;
+        const reasons = [];
+        if ((isSlow || isStun) && sc === 'fast')
+          reasons.push('CC vs Fast');
+        if (t.shot_type === 'splash' && c.health <= 5)
+          reasons.push('AoE vs Low HP');
+        if (t.range >= 3 && sc === 'slow')
+          reasons.push('Range vs Slow');
+        if (dps(t) >= 5 && (ac === 'heavy' || ac === 'medium'))
+          reasons.push('High DPS vs Armour');
+        if (reasons.length) pairs.push({ tower: t.iid, critter: c.iid, reasons });
+      }
+    }
+    return pairs;
+  }
+
+  function findWarnings(eraCritters, availableTowers) {
+    const warnings = [];
+    const hasSlow    = availableTowers.some(t => 'slow_duration' in (t.effects || {}));
+    const hasSplash  = availableTowers.some(t => t.shot_type === 'splash');
+    const hasHighDPS = availableTowers.some(t => dps(t) >= 5);
+
+    const hasFastCritter = eraCritters.some(c => classifySpeed(c.speed) === 'fast');
+    const hasHeavyArmour = eraCritters.some(c => classifyArmour(c.armour) === 'heavy' || classifyArmour(c.armour) === 'medium');
+
+    if (hasFastCritter && !hasSlow) warnings.push('Keine Slow/Stun Tower gegen schnelle Einheiten verfuegbar');
+    if (hasHeavyArmour && !hasHighDPS) warnings.push('Keine High-DPS Tower gegen gepanzerte Einheiten');
+    return warnings;
+  }
+
+  // ── Render ──
+  function reqsHtml(reqs) {
+    if (!reqs || !reqs.length) return '';
+    return `<div class="reqs-line">${reqs.map(r =>
+      `<span class="req-tag">${r}</span>`
+    ).join('')}</div>`;
+  }
+
+  function critterSprite(c) {
+    // animation = "assets/sprites/critters/slave" → folder contains slave.png
+    if (!c.animation) return '';
+    const folder = c.animation.replace(/^\//, '');
+    const name = folder.split('/').pop();
+    return `/${folder}/${name}.png`;
+  }
+
+  function roleScoresHtml(c) {
+    const scores = roleScores(c);
+    const bestRole = Object.entries(scores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+    const ROLES = [
+      { key: 'normal',    label: 'Normal' },
+      { key: 'fast',      label: 'Fast' },
+      { key: 'tank',      label: 'Tank' },
+      { key: 'transport', label: 'Transport' },
+    ];
+    return `<div class="role-scores" data-iid="${c.iid}">${ROLES.map(({ key, label }) => {
+      const pct = (scores[key] / ROLE_MAX * 100).toFixed(0);
+      const best = key === bestRole ? ' best' : '';
+      return `<div class="role-bar-row role-bar-${key}${best}" data-role="${key}">
+        <div class="role-bar-label">${label}</div>
+        <div class="role-bar-bg"><div class="role-bar-fill" style="width:${pct}%"></div></div>
+        <div class="role-bar-val">${pct}%</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  function renderCritterCard(c, counterHtml) {
+    const effort = cumulativeEffort(c.requirements || []);
+    const sc = classifySpeed(c.speed);
+    const ac = classifyArmour(c.armour);
+    const sprite = critterSprite(c);
+    return `<div class="unit-card">
+      <div class="unit-name">${c.name}<span class="unit-iid">${c.iid}</span></div>
+      <div class="card-body">
+        ${sprite ? `<canvas class="card-sprite critter-sprite-canvas" data-src="${sprite}" width="48" height="48"></canvas>` : ''}
+        <div class="card-info">
+          <div class="stats-row">
+            ${editStat(c.iid,'critter','health',c.health)}
+            ${editStat(c.iid,'critter','speed',c.speed)}
+            ${editStat(c.iid,'critter','armour',c.armour)}
+            ${editStat(c.iid,'critter','damage',c.damage)}
+            ${editStat(c.iid,'critter','value',c.value)}
+            ${editStat(c.iid,'critter','time_between',c.time_between)}
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="tag tag-speed-${sc}">${sc}</span>
+            <span class="tag tag-armour-${ac}">${ac} armour</span>
+          </div>
+          ${reqsHtml(c.requirements)}
+          ${roleScoresHtml(c)}
+          <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
+          ${counterHtml}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderTowerCard(t, counterHtml, maxDPS) {
+    const effort = cumulativeEffort(t.requirements || []);
+    const d = dps(t);
+    const barW = maxDPS > 0 ? (d / maxDPS * 100) : 0;
+    const sprite = t.sprite ? `/${t.sprite.replace(/^\//, '')}` : '';
+    const efx = t.effects || {};
+    const effectStats = [
+      ['effects.burn_dps',      efx.burn_dps],
+      ['effects.burn_duration', efx.burn_duration],
+      ['effects.slow_ratio',    efx.slow_ratio],
+      ['effects.slow_duration', efx.slow_duration],
+    ].filter(([, v]) => v !== undefined && v !== null);
+    const effectsRow = effectStats.length
+      ? `<div class="stats-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px">${effectStats.map(([k, v]) => editStat(t.iid, 'tower', k, v)).join('')}</div>`
+      : '';
+    return `<div class="unit-card">
+      <div class="unit-name">${t.name}<span class="unit-iid">${t.iid}</span></div>
+      <div class="card-body">
+        ${sprite ? `<img class="card-sprite" src="${sprite}" alt="${t.name}" onerror="this.style.display='none'">` : ''}
+        <div class="card-info">
+          <div class="stats-row">
+            ${editStat(t.iid,'tower','damage',t.damage)}
+            ${editStat(t.iid,'tower','range',t.range)}
+            ${editStat(t.iid,'tower','reload_time',t.reload_time)}
+            ${editStat(t.iid,'tower','shot_speed',t.shot_speed)}
+            <span class="stat"><span class="stat-label">DPS</span> <span class="stat-value">${d.toFixed(1)}</span></span>
+            <span class="stat"><span class="stat-label">Cost</span> <span class="stat-value">${fmtNum(t.costs?.gold || 0)}g</span></span>
+          </div>
+          ${effectsRow}
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px">
+            <span class="tag tag-${t.shot_type}">${t.shot_type}</span>
+            ${t.shot_sprite ? `<img src="/${t.shot_sprite.replace(/^\//, '')}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'">` : ''}
+          </div>
+          ${effectTagsHtml(efx)}
+          ${reqsHtml(t.requirements)}
+          <div class="dps-bar-bg"><div class="dps-bar" style="width:${barW}%"></div></div>
+          <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
+          ${counterHtml}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function counterTagsHtml(list) {
+    if (!list || !list.length) return '';
+    return `<div class="counter-line">${list.map(x =>
+      `<span class="counter-tag" title="${x.reasons.join(', ')}">vs ${x.id}</span>`
+    ).join('')}</div>`;
+  }
+
+  function effectTagsHtml(efx) {
+    if (!efx || Object.keys(efx).length === 0) return '';
+    const tags = [];
+    if (efx.burn_dps || efx.burn_duration) {
+      const dps = efx.burn_dps || 1.0;
+      const dur = (efx.burn_duration || 0) / 1000;
+      tags.push(`<span class="tag" style="background:rgba(255,85,0,0.2);color:#ff5500" title="Burn DPS=${dps}, Duration=${dur}s">🔥 ${dps.toFixed(1)} dps</span>`);
+    }
+    if (efx.slow_ratio !== undefined || efx.slow_duration !== undefined) {
+      const ratio = efx.slow_ratio !== undefined ? efx.slow_ratio : 0.5;
+      const dur = (efx.slow_duration || 0) / 1000;
+      tags.push(`<span class="tag" style="background:rgba(79,195,247,0.2);color:#4fc3f7" title="Slow Ratio=${ratio}, Duration=${dur}s">❄ ${(ratio * 100).toFixed(0)}%</span>`);
+    }
+    return tags.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${tags.join('')}</div>` : '';
+  }
+
+  contentEl.innerHTML = '';
+  let accumulatedTowers = [];
+
+  for (const era of ERA_ORDER) {
+    const ec = crittersByEra[era] || [];
+    const et = towersByEra[era] || [];
+    accumulatedTowers = accumulatedTowers.concat(et);
+
+    if (ec.length === 0 && et.length === 0) continue;
+
+    const counters = findCounters(ec, accumulatedTowers);
+    const warnings = findWarnings(ec, accumulatedTowers);
+
+    const critterCounters = {};
+    const towerCounters = {};
+    for (const p of counters) {
+      if (!critterCounters[p.critter]) critterCounters[p.critter] = [];
+      critterCounters[p.critter].push({ id: p.tower, reasons: p.reasons });
+      if (!towerCounters[p.tower]) towerCounters[p.tower] = [];
+      towerCounters[p.tower].push({ id: p.critter, reasons: p.reasons });
+    }
+
+    const avgHP = ec.length ? (ec.reduce((s,c) => s + c.health, 0) / ec.length).toFixed(1) : '—';
+    const avgDPS = et.length ? (et.reduce((s,t) => s + dps(t), 0) / et.length).toFixed(1) : '—';
+    const maxDPS = accumulatedTowers.length ? Math.max(...accumulatedTowers.map(dps)) : 0;
+
+    const critterCards = ec.length
+      ? ec.map(c => renderCritterCard(c, counterTagsHtml(critterCounters[c.iid]))).join('')
+      : '<div style="color:var(--text-dim);font-size:12px">Keine neuen Critters</div>';
+    const towerCards = et.length
+      ? et.map(t => renderTowerCard(t, counterTagsHtml(towerCounters[t.iid]), maxDPS)).join('')
+      : '<div style="color:var(--text-dim);font-size:12px">Keine neuen Towers</div>';
+
+    const section = document.createElement('div');
+    section.className = 'era-section';
+    section.innerHTML = `
+      <div class="era-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+        <span class="arrow">&#9660;</span>
+        <span class="era-name">${era}</span>
+        <span class="era-info">${ec.length} Critters &middot; ${et.length} Towers (${accumulatedTowers.length} total)</span>
+      </div>
+      <div class="era-body">
+        <div class="balance-grid">
+          <div>
+            <div class="column-header">Critters (Attack)</div>
+            ${critterCards}
+          </div>
+          <div>
+            <div class="column-header">Towers (Defense)</div>
+            ${towerCards}
+          </div>
+        </div>
+        ${warnings.length ? warnings.map(w => `<div class="warning-banner">${w}</div>`).join('') : ''}
+        <div class="summary-row">
+          <span>Avg HP: <b>${avgHP}</b></span>
+          <span>Avg DPS (new): <b>${avgDPS}</b></span>
+          <span>Max DPS (cumul.): <b>${maxDPS.toFixed(1)}</b></span>
+        </div>
+      </div>`;
+    contentEl.appendChild(section);
+  }
+
+  // ── Transport & Bosses ──
+  if (transportCritters.length || bossCritters.length) {
+    const extra = document.createElement('div');
+    extra.className = 'era-section';
+    extra.innerHTML = `
+      <div class="era-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+        <span class="arrow">&#9660;</span>
+        <span class="era-name">Spezial-Einheiten</span>
+        <span class="era-info">${transportCritters.length} Transport &middot; ${bossCritters.length} Bosses</span>
+      </div>
+      <div class="era-body">
+        <div class="balance-grid">
+          <div>
+            <div class="column-header">Transport</div>
+            ${transportCritters.map(c => renderCritterCard(c, '')).join('')}
+          </div>
+          <div>
+            <div class="column-header">Bosses / Helden</div>
+            ${bossCritters.map(c => renderCritterCard(c, '')).join('')}
+          </div>
+        </div>
+      </div>`;
+    contentEl.appendChild(extra);
+  }
+
+  // ── +/− button event delegation ──
+  contentEl.addEventListener('click', e => {
+    const btn = e.target.closest('.stat-btn');
+    if (!btn) return;
+    const { iid, type, field, dir } = btn.dataset;
+    const cfg = type === 'critter' ? CRITTER_FIELDS[field] : TOWER_FIELDS[field];
+    if (!cfg) return;
+    const key = `${type}-${iid}-${field}`;
+    const oldVal = liveVals[key] ?? 0;
+    const newVal = Math.max(cfg.min, parseFloat((oldVal + parseInt(dir) * cfg.step).toFixed(4)));
+    liveVals[key] = newVal;
+    const el = contentEl.querySelector(`.stat-val[data-key="${key}"]`);
+    if (el) { el.textContent = fmtVal(newVal, cfg.step); el.classList.add('changed'); }
+    const changes = type === 'critter' ? critterChanges : towerChanges;
+    if (!changes[iid]) changes[iid] = {};
+    changes[iid][field] = newVal;
+    if (type === 'critter') updateRoleBars(iid);
+    updateSaveBtn();
+  });
+
+  // ── Render critter sprites via canvas (extract first frame from 4×4 sheet) ──
+  const SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+  document.querySelectorAll('.critter-sprite-canvas').forEach(canvas => {
+    const baseUrl = canvas.dataset.src.replace(/\.\w+$/, ''); // strip extension
+    function tryLoad(idx) {
+      if (idx >= SPRITE_EXTS.length) { canvas.style.display = 'none'; return; }
+      const img = new Image();
+      img.onload = () => {
+        const frameW = Math.floor(img.naturalWidth / 4);
+        const frameH = Math.floor(img.naturalHeight / 4);
+        canvas.width = frameW;
+        canvas.height = frameH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, frameW, frameH, 0, 0, frameW, frameH);
+      };
+      img.onerror = () => tryLoad(idx + 1);
+      img.src = baseUrl + SPRITE_EXTS[idx];
+    }
+    tryLoad(0);
+  });
+})();
+</script>
+</body>
+</html>

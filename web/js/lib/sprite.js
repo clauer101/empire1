@@ -3,9 +3,6 @@
  *
  * Works with any sprite sheet that uses a 4×4 grid.
  * Frame dimensions are computed dynamically from the image size.
- * The near-white background (RGB ~252,252,252) is
- * stripped to transparency at load time using an OffscreenCanvas, so sprites
- * can be drawn directly onto the battle canvas without a white box.
  *
  * Animation rows
  *   0 → 'forward'   (walk towards viewer)
@@ -38,12 +35,6 @@ const FRAME_H = 256;
 /** Frames per second for playback. */
 const DEFAULT_FPS = 8;
 
-/** Background color (near-white) tolerance for keying. */
-const BG_R = 252;
-const BG_G = 252;
-const BG_B = 252;
-const BG_TOLERANCE = 20;
-
 /** Map direction name → row index. */
 const DIRECTION_ROW = {
   forward:  0,
@@ -51,27 +42,6 @@ const DIRECTION_ROW = {
   right:    2,
   backward: 3,
 };
-
-// ── Background removal ──────────────────────────────────────
-
-/**
- * Remove near-white background pixels from an ImageData in-place,
- * setting their alpha to 0.
- * @param {ImageData} imageData
- */
-function removeBackground(imageData) {
-  const d = imageData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2];
-    if (
-      Math.abs(r - BG_R) <= BG_TOLERANCE &&
-      Math.abs(g - BG_G) <= BG_TOLERANCE &&
-      Math.abs(b - BG_B) <= BG_TOLERANCE
-    ) {
-      d[i + 3] = 0; // fully transparent
-    }
-  }
-}
 
 /**
  * Load an image URL and return an object with frames and computed frame size.
@@ -89,35 +59,14 @@ async function loadFrames(url) {
   const frameW = Math.floor(img.width  / COLS);
   const frameH = Math.floor(img.height / ROWS);
 
-  // 3. Draw full sheet onto OffscreenCanvas to access pixel data
-  const oc = new OffscreenCanvas(img.width, img.height);
-  const octx = oc.getContext('2d');
-  octx.drawImage(img, 0, 0);
-  const raw = octx.getImageData(0, 0, img.width, img.height);
-  removeBackground(raw);
-
-  // 4. Slice into individual frame ImageBitmaps (for fast canvas blitting)
+  // 3. Slice into individual frame ImageBitmaps (for fast canvas blitting)
   const frames = [];
   for (let row = 0; row < ROWS; row++) {
     frames[row] = [];
     for (let col = 0; col < COLS; col++) {
-      const fc = new OffscreenCanvas(frameW, frameH);
-      const fctx = fc.getContext('2d');
-      const frameData = fctx.createImageData(frameW, frameH);
-      for (let fy = 0; fy < frameH; fy++) {
-        const srcY = row * frameH + fy;
-        for (let fx = 0; fx < frameW; fx++) {
-          const srcX = col * frameW + fx;
-          const srcIdx = (srcY * img.width + srcX) * 4;
-          const dstIdx = (fy * frameW + fx) * 4;
-          frameData.data[dstIdx]     = raw.data[srcIdx];
-          frameData.data[dstIdx + 1] = raw.data[srcIdx + 1];
-          frameData.data[dstIdx + 2] = raw.data[srcIdx + 2];
-          frameData.data[dstIdx + 3] = raw.data[srcIdx + 3];
-        }
-      }
-      fctx.putImageData(frameData, 0, 0);
-      frames[row][col] = await createImageBitmap(fc);
+      frames[row][col] = await createImageBitmap(
+        img, col * frameW, row * frameH, frameW, frameH
+      );
     }
   }
   return { frames, frameW, frameH };

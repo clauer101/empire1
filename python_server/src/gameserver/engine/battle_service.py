@@ -26,9 +26,23 @@ import time
 from collections import deque
 from typing import TYPE_CHECKING, Any, Callable, Awaitable
 
-from gameserver.models.critter import Critter, DamageType
+from gameserver.models.critter import Critter
 from gameserver.models.hex import HexCoord
 from gameserver.models.shot import Shot
+
+# Visual shot type constants (sent to client for rendering only)
+_VISUAL_NORMAL = 0
+_VISUAL_SLOW   = 1
+_VISUAL_BURN   = 2
+_VISUAL_SPLASH = 3
+
+def _shot_visual_type(effects: dict) -> int:
+    """Derive a visual shot-type integer from the effects dict (for client rendering only)."""
+    if "burn_dps" in effects or "burn_duration" in effects:
+        return _VISUAL_BURN
+    if "slow_duration" in effects or "slow_ratio" in effects:
+        return _VISUAL_SLOW
+    return _VISUAL_NORMAL
 
 if TYPE_CHECKING:
     from gameserver.models.battle import BattleState
@@ -183,49 +197,34 @@ class BattleService:
     
     def _apply_shot_damage(self, battle: BattleState, shot: Shot) -> None:
         """Apply damage and effects from a shot to its target critter."""
-        # Find target critter
         critter = battle.critters.get(shot.target_cid)
         if not critter:
             log.debug("[SHOT] Shot %d->%d missed (target not found)", shot.source_sid, shot.target_cid)
             return
-        
-        # Apply base damage (reduced by armour for non-burn damage, minimum 0.5)
-        damage = shot.damage
-        if shot.shot_type != DamageType.BURN:
-            damage = max(0.5, damage - critter.armour)
-        
-        critter.health -= damage
-        log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)", 
+
+        # Apply base damage (reduced by armour, minimum 0.5; zero if tower has 0 base damage)
+        has_burn = "burn_dps" in shot.effects or "burn_duration" in shot.effects
+        damage = max(0.5, shot.damage - critter.armour) if shot.damage > 0 else 0.0
+        if damage > 0:
+            critter.health -= damage
+        log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)",
                   critter.cid, shot.source_sid, damage, critter.health)
-        
-        # Apply shot effects based on shot_type
-        if shot.shot_type == DamageType.COLD:
-            # Apply slow effect
-            slow_factor = shot.effects.get("slow_target", 0.5)  # Default 50% speed
-            slow_duration_s = shot.effects.get("slow_target_duration", 2.0)  # Default 2s
-            
-            critter.slow_remaining_ms = slow_duration_s * 1000.0
-            critter.slow_speed = critter.speed * slow_factor
-            
-            log.debug("[SLOW] Critter cid=%d slowed to %.2f hex/s for %.0fms", 
+
+        # Apply slow effect if effects dict contains slow keys
+        if "slow_duration" in shot.effects or "slow_ratio" in shot.effects:
+            slow_ratio       = float(shot.effects.get("slow_ratio", 0.5))
+            slow_duration_ms = float(shot.effects.get("slow_duration", 2000.0))
+            critter.slow_remaining_ms = slow_duration_ms
+            critter.slow_speed = critter.speed * slow_ratio
+            log.debug("[SLOW] Critter cid=%d slowed to %.2f hex/s for %.0fms",
                       critter.cid, critter.slow_speed, critter.slow_remaining_ms)
-        
-        elif shot.shot_type == DamageType.BURN:
-            # Apply burn effect (damage over time)
-            burn_dps = shot.effects.get("burn_target_dps", 1.0)  # Default 1 dps
-            burn_duration_s = shot.effects.get("burn_target_duration", 3.0)  # Default 3s
-            
-            critter.burn_remaining_ms = burn_duration_s * 1000.0
-            critter.burn_dps = burn_dps
-            
-            log.debug("[BURN] Critter cid=%d burning for %.1f dps over %.0fms", 
+
+        # Apply burn effect if effects dict contains burn keys
+        if has_burn:
+            critter.burn_remaining_ms = float(shot.effects.get("burn_duration", 3000.0))
+            critter.burn_dps          = float(shot.effects.get("burn_dps", 1.0))
+            log.debug("[BURN] Critter cid=%d burning for %.1f dps over %.0fms",
                       critter.cid, critter.burn_dps, critter.burn_remaining_ms)
-        
-        elif shot.shot_type == DamageType.SPLASH:
-            # TODO: Implement splash damage (create sub-shots for nearby critters)
-            # For now, just apply direct damage
-            log.debug("[SPLASH] Splash damage at critter cid=%d (splash radius not yet implemented)", 
-                      critter.cid)
 
     # -- Critter movement ------------------------------------------------
 
@@ -319,7 +318,6 @@ class BattleService:
                         damage=structure.damage,
                         target_cid=target.cid,
                         source_sid=sid,
-                        shot_type=structure.shot_type,
                         effects=dict(structure.effects),
                         flight_remaining_ms=flight_time_ms,
                         origin=structure.position,
@@ -382,53 +380,66 @@ class BattleService:
         """Get interval between waves (wave_start_ms) for a wave."""
         return 10000.0  # Fallback default
 
+    def _make_critter_from_item(self, iid: str, path: list, path_progress: float = 0.0) -> Critter:
+        """Create a Critter from item config, placing it at path_progress."""
+        item = self._items_by_iid.get(iid)
+        return Critter(
+            cid=_new_cid(),
+            iid=iid,
+            path=path,
+            path_progress=path_progress,
+            health=getattr(item, 'health', 1.0) if item else 1.0,
+            max_health=getattr(item, 'health', 1.0) if item else 1.0,
+            speed=getattr(item, 'speed', 0.15) if item else 0.15,
+            armour=getattr(item, 'armour', 0.0) if item else 0.0,
+            scale=getattr(item, 'scale', 1.0) if item else 1.0,
+            value=getattr(item, 'value', getattr(item, 'health', 1.0) if item else 1.0) if item else 1.0,
+            damage=getattr(item, 'critter_damage', 1.0) if item else 1.0,
+            spawn_on_death=dict(getattr(item, 'spawn_on_death', None) or {}),
+        )
+
     def _step_wave(self, wave, dt_ms: float) -> list[Critter]:
         """Step a wave: decrement spawn timer and spawn critters as needed.
-        
+
         This function manages the spawn timing for a single wave, spawning
         critters at the configured spawn interval until all slots are filled.
-        
+
+        Each critter consumes a number of slots (e.g. CART costs 2 slots, SLAVE costs 1).
+        The wave spawner fills the wave until num_critters_spawned >= wave.slots.
+
         Args:
-            wave: The wave object with .iid (critter type), .slots (total count),
-                  .num_critters_spawned, and .next_critter_ms.
+            wave: The wave object with .iid (critter type), .slots (total slot capacity),
+                  .num_critters_spawned (slots filled so far), and .next_critter_ms.
             dt_ms: Time delta in milliseconds.
-            
+
         Returns:
             List of newly spawned Critter objects (may be empty).
         """
         critters: list[Critter] = []
-        
+
         # Decrement spawn timer
         next_spawn_ms = max(0, wave.next_critter_ms - dt_ms)
         critters_spawned = wave.num_critters_spawned
-                
+
         if critters_spawned >= wave.slots:
             return []  # Wave fully spawned
-        
+
         # Spawn critters if wave hasn't finished
         if next_spawn_ms <= 0:
-            # Get critter stats from item config
             item = self._items_by_iid.get(wave.iid)
-            
-            critter = Critter(
-                cid=_new_cid(),
-                iid=wave.iid,
-                health=getattr(item, 'health', 1.0) if item else 1.0,
-                max_health=getattr(item, 'health', 1.0) if item else 1.0,
-                speed=getattr(item, 'speed', 0.15) if item else 0.15,
-                armour=getattr(item, 'armour', 0.0) if item else 0.0,
-                scale=getattr(item, 'scale', 1.0) if item else 1.0,
-                value=getattr(item, 'value', getattr(item, 'health', 1.0)) if item else 1.0,
-                damage=getattr(item, 'critter_damage', 1.0) if item else 1.0,
-            )
-            critters.append(critter)
-            critters_spawned += 1
-            next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
-        
+            critter_slot_cost = item.slots if item else 1
+
+            # Only spawn if it fits in remaining slots
+            if critters_spawned + critter_slot_cost <= wave.slots:
+                critter = self._make_critter_from_item(wave.iid, path=[])
+                critters.append(critter)
+                critters_spawned += critter_slot_cost
+                next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
+
         # Update wave state with new pointers and timer
         wave.num_critters_spawned = critters_spawned
         wave.next_critter_ms = int(next_spawn_ms)
-        
+
         return critters
 
     def _step_armies(self, battle: BattleState, dt_ms: float) -> None:
@@ -530,8 +541,9 @@ class BattleService:
 
     def _critter_died(self, battle: BattleState, critter: Critter) -> None:
         """Handle critter killed by tower.
-        
+
         Defender gains gold equal to the critter's value.
+        Spawns child critters if spawn_on_death is configured.
         """
         battle.removed_critters.append({"cid": critter.cid, "reason": "died", "path_progress": critter.path_progress, "value": critter.value})
         del battle.critters[critter.cid]
@@ -544,8 +556,27 @@ class BattleService:
                      critter.cid, critter.iid, critter.value, battle.defender.resources["gold"])
         else:
             log.info("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f",
-                     critter.cid, critter.iid, critter.path_progress)    
-       
+                     critter.cid, critter.iid, critter.path_progress)
+
+        if critter.spawn_on_death:
+            self._spawn_death_critters(battle, critter)
+
+    def _spawn_death_critters(self, battle: BattleState, dead: Critter) -> None:
+        """Spawn child critters at the dead critter's position, evenly spaced backwards.
+
+        Each spawned critter is placed 5% of the path behind the previous one,
+        ensuring consistent spacing regardless of path length or carrier position.
+        """
+        SPAWN_SPACING = 0.05  # 5% of path between each spawned critter
+        for iid, count in dead.spawn_on_death.items():
+            for i in range(count):
+                # Position: parent_progress - (i+1) * spacing
+                offset = SPAWN_SPACING * (i + 1)
+                spawn_progress = max(0.0, dead.path_progress - offset)
+                child = self._make_critter_from_item(iid, path=dead.path, path_progress=spawn_progress)
+                battle.critters[child.cid] = child
+                log.info("[SPAWN_ON_DEATH] Critter cid=%d (%s) spawned from dead cid=%d at progress=%.3f (spacing=%.2f%%)",
+                         child.cid, child.iid, dead.cid, spawn_progress, offset * 100)
 
 
     # -- Broadcasting (delta-based, like Java) ---------------------------
@@ -577,7 +608,7 @@ class BattleService:
             shot_updates.append({
                 "source_sid": shot.source_sid,
                 "target_cid": shot.target_cid,
-                "shot_type": shot.shot_type,
+                "shot_type": _shot_visual_type(shot.effects),
                 "shot_sprite": src_struct.shot_sprite if src_struct else "",
                 "path_progress": shot.path_progress,
                 "origin_q": shot.origin.q if shot.origin else 0,
@@ -641,6 +672,8 @@ class BattleService:
             "type": "battle_summary",
             "bid": battle.bid,
             "defender_won": battle.defender_won or False,
+            "attacker_uid": battle.attacker.uid if battle.attacker else None,
+            "army_name": battle.army.name if battle.army else "",
             "attacker_gains": dict(battle.attacker_gains),  # Dict of {uid: {resource: amount}}
             "defender_losses": dict(battle.defender_losses),
             "loot": loot or {},

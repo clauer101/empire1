@@ -219,7 +219,7 @@ class RestClient {
   /** @returns {Promise<object>} */
   async getSummary() {
     const resp = await this._get('/api/empire/summary');
-    state.setSummary(resp);
+    if (!resp.error) state.setSummary(resp);
     return resp;
   }
 
@@ -303,6 +303,16 @@ class RestClient {
    */
   async sendMessage(toUid, body) {
     return this._post('/api/messages', { to_uid: toUid, body });
+  }
+
+  /**
+   * Submit AI battle difficulty feedback (too_easy / too_hard).
+   * Sends a message from AI UID 0 to admin UID 4.
+   * @param {string} armyName
+   * @param {'too_easy'|'too_hard'} rating
+   */
+  async battleFeedback(armyName, rating) {
+    return this._post('/api/battle-feedback', { army_name: armyName, rating });
   }
 
   /**
