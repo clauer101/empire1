@@ -195,3 +195,59 @@ export function hexAStar(start, goal, isWalkable) {
 
   return null; // No path found
 }
+
+// ── Critter position & world-space distance ─────────────────
+
+const _SQRT3 = Math.sqrt(3);
+
+/**
+ * Interpolated continuous hex-coordinate of a critter on its path.
+ *
+ * path_progress is normalized [0.0, 1.0] over the whole path.
+ * Returns sub-tile-precise floating-point hex coordinates — the critter
+ * is between two hex centers, not snapped to a grid tile.
+ *
+ * @param {Array<{q:number, r:number}>} path  Ordered tile centers.
+ * @param {number} path_progress              Normalized [0, 1].
+ * @returns {{q: number, r: number}}
+ */
+export function critterHexPos(path, path_progress) {
+  if (!path || path.length === 0) return { q: 0, r: 0 };
+  if (path.length === 1) return { q: path[0].q, r: path[0].r };
+  const maxIdx = path.length - 1;
+  const floatIdx = path_progress * maxIdx;
+  const idx = Math.min(Math.floor(floatIdx), maxIdx - 1);
+  const frac = floatIdx - idx;
+  const a = path[idx];
+  const b = path[idx + 1];
+  return { q: a.q + (b.q - a.q) * frac, r: a.r + (b.r - a.r) * frac };
+}
+
+/**
+ * Euclidean distance between two positions in hex-world space.
+ *
+ * Works for any combination of integer tile coords and fractional critter
+ * positions.  1 unit = distance between two adjacent tile centers
+ * (flat-top hex layout, independent of canvas hexSize).
+ *
+ * Formula:  hexToPixel maps (q,r) → (1.5q, √3/2·q + √3·r) at size=1.
+ * All six neighbors are exactly √3 pixels away → hex_dist = px_dist / √3.
+ *
+ * Examples:
+ *   hexWorldDistance(0,0, 1,0)  === 1   (E neighbor)
+ *   hexWorldDistance(0,0, 0,1)  === 1   (SE neighbor)
+ *   hexWorldDistance(0,0, 2,0)  === 2
+ *
+ * @param {number} q1
+ * @param {number} r1
+ * @param {number} q2
+ * @param {number} r2
+ * @returns {number}  Distance in hex units.
+ */
+export function hexWorldDistance(q1, r1, q2, r2) {
+  const dq = q2 - q1;
+  const dr = r2 - r1;
+  const dx = 1.5 * dq;
+  const dy = 0.5 * _SQRT3 * dq + _SQRT3 * dr;
+  return Math.sqrt(dx * dx + dy * dy) / _SQRT3;
+}

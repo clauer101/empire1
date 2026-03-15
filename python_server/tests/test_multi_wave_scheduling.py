@@ -166,6 +166,55 @@ def test_wave_spawn_intervals(battle_service, test_path):
         assert 85 <= interval_1 <= 115, f"First interval should be ~100ms, got {interval_1:.0f}ms"
 
 
+def test_wave_with_unspawnable_remaining_slots_completes_and_battle_finishes(test_path):
+    """A wave must complete once the next critter no longer fits the remaining slots."""
+    service = BattleService(items={
+        "HEAVY_ORC": ItemDetails(
+            iid="HEAVY_ORC",
+            name="Heavy Orc",
+            item_type=ItemType.CRITTER,
+            health=1.0,
+            speed=1000.0,
+            slots=2,
+            time_between_ms=50.0,
+            critter_damage=0.0,
+        )
+    })
+
+    army = Army(
+        aid=1,
+        uid=100,
+        name="Heavy Test Army",
+        waves=[CritterWave(wave_id=1, iid="HEAVY_ORC", slots=3)],
+    )
+
+    battle = BattleState(
+        bid=1,
+        defender=None,
+        attacker=None,
+        attack_id=1,
+        army=army,
+        critter_path=test_path,
+        structures={},
+        observer_uids=set(),
+    )
+    battle.MIN_KEEP_ALIVE_MS = 0.0
+
+    service.tick(battle, 15.0)
+
+    assert army.waves[0].num_critters_spawned == 3
+    assert army.waves[0].next_critter_ms == 0
+    assert len(battle.critters) == 1
+    assert not battle.is_finished
+
+    for _ in range(10):
+        service.tick(battle, 15.0)
+        if battle.is_finished:
+            break
+
+    assert battle.is_finished, "Battle should finish once the blocked wave is treated as complete"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "-s"])
 

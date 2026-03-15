@@ -173,7 +173,6 @@
     "Steinzeit","Neolithikum","Bronzezeit","Eisenzeit",
     "Mittelalter","Renaissance","Industrialisierung","Moderne","Zukunft"
   ];
-  const ERA_EXTRA = ["Transport-Einheiten","Bosses / Helden"];
 
   const statusEl = document.getElementById('load-status');
   const contentEl = document.getElementById('content');
@@ -305,7 +304,6 @@
   const normHealth    = makeNorm(critters.map(c => c.health       || 0));
   const normSpeed     = makeNorm(critters.map(c => c.speed        || 0));
   const normArmour    = makeNorm(critters.map(c => c.armour       || 0));
-  const normSlots     = makeNorm(critters.map(c => c.slots        || 1));
   // time_between inverted: smaller interval = faster attacks = better
   const normTBInv     = (() => {
     const arr = critters.map(c => c.time_between || 2000);
@@ -313,15 +311,14 @@
     return v => 1 - ((v - min) / range);
   })();
 
-  // Max possible per role: normal=4, fast=4, tank=4, transport=4
+  // Max possible per role: normal=4, fast=4, tank=4
   const ROLE_MAX = 4;
 
   function roleScores(c) {
     return {
-      normal:    normHealth(c.health)*2 + normSpeed(c.speed)    + normArmour(c.armour),
-      fast:      normHealth(c.health)   + normSpeed(c.speed)*2  + normTBInv(c.time_between || 2000),
-      tank:      normArmour(c.armour)*2 + normHealth(c.health)*2,
-      transport: normHealth(c.health)   + normSlots(c.slots)*2  + normArmour(c.armour),
+      normal: normHealth(c.health)*2 + normSpeed(c.speed)    + normArmour(c.armour),
+      fast:   normHealth(c.health)   + normSpeed(c.speed)*2  + normTBInv(c.time_between || 2000),
+      tank:   normArmour(c.armour)*2 + normHealth(c.health)*2,
     };
   }
 
@@ -338,7 +335,6 @@
       speed:        liveVals[`critter-${iid}-speed`]        ?? orig.speed,
       armour:       liveVals[`critter-${iid}-armour`]       ?? orig.armour,
       time_between: liveVals[`critter-${iid}-time_between`] ?? orig.time_between,
-      slots:        orig.slots,
     };
     const scores   = roleScores(pseudo);
     const bestRole = Object.entries(scores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
@@ -378,8 +374,7 @@
     return m;
   }
 
-  const combatCritters = critters.filter(c => !c.is_boss && c.slots <= 1);
-  const transportCritters = critters.filter(c => c.slots > 1);
+  const combatCritters = critters.filter(c => !c.is_boss);
   const bossCritters = critters.filter(c => c.is_boss);
 
   const crittersByEra = groupByEra(combatCritters);
@@ -444,10 +439,9 @@
     const scores = roleScores(c);
     const bestRole = Object.entries(scores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
     const ROLES = [
-      { key: 'normal',    label: 'Normal' },
-      { key: 'fast',      label: 'Fast' },
-      { key: 'tank',      label: 'Tank' },
-      { key: 'transport', label: 'Transport' },
+      { key: 'normal', label: 'Normal' },
+      { key: 'fast',   label: 'Fast' },
+      { key: 'tank',   label: 'Tank' },
     ];
     return `<div class="role-scores" data-iid="${c.iid}">${ROLES.map(({ key, label }) => {
       const pct = (scores[key] / ROLE_MAX * 100).toFixed(0);
@@ -481,6 +475,7 @@
           <div style="display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag tag-speed-${sc}">${sc}</span>
             <span class="tag tag-armour-${ac}">${ac} armour</span>
+            ${(c.slots > 1) ? `<span class="tag" style="background:rgba(171,71,188,0.2);color:var(--purple)">${c.slots} Slots</span>` : ''}
           </div>
           ${reqsHtml(c.requirements)}
           ${roleScoresHtml(c)}
@@ -619,27 +614,18 @@
     contentEl.appendChild(section);
   }
 
-  // ── Transport & Bosses ──
-  if (transportCritters.length || bossCritters.length) {
+  // ── Bosses ──
+  if (bossCritters.length) {
     const extra = document.createElement('div');
     extra.className = 'era-section';
     extra.innerHTML = `
       <div class="era-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
         <span class="arrow">&#9660;</span>
-        <span class="era-name">Spezial-Einheiten</span>
-        <span class="era-info">${transportCritters.length} Transport &middot; ${bossCritters.length} Bosses</span>
+        <span class="era-name">Bosses / Helden</span>
+        <span class="era-info">${bossCritters.length} Einheiten</span>
       </div>
       <div class="era-body">
-        <div class="balance-grid">
-          <div>
-            <div class="column-header">Transport</div>
-            ${transportCritters.map(c => renderCritterCard(c, '')).join('')}
-          </div>
-          <div>
-            <div class="column-header">Bosses / Helden</div>
-            ${bossCritters.map(c => renderCritterCard(c, '')).join('')}
-          </div>
-        </div>
+        ${bossCritters.map(c => renderCritterCard(c, '')).join('')}
       </div>`;
     contentEl.appendChild(extra);
   }

@@ -70,19 +70,33 @@ async def handle_ping(message: GameMessage, sender_uid: int) -> dict:
 # Map validation helpers
 # ===================================================================
 
-def _has_path_from_spawn_to_castle(tiles: dict[str, str]) -> bool:
+def _tile_type(v) -> str:
+    """Extract tile type from a string or dict tile value."""
+    return v if isinstance(v, str) else v.get('type', 'empty')
+
+
+def _tile_select(v, item_default: str = 'first') -> str:
+    """Return per-tile select override, or fall back to the item-level default."""
+    if isinstance(v, dict):
+        return v.get('select', item_default)
+    return item_default
+
+
+def _has_path_from_spawn_to_castle(tiles) -> bool:
     """Check if there's a path from any spawnpoint to the castle.
-    
+
     Uses the centralized pathfinding logic from hex_pathfinding module.
-    
+
     Args:
-        tiles: Dict of {"q,r": "tile_type"} where tile_type is 'castle', 'spawnpoint', etc.
-    
+        tiles: Dict of {"q,r": tile_value} where tile_value is a type string
+               or a dict {"type": ..., "select": ...}.
+
     Returns:
         True if at least one path exists, False otherwise.
     """
     from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
-    return find_path_from_spawn_to_castle(tiles) is not None
+    normalized = {k: _tile_type(v) for k, v in tiles.items()}
+    return find_path_from_spawn_to_castle(normalized) is not None
 
 
 # ===================================================================
@@ -182,6 +196,7 @@ async def handle_item_request(
             "reload_time_ms": item.reload_time_ms,
             "shot_speed": item.shot_speed,
             "shot_type": item.shot_type,
+            "select": item.select,
             "sprite": item.sprite,
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
@@ -985,8 +1000,9 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
     from gameserver.models.hex import HexCoord
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    for tile_key, tile_type in tiles.items():
+    for tile_key, tile_val in tiles.items():
         # Check if tile_type is a structure (not path, castle, etc.)
+        tile_type = _tile_type(tile_val)
         if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
             # This is a structure tile, load stats from item provider
             item = items_dict.get(tile_type)
@@ -1000,10 +1016,11 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
                     position=HexCoord(q, r),
                     damage=getattr(item, "damage", 1.0),
                     range=getattr(item, "range", 1),
-                    reload_time_ms=getattr(item, "reload_time", 2000.0),
+                    reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
                     shot_speed=getattr(item, "shot_speed", 1.0),
                     shot_type=getattr(item, "shot_type", "normal"),
                     shot_sprite=getattr(item, "shot_sprite", ""),
+                    select=_tile_select(tile_val, getattr(item, "select", "first")),
                     effects=getattr(item, "effects", {}),
                 )
                 structures_dict[structure_sid] = structure
@@ -1526,19 +1543,23 @@ async def handle_map_save_request(
     
     # Get tiles from typed message model
     raw_tiles = message.tiles or {}
-    
-    # Normalize: accept both {"0,0": "type"} and {"0,0": {"type": "type"}}
+
+    # Normalize: accept both {"0,0": "type"} and {"0,0": {"type": ..., "select": ...}}
+    # Per-tile select overrides are kept when they differ from the default "first".
     tiles = {}
     for k, v in raw_tiles.items():
         if isinstance(v, dict):
-            tiles[k] = v.get('type', 'empty')
+            tile_type = v.get('type', 'empty')
+            select_val = v.get('select', 'first')
+            tiles[k] = {'type': tile_type, 'select': select_val} if select_val != 'first' else tile_type
         else:
             tiles[k] = v
 
     # -- Validation --------------------------------------------------
     type_counts: dict[str, int] = {}
-    for tile_type in tiles.values():
-        type_counts[tile_type] = type_counts.get(tile_type, 0) + 1
+    for v in tiles.values():
+        t = _tile_type(v)
+        type_counts[t] = type_counts.get(t, 0) + 1
 
     castle_count = type_counts.get('castle', 0)
     spawnpoint_count = type_counts.get('spawnpoint', 0)
@@ -1553,9 +1574,9 @@ async def handle_map_save_request(
 
     # Void tiles must not be overwritten
     old_tiles_for_void = empire.hex_map or {}
-    for tile_key, tile_type in tiles.items():
-        if tile_type != 'void' and old_tiles_for_void.get(tile_key) == 'void':
-            errors.append(f"Cannot place '{tile_type}' on a void tile at {tile_key}")
+    for tile_key, tile_val in tiles.items():
+        if _tile_type(tile_val) != 'void' and _tile_type(old_tiles_for_void.get(tile_key, '')) == 'void':
+            errors.append(f"Cannot place '{_tile_type(tile_val)}' on a void tile at {tile_key}")
             break
     
     # Check path connectivity (only if basic requirements are met)
@@ -1581,9 +1602,10 @@ async def handle_map_save_request(
     }
     old_tiles = empire.hex_map or {}
     total_gold_cost = 0.0
-    for tile_key, tile_type in tiles.items():
+    for tile_key, tile_val in tiles.items():
+        tile_type = _tile_type(tile_val)
         if tile_type in structure_iids:
-            old_type = old_tiles.get(tile_key)
+            old_type = _tile_type(old_tiles.get(tile_key, ''))
             if old_type != tile_type:
                 # New or changed structure tile — charge placement cost
                 item = svc.upgrade_provider.get(tile_type)
@@ -1906,18 +1928,19 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict
         (s.position.q, s.position.r): s for s in battle.structures.values()
     }
 
-    # Build lookup: (q, r) → tile_type for all structure tiles in new map
-    new_pos_types: dict[tuple[int, int], str] = {}
-    for tile_key, tile_type in tiles.items():
+    # Build lookup: (q, r) → tile_value for all structure tiles in new map
+    new_pos_types: dict[tuple[int, int], tuple[str, str]] = {}
+    for tile_key, tile_val in tiles.items():
+        tile_type = _tile_type(tile_val)
         if tile_type not in NON_STRUCTURE:
             q, r = map(int, tile_key.split(","))
-            new_pos_types[(q, r)] = tile_type
+            new_pos_types[(q, r)] = (tile_type, _tile_select(tile_val))
 
     # Remove structures whose tile was removed or replaced
     sids_to_remove = [
         s.sid for s in battle.structures.values()
         if (s.position.q, s.position.r) not in new_pos_types
-           or new_pos_types[(s.position.q, s.position.r)] != s.iid
+           or new_pos_types[(s.position.q, s.position.r)][0] != s.iid
     ]
     for sid in sids_to_remove:
         s = battle.structures.pop(sid)
@@ -1931,7 +1954,7 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict
     next_sid = max(battle.structures.keys(), default=0) + 1
     new_sids: list[int] = []
 
-    for (q, r), tile_type in new_pos_types.items():
+    for (q, r), (tile_type, tile_select) in new_pos_types.items():
         if (q, r) in existing_pos:
             continue  # Already present and correct iid
         item = items_dict.get(tile_type)
@@ -1943,10 +1966,11 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict
             position=HexCoord(q, r),
             damage=getattr(item, "damage", 1.0),
             range=getattr(item, "range", 1),
-            reload_time_ms=getattr(item, "reload_time", 2000.0),
+            reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
             shot_speed=getattr(item, "shot_speed", 1.0),
             shot_type=getattr(item, "shot_type", "normal"),
             shot_sprite=getattr(item, "shot_sprite", ""),
+            select=tile_select if tile_select != 'first' else getattr(item, "select", "first"),
             effects=getattr(item, "effects", {}),
         )
         battle.structures[next_sid] = structure
@@ -2279,8 +2303,9 @@ def _create_battle_start_handler() -> Callable:
         from gameserver.models.hex import HexCoord
         structure_sid = 1
         items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
-        for tile_key, tile_type in tiles.items():
+        for tile_key, tile_val in tiles.items():
             # Check if tile_type is a structure (not path, castle, etc.)
+            tile_type = _tile_type(tile_val)
             if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
                 # This is a structure tile, load stats from item provider
                 item = items_dict.get(tile_type)
@@ -2294,10 +2319,11 @@ def _create_battle_start_handler() -> Callable:
                         position=HexCoord(q, r),
                         damage=getattr(item, "damage", 1.0),
                         range=getattr(item, "range", 1),
-                        reload_time_ms=getattr(item, "reload_time", 2000.0),
+                        reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
                         shot_speed=getattr(item, "shot_speed", 1.0),
                         shot_type=getattr(item, "shot_type", "normal"),
                         shot_sprite=getattr(item, "shot_sprite", ""),
+                        select=_tile_select(tile_val, getattr(item, "select", "first")),
                         effects=getattr(item, "effects", {}),
                     )
                     structures_dict[structure_sid] = structure
@@ -2444,8 +2470,9 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     from gameserver.models.hex import HexCoord
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    for tile_key, tile_type in tiles.items():
+    for tile_key, tile_val in tiles.items():
         # Check if tile_type is a structure (not path, castle, etc.)
+        tile_type = _tile_type(tile_val)
         if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
             # This is a structure tile, load stats from item provider
             item = items_dict.get(tile_type)
@@ -2459,10 +2486,11 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
                     position=HexCoord(q, r),
                     damage=getattr(item, "damage", 1.0),
                     range=getattr(item, "range", 1),
-                    reload_time_ms=getattr(item, "reload_time", 2000.0),
+                    reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
                     shot_speed=getattr(item, "shot_speed", 1.0),
                     shot_type=getattr(item, "shot_type", "normal"),
                     shot_sprite=getattr(item, "shot_sprite", ""),
+                    select=_tile_select(tile_val, getattr(item, "select", "first")),
                     effects=getattr(item, "effects", {}),
                 )
                 structures_dict[structure_sid] = structure
