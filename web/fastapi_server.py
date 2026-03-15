@@ -538,6 +538,163 @@ async def patch_structure_stats(changes: dict = Body(...)):
     return {"ok": True}
 
 
+def _fmt_yaml(v) -> str:
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, float) and v == int(v):
+        return str(int(v))
+    if isinstance(v, (int, float)):
+        return f"{v:.10g}"
+    return str(v)
+
+
+def _add_effect_to_yaml(path: Path, iid: str, eff_key: str, value) -> bool:
+    """Add a new effect key/value to an item's effects block in a YAML file."""
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+    key_positions: dict[str, int] = {}
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            key_positions[m.group(1)] = i
+    if iid not in key_positions:
+        return False
+    start = key_positions[iid]
+    sorted_pos = sorted(key_positions.values())
+    end = next((p for p in sorted_pos if p > start), len(lines))
+    new_line = f"    {eff_key}: {_fmt_yaml(value)}\n"
+    effects_idx: int | None = None
+    for j in range(start + 1, end):
+        if re.match(r'^\s{2}effects:', lines[j]):
+            effects_idx = j
+            break
+    if effects_idx is None:
+        lines.insert(end, new_line)
+        lines.insert(end, "  effects:\n")
+    else:
+        if re.match(r'^\s{2}effects:\s*(\{[^}]*\})?\s*$', lines[effects_idx].rstrip('\r\n')):
+            lines[effects_idx] = "  effects:\n"
+        insert_at = effects_idx
+        for j in range(effects_idx + 1, end):
+            ln = lines[j]
+            if ln.startswith("    ") and not ln.lstrip().startswith("#"):
+                insert_at = j
+            elif not ln.strip():
+                continue
+            else:
+                break
+        lines.insert(insert_at + 1, new_line)
+    path.write_text("".join(lines), encoding="utf-8")
+    return True
+
+
+def _remove_effect_from_yaml(path: Path, iid: str, eff_key: str) -> bool:
+    """Remove an effect key from an item's effects block in a YAML file."""
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+    key_positions: dict[str, int] = {}
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            key_positions[m.group(1)] = i
+    if iid not in key_positions:
+        return False
+    start = key_positions[iid]
+    sorted_pos = sorted(key_positions.values())
+    end = next((p for p in sorted_pos if p > start), len(lines))
+    eff_re = re.compile(r'^\s{4}' + re.escape(eff_key) + r':\s')
+    effects_header_re = re.compile(r'^(\s{2}effects:)\s*$')
+    for j in range(start + 1, end):
+        if eff_re.match(lines[j]):
+            del lines[j]
+            # Recalculate end after deletion
+            end2 = next((p for p in sorted_pos if p > start), len(lines))
+            # Check if the effects block is now empty (no more indented effect lines)
+            has_remaining = any(
+                re.match(r'^\s{4}\S', lines[k]) for k in range(start + 1, end2)
+            )
+            if not has_remaining:
+                # Find the effects: header line and make it effects: {}
+                for k in range(start + 1, end2):
+                    m = effects_header_re.match(lines[k].rstrip("\r\n"))
+                    if m:
+                        eol = "\n" if lines[k].endswith("\n") else ""
+                        lines[k] = m.group(1) + " {}" + eol
+                        break
+            path.write_text("".join(lines), encoding="utf-8")
+            return True
+    return False
+
+
+@app.patch("/api/building-effects")
+async def patch_building_effects(changes: dict = Body(...)):
+    """Update effect values in buildings.yaml. Body: { IID: { effect_key: value } }"""
+    _patch_yaml_inplace(BUILDINGS_PATH, changes)
+    return {"ok": True}
+
+
+@app.patch("/api/knowledge-effects")
+async def patch_knowledge_effects(changes: dict = Body(...)):
+    """Update effect values in knowledge.yaml. Body: { IID: { effect_key: value } }"""
+    _patch_yaml_inplace(KNOWLEDGE_PATH, changes)
+    return {"ok": True}
+
+
+@app.post("/api/building-effects")
+async def add_building_effect(body: dict = Body(...)):
+    """Add an effect key to a building. Body: {iid, effect, value}"""
+    ok = _add_effect_to_yaml(BUILDINGS_PATH, body["iid"], body["effect"], body["value"])
+    return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
+
+
+@app.post("/api/knowledge-effects")
+async def add_knowledge_effect(body: dict = Body(...)):
+    """Add an effect key to a knowledge item. Body: {iid, effect, value}"""
+    ok = _add_effect_to_yaml(KNOWLEDGE_PATH, body["iid"], body["effect"], body["value"])
+    return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
+
+
+@app.post("/api/building-effects/remove")
+async def remove_building_effect(body: dict = Body(...)):
+    """Remove an effect key from a building. Body: {iid, effect}"""
+    ok = _remove_effect_from_yaml(BUILDINGS_PATH, body["iid"], body["effect"])
+    return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
+
+
+@app.post("/api/knowledge-effects/remove")
+async def remove_knowledge_effect(body: dict = Body(...)):
+    """Remove an effect key from a knowledge item. Body: {iid, effect}"""
+    ok = _remove_effect_from_yaml(KNOWLEDGE_PATH, body["iid"], body["effect"])
+    return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
+
+
+@app.patch("/api/tower-effects/{iid}")
+async def patch_tower_effects(iid: str, body: dict = Body(...)):
+    """Replace the entire effects dict for a tower in structures.yaml, preserving inline comments."""
+    new_effects: dict = body.get("effects", {})
+    lines = STRUCTURES_PATH.read_text(encoding="utf-8").splitlines()
+    iid_idx = next((i for i, ln in enumerate(lines) if ln.startswith(f"{iid}:")), None)
+    if iid_idx is None:
+        return JSONResponse({"error": f"'{iid}' not found"}, status_code=404)
+    if new_effects:
+        pairs = ", ".join(f"{k}: {v}" for k, v in new_effects.items())
+        new_val = f"  effects: {{{pairs}}}"
+    else:
+        new_val = "  effects: {}"
+    for i in range(iid_idx + 1, len(lines)):
+        line = lines[i]
+        if line and not line.startswith(" ") and not line.startswith("#"):
+            break
+        if line.lstrip().startswith("effects:"):
+            rest = line[line.index("effects:"):]
+            hi = rest.find("#")
+            comment = ("   " + rest[hi:]) if hi != -1 else ""
+            lines[i] = new_val + comment
+            STRUCTURES_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return JSONResponse({"ok": True})
+    return JSONResponse({"error": "effects line not found"}, status_code=500)
+
+
 @app.get("/api/admin/catalog")
 async def get_catalog():
     """Return full item catalog (buildings + knowledge) with effects — no auth needed on web port."""

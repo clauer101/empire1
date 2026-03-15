@@ -349,7 +349,7 @@ class TestStructuresYamlEffects:
 
     def test_spike_trap_has_slow_effects(self, items_by_iid):
         item = items_by_iid["SPIKE_TRAP"]
-        assert item.effects.get("slow_duration") == pytest.approx(1000.0)
+        assert item.effects.get("slow_duration") == pytest.approx(2000.0)
         assert item.effects.get("slow_ratio") == pytest.approx(0.3)
 
     def test_tar_tower_has_slow_effects(self, items_by_iid):
@@ -364,8 +364,8 @@ class TestStructuresYamlEffects:
 
     def test_ice_tower_has_slow_effects(self, items_by_iid):
         item = items_by_iid["ICE_TOWER"]
-        assert item.effects.get("slow_duration") == pytest.approx(4000.0)
-        assert item.effects.get("slow_ratio") == pytest.approx(0.3)
+        assert item.effects.get("slow_duration") == pytest.approx(3500.0)
+        assert item.effects.get("slow_ratio") == pytest.approx(0.1)
 
     def test_fire_tower_has_burn_effects(self, items_by_iid):
         item = items_by_iid["FIRE_TOWER"]
@@ -375,13 +375,13 @@ class TestStructuresYamlEffects:
     def test_flame_thrower_has_burn_effects(self, items_by_iid):
         item = items_by_iid["FLAME_THROWER"]
         assert item.effects.get("burn_duration") == pytest.approx(4000.0)
-        assert item.effects.get("burn_dps") == pytest.approx(4.0)
+        assert item.effects.get("burn_dps") == pytest.approx(6.0)
 
     def test_paralyzing_tower_stuns(self, items_by_iid):
         """Paralyzing tower should have slow_ratio=0.0 (full stop)."""
         item = items_by_iid["PARALYZNG_TOWER"]
         assert item.effects.get("slow_ratio") == pytest.approx(0.0)
-        assert item.effects.get("slow_duration") == pytest.approx(3000.0)
+        assert item.effects.get("slow_duration") == pytest.approx(2000.0)
 
     def test_visual_type_slow_towers(self, items_by_iid):
         """Slow towers should produce VISUAL_SLOW shots."""
@@ -391,6 +391,6 @@ class TestStructuresYamlEffects:
 
     def test_visual_type_burn_towers(self, items_by_iid):
         """Burn towers should produce VISUAL_BURN shots."""
-        for iid in ("FIRE_TOWER", "FLAME_THROWER", "BASIC_TOWER"):
+        for iid in ("FIRE_TOWER", "FLAME_THROWER"):
             item = items_by_iid[iid]
             assert _shot_visual_type(item.effects) == _VISUAL_BURN, f"{iid} should map to VISUAL_BURN"

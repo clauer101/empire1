@@ -1658,6 +1658,23 @@ label {
   font-size: 12px;
 }
 
+.props-row.effects-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.props-row.effects-row .label {
+  margin-bottom: 2px;
+}
+
+.props-row .value.effects-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .mono {
   font-family: var(--mono);
 }

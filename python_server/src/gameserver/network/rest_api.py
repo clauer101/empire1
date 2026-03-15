@@ -518,6 +518,106 @@ def create_app(services: "Services") -> FastAPI:
                 knowledge[iid] = entry
         return {"buildings": buildings, "knowledge": knowledge}
 
+    # Era groupings matching STEINZEIT … ZUKUNFT comments in structures.yaml
+    _STRUCTURE_ERAS: list[tuple[str, list[str]]] = [
+        ("STEINZEIT",         ["BASIC_TOWER", "SLING_TOWER"]),
+        ("NEOLITHIKUM",       ["DOUBLE_SLING_TOWER", "SPIKE_TRAP"]),
+        ("BRONZEZEIT",        ["ARROW_TOWER", "BALLISTA_TOWER", "FIRE_TOWER"]),
+        ("EISENZEIT",         ["CATAPULTS", "ARBELESTE_TOWER"]),
+        ("MITTELALTER",       ["TAR_TOWER", "COAL_TOWER", "HEAVY_TOWER", "BOILING_OIL"]),
+        ("RENAISSANCE",       ["MECHANICAL_BALISTA", "CANNON_TOWER", "RIFLE_TOWER", "COLD_TOWER", "ICE_TOWER"]),
+        ("INDUSTRIALISIERUNG",["FLAME_THROWER", "SHOCK_TOWER", "PARALYZNG_TOWER", "NAPALM_THROWER"]),
+        ("MODERNE",           ["MG_TOWER", "RAPID_FIRE_MG_BUNKER", "RADAR_TOWER", "ANTI_AIR_TOWER", "LASER_TOWER"]),
+        ("ZUKUNFT",           ["SNIPER_TOWER", "ROCKET_TOWER"]),
+    ]
+
+    @app.get("/api/admin/structures")
+    async def admin_structures(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return all structure definitions grouped by era."""
+        from gameserver.models.items import ItemType
+        up = services.empire_service._upgrades if services.empire_service else None
+        if up is None:
+            return {"structures": {}}
+        result: dict[str, Any] = {}
+        for era, iids in _STRUCTURE_ERAS:
+            for iid in iids:
+                item = up.items.get(iid)
+                if item and item.item_type == ItemType.STRUCTURE:
+                    result[iid] = {
+                        "name": item.name,
+                        "era": era,
+                        "damage": item.damage,
+                        "range": item.range,
+                        "reload_time_ms": item.reload_time_ms,
+                        "effects": dict(item.effects),
+                        "costs": dict(item.costs),
+                        "sprite": item.sprite or "",
+                    }
+        return {"structures": result}
+
+    def _update_effects_in_yaml(yaml_path: "Path", iid: str, new_effects: dict[str, Any]) -> bool:
+        """Replace the `effects:` line for *iid* in a YAML file, preserving inline comments."""
+        from pathlib import Path as _Path
+        text = _Path(yaml_path).read_text()
+        lines = text.splitlines()
+
+        # Format new effects as YAML flow mapping
+        if new_effects:
+            pairs = ", ".join(f"{k}: {v}" for k, v in new_effects.items())
+            new_line_value = f"  effects: {{{pairs}}}"
+        else:
+            new_line_value = "  effects: {}"
+
+        # Locate the root `IID:` line
+        iid_idx: int | None = None
+        for i, line in enumerate(lines):
+            if line.startswith(f"{iid}:"):
+                iid_idx = i
+                break
+        if iid_idx is None:
+            return False
+
+        # Find `effects:` key within this IID's indented block
+        for i in range(iid_idx + 1, len(lines)):
+            line = lines[i]
+            # Leaving this IID's block (new root key or EOF)
+            if line and not line.startswith(" ") and not line.startswith("#"):
+                break
+            stripped = line.lstrip()
+            if stripped.startswith("effects:"):
+                # Preserve trailing inline comment
+                comment = ""
+                rest = line[line.index("effects:"):]
+                hash_pos = rest.find("#")
+                if hash_pos != -1:
+                    comment = "   " + rest[hash_pos:]
+                lines[i] = new_line_value + comment
+                _Path(yaml_path).write_text("\n".join(lines) + "\n")
+                return True
+        return False
+
+    @app.patch("/api/admin/structures/{iid}/effects")
+    async def update_structure_effects(
+        iid: str, body: dict[str, Any], _uid: int = Depends(require_admin)
+    ) -> dict[str, Any]:
+        """Write updated effects for *iid* to structures.yaml."""
+        from pathlib import Path as _Path
+        new_effects: dict[str, Any] = body.get("effects", {})
+        for k, v in new_effects.items():
+            if not isinstance(k, str):
+                raise HTTPException(status_code=400, detail="Effect keys must be strings")
+            if not isinstance(v, (int, float)):
+                raise HTTPException(status_code=400, detail=f"Effect value for '{k}' must be a number")
+
+        config_path = _Path(__file__).parent.parent.parent.parent / "config" / "structures.yaml"
+        if not config_path.exists():
+            raise HTTPException(status_code=500, detail="structures.yaml not found")
+
+        ok = _update_effects_in_yaml(config_path, iid, new_effects)
+        if not ok:
+            raise HTTPException(status_code=404, detail=f"IID '{iid}' not found in structures.yaml")
+        return {"success": True, "iid": iid, "effects": new_effects}
+
     # =================================================================
     # WebSocket proxy — /ws on the same port as REST
     # =================================================================

@@ -13,7 +13,6 @@ export const dict = {
   build_speed_modifier: 'Accelerates building construction by a multiplier',
   build_speed_offset: 'Accelerates building construction by a fixed amount',
   research_speed_modifier: 'Accelerates research by a multiplier',
-  research_speed_offset: 'Accelerates research by a fixed amount',
   incoming_siege_time_offset: 'Increases siege time of incoming armies by a fixed amount',
   outgoing_siege_time_offset: 'Decreases siege time of outgoing armies by a fixed amount',
   incoming_travel_time_offset: 'Increases travel time of incoming armies by a fixed amount',

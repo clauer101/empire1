@@ -145,7 +145,7 @@ FIELD_HEALER:
   costs: {gold: 1200}
   requirements: [HERBOLOGY]
   effects:
-    life_offset: 0.02
+    life_offset: 0.002
     restore_life_after_loss: 2
 
 HARBOR:
@@ -156,7 +156,6 @@ HARBOR:
   requirements: [SAILING]
   effects:
     gold_modifier: 0.1
-    build_speed_modifier: 0.15
 
 SWORD_MAKER:
   name: "Sword Maker"
@@ -165,7 +164,6 @@ SWORD_MAKER:
   costs: {gold: 1600}
   requirements: [COPPER_BRONZE]
   effects:
-    build_speed_modifier: 0.05
 
 # ============================================================
 #   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
@@ -223,7 +221,7 @@ LIBRARY:
   costs: {gold: 3600}
   requirements: [ALPHABET_WRITING]
   effects:
-    research_speed_modifier: 0.35
+    research_speed_modifier: 0.25
 
 LORE_COLLECTION:
   name: "Lore Collection"
@@ -241,7 +239,7 @@ FORGE:
   costs: {gold: 4400}
   requirements: [IRON]
   effects:
-    build_speed_modifier: 0.15
+    build_speed_modifier: 0.4
 
 TREASURE_CHAMBER:
   name: "Treasure Chamber"
@@ -252,15 +250,6 @@ TREASURE_CHAMBER:
   effects:
     gold_offset: 0.5
 
-IRON_WORK:
-  name: "Iron Work"
-  description: "Advanced metal processing facility for iron-based construction."
-  effort: 28000
-  costs: {gold: 5600}
-  requirements: [IRON]
-  effects:
-    build_speed_modifier: 0.1
-
 CARTOGRAPHER:
   name: "Cartographer"
   description: "Maps territories for exploration and navigation."
@@ -268,7 +257,6 @@ CARTOGRAPHER:
   costs: {gold: 6000}
   requirements: [CARTOGRAPHY]
   effects:
-    research_speed_modifier: 0.1
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -316,7 +304,7 @@ TREADWHEEL_CRANE:
   costs: {gold: 10000}
   requirements: [MECHANICS]
   effects:
-    build_speed_modifier: 0.05
+    build_speed_modifier: 0.2
 
 TEMPLE:
   name: "Temple"
@@ -353,7 +341,7 @@ GUILD:
   costs: {gold: 14000}
   requirements: [ECONOMY]
   effects:
-    build_speed_modifier: 0.1
+    build_speed_modifier: 0.3
 
 SOVEREIGN_GUARD:
   name: "Sovereign Guard"
@@ -372,7 +360,7 @@ MONASTERY:
   requirements: [RELIGION]
   effects:
     culture_offset: 0.2
-    research_speed_modifier: 0.2
+    research_speed_modifier: 0.3
 
 MANOR:
   name: "Manor"
@@ -380,7 +368,7 @@ MANOR:
   effort: 85000
   costs: {gold: 17000}
   requirements: [FEUDALISM]
-  effects: {}
+  effects: {gold_offset: 0.1}
 
 BANK:
   name: "Bank"
@@ -484,8 +472,7 @@ COURTHOUSE:
   effort: 180000
   costs: {gold: 36000}
   requirements: [LAWS]
-  effects:
-    build_speed_modifier: 0.1
+  effects: {max_life_modifier: 2}
 
 PARADE_GROUND:
   name: "Parade Ground"
@@ -517,8 +504,7 @@ CANNON_MANUFACTORY:
   effort: 230651
   costs: {gold: 46130}
   requirements: [GUNPOWDER]
-  effects:
-    build_speed_modifier: 0.1
+  effects: {}
 
 SECRET_ORDER:
   name: "Secret Order"
@@ -543,8 +529,7 @@ HIGH_COURT:
   effort: 257213
   costs: {gold: 60000}
   requirements: [CONSTITUTION]
-  effects: 
-    build_speed_modifier: 0.4
+  effects: {max_life_modifier: 3}
 
 PARLIAMENT:
   name: "Parliament"
@@ -586,7 +571,7 @@ HEAVY_EQUIPMENT:
   costs: {gold: 100000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
-    build_speed_modifier: 0.2
+    build_speed_modifier: 0.4
 
 RAIL_ROADS:
   name: "Rail Roads"
@@ -604,7 +589,6 @@ VEHICLE_WORKSHOP:
   costs: {gold: 160000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
-    build_speed_modifier: 0.2
 
 DEFENSE_DEPARTMENT:
   name: "Defense Department"
@@ -640,7 +624,6 @@ HANGAR:
   costs: {gold: 320000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
-    build_speed_modifier: 0.1
 
 HOSPITAL:
   name: "Hospital"
@@ -649,7 +632,7 @@ HOSPITAL:
   costs: {gold: 340000}
   requirements: [CHEMISTRY, ELECTRICITY]
   effects:
-    life_offset: 0.05
+    life_offset: 0.005
     max_life_modifier: 10
 
 FACTORY:
@@ -669,7 +652,7 @@ EMERGENCY_ROOM:
   costs: {gold: 380000}
   requirements: [ELECTRICITY]
   effects:
-    life_offset: 0.03
+    life_offset: 0.003
     max_life_modifier: 5
     restore_life_after_loss: 5
 
@@ -692,7 +675,6 @@ ROCKET_SILO:
   costs: {gold: 500000}
   requirements: [CHEMISTRY]
   effects:
-    build_speed_modifier: 0.1
 
 RESEARCH_VAULT:
   name: "Research Vault"
@@ -752,9 +734,8 @@ SOCIAL_SECURITY_SYSTEM:
   description: "Public welfare infrastructure supporting citizens."
   effort: 769078
   costs: {gold: 650000}
-  requirements: [CONSTITUTION]
-  effects:
-    culture_offset: 0.15
+  requirements: [CONSTITUTION, SANITATION]
+  effects: {max_life_modifier: 5}
 
 EXECUTIVE_CARPOOL:
   name: "Executive Carpool"
@@ -824,7 +805,6 @@ MECH_WARRIOR_LAB:
   costs: {gold: 1000000}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
-    build_speed_modifier: 0.2
 
 ELITE_ACADEMY:
   name: "Elite Academy"
@@ -834,7 +814,6 @@ ELITE_ACADEMY:
   requirements: [COMMAND_CHAIN]
   effects:
     research_speed_modifier: 0.15
-    culture_offset: 0.25
 
 RECRUITING_OFFICE:
   name: "Recruiting Office"
@@ -844,7 +823,6 @@ RECRUITING_OFFICE:
   requirements: [STRATEGIC_WARFARE]
   effects:
     culture_offset: 0.2
-    gold_offset: 0.2
 
 # ============================================================
 #   ZUKUNFT  (Effort 40.000.000 – 80.000.000)
@@ -878,7 +856,6 @@ CYBER_COMMAND:
   costs: {gold: 14000000}
   requirements: [COMPUTER_TECHNOLOGY]
   effects:
-    culture_offset: 2.0
 
 FUSION_REACTOR:
   name: "Fusion Reactor"

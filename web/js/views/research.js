@@ -13,7 +13,7 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
-let hideCompleted = null; // null = auto: computed on first render
+let hideCompleted = true; // default: hide completed items
 
 function init(el, _api, _state) {
   container = el;
@@ -42,7 +42,7 @@ async function enter() {
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
-  hideCompleted = null; // reset so next visit re-evaluates the default
+  hideCompleted = true; // reset to default on leave
 }
 
 function render() {
@@ -84,12 +84,6 @@ function render() {
     entries.sort(([a], [b]) => (b === researchQueue) - (a === researchQueue));
   }
 
-  // Auto-default: hide completed only when 5+ knowledge items are done
-  if (hideCompleted === null) {
-    const completedKnowledgeCount = Object.keys(knowledge).filter(iid => completed.has(iid)).length;
-    hideCompleted = completedKnowledgeCount >= 5;
-  }
-
   // Filter out completed items if toggle is active
   if (hideCompleted) {
     entries = entries.filter(([iid]) => !completed.has(iid));
@@ -109,12 +103,12 @@ function render() {
     const badgeText = status === 'in-progress' ? 'researching' : status;
 
     // Calculate wall-clock duration with empire effects
-    // Research speed: (base_research_speed + research_speed_offset) * (1 + research_speed_modifier + n_scientists * citizen_effect)
+    // Research speed: base_research_speed * (1 + research_speed_modifier + n_scientists * citizen_effect)
     const fullEffort = info.effort;
     const stored = summary.knowledge?.[iid];
     const remaining = (stored != null && stored < fullEffort) ? stored : fullEffort;
     const scientistBonus = (summary.citizens?.scientist || 0) * (summary.citizen_effect || 0);
-    const researchMultiplier = ((summary.base_research_speed ?? 1) + (summary.effects?.research_speed_offset || 0)) * (1 + (summary.effects?.research_speed_modifier || 0) + scientistBonus);
+    const researchMultiplier = (summary.base_research_speed ?? 1) * (1 + (summary.effects?.research_speed_modifier || 0) + scientistBonus);
     const totalSecs  = researchMultiplier > 0 ? fullEffort / researchMultiplier : fullEffort;
     const remainSecs = researchMultiplier > 0 ? remaining  / researchMultiplier : remaining;
 

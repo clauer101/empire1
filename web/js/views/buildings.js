@@ -13,7 +13,7 @@ let st;
 /** @type {HTMLElement} */
 let container;
 let _unsub = [];
-let hideCompleted = null; // null = auto: computed on first render
+let hideCompleted = true; // default: hide completed items
 
 function init(el, _api, _state) {
   container = el;
@@ -42,7 +42,7 @@ async function enter() {
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
-  hideCompleted = null; // reset so next visit re-evaluates the default
+  hideCompleted = true; // reset to default on leave
 }
 
 function render() {
@@ -82,12 +82,6 @@ function render() {
   let entries = Object.entries(buildings).sort(([, a], [, b]) => totalCost(a) - totalCost(b));
   if (buildQueue) {
     entries.sort(([a], [b]) => (b === buildQueue) - (a === buildQueue));
-  }
-
-  // Auto-default: hide completed only when 5+ buildings are done
-  if (hideCompleted === null) {
-    const completedBuildingCount = Object.keys(buildings).filter(iid => completed.has(iid)).length;
-    hideCompleted = completedBuildingCount >= 5;
   }
 
   // Filter out completed items if toggle is active
