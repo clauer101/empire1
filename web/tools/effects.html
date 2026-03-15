@@ -23,11 +23,28 @@
     .effect-header.open .effect-chevron { transform: rotate(90deg); }
     .effect-items { display: none; }
     .effect-items.open { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; padding: 0 4px 4px; }
-    .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+    .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .item-card:hover { border-color: var(--accent); }
     .item-name { font-size: 13px; font-weight: 600; }
-    .item-meta { display: flex; justify-content: space-between; align-items: center; }
-    .item-id { font-family: monospace; font-size: 10px; color: var(--text-dim); }
-    .item-value { font-size: 12px; color: var(--success, #4caf50); font-weight: 700; }
+    .item-meta { display: flex; align-items: center; gap: 6px; }
+    .item-id { font-family: monospace; font-size: 10px; color: var(--text-dim); flex: 1; }
+    .item-value-input {
+      width: 80px; text-align: right; background: var(--surface-alt, #1a1a28);
+      border: 1px solid var(--border); border-radius: 4px;
+      color: var(--success, #4caf50); font-weight: 700; font-size: 12px;
+      padding: 2px 5px; outline: none; font-family: monospace;
+    }
+    .item-value-input:focus { border-color: var(--accent); }
+    .save-eff-btn {
+      background: none; border: 1px solid var(--border); border-radius: 4px;
+      color: var(--text-dim); cursor: pointer; font-size: 11px;
+      padding: 2px 6px; transition: border-color .15s, color .15s;
+    }
+    .save-eff-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .save-eff-btn:disabled { opacity: 0.4; cursor: default; }
+    .eff-status { font-size: 10px; min-width: 16px; }
+    .eff-status.ok  { color: var(--success, #4caf50); }
+    .eff-status.err { color: var(--danger, #ef5350); }
     .item-type-b { font-size: 10px; color: var(--accent-dim); }
     .item-type-k { font-size: 10px; color: var(--warning, #ff9800); }
     .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
@@ -35,6 +52,12 @@
     .toggle-all { font-size: 12px; color: var(--accent); cursor: pointer; white-space: nowrap; }
     .toggle-all:hover { text-decoration: underline; }
     h1 { font-size: 18px; font-weight: 700; color: var(--accent); margin: 0 0 20px; padding-bottom: 10px; border-bottom: 2px solid var(--accent-dim); }
+    .group-header {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-dim); padding: 6px 4px 4px; margin: 16px 0 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .group-header:first-child { margin-top: 0; }
   </style>
 </head>
 <body>
@@ -48,24 +71,38 @@
 </div>
 <script>
 const EFFECT_LABELS = {
-  life_offset: 'Life Regen / tick',
-  max_life_modifier: 'Max Life +',
-  siege_time_offset: 'Siege Time (defender gets) +s',
-  restore_life_after_loss: 'Life Restored after Loss',
-  gold_offset: 'Gold / tick',
-  gold_modifier: 'Gold Multiplier',
-  culture_offset: 'Culture / tick',
-  culture_modifier: 'Culture Multiplier',
-  build_speed_modifier: 'Build Speed Multiplier',
-  build_speed_offset: 'Build Speed +',
-  research_speed_modifier: 'Research Speed Multiplier',
-  research_speed_offset: 'Research Speed +',
-  travel_time_offset: 'Travel Time Offset',
-  wave_delay_offset: 'Wave Delay +',
-  wave_delay_modifier: 'Wave Delay Multiplier',
-  restore_life_after_loss_offset: 'Life Restored after Loss (offset)',
+  gold_offset:                   'Gold / tick',
+  gold_modifier:                 'Gold Multiplier',
+  culture_offset:                'Culture / tick',
+  culture_modifier:              'Culture Multiplier',
+  life_offset:                   'Life Regen / tick',
+  max_life_modifier:             'Max Life +',
+  restore_life_after_loss:       'Life Restored after Loss',
+  restore_life_after_loss_offset:'Life Restored after Loss (offset)',
+  build_speed_modifier:          'Build Speed Multiplier',
+  build_speed_offset:            'Build Speed +',
+  research_speed_modifier:       'Research Speed Multiplier',
+  siege_time_offset:             'Siege Time (defender gets) +s',
+  wave_delay_offset:             'Wave Delay +',
+  wave_delay_modifier:           'Wave Delay Multiplier',
+  travel_time_offset:            'Travel Time Offset',
 };
 
+const EFFECT_GROUPS = [
+  {
+    label: '💰 Economy',
+    keys: ['gold_offset','gold_modifier','culture_offset','culture_modifier',
+           'life_offset','max_life_modifier','restore_life_after_loss',
+           'restore_life_after_loss_offset','build_speed_modifier',
+           'build_speed_offset','research_speed_modifier'],
+  },
+  {
+    label: '⚔ Battle',
+    keys: ['siege_time_offset','wave_delay_offset','wave_delay_modifier','travel_time_offset'],
+  },
+];
+
+let CATALOG = {};
 let DATA = {};
 let currentFilter = '';
 
@@ -89,34 +126,86 @@ function buildData(catalog) {
   return effects;
 }
 
-function render(filter) {
-  const root = document.getElementById('effects-root');
-  const q = (filter || '').toLowerCase();
-  root.innerHTML = '';
-  for (const [eff, items] of Object.entries(DATA)) {
-    const matched = items.filter(it =>
-      !q || eff.includes(q) || it.name.toLowerCase().includes(q) || it.id.toLowerCase().includes(q)
-    );
-    if (!matched.length) continue;
-    const block = document.createElement('div');
-    block.className = 'effect-block';
-    const hdr = document.createElement('div');
-    hdr.className = 'effect-header';
-    hdr.innerHTML =
-      '<span class="effect-key">' + eff + '</span>' +
-      '<span style="font-size:11px;color:var(--text-dim);flex:1;padding-left:8px">' + (EFFECT_LABELS[eff] || '') + '</span>' +
-      '<span class="effect-count">' + matched.length + ' items</span>' +
-      '<span class="effect-chevron">&#9658;</span>';
-    const list = document.createElement('div');
-    list.className = 'effect-items';
-    matched.forEach(it => {
+function renderEffectBlock(root, eff, items, q) {
+  const matched = items.filter(it =>
+    !q || eff.includes(q) || it.name.toLowerCase().includes(q) || it.id.toLowerCase().includes(q)
+  );
+  if (!matched.length) return false;
+  const block = document.createElement('div');
+  block.className = 'effect-block';
+  const hdr = document.createElement('div');
+  hdr.className = 'effect-header';
+  hdr.innerHTML =
+    '<span class="effect-key">' + eff + '</span>' +
+    '<span style="font-size:11px;color:var(--text-dim);flex:1;padding-left:8px">' + (EFFECT_LABELS[eff] || '') + '</span>' +
+    '<span class="effect-count">' + matched.length + ' items</span>' +
+    '<span class="effect-chevron">&#9658;</span>';
+  const addItemBtn = document.createElement('button');
+  addItemBtn.className = 'save-eff-btn';
+  addItemBtn.textContent = '＋';
+  addItemBtn.title = 'Item hinzufügen';
+  addItemBtn.style.cssText = 'margin-right:4px;font-size:13px;';
+  addItemBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    hdr.classList.add('open');
+    list.classList.add('open');
+    showAddForm(list, eff, items);
+  });
+  hdr.insertBefore(addItemBtn, hdr.querySelector('.effect-chevron'));
+  const list = document.createElement('div');
+  list.className = 'effect-items';
+  matched.forEach(it => {
       const card = document.createElement('div');
       card.className = 'item-card';
-      card.innerHTML =
-        '<span class="item-name">' + it.name + '</span>' +
-        '<div class="item-meta"><span class="item-id">' + it.id + '</span><span class="item-value">+' + fmt(it.value) + '</span></div>' +
-        '<span class="' + (it.type === 'building' ? 'item-type-b' : 'item-type-k') + '">' +
-          (it.type === 'building' ? '🏗 Building' : '🔬 Knowledge') + '</span>';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'item-name';
+      nameEl.textContent = it.name;
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'item-meta';
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'item-value-input';
+      input.value = it.value;
+      input.step = 'any';
+      input.title = eff;
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'save-eff-btn';
+      saveBtn.textContent = '💾';
+      saveBtn.title = 'Speichern';
+
+      const statusEl = document.createElement('span');
+      statusEl.className = 'eff-status';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'save-eff-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.title = 'Effect entfernen';
+      removeBtn.style.color = 'var(--danger, #ef5350)';
+      removeBtn.addEventListener('click', () => removeEffect(it.id, it.type, eff));
+
+      saveBtn.addEventListener('click', () =>
+        saveEffect(it.id, it.type, eff, parseFloat(input.value), saveBtn, statusEl)
+      );
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') saveBtn.click();
+      });
+
+      metaEl.appendChild(input);
+      metaEl.appendChild(saveBtn);
+      metaEl.appendChild(statusEl);
+      metaEl.appendChild(removeBtn);
+
+      const typeEl = document.createElement('span');
+      typeEl.className = it.type === 'building' ? 'item-type-b' : 'item-type-k';
+      typeEl.textContent = it.type === 'building' ? '🏗 Building' : '🔬 Knowledge';
+
+      card.appendChild(nameEl);
+      card.appendChild(metaEl);
+      card.appendChild(typeEl);
       list.appendChild(card);
     });
     hdr.addEventListener('click', () => { hdr.classList.toggle('open'); list.classList.toggle('open'); });
@@ -124,6 +213,145 @@ function render(filter) {
     block.appendChild(hdr);
     block.appendChild(list);
     root.appendChild(block);
+    return true;
+}
+
+function render(filter) {
+  const root = document.getElementById('effects-root');
+  const q = (filter || '').toLowerCase();
+  root.innerHTML = '';
+
+  // Collect all effect keys not belonging to any defined group
+  const groupedKeys = new Set(EFFECT_GROUPS.flatMap(g => g.keys));
+  const otherKeys = Object.keys(DATA).filter(k => !groupedKeys.has(k));
+  const allGroups = [...EFFECT_GROUPS];
+  if (otherKeys.length) allGroups.push({ label: '⋯ Other', keys: otherKeys });
+
+  for (const group of allGroups) {
+    // Only render keys that actually have data
+    const presentKeys = group.keys.filter(k => DATA[k]);
+    // Check if any match the filter before rendering the header
+    const anyMatch = presentKeys.some(k => {
+      return DATA[k].some(it =>
+        !q || k.includes(q) || it.name.toLowerCase().includes(q) || it.id.toLowerCase().includes(q)
+      );
+    });
+    if (!anyMatch) continue;
+
+    const gh = document.createElement('div');
+    gh.className = 'group-header';
+    gh.textContent = group.label;
+    root.appendChild(gh);
+
+    for (const eff of presentKeys) {
+      renderEffectBlock(root, eff, DATA[eff], q);
+    }
+  }
+}
+
+async function saveEffect(iid, type, effKey, newVal, btn, statusEl) {
+  btn.disabled = true;
+  statusEl.textContent = '';
+  statusEl.className = 'eff-status';
+  const endpoint = type === 'building' ? '/api/building-effects' : '/api/knowledge-effects';
+  try {
+    const res = await fetch(endpoint, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [iid]: { [effKey]: newVal } }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    statusEl.textContent = '✓';
+    statusEl.className = 'eff-status ok';
+    setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'eff-status'; }, 2500);
+  } catch (e) {
+    statusEl.textContent = '✗';
+    statusEl.className = 'eff-status err';
+    statusEl.title = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showAddForm(list, eff, existingItems) {
+  if (list.querySelector('.add-effect-form')) return;
+  const existingIds = new Set(existingItems.map(it => it.id));
+  const bOptions = Object.entries(CATALOG.buildings || {})
+    .filter(([iid]) => !existingIds.has(iid))
+    .map(([iid, b]) => ({ iid, name: b.name, type: 'building' }));
+  const kOptions = Object.entries(CATALOG.knowledge || {})
+    .filter(([iid]) => !existingIds.has(iid))
+    .map(([iid, k]) => ({ iid, name: k.name, type: 'knowledge' }));
+  const formDiv = document.createElement('div');
+  formDiv.className = 'add-effect-form';
+  formDiv.style.cssText = 'grid-column:1/-1;display:flex;gap:6px;align-items:center;padding:8px;background:var(--surface-alt);border-radius:6px;border:1px dashed var(--accent);flex-wrap:wrap;';
+  const sel = document.createElement('select');
+  sel.style.cssText = 'flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 6px;font-size:12px;';
+  const grpB = document.createElement('optgroup'); grpB.label = '🏗 Buildings';
+  const grpK = document.createElement('optgroup'); grpK.label = '🔬 Knowledge';
+  bOptions.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.iid + '::building';
+    opt.textContent = o.name;
+    grpB.appendChild(opt);
+  });
+  kOptions.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.iid + '::knowledge';
+    opt.textContent = o.name;
+    grpK.appendChild(opt);
+  });
+  if (grpB.childElementCount) sel.appendChild(grpB);
+  if (grpK.childElementCount) sel.appendChild(grpK);
+  if (!sel.options.length) sel.innerHTML = '<option disabled>Alle Items haben diesen Effekt bereits</option>';
+  const valInput = document.createElement('input');
+  valInput.type = 'number'; valInput.step = 'any';
+  valInput.className = 'item-value-input';
+  valInput.value = '0'; valInput.style.width = '80px';
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'save-eff-btn'; saveBtn.textContent = '✓ Add';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'save-eff-btn'; cancelBtn.textContent = '✕';
+  cancelBtn.style.color = 'var(--danger, #ef5350)';
+  const statusEl = document.createElement('span');
+  statusEl.className = 'eff-status';
+  saveBtn.addEventListener('click', async () => {
+    if (!sel.value || !sel.value.includes('::')) return;
+    const [iid, type] = sel.value.split('::');
+    const value = parseFloat(valInput.value);
+    saveBtn.disabled = true; statusEl.textContent = '';
+    try {
+      const endpoint = type === 'building' ? '/api/building-effects' : '/api/knowledge-effects';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ iid, effect: eff, value }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      await load();
+    } catch(e) {
+      statusEl.textContent = '✗'; statusEl.className = 'eff-status err'; statusEl.title = e.message;
+      saveBtn.disabled = false;
+    }
+  });
+  cancelBtn.addEventListener('click', () => formDiv.remove());
+  formDiv.append(sel, valInput, saveBtn, cancelBtn, statusEl);
+  list.insertBefore(formDiv, list.firstChild);
+}
+
+async function removeEffect(iid, type, effKey) {
+  if (!confirm(`"${effKey}" von "${iid}" entfernen?`)) return;
+  const endpoint = type === 'building' ? '/api/building-effects/remove' : '/api/knowledge-effects/remove';
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iid, effect: effKey }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    await load();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
   }
 }
 
@@ -134,7 +362,8 @@ async function load() {
   try {
     const res = await fetch('/api/admin/catalog', { headers: { Authorization: 'Bearer ' + token } });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    DATA = buildData(await res.json());
+    CATALOG = await res.json();
+    DATA = buildData(CATALOG);
     render(currentFilter);
   } catch (e) {
     root.innerHTML = '<div style="color:var(--danger);padding:20px">Failed to load: ' + e.message + '</div>';

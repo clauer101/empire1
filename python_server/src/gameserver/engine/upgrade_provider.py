@@ -46,7 +46,7 @@ class UpgradeProvider:
     def get_effects(self, iid: str) -> dict[str, float]:
         """Return the passive effects granted by an item."""
         item = self.items.get(iid)
-        return dict(item.effects) if item else {}
+        return dict(item.effects) if item and item.effects else {}
 
     def available_critters(self, completed: set[str]) -> list[ItemDetails]:
         """Return all critter types whose requirements are met."""

@@ -123,6 +123,13 @@ class UpgradeStructureRequest(GameMessage):
     sid: int = 0
 
 
+class SetStructureSelectRequest(GameMessage):
+    type: Literal["set_structure_select"] = "set_structure_select"
+    hex_q: int = 0
+    hex_r: int = 0
+    select: str = "first"
+
+
 # -- Citizens ------------------------------------------------------------
 
 class CitizenUpgradeRequest(GameMessage):
@@ -384,6 +391,7 @@ MESSAGE_TYPES: dict[str, type[GameMessage]] = {
     "new_structure": NewStructureRequest,
     "delete_structure": DeleteStructureRequest,
     "upgrade_structure": UpgradeStructureRequest,
+    "set_structure_select": SetStructureSelectRequest,
     # Military
     "military_request": MilitaryRequest,
     "military_response": MilitaryResponse,

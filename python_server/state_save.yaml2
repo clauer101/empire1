@@ -1,14 +1,14 @@
 meta:
   version: 1
-  saved_at: '2026-03-15T19:37:09'
-  saved_at_unix: 1773603429.7213104
+  saved_at: '2026-03-15T19:17:33'
+  saved_at_unix: 1773602253.022334
 empires:
 - uid: 4
   name: Empire1
   resources:
-    gold: 1370.1036154081228
-    culture: 34305.144891487354
-    life: 12.0
+    gold: 1031.4817035540266
+    culture: 33735.01616234522
+    life: 10.65940953282606
   buildings:
     BASE_CAMP: 0.0
     FIRE_PLACE: 0.0
@@ -42,7 +42,7 @@ empires:
     SAILING: 0.0
     HORSEBACK_RIDING: 0.0
     DRILL: 0.0
-    ARTS: 2509.0153033710712
+    ARTS: 3567.2087779151225
   research_queue: ARTS
   citizens:
     merchant: 10
@@ -98,17 +98,13 @@ empires:
     type: path
   - q: -2
     r: 3
-    type:
-      type: BALLISTA_TOWER
-      select: random
+    type: BALLISTA_TOWER
   - q: -3
     r: 2
     type: BASIC_TOWER
   - q: -3
     r: 3
-    type:
-      type: BALLISTA_TOWER
-      select: random
+    type: BALLISTA_TOWER
   - q: 0
     r: 0
     type: castle
@@ -143,8 +139,8 @@ empires:
 - uid: 3
   name: Bikini Bottom
   resources:
-    gold: 2456.9649363436656
-    culture: 8803.082085973954
+    gold: 2225.5029838399473
+    culture: 8554.730556234026
     life: 10.0
   buildings:
     BASE_CAMP: 0.0
@@ -154,7 +150,7 @@ empires:
     SHRINE: 0.0
     TOOL_SHOP: 0.0
     EARTH_WALL: 0.0
-    EPIC_DRAWINGS: 2038.8422888023379
+    EPIC_DRAWINGS: 3680.121963605355
   build_queue: EPIC_DRAWINGS
   knowledge:
     HUNTING: 0.0
@@ -164,9 +160,8 @@ empires:
     POTTERY: 0.0
     HORSEBACK_RIDING: 0.0
     HERBOLOGY: 0.0
-    AGRICULTURE: 0.0
-    COPPER_BRONZE: 2029.1324000524905
-  research_queue: COPPER_BRONZE
+    AGRICULTURE: 10.615802910291663
+  research_queue: AGRICULTURE
   citizens:
     merchant: 1
     scientist: 1
@@ -177,8 +172,8 @@ empires:
     gold_offset: 0.15000000000000002
     culture_offset: 0.25
     build_speed_modifier: 0.9
-    restore_life_after_loss: 1.0
     research_speed_modifier: 0.3
+    restore_life_after_loss: 1.0
   artefacts: []
   max_life: 10.0
   structures: {}
@@ -297,18 +292,18 @@ empires:
     - wave_id: 1
       iid: CLUBMAN
       slots: 10
-      num_critters_spawned: 10
-      next_critter_ms: 2000
+      num_critters_spawned: 0
+      next_critter_ms: 0
     - wave_id: 2
       iid: SCOUT
       slots: 12
-      num_critters_spawned: 12
-      next_critter_ms: 2000
+      num_critters_spawned: 0
+      next_critter_ms: 15000
     - wave_id: 3
       iid: SWORDMAN
       slots: 3
-      num_critters_spawned: 3
-      next_critter_ms: 2000
+      num_critters_spawned: 0
+      next_critter_ms: 30000
   - aid: 10001
     uid: 0
     name: Field Healer Hunt
@@ -348,55 +343,26 @@ empires:
       slots: 14
       num_critters_spawned: 0
       next_critter_ms: 90000
-  - aid: 10000
-    uid: 0
-    name: Harvest Raiders
-    waves:
-    - wave_id: 1
-      iid: CHARIOT
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: WARRIOR
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SCOUT
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: CHARIOT
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: WARRIOR
-      slots: 10
-      num_critters_spawned: 0
-      next_critter_ms: 60000
   spies: []
   bosses: {}
   hex_map: []
 attacks:
-- attack_id: 2
-  attacker_uid: 0
-  defender_uid: 4
-  army_aid: 10001
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 630.0
-  siege_remaining_seconds: 2266.1801330059534
-  total_siege_seconds: 3120.0
-- attack_id: 3
+- attack_id: 1
   attacker_uid: 0
   defender_uid: 3
   army_aid: 10000
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 300.0
-  siege_remaining_seconds: 1667.4625894929632
+  total_eta_seconds: 150.0
+  siege_remaining_seconds: 1659.447577749961
   total_siege_seconds: 2220.0
+- attack_id: 2
+  attacker_uid: 0
+  defender_uid: 4
+  army_aid: 10001
+  phase: travelling
+  eta_seconds: 9.39823427295778
+  total_eta_seconds: 630.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
 battles: []

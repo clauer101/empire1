@@ -457,7 +457,6 @@ function init(el, _api, _state) {
           </div>
           <div class="tile-overlay__body" id="tower-overlay-body">
           </div>
-    _setBattleTitle('⚔ Defense');
         </div>
       </div>
 
@@ -634,8 +633,8 @@ function _showTileDetails(q, r, tile) {
       '<div class="props-section-label">Target Select</div>' +
       '<div id="select-btns" style="display:flex;gap:4px;margin-top:4px;">' + _selectBtns + '</div>';
     if (s.effects && Object.keys(s.effects).length > 0) {
-      towerInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' +
-        Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ') + '</span></div>';
+      towerInfo += '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' +
+        Object.entries(s.effects).map(([k, v]) => '<span>' + k + ': ' + v + '</span>').join('') + '</span></div>';
     }
   } else if (!['path', 'castle', 'spawnpoint', 'empty'].includes(tile.type)) {
     // Unknown structure tile — don't show details
@@ -678,6 +677,8 @@ function _showTileDetails(q, r, tile) {
         if (tileData) {
           tileData.select = val === 'first' ? undefined : val;
           grid._dirty = true;
+          // Immediately notify server (updates live battle + persists to hex_map)
+          _sendWs({ type: 'set_structure_select', hex_q: q, hex_r: r, select: val });
           _autoSave();
         }
         // Refresh button highlight without re-opening the full panel
@@ -904,10 +905,18 @@ function _initCanvas() {
       if (tileTypeId !== 'void') {
         const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
         const existingType = grid.getTile(q, r)?.type;
-        if (existingType === 'void') return;  // cannot build on void tiles
+        if (!existingType || existingType === 'void') return;  // cannot build on void tiles
+        if (existingType !== 'empty') {
+          const NON_STRUCTURE = new Set(['path', 'castle', 'spawnpoint', 'blocked']);
+          if (!NON_STRUCTURE.has(existingType)) {
+            _showMapError('Tower already here. Use 🗑 Empty Tile to remove it first.');
+          }
+          return;
+        }
         const brushIsPath = PATH_TYPES.includes(tileTypeId);
         const replacesPath = PATH_TYPES.includes(existingType);
         if (tileTypeId === 'spawnpoint') _clearExistingSpawnpoint(q, r);
+        grid.setTile(q, r, tileTypeId);
         if (brushIsPath || replacesPath) { _markPathDirty(); }
         else {
           // Optimistically deduct cost so palette grays out immediately
@@ -1050,8 +1059,8 @@ function _showTypeDetails(typeId) {
       '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
       '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>';
     if (s.effects && Object.keys(s.effects).length > 0) {
-      html += '<div class="props-row"><span class="label">Effects</span><span class="value">' +
-        Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ') + '</span></div>';
+      html += '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' +
+        Object.entries(s.effects).map(([k, v]) => '<span>' + k + ': ' + v + '</span>').join('') + '</span></div>';
     }
   }
   html += '</div>';
@@ -1240,7 +1249,8 @@ function _onBattleSetup(msg) {
   if (msg.structures) {
     for (const s of msg.structures) {
       const key = hexKey(s.q, s.r);
-      grid.setTile(s.q, s.r, s.iid);
+      const _meta = (s.select && s.select !== 'first') ? { select: s.select } : {};
+      grid.setTile(s.q, s.r, s.iid, _meta);
       const tile = grid.tiles.get(key);
       if (tile) {
         tile.sid = s.sid;
@@ -1309,7 +1319,8 @@ function _onStructureUpdate(msg) {
 
   // Place all structures from the server snapshot
   for (const s of msg.structures) {
-    grid.setTile(s.q, s.r, s.iid);
+    const _meta = (s.select && s.select !== 'first') ? { select: s.select } : {};
+    grid.setTile(s.q, s.r, s.iid, _meta);
     const key = hexKey(s.q, s.r);
     const tile = grid.tiles.get(key);
     if (tile) {

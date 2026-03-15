@@ -129,7 +129,7 @@ empires:
     name: Early Barbarians Raid
     waves:
     - wave_id: 1
-      iid: CART
+      iid: THE_GENERAL
       slots: 5
       num_critters_spawned: 0
       next_critter_ms: 0

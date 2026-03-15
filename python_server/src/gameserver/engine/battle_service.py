@@ -40,6 +40,8 @@ _VISUAL_SPLASH = 3
 
 def _shot_visual_type(effects: dict) -> int:
     """Derive a visual shot-type integer from the effects dict (for client rendering only)."""
+    if "splash_radius" in effects:
+        return _VISUAL_SPLASH
     if "burn_dps" in effects or "burn_duration" in effects:
         return _VISUAL_BURN
     if "slow_duration" in effects or "slow_ratio" in effects:
@@ -118,7 +120,10 @@ class BattleService:
         return max(1, int(getattr(item, "slots", 1) or 1))
 
     def _mark_wave_complete_if_blocked(self, wave) -> bool:
-        """Mark a wave complete when its remaining slots cannot fit another critter."""
+        """Mark a wave complete when its remaining slots cannot fit another critter.
+        
+        Always lets the first critter through regardless of slot cost.
+        """
         if wave.num_critters_spawned >= wave.slots:
             return True
 
@@ -127,6 +132,10 @@ class BattleService:
             wave.num_critters_spawned = wave.slots
             wave.next_critter_ms = 0
             return True
+
+        # If nothing has been spawned yet, never block — guarantee at least one critter.
+        if wave.num_critters_spawned == 0:
+            return False
 
         critter_slot_cost = self._get_wave_critter_slot_cost(wave)
         if critter_slot_cost > remaining_slots:
@@ -258,6 +267,29 @@ class BattleService:
             critter.burn_dps          = float(shot.effects.get("burn_dps", 1.0))
             log.debug("[BURN] Critter cid=%d burning for %.1f dps over %.0fms",
                       critter.cid, critter.burn_dps, critter.burn_remaining_ms)
+
+        # Apply splash damage (and effects) to nearby critters
+        if "splash_radius" in shot.effects and critter.path:
+            splash_radius = float(shot.effects["splash_radius"])
+            impact_q, impact_r = critter_hex_pos(critter.path, critter.path_progress)
+            has_splash_slow = "slow_duration" in shot.effects or "slow_ratio" in shot.effects
+            has_splash_burn = "burn_dps" in shot.effects or "burn_duration" in shot.effects
+            for other_cid, other in list(battle.critters.items()):
+                if other_cid == critter.cid or not other.path:
+                    continue
+                oq, or_ = critter_hex_pos(other.path, other.path_progress)
+                dist = hex_world_distance(impact_q, impact_r, oq, or_)
+                if dist <= splash_radius:
+                    splash_dmg = max(0.5, shot.damage - other.armour) if shot.damage > 0 else 0.0
+                    other.health -= splash_dmg
+                    if has_splash_slow:
+                        other.slow_remaining_ms = float(shot.effects.get("slow_duration", 2000.0))
+                        other.slow_speed = other.speed * float(shot.effects.get("slow_ratio", 0.5))
+                    if has_splash_burn:
+                        other.burn_remaining_ms = float(shot.effects.get("burn_duration", 3000.0))
+                        other.burn_dps = float(shot.effects.get("burn_dps", 1.0))
+                    log.debug("[SPLASH] Critter cid=%d hit for %.1f dmg (dist=%.2f, slow=%s, burn=%s)",
+                              other_cid, splash_dmg, dist, has_splash_slow, has_splash_burn)
 
     # -- Critter movement ------------------------------------------------
 
@@ -473,8 +505,8 @@ class BattleService:
         if next_spawn_ms <= 0:
             critter_slot_cost = self._get_wave_critter_slot_cost(wave)
 
-            # Only spawn if it fits in remaining slots
-            if critters_spawned + critter_slot_cost <= wave.slots:
+            # Spawn if it fits, or if this is the very first critter of the wave
+            if critters_spawned == 0 or critters_spawned + critter_slot_cost <= wave.slots:
                 critter = self._make_critter_from_item(wave.iid, path=[])
                 critters.append(critter)
                 critters_spawned += critter_slot_cost

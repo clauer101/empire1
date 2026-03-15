@@ -24,7 +24,7 @@ MYSTIC:
   costs: {}
   requirements: [FIRE_PLACE]
   effects:
-    research_speed_offset: 0.3
+    research_speed_modifier: 0.3
 
 DOMESTICATION:
   name: "Domestication"
@@ -42,7 +42,7 @@ CRAFTSMANSHIP:
   costs: {}
   requirements: [HUNTING, MYSTIC]
   effects:
-    build_speed_modifier: 0.5
+    build_speed_modifier: 0.4
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 800 – 1.500)
@@ -55,7 +55,6 @@ POTTERY:
   costs: {}
   requirements: [CRAFTSMANSHIP]
   effects:
-    gold_offset: 0.05
 
 HERBOLOGY:
   name: "Herbology"
@@ -70,7 +69,7 @@ AGRICULTURE:
   description: "Systematic crop cultivation and farming techniques."
   effort: 1400
   costs: {}
-  requirements: [DOMESTICATION, HERBOLOGY]
+  requirements: [DOMESTICATION, HERBOLOGY, POTTERY]
   effects: {}
 
 ALPHABET_WRITING:
@@ -228,7 +227,7 @@ SCIENCE:
   costs: {}
   requirements: [MATHMATICS, ARCHITECTURE]
   effects: 
-    research_speed_modifier: 1.0
+    research_speed_modifier: 0.6
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -379,9 +378,7 @@ OPTICS:
   effort: 236086
   costs: {}
   requirements: [PHYSICS]
-  effects: 
-    build_speed_modifier: 0.1
-    research_speed_modifier: 0.1
+  effects: {}
 
 BALLISTICS:
   name: "Ballistics"

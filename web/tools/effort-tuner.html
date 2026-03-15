@@ -178,7 +178,7 @@ let dirty = false;
 
 // ── Speed effect keys ─────────────────────────────────────────
 const BUILD_EFFECTS    = ['build_speed_modifier','build_speed_offset'];
-const RESEARCH_EFFECTS = ['research_speed_modifier','research_speed_offset'];
+const RESEARCH_EFFECTS = ['research_speed_modifier'];
 
 function hasEffect(item, keys) { return keys.some(k => item.effects && item.effects[k]); }
 
@@ -188,14 +188,14 @@ function calcCumulativeSpeed(era, isResearch) {
   const eraIdx = ERA_ORDER.indexOf(era);
   let offset = 0, modifier = 0;
   const base = isResearch ? BASE_RESEARCH_SPEED : BASE_BUILD_SPEED;
-  const offsetKey  = isResearch ? 'research_speed_offset'   : 'build_speed_offset';
+  const offsetKey  = isResearch ? null : 'build_speed_offset';
   const modKey     = isResearch ? 'research_speed_modifier' : 'build_speed_modifier';
 
   // Sum effects from all previous epochs (fully "built" assumption)
   for (const item of items) {
     if (ERA_ORDER.indexOf(item.era) < eraIdx) {
-      offset   += item.effects?.[offsetKey]  ?? 0;
-      modifier += item.effects?.[modKey]     ?? 0;
+      if (offsetKey) offset += item.effects?.[offsetKey] ?? 0;
+      modifier += item.effects?.[modKey] ?? 0;
     }
   }
   return (base + offset) * (1 + modifier);
@@ -206,7 +206,7 @@ function calcSpeedWithinEra(era, isResearch, includeCount) {
   const items = isResearch ? knowledge : buildings;
   const eraIdx = ERA_ORDER.indexOf(era);
   const base = isResearch ? BASE_RESEARCH_SPEED : BASE_BUILD_SPEED;
-  const offsetKey  = isResearch ? 'research_speed_offset'   : 'build_speed_offset';
+  const offsetKey  = isResearch ? null : 'build_speed_offset';
   const modKey     = isResearch ? 'research_speed_modifier' : 'build_speed_modifier';
   let offset = 0, modifier = 0;
 
@@ -214,10 +214,10 @@ function calcSpeedWithinEra(era, isResearch, includeCount) {
   for (const item of items) {
     const iIdx = ERA_ORDER.indexOf(item.era);
     if (iIdx < eraIdx) {
-      offset += item.effects?.[offsetKey] ?? 0;
+      if (offsetKey) offset += item.effects?.[offsetKey] ?? 0;
       modifier += item.effects?.[modKey] ?? 0;
     } else if (iIdx === eraIdx && sameEraCount < includeCount) {
-      offset += item.effects?.[offsetKey] ?? 0;
+      if (offsetKey) offset += item.effects?.[offsetKey] ?? 0;
       modifier += item.effects?.[modKey] ?? 0;
       sameEraCount++;
     }

@@ -681,6 +681,16 @@ class ApiClient {
   }
 
   /**
+   * Update targeting strategy for a tower (fire-and-forget).
+   * @param {number} hex_q
+   * @param {number} hex_r
+   * @param {string} select 'first'|'last'|'random'
+   */
+  async setStructureSelect(hex_q, hex_r, select) {
+    return this._request({ type: 'set_structure_select', hex_q, hex_r, select }, null);
+  }
+
+  /**
    * Upgrade citizen count.
    * @returns {Promise<{success: boolean, error?: string}>}
    */

@@ -23,7 +23,7 @@ BASIC_TOWER:
   max_level: 1
   select: first
   costs: {gold: 100}
-  effects: {}   
+  effects: {} 
   requirements: [HUNTING]
 
 SLING_TOWER:
@@ -140,7 +140,7 @@ CATAPULTS:
   max_level: 1
   select: first
   costs: {gold: 2000}
-  effects: {}
+  effects: {splash_radius: 0.5}
   requirements: [MECHANICS, TREADWHEEL_CRANE, MATHMATICS]
 
 ARBELESTE_TOWER:
@@ -190,7 +190,7 @@ HEAVY_TOWER:
   select: first
   costs: {gold: 5000}
   effects: {}
-  requirements: [IRON, IRON_WORK, LAWS, BOOT_CAMP]
+  requirements: [IRON, LAWS, BOOT_CAMP]
 
 BOILING_OIL:
   name: "Boiling Oil"

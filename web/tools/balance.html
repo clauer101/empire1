@@ -148,6 +148,29 @@
     #save-btn:hover { background: rgba(102,187,106,0.3); }
     #save-btn:disabled { opacity: 0.5; cursor: default; }
 
+    .fx-editor { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+    .fx-editor-header { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+    .fx-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .fx-table td { padding: 1px 2px; vertical-align: middle; }
+    td.fx-key-cell { width: 120px; }
+    td.fx-val-cell { width: 65px; }
+    td.fx-del-cell { width: 24px; text-align: center; }
+    .fx-key-in { font-family: var(--mono); font-size: 11px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 3px; color: var(--text); padding: 2px 4px; width: 100%; outline: none; }
+    .fx-key-in:focus { border-color: var(--accent); }
+    .fx-val-in { font-family: var(--mono); font-size: 11px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 3px; color: var(--success); padding: 2px 4px; width: 100%; text-align: right; outline: none; }
+    .fx-val-in:focus { border-color: var(--accent); }
+    .fx-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; line-height: 1; padding: 1px 3px; border-radius: 3px; }
+    .fx-del:hover { background: rgba(239,83,80,0.15); }
+    .fx-footer { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .fx-add { background: none; border: 1px dashed var(--border); color: var(--text-dim); font-size: 10px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+    .fx-add:hover { border-color: var(--accent); color: var(--accent); }
+    .fx-save { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: 10px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+    .fx-save:hover { border-color: var(--success); color: var(--success); }
+    .fx-save:disabled { opacity: 0.4; cursor: default; }
+    .fx-status { font-size: 10px; flex: 1; }
+    .fx-status.ok  { color: var(--success); }
+    .fx-status.err { color: var(--danger); }
+
     @media (max-width: 768px) {
       .balance-grid { grid-template-columns: 1fr; }
       #content { padding: 8px 8px 40px; }
@@ -156,6 +179,13 @@
 </head>
 <body>
 <script src="nav.js"></script>
+<datalist id="fx-known-keys">
+  <option value="slow_duration">
+  <option value="slow_ratio">
+  <option value="burn_duration">
+  <option value="burn_dps">
+  <option value="splash_radius">
+</datalist>
 
 <div id="topbar">
   <h1>Balance Overview</h1>
@@ -196,10 +226,6 @@
     range:       { label: 'Range',      step: 0.5,  min: 0.5 },
     reload_time: { label: 'Reload',     step: 100,  min: 100 },
     shot_speed:  { label: 'Shot Speed', step: 0.1,  min: 0.1 },
-    'effects.burn_dps':      { label: 'Burn DPS',    step: 0.5,  min: 0 },
-    'effects.burn_duration': { label: 'Burn ms',     step: 500,  min: 0 },
-    'effects.slow_ratio':    { label: 'Slow Ratio',  step: 0.05, min: 0 },
-    'effects.slow_duration': { label: 'Slow ms',     step: 500,  min: 0 },
   };
 
   function fmtVal(v, step) {
@@ -492,15 +518,7 @@
     const barW = maxDPS > 0 ? (d / maxDPS * 100) : 0;
     const sprite = t.sprite ? `/${t.sprite.replace(/^\//, '')}` : '';
     const efx = t.effects || {};
-    const effectStats = [
-      ['effects.burn_dps',      efx.burn_dps],
-      ['effects.burn_duration', efx.burn_duration],
-      ['effects.slow_ratio',    efx.slow_ratio],
-      ['effects.slow_duration', efx.slow_duration],
-    ].filter(([, v]) => v !== undefined && v !== null);
-    const effectsRow = effectStats.length
-      ? `<div class="stats-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px">${effectStats.map(([k, v]) => editStat(t.iid, 'tower', k, v)).join('')}</div>`
-      : '';
+    const fxData = JSON.stringify(efx).replace(/'/g, '&#39;');
     return `<div class="unit-card">
       <div class="unit-name">${t.name}<span class="unit-iid">${t.iid}</span></div>
       <div class="card-body">
@@ -514,12 +532,11 @@
             <span class="stat"><span class="stat-label">DPS</span> <span class="stat-value">${d.toFixed(1)}</span></span>
             <span class="stat"><span class="stat-label">Cost</span> <span class="stat-value">${fmtNum(t.costs?.gold || 0)}g</span></span>
           </div>
-          ${effectsRow}
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px">
             <span class="tag tag-${t.shot_type}">${t.shot_type}</span>
             ${t.shot_sprite ? `<img src="/${t.shot_sprite.replace(/^\//, '')}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'">` : ''}
           </div>
-          ${effectTagsHtml(efx)}
+          <div class="fx-editor" data-iid="${t.iid}" data-fx='${fxData}'></div>
           ${reqsHtml(t.requirements)}
           <div class="dps-bar-bg"><div class="dps-bar" style="width:${barW}%"></div></div>
           <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
@@ -550,6 +567,75 @@
       tags.push(`<span class="tag" style="background:rgba(79,195,247,0.2);color:#4fc3f7" title="Slow Ratio=${ratio}, Duration=${dur}s">❄ ${(ratio * 100).toFixed(0)}%</span>`);
     }
     return tags.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${tags.join('')}</div>` : '';
+  }
+
+  // ── Effects editor (per tower) ──
+  function initFxEditors() {
+    document.querySelectorAll('.fx-editor:not(.fx-inited)').forEach(el => {
+      el.classList.add('fx-inited');
+      const iid = el.dataset.iid;
+      let efx;
+      try { efx = JSON.parse(el.dataset.fx || '{}'); } catch { efx = {}; }
+
+      const header = document.createElement('div');
+      header.className = 'fx-editor-header';
+      header.textContent = 'Effects';
+
+      const table = document.createElement('table');
+      table.className = 'fx-table';
+
+      function addRow(k, v) {
+        const tr = document.createElement('tr');
+        const kTd = document.createElement('td'); kTd.className = 'fx-key-cell';
+        const kIn = document.createElement('input'); kIn.className = 'fx-key-in';
+        kIn.setAttribute('list', 'fx-known-keys'); kIn.value = k || ''; kIn.placeholder = 'effect key';
+        kTd.appendChild(kIn);
+        const vTd = document.createElement('td'); vTd.className = 'fx-val-cell';
+        const vIn = document.createElement('input'); vIn.type = 'number'; vIn.step = 'any';
+        vIn.className = 'fx-val-in'; vIn.value = (v !== undefined && v !== '') ? v : '';
+        vTd.appendChild(vIn);
+        const dTd = document.createElement('td'); dTd.className = 'fx-del-cell';
+        const dBtn = document.createElement('button'); dBtn.className = 'fx-del';
+        dBtn.textContent = '\u2715'; dBtn.title = 'L\u00f6schen';
+        dBtn.addEventListener('click', () => tr.remove());
+        dTd.appendChild(dBtn);
+        tr.appendChild(kTd); tr.appendChild(vTd); tr.appendChild(dTd);
+        table.appendChild(tr);
+      }
+
+      for (const [k, v] of Object.entries(efx)) addRow(k, v);
+
+      const footer = document.createElement('div');
+      footer.className = 'fx-footer';
+      const addBtn = document.createElement('button'); addBtn.className = 'fx-add'; addBtn.textContent = '+ Effect';
+      const saveBtn = document.createElement('button'); saveBtn.className = 'fx-save'; saveBtn.textContent = '\ud83d\udcbe FX';
+      const statusEl = document.createElement('span'); statusEl.className = 'fx-status';
+
+      addBtn.addEventListener('click', () => addRow('', ''));
+      saveBtn.addEventListener('click', async () => {
+        const effects = {};
+        for (const tr of table.querySelectorAll('tr')) {
+          const k = tr.querySelector('.fx-key-in').value.trim();
+          const v = tr.querySelector('.fx-val-in').value.trim();
+          if (k) effects[k] = v === '' ? 0 : parseFloat(v);
+        }
+        saveBtn.disabled = true; statusEl.textContent = ''; statusEl.className = 'fx-status';
+        try {
+          const r = await fetch(`/api/tower-effects/${iid}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ effects }),
+          });
+          if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+          statusEl.textContent = '\u2713'; statusEl.className = 'fx-status ok';
+          setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'fx-status'; }, 3000);
+        } catch (e) {
+          statusEl.textContent = '\u2717 ' + e.message; statusEl.className = 'fx-status err';
+        } finally { saveBtn.disabled = false; }
+      });
+
+      footer.appendChild(addBtn); footer.appendChild(saveBtn); footer.appendChild(statusEl);
+      el.appendChild(header); el.appendChild(table); el.appendChild(footer);
+    });
   }
 
   contentEl.innerHTML = '';
@@ -629,6 +715,8 @@
       </div>`;
     contentEl.appendChild(extra);
   }
+
+  initFxEditors();
 
   // ── +/− button event delegation ──
   contentEl.addEventListener('click', e => {

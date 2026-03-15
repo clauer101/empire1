@@ -18,7 +18,6 @@ MAX_LIFE_MODIFIER = "max_life_modifier"
 BUILD_SPEED_MODIFIER = "build_speed_modifier"
 BUILD_SPEED_OFFSET = "build_speed_offset"
 RESEARCH_SPEED_MODIFIER = "research_speed_modifier"
-RESEARCH_SPEED_OFFSET = "research_speed_offset"
 
 # -- Structure / Tower ---------------------------------------------------
 DAMAGE_MODIFIER = "damage_modifier"

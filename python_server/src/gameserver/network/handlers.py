@@ -390,6 +390,44 @@ async def handle_delete_structure(
     return None
 
 
+async def handle_set_structure_select(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Update targeting strategy for a tower.
+
+    Updates the live BattleState structure immediately (if a battle is active)
+    and persists the value into empire.hex_map so it survives the next save.
+    """
+    select_val = getattr(message, 'select', 'first')
+    if select_val not in ('first', 'last', 'random'):
+        return None
+    hex_q = getattr(message, 'hex_q', 0)
+    hex_r = getattr(message, 'hex_r', 0)
+
+    # Update live battle structure
+    battle = _active_battles.get(sender_uid)
+    if battle:
+        for s in battle.structures.values():
+            if s.position.q == hex_q and s.position.r == hex_r:
+                s.select = select_val
+                break
+
+    # Persist to hex_map so next battle starts with the correct select
+    svc = _svc()
+    empire = svc.empire_service.get(sender_uid)
+    if empire and empire.hex_map:
+        tile_key = f"{hex_q},{hex_r}"
+        tile_val = empire.hex_map.get(tile_key)
+        if tile_val is not None:
+            tile_type = _tile_type(tile_val)
+            if select_val == 'first':
+                empire.hex_map[tile_key] = tile_type
+            else:
+                empire.hex_map[tile_key] = {'type': tile_type, 'select': select_val}
+
+    return None  # fire-and-forget
+
+
 # ===================================================================
 # Citizens
 # ===================================================================
@@ -1043,6 +1081,7 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
                 "r": s.position.r,
                 "damage": s.damage,
                 "range": s.range,
+                "select": s.select,
             }
             for s in structures_dict.values()
         ],
@@ -1650,6 +1689,7 @@ async def handle_map_save_request(
                         "r": s.position.r,
                         "damage": s.damage,
                         "range": s.range,
+                        "select": s.select,
                     }
                     for s in battle.structures.values()
                 ],
@@ -2366,6 +2406,7 @@ def _create_battle_start_handler() -> Callable:
                     "r": s.position.r,
                     "damage": s.damage,
                     "range": s.range,
+                    "select": s.select,
                 }
                 for s in structures_dict.values()
             ],
@@ -2530,6 +2571,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
                 "r": s.position.r,
                 "damage": s.damage,
                 "range": s.range,
+                "select": s.select,
             }
             for s in structures_dict.values()
         ],
@@ -2603,6 +2645,7 @@ def register_all_handlers(services: Services) -> None:
     router.register("new_structure", handle_new_structure)
     router.register("delete_structure", handle_delete_structure)
     router.register("upgrade_structure", handle_upgrade_structure)
+    router.register("set_structure_select", handle_set_structure_select)
 
     # -- Citizens / Life (fire-and-forget) -------------------------------
     router.register("citizen_upgrade", handle_citizen_upgrade)
