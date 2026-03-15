@@ -72,6 +72,44 @@ class TestLoadItemsFromConfigDir:
             assert k.effort > 0, f"Knowledge {k.iid} has no effort value"
 
 
+class TestStructureSelectAttribute:
+    """Verify the 'select' targeting strategy field on structure items."""
+
+    def test_all_structures_have_select(self):
+        items = load_items(CONFIG_DIR)
+        structures = [i for i in items if i.item_type == ItemType.STRUCTURE]
+        for s in structures:
+            assert hasattr(s, "select"), f"Structure {s.iid} is missing 'select'"
+
+    def test_all_structures_select_is_first(self):
+        items = load_items(CONFIG_DIR)
+        structures = [i for i in items if i.item_type == ItemType.STRUCTURE]
+        for s in structures:
+            assert s.select == "first", f"Structure {s.iid} has select={s.select!r}, expected 'first'"
+
+    def test_select_default_is_first(self, tmp_path):
+        (tmp_path / "structures.yaml").write_text(
+            "MY_TOWER:\n  name: Test Tower\n  damage: 5\n  range: 2\n"
+        )
+        items = load_items(tmp_path)
+        assert len(items) == 1
+        assert items[0].select == "first"
+
+    def test_select_last_parsed(self, tmp_path):
+        (tmp_path / "structures.yaml").write_text(
+            "SNIPER:\n  name: Sniper\n  damage: 10\n  range: 5\n  select: last\n"
+        )
+        items = load_items(tmp_path)
+        assert items[0].select == "last"
+
+    def test_select_random_parsed(self, tmp_path):
+        (tmp_path / "structures.yaml").write_text(
+            "SPLASH:\n  name: Splash\n  damage: 3\n  range: 2\n  select: random\n"
+        )
+        items = load_items(tmp_path)
+        assert items[0].select == "random"
+
+
 class TestLoadItemsFromSingleFile:
     """Verify legacy single-file mode still works."""
 

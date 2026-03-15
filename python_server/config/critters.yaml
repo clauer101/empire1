@@ -37,7 +37,7 @@ CLUBMAN:
   health: 2
   value: 4
   damage: 1
-  armour: 0.5
+  armour: 0
   slots: 2
   time_between: 2000
   is_boss: false
@@ -74,8 +74,8 @@ WARRIOR:
   speed: 0.2
   health: 2
   value: 6
-  damage: 2
-  armour: 1
+  damage: 1
+  armour: 0.5
   slots: 1
   time_between: 2000
   is_boss: false
@@ -89,11 +89,11 @@ WARRIOR:
 CART:
   name: "Cart"
   speed: 0.2
-  health: 4
+  health: 2
   value: 7
   damage: 2
   armour: 1
-  slots: 5
+  slots: 3
   time_between: 5000
   is_boss: false
   capture: {}
@@ -154,7 +154,7 @@ CHARIOT:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 2.5
   animation: assets/sprites/critters/chariot
   requirements: [HORSEBACK_RIDING, COPPER_BRONZE]
 
@@ -275,7 +275,7 @@ KNIGHT:
   value: 22
   damage: 1
   armour: 2
-  slots: 1
+  slots: 2
   time_between: 2200
   is_boss: false
   capture: {}
@@ -309,7 +309,7 @@ SIEGE_RAM:
   value: 28
   damage: 3
   armour: 5
-  slots: 1
+  slots: 3
   time_between: 2500
   is_boss: false
   capture: {}
@@ -383,7 +383,7 @@ CARGO:
   value: 28
   damage: 4
   armour: 0
-  slots: 8
+  slots: 4
   time_between: 2000
   is_boss: false
   capture: {}
@@ -438,7 +438,7 @@ SMALL_TANK:
   value: 44
   damage: 1
   armour: 4
-  slots: 1
+  slots: 2
   time_between: 2500
   is_boss: false
   capture: {}
@@ -455,7 +455,7 @@ SIEGE_TANK:
   value: 47
   damage: 1
   armour: 8
-  slots: 1
+  slots: 2
   time_between: 3000
   is_boss: false
   capture: {}
@@ -472,7 +472,7 @@ TRANSPORTER:
   value: 41
   damage: 5
   armour: 9
-  slots: 5
+  slots: 4
   time_between: 2000
   is_boss: false
   capture: {}
@@ -531,7 +531,7 @@ MECH_WARRIOR:
   value: 53
   damage: 1
   armour: 6
-  slots: 1
+  slots: 2
   time_between: 2000
   is_boss: false
   capture: {}

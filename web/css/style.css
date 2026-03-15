@@ -473,6 +473,24 @@ button.btn-danger:hover {
   color: var(--text-bright);
 }
 
+/* ── Select-Mode Buttons (tower targeting strategy) ─────── */
+button.select-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+button.select-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+button.select-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 /* ── Toggle Switch ───────────────────────────────────────── */
 .toggle-switch {
   position: relative;

@@ -51,10 +51,10 @@ armies:
   - name: "Barbarians"
     travel_time: 120
     trigger:
-      items: [SHRINE, DOMESTICATION, MYSTIC, GRANARY]
+      items: [SHRINE, MYSTIC]
     waves:
-      - critter: WARRIOR
-        slots: 3
+      - critter: CLUBMAN
+        slots: 4
       - critter: SCOUT
         slots: 6
 
@@ -63,9 +63,11 @@ armies:
     trigger:
       items: [POTTERY, CRAFTMANSHIP, GRANARY]
     waves:
-      - critter: SLAVE
-        slots: 10
       - critter: SCOUT
+        slots: 10
+      - critter: WARRIOR
+        slots: 6
+      - critter: CLUBMAN
         slots: 6
 
   - name: "Rude Barbarians"
@@ -74,9 +76,9 @@ armies:
       items: [EARTH_WALL, ALPHABET_WRITING, HERBOLOGY, EPIC_DRAWINGS]
     waves:
       - critter: CLUBMAN
-        slots: 5
-      - critter: SCOUT
         slots: 10
+      - critter: SCOUT
+        slots: 12
       - critter: SWORDMAN
         slots: 3
 
@@ -91,6 +93,8 @@ armies:
         slots: 8
       - critter: SWORDMAN
         slots: 4
+      - critter: WARRIOR
+        slots: 8
 
   - name: "Stone Eaters"
     travel_time: 180
@@ -101,14 +105,12 @@ armies:
         slots: 4
       - critter: SCOUT
         slots: 4
-      - critter: WARRIOR
+      - critter: CLUBMAN
         slots: 6
       - critter: SCOUT
         slots: 8
-      - critter: WARRIOR
+      - critter: CLUBMAN
         slots: 10
-      - critter: WARRIOR
-        slots: 12
 
   - name: "Hunter Hunters"
     travel_time: 180
@@ -123,7 +125,7 @@ armies:
         slots: 6
       - critter: SCOUT
         slots: 8
-      - critter: WARRIOR
+      - critter: CLUBMAN
         slots: 10
       - critter: SCOUT
         slots: 12
@@ -137,26 +139,32 @@ armies:
     trigger:
       items: [POTTERY]
     waves:
-      - critter: CLUBMAN
-        slots: 7
+      - critter: WARRIOR
+        slots: 8
+      - critter: CHARIOT
+        slots: 10
       - critter: SCOUT
-        slots: 15
-      - critter: SCOUT
-        slots: 6
+        slots: 11
+      - critter: WARRIOR
+        slots: 8
+      - critter: CHARIOT
+        slots: 10
 
   - name: "Harvest Raiders"
     travel_time: 300
     trigger:
       items: [AGRICULTURE, GRANARY]
     waves:
-      - critter: CLUBMAN
-        slots: 7
+      - critter: CHARIOT
+        slots: 8
       - critter: WARRIOR
         slots: 8
       - critter: SCOUT
         slots: 8
-      - critter: WARRIOR
+      - critter: CHARIOT
         slots: 8
+      - critter: WARRIOR
+        slots: 10
 
   - name: "Shrine Destroyers"
     travel_time: 420
@@ -167,24 +175,44 @@ armies:
         slots: 9
       - critter: WARRIOR
         slots: 7
-      - critter: SCOUT
+      - critter: SWORDMAN
         slots: 7
-      - critter: WARRIOR
-        slots: 8
+      - critter: CHARIOT
+        slots: 3
+      - critter: BOWMAN
+        slots: 10
 
   - name: "Epic Plunder"
     travel_time: 420
     trigger:
       items: [EPIC_DRAWINGS, HERBOLOGY, ALPHABET_WRITING]
     waves:
-      - critter: CLUBMAN
+      - critter: SWORDMAN
         slots: 10
-      - critter: WARRIOR
+      - critter: BOWMAN
+        slots: 7
+      - critter: PIKENEER
         slots: 7
       - critter: SCOUT
-        slots: 7
+        slots: 8
+      - critter: WARRIOR
+        slots: 10
+
+  - name: "New Army"
+    travel_time: 120
+    trigger:
+      items: [TOOL_SHOP]
+    waves:
+      - critter: SWORDMAN
+        slots: 5
+      - critter: WARRIOR
+        slots: 4
+      - critter: PIKENEER
+        slots: 6
       - critter: WARRIOR
         slots: 8
+      - critter: HORSEMAN_SLOW
+        slots: 10
 
   # ──────────────────────────────────────────────────────────
   #   BRONZEZEIT  (Effort 2.500 – 8.000)
@@ -331,8 +359,10 @@ armies:
         slots: 8
       - critter: CHARIOT
         slots: 10
-      - critter: SWORDMAN
+      - critter: HORSEMAN_SLOW
         slots: 12
+      - critter: CHARIOT
+        slots: 14
 
   - name: "Field Healer Hunt"
     travel_time: 630
@@ -349,8 +379,10 @@ armies:
         slots: 8
       - critter: BOWMAN
         slots: 10
-      - critter: BOWMAN
+      - critter: LEGIONARY
         slots: 12
+      - critter: CHARIOT
+        slots: 14
 
   - name: "Harbor Blockade"
     travel_time: 660
@@ -367,8 +399,10 @@ armies:
         slots: 8
       - critter: CHARIOT
         slots: 10
-      - critter: CHARIOT
+      - critter: CRUSADER
         slots: 12
+      - critter: SWORDMAN
+        slots: 14
 
   - name: "Drilled Swords"
     travel_time: 660
@@ -405,8 +439,10 @@ armies:
         slots: 8
       - critter: BOWMAN
         slots: 10
-      - critter: CHARIOT
+      - critter: HORSEMAN_FAST
         slots: 12
+      - critter: CHARIOT
+        slots: 14
 
   # ──────────────────────────────────────────────────────────
   #   EISENZEIT  (Effort 8.000 – 30.000)

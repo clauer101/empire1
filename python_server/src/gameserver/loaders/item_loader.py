@@ -48,6 +48,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             shot_speed=float(attrs.get("shot_speed", 0)),
             shot_type=attrs.get("shot_type", "normal"),
             shot_sprite=attrs.get("shot_sprite", ""),
+            select=attrs.get("select", "first"),
             sprite=attrs.get("sprite", None),
             speed=float(attrs.get("speed", 0)),
             health=float(attrs.get("health", 0)),

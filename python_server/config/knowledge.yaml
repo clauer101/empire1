@@ -80,7 +80,7 @@ ALPHABET_WRITING:
   costs: {}
   requirements: [CRAFTSMANSHIP]
   effects:
-    research_speed_modifier: 0.8
+    research_speed_modifier: 0.3
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)

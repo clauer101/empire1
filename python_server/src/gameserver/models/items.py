@@ -75,6 +75,7 @@ class ItemDetails:
     shot_speed: float = 0.0
     shot_type: str = "normal"
     shot_sprite: str = ""  # Sprite URL for the projectile visual
+    select: str = "first"  # Targeting strategy: first | last | random
     sprite: str | None = None
 
     # Critter

@@ -13,10 +13,14 @@ This module provides:
 
 from __future__ import annotations
 
+import math
 from collections import deque
 from typing import Optional
 
 from gameserver.models.hex import HexCoord
+
+# sqrt(3) — distance between two adjacent flat-top hex centers in "size=1" space
+_SQRT3 = math.sqrt(3)
 
 
 def validate_path(path: list[HexCoord]) -> bool:
@@ -132,3 +136,55 @@ def sub_path_from(path: list[HexCoord], start_index: int) -> list[HexCoord]:
     """
     start_index = max(0, min(start_index, len(path) - 1))
     return path[start_index:]
+
+
+def critter_hex_pos(path: list[HexCoord], path_progress: float) -> tuple[float, float]:
+    """Return the interpolated (q, r) position of a critter on its path.
+
+    path_progress is normalized in [0.0, 1.0] over the whole path.
+    Returns sub-tile-precise floating-point hex coordinates — the critter
+    is between two hex centers, not snapped to a grid tile.
+
+    Args:
+        path: Ordered list of HexCoord tile centers the critter follows.
+        path_progress: Normalized progress [0, 1] along the path.
+
+    Returns:
+        (q, r) as floats representing the interpolated hex position.
+    """
+    if not path:
+        return (0.0, 0.0)
+    if len(path) == 1:
+        return (float(path[0].q), float(path[0].r))
+    max_idx = len(path) - 1
+    float_idx = path_progress * max_idx
+    idx = min(int(float_idx), max_idx - 1)
+    frac = float_idx - idx
+    a, b = path[idx], path[idx + 1]
+    return (a.q + (b.q - a.q) * frac, a.r + (b.r - a.r) * frac)
+
+
+def hex_world_distance(q1: float, r1: float, q2: float, r2: float) -> float:
+    """Euclidean distance between two positions in hex-world space.
+
+    Works for any combination of integer tile coords and fractional critter
+    positions.  1 unit = distance between two adjacent tile centers
+    (flat-top hex layout, independent of canvas hexSize).
+
+    Formula derivation:
+      hexToPixel maps (q, r) → (1.5·q, √3/2·q + √3·r) at size=1.
+      All six neighbors are exactly √3 pixels away at size=1.
+      → hex_units = euclidean_pixel_distance / √3
+
+    Args:
+        q1, r1: First position (hex-space, may be fractional).
+        q2, r2: Second position (hex-space, may be fractional).
+
+    Returns:
+        Distance in hex units (float).
+    """
+    dq = q2 - q1
+    dr = r2 - r1
+    dx = 1.5 * dq
+    dy = 0.5 * _SQRT3 * dq + _SQRT3 * dr
+    return math.sqrt(dx * dx + dy * dy) / _SQRT3

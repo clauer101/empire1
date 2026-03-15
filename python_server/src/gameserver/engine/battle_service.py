@@ -22,6 +22,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
+import random
 import time
 from collections import deque
 from typing import TYPE_CHECKING, Any, Callable, Awaitable
@@ -29,6 +30,7 @@ from typing import TYPE_CHECKING, Any, Callable, Awaitable
 from gameserver.models.critter import Critter
 from gameserver.models.hex import HexCoord
 from gameserver.models.shot import Shot
+from gameserver.engine.hex_pathfinding import critter_hex_pos, hex_world_distance
 
 # Visual shot type constants (sent to client for rendering only)
 _VISUAL_NORMAL = 0
@@ -109,6 +111,37 @@ class BattleService:
             self._items_by_iid = items
         else:
             self._items_by_iid = {item.iid: item for item in items}
+
+    def _get_wave_critter_slot_cost(self, wave) -> int:
+        """Return the slot cost for the next critter of this wave."""
+        item = self._items_by_iid.get(wave.iid)
+        return max(1, int(getattr(item, "slots", 1) or 1))
+
+    def _mark_wave_complete_if_blocked(self, wave) -> bool:
+        """Mark a wave complete when its remaining slots cannot fit another critter."""
+        if wave.num_critters_spawned >= wave.slots:
+            return True
+
+        remaining_slots = wave.slots - wave.num_critters_spawned
+        if remaining_slots <= 0:
+            wave.num_critters_spawned = wave.slots
+            wave.next_critter_ms = 0
+            return True
+
+        critter_slot_cost = self._get_wave_critter_slot_cost(wave)
+        if critter_slot_cost > remaining_slots:
+            log.info(
+                "[SPAWN] Wave %d completed early: remaining_slots=%d cannot fit critter %s (cost=%d)",
+                wave.wave_id,
+                remaining_slots,
+                wave.iid,
+                critter_slot_cost,
+            )
+            wave.num_critters_spawned = wave.slots
+            wave.next_critter_ms = 0
+            return True
+
+        return False
 
     # ── Main loop ──────────────────────────────────────────────
 
@@ -309,8 +342,11 @@ class BattleService:
                 target = self._find_target(battle, structure)
                 
                 if target:
-                    # Calculate flight time: distance / speed * 1000ms
-                    distance = structure.position.distance_to(target.path[int(target.path_progress * (len(target.path) - 1))] if target.path else structure.position)
+                    # Flight distance using interpolated critter position
+                    cq, cr = critter_hex_pos(target.path, target.path_progress)
+                    distance = hex_world_distance(
+                        float(structure.position.q), float(structure.position.r), cq, cr
+                    )
                     flight_time_ms = (distance / structure.shot_speed) * 1000.0 if structure.shot_speed > 0 else 0.0
                     
                     # Create shot
@@ -335,30 +371,39 @@ class BattleService:
                              sid, target.cid, distance, flight_time_ms)
     
     def _find_target(self, battle: BattleState, structure: Structure) -> Critter | None:
-        """Find the most-advanced critter within range.
-        
-        Targeting strategy: critter with highest path_progress (closest to finish).
+        """Find a critter within range using the structure's targeting strategy.
+
+        Strategies:
+          first  — most-advanced critter (highest path_progress, closest to finish)
+          last   — least-advanced critter (lowest path_progress, furthest from spawn)
+          random — random critter among those in range
         """
-        best_target: Critter | None = None
-        best_progress = -1.0
-        
+        in_range: list[Critter] = []
+
+        tq, tr = float(structure.position.q), float(structure.position.r)
+
         for critter in battle.critters.values():
             if not critter.path:
                 continue
-                
-            # Get current position from path_progress
-            path_idx = int(critter.path_progress * (len(critter.path) - 1))
-            critter_pos = critter.path[path_idx]
-            
-            # Check if in range
-            distance = structure.position.distance_to(critter_pos)
+
+            # Interpolated critter position (between two hex centers)
+            cq, cr = critter_hex_pos(critter.path, critter.path_progress)
+
+            # Check if in range (continuous hex-world distance)
+            distance = hex_world_distance(tq, tr, cq, cr)
             if distance <= structure.range:
-                # Select most-advanced (highest path_progress)
-                if critter.path_progress > best_progress:
-                    best_progress = critter.path_progress
-                    best_target = critter
-        
-        return best_target
+                in_range.append(critter)
+
+        if not in_range:
+            return None
+
+        strategy = structure.select
+        if strategy == "last":
+            return min(in_range, key=lambda c: c.path_progress)
+        if strategy == "random":
+            return random.choice(in_range)
+        # default: "first" — highest path_progress
+        return max(in_range, key=lambda c: c.path_progress)
 
     # -- Army wave dispatch ---------
 
@@ -417,17 +462,16 @@ class BattleService:
         """
         critters: list[Critter] = []
 
+        if self._mark_wave_complete_if_blocked(wave):
+            return critters
+
         # Decrement spawn timer
         next_spawn_ms = max(0, wave.next_critter_ms - dt_ms)
         critters_spawned = wave.num_critters_spawned
 
-        if critters_spawned >= wave.slots:
-            return []  # Wave fully spawned
-
         # Spawn critters if wave hasn't finished
         if next_spawn_ms <= 0:
-            item = self._items_by_iid.get(wave.iid)
-            critter_slot_cost = item.slots if item else 1
+            critter_slot_cost = self._get_wave_critter_slot_cost(wave)
 
             # Only spawn if it fits in remaining slots
             if critters_spawned + critter_slot_cost <= wave.slots:
@@ -435,6 +479,11 @@ class BattleService:
                 critters.append(critter)
                 critters_spawned += critter_slot_cost
                 next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
+            else:
+                wave.num_critters_spawned = critters_spawned
+                wave.next_critter_ms = int(next_spawn_ms)
+                self._mark_wave_complete_if_blocked(wave)
+                return critters
 
         # Update wave state with new pointers and timer
         wave.num_critters_spawned = critters_spawned
@@ -488,7 +537,7 @@ class BattleService:
         all_armies_done = True
         if battle.army:
             for wave in battle.army.waves:
-                if wave.num_critters_spawned < wave.slots:
+                if not self._mark_wave_complete_if_blocked(wave):
                     all_armies_done = False
                     break
         

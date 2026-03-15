@@ -655,7 +655,11 @@ export class HexGrid {
     const tiles = {};
     for (const [key, data] of this.tiles) {
       if (data.type === 'void') continue;  // void tiles are client-side only
-      tiles[key] = data.type || 'empty';
+      if (data.select && data.select !== 'first') {
+        tiles[key] = { type: data.type || 'empty', select: data.select };
+      } else {
+        tiles[key] = data.type || 'empty';
+      }
     }
     return {
       version: 1,
@@ -1327,19 +1331,26 @@ export class HexGrid {
     }
   }
 
-  /** Get interpolated pixel position of a shot between origin and target critter. */
+  /** Return the visual center (mid-sprite) of a critter — same Y offset used in _renderCritters. */
+  _getCritterVisualCenter(critter, sz) {
+    const pos = this._getCritterPixelPos(critter.path_progress, sz);
+    const spriteSize = sz * 0.467 * (critter.scale ?? 1.0);
+    return { x: pos.x, y: pos.y - spriteSize / 2 };
+  }
+
+  /** Get interpolated pixel position of a shot between origin and target critter center. */
   _getShotPixelPos(shot, sz) {
     // Get origin position (tower hex)
     const originPos = hexToPixel(shot.origin_q, shot.origin_r, sz);
     
-    // Get target critter position
+    // Get target critter visual center
     const targetCritter = this.battleCritters.get(shot.target_cid);
     if (!targetCritter) {
       // Target critter not found (died?) - use origin
       return originPos;
     }
     
-    const targetPos = this._getCritterPixelPos(targetCritter.path_progress, sz);
+    const targetPos = this._getCritterVisualCenter(targetCritter, sz);
     
     // Interpolate between origin and target based on path_progress
     const x = originPos.x + (targetPos.x - originPos.x) * shot.path_progress;
@@ -1360,12 +1371,12 @@ export class HexGrid {
       if (shot.shot_sprite) {
         const bmp = this._spriteCache.get(shot.shot_sprite);
         if (bmp && bmp !== 'loading') {
-          // Compute direction angle from origin to current target position
+          // Compute direction angle from origin to current target visual center
           const originPos = hexToPixel(shot.origin_q, shot.origin_r, sz);
           const targetCritter = this.battleCritters.get(shot.target_cid);
           let angle = 0;
           if (targetCritter) {
-            const targetPos = this._getCritterPixelPos(targetCritter.path_progress, sz);
+            const targetPos = this._getCritterVisualCenter(targetCritter, sz);
             angle = Math.atan2(targetPos.y - originPos.y, targetPos.x - originPos.x);
           }
           const spriteSize = sz * 0.55;

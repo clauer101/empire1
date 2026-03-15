@@ -55,6 +55,41 @@ let _wsIntentionalClose = false;
 
 let _wsConnectTimeout = null;
 
+function _fmtTitleResource(value, digits = 0) {
+  const normalized = value ?? 0;
+  if (normalized >= 1000) return (Math.floor(normalized / 100) / 10) + 'k';
+  return Math.floor(normalized * Math.pow(10, digits)) / Math.pow(10, digits);
+}
+
+function _setBattleTitle(label) {
+  const titleEl = container?.querySelector('.battle-title');
+  if (!titleEl) return;
+
+  const resources = st?.summary?.resources || {};
+  titleEl.textContent = label;
+
+  const resourceWrap = document.createElement('span');
+  resourceWrap.className = 'title-resources';
+
+  const goldEl = document.createElement('span');
+  goldEl.className = 'title-gold';
+  goldEl.textContent = '🪙 ' + _fmtTitleResource(resources.gold);
+
+  const cultureEl = document.createElement('span');
+  cultureEl.className = 'title-culture';
+  cultureEl.textContent = '🎭 ' + _fmtTitleResource(resources.culture);
+
+  const lifeEl = document.createElement('span');
+  lifeEl.className = 'title-life';
+  const lifeIcon = document.createElement('span');
+  lifeIcon.style.color = '#e05c5c';
+  lifeIcon.textContent = '❤';
+  lifeEl.append(lifeIcon, document.createTextNode(' ' + _fmtTitleResource(resources.life, 1)));
+
+  resourceWrap.append(goldEl, cultureEl, lifeEl);
+  titleEl.append(resourceWrap);
+}
+
 /**
  * Connect the battle WebSocket (with JWT token).
  * Only called from enter() or mobile wake-up.
@@ -422,6 +457,7 @@ function init(el, _api, _state) {
           </div>
           <div class="tile-overlay__body" id="tower-overlay-body">
           </div>
+    _setBattleTitle('⚔ Defense');
         </div>
       </div>
 
@@ -523,7 +559,6 @@ function _showTileDetails(q, r, tile) {
     const canAfford = currentGold >= tilePrice;
     const buyHTML =
       '<div class="props-tile">' +
-        '<div class="props-row"><span class="label">Position</span><span class="value mono">' + q + ', ' + r + '</span></div>' +
         '<div class="props-row"><span class="label">Type</span><span class="value">Void</span></div>' +
         '<div class="props-divider"></div>' +
         '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + (canAfford ? 'var(--text)' : 'var(--danger)') + '">' +
@@ -583,6 +618,11 @@ function _showTileDetails(q, r, tile) {
     const _goldCost = s.costs?.gold;
     const _currentGold = st.summary?.resources?.gold || 0;
     const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
+    const _tileSelect = (tile && tile.select) || s.select || 'first';
+    const _selectLabels = { first: '▶ First', last: '◀ Last', random: '⁇ Random' };
+    const _selectBtns = ['first', 'last', 'random'].map(v =>
+      `<button class="btn select-btn${_tileSelect === v ? ' select-btn--active' : ''}" data-select="${v}" style="flex:1;padding:3px 0;font-size:11px;">${_selectLabels[v]}</button>`
+    ).join('');
     towerInfo =
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Tower Stats</div>' +
@@ -590,14 +630,12 @@ function _showTileDetails(q, r, tile) {
       '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
       '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
       '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
-      '<div class="props-row"><span class="label">Shot Speed</span><span class="value">' + (s.shot_speed || 0) + ' hex/s</span></div>' +
-      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+      '<div class="props-divider"></div>' +
+      '<div class="props-section-label">Target Select</div>' +
+      '<div id="select-btns" style="display:flex;gap:4px;margin-top:4px;">' + _selectBtns + '</div>';
     if (s.effects && Object.keys(s.effects).length > 0) {
       towerInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' +
         Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ') + '</span></div>';
-    }
-    if (s.requirements && s.requirements.length > 0) {
-      towerInfo += '<div class="props-row"><span class="label">Requires</span><span class="value" style="font-size:10px;">' + s.requirements.join(', ') + '</span></div>';
     }
   } else if (!['path', 'castle', 'spawnpoint', 'empty'].includes(tile.type)) {
     // Unknown structure tile — don't show details
@@ -606,15 +644,13 @@ function _showTileDetails(q, r, tile) {
 
   const detailsHTML =
     '<div class="props-tile">' +
-      '<div class="props-row"><span class="label">Position</span><span class="value mono">' + q + ', ' + r + '</span></div>' +
       '<div class="props-row"><span class="label">Type</span><span class="value">' +
         '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
         t.label +
       '</span></div>' +
-      '<div class="props-row"><span class="label">Key</span><span class="value mono">' + hexKey(q, r) + '</span></div>' +
       towerInfo +
       '<div class="props-divider"></div>' +
-      '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile</button>' +
+      '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' + (t.serverData ? ' (no refund)' : '') + '</button>' +
     '</div>';
 
   if (propsContent) propsContent.innerHTML = detailsHTML;
@@ -632,10 +668,31 @@ function _showTileDetails(q, r, tile) {
     // Clear props panel on desktop
     if (propsContent) propsContent.innerHTML = '';
   };
+
+  const _bindSelectBtns = (root) => {
+    if (!root) return;
+    root.querySelectorAll('.select-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.select;
+        const tileData = grid.getTile(q, r);
+        if (tileData) {
+          tileData.select = val === 'first' ? undefined : val;
+          grid._dirty = true;
+          _autoSave();
+        }
+        // Refresh button highlight without re-opening the full panel
+        root.querySelectorAll('.select-btn').forEach(b => {
+          b.classList.toggle('select-btn--active', b.dataset.select === val);
+        });
+      });
+    });
+  };
+
   [propsContent, overlayBody].forEach(root => {
     if (!root) return;
     const b = root.querySelector('#empty-tile-btn');
     if (b) b.addEventListener('click', _doEmpty);
+    _bindSelectBtns(root);
   });
 }
 
@@ -675,15 +732,21 @@ async function enter() {
   }
 
   // If no attack id set (navigated via menu), auto-pick the nearest incoming attack.
-  // Prefer an attack already in_siege, otherwise take the one with the smallest eta.
+  // Priority: 1) currently in_battle, 2) smallest siege_time (in_siege), 3) smallest eta_seconds
   if (_pendingAttackId == null) {
     const incoming = st.summary?.attacks_incoming || [];
-    const siegeAttack = incoming.find(a => a.phase === 'in_siege');
-    if (siegeAttack) {
-      _pendingAttackId = siegeAttack.attack_id;
-    } else if (incoming.length > 0) {
-      const nearest = incoming.reduce((a, b) => (a.eta_seconds <= b.eta_seconds ? a : b));
-      _pendingAttackId = nearest.attack_id;
+    const battleAttack = incoming.find(a => a.phase === 'in_battle');
+    if (battleAttack) {
+      _pendingAttackId = battleAttack.attack_id;
+    } else {
+      const siegeAttacks = incoming.filter(a => a.phase === 'in_siege');
+      if (siegeAttacks.length > 0) {
+        const soonest = siegeAttacks.reduce((a, b) => ((a.siege_time ?? Infinity) <= (b.siege_time ?? Infinity) ? a : b));
+        _pendingAttackId = soonest.attack_id;
+      } else if (incoming.length > 0) {
+        const nearest = incoming.reduce((a, b) => ((a.eta_seconds ?? Infinity) <= (b.eta_seconds ?? Infinity) ? a : b));
+        _pendingAttackId = nearest.attack_id;
+      }
     }
   }
 
@@ -710,8 +773,7 @@ async function enter() {
     if (props) props.style.display = 'none';
     const body = container.querySelector('.battle-view__body');
     if (body) body.style.gridTemplateColumns = '1fr';
-    const titleEl = container.querySelector('.battle-title');
-    if (titleEl) titleEl.textContent = '👁 Spectating...';
+    _setBattleTitle('👁 Spectating...');
   } else {
     // Own defense: ensure palette and props are visible
     const palette = container.querySelector('#tile-palette');
@@ -720,8 +782,7 @@ async function enter() {
     if (props) props.style.display = '';
     const body = container.querySelector('.battle-view__body');
     if (body) body.style.gridTemplateColumns = '';
-    const titleEl = container.querySelector('.battle-title');
-    if (titleEl) titleEl.textContent = '⚔ Defense';
+    _setBattleTitle('⚔ Defense');
     // Load own map from server
     try {
       const response = await rest.loadMap();
@@ -811,9 +872,13 @@ function _initCanvas() {
       if (_activeBrush && _activeBrush !== 'void') {
         const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
         const existingType = (tile || grid.getTile(q, r))?.type;
-        if (existingType === 'void') return;  // cannot build on void tiles
+        if (!existingType || existingType === 'void') return;  // no tile or void — silently ignore
         if (existingType !== 'empty') {
-          _showMapError('Only empty tiles can be built on. Use 🗑 Empty Tile first.');
+          // Only show an error when an existing tower would be replaced
+          const NON_STRUCTURE = new Set(['path', 'castle', 'spawnpoint', 'blocked']);
+          if (!NON_STRUCTURE.has(existingType)) {
+            _showMapError('Tower already here. Use 🗑 Empty Tile to remove it first.');
+          }
           return;
         }
         const brushIsPath = PATH_TYPES.includes(_activeBrush);
@@ -983,14 +1048,10 @@ function _showTypeDetails(typeId) {
       (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
       '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
       '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
-      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
-      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>';
     if (s.effects && Object.keys(s.effects).length > 0) {
       html += '<div class="props-row"><span class="label">Effects</span><span class="value">' +
         Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ') + '</span></div>';
-    }
-    if (s.requirements && s.requirements.length > 0) {
-      html += '<div class="props-row"><span class="label">Requires</span><span class="value" style="font-size:10px;">' + s.requirements.join(', ') + '</span></div>';
     }
   }
   html += '</div>';
@@ -1196,8 +1257,7 @@ function _onBattleSetup(msg) {
 
   // Update title with defender name when spectating
   if (_spectateDefenderUid != null) {
-    const titleEl = container.querySelector('.battle-title');
-    if (titleEl && msg.defender_name) titleEl.textContent = `\u{1F441} ${msg.defender_name}`;
+    if (msg.defender_name) _setBattleTitle(`\u{1F441} ${msg.defender_name}`);
   }
 
   // Update status

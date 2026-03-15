@@ -39,6 +39,7 @@ class Structure:
     shot_speed: float
     shot_type: str = "normal"
     shot_sprite: str = ""  # Sprite URL for the projectile visual
+    select: str = "first"  # Targeting strategy: first | last | random
     effects: dict[str, float] = field(default_factory=dict)
 
     # Transient battle state

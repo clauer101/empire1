@@ -41,6 +41,7 @@ This file contains the implementation of the hexagonal grid used in the game. It
 ## Changes a the data models
 Every time the data models change also the serialization and deserialization logic has to be updated.
 Relevant entrypoint: /home/pi/e3/python_server/src/gameserver/persistence/state_load.py
+see also: /home/eem/empire1/doc/yaml-attribute-guide.md
 
 ## Changes in the data exchange between client and server
 When the data exchange between client and server changes, the API endpoints have to be updated. 

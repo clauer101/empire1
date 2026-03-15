@@ -1,26 +1,60 @@
 meta:
   version: 1
-  saved_at: '2026-03-14T21:46:39'
-  saved_at_unix: 1773524799.6561766
+  saved_at: '2026-03-15T14:47:46'
+  saved_at_unix: 1773586066.9320326
 empires:
 - uid: 4
   name: Empire1
   resources:
-    gold: 295.0
-    culture: 0.0
-    life: 10.0
+    gold: 5288.566830463372
+    culture: 24655.476969086205
+    life: 2.4230632286260496
   buildings:
     BASE_CAMP: 0.0
-  build_queue: null
-  knowledge: {}
-  research_queue: null
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    EARTH_WALL: 0.0
+    TOOL_SHOP: 0.0
+    SHRINE: 0.0
+    GRANARY: 0.0
+    EPIC_DRAWINGS: 0.0
+    EXCHANGE_POST: 0.0
+    WATCH_TOWER: 0.0
+    BOW_MAKER: 1717.4098407260608
+  build_queue: BOW_MAKER
+  knowledge:
+    HUNTING: 0.0
+    MYSTIC: 0.0
+    CRAFTSMANSHIP: 0.0
+    DOMESTICATION: 0.0
+    ALPHABET_WRITING: 0.0
+    MUSIC: 0.0
+    POTTERY: 0.0
+    COPPER_BRONZE: 0.0
+    HERBOLOGY: 0.0
+    AGRICULTURE: 0.0
+    CURRENCY: 0.0
+    RELIGION: 0.0
+    SAILING: 0.0
+    HORSEBACK_RIDING: 0.0
+    DRILL: 3057.4036323254036
+  research_queue: DRILL
   citizens:
-    merchant: 0
+    merchant: 9
     scientist: 0
     artist: 0
   effects:
     life_offset: 0.001
-    siege_time_offset: 120.0
+    siege_time_offset: 2820.0
+    gold_offset: 0.33
+    culture_offset: 0.55
+    restore_life_after_loss: 1.0
+    build_speed_modifier: 1.0
+    research_speed_modifier: 0.9500000000000001
+    gold_modifier: 0.1
+    research_speed_offset: 0.3
+    culture_modifier: 0.2
   artefacts: []
   max_life: 10.0
   structures: {}
@@ -28,30 +62,99 @@ empires:
   spies: []
   bosses: {}
   hex_map:
+  - q: -1
+    r: 0
+    type: SPIKE_TRAP
+  - q: -1
+    r: 1
+    type: BALLISTA_TOWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: DOUBLE_SLING_TOWER
+  - q: -2
+    r: 0
+    type: spawnpoint
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: SLING_TOWER
+  - q: -3
+    r: 2
+    type: DOUBLE_SLING_TOWER
+  - q: -3
+    r: 3
+    type: BASIC_TOWER
   - q: 0
     r: 0
     type: castle
   - q: 0
     r: 1
+    type:
+      type: SPIKE_TRAP
+      select: random
+  - q: 0
+    r: 2
     type: path
+  - q: 0
+    r: 3
+    type: SPIKE_TRAP
   - q: 1
     r: 0
-    type: spawnpoint
+    type: path
+  - q: 1
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: path
 - uid: 3
   name: Bikini Bottom
   resources:
-    gold: 300.0
-    culture: 0.0
+    gold: 2792.5981762259776
+    culture: 4791.314466848913
     life: 10.0
-  buildings: {}
-  build_queue: null
-  knowledge: {}
-  research_queue: null
+  buildings:
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    SHRINE: 0.0
+    TOOL_SHOP: 2025.789776649559
+  build_queue: TOOL_SHOP
+  knowledge:
+    HUNTING: 0.0
+    MYSTIC: 0.0
+    DOMESTICATION: 0.0
+    CRAFTSMANSHIP: 0.0
+    POTTERY: 0.0
+    HORSEBACK_RIDING: 0.0
+    HERBOLOGY: 190.8008367006751
+  research_queue: HERBOLOGY
   citizens:
-    merchant: 0
-    scientist: 0
-    artist: 0
-  effects: {}
+    merchant: 1
+    scientist: 1
+    artist: 3
+  effects:
+    life_offset: 0.001
+    siege_time_offset: 120.0
+    gold_offset: 0.2
+    culture_offset: 0.25
+    research_speed_offset: 0.3
+    build_speed_modifier: 0.5
   artefacts: []
   max_life: 10.0
   structures: {}
@@ -59,15 +162,63 @@ empires:
   spies: []
   bosses: {}
   hex_map:
-  - q: 0
-    r: 0
-    type: spawnpoint
-  - q: 0
+  - q: -1
     r: 1
     type: path
+  - q: -1
+    r: 2
+    type: path
+  - q: 0
+    r: 0
+    type: path
+  - q: 0
+    r: 1
+    type: BASIC_TOWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 1
+    r: -1
+    type: BASIC_TOWER
   - q: 1
     r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 2
+    r: -1
+    type: BASIC_TOWER
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: BASIC_TOWER
+  - q: 2
+    r: 2
+    type: path
+  - q: 3
+    r: -1
+    type: BASIC_TOWER
+  - q: 3
+    r: 0
+    type: path
+  - q: 3
+    r: 1
+    type: BASIC_TOWER
+  - q: 3
+    r: 2
     type: castle
+  - q: 4
+    r: -1
+    type: BASIC_TOWER
+  - q: 4
+    r: 0
+    type: spawnpoint
 - uid: 100
   name: AI
   resources:
@@ -94,7 +245,7 @@ empires:
   name: AI
   resources:
     gold: 0.0
-    culture: 0.0
+    culture: 8095.537776460475
     life: 10.0
   buildings: {}
   build_queue: null
