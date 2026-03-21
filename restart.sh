@@ -141,17 +141,26 @@ stop_server() {
 }
 
 start_gameserver() {
-    local state_file="${1:-state.yaml}"
+    local state_file="${1:-python_server/state.yaml}"
+    # Resolve to absolute path before cd-ing into a subdirectory
+    if [[ "$state_file" != /* ]]; then
+        state_file="$SCRIPT_DIR/$state_file"
+    fi
+
+    # Stop any already-running instance to avoid "Address already in use"
+    local existing_pids
+    existing_pids=$(find_server_pids)
+    if [[ -n "$existing_pids" ]]; then
+        echo "[INFO] Laufender GameServer gefunden (PIDs: $existing_pids) — stoppe zuerst …"
+        stop_gameserver
+    fi
+
     echo "[INFO] Starte GameServer …"
     echo "       State-Datei: $state_file"
     cd "$PYTHON_SERVER_DIR"
 
     # Starte im Hintergrund, leite Ausgabe in Log um
-    if [[ "$state_file" != "state.yaml" ]]; then
-        PYTHONPATH=src nohup "$VENV" -m "$MODULE" --state_file "$state_file" >> "$LOG" 2>&1 &
-    else
-        PYTHONPATH=src nohup "$VENV" -m "$MODULE" >> "$LOG" 2>&1 &
-    fi
+    PYTHONPATH=src nohup "$VENV" -m "$MODULE" --state_file "$state_file" >> "$LOG" 2>&1 &
     local pid=$!
     echo "$pid" > "$PIDFILE"
 
@@ -212,7 +221,7 @@ start_webserver() {
 }
 
 start_server() {
-    local state_file="${1:-state.yaml}"
+    local state_file="${1:-python_server/state.yaml}"
     start_gameserver "$state_file"
     echo ""
     start_webserver
@@ -270,7 +279,7 @@ case "$CMD" in
         echo " Start GameServer & WebServer"
         echo " $(date '+%Y-%m-%d %H:%M:%S')"
         echo "========================================"
-        start_gameserver "${STATE_FILE:-state.yaml}"
+        start_gameserver "${STATE_FILE:-python_server/state.yaml}"
         echo ""
         start_webserver
         echo "========================================"
@@ -295,7 +304,7 @@ case "$CMD" in
                     echo " Start GameServer"
                     echo " $(date '+%Y-%m-%d %H:%M:%S')"
                     echo "========================================"
-                    start_gameserver "${STATE_FILE:-state.yaml}"
+                    start_gameserver "${STATE_FILE:-python_server/state.yaml}"
                     echo "========================================"
                     echo " Fertig."
                     echo "========================================"
@@ -312,7 +321,7 @@ case "$CMD" in
             echo " $(date '+%Y-%m-%d %H:%M:%S')"
             echo "========================================"
             stop_gameserver
-            start_gameserver "${STATE_FILE:-state.yaml}"
+            start_gameserver "${STATE_FILE:-python_server/state.yaml}"
             echo "========================================"
             echo " Fertig."
             echo "========================================"
@@ -368,7 +377,7 @@ case "$CMD" in
         echo ""
         stop_webserver
         echo ""
-        start_gameserver "${STATE_FILE:-state.yaml}"
+        start_gameserver "${STATE_FILE:-python_server/state.yaml}"
         echo ""
         start_webserver
         echo "========================================"

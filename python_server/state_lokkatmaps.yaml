@@ -1,0 +1,199 @@
+- uid: 4
+  name: Empire1
+  resources:
+    gold: 45999.85134021383
+    culture: 319065.5467055271
+    life: 12.0
+  buildings:
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    EARTH_WALL: 0.0
+    TOOL_SHOP: 0.0
+    SHRINE: 0.0
+    GRANARY: 0.0
+    EPIC_DRAWINGS: 0.0
+    EXCHANGE_POST: 0.0
+    WATCH_TOWER: 0.0
+    BOW_MAKER: 0.0
+    MEDICUS: 0.0
+    TOWN_GUARD: 0.0
+    FIELD_HEALER: 0.0
+    HARBOR: 0.0
+    SWORD_MAKER: 0.0
+    BULLETIN_BOARD: 0.0
+    MARKET_PLACE: 0.0
+    BOOT_CAMP: 0.0
+    CHAPEL: 0.0
+    LORE_COLLECTION: 0.0
+    LIBRARY: 0.0
+    FORGE: 0.0
+    TREASURE_CHAMBER: 0.0
+    WORK_SHOP: 0.0
+  build_queue: null
+  knowledge:
+    HUNTING: 0.0
+    MYSTIC: 0.0
+    CRAFTSMANSHIP: 0.0
+    DOMESTICATION: 0.0
+    ALPHABET_WRITING: 0.0
+    MUSIC: 0.0
+    POTTERY: 0.0
+    COPPER_BRONZE: 0.0
+    HERBOLOGY: 0.0
+    AGRICULTURE: 0.0
+    CURRENCY: 0.0
+    RELIGION: 0.0
+    SAILING: 0.0
+    HORSEBACK_RIDING: 0.0
+    DRILL: 0.0
+    ARTS: 0.0
+    MECHANICS: 0.0
+    MATHMATICS: 0.0
+    CARTOGRAPHY: 0.0
+    LAWS: 0.0
+    IRON: 0.0
+    ARCHITECTURE: 0.0
+    PAINTING: 0.0
+    SCIENCE: 0.0
+    LITRATURE: 0.0
+  research_queue: null
+  citizens:
+    merchant: 17
+    scientist: 0
+    artist: 0
+  effects:
+    life_offset: 0.003
+    siege_time_offset: 4620.0
+    gold_offset: 0.78
+    culture_offset: 0.8500000000000001
+    restore_life_after_loss: 5.0
+    build_speed_modifier: 1.7000000000000002
+    research_speed_modifier: 1.6
+    gold_modifier: 0.4
+    max_life_modifier: 2.0
+    culture_modifier: 0.35
+  artefacts: []
+  max_life: 12.0
+  structures: {}
+  armies:
+  - aid: 1
+    uid: 4
+    name: Na, wer is denn da?
+    waves:
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 9
+      num_critters_spawned: 9
+      next_critter_ms: 2000
+    - wave_id: 1
+      iid: SLAVE
+      slots: 4
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
+    - wave_id: 2
+      iid: SLAVE
+      slots: 4
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
+    - wave_id: 3
+      iid: SLAVE
+      slots: 4
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: -1
+    r: -1
+    type: path
+  - q: -1
+    r: 0
+    type: ARROW_TOWER
+  - q: -1
+    r: 1
+    type: FIRE_TOWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: FIRE_TOWER
+  - q: -2
+    r: 0
+    type: path
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: BALLISTA_TOWER
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
+  - q: -3
+    r: 2
+    type: FIRE_TOWER
+  - q: -3
+    r: 3
+    type: BALLISTA_TOWER
+  - q: 0
+    r: -1
+    type:
+      type: SPIKE_TRAP
+      select: last
+  - q: 0
+    r: -2
+    type: path
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: BALLISTA_TOWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: ARROW_TOWER
+  - q: 1
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 1
+    r: -2
+    type: path
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: ARROW_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 2
+    r: -1
+    type: HEAVY_TOWER
+  - q: 2
+    r: -2
+    type: path
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: path
+  - q: 3
+    r: -1
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: -2
+    type: spawnpoint
+  - q: 3
+    r: 0
+    type: ARBELESTE_TOWER

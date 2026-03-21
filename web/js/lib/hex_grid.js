@@ -336,7 +336,6 @@ export class HexGrid {
       if (hex) {
         const key = hexKey(hex.q, hex.r);
         if (this.tiles.has(key)) {
-          this.setTile(hex.q, hex.r, tileTypeId);
           if (this.onTileDrop) this.onTileDrop(hex.q, hex.r, tileTypeId);
         }
       }

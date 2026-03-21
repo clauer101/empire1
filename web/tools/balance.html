@@ -25,7 +25,7 @@
     body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
 
     #topbar {
-      position: sticky; top: 0; z-index: 100;
+      position: sticky; top: 38px; z-index: 100;
       background: var(--surface); border-bottom: 1px solid var(--border);
       display: flex; align-items: center; gap: 12px; padding: 10px 20px;
     }
@@ -190,7 +190,7 @@
 <div id="topbar">
   <h1>Balance Overview</h1>
   <span id="load-status">Lade...</span>
-  <button id="save-btn" style="display:none">Speichern</button>
+  <button id="save-btn" disabled>Speichern</button>
 </div>
 
 <div id="content">
@@ -249,8 +249,8 @@
 
   function updateSaveBtn() {
     const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length;
-    saveBtn.style.display = n > 0 ? '' : 'none';
-    saveBtn.textContent = `Speichern (${n})`;
+    saveBtn.disabled = n === 0;
+    saveBtn.textContent = n > 0 ? `Speichern (${n})` : 'Speichern';
   }
 
   saveBtn.addEventListener('click', async () => {
@@ -267,8 +267,7 @@
       for (const k of Object.keys(towerChanges))   delete towerChanges[k];
       document.querySelectorAll('.stat-val.changed').forEach(el => el.classList.remove('changed'));
       saveBtn.textContent = 'Gespeichert ✓';
-      saveBtn.style.display = '';
-      setTimeout(() => { saveBtn.style.display = 'none'; }, 2000);
+      setTimeout(() => { saveBtn.textContent = 'Speichern'; saveBtn.disabled = true; }, 2000);
     } catch(e) {
       saveBtn.textContent = 'Fehler: ' + e.message;
     } finally {

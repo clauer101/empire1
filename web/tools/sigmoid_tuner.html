@@ -17,6 +17,33 @@
       color: #eee;
       padding: 20px;
     }
+
+    #topbar {
+      position: sticky;
+      top: 38px;
+      z-index: 100;
+      background: #0d0d14;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 20px;
+      margin: -20px -20px 20px -20px;
+    }
+    #topbar-spacer { flex: 1; }
+    #save-all-btn {
+      background: #4fc3f7;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #save-all-btn:hover { opacity: 0.85; }
+    #save-all-btn:disabled { opacity: 0.4; cursor: default; }
+    #save-all-status { font-size: 12px; min-width: 80px; color: #66bb6a; }
     
     h1 {
       text-align: center;
@@ -185,6 +212,11 @@
 </head>
 <body>
 <script src="nav.js"></script>
+<div id="topbar">
+  <span id="topbar-spacer"></span>
+  <span id="save-all-status"></span>
+  <button id="save-all-btn" onclick="saveAll()">💾 Speichern</button>
+</div>
   <h1>🎛️ Sigmoid Function Tuner</h1>
   
   <div class="container">
@@ -666,7 +698,10 @@
       prices.citizen = { u: prices.citizen.u, y: prices.citizen.y, z: prices.citizen.z, v: prices.citizen.v };
 
       const btns = document.querySelectorAll('button');
+      const topbarBtn = document.getElementById('save-all-btn');
+      const topbarStatus = document.getElementById('save-all-status');
       btns.forEach(b => { if (b.textContent.includes('Save')) { b.textContent = '…'; b.disabled = true; } });
+      if (topbarBtn) { topbarBtn.disabled = true; topbarStatus.textContent = ''; }
       try {
         const r = await fetch('/api/prices', {
           method: 'POST',
@@ -676,10 +711,18 @@
         const data = await r.json();
         const msg = data.success ? '✓ Saved!' : ('✗ ' + (data.error || 'Error'));
         btns.forEach(b => { if (b.disabled) { b.textContent = msg; b.disabled = false; } });
-        setTimeout(() => btns.forEach(b => { if (b.textContent === msg) b.textContent = 'Save to game.yaml'; }), 2000);
+        if (topbarBtn) { topbarBtn.disabled = false; topbarStatus.textContent = msg; topbarStatus.style.color = data.success ? '#66bb6a' : '#ef5350'; }
+        setTimeout(() => {
+          btns.forEach(b => { if (b.textContent === msg) b.textContent = 'Save to game.yaml'; });
+          if (topbarStatus) topbarStatus.textContent = '';
+        }, 2000);
       } catch (e) {
         btns.forEach(b => { if (b.disabled) { b.textContent = '✗ Failed'; b.disabled = false; } });
-        setTimeout(() => btns.forEach(b => { if (b.textContent === '✗ Failed') b.textContent = 'Save to game.yaml'; }), 2000);
+        if (topbarBtn) { topbarBtn.disabled = false; topbarStatus.textContent = '✗ Failed'; topbarStatus.style.color = '#ef5350'; }
+        setTimeout(() => {
+          btns.forEach(b => { if (b.textContent === '✗ Failed') b.textContent = 'Save to game.yaml'; });
+          if (topbarStatus) topbarStatus.textContent = '';
+        }, 2000);
       }
     }
 

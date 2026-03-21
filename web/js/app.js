@@ -79,6 +79,21 @@ function _updateTitleResources(r) {
 const navMsgBadge = document.getElementById('nav-msg-badge');
 const navDashboard = document.getElementById('nav-dashboard');
 const navDefense = document.getElementById('nav-defense');
+
+// When the user explicitly clicks the defense nav link while already on the
+// defense view (e.g. after spectating an outgoing attack), force a full
+// leave()/enter() cycle so spectator state is cleared and their own map loads.
+if (navDefense) {
+  navDefense.addEventListener('click', () => {
+    if (router.currentRoute() === 'defense') {
+      // Clear any pending spectate context so enter() treats this as own defense
+      state.pendingSpectateAttack = null;
+      battleView.leave();
+      battleView.enter();
+    }
+    // Otherwise the normal hash-change navigation handles it
+  });
+}
 eventBus.on('state:summary', (data) => {
   if (data?.resources) {
     _lastResources = data.resources;

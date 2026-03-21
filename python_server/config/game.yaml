@@ -1,169 +1,72 @@
-# ============================================================
-# Game Configuration — all tunable gameplay constants
-# ============================================================
-# This file is loaded once at server startup.
-# Changes require a server restart to take effect.
-# ============================================================
-
-# -- Timing --------------------------------------------------
-
-# Main game loop tick interval (milliseconds)
 step_length_ms: 1000.0
-
-# Battle simulation tick interval (milliseconds)
 battle_tick_ms: 50.0
-
-# Minimum interval between battle broadcast updates (ms)
 broadcast_interval_ms: 250.0
-
-# Minimum battle duration before finish check (ms)
 min_keep_alive_ms: 10000.0
-
-# Delay before the first wave is dispatched in a battle (ms)
 initial_wave_delay_ms: 15000.0
-
-# Flight time for splash sub-shots (ms)
 splash_flight_ms: 500.0
-
-# -- Economy -------------------------------------------------
-
-# Base gold generation per second (before citizen/effect modifiers)
 base_gold_per_sec: 0.0
-
-# Base culture generation per second (before citizen/effect modifiers)
 base_culture_per_sec: 0.0
-
-# Per-citizen modifier for resource / research generation
 citizen_effect: 0.03
-
-# Base build speed (multiplier, before build_speed_modifier effects)
 base_build_speed: 1.0
-
-# Base research speed (multiplier, before research_speed_modifier and scientist bonuses)
 base_research_speed: 0.7
-
-# -- New empire defaults -------------------------------------
-
-# Starting resources for a freshly created empire
 starting_resources:
   gold: 300.0
   culture: 0.0
   life: 10.0
-
-# Maximum life points for a new empire
 starting_max_life: 10.0
 restore_life_after_loss_offset: 1.0
-
-# -- Travel & Siege ------------------------------------------
-
-# Base attack travel time in seconds (~5 minutes)
 base_travel_offset: 300.0
-
-# Base siege duration in seconds (before defender modifiers)
 base_siege_offset: 300.0
-
-# -- AI attack schedule --------------------------------------
-
-# Travel time for AI attacks (seconds)
 ai_travel_seconds: 60.0
-
-# -- Army & Waves --------------------------------------------
-
-# Number of waves per slot-scaling level
 waves_per_level: 1.0
-
-# Additional slots per AI army level
 slot_adder_per_ai_level: 2.0
-
-# Default time between individual critter spawns in a wave (ms)
 default_spawn_interval_ms: 2000.0
-
-# -- Battle strategy -----------------------------------------
-
-# Range for knowledge theft percentage on battle loss
 max_lose_knowledge: 0.15
 min_lose_knowledge: 0.03
-
-# Range of culture loss on battle defeat (as a fraction of defender's culture)
 min_lose_culture: 0.01
 max_lose_culture: 0.05
-
-# Chance of stealing an artefact on battle loss (if defender has any)
 artefact_steal_chance: 0.33
-
-# -- Spy costs -----------------------------------------------
-
 spy_costs:
   defense: 500
   build_queue: 1000
   research_queue: 2000
   attacks: 5000
   artefacts: 10000
-
-# -- Prices --------------------------------------------------
-
 prices:
   citizen:
-    # Formula: u + (i * y) * (i + z)^v
     u: 34
     y: 1
     z: 1.5
     v: 3.3
-
   tile:
-    # Sigmoid: minv + (maxv - minv) / (1 + exp((-7 * i) / spread + steep))
-    maxv: 47000
+    maxv: 75000
     minv: 100
     spread: 29
-    steep: 8.5
-
+    steep: 9
   wave:
     maxv: 28000
     minv: 100
     spread: 12
     steep: 7
-
   critter_slot:
     maxv: 13000
     minv: 25
     spread: 23
     steep: 7
-
   army:
     maxv: 75000
     minv: 1000
     spread: 7
     steep: 6
-
-# -- Auth validation -----------------------------------------
-
 min_username_length: 2
 max_username_length: 20
 min_password_length: 4
-
-# -- Network -------------------------------------------------
-
-# WebSocket server port
 ws_port: 8765
-
-# REST API port (FastAPI / uvicorn)
 rest_port: 8080
-
-# WebSocket ping interval (seconds)
-# Reduced to 15s to match client keepalive and prevent timeouts
 ws_ping_interval: 15
-
-# WebSocket ping timeout (seconds)
 ws_ping_timeout: 10
-
-# Maximum WebSocket message size (bytes)
 ws_max_message_size: 1048576
-
-# Debug dashboard HTTP port
 debug_port: 9000
-
-# -- Server UIDs (reserved, rarely need changing) ------------
-
 uid_game_server: 0
 uid_game_engine: 1
 uid_ai: 2

@@ -161,6 +161,8 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
                 lines.append(f"    travel_time: {int(w['travel_time'])}")
             if "siege_time" in w:
                 lines.append(f"    siege_time: {int(w['siege_time'])}")
+            if w.get("time_between") is not None:
+                lines.append(f"    time_between: {int(w['time_between'])}")
             if "trigger" in w:
                 trig = w["trigger"]
                 lines.append("    trigger:")
