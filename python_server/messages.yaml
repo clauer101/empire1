@@ -131,4 +131,28 @@ messages:
   body_b64: W3Rvb19oYXJkXSBBcm15OiBTdG9uZSBFYXRlcnMgKHJlcG9ydGVkIGJ5IFVJRCAzKQ==
   sent_at: '2026-03-15T09:46:37'
   read: true
-next_id: 23
+- id: 23
+  from_uid: 0
+  to_uid: 4
+  body_b64: W3Rvb19oYXJkXSBBcm15OiBFcGljIFBsdW5kZXIgKHJlcG9ydGVkIGJ5IFVJRCAzKQ==
+  sent_at: '2026-03-15T21:41:53'
+  read: true
+- id: 24
+  from_uid: 0
+  to_uid: 4
+  body_b64: W3Rvb19lYXN5XSBBcm15OiBNZWNoYW5pY2FsIEFzc2F1bHQgKHJlcG9ydGVkIGJ5IFVJRCA0KQ==
+  sent_at: '2026-03-16T08:31:31'
+  read: true
+- id: 25
+  from_uid: 0
+  to_uid: 4
+  body_b64: W3Rvb19oYXJkXSBBcm15OiBXYXRjaCBUb3dlciBCcmVhY2ggKHJlcG9ydGVkIGJ5IFVJRCAzKQ==
+  sent_at: '2026-03-16T12:14:21'
+  read: true
+- id: 26
+  from_uid: 0
+  to_uid: 4
+  body_b64: W3Rvb19oYXJkXSBBcm15OiBEcmlsbGVkIFN3b3JkcyAocmVwb3J0ZWQgYnkgVUlEIDMp
+  sent_at: '2026-03-16T15:03:16'
+  read: true
+next_id: 27

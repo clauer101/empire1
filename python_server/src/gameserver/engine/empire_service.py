@@ -294,7 +294,11 @@ class EmpireService:
         pass
 
     def upgrade_citizen(self, empire: Empire) -> Optional[str]:
-        """Add one new citizen as an artist. Returns error message or None."""
+        """Add one new citizen in round-robin order (artist → merchant → scientist).
+
+        The 3rd citizen results in a 1/1/1 distribution.
+        Returns error message or None.
+        """
         # Migrate any legacy free citizens to artist
         if empire.citizens.get("free", 0) > 0:
             empire.citizens["artist"] = empire.citizens.get("artist", 0) + empire.citizens.pop("free")
@@ -302,7 +306,9 @@ class EmpireService:
         price = self._citizen_price(n + 1)
         if empire.resources.get("culture", 0.0) < price:
             return f"Not enough culture (need {price:.1f}, have {empire.resources.get('culture', 0.0):.1f})"
-        empire.citizens["artist"] = empire.citizens.get("artist", 0) + 1
+        _roles = ["artist", "merchant", "scientist"]
+        role = _roles[n % len(_roles)]
+        empire.citizens[role] = empire.citizens.get(role, 0) + 1
         return None
 
     def _citizen_price(self, i: int) -> float:

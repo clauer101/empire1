@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Send AI Army</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #22222f;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --danger:      #ef5350;
+      --success:     #66bb6a;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--danger); letter-spacing: 1px; flex: 1; }
+
+    #content {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 700px) {
+      #content { grid-template-columns: 1fr; }
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 8px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 0.75rem;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── Full-width cards ── */
+    .full-col { grid-column: 1 / -1; }
+
+    /* ── Empire list ── */
+    #empire-list { display: flex; flex-direction: column; gap: 4px; }
+
+    .empire-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      text-align: left; color: var(--text);
+      font-family: var(--font); font-size: 12px;
+    }
+    .empire-btn:hover { background: var(--surface-hover); }
+    .empire-btn.selected { border-color: var(--accent); background: #0a1f2f; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot.online  { background: var(--success); box-shadow: 0 0 4px var(--success); }
+    .dot.offline { background: #3a3a4a; }
+    .empire-name { color: var(--accent); font-weight: 600; }
+    .empire-user { color: var(--text-dim); font-size: 11px; }
+    .empire-life { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+    /* ── Map analysis panel ── */
+    #empire-analysis {
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #empire-analysis.visible { display: flex; }
+
+    .analysis-row {
+      display: flex; gap: 16px; flex-wrap: wrap;
+    }
+    .stat-box {
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 90px;
+    }
+    .stat-box .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat-box .val { font-family: var(--mono); font-size: 1.1rem; color: var(--accent); font-weight: 700; }
+    .stat-box .val.warn { color: var(--warning); }
+
+    .age-bars { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+    .age-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .age-name { width: 90px; color: var(--text-dim); }
+    .age-bar-outer {
+      flex: 1; height: 6px; background: var(--surface-alt);
+      border-radius: 3px; overflow: hidden;
+    }
+    .age-bar-inner { height: 100%; border-radius: 3px; background: var(--accent); }
+    .age-pct { width: 38px; text-align: right; font-family: var(--mono); color: var(--text-dim); }
+
+    .tower-list {
+      display: flex; flex-wrap: wrap; gap: 4px;
+    }
+    .tower-chip {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: 3px; padding: 2px 6px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    }
+
+    /* ── Era tabs ── */
+    #era-tabs {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    .era-tab {
+      padding: 4px 10px;
+      font-size: 11px; font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: color 0.12s, border-color 0.12s, background 0.12s;
+      white-space: nowrap;
+      background: var(--surface);
+    }
+    .era-tab:hover { color: var(--text); border-color: var(--text-dim); }
+    .era-tab.active {
+      color: var(--bg);
+      background: var(--warning);
+      border-color: var(--warning);
+    }
+
+    /* ── Army list ── */
+    #army-list {
+      display: flex; flex-direction: column; gap: 4px;
+      max-height: 380px; overflow-y: auto;
+      padding: 10px;
+    }
+    .army-btn {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 9px 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      text-align: left; color: var(--text);
+      font-family: var(--font); font-size: 12px;
+    }
+    .army-btn:hover { background: var(--surface-hover); }
+    .army-btn.selected { border-color: var(--warning); background: #2a1a00; }
+
+    .army-header { display: flex; align-items: baseline; gap: 8px; }
+    .army-name { font-weight: 600; color: var(--text); }
+    .army-strength {
+      font-family: var(--mono); font-size: 11px;
+      color: var(--danger); font-weight: 700;
+      margin-left: auto;
+    }
+    .army-travel { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+
+    .wave-rows { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+    .wave-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; font-family: var(--mono);
+    }
+    .wave-num { color: var(--text-dim); width: 12px; }
+    .wave-critter { color: var(--accent); font-weight: 600; width: 110px; }
+    .wave-slots { color: var(--text-dim); width: 50px; }
+    .wave-hp { color: var(--warning); width: 60px; }
+    .wave-armour { color: #ce93d8; }
+    .wave-speed { color: var(--success); }
+
+    /* ── Army analysis panel ── */
+    #army-analysis {
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #army-analysis.visible { display: flex; }
+
+    /* ── Launch section ── */
+    #launch-card .card-body {
+      flex-direction: row; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 4px; }
+    .field-group label { font-size: 11px; color: var(--text-dim); }
+
+    input[type="number"] {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono); font-size: 13px;
+      padding: 6px 10px; width: 120px;
+      outline: none; transition: border-color 0.12s;
+    }
+    input[type="number"]:focus { border-color: var(--accent); }
+
+    #preview {
+      flex: 1; min-width: 220px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 12px; color: var(--text-dim);
+      font-family: var(--mono); line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    #preview .sel   { color: var(--text); }
+    #preview .arrow { color: var(--danger); font-weight: 700; }
+
+    #send-btn {
+      background: var(--danger); color: #fff;
+      border: none; border-radius: var(--radius);
+      padding: 9px 24px;
+      font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: opacity 0.15s;
+      white-space: nowrap; align-self: flex-end;
+    }
+    #send-btn:hover { opacity: 0.85; }
+    #send-btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      padding: 10px 18px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.ok  { background: #1a3a1a; border: 1px solid var(--success); color: var(--success); }
+    #toast.err { background: #3a0a0a; border: 1px solid var(--danger);  color: var(--danger); }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>⚔ Send AI Army</h1>
+</div>
+
+<div id="content">
+
+  <!-- ── 1: Empire chooser ── -->
+  <div class="card">
+    <div class="card-header">1 · Ziel-Empire wählen</div>
+    <div class="card-body" style="padding:10px">
+      <div id="empire-list"><span style="color:var(--text-dim)">Lade…</span></div>
+    </div>
+    <div id="empire-analysis">
+      <!-- filled dynamically -->
+    </div>
+  </div>
+
+  <!-- ── 2: Army chooser ── -->
+  <div class="card">
+    <div class="card-header">2 · KI-Armee wählen</div>
+    <div id="era-tabs"></div>
+    <div id="army-list"><span style="color:var(--text-dim);padding:10px;display:block">Lade…</span></div>
+    <div id="army-analysis">
+      <!-- filled dynamically -->
+    </div>
+  </div>
+
+  <!-- ── 3: Launch ── -->
+  <div class="card full-col" id="launch-card">
+    <div class="card-header">3 · Absenden</div>
+    <div class="card-body">
+      <div id="preview">Bitte Empire und Armee auswählen…</div>
+
+      <div class="field-group">
+        <label>Travel Time (s)</label>
+        <input type="number" id="travel-input" min="1" max="9999" placeholder="aus Armee" />
+      </div>
+
+      <button id="send-btn" disabled>Armee senden ⚔</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const GS = `${location.protocol}//${location.hostname}:8080`;
+
+let selectedEmpire = null;
+let selectedArmy   = null;
+let critterStats   = {};   // iid → {health, armour, slots, speed}
+
+// ── Auth ──────────────────────────────────────────────────────────
+function authHeaders() {
+  const t = localStorage.getItem('e3_jwt_token');
+  return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' } : {};
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Army strength ─────────────────────────────────────────────────
+// effective HP per critter: health + armour (armour subtracts from each shot)
+// total strength = Σ (wave.slots / critter.slots_cost) * (health + armour)
+function armyStrength(waves) {
+  let total = 0;
+  for (const w of waves) {
+    const c = critterStats[w.critter.toUpperCase()];
+    if (!c) continue;
+    const count = w.slots / (c.slots || 1);
+    total += count * (c.health + c.armour);
+  }
+  return Math.round(total);
+}
+
+// ── Era detection by travel_time ──────────────────────────────────
+const ERA_BREAKS = [
+  [120,  'Stone Age'],
+  [300,  'Neolithic'],
+  [630,  'Bronze Age'],
+  [900,  'Iron Age'],
+  [1500, 'Middle Ages'],
+  [2400, 'Renaissance'],
+  [3600, 'Industrial'],
+  [5400, 'Modern'],
+  [Infinity, 'Future'],
+];
+
+function travelToEra(t) {
+  if (!t) return 'Unbekannt';
+  for (const [max, era] of ERA_BREAKS) if (t <= max) return era;
+  return 'Zukunft';
+}
+
+function fmtK(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
+  return String(n);
+}
+
+// ── Render empires ────────────────────────────────────────────────
+function renderEmpires(empires) {
+  const list = document.getElementById('empire-list');
+  list.innerHTML = '';
+  if (!empires.length) {
+    list.innerHTML = '<span style="color:var(--text-dim)">Keine Empires.</span>';
+    return;
+  }
+  empires.filter(e => e.uid > 0 && e.uid !== 100).forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'empire-btn';
+    btn.dataset.uid  = e.uid;
+    const lifePct = e.max_life > 0
+      ? Math.round((e.resources?.life ?? 0) / e.max_life * 100) : 0;
+    btn.innerHTML = `
+      <span class="dot ${e.online ? 'online' : 'offline'}"></span>
+      <span>
+        <span class="empire-name">${e.name}</span>
+        ${e.username ? `<br><span class="empire-user">${e.username}</span>` : ''}
+      </span>
+      <span class="empire-life">${lifePct}% HP · uid ${e.uid}</span>
+    `;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.empire-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedEmpire = { uid: e.uid, name: e.name };
+      updatePreview();
+      loadEmpireAnalysis(e.uid);
+    });
+    list.appendChild(btn);
+  });
+}
+
+// ── Empire analysis ───────────────────────────────────────────────
+async function loadEmpireAnalysis(uid) {
+  const panel = document.getElementById('empire-analysis');
+  panel.classList.add('visible');
+  panel.innerHTML = '<span style="color:var(--text-dim);font-size:11px">Analysiere…</span>';
+
+  try {
+    const r = await fetch(`${GS}/api/admin/analyze-empire/${uid}`, { headers: authHeaders() });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    renderEmpireAnalysis(panel, d);
+  } catch (e) {
+    panel.innerHTML = `<span style="color:var(--danger);font-size:11px">Fehler: ${e.message}</span>`;
+  }
+}
+
+function renderEmpireAnalysis(panel, d) {
+  const AGES = ['Stone Age','Neolithic','Bronze Age','Iron Age','Middle Ages','Renaissance','Industrial','Modern'];
+
+  // Tower type chips
+  const towerChips = Object.entries(d.tower_counts || {})
+    .sort((a, b) => b[1] - a[1])
+    .map(([iid, cnt]) => `<span class="tower-chip">${iid.replace(/_TOWER|_/g, m => m === '_TOWER' ? '' : ' ').trim()} ×${cnt}</span>`)
+    .join('');
+
+  // Age bars
+  const ageBars = AGES
+    .filter(a => (d.age_pct || {})[a])
+    .map(a => {
+      const pct = d.age_pct[a];
+      const cnt = d.age_counts[a] || 0;
+      return `<div class="age-row">
+        <span class="age-name">${a}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%"></div></div>
+        <span class="age-pct">${pct}%</span>
+        <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${cnt}×</span>
+      </div>`;
+    }).join('');
+
+  panel.innerHTML = `
+    <div class="analysis-row">
+      <div class="stat-box">
+        <span class="lbl">Weglaenge</span>
+        <span class="val${d.path_length === null ? ' warn' : ''}">${d.path_length ?? '—'}</span>
+      </div>
+      <div class="stat-box">
+        <span class="lbl">Turme</span>
+        <span class="val">${d.num_towers}</span>
+      </div>
+      <div class="stat-box">
+        <span class="lbl">Turmkosten</span>
+        <span class="val">${fmtK(d.total_cost)}</span>
+      </div>
+      <div class="stat-box">
+        <span class="lbl">Ø/Turm</span>
+        <span class="val">${fmtK(d.avg_cost)}</span>
+      </div>
+    </div>
+    ${towerChips ? `<div class="tower-list">${towerChips}</div>` : ''}
+    ${ageBars ? `<div class="age-bars">${ageBars}</div>` : ''}
+  `;
+}
+
+// ── Render armies ─────────────────────────────────────────────────
+let armiesByEra = {};   // era → army[]
+let activeEra   = null;
+
+function buildArmyBtn(army) {
+  const btn = document.createElement('button');
+  btn.className = 'army-btn';
+  const str = armyStrength(army.waves);
+  const totalSlots = army.waves.reduce((s, w) => s + w.slots, 0);
+
+  const waveRows = army.waves.map((w, i) => {
+    const c = critterStats[w.critter.toUpperCase()] || {};
+    const count = Math.round(w.slots / (c.slots || 1));
+    const effHp = c.health !== undefined ? `${(c.health + c.armour).toFixed(1)} eHP` : '';
+    const spd   = c.speed  !== undefined ? `⚡${c.speed}` : '';
+    const armr  = c.armour ? `🛡${c.armour}` : '';
+    return `<div class="wave-row">
+      <span class="wave-num">${i+1}.</span>
+      <span class="wave-critter">${w.critter}</span>
+      <span class="wave-slots">${w.slots} sl ×${count}</span>
+      <span class="wave-hp">${effHp}</span>
+      <span class="wave-armour">${armr}</span>
+      <span class="wave-speed">${spd}</span>
+    </div>`;
+  }).join('');
+
+  btn.innerHTML = `
+    <div class="army-header">
+      <span class="army-name">${army.name}</span>
+      <span class="army-strength">⚔ ${str}</span>
+    </div>
+    <div class="army-travel">✈ ${army.travel_time ?? '?'}s · ${army.waves.length} Wellen · ${totalSlots} Slots</div>
+    <div class="wave-rows">${waveRows}</div>
+  `;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.army-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedArmy = army;
+    renderArmyAnalysis(army);
+    updatePreview();
+  });
+  return btn;
+}
+
+function showEraTab(era) {
+  activeEra = era;
+  document.querySelectorAll('.era-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.era === era)
+  );
+  const list = document.getElementById('army-list');
+  list.innerHTML = '';
+  (armiesByEra[era] || []).forEach(army => list.appendChild(buildArmyBtn(army)));
+  // re-select if already chosen
+  if (selectedArmy) {
+    list.querySelectorAll('.army-btn').forEach(btn => {
+      if (btn.querySelector('.army-name')?.textContent === selectedArmy.name)
+        btn.classList.add('selected');
+    });
+  }
+}
+
+function renderArmies(armies) {
+  // Group by era, preserving ERA_BREAKS order
+  armiesByEra = {};
+  armies.forEach(army => {
+    const era = army.main_age || travelToEra(army.travel_time);
+    (armiesByEra[era] = armiesByEra[era] || []).push(army);
+  });
+
+  const eras = ERA_BREAKS.map(([, e]) => e).filter(e => armiesByEra[e]);
+
+  const tabBar = document.getElementById('era-tabs');
+  tabBar.innerHTML = '';
+  eras.forEach(era => {
+    const tab = document.createElement('button');
+    tab.className = 'era-tab';
+    tab.dataset.era = era;
+    tab.textContent = `${era} (${armiesByEra[era].length})`;
+    tab.addEventListener('click', () => showEraTab(era));
+    tabBar.appendChild(tab);
+  });
+
+  showEraTab(eras[0]);
+}
+
+// ── Army analysis panel ───────────────────────────────────────────
+const ERA_ORDER = ['Stone Age','Neolithic','Bronze Age','Iron Age','Middle Ages','Renaissance','Industrial','Modern','Future'];
+
+function renderArmyAnalysis(army) {
+  const panel = document.getElementById('army-analysis');
+  panel.classList.add('visible');
+
+  const str = armyStrength(army.waves);
+  const totalSlots = army.waves.reduce((s, w) => s + w.slots, 0);
+  const totalCount = army.waves.reduce((s, w) => {
+    const c = critterStats[w.critter.toUpperCase()];
+    return s + Math.round(w.slots / (c ? c.slots || 1 : 1));
+  }, 0);
+
+  // Slots per critter type and per era
+  const byCritter = {};
+  const byEra = {};
+  for (const w of army.waves) {
+    const iid = w.critter.toUpperCase();
+    byCritter[iid] = (byCritter[iid] || 0) + w.slots;
+    const era = critterStats[iid]?.era || 'Unbekannt';
+    byEra[era] = (byEra[era] || 0) + w.slots;
+  }
+
+  // Critter composition bars
+  const compBars = Object.entries(byCritter)
+    .sort((a, b) => b[1] - a[1])
+    .map(([iid, slots]) => {
+      const pct = Math.round(slots / totalSlots * 100);
+      const c = critterStats[iid] || {};
+      const effHp = c.health !== undefined
+        ? `${(c.health + c.armour).toFixed(1)} eHP  ⚡${c.speed}`
+        : '';
+      return `<div class="age-row">
+        <span class="age-name" style="width:120px">${iid}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%;background:var(--warning)"></div></div>
+        <span class="age-pct">${pct}%</span>
+        <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${slots}sl  ${effHp}</span>
+      </div>`;
+    }).join('');
+
+  // Era distribution bars
+  const eraBars = ERA_ORDER
+    .filter(e => byEra[e])
+    .map(era => {
+      const slots = byEra[era];
+      const pct = Math.round(slots / totalSlots * 100);
+      return `<div class="age-row">
+        <span class="age-name">${era}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%"></div></div>
+        <span class="age-pct">${pct}%</span>
+        <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${slots} sl</span>
+      </div>`;
+    }).join('');
+
+  panel.innerHTML = `
+    <div class="analysis-row">
+      <div class="stat-box">
+        <span class="lbl">Stärke</span>
+        <span class="val" style="color:var(--danger)">⚔ ${str}</span>
+      </div>
+      <div class="stat-box">
+        <span class="lbl">Einheiten</span>
+        <span class="val">${totalCount}</span>
+      </div>
+      <div class="stat-box">
+        <span class="lbl">Wellen</span>
+        <span class="val">${army.waves.length}</span>
+      </div>
+      <div class="stat-box">
+        <span class="lbl">Slots</span>
+        <span class="val">${totalSlots}</span>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">Era Distribution</div>
+    <div class="age-bars">${eraBars}</div>
+    <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:4px">Einheiten-Mix</div>
+    <div class="age-bars">${compBars}</div>
+  `;
+}
+
+// ── Preview & send button ─────────────────────────────────────────
+function updatePreview() {
+  const preview = document.getElementById('preview');
+  const btn = document.getElementById('send-btn');
+
+  if (!selectedEmpire && !selectedArmy) {
+    preview.innerHTML = 'Bitte Empire und Armee auswählen…';
+    btn.disabled = true;
+    return;
+  }
+
+  const empPart = selectedEmpire
+    ? `<span class="sel">${selectedEmpire.name}</span> (uid ${selectedEmpire.uid})`
+    : '<span style="color:var(--text-dim)">— Empire wählen —</span>';
+  const armPart = selectedArmy
+    ? `<span class="sel">${selectedArmy.name}</span>`
+    : '<span style="color:var(--text-dim)">— Armee wählen —</span>';
+
+  const travelInput = document.getElementById('travel-input');
+  const travelVal = travelInput.value
+    ? `${travelInput.value}s (manuell)`
+    : selectedArmy?.travel_time ? `${selectedArmy.travel_time}s` : '30s (default)';
+
+  const strPart = selectedArmy
+    ? `  ⚔ Stärke ${armyStrength(selectedArmy.waves)}`
+    : '';
+
+  preview.innerHTML =
+    `${armPart} <span class="arrow">→</span> ${empPart}\n` +
+    `✈ Reisezeit: ${travelVal}${strPart}`;
+
+  btn.disabled = !(selectedEmpire && selectedArmy);
+}
+
+document.getElementById('travel-input').addEventListener('input', updatePreview);
+
+// ── Send ──────────────────────────────────────────────────────────
+document.getElementById('send-btn').addEventListener('click', async () => {
+  if (!selectedEmpire || !selectedArmy) return;
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sende…';
+
+  const travelRaw = document.getElementById('travel-input').value;
+  const body = {
+    defender_uid: selectedEmpire.uid,
+    army_name:    selectedArmy.name,
+    waves:        selectedArmy.waves.map(w => ({ critter: w.critter, slots: w.slots })),
+  };
+  if (travelRaw) body.travel_time = parseFloat(travelRaw);
+
+  try {
+    const r = await fetch(`${GS}/api/admin/send-ai-attack`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok || d.success === false) {
+      toast(`Fehler: ${d.detail || d.error || r.status}`, 'err');
+    } else {
+      toast(`✓ "${selectedArmy.name}" → ${selectedEmpire.name} gesendet!`, 'ok');
+    }
+  } catch (e) {
+    toast(`Netzwerkfehler: ${e.message}`, 'err');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Armee senden ⚔';
+});
+
+// ── Load data ─────────────────────────────────────────────────────
+async function loadAll() {
+  const headers = authHeaders();
+  try {
+    const [statusR, armiesR] = await Promise.all([
+      fetch(`${GS}/api/admin/status`,    { headers }),
+      fetch(`${GS}/api/admin/ai-armies`, { headers }),
+    ]);
+
+    if (armiesR.ok) {
+      const d = await armiesR.json();
+      critterStats = d.critters || {};
+      renderArmies(d.armies || []);
+    }
+
+    if (statusR.ok) {
+      const d = await statusR.json();
+      renderEmpires(d.empires || []);
+    }
+  } catch (e) {
+    document.getElementById('empire-list').innerHTML =
+      `<span style="color:var(--danger)">Verbindungsfehler: ${e.message}</span>`;
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>

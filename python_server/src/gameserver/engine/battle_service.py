@@ -730,8 +730,8 @@ class BattleService:
             "wave_info": wave_info,
         }
         
-        # Send to all observers
-        for uid in battle.observer_uids:
+        # Send to all observers (snapshot to avoid mutation during async iteration)
+        for uid in list(battle.observer_uids):
             await send_fn(uid, msg)
         
         # Clear removed_critters after broadcast
@@ -759,7 +759,7 @@ class BattleService:
             "defender_losses": dict(battle.defender_losses),
             "loot": loot or {},
         }
-        for uid in battle.observer_uids:
+        for uid in list(battle.observer_uids):
             await send_fn(uid, msg)
 
     # -- Loot (stub) -----------------------------------------------------

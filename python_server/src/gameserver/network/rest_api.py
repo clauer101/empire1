@@ -518,6 +518,23 @@ def create_app(services: "Services") -> FastAPI:
                 knowledge[iid] = entry
         return {"buildings": buildings, "knowledge": knowledge}
 
+    # Era groupings matching STEINZEIT … ZUKUNFT comments in critters.yaml
+    _CRITTER_ERAS: dict[str, str] = {
+        iid: era
+        for era, iids in [
+            ("Stone Age",   ["SLAVE", "SCOUT"]),
+            ("Neolithic",   ["CLUBMAN", "WARRIOR", "CART"]),
+            ("Bronze Age",  ["BOWMAN", "SWORDMAN", "CHARIOT"]),
+            ("Iron Age",    ["PIKENEER", "HORSEMAN_SLOW", "HORSEMAN_FAST", "LEGIONARY", "LARGE_CART"]),
+            ("Middle Ages", ["CRUSADER", "KNIGHT", "SAMURAI", "SIEGE_RAM"]),
+            ("Renaissance", ["NINJA", "MUSKETEER", "DRAGOONER", "CARGO"]),
+            ("Industrial",  ["SOLDIER", "MOTORBIKE", "SMALL_TANK", "SIEGE_TANK", "TRANSPORTER"]),
+            ("Modern",      ["SPECOPS", "HELI"]),
+            ("Future",      ["MECH_WARRIOR", "THE_SWORDMASTER", "THE_KING", "THE_GENERAL"]),
+        ]
+        for iid in iids
+    }
+
     # Era groupings matching STEINZEIT … ZUKUNFT comments in structures.yaml
     _STRUCTURE_ERAS: list[tuple[str, list[str]]] = [
         ("STEINZEIT",         ["BASIC_TOWER", "SLING_TOWER"]),
@@ -595,6 +612,229 @@ def create_app(services: "Services") -> FastAPI:
                 _Path(yaml_path).write_text("\n".join(lines) + "\n")
                 return True
         return False
+
+    @app.get("/api/admin/analyze-empire/{uid}")
+    async def admin_analyze_empire(uid: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Run hex-map analysis for a given empire: path length, tower costs, age distribution."""
+        from collections import deque as _deque, Counter as _Counter
+
+        empire = services.empire_service.get(uid)
+        if empire is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
+
+        # hex_map is stored as {"q,r": type_value}
+        raw_map = empire.hex_map  # dict[str, str|dict]
+
+        # ── BFS path length ──
+        HEX_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
+        walkable: set[tuple[int, int]] = set()
+        start: tuple[int, int] | None = None
+        goal:  tuple[int, int] | None = None
+
+        for key, tile_type in raw_map.items():
+            if isinstance(tile_type, dict):
+                tile_type = tile_type.get("type", "")
+            try:
+                q, r = map(int, key.split(","))
+            except Exception:
+                continue
+            if tile_type in ("path", "spawnpoint", "castle"):
+                walkable.add((q, r))
+            if tile_type == "spawnpoint":
+                start = (q, r)
+            if tile_type == "castle":
+                goal = (q, r)
+
+        path_length: int | None = None
+        if start and goal:
+            queue = _deque([(start, 0)])
+            visited = {start}
+            while queue:
+                (q, r), dist = queue.popleft()
+                if (q, r) == goal:
+                    path_length = dist
+                    break
+                for dq, dr in HEX_DIRS:
+                    nb = (q + dq, r + dr)
+                    if nb not in visited and nb in walkable:
+                        visited.add(nb)
+                        queue.append((nb, dist + 1))
+
+        # ── Tower analysis ──
+        AGES = [
+            ("Stone Age",   0,          200),
+            ("Neolithic",   200,      1_500),
+            ("Bronze Age",  1_500,    8_000),
+            ("Iron Age",    8_000,   30_000),
+            ("Middle Ages", 30_000, 130_000),
+            ("Renaissance", 130_000, 500_000),
+            ("Industrial",  500_000, 2_000_000),
+            ("Modern",    2_000_000, 999_999_999),
+        ]
+
+        def _cost_to_age(gold: float) -> str:
+            for name, lo, hi in AGES:
+                if lo <= gold < hi:
+                    return name
+            return "Unbekannt"
+
+        up = services.empire_service._upgrades
+        tower_names: list[str] = []
+        total_cost = 0
+        age_counts: dict[str, int] = {}
+
+        for tile_type in raw_map.values():
+            if isinstance(tile_type, dict):
+                tile_type = tile_type.get("type", "")
+            if tile_type in ("path", "castle", "spawnpoint", "", None):
+                continue
+            item = up.items.get(tile_type) if up else None
+            if item is None:
+                continue
+            cost = item.costs.get("gold", 0)
+            total_cost += cost
+            tower_names.append(tile_type)
+            age = _cost_to_age(cost)
+            age_counts[age] = age_counts.get(age, 0) + 1
+
+        tower_counts = dict(_Counter(tower_names))
+        num_towers = len(tower_names)
+        age_pct = {
+            age: round(cnt / num_towers * 100, 1)
+            for age, cnt in age_counts.items()
+        } if num_towers else {}
+
+        return {
+            "uid": uid,
+            "path_length": path_length,
+            "num_towers": num_towers,
+            "total_cost": total_cost,
+            "avg_cost": round(total_cost / num_towers) if num_towers else 0,
+            "tower_counts": tower_counts,
+            "age_counts": age_counts,
+            "age_pct": age_pct,
+        }
+
+    @app.get("/api/admin/ai-armies")
+    async def admin_ai_armies(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return all hardcoded AI army definitions + critter stats for strength calc."""
+        from gameserver.models.items import ItemType
+        hw = services.ai_service._hardcoded_waves if services.ai_service else []
+        armies = []
+        for entry in hw:
+            armies.append({
+                "name": entry.get("name", ""),
+                "travel_time": entry.get("travel_time"),
+                "main_age": entry.get("main_age", ""),
+                "trigger": entry.get("trigger") or {},
+                "waves": [
+                    {"critter": w.get("critter", ""), "slots": w.get("slots", 1)}
+                    for w in (entry.get("waves") or [])
+                ],
+            })
+        # Include critter stats so the frontend can compute army strength
+        up = services.empire_service._upgrades if services.empire_service else None
+        critters: dict[str, Any] = {}
+        if up:
+            for iid, item in up.items.items():
+                if item.item_type == ItemType.CRITTER:
+                    critters[iid] = {
+                        "health": item.health,
+                        "armour": item.armour,
+                        "slots": item.slots,
+                        "speed": item.speed,
+                        "era": _CRITTER_ERAS.get(iid, "Unbekannt"),
+                    }
+        return {"armies": armies, "critters": critters}
+
+    @app.post("/api/admin/send-ai-attack")
+    async def admin_send_ai_attack(
+        body: dict[str, Any], _uid: int = Depends(require_admin)
+    ) -> dict[str, Any]:
+        """Send a specific AI army to a target empire (admin only).
+
+        Body::
+
+            {
+                "defender_uid": 3,
+                "army_name": "Early Barbarians Raid",   # from ai_waves.yaml
+                "waves": [                               # OR manual waves
+                    {"critter": "SLAVE", "slots": 6}
+                ],
+                "travel_time": 10   # optional, seconds
+            }
+        """
+        from gameserver.models.army import Army, CritterWave
+
+        defender_uid: int = body.get("defender_uid", 0)
+        if not defender_uid:
+            raise HTTPException(status_code=400, detail="defender_uid required")
+
+        if services.empire_service.get(defender_uid) is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={defender_uid} not found")
+
+        travel_time: float | None = body.get("travel_time")
+        army_name: str = body.get("army_name") or "Admin Attack"
+
+        # Build waves either from explicit list or from ai_waves.yaml by name
+        waves_raw: list[dict] = body.get("waves") or []
+        if not waves_raw:
+            # look up by name in hardcoded waves
+            hw = services.ai_service._hardcoded_waves if services.ai_service else []
+            entry = next((e for e in hw if e.get("name") == army_name), None)
+            if entry is None:
+                raise HTTPException(status_code=404, detail=f"Army '{army_name}' not found in ai_waves.yaml")
+            waves_raw = entry.get("waves") or []
+            if travel_time is None:
+                travel_time = float(entry.get("travel_time") or 0) or None
+
+        if not waves_raw:
+            raise HTTPException(status_code=400, detail="No waves defined")
+
+        initial_delay_ms = (
+            services.ai_service._game_config.initial_wave_delay_ms
+            if services.ai_service and services.ai_service._game_config
+            else 15000.0
+        )
+
+        aid = services.ai_service._next_army_aid if services.ai_service else 9000
+        if services.ai_service:
+            services.ai_service._next_army_aid += 1
+
+        waves = []
+        for i, w in enumerate(waves_raw):
+            waves.append(CritterWave(
+                wave_id=i + 1,
+                iid=str(w.get("critter", "")).upper(),
+                slots=int(w.get("slots", 1)),
+                num_critters_spawned=0,
+                next_critter_ms=int(i * initial_delay_ms),
+            ))
+
+        army = Army(aid=aid, uid=0, name=army_name, waves=waves)
+
+        if services.ai_service:
+            services.ai_service._send_army(
+                defender_uid=defender_uid,
+                empire=services.empire_service.get(defender_uid),
+                empire_service=services.empire_service,
+                attack_service=services.attack_service,
+                army=army,
+                travel_seconds=travel_time,
+            )
+        else:
+            services.attack_service.start_ai_attack(
+                defender_uid=defender_uid,
+                army=army,
+                travel_seconds=travel_time or 30.0,
+            )
+
+        return {
+            "success": True,
+            "defender_uid": defender_uid,
+            "army_name": army_name,
+            "waves": [{"critter": w.iid, "slots": w.slots} for w in waves],
+        }
 
     @app.patch("/api/admin/structures/{iid}/effects")
     async def update_structure_effects(

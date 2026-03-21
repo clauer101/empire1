@@ -39,7 +39,7 @@ CLUBMAN:
   damage: 1
   armour: 0
   slots: 2
-  time_between: 2000
+  time_between: 1900
   is_boss: false
   capture: {}
   bonus: {}
@@ -56,7 +56,7 @@ SCOUT:
   damage: 1
   armour: 0
   slots: 1
-  time_between: 2000
+  time_between: 1800
   is_boss: false
   capture: {}
   bonus: {}
@@ -77,7 +77,7 @@ WARRIOR:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 2000
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
@@ -94,7 +94,7 @@ CART:
   damage: 2
   armour: 1
   slots: 3
-  time_between: 5000
+  time_between: 4000
   is_boss: false
   capture: {}
   bonus: {}
@@ -110,12 +110,12 @@ CART:
 BOWMAN:
   name: "Bowman"
   speed: 0.35
-  health: 4
+  health: 5
   value: 8
   damage: 2
   armour: 0.5
   slots: 1
-  time_between: 2000
+  time_between: 1600
   is_boss: false
   capture: {}
   bonus: {}
@@ -132,7 +132,7 @@ SWORDMAN:
   damage: 2
   armour: 2
   slots: 1
-  time_between: 2000
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
@@ -149,7 +149,7 @@ CHARIOT:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 2000
+  time_between: 1600
   is_boss: false
   capture: {}
   bonus: {}
@@ -164,13 +164,13 @@ CHARIOT:
 
 PIKENEER:
   name: "Pikeneer"
-  speed: 0.35
+  speed: 0.4
   health: 6
   value: 15
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 2100
+  time_between: 1300
   is_boss: false
   capture: {}
   bonus: {}
@@ -185,14 +185,14 @@ HORSEMAN_SLOW:
   health: 10
   value: 17
   damage: 2
-  armour: 1
+  armour: 2.5
   slots: 1
-  time_between: 2000
+  time_between: 1800
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 2
   animation: assets/sprites/critters/horseman_slow
   requirements: [HORSEBACK_RIDING, STABLES]
 
@@ -204,7 +204,7 @@ HORSEMAN_FAST:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 2000
+  time_between: 1200
   is_boss: false
   capture: {}
   bonus: {}
@@ -216,12 +216,12 @@ HORSEMAN_FAST:
 LEGIONARY:
   name: "Legionary"
   speed: 0.35
-  health: 8
+  health: 10
   value: 16
   damage: 1
   armour: 2
   slots: 1
-  time_between: 2000
+  time_between: 1500
   is_boss: false
   capture: {}
   bonus: {}
@@ -233,12 +233,12 @@ LEGIONARY:
 LARGE_CART:
   name: "Large Cart"
   speed: 0.3
-  health: 6
+  health: 7
   value: 12
   damage: 3
-  armour: 2
+  armour: 2.5
   slots: 3
-  time_between: 2000
+  time_between: 2200
   is_boss: false
   capture: {}
   bonus: {}
@@ -259,7 +259,7 @@ CRUSADER:
   damage: 2
   armour: 1.5
   slots: 1
-  time_between: 1800
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
@@ -276,7 +276,7 @@ KNIGHT:
   damage: 1
   armour: 2
   slots: 2
-  time_between: 2200
+  time_between: 2000
   is_boss: false
   capture: {}
   bonus: {}
@@ -293,7 +293,7 @@ SAMURAI:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 2000
+  time_between: 1800
   is_boss: false
   capture: {}
   bonus: {}
@@ -310,7 +310,7 @@ SIEGE_RAM:
   damage: 3
   armour: 5
   slots: 3
-  time_between: 2500
+  time_between: 2300
   is_boss: false
   capture: {}
   bonus: {}
@@ -333,7 +333,7 @@ NINJA:
   damage: 1
   armour: 1
   slots: 1
-  time_between: 1500
+  time_between: 1200
   is_boss: false
   capture: {}
   bonus: {}
@@ -350,7 +350,7 @@ MUSKETEER:
   damage: 1
   armour: 1.5
   slots: 1
-  time_between: 2100
+  time_between: 1800
   is_boss: false
   capture: {}
   bonus: {}
@@ -367,7 +367,7 @@ DRAGOONER:
   damage: 2
   armour: 2.5
   slots: 1
-  time_between: 2000
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
@@ -399,13 +399,13 @@ CARGO:
 
 SOLDIER:
   name: "Soldier"
-  speed: 0.6
-  health: 24
+  speed: 0.7
+  health: 27
   value: 30
   damage: 1
-  armour: 3
+  armour: 6
   slots: 1
-  time_between: 2000
+  time_between: 1300
   is_boss: false
   capture: {}
   bonus: {}
@@ -416,13 +416,13 @@ SOLDIER:
 
 MOTORBIKE:
   name: "Motorbike"
-  speed: 0.9
-  health: 14
+  speed: 1
+  health: 19
   value: 33
-  damage: 1
-  armour: 1
+  damage: 3
+  armour: 3
   slots: 1
-  time_between: 1600
+  time_between: 1200
   is_boss: false
   capture: {}
   bonus: {}
@@ -433,13 +433,13 @@ MOTORBIKE:
 
 SMALL_TANK:
   name: "Small Tank"
-  speed: 0.2
-  health: 30
+  speed: 0.3
+  health: 33
   value: 44
-  damage: 1
-  armour: 4
+  damage: 2
+  armour: 9
   slots: 2
-  time_between: 2500
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
@@ -451,12 +451,12 @@ SMALL_TANK:
 SIEGE_TANK:
   name: "Siege Tank"
   speed: 0.10
-  health: 40
+  health: 50
   value: 47
-  damage: 1
-  armour: 8
+  damage: 2
+  armour: 12
   slots: 2
-  time_between: 3000
+  time_between: 1800
   is_boss: false
   capture: {}
   bonus: {}
@@ -468,10 +468,10 @@ SIEGE_TANK:
 TRANSPORTER:
   name: "Transporter"
   speed: 0.5
-  health: 20
+  health: 60
   value: 41
   damage: 5
-  armour: 9
+  armour: 10
   slots: 4
   time_between: 2000
   is_boss: false
@@ -488,13 +488,13 @@ TRANSPORTER:
 
 SPECOPS:
   name: "Special Ops"
-  speed: 0.65
-  health: 45
+  speed: 0.6
+  health: 40
   value: 30
-  damage: 1
+  damage: 2
   armour: 2
   slots: 1
-  time_between: 2300
+  time_between: 1300
   is_boss: false
   capture: {}
   bonus: {}
@@ -505,13 +505,13 @@ SPECOPS:
 
 HELI:
   name: "Helicopter"
-  speed: 1.2
-  health: 30
+  speed: 1.1
+  health: 32
   value: 40
   damage: 1
   armour: 2
   slots: 1
-  time_between: 2000
+  time_between: 1000
   is_boss: false
   capture: {}
   bonus: {}
@@ -526,11 +526,11 @@ HELI:
 
 MECH_WARRIOR:
   name: "Mech Warrior"
-  speed: 0.6
+  speed: 0.5
   health: 50
   value: 53
   damage: 1
-  armour: 6
+  armour: 5
   slots: 2
   time_between: 2000
   is_boss: false

@@ -397,6 +397,7 @@ async def handle_set_structure_select(
 
     Updates the live BattleState structure immediately (if a battle is active)
     and persists the value into empire.hex_map so it survives the next save.
+    Only the defender (map owner) is allowed to change targeting.
     """
     select_val = getattr(message, 'select', 'first')
     if select_val not in ('first', 'last', 'random'):
@@ -404,8 +405,18 @@ async def handle_set_structure_select(
     hex_q = getattr(message, 'hex_q', 0)
     hex_r = getattr(message, 'hex_r', 0)
 
-    # Update live battle structure
+    # Only the defender may change tower targeting.
+    # Active battles are keyed by defender_uid, so this lookup implicitly
+    # verifies that sender_uid is the defender.
     battle = _active_battles.get(sender_uid)
+    # Also reject if a battle is active for this map but sender is NOT the defender.
+    # (An attacker's uid would not be a key in _active_battles for their own attack.)
+    # Additionally guard the hex_map persistence below so only the map owner is updated.
+    svc = _svc()
+    empire = svc.empire_service.get(sender_uid)
+    if empire is None or empire.hex_map is None:
+        log.warning("set_structure_select: sender %d has no empire/map — rejected", sender_uid)
+        return None
     if battle:
         for s in battle.structures.values():
             if s.position.q == hex_q and s.position.r == hex_r:
@@ -413,17 +424,14 @@ async def handle_set_structure_select(
                 break
 
     # Persist to hex_map so next battle starts with the correct select
-    svc = _svc()
-    empire = svc.empire_service.get(sender_uid)
-    if empire and empire.hex_map:
-        tile_key = f"{hex_q},{hex_r}"
-        tile_val = empire.hex_map.get(tile_key)
-        if tile_val is not None:
-            tile_type = _tile_type(tile_val)
-            if select_val == 'first':
-                empire.hex_map[tile_key] = tile_type
-            else:
-                empire.hex_map[tile_key] = {'type': tile_type, 'select': select_val}
+    tile_key = f"{hex_q},{hex_r}"
+    tile_val = empire.hex_map.get(tile_key)
+    if tile_val is not None:
+        tile_type = _tile_type(tile_val)
+        if select_val == 'first':
+            empire.hex_map[tile_key] = tile_type
+        else:
+            empire.hex_map[tile_key] = {'type': tile_type, 'select': select_val}
 
     return None  # fire-and-forget
 
@@ -1132,7 +1140,12 @@ async def handle_battle_register(
     if not hasattr(attack, '_observers'):
         attack._observers = set()
     attack._observers.add(sender_uid)
-    
+
+    # Also add to the active BattleState so _broadcast() delivers updates
+    battle = _active_battles.get(attack.defender_uid)
+    if battle:
+        battle.observer_uids.add(sender_uid)
+
     log.info("battle_register: uid=%d registered for attack %d (phase=%s)", 
              sender_uid, attack.attack_id, attack.phase.value)
     
@@ -1164,6 +1177,10 @@ async def handle_battle_unregister(
     for attack in attack_svc.get_all_attacks():
         if hasattr(attack, '_observers') and sender_uid in attack._observers:
             attack._observers.remove(sender_uid)
+            # Also remove from active BattleState
+            battle = _active_battles.get(attack.defender_uid)
+            if battle:
+                battle.observer_uids.discard(sender_uid)
             log.info("battle_unregister: uid=%d unregistered from attack %d", 
                      sender_uid, attack.attack_id)
             return {"type": "battle_unregister_ack"}
@@ -1580,6 +1597,25 @@ async def handle_map_save_request(
             "error": f"No empire found for uid {target_uid}",
         }
     
+    # Safety guard: reject if sender is currently observing someone else's battle.
+    # This prevents accidental (or malicious) overwrite of the sender's own map
+    # with foreign tile data loaded during spectating.
+    for _b in _active_battles.values():
+        if (
+            sender_uid in _b.observer_uids
+            and _b.defender is not None
+            and _b.defender.uid != sender_uid
+        ):
+            log.warning(
+                "[map_save] Rejected: uid=%d is currently observing battle bid=%d (defender=%d)",
+                sender_uid, _b.bid, _b.defender.uid,
+            )
+            return {
+                "type": "map_save_response",
+                "success": False,
+                "error": "Cannot save map while spectating another battle",
+            }
+
     # Get tiles from typed message model
     raw_tiles = message.tiles or {}
 
@@ -2037,19 +2073,42 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
     
     try:
         await battle_svc.run_battle(battle, send_fn, broadcast_interval_ms)
-        
-        # Battle finished - compute loot and apply resource transfers
+    except Exception:
+        import traceback
+        log.error("Battle loop crashed: %s", traceback.format_exc())
+
+        # ── Crash recovery ────────────────────────────────────────────────
+        # Treat crash as defender win so the attacker doesn't get stuck.
+        battle.defender_won = True
+        battle.is_finished = True
+
+        # Reset the attacking army waves so the attacker can re-use it
+        # (only for human players — AI armies are cleaned up below anyway).
+        from gameserver.engine.ai_service import AI_UID as _AI_UID
+        if battle.army is not None and (battle.attacker is None or battle.attacker.uid != _AI_UID):
+            for wave in battle.army.waves:
+                wave.num_critters_spawned = 0
+                wave.next_critter_ms = 0
+            log.info("[battle] bid=%d army '%s' reset after crash", bid, battle.army.name)
+
+        # Best-effort summary to connected clients
+        try:
+            await battle_svc.send_summary(battle, send_fn, loot={})
+        except Exception:
+            pass
+
+    # ── Post-battle cleanup (runs whether crashed or not) ─────────────────
+    try:
         log.info("[battle] bid=%d complete: attacker_wins=%s", bid, not battle.defender_won)
-        
-        # Compute and apply loot if defender lost
+
         loot: dict = {}
         if battle.defender_won is False:
             loot = _compute_and_apply_loot(battle, svc)
-        
-        # Send battle summary with loot info
-        await battle_svc.send_summary(battle, send_fn, loot)
-        
-        # Mark attack as FINISHED so it gets removed from _attacks list
+            await battle_svc.send_summary(battle, send_fn, loot)
+        elif not battle.is_finished:
+            # Normal defender-win path (no loot to send)
+            await battle_svc.send_summary(battle, send_fn, loot={})
+
         from gameserver.models.attack import AttackPhase
         attack = svc.attack_service.get(battle.attack_id)
         if attack:
@@ -2058,7 +2117,6 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         else:
             log.warning("[battle] Could not find attack_id=%d to mark FINISHED (bid=%d)", battle.attack_id, bid)
 
-        # ── AI-ATTACK outcome logging & parameter adaptation ─────────────
         from gameserver.engine.ai_service import AI_UID
         if (svc.ai_service is not None
                 and battle.attacker is not None
@@ -2066,13 +2124,12 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                 and battle.attack_id is not None):
             svc.ai_service.on_battle_result(battle.attack_id, battle)
 
-        # ── Remove finished AI armies from state ──────────────────────────
         if svc.ai_service is not None:
             svc.ai_service.cleanup_inactive_armies(svc.empire_service, svc.attack_service)
-        
+
     except Exception:
         import traceback
-        log.error("Battle loop crashed: %s", traceback.format_exc())
+        log.error("[battle] bid=%d post-battle cleanup crashed: %s", bid, traceback.format_exc())
     finally:
         _active_battles.pop(battle.defender.uid, None)
 
@@ -2374,6 +2431,12 @@ def _create_battle_start_handler() -> Callable:
         # ── Create BattleState ───────────────────────────────
         bid = _next_bid
         _next_bid += 1
+        # Include any observers already registered before battle started
+        attack = next(
+            (a for a in svc.attack_service.get_all_attacks() if a.attack_id == attack_id),
+            None,
+        )
+        pre_registered = getattr(attack, '_observers', set())
         battle = BattleState(
             bid=bid,
             defender=defender_empire,
@@ -2381,7 +2444,7 @@ def _create_battle_start_handler() -> Callable:
             attack_id=attack_id,
             army=attacking_army,
             structures=structures_dict,
-            observer_uids={attacker_uid, defender_uid},
+            observer_uids={attacker_uid, defender_uid} | pre_registered,
             critter_path=critter_path,
         )
         

@@ -35,7 +35,7 @@
     /* ── Top bar ── */
     #topbar {
       position: sticky;
-      top: 0;
+      top: 38px;
       z-index: 100;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -475,26 +475,26 @@ const ERA_INFO = {
 // All known critters in era order
 const ERA_CRITTERS = {
   "Steinzeit":          ["SLAVE", "WARRIOR", "SCOUT"],
-  "Neolithikum":        ["CLUBMAN", "SCOUT", "WARRIOR"],
+  "Neolithikum":        ["CLUBMAN", "SCOUT", "WARRIOR", "CART"],
   "Bronzezeit":         ["BOWMAN", "SWORDMAN", "CHARIOT"],
-  "Eisenzeit":          ["PIKENEER", "HORSEMAN_FAST", "HORSEMAN_SLOW", "LEGIONARY"],
+  "Eisenzeit":          ["PIKENEER", "HORSEMAN_FAST", "HORSEMAN_SLOW", "LEGIONARY", "LARGE_CART"],
   "Mittelalter":        ["CRUSADER", "KNIGHT", "SAMURAI", "SIEGE_RAM"],
-  "Renaissance":        ["NINJA", "MUSKETEER", "DRAGOONER"],
-  "Industrialisierung": ["SOLDIER", "MOTORBIKE", "SMALL_TANK", "SIEGE_TANK"],
+  "Renaissance":        ["NINJA", "MUSKETEER", "DRAGOONER", "CARGO"],
+  "Industrialisierung": ["SOLDIER", "MOTORBIKE", "SMALL_TANK", "SIEGE_TANK", "TRANSPORTER"],
   "Moderne":            ["SPECOPS", "HELI"],
-  "Zukunft":            ["MECH_WARRIOR", "THE_GENERAL"],
+  "Zukunft":            ["MECH_WARRIOR", "THE_SWORDMASTER", "THE_KING", "THE_GENERAL"],
 };
 
 const ALL_CRITTERS = [
   "SLAVE","WARRIOR","SCOUT",
-  "CLUBMAN",
+  "CLUBMAN","CART",
   "BOWMAN","SWORDMAN","CHARIOT",
-  "PIKENEER","HORSEMAN_FAST","HORSEMAN_SLOW","LEGIONARY",
+  "PIKENEER","HORSEMAN_FAST","HORSEMAN_SLOW","LEGIONARY","LARGE_CART",
   "CRUSADER","KNIGHT","SAMURAI","SIEGE_RAM",
-  "NINJA","MUSKETEER","DRAGOONER",
-  "SOLDIER","MOTORBIKE","SMALL_TANK","SIEGE_TANK",
+  "NINJA","MUSKETEER","DRAGOONER","CARGO",
+  "SOLDIER","MOTORBIKE","SMALL_TANK","SIEGE_TANK","TRANSPORTER",
   "SPECOPS","HELI",
-  "MECH_WARRIOR","THE_GENERAL",
+  "MECH_WARRIOR","THE_SWORDMASTER","THE_KING","THE_GENERAL",
 ];
 
 const CRITTER_STATS = {
@@ -522,8 +522,14 @@ const CRITTER_STATS = {
   SIEGE_TANK:    { speed: 0.10, health: 28, armour: 4   },
   SPECOPS:       { speed: 1.0,  health: 30, armour: 2   },
   HELI:          { speed: 1.2,  health: 40, armour: 5   },
-  MECH_WARRIOR:  { speed: 0.8,  health: 50, armour: 6   },
-  THE_GENERAL:   { speed: 1.0,  health: 60, armour: 8   },
+  MECH_WARRIOR:     { speed: 0.8,  health: 50, armour: 6   },
+  THE_SWORDMASTER:  { speed: 0.4,  health: 40, armour: 3   },
+  THE_KING:         { speed: 0.4,  health: 70, armour: 6   },
+  THE_GENERAL:      { speed: 1.0,  health: 60, armour: 8   },
+  CART:             { speed: 0.2,  health: 2,  armour: 1   },
+  LARGE_CART:       { speed: 0.3,  health: 7,  armour: 2.5 },
+  CARGO:            { speed: 0.4,  health: 12, armour: 0   },
+  TRANSPORTER:      { speed: 0.5,  health: 50, armour: 10  },
 };
 
 function calcDifficulty(army) {
@@ -733,6 +739,64 @@ function buildArmyRow(army, idx) {
   sSec.className = 'travel-label';
   sSec.textContent = 's';
   top.appendChild(sSec);
+
+  // time_between
+  const tbLabel = document.createElement('span');
+  tbLabel.className = 'travel-label';
+  tbLabel.textContent = 'Interval:';
+  top.appendChild(tbLabel);
+
+  const tbInput = document.createElement('input');
+  tbInput.type = 'number';
+  tbInput.className = 'travel-input';
+  tbInput.value = army.time_between ?? '';
+  tbInput.placeholder = 'ms';
+  tbInput.min = 500;
+  tbInput.step = 500;
+  tbInput.title = 'Zeit zwischen Waves (ms). Leer = Standard (15000ms)';
+  tbInput.addEventListener('input', () => {
+    const v = parseInt(tbInput.value);
+    if (isNaN(v) || tbInput.value.trim() === '') {
+      delete army.time_between;
+    } else {
+      army.time_between = Math.max(500, v);
+    }
+    markDirty();
+  });
+  top.appendChild(tbInput);
+
+  const tbSec = document.createElement('span');
+  tbSec.className = 'travel-label';
+  tbSec.textContent = 'ms';
+  top.appendChild(tbSec);
+
+  // All-slots ± buttons
+  const allSlotsLabel = document.createElement('span');
+  allSlotsLabel.className = 'travel-label';
+  allSlotsLabel.textContent = 'Alle Slots:';
+  top.appendChild(allSlotsLabel);
+
+  const allSlotsMinus = document.createElement('button');
+  allSlotsMinus.className = 'slot-btn';
+  allSlotsMinus.textContent = '−';
+  allSlotsMinus.title = 'Alle Waves −1 Slot';
+  allSlotsMinus.addEventListener('click', () => {
+    for (const w of army.waves || []) w.slots = Math.max(1, (w.slots || 1) - 1);
+    markDirty();
+    renderAll();
+  });
+  top.appendChild(allSlotsMinus);
+
+  const allSlotsPlus = document.createElement('button');
+  allSlotsPlus.className = 'slot-btn';
+  allSlotsPlus.textContent = '+';
+  allSlotsPlus.title = 'Alle Waves +1 Slot';
+  allSlotsPlus.addEventListener('click', () => {
+    for (const w of army.waves || []) w.slots = (w.slots || 1) + 1;
+    markDirty();
+    renderAll();
+  });
+  top.appendChild(allSlotsPlus);
 
   const diffBadge = document.createElement('span');
   diffBadge.className = 'diff-badge';

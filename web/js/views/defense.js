@@ -550,6 +550,8 @@ function _showTileDetails(q, r, tile) {
   if (!tile) return;
 
   const t = getTileType(tile.type);
+  // Show editing controls when viewing own map; hide only when spectating a foreign map.
+  const _isDefender = _spectateDefenderUid == null;
 
   // ── Buy-tile button for void tiles ──────────────────────
   if (tile.type === 'void') {
@@ -559,12 +561,14 @@ function _showTileDetails(q, r, tile) {
     const buyHTML =
       '<div class="props-tile">' +
         '<div class="props-row"><span class="label">Type</span><span class="value">Void</span></div>' +
-        '<div class="props-divider"></div>' +
-        '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + (canAfford ? 'var(--text)' : 'var(--danger)') + '">' +
-          '\ud83d\udcb0 ' + Math.round(tilePrice) + ' Gold</span></div>' +
-        '<button id="buy-tile-btn" class="btn" style="width:100%;margin-top:8px;"' +
-          (canAfford ? '' : ' disabled title="Not enough gold"') + '>Buy Tile</button>' +
-        '<div id="buy-tile-msg" style="margin-top:6px;font-size:12px;text-align:center;"></div>' +
+        (_isDefender
+          ? '<div class="props-divider"></div>' +
+            '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + (canAfford ? 'var(--text)' : 'var(--danger)') + '">' +
+            '\ud83d\udcb0 ' + Math.round(tilePrice) + ' Gold</span></div>' +
+            '<button id="buy-tile-btn" class="btn" style="width:100%;margin-top:8px;"' +
+            (canAfford ? '' : ' disabled title="Not enough gold"') + '>Buy Tile</button>' +
+            '<div id="buy-tile-msg" style="margin-top:6px;font-size:12px;text-align:center;"></div>'
+          : '') +
       '</div>';
 
     if (propsContent) propsContent.innerHTML = buyHTML;
@@ -619,10 +623,16 @@ function _showTileDetails(q, r, tile) {
     const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
     const _tileSelect = (tile && tile.select) || s.select || 'first';
     const _selectLabels = { first: '▶ First', last: '◀ Last', random: '⁇ Random' };
-    const _selectBtns = ['first', 'last', 'random'].map(v =>
-      `<button class="btn select-btn${_tileSelect === v ? ' select-btn--active' : ''}" data-select="${v}" style="flex:1;padding:3px 0;font-size:11px;">${_selectLabels[v]}</button>`
-    ).join('');
+    const _selectBtns = _isDefender
+      ? ['first', 'last', 'random'].map(v =>
+          `<button class="btn select-btn${_tileSelect === v ? ' select-btn--active' : ''}" data-select="${v}" style="flex:1;padding:3px 0;font-size:11px;">${_selectLabels[v]}</button>`
+        ).join('')
+      : `<span style="font-size:11px;color:var(--muted,#888)">${_selectLabels[_tileSelect]}</span>`;
+    const _spriteThumb = t.spriteUrl
+      ? '<div style="text-align:center;margin:6px 0 4px"><span style="display:inline-block;width:56px;height:56px;border-radius:6px;background:' + t.color + ';border:1px solid ' + t.stroke + ';background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;"></span></div>'
+      : '';
     towerInfo =
+      _spriteThumb +
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Tower Stats</div>' +
       (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
@@ -648,8 +658,10 @@ function _showTileDetails(q, r, tile) {
         t.label +
       '</span></div>' +
       towerInfo +
-      '<div class="props-divider"></div>' +
-      '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' + (t.serverData ? ' (no refund)' : '') + '</button>' +
+      (_isDefender
+        ? '<div class="props-divider"></div>' +
+          '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' + (t.serverData ? ' (no refund)' : '') + '</button>'
+        : '') +
     '</div>';
 
   if (propsContent) propsContent.innerHTML = detailsHTML;
@@ -872,7 +884,8 @@ function _initCanvas() {
     onTileClick: (q, r, tile) => {
       if (_activeBrush && _activeBrush !== 'void') {
         const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
-        const existingType = (tile || grid.getTile(q, r))?.type;
+        // Always read fresh state from the grid — never rely on the stale `tile` parameter
+        const existingType = grid.getTile(q, r)?.type;
         if (!existingType || existingType === 'void') return;  // no tile or void — silently ignore
         if (existingType !== 'empty') {
           // Only show an error when an existing tower would be replaced
@@ -1124,6 +1137,8 @@ function _setActiveBrush(typeId) {
 
 function _markPathDirty() {
   _isDirtyPath = true;
+  // Never show the save button when spectating
+  if (_spectateDefenderUid != null) return;
   const btn = container.querySelector('#map-save');
   if (btn) btn.style.display = '';
 }
@@ -1135,6 +1150,19 @@ function _clearPathDirty() {
 }
 
 async function _saveMap() {
+  // Never save while spectating another player's battle
+  if (_spectateDefenderUid != null) {
+    console.warn('[Battle] _saveMap blocked: spectating uid', _spectateDefenderUid);
+    return;
+  }
+  // Verify that the map currently shown belongs to the logged-in user
+  const myUid = st?.auth?.uid;
+  if (myUid == null || (_battleState.defender_uid != null && _battleState.defender_uid !== myUid)) {
+    console.error('[Battle] _saveMap blocked: displayed map belongs to uid', _battleState.defender_uid, '(mine:', myUid, ')');
+    const errBanner = container.querySelector('#map-error-banner');
+    if (errBanner) { errBanner.textContent = '\u274c Cannot save: wrong map loaded'; errBanner.style.display = 'block'; }
+    return;
+  }
   const btn = container.querySelector('#map-save');
   const errBanner = container.querySelector('#map-error-banner');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving\u2026'; }
@@ -1161,6 +1189,8 @@ async function _saveMap() {
 }
 
 async function _autoSave() {
+  // Never auto-save while spectating another player's battle
+  if (_spectateDefenderUid != null) return;
   clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(async () => {
     try {
@@ -1232,11 +1262,16 @@ function _onBattleSetup(msg) {
 
   // Load battle map
   if (msg.tiles) {
-    grid.fromJSON({ tiles: msg.tiles });
-    grid.addVoidNeighbors();
-    // Only center on first setup, not on reconnect/refresh
-    if (!wasActive) {
-      grid._centerGrid();
+    // When the defender has pending local edits (auto-save not yet persisted),
+    // skip the full reload so client changes are never clobbered by server state.
+    const hasPendingChanges = _spectateDefenderUid == null && (_isDirtyPath || _autoSaveTimer != null);
+    if (!hasPendingChanges) {
+      grid.fromJSON({ tiles: msg.tiles });
+      grid.addVoidNeighbors();
+      // Only center on first setup, not on reconnect/refresh
+      if (!wasActive) {
+        grid._centerGrid();
+      }
     }
   }
 
@@ -1534,19 +1569,24 @@ function _showSummary(msg) {
   const content = container.querySelector('#summary-content');
 
   const won = msg.defender_won || false;
-  title.textContent = won ? '🎉 Victory!' : '💀 Defeat';
+  title.textContent = won ? '🛡 Defender Victory' : '⚔ Attacker Victory';
   title.style.color = won ? 'var(--green, #4caf50)' : 'var(--red, #d32f2f)';
 
   const myUid = st?.auth?.uid;
   const isDefender = myUid != null && myUid == _battleState.defender_uid;
 
+  const defenderName = _battleState.defender_name || 'Defender';
+  const armyPart = msg.army_name || _battleState.attacker_army_name || 'the attacker';
+  const usernamePart = _battleState.attacker_username ? ` (${_battleState.attacker_username})` : '';
+  const attackLabel = `${armyPart}${usernamePart}`;
+
   let html = '<div style="margin-top:8px">';
 
   // Outcome sentence
   if (won) {
-    html += '<p style="text-align:center">You successfully defended your empire!</p>';
+    html += `<p style="text-align:center">${defenderName} successfully defeated ${attackLabel}.</p>`;
   } else {
-    html += '<p style="text-align:center">Your defenses were overrun...</p>';
+    html += `<p style="text-align:center">${attackLabel} broke through ${defenderName}'s defenses.</p>`;
   }
 
   // ── Loot section (only on defender loss) ──────────────────────────
