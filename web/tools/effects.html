@@ -70,35 +70,82 @@
   <div id="effects-root"></div>
 </div>
 <script>
+// Effects marked with ⚠ are defined in effects.py but not yet read from empire.effects at runtime.
 const EFFECT_LABELS = {
-  gold_offset:                   'Gold / tick',
-  gold_modifier:                 'Gold Multiplier',
-  culture_offset:                'Culture / tick',
-  culture_modifier:              'Culture Multiplier',
-  life_offset:                   'Life Regen / tick',
-  max_life_modifier:             'Max Life +',
-  restore_life_after_loss:       'Life Restored after Loss',
-  restore_life_after_loss_offset:'Life Restored after Loss (offset)',
-  build_speed_modifier:          'Build Speed Multiplier',
-  build_speed_offset:            'Build Speed +',
-  research_speed_modifier:       'Research Speed Multiplier',
-  siege_time_offset:             'Siege Time (defender gets) +s',
-  wave_delay_offset:             'Wave Delay +',
-  wave_delay_modifier:           'Wave Delay Multiplier',
-  travel_time_offset:            'Travel Time Offset',
+  // Economy — implemented
+  gold_offset:                    'Gold / tick',
+  gold_modifier:                  'Gold Multiplier',
+  culture_offset:                 'Culture / tick',
+  culture_modifier:               'Culture Multiplier',
+  life_offset:                    'Life Regen / tick',
+  max_life_modifier:              'Max Life +',
+  restore_life_after_loss_offset: 'Life Restored after Loss (offset)',
+  build_speed_modifier:           'Build Speed Multiplier',
+  build_speed_offset:             'Build Speed +',
+  research_speed_modifier:        'Research Speed Multiplier',
+  // Travel & Siege — implemented
+  travel_time_offset:             'Travel Time −s (attacker)',
+  siege_time_offset:              'Siege Time +s (defender)',
+  // Battle — NOT yet implemented in engine
+  wave_delay_offset:              'Wave Delay Offset ⚠',
+  wave_delay_modifier:            'Wave Delay Multiplier ⚠',
+  // Critter buffs — NOT yet implemented
+  speed_modifier:                 'Critter Speed Multiplier ⚠',
+  health_modifier:                'Critter Health Multiplier ⚠',
+  armour_modifier:                'Critter Armour Multiplier ⚠',
+  slot_offset:                    'Wave Slots + ⚠',
+  slot_adder_per_level:           'Wave Slots per Level + ⚠',
+  // Tower buffs — NOT yet implemented
+  damage_modifier:                'Tower Damage Multiplier ⚠',
+  range_modifier:                 'Tower Range Multiplier ⚠',
+  reload_modifier:                'Tower Reload Multiplier ⚠',
+  slow_target:                    'Tower Slow Chance ⚠',
+  slow_target_duration:           'Tower Slow Duration ⚠',
+  burn_target:                    'Tower Burn Chance ⚠',
+  burn_target_duration:           'Tower Burn Duration ⚠',
+  // Loot — NOT yet implemented
+  capture_gold:                   'Capture Gold % ⚠',
+  capture_culture:                'Capture Culture % ⚠',
+  culture_steal_modifier:         'Culture Steal Modifier ⚠',
+  knowledge_steal_modifier:       'Knowledge Steal Modifier ⚠',
+  artefact_steal_chance_modifier: 'Artefact Steal Chance ⚠',
+  destroy_wonder_percent:         'Destroy Wonder % ⚠',
+  // Spy — NOT yet implemented
+  spy_disguise_chance:            'Spy Disguise Chance ⚠',
 };
 
 const EFFECT_GROUPS = [
   {
     label: '💰 Economy',
     keys: ['gold_offset','gold_modifier','culture_offset','culture_modifier',
-           'life_offset','max_life_modifier','restore_life_after_loss',
-           'restore_life_after_loss_offset','build_speed_modifier',
-           'build_speed_offset','research_speed_modifier'],
+           'life_offset','max_life_modifier','restore_life_after_loss_offset',
+           'build_speed_modifier','build_speed_offset','research_speed_modifier'],
   },
   {
-    label: '⚔ Battle',
-    keys: ['siege_time_offset','wave_delay_offset','wave_delay_modifier','travel_time_offset'],
+    label: '⚔ Travel & Siege',
+    keys: ['travel_time_offset','siege_time_offset'],
+  },
+  {
+    label: '🏹 Battle (⚠ not yet applied)',
+    keys: ['wave_delay_offset','wave_delay_modifier'],
+  },
+  {
+    label: '🐛 Critter Buffs (⚠ not yet applied)',
+    keys: ['speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level'],
+  },
+  {
+    label: '🗼 Tower Buffs (⚠ not yet applied)',
+    keys: ['damage_modifier','range_modifier','reload_modifier',
+           'slow_target','slow_target_duration','burn_target','burn_target_duration'],
+  },
+  {
+    label: '💀 Loot (⚠ not yet applied)',
+    keys: ['capture_gold','capture_culture','culture_steal_modifier',
+           'knowledge_steal_modifier','artefact_steal_chance_modifier','destroy_wonder_percent'],
+  },
+  {
+    label: '🕵 Spy (⚠ not yet applied)',
+    keys: ['spy_disguise_chance'],
   },
 ];
 

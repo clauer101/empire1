@@ -199,7 +199,8 @@
 
 <script>
 (async function() {
-  const ERA_ORDER = [
+  const eraMap = await fetch('/api/era-map').then(r => r.json()).catch(() => ({}));
+  const ERA_ORDER = eraMap.eras || [
     "Steinzeit","Neolithikum","Bronzezeit","Eisenzeit",
     "Mittelalter","Renaissance","Industrialisierung","Moderne","Zukunft"
   ];

@@ -39,7 +39,9 @@
     { name: '🎛️ Sigmoid', href: 'sigmoid_tuner.html' },
     { name: '⚡ Effects',  href: 'effects.html' },
     { name: '⚖ Balance',  href: 'balance.html' },
+    { name: '📊 Scatter',  href: 'critter-scatter.html' },
     { name: '⚔ AI Army',  href: 'send-ai-army.html' },
+    { name: '🗺 Maps',     href: 'map-overview.html' },
   ];
 
   const current = window.location.pathname.split('/').pop() || 'index.html';

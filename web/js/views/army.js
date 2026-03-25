@@ -405,6 +405,16 @@ async function onAttackOpponent(e) {
   }
 }
 
+function fmtTravelTime(seconds) {
+  if (!seconds || seconds <= 0) return '';
+  const s = Math.round(seconds);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60), r = s % 60;
+  if (m < 60) return r ? `${m}m ${r}s` : `${m}m`;
+  const h = Math.floor(m / 60), rm = m % 60;
+  return rm ? `${h}h ${rm}m` : `${h}h`;
+}
+
 /**
  * How many critters will spawn in a wave given its slot capacity
  * and the slot cost of the selected critter type.
@@ -444,6 +454,9 @@ function renderArmies(data) {
   const currentGold = st.summary?.resources?.gold || 0;
   const canAffordWave = currentGold >= wavePrice;
 
+  const travelTime = st.summary?.travel_time_seconds;
+  const travelLabel = travelTime ? fmtTravelTime(travelTime) : '';
+
   el.classList.add('armies-container');
   el.innerHTML = armies.map((a, idx) => `
     <div class="army-group" data-aid="${a.aid}">
@@ -455,7 +468,10 @@ function renderArmies(data) {
       </div>
       <div class="army-attack-row">
         <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" />
-        <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack">⚔ Attack</button>
+        <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;">
+          <span>⚔ Attack</span>
+          ${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}
+        </button>
       </div>
       <div class="waves-container">
         ${(a.waves || []).length > 0 ? `

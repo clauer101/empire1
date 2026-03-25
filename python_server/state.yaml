@@ -1,13 +1,13 @@
 meta:
   version: 1
-  saved_at: '2026-03-15T19:37:09'
-  saved_at_unix: 1773603429.7213104
+  saved_at: '2026-03-25T17:11:25'
+  saved_at_unix: 1774458685.056331
 empires:
 - uid: 4
   name: Empire1
   resources:
-    gold: 1370.1036154081228
-    culture: 34305.144891487354
+    gold: 126328.25324116512
+    culture: 859611.4388743414
     life: 12.0
   buildings:
     BASE_CAMP: 0.0
@@ -23,9 +23,32 @@ empires:
     WATCH_TOWER: 0.0
     BOW_MAKER: 0.0
     MEDICUS: 0.0
-    TOWN_GUARD: 10827.88763515791
+    TOWN_GUARD: 0.0
     FIELD_HEALER: 0.0
-  build_queue: null
+    HARBOR: 0.0
+    SWORD_MAKER: 0.0
+    BULLETIN_BOARD: 0.0
+    MARKET_PLACE: 0.0
+    BOOT_CAMP: 0.0
+    CHAPEL: 0.0
+    LORE_COLLECTION: 0.0
+    LIBRARY: 0.0
+    FORGE: 0.0
+    TREASURE_CHAMBER: 0.0
+    WORK_SHOP: 0.0
+    CARTOGRAPHER: 0.0
+    STABLES: 0.0
+    THEATER: 0.0
+    CATHEDRAL: 0.0
+    RACE_COURSE: 0.0
+    TEMPLE: 0.0
+    TREADWHEEL_CRANE: 0.0
+    FENCING_SCHOOL: 0.0
+    SOVEREIGN_GUARD: 11094.660432433699
+    ACADEMY: 40446.28801186673
+    CITY_WALLS: 0.0
+    GUILD: 22588.501853266545
+  build_queue: GUILD
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -42,23 +65,41 @@ empires:
     SAILING: 0.0
     HORSEBACK_RIDING: 0.0
     DRILL: 0.0
-    ARTS: 2509.0153033710712
-  research_queue: ARTS
+    ARTS: 0.0
+    MECHANICS: 0.0
+    MATHMATICS: 0.0
+    CARTOGRAPHY: 0.0
+    LAWS: 0.0
+    IRON: 0.0
+    ARCHITECTURE: 0.0
+    PAINTING: 0.0
+    SCIENCE: 0.0
+    LITRATURE: 0.0
+    COMMAND_CHAIN: 0.0
+    TACTICS: 0.0
+    ECONOMY: 0.0
+    FANATISM: 0.0
+    HOLY_WAR: 0.0
+    GUNPOWDER: 0.0
+    FEUDALISM: 96979.63236923808
+    PHYSICS: 104726.60204149285
+  research_queue: PHYSICS
   citizens:
-    merchant: 10
-    scientist: 0
-    artist: 0
+    merchant: 9
+    scientist: 6
+    artist: 7
   effects:
     life_offset: 0.003
-    siege_time_offset: 2820.0
-    gold_offset: 0.28
-    culture_offset: 0.55
+    siege_time_offset: 8220.0
+    gold_offset: 1.231
+    culture_offset: 1.55
     restore_life_after_loss: 5.0
-    build_speed_modifier: 0.9
-    research_speed_modifier: 0.75
-    gold_modifier: 0.1
+    build_speed_modifier: 1.9000000000000001
+    research_speed_modifier: 1.7000000000000002
+    gold_modifier: 0.8
     max_life_modifier: 2.0
-    culture_modifier: 0.2
+    travel_time_offset: -5400.0
+    culture_modifier: 0.6499999999999999
   artefacts: []
   max_life: 12.0
   structures: {}
@@ -68,16 +109,48 @@ empires:
     name: Na, wer is denn da?
     waves:
     - wave_id: 1
-      iid: CHARIOT
-      slots: 9
-      num_critters_spawned: 9
+      iid: PIKENEER
+      slots: 11
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 11
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CRUSADER
+      slots: 20
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  - aid: 2
+    uid: 4
+    name: Noooob
+    waves:
+    - wave_id: 1
+      iid: SLAVE
+      slots: 4
+      num_critters_spawned: 4
+      next_critter_ms: 2000
+    - wave_id: 2
+      iid: SLAVE
+      slots: 4
+      num_critters_spawned: 4
       next_critter_ms: 2000
   spies: []
   bosses: {}
   hex_map:
   - q: -1
+    r: -1
+    type: path
+  - q: -1
     r: 0
-    type: ARROW_TOWER
+    type: TAR_TOWER
   - q: -1
     r: 1
     type: FIRE_TOWER
@@ -89,7 +162,7 @@ empires:
     type: FIRE_TOWER
   - q: -2
     r: 0
-    type: spawnpoint
+    type: path
   - q: -2
     r: 1
     type: path
@@ -98,54 +171,112 @@ empires:
     type: path
   - q: -2
     r: 3
-    type:
-      type: BALLISTA_TOWER
-      select: random
+    type: BALLISTA_TOWER
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
   - q: -3
     r: 2
-    type: BASIC_TOWER
+    type: FIRE_TOWER
   - q: -3
     r: 3
-    type:
-      type: BALLISTA_TOWER
-      select: random
+    type: BALLISTA_TOWER
+  - q: 0
+    r: -1
+    type: HEAVY_TOWER
+  - q: 0
+    r: -2
+    type: path
   - q: 0
     r: 0
     type: castle
   - q: 0
     r: 1
-    type:
-      type: SPIKE_TRAP
-      select: random
+    type: BALLISTA_TOWER
   - q: 0
     r: 2
     type: path
   - q: 0
     r: 3
-    type:
-      type: SPIKE_TRAP
-      select: random
+    type: ARROW_TOWER
+  - q: 0
+    r: 4
+    type: spawnpoint
+  - q: 1
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 1
+    r: -2
+    type: path
   - q: 1
     r: 0
     type: path
   - q: 1
     r: 1
-    type: BASIC_TOWER
+    type: TAR_TOWER
   - q: 1
     r: 2
+    type: path
+  - q: 1
+    r: 3
+    type: BOILING_OIL
+  - q: 1
+    r: 4
+    type: path
+  - q: 2
+    r: -1
+    type: HEAVY_TOWER
+  - q: 2
+    r: -2
     type: path
   - q: 2
     r: 0
     type: path
   - q: 2
+    r: 1
+    type: path
+  - q: 2
+    r: 2
+    type: HEAVY_TOWER
+  - q: 2
+    r: 3
+    type: path
+  - q: 3
+    r: -1
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: -2
+    type: path
+  - q: 3
+    r: 0
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: 1
+    type: TAR_TOWER
+  - q: 3
+    r: 2
+    type: path
+  - q: 3
+    r: 3
+    type: FIRE_TOWER
+  - q: 4
+    r: -1
+    type: path
+  - q: 4
+    r: -2
+    type: path
+  - q: 4
+    r: 0
+    type: path
+  - q: 4
     r: 1
     type: path
 - uid: 3
   name: Bikini Bottom
   resources:
-    gold: 2456.9649363436656
-    culture: 8803.082085973954
-    life: 10.0
+    gold: 164367.01016403674
+    culture: 813040.4608396682
+    life: 17.0
   buildings:
     BASE_CAMP: 0.0
     FIRE_PLACE: 0.0
@@ -154,8 +285,30 @@ empires:
     SHRINE: 0.0
     TOOL_SHOP: 0.0
     EARTH_WALL: 0.0
-    EPIC_DRAWINGS: 2038.8422888023379
-  build_queue: EPIC_DRAWINGS
+    EPIC_DRAWINGS: 0.0
+    GRANARY: 0.0
+    BOW_MAKER: 0.0
+    MEDICUS: 0.0
+    EXCHANGE_POST: 0.0
+    WATCH_TOWER: 0.0
+    BULLETIN_BOARD: 0.0
+    BOOT_CAMP: 0.0
+    FIELD_HEALER: 0.0
+    HARBOR: 0.0
+    SWORD_MAKER: 0.0
+    LIBRARY: 0.0
+    MARKET_PLACE: 0.0
+    MONASTERY: 0.0
+    CHAPEL: 0.0
+    BOTANIC_GARDENS: 0.0
+    TOWN_GUARD: 0.0
+    LORE_COLLECTION: 0.0
+    TREASURE_CHAMBER: 0.0
+    CHURCH: 0.0
+    WORK_SHOP: 0.0
+    CARTOGRAPHER: 0.0
+    THEATER: 0.0
+  build_queue: null
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -165,87 +318,188 @@ empires:
     HORSEBACK_RIDING: 0.0
     HERBOLOGY: 0.0
     AGRICULTURE: 0.0
-    COPPER_BRONZE: 2029.1324000524905
-  research_queue: COPPER_BRONZE
+    MUSIC: 0.0
+    ALPHABET_WRITING: 0.0
+    COPPER_BRONZE: 0.0
+    RELIGION: 0.0
+    SAILING: 0.0
+    DRILL: 0.0
+    CURRENCY: 0.0
+    ARTS: 0.0
+    FANATISM: 0.0
+    HOLY_WAR: 0.0
+    MECHANICS: 0.0
+    LITRATURE: 0.0
+    MATHMATICS: 0.0
+    PRINTING_PRESS: 0.0
+    CARTOGRAPHY: 0.0
+    LAWS: 0.0
+    ECONOMY: 0.0
+    IRON: 0.0
+  research_queue: null
   citizens:
-    merchant: 1
-    scientist: 1
-    artist: 5
+    merchant: 6
+    scientist: 6
+    artist: 10
   effects:
-    life_offset: 0.001
-    siege_time_offset: 1920.0
-    gold_offset: 0.15000000000000002
-    culture_offset: 0.25
-    build_speed_modifier: 0.9
-    restore_life_after_loss: 1.0
-    research_speed_modifier: 0.3
+    life_offset: 0.003
+    siege_time_offset: 4620.0
+    gold_offset: 1.231
+    culture_offset: 1.5
+    build_speed_modifier: 1.0
+    restore_life_after_loss: 5.0
+    research_speed_modifier: 1.3
+    max_life_modifier: 7.0
+    gold_modifier: 0.8
+    travel_time_offset: -5400.0
+    culture_modifier: 0.55
   artefacts: []
-  max_life: 10.0
+  max_life: 17.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 1
+    uid: 3
+    name: Munchkins
+    waves:
+    - wave_id: 1
+      iid: SLAVE
+      slots: 2
+      num_critters_spawned: 2
+      next_critter_ms: 2000
+    - wave_id: 2
+      iid: SLAVE
+      slots: 2
+      num_critters_spawned: 2
+      next_critter_ms: 2000
+    - wave_id: 3
+      iid: SLAVE
+      slots: 3
+      num_critters_spawned: 3
+      next_critter_ms: 2000
+    - wave_id: 4
+      iid: SLAVE
+      slots: 3
+      num_critters_spawned: 3
+      next_critter_ms: 2000
+    - wave_id: 1
+      iid: SLAVE
+      slots: 4
+      num_critters_spawned: 4
+      next_critter_ms: 2000
   spies: []
   bosses: {}
   hex_map:
   - q: -1
-    r: 1
+    r: -1
+    type: FIRE_TOWER
+  - q: -1
+    r: 0
     type: path
+  - q: -1
+    r: 1
+    type: TAR_TOWER
   - q: -1
     r: 2
     type: path
   - q: -1
     r: 3
+    type: FIRE_TOWER
+  - q: -1
+    r: 4
+    type: CATAPULTS
+  - q: -2
+    r: 0
+    type: FIRE_TOWER
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: FIRE_TOWER
+  - q: -2
+    r: 4
+    type: CATAPULTS
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
+  - q: -3
+    r: 2
+    type: FIRE_TOWER
+  - q: -3
+    r: 3
+    type: FIRE_TOWER
+  - q: -3
+    r: 4
+    type: CATAPULTS
+  - q: 0
+    r: -1
     type: DOUBLE_SLING_TOWER
   - q: 0
     r: 0
     type: path
   - q: 0
     r: 1
-    type: BASIC_TOWER
+    type: CATAPULTS
   - q: 0
     r: 2
     type: path
   - q: 0
     r: 3
+    type: CATAPULTS
+  - q: 0
+    r: 4
+    type: empty
+  - q: 1
+    r: -1
     type: DOUBLE_SLING_TOWER
   - q: 1
-    r: -1
-    type: BASIC_TOWER
-  - q: 1
     r: 0
     type: path
   - q: 1
     r: 1
-    type: BASIC_TOWER
+    type: CATAPULTS
   - q: 1
     r: 2
     type: path
+  - q: 1
+    r: 3
+    type: FIRE_TOWER
+  - q: 1
+    r: 4
+    type: empty
   - q: 2
     r: -1
-    type: BASIC_TOWER
+    type: FIRE_TOWER
   - q: 2
     r: 0
     type: path
   - q: 2
     r: 1
-    type: BASIC_TOWER
+    type: CATAPULTS
   - q: 2
     r: 2
     type: path
+  - q: 2
+    r: 3
+    type: FIRE_TOWER
   - q: 3
     r: -1
-    type: BASIC_TOWER
+    type: FIRE_TOWER
   - q: 3
     r: 0
     type: path
   - q: 3
     r: 1
-    type: BASIC_TOWER
+    type: CATAPULTS
   - q: 3
     r: 2
     type: castle
   - q: 4
     r: -1
-    type: BASIC_TOWER
+    type: ARROW_TOWER
   - q: 4
     r: 0
     type: spawnpoint
@@ -275,7 +529,7 @@ empires:
   name: AI
   resources:
     gold: 0.0
-    culture: 9487.999318620188
+    culture: 511708.2149593938
     life: 10.0
   buildings: {}
   build_queue: null
@@ -292,111 +546,54 @@ empires:
   armies:
   - aid: 10000
     uid: 0
-    name: Rude Barbarians
+    name: Theater in Flames
     waves:
     - wave_id: 1
-      iid: CLUBMAN
-      slots: 10
-      num_critters_spawned: 10
-      next_critter_ms: 2000
-    - wave_id: 2
-      iid: SCOUT
-      slots: 12
-      num_critters_spawned: 12
-      next_critter_ms: 2000
-    - wave_id: 3
-      iid: SWORDMAN
-      slots: 3
-      num_critters_spawned: 3
-      next_critter_ms: 2000
-  - aid: 10001
-    uid: 0
-    name: Field Healer Hunt
-    waves:
-    - wave_id: 1
-      iid: CHARIOT
-      slots: 11
+      iid: CRUSADER
+      slots: 16
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: BOWMAN
+      iid: KNIGHT
       slots: 17
       num_critters_spawned: 0
       next_critter_ms: 15000
     - wave_id: 3
-      iid: SWORDMAN
-      slots: 6
+      iid: SIEGE_RAM
+      slots: 18
       num_critters_spawned: 0
       next_critter_ms: 30000
     - wave_id: 4
-      iid: BOWMAN
-      slots: 8
+      iid: SAMURAI
+      slots: 19
       num_critters_spawned: 0
       next_critter_ms: 45000
     - wave_id: 5
-      iid: BOWMAN
-      slots: 10
+      iid: SIEGE_RAM
+      slots: 20
       num_critters_spawned: 0
       next_critter_ms: 60000
     - wave_id: 6
-      iid: LEGIONARY
-      slots: 12
+      iid: CRUSADER
+      slots: 21
       num_critters_spawned: 0
       next_critter_ms: 75000
     - wave_id: 7
-      iid: CHARIOT
-      slots: 14
+      iid: SAMURAI
+      slots: 22
       num_critters_spawned: 0
       next_critter_ms: 90000
-  - aid: 10000
-    uid: 0
-    name: Harvest Raiders
-    waves:
-    - wave_id: 1
-      iid: CHARIOT
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: WARRIOR
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SCOUT
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: CHARIOT
-      slots: 8
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: WARRIOR
-      slots: 10
-      num_critters_spawned: 0
-      next_critter_ms: 60000
   spies: []
   bosses: {}
   hex_map: []
 attacks:
-- attack_id: 2
-  attacker_uid: 0
-  defender_uid: 4
-  army_aid: 10001
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 630.0
-  siege_remaining_seconds: 2266.1801330059534
-  total_siege_seconds: 3120.0
-- attack_id: 3
+- attack_id: 8
   attacker_uid: 0
   defender_uid: 3
   army_aid: 10000
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 300.0
-  siege_remaining_seconds: 1667.4625894929632
-  total_siege_seconds: 2220.0
+  total_eta_seconds: 240.0
+  siege_remaining_seconds: 3665.890479633119
+  total_siege_seconds: 4920.0
 battles: []

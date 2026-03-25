@@ -556,7 +556,7 @@ class BattleService:
             return
         if battle.elapsed_ms < battle.MIN_KEEP_ALIVE_MS:
             return
-        
+
         # Check if defender has lost all life (< 1.0 accounts for fractional offsets like life_offset)
         if battle.defender and battle.defender.resources.get("life", 0) < 1.0:
             battle.is_finished = True

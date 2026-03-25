@@ -149,7 +149,7 @@ CHARIOT:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 1600
+  time_between: 1100
   is_boss: false
   capture: {}
   bonus: {}
@@ -165,12 +165,12 @@ CHARIOT:
 PIKENEER:
   name: "Pikeneer"
   speed: 0.4
-  health: 6
+  health: 7
   value: 15
   damage: 1
-  armour: 0.5
+  armour: 1
   slots: 1
-  time_between: 1300
+  time_between: 1200
   is_boss: false
   capture: {}
   bonus: {}
@@ -187,7 +187,7 @@ HORSEMAN_SLOW:
   damage: 2
   armour: 2.5
   slots: 1
-  time_between: 1800
+  time_between: 1500
   is_boss: false
   capture: {}
   bonus: {}
@@ -204,7 +204,7 @@ HORSEMAN_FAST:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 1200
+  time_between: 900
   is_boss: false
   capture: {}
   bonus: {}
@@ -221,7 +221,7 @@ LEGIONARY:
   damage: 1
   armour: 2
   slots: 1
-  time_between: 1500
+  time_between: 1400
   is_boss: false
   capture: {}
   bonus: {}
@@ -259,14 +259,14 @@ CRUSADER:
   damage: 2
   armour: 1.5
   slots: 1
-  time_between: 1700
+  time_between: 1500
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
   scale: 1
   animation: assets/sprites/critters/crusader
-  requirements: [HOLY_WAR, FANATISM, CATHEDRAL]
+  requirements: [HOLY_WAR, FANATISM]
 
 KNIGHT:
   name: "Knight"
@@ -276,7 +276,7 @@ KNIGHT:
   damage: 1
   armour: 2
   slots: 2
-  time_between: 2000
+  time_between: 1900
   is_boss: false
   capture: {}
   bonus: {}
@@ -293,7 +293,7 @@ SAMURAI:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 1800
+  time_between: 1600
   is_boss: false
   capture: {}
   bonus: {}
@@ -333,7 +333,7 @@ NINJA:
   damage: 1
   armour: 1
   slots: 1
-  time_between: 1200
+  time_between: 1100
   is_boss: false
   capture: {}
   bonus: {}
@@ -350,7 +350,7 @@ MUSKETEER:
   damage: 1
   armour: 1.5
   slots: 1
-  time_between: 1800
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
@@ -367,7 +367,7 @@ DRAGOONER:
   damage: 2
   armour: 2.5
   slots: 1
-  time_between: 1700
+  time_between: 1200
   is_boss: false
   capture: {}
   bonus: {}
@@ -391,7 +391,7 @@ CARGO:
   spawn_on_death: {MUSKETEER: 6}
   scale: 1
   animation: assets/sprites/critters/cargo
-  requirements: [STEAM_ENGINE, RAIL_ROADS]
+  requirements: [PHYSICS, MECHANICAL_ENGINEERING]
 
 # ============================================================
 #   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
@@ -405,13 +405,13 @@ SOLDIER:
   damage: 1
   armour: 6
   slots: 1
-  time_between: 1300
+  time_between: 1000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
   scale: 1
-  animation: assets/sprites/critters/soldier
+  animation: assets/sprites/critters/the_general
   requirements: [BARRACKS, CONSTITUTION, MILITARY_SERVICE]
 
 MOTORBIKE:
@@ -422,7 +422,7 @@ MOTORBIKE:
   damage: 3
   armour: 3
   slots: 1
-  time_between: 1200
+  time_between: 700
   is_boss: false
   capture: {}
   bonus: {}
@@ -439,7 +439,7 @@ SMALL_TANK:
   damage: 2
   armour: 9
   slots: 2
-  time_between: 1700
+  time_between: 1600
   is_boss: false
   capture: {}
   bonus: {}
@@ -450,20 +450,20 @@ SMALL_TANK:
 
 SIEGE_TANK:
   name: "Siege Tank"
-  speed: 0.10
+  speed: 0.2
   health: 50
   value: 47
   damage: 2
   armour: 12
   slots: 2
-  time_between: 1800
+  time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
   scale: 1
   animation: assets/sprites/critters/siege_tank
-  requirements: [KNO_ARMOUR, FACTORY]
+  requirements: [KNO_ARMOUR, PARADE_GROUND]
 
 TRANSPORTER:
   name: "Transporter"
@@ -473,7 +473,7 @@ TRANSPORTER:
   damage: 5
   armour: 10
   slots: 4
-  time_between: 2000
+  time_between: 1900
   is_boss: false
   capture: {}
   bonus: {}
@@ -494,7 +494,7 @@ SPECOPS:
   damage: 2
   armour: 2
   slots: 1
-  time_between: 1300
+  time_between: 1500
   is_boss: false
   capture: {}
   bonus: {}
@@ -511,11 +511,11 @@ HELI:
   damage: 1
   armour: 2
   slots: 1
-  time_between: 1000
+  time_between: 900
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: null
+  spawn_on_death: {SOLDIER: 2}
   scale: 1
   animation: assets/sprites/critters/heli
   requirements: [AVIATION, HANGAR]
@@ -536,7 +536,7 @@ MECH_WARRIOR:
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: null
+  spawn_on_death: {SPECOPS: 2}
   scale: 1
   animation: assets/sprites/critters/mech_warrior
   requirements: [MECH_WARRIOR_LAB, COMPUTER_TECHNOLOGY, FIBER_COMPOSITE]
@@ -594,4 +594,4 @@ THE_GENERAL:
   spawn_on_death: null
   scale: 1
   animation: assets/sprites/critters/the_general
-  requirements: [ELITE_ACADEMY, BIONICS]
+  requirements: [ELITE_ACADEMY]

@@ -15,7 +15,15 @@ starting_resources:
   life: 10.0
 starting_max_life: 10.0
 restore_life_after_loss_offset: 1.0
-base_travel_offset: 300.0
+stone_travel_offset: 300.0
+neolithicum_travel_offset: 900.0
+bronze_travel_offset: 3600.0
+iron_travel_offset: 7200.0
+middle_ages_travel_offset: 10800.0
+rennaissance_travel_offset: 12600.0
+industrial_travel_offset: 14400.0
+modern_travel_offset: 16200.0
+future_travel_offset: 18000.0
 base_siege_offset: 300.0
 ai_travel_seconds: 60.0
 waves_per_level: 1.0
@@ -39,17 +47,17 @@ prices:
     z: 1.5
     v: 3.3
   tile:
-    maxv: 75000
+    maxv: 30000
     minv: 100
     spread: 29
     steep: 9
   wave:
-    maxv: 28000
+    maxv: 37000
     minv: 100
     spread: 12
     steep: 7
   critter_slot:
-    maxv: 13000
+    maxv: 27000
     minv: 25
     spread: 23
     steep: 7

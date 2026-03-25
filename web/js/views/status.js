@@ -40,13 +40,20 @@ function init(el, _api, _state) {
       .csl-merchant{background:#4fc3f7}
       .csl-scientist{background:#ffa726}
       .csl-artist{background:#81c784}
-      .csl-handle{position:absolute;top:50%;width:18px;height:18px;margin-top:-9px;margin-left:-9px;border-radius:50%;background:#fff;border:2px solid #555;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.5);z-index:2;touch-action:none}
-      .csl-handle:active{cursor:grabbing;border-color:var(--accent,#4fc3f7)}
+      .csl-handle{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;margin-left:-12px;border-radius:50%;border:3px solid rgba(0,0,0,.35);cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.55);z-index:2;touch-action:none;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;user-select:none}
+      .csl-handle:active{cursor:grabbing;filter:brightness(1.2)}
       .csl-labels{display:flex;justify-content:space-between;font-size:0.82em;margin-top:4px;padding:0 4px}
       .csl-lbl{display:flex;flex-direction:column;align-items:center;gap:1px}
       .csl-lbl span{color:#bbb;font-size:0.9em}
       .csl-lbl strong{font-size:1.1em}
       .csl-hint{font-size:0.8em;color:#888;text-align:center;margin-bottom:2px;font-style:italic}
+      .prod-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto}
+      .prod-overlay-box{background:var(--panel-bg,#1e1e1e);border:1px solid var(--border-color,#444);border-radius:8px;width:100%;max-width:480px;padding:16px 18px;position:relative}
+      .prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
+      .prod-overlay-section{margin-bottom:14px}
+      .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
+      .prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
+      .prod-info-btn:hover{opacity:1}
     `;
     document.head.appendChild(s);
   }
@@ -123,10 +130,10 @@ function render(data) {
     <div class="dashboard-2col">
 
       <div class="panel">
-        <div class="panel-header">Resources</div>
-        <div class="panel-row"><span class="label">🪙 Gold</span><span class="value">${fmt(r.gold)}</span></div>
-        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)}</span></div>
-        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)}</span></div>
+        <div class="panel-header">Resources <button class="prod-info-btn" id="resources-detail-btn" title="Show income details">🔍</button></div>
+        <div class="panel-row"><span class="label"><span style="display:inline-block;width:13px;height:13px;background:linear-gradient(135deg,#FFE566,#FFD700 50%,#E6AC00);border-radius:50%;vertical-align:middle;margin-right:3px;box-shadow:0 1px 2px rgba(0,0,0,.35)"></span> Gold</span><span class="value">${fmt(r.gold)} <span style="color:#888;font-size:0.85em">(+${calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold).toFixed(2)}/s)</span></span></div>
+        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)} <span style="color:#888;font-size:0.85em">(+${calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture).toFixed(2)}/s)</span></span></div>
+        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0).toFixed(3)}/s)</span></span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
         <div class="panel-header" style="margin-bottom:4px">Citizens</div>
         ${renderCitizens(data.citizens)}
@@ -197,32 +204,6 @@ function render(data) {
     <div id="empires-section" style="margin-top:8px">
       ${renderEmpiresSection(_empiresData)}
     </div>
-
-    <div class="dashboard-4col" style="margin-top:8px;">
-
-      <div class="panel">
-        <div class="panel-header">Construction Speed</div>
-        ${renderBuildSpeed(data.effects, data.completed_buildings, data.completed_research, st.items, data.base_build_speed)}
-        <div class="panel-header" style="margin-top:10px">Research Speed</div>
-        ${renderResearchSpeed(data.effects, data.citizens, data.citizen_effect, data.completed_buildings, data.completed_research, st.items, data.base_research_speed)}
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">Gold Income</div>
-        ${renderResourceIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold, data.completed_buildings, st.items)}
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">Culture Income</div>
-        ${renderResourceIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture, data.completed_buildings, st.items)}
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">Life Regeneration</div>
-        ${renderResourceIncome('life', data.effects, data.citizens, data.citizen_effect, 0, data.completed_buildings, st.items)}
-      </div>
-
-    </div>
   `;
   const btn = el.querySelector('#buy-citizen-btn');
   if (btn) {
@@ -249,6 +230,10 @@ function render(data) {
     };
   }
   
+  // Bind production detail overlay
+  const detailBtn = el.querySelector('#resources-detail-btn');
+  if (detailBtn) detailBtn.addEventListener('click', () => _showProductionOverlay(data));
+
   // Replace old citizen-btn handler with slider init
   _initCitizenSlider(el, data);
 
@@ -278,6 +263,51 @@ function render(data) {
   });
 }
 
+function _showProductionOverlay(data) {
+  // Remove any existing overlay
+  document.querySelector('.prod-overlay')?.remove();
+
+  const items = st.items;
+  const effects = data.effects || {};
+  const citizens = data.citizens || {};
+  const citizenEffect = data.citizen_effect || 0;
+  const completedBuildings = data.completed_buildings || [];
+  const completedResearch = data.completed_research || [];
+
+  function section(title, html) {
+    return `<div class="prod-overlay-section"><div class="prod-overlay-title">${title}</div>${html}</div>`;
+  }
+
+  const goldHtml = renderResourceIncome('gold', effects, citizens, citizenEffect, data.base_gold, completedBuildings, items, completedResearch);
+  const cultureHtml = renderResourceIncome('culture', effects, citizens, citizenEffect, data.base_culture, completedBuildings, items, completedResearch);
+  const lifeHtml = renderResourceIncome('life', effects, citizens, citizenEffect, 0, completedBuildings, items, completedResearch);
+  const buildHtml = renderBuildSpeed(effects, completedBuildings, completedResearch, items, data.base_build_speed);
+  const researchHtml = renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, data.base_research_speed);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'prod-overlay';
+  overlay.innerHTML = `
+    <div class="prod-overlay-box">
+      <button class="prod-overlay-close" title="Close">✕</button>
+      <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">Production Details</div>
+      ${section('<span style="color:#FFD700">● Gold Income</span>', goldHtml)}
+      ${section('<span style="color:#ffa726">● Culture Income</span>', cultureHtml)}
+      ${section('<span style="color:#90ee90">● Life Regen</span>', lifeHtml)}
+      ${section('<span style="color:#4fc3f7">● Construction Speed</span>', buildHtml)}
+      ${section('<span style="color:#ffa726">● Research Speed</span>', researchHtml)}
+    </div>
+  `;
+
+  // Close on backdrop click or ✕ button
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) {
+      overlay.remove();
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
 function renderCitizens(citizens) {
   if (!citizens) return '<div class="panel-row"><span class="value">—</span></div>';
   const m = citizens.merchant || 0;
@@ -296,8 +326,8 @@ function renderCitizens(citizens) {
         <div class="csl-seg csl-merchant" style="left:0;width:${p1}%"></div>
         <div class="csl-seg csl-scientist" style="left:${p1}%;width:${(p2-p1).toFixed(2)}%"></div>
         <div class="csl-seg csl-artist" style="left:${p2}%;width:${(100-p2).toFixed(2)}%"></div>
-        <div class="csl-handle" id="csl-h1" style="left:${p1}%"></div>
-        <div class="csl-handle" id="csl-h2" style="left:${p2}%"></div>
+        <div class="csl-handle" id="csl-h1" style="left:${p1}%;background:#ffa726">🔭</div>
+        <div class="csl-handle" id="csl-h2" style="left:${p2}%;background:#81c784">🎨</div>
       </div>
       <div class="csl-labels">
         <div class="csl-lbl"><span>🫂 Merchant</span><strong id="csl-lbl-m">${m}</strong></div>
@@ -514,7 +544,27 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
   return html;
 }
 
-function renderResourceIncome(resourceType, effects, citizens, citizenEffect, baseAmount, completedBuildings, items) {
+// effects[key] from the backend is already the full aggregated sum of all
+// building + knowledge contributions (see empire_service.recalculate_effects).
+// Do NOT iterate completedBuildings here — that would double-count.
+function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) {
+  baseAmount = baseAmount ?? 0;
+  if (resourceType === 'life') {
+    return baseAmount + (effects?.life_offset || 0);
+  }
+  if (resourceType === 'gold') {
+    const offset   = baseAmount + (effects?.gold_offset    || 0);
+    const modifier = (citizens?.merchant || 0) * (citizenEffect || 0) + (effects?.gold_modifier    || 0);
+    return offset * (1 + modifier);
+  }
+  // culture
+  const offset   = baseAmount + (effects?.culture_offset || 0);
+  const modifier = (citizens?.artist   || 0) * (citizenEffect || 0) + (effects?.culture_modifier || 0);
+  return offset * (1 + modifier);
+}
+
+function renderResourceIncome(resourceType, effects, citizens, citizenEffect, baseAmount, completedBuildings, items, completedResearch) {
+  completedResearch = completedResearch || [];
   let html = '';
   
   // Determine which citizen type and effect keys
@@ -542,27 +592,25 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
     html += `<div class="panel-row"><span class="label">+${baseAmount.toFixed(2)}</span><span class="value">(base)</span></div>`;
   }
 
-  // Building effects
+  // Building & Research effects (offsets)
   let totalOffset = baseAmount;
-  if (completedBuildings && items?.buildings) {
-    for (const iid of completedBuildings) {
-      const item = items.buildings[iid];
+  function addOffsetSources(catalog) {
+    if (!catalog) return;
+    for (const iid of (completedBuildings.concat(completedResearch))) {
+      const item = catalog.buildings?.[iid] || catalog.knowledge?.[iid];
       if (item?.effects?.[effectOffsetKey] > 0) {
         const offset = item.effects[effectOffsetKey];
         totalOffset += offset;
-        if (resourceType === 'life') {
-          html += `<div class="panel-row"><span class="label">+${offset.toFixed(3)}</span><span class="value">(${item.name || iid})</span></div>`;
-        }else{
-          html += `<div class="panel-row"><span class="label">+${offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
-        }
-        
+        const decimals = resourceType === 'life' ? 3 : 2;
+        html += `<div class="panel-row"><span class="label">+${offset.toFixed(decimals)}</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
   }
-  
+  addOffsetSources(items);
+
   // For life, only show offset without multiplier
   if (resourceType === 'life') {
-    const color = '#90ee90'; // Light green for life
+    const color = '#90ee90';
     html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
     html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${totalOffset.toFixed(3)}/s</span></div>`;
     return html;
@@ -577,18 +625,14 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   
   // Effect modifiers from buildings
   let totalModifier = citizenBonus;
-  let totalBuildingModifier = 0;
-  if (completedBuildings && items?.buildings) {
-    for (const iid of completedBuildings) {
-      const item = items.buildings[iid];
-      if (item?.effects?.[effectModifierKey] > 0) {
-        const modifier = item.effects[effectModifierKey];
-        totalBuildingModifier += modifier;
-        html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
-      }
+  for (const iid of (completedBuildings.concat(completedResearch))) {
+    const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
+    if (item?.effects?.[effectModifierKey] > 0) {
+      const modifier = item.effects[effectModifierKey];
+      totalModifier += modifier;
+      html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
-  totalModifier += totalBuildingModifier;
   
   // Final calculation line
   const multiplier = 1 + totalModifier;

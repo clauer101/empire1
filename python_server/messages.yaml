@@ -155,4 +155,16 @@ messages:
   body_b64: W3Rvb19oYXJkXSBBcm15OiBEcmlsbGVkIFN3b3JkcyAocmVwb3J0ZWQgYnkgVUlEIDMp
   sent_at: '2026-03-16T15:03:16'
   read: true
-next_id: 27
+- id: 27
+  from_uid: 4
+  to_uid: 3
+  body_b64: RGllIFNrbGF2ZW4gd2VyZGVuIGRpY2ggc28gaGFydCBmaXN0ZW4hIE11aGFoYWhhaGFyISEhIQ==
+  sent_at: '2026-03-24T17:18:45'
+  read: true
+- id: 28
+  from_uid: 3
+  to_uid: 4
+  body_b64: aGFiIGRlbiBrYW1wZiB3b2hsIHZlcnBhc3N0LCBkYSB3w6RyIG4gcmVwbGF5IGd1dCA6RA==
+  sent_at: '2026-03-24T21:52:41'
+  read: true
+next_id: 29

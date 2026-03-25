@@ -132,12 +132,12 @@ function render() {
         </div>
       </td>
       <td class="col-details" data-label="Details">
-        <div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>
         <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums">${durationStr}</span></div>
-        <div class="detail-row"><span class="detail-label">Effects:</span>${fmtEffects(info.effects)}</div>
-        <div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u =>
+        ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>` : ''}
+        ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${fmtEffects(info.effects)}</div>` : ''}
+        ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u =>
           `<span class="badge badge--unlock-${u.category} ${completed.has(u.iid) ? 'badge--completed' : ''}" style="margin-right:4px">${u.name}</span>`
-        ).join('') || '—'}</div>
+        ).join('')}</div>` : ''}
       </td>
     </tr>`;
   }).join('');

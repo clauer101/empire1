@@ -1,0 +1,1212 @@
+maps:
+- id: state_all_industial_uid4
+  name: Industial
+  life: 25.0
+  hex_map:
+  - q: -1
+    r: -1
+    type: path
+  - q: -1
+    r: -2
+    type: FLAME_THROWER
+  - q: -1
+    r: -3
+    type: path
+  - q: -1
+    r: 0
+    type: NAPALM_THROWER
+  - q: -1
+    r: 1
+    type: NAPALM_THROWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: SHOCK_TOWER
+  - q: -1
+    r: 4
+    type: path
+  - q: -2
+    r: -1
+    type: FLAME_THROWER
+  - q: -2
+    r: -2
+    type: path
+  - q: -2
+    r: 0
+    type: path
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: FLAME_THROWER
+  - q: -2
+    r: 4
+    type: path
+  - q: -3
+    r: -1
+    type: path
+  - q: -3
+    r: 0
+    type: FLAME_THROWER
+  - q: -3
+    r: 1
+    type: PARALYZNG_TOWER
+  - q: -3
+    r: 2
+    type: FLAME_THROWER
+  - q: -3
+    r: 3
+    type: SHOCK_TOWER
+  - q: -3
+    r: 4
+    type: path
+  - q: -4
+    r: 0
+    type: path
+  - q: -4
+    r: 1
+    type: path
+  - q: -4
+    r: 2
+    type: path
+  - q: -4
+    r: 3
+    type: path
+  - q: -4
+    r: 4
+    type: path
+  - q: 0
+    r: -1
+    type: NAPALM_THROWER
+  - q: 0
+    r: -2
+    type: path
+  - q: 0
+    r: -3
+    type: FLAME_THROWER
+  - q: 0
+    r: -4
+    type: path
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: NAPALM_THROWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: SHOCK_TOWER
+  - q: 0
+    r: 4
+    type: path
+  - q: 1
+    r: -1
+    type: NAPALM_THROWER
+  - q: 1
+    r: -2
+    type: path
+  - q: 1
+    r: -3
+    type: FLAME_THROWER
+  - q: 1
+    r: -4
+    type: path
+  - q: 1
+    r: -5
+    type: SHOCK_TOWER
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: NAPALM_THROWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 1
+    r: 3
+    type: PARALYZNG_TOWER
+  - q: 1
+    r: 4
+    type: path
+  - q: 2
+    r: -1
+    type: NAPALM_THROWER
+  - q: 2
+    r: -2
+    type: path
+  - q: 2
+    r: -3
+    type: FLAME_THROWER
+  - q: 2
+    r: -4
+    type: path
+  - q: 2
+    r: -5
+    type: SHOCK_TOWER
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: path
+  - q: 2
+    r: 2
+    type: PARALYZNG_TOWER
+  - q: 2
+    r: 3
+    type: path
+  - q: 3
+    r: -1
+    type: PARALYZNG_TOWER
+  - q: 3
+    r: -2
+    type: path
+  - q: 3
+    r: -3
+    type: SHOCK_TOWER
+  - q: 3
+    r: -4
+    type: path
+  - q: 3
+    r: -5
+    type: FLAME_THROWER
+  - q: 3
+    r: 0
+    type: SHOCK_TOWER
+  - q: 3
+    r: 1
+    type: NAPALM_THROWER
+  - q: 3
+    r: 2
+    type: NAPALM_THROWER
+  - q: 3
+    r: 3
+    type: path
+  - q: 4
+    r: -1
+    type: path
+  - q: 4
+    r: -2
+    type: path
+  - q: 4
+    r: -3
+    type: SHOCK_TOWER
+  - q: 4
+    r: -4
+    type: path
+  - q: 4
+    r: -5
+    type: FLAME_THROWER
+  - q: 4
+    r: 0
+    type: path
+  - q: 4
+    r: 1
+    type: path
+  - q: 4
+    r: 2
+    type: NAPALM_THROWER
+  - q: 4
+    r: 3
+    type: path
+  - q: 5
+    r: -1
+    type: NAPALM_THROWER
+  - q: 5
+    r: -2
+    type: NAPALM_THROWER
+  - q: 5
+    r: -3
+    type: SHOCK_TOWER
+  - q: 5
+    r: -4
+    type: path
+  - q: 5
+    r: -5
+    type: SHOCK_TOWER
+  - q: 5
+    r: 0
+    type: NAPALM_THROWER
+  - q: 5
+    r: 1
+    type: path
+  - q: 5
+    r: 2
+    type: NAPALM_THROWER
+  - q: 5
+    r: 3
+    type: path
+  - q: 6
+    r: -1
+    type: path
+  - q: 6
+    r: -2
+    type: path
+  - q: 6
+    r: -3
+    type: path
+  - q: 6
+    r: -4
+    type: path
+  - q: 6
+    r: -5
+    type: SHOCK_TOWER
+  - q: 6
+    r: 0
+    type: path
+  - q: 6
+    r: 1
+    type: NAPALM_THROWER
+  - q: 6
+    r: 2
+    type: path
+  - q: 7
+    r: -1
+    type: NAPALM_THROWER
+  - q: 7
+    r: -2
+    type: NAPALM_THROWER
+  - q: 7
+    r: -3
+    type: NAPALM_THROWER
+  - q: 7
+    r: -4
+    type: NAPALM_THROWER
+  - q: 7
+    r: -5
+    type: NAPALM_THROWER
+  - q: 7
+    r: 0
+    type: NAPALM_THROWER
+  - q: 7
+    r: 1
+    type: path
+  - q: 8
+    r: -1
+    type: SHOCK_TOWER
+  - q: 8
+    r: -2
+    type: SHOCK_TOWER
+  - q: 8
+    r: -3
+    type: SHOCK_TOWER
+  - q: 8
+    r: -4
+    type: SHOCK_TOWER
+  - q: 8
+    r: -5
+    type: SHOCK_TOWER
+  - q: 8
+    r: 0
+    type: path
+  - q: 9
+    r: -1
+    type: path
+  - q: 9
+    r: -2
+    type: path
+  - q: 9
+    r: -3
+    type: path
+  - q: 9
+    r: -4
+    type: path
+  - q: 9
+    r: -5
+    type: spawnpoint
+- id: state_all_moden_uid4
+  name: Future
+  life: 37.0
+  hex_map:
+  - q: -1
+    r: -1
+    type: path
+  - q: -1
+    r: -2
+    type: SNIPER_TOWER
+  - q: -1
+    r: -3
+    type: path
+  - q: -1
+    r: -4
+    type: ROCKET_TOWER
+  - q: -1
+    r: -5
+    type: path
+  - q: -1
+    r: 0
+    type: ROCKET_TOWER
+  - q: -1
+    r: 1
+    type: ROCKET_TOWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: ROCKET_TOWER
+  - q: -1
+    r: 4
+    type: path
+  - q: -2
+    r: -1
+    type: SNIPER_TOWER
+  - q: -2
+    r: -2
+    type: path
+  - q: -2
+    r: -3
+    type: ROCKET_TOWER
+  - q: -2
+    r: -4
+    type: path
+  - q: -2
+    r: 0
+    type: path
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: SNIPER_TOWER
+  - q: -2
+    r: 4
+    type: path
+  - q: -3
+    r: -1
+    type: path
+  - q: -3
+    r: -2
+    type: SNIPER_TOWER
+  - q: -3
+    r: -3
+    type: path
+  - q: -3
+    r: 0
+    type: SNIPER_TOWER
+  - q: -3
+    r: 1
+    type: empty
+  - q: -3
+    r: 2
+    type: SNIPER_TOWER
+  - q: -3
+    r: 3
+    type: ROCKET_TOWER
+  - q: -3
+    r: 4
+    type: path
+  - q: -4
+    r: -1
+    type: SNIPER_TOWER
+  - q: -4
+    r: -2
+    type: spawnpoint
+  - q: -4
+    r: 0
+    type: path
+  - q: -4
+    r: 1
+    type: path
+  - q: -4
+    r: 2
+    type: path
+  - q: -4
+    r: 3
+    type: path
+  - q: -4
+    r: 4
+    type: path
+  - q: 0
+    r: -1
+    type: ROCKET_TOWER
+  - q: 0
+    r: -2
+    type: path
+  - q: 0
+    r: -3
+    type: SNIPER_TOWER
+  - q: 0
+    r: -4
+    type: path
+  - q: 0
+    r: -5
+    type: ROCKET_TOWER
+  - q: 0
+    r: -6
+    type: path
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: ROCKET_TOWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: ROCKET_TOWER
+  - q: 0
+    r: 4
+    type: path
+  - q: 1
+    r: -1
+    type: SNIPER_TOWER
+  - q: 1
+    r: -2
+    type: path
+  - q: 1
+    r: -3
+    type: SNIPER_TOWER
+  - q: 1
+    r: -4
+    type: path
+  - q: 1
+    r: -5
+    type: ROCKET_TOWER
+  - q: 1
+    r: -6
+    type: path
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: ROCKET_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 1
+    r: 3
+    type: empty
+  - q: 1
+    r: 4
+    type: path
+  - q: 2
+    r: -1
+    type: SNIPER_TOWER
+  - q: 2
+    r: -2
+    type: path
+  - q: 2
+    r: -3
+    type: SNIPER_TOWER
+  - q: 2
+    r: -4
+    type: path
+  - q: 2
+    r: -5
+    type: ROCKET_TOWER
+  - q: 2
+    r: -6
+    type: path
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: path
+  - q: 2
+    r: 2
+    type: empty
+  - q: 2
+    r: 3
+    type: path
+  - q: 3
+    r: -1
+    type: empty
+  - q: 3
+    r: -2
+    type: path
+  - q: 3
+    r: -3
+    type: ROCKET_TOWER
+  - q: 3
+    r: -4
+    type: path
+  - q: 3
+    r: -5
+    type: SNIPER_TOWER
+  - q: 3
+    r: -6
+    type: path
+  - q: 3
+    r: 0
+    type: ROCKET_TOWER
+  - q: 3
+    r: 1
+    type: ROCKET_TOWER
+  - q: 3
+    r: 2
+    type: ROCKET_TOWER
+  - q: 3
+    r: 3
+    type: path
+  - q: 4
+    r: -1
+    type: path
+  - q: 4
+    r: -2
+    type: path
+  - q: 4
+    r: -3
+    type: ROCKET_TOWER
+  - q: 4
+    r: -4
+    type: path
+  - q: 4
+    r: -5
+    type: SNIPER_TOWER
+  - q: 4
+    r: -6
+    type: path
+  - q: 4
+    r: 0
+    type: path
+  - q: 4
+    r: 1
+    type: path
+  - q: 4
+    r: 2
+    type: ROCKET_TOWER
+  - q: 4
+    r: 3
+    type: path
+  - q: 5
+    r: -1
+    type: ROCKET_TOWER
+  - q: 5
+    r: -2
+    type: ROCKET_TOWER
+  - q: 5
+    r: -3
+    type: ROCKET_TOWER
+  - q: 5
+    r: -4
+    type: path
+  - q: 5
+    r: -5
+    type: ROCKET_TOWER
+  - q: 5
+    r: -6
+    type: path
+  - q: 5
+    r: 0
+    type: ROCKET_TOWER
+  - q: 5
+    r: 1
+    type: path
+  - q: 5
+    r: 2
+    type: ROCKET_TOWER
+  - q: 5
+    r: 3
+    type: path
+  - q: 6
+    r: -1
+    type: path
+  - q: 6
+    r: -2
+    type: path
+  - q: 6
+    r: -3
+    type: path
+  - q: 6
+    r: -4
+    type: path
+  - q: 6
+    r: -5
+    type: ROCKET_TOWER
+  - q: 6
+    r: -6
+    type: path
+  - q: 6
+    r: 0
+    type: path
+  - q: 6
+    r: 1
+    type: ROCKET_TOWER
+  - q: 6
+    r: 2
+    type: path
+  - q: 7
+    r: -1
+    type: ROCKET_TOWER
+  - q: 7
+    r: -2
+    type: ROCKET_TOWER
+  - q: 7
+    r: -3
+    type: ROCKET_TOWER
+  - q: 7
+    r: -4
+    type: ROCKET_TOWER
+  - q: 7
+    r: -5
+    type: ROCKET_TOWER
+  - q: 7
+    r: -6
+    type: path
+  - q: 7
+    r: 0
+    type: ROCKET_TOWER
+  - q: 7
+    r: 1
+    type: path
+  - q: 8
+    r: -1
+    type: ROCKET_TOWER
+  - q: 8
+    r: -2
+    type: ROCKET_TOWER
+  - q: 8
+    r: -3
+    type: ROCKET_TOWER
+  - q: 8
+    r: -4
+    type: ROCKET_TOWER
+  - q: 8
+    r: -5
+    type: ROCKET_TOWER
+  - q: 8
+    r: -6
+    type: path
+  - q: 8
+    r: 0
+    type: path
+  - q: 9
+    r: -1
+    type: path
+  - q: 9
+    r: -2
+    type: path
+  - q: 9
+    r: -3
+    type: path
+  - q: 9
+    r: -4
+    type: path
+  - q: 9
+    r: -5
+    type: path
+  - q: 9
+    r: -6
+    type: path
+- id: live_4_1774129631
+  name: Bronze+
+  life: 12.0
+  hex_map:
+  - q: -1
+    r: -1
+    type: path
+  - q: -1
+    r: 0
+    type: ARROW_TOWER
+  - q: -1
+    r: 1
+    type: FIRE_TOWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: FIRE_TOWER
+  - q: -2
+    r: 0
+    type: path
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: BALLISTA_TOWER
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
+  - q: -3
+    r: 2
+    type: FIRE_TOWER
+  - q: -3
+    r: 3
+    type: BALLISTA_TOWER
+  - q: 0
+    r: -1
+    type: SPIKE_TRAP
+  - q: 0
+    r: -2
+    type: path
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: BALLISTA_TOWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: ARROW_TOWER
+  - q: 1
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 1
+    r: -2
+    type: path
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: ARROW_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 2
+    r: -1
+    type: HEAVY_TOWER
+  - q: 2
+    r: -2
+    type: path
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: path
+  - q: 3
+    r: -1
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: -2
+    type: spawnpoint
+  - q: 3
+    r: 0
+    type: ARBELESTE_TOWER
+- id: live_3_1774129668
+  name: Stone/Neo
+  life: 10
+  hex_map:
+  - q: -1
+    r: 0
+    type: DOUBLE_SLING_TOWER
+  - q: -1
+    r: 1
+    type: path
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: DOUBLE_SLING_TOWER
+  - q: -2
+    r: 1
+    type: DOUBLE_SLING_TOWER
+  - q: -2
+    r: 2
+    type: BALLISTA_TOWER
+  - q: -2
+    r: 3
+    type: DOUBLE_SLING_TOWER
+  - q: 0
+    r: -1
+    type: DOUBLE_SLING_TOWER
+  - q: 0
+    r: 0
+    type: path
+  - q: 0
+    r: 1
+    type: BASIC_TOWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: DOUBLE_SLING_TOWER
+  - q: 1
+    r: -1
+    type: BASIC_TOWER
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 1
+    r: 3
+    type: DOUBLE_SLING_TOWER
+  - q: 2
+    r: -1
+    type: BASIC_TOWER
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: BASIC_TOWER
+  - q: 2
+    r: 2
+    type: path
+  - q: 3
+    r: -1
+    type: BASIC_TOWER
+  - q: 3
+    r: 0
+    type: path
+  - q: 3
+    r: 1
+    type: BASIC_TOWER
+  - q: 3
+    r: 2
+    type: castle
+  - q: 4
+    r: -1
+    type: BASIC_TOWER
+  - q: 4
+    r: 0
+    type: spawnpoint
+- id: live_4_1774162533
+  name: Bronze
+  hex_map:
+  - q: -1
+    r: -1
+    type: path
+  - q: -1
+    r: -2
+    type: empty
+  - q: -1
+    r: -3
+    type: empty
+  - q: -1
+    r: 0
+    type: FIRE_TOWER
+  - q: -1
+    r: 1
+    type: FIRE_TOWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: ARROW_TOWER
+  - q: -1
+    r: 4
+    type: empty
+  - q: -2
+    r: -1
+    type: empty
+  - q: -2
+    r: -2
+    type: empty
+  - q: -2
+    r: 0
+    type: path
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: ARROW_TOWER
+  - q: -2
+    r: 4
+    type: empty
+  - q: -3
+    r: -1
+    type: empty
+  - q: -3
+    r: 0
+    type: empty
+  - q: -3
+    r: 1
+    type: empty
+  - q: -3
+    r: 2
+    type: empty
+  - q: -3
+    r: 3
+    type: empty
+  - q: -3
+    r: 4
+    type: empty
+  - q: -4
+    r: 0
+    type: empty
+  - q: -4
+    r: 1
+    type: empty
+  - q: -4
+    r: 2
+    type: empty
+  - q: -4
+    r: 3
+    type: empty
+  - q: -4
+    r: 4
+    type: empty
+  - q: 0
+    r: -1
+    type: ARROW_TOWER
+  - q: 0
+    r: -2
+    type: path
+  - q: 0
+    r: -3
+    type: empty
+  - q: 0
+    r: -4
+    type: empty
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: ARROW_TOWER
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: ARROW_TOWER
+  - q: 0
+    r: 4
+    type: empty
+  - q: 1
+    r: -1
+    type: FIRE_TOWER
+  - q: 1
+    r: -2
+    type: path
+  - q: 1
+    r: -3
+    type: empty
+  - q: 1
+    r: -4
+    type: empty
+  - q: 1
+    r: -5
+    type: empty
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: ARROW_TOWER
+  - q: 1
+    r: 2
+    type: path
+  - q: 1
+    r: 3
+    type: FIRE_TOWER
+  - q: 1
+    r: 4
+    type: empty
+  - q: 2
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 2
+    r: -2
+    type: path
+  - q: 2
+    r: -3
+    type: empty
+  - q: 2
+    r: -4
+    type: empty
+  - q: 2
+    r: -5
+    type: empty
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: path
+  - q: 2
+    r: 2
+    type: BALLISTA_TOWER
+  - q: 2
+    r: 3
+    type: empty
+  - q: 3
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 3
+    r: -2
+    type: spawnpoint
+  - q: 3
+    r: -3
+    type: empty
+  - q: 3
+    r: -4
+    type: empty
+  - q: 3
+    r: -5
+    type: empty
+  - q: 3
+    r: 0
+    type: BALLISTA_TOWER
+  - q: 3
+    r: 1
+    type: FIRE_TOWER
+  - q: 3
+    r: 2
+    type: empty
+  - q: 3
+    r: 3
+    type: empty
+  - q: 4
+    r: -1
+    type: empty
+  - q: 4
+    r: -2
+    type: empty
+  - q: 4
+    r: -3
+    type: empty
+  - q: 4
+    r: -4
+    type: empty
+  - q: 4
+    r: -5
+    type: empty
+  - q: 4
+    r: 0
+    type: empty
+  - q: 4
+    r: 1
+    type: empty
+  - q: 4
+    r: 2
+    type: empty
+  - q: 4
+    r: 3
+    type: empty
+  - q: 5
+    r: -1
+    type: empty
+  - q: 5
+    r: -2
+    type: empty
+  - q: 5
+    r: -3
+    type: empty
+  - q: 5
+    r: -4
+    type: empty
+  - q: 5
+    r: -5
+    type: empty
+  - q: 5
+    r: 0
+    type: empty
+  - q: 5
+    r: 1
+    type: empty
+  - q: 5
+    r: 2
+    type: empty
+  - q: 5
+    r: 3
+    type: empty
+  - q: 6
+    r: -1
+    type: empty
+  - q: 6
+    r: -2
+    type: empty
+  - q: 6
+    r: -3
+    type: empty
+  - q: 6
+    r: -4
+    type: empty
+  - q: 6
+    r: -5
+    type: empty
+  - q: 6
+    r: 0
+    type: empty
+  - q: 6
+    r: 1
+    type: empty
+  - q: 6
+    r: 2
+    type: empty
+  - q: 7
+    r: -1
+    type: empty
+  - q: 7
+    r: -2
+    type: empty
+  - q: 7
+    r: -3
+    type: empty
+  - q: 7
+    r: -4
+    type: empty
+  - q: 7
+    r: -5
+    type: empty
+  - q: 7
+    r: 0
+    type: empty
+  - q: 7
+    r: 1
+    type: empty
+  - q: 8
+    r: -1
+    type: empty
+  - q: 8
+    r: -2
+    type: empty
+  - q: 8
+    r: -3
+    type: empty
+  - q: 8
+    r: -4
+    type: empty
+  - q: 8
+    r: -5
+    type: empty
+  - q: 8
+    r: 0
+    type: empty
+  - q: 9
+    r: -1
+    type: empty
+  - q: 9
+    r: -2
+    type: empty
+  - q: 9
+    r: -3
+    type: empty
+  - q: 9
+    r: -4
+    type: empty
+  - q: 9
+    r: -5
+    type: empty
+  life: 10.0

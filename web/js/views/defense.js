@@ -1413,10 +1413,6 @@ function _onBattleUpdate(msg) {
 
   // Update shot positions (all shots with path_progress)
   if (msg.shots && Array.isArray(msg.shots)) {
-    if (msg.shots.length > 0) {
-      console.log('[Battle] Received', msg.shots.length, 'shots');
-    }
-    
     // Build set of active shot IDs from server
     const activeShotIds = new Set();
     for (const shot of msg.shots) {

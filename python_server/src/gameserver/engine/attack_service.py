@@ -32,11 +32,30 @@ class AttackService:
         empire_service: Empire service for defender lookups.
     """
 
+    # Maps ERA_KEY → GameConfig field name for travel offset.
+    _ERA_TRAVEL_FIELD: dict[str, str] = {
+        "STEINZEIT":          "stone_travel_offset",
+        "NEOLITHIKUM":        "neolithicum_travel_offset",
+        "BRONZEZEIT":         "bronze_travel_offset",
+        "EISENZEIT":          "iron_travel_offset",
+        "MITTELALTER":        "middle_ages_travel_offset",
+        "RENAISSANCE":        "rennaissance_travel_offset",
+        "INDUSTRIALISIERUNG": "industrial_travel_offset",
+        "MODERNE":            "modern_travel_offset",
+        "ZUKUNFT":            "diamond_travel_offset",
+    }
+    _ERA_ORDER: list[str] = [
+        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
+        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
+    ]
+
     def __init__(self, event_bus: EventBus,
                  game_config: GameConfig | None = None,
-                 empire_service: EmpireService | None = None) -> None:
+                 empire_service: EmpireService | None = None,
+                 knowledge_era_groups: dict[str, list[str]] | None = None) -> None:
         self._events = event_bus
         self._empire_service = empire_service
+        self._game_config = game_config
         self._attacks: list[Attack] = []
         self._base_travel_offset = (
             game_config.base_travel_offset if game_config else 300.0
@@ -44,9 +63,30 @@ class AttackService:
         self._base_siege_offset = (
             game_config.base_siege_offset if game_config else 900.0
         )
+        # era key → set of knowledge IIDs that belong to that era
+        self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
         self._next_attack_id: int = 1
         self._broadcast_timer: dict[int, float] = {}  # attack_id -> seconds since last broadcast
         self._battles_started: set[int] = set()  # attack_ids that have already emitted BattleStartRequested
+
+    # -- Era travel offset -----------------------------------------------
+
+    def _era_travel_offset(self, empire) -> float:
+        """Return the travel offset for the attacker's current era.
+
+        Iterates eras in order; the highest era where at least one knowledge
+        item is completed is the attacker's era. Falls back to base_travel_offset.
+        """
+        if not self._knowledge_era_groups or self._game_config is None:
+            return self._base_travel_offset
+        done = {iid for iid, remaining in empire.knowledge.items() if remaining == 0.0}
+        era_key = self._ERA_ORDER[0]
+        for key in self._ERA_ORDER:
+            items = self._knowledge_era_groups.get(key, [])
+            if any(iid in done for iid in items):
+                era_key = key
+        field_name = self._ERA_TRAVEL_FIELD.get(era_key, "")
+        return getattr(self._game_config, field_name, self._base_travel_offset)
 
     # -- Query -----------------------------------------------------------
 
@@ -146,11 +186,11 @@ class AttackService:
                     and existing.phase != AttackPhase.FINISHED):
                 return "Army is already attacking"
 
-        # Calculate travel time: base + attacker.TRAVEL_TIME_OFFSET
+        # Calculate travel time: era_base + attacker.TRAVEL_TIME_OFFSET
         # Negative offset = faster travel; positive = slower.
         from gameserver.util import effects as fx
         travel_offset = att_empire.get_effect(fx.TRAVEL_TIME_OFFSET, 0.0)
-        eta = max(1.0, self._base_travel_offset + travel_offset)
+        eta = max(1.0, self._era_travel_offset(att_empire) + travel_offset)
 
         attack = Attack(
             attack_id=self._next_attack_id,

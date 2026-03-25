@@ -50,7 +50,7 @@ DOUBLE_SLING_TOWER:
   sprite: "assets/sprites/structures/double_sling_tower/double_sling_tower.webp"
   damage: 2
   range: 2
-  reload_time: 1600
+  reload_time: 1800
   shot_speed: 1.4
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
@@ -72,7 +72,7 @@ SPIKE_TRAP:
   max_level: 1
   select: first
   costs: {gold: 850}
-  effects: {slow_duration: 2000, slow_ratio: 0.3}   # slows to 30% speed for 1s
+  effects: {slow_duration: 2000, slow_ratio: 0.7}   # slows to 30% speed for 1s
   requirements: [EARTH_WALL]
 
 # ============================================================
@@ -84,7 +84,7 @@ ARROW_TOWER:
   sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
   damage: 2
   range: 2
-  reload_time: 2200
+  reload_time: 1500
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
@@ -97,7 +97,7 @@ ARROW_TOWER:
 BALLISTA_TOWER:
   name: "Ballista Tower"
   sprite: "assets/sprites/structures/ballista_tower/ballista_tower.webp"
-  damage: 3
+  damage: 4
   range: 1
   reload_time: 3200
   shot_speed: 2
@@ -107,7 +107,7 @@ BALLISTA_TOWER:
   select: first
   costs: {gold: 7800}
   effects: {}
-  requirements: [COPPER_BRONZE, WATCH_TOWER, EXCHANGE_POST]
+  requirements: [WATCH_TOWER]
 
 FIRE_TOWER:
   name: "Fire Tower"
@@ -121,8 +121,8 @@ FIRE_TOWER:
   max_level: 1
   select: first
   costs: {gold: 5000}
-  effects: {burn_duration: 2000, burn_dps: 2.0}    # burns for 2 dps over 3s
-  requirements: [COPPER_BRONZE, BOW_MAKER]
+  effects: {burn_duration: 1500, burn_dps: 2}   # burns for 2 dps over 3s
+  requirements: [COPPER_BRONZE]
 
 # ============================================================
 #   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
@@ -131,7 +131,7 @@ FIRE_TOWER:
 CATAPULTS:
   name: "Catapult"
   sprite: "assets/sprites/structures/catapults/catapults.webp"
-  damage: 5
+  damage: 7
   range: 2
   reload_time: 3500
   shot_speed: 1
@@ -141,7 +141,7 @@ CATAPULTS:
   select: first
   costs: {gold: 18000}
   effects: {splash_radius: 0.5}
-  requirements: [MECHANICS, TREADWHEEL_CRANE, MATHMATICS]
+  requirements: [MECHANICS, MATHMATICS]
 
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
@@ -156,7 +156,7 @@ ARBELESTE_TOWER:
   select: first
   costs: {gold: 21500}
   effects: {}
-  requirements: [IRON, FORGE]
+  requirements: [FORGE]
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -165,7 +165,7 @@ ARBELESTE_TOWER:
 TAR_TOWER:
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
-  damage: 2
+  damage: 4
   range: 1
   reload_time: 3000
   shot_speed: 1
@@ -190,7 +190,7 @@ HEAVY_TOWER:
   select: first
   costs: {gold: 55000}
   effects: {}
-  requirements: [IRON, LAWS, BOOT_CAMP]
+  requirements: [IRON, LAWS]
 
 BOILING_OIL:
   name: "Boiling Oil"
@@ -205,7 +205,7 @@ BOILING_OIL:
   select: first
   costs: {gold: 47000}
   effects: {burn_duration: 5000, burn_dps: 3.0}    # burns for 3 dps over 5s
-  requirements: [CITY_WALLS, TOWN_GUARD]
+  requirements: [CITY_WALLS]
 
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
@@ -214,7 +214,7 @@ BOILING_OIL:
 CANNON_TOWER:
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 21
+  damage: 23
   range: 2
   reload_time: 3800
   shot_speed: 1
@@ -229,9 +229,9 @@ CANNON_TOWER:
 RIFLE_TOWER:
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
-  damage: 14
+  damage: 9
   range: 1.5
-  reload_time: 1600
+  reload_time: 1900
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
@@ -239,12 +239,12 @@ RIFLE_TOWER:
   select: first
   costs: {gold: 85000}
   effects: {}
-  requirements: [GUNPOWDER, GUNSMITH]
+  requirements: [GUNSMITH]
 
 COLD_TOWER:
   name: "Cold Tower"
   sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
-  damage: 5
+  damage: 3
   range: 2
   reload_time: 1000
   shot_speed: 5
@@ -280,15 +280,15 @@ FLAME_THROWER:
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
   damage: 0
   range: 1
-  reload_time: 2000
+  reload_time: 2300
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 4000, burn_dps: 6}    # burns for 4 dps over 4s
-  requirements: [CHEMISTRY, HEAVY_EQUIPMENT]
+  effects: {burn_duration: 4000, burn_dps: 4}   # burns for 4 dps over 4s
+  requirements: [HEAVY_EQUIPMENT]
 
 SHOCK_TOWER:
   name: "Shock Tower"
@@ -303,14 +303,14 @@ SHOCK_TOWER:
   select: first
   costs: {gold: 145000}
   effects: {slow_duration: 1500, slow_ratio: 0.4}
-  requirements: [ELECTRICITY, ELECTRIC_FENCE]
+  requirements: [ELECTRIC_FENCE]
 
 PARALYZNG_TOWER:
   name: "Paralyzing Tower"
   sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
   damage: 4
   range: 2
-  reload_time: 2800
+  reload_time: 2600
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
@@ -318,26 +318,26 @@ PARALYZNG_TOWER:
   select: first
   costs: {gold: 100000}
   effects: {slow_duration: 800, slow_ratio: 0}   # stun: stops completely for 3s
-  requirements: [ELECTRICITY, HOSPITAL]
+  requirements: [HOSPITAL]
+
+# ============================================================
+#   MODERNE  (Effort 2.000.000 – 5.300.000)
+# ============================================================
 
 NAPALM_THROWER:
   name: "Napalm Thrower"
   sprite: "assets/sprites/structures/napalm_tower/napalm_tower.webp"
   damage: 7
   range: 1
-  reload_time: 2300
+  reload_time: 2000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
   costs: {gold: 140000}
-  effects: {burn_dps: 5, burn_duration: 2}
-  requirements: [CHEMICAL_WARFARE, WMD_SITE]
-
-# ============================================================
-#   MODERNE  (Effort 2.000.000 – 5.300.000)
-# ============================================================
+  effects: {burn_dps: 5, burn_duration: 2000}
+  requirements: [WMD_SITE]
 
 MG_TOWER:
   name: "MG Bunker"
@@ -352,7 +352,7 @@ MG_TOWER:
   select: first
   costs: {gold: 300000}
   effects: {}
-  requirements: [MECHANICAL_ENGINEERING, DEFENSE_DEPARTMENT]
+  requirements: [DEFENSE_DEPARTMENT]
 
 RAPID_FIRE_MG_BUNKER:
   name: "Rapid Fire MG Bunker"
@@ -367,7 +367,7 @@ RAPID_FIRE_MG_BUNKER:
   select: first
   costs: {gold: 450000}
   effects: {}
-  requirements: [MASS_PRODUCTION, BUNKER]
+  requirements: [MASS_PRODUCTION, DEFENSE_DEPARTMENT]
 
 RADAR_TOWER:
   name: "Radar Tower"
@@ -382,7 +382,7 @@ RADAR_TOWER:
   select: first
   costs: {gold: 250000}
   effects: {}
-  requirements: [ELECTRONICS, SATELITE_SYSTEMS]
+  requirements: [SATELITE_SYSTEMS]
 
 ANTI_AIR_TOWER:
   name: "Anti-Air Tower"
@@ -397,7 +397,7 @@ ANTI_AIR_TOWER:
   select: first
   costs: {gold: 350000}
   effects: {}
-  requirements: [AVIATION, ECHELON_DEFENSE_FACILITY]
+  requirements: [ECHELON_DEFENSE_FACILITY]
 
 LASER_TOWER:
   name: "Laser Tower"
@@ -412,7 +412,7 @@ LASER_TOWER:
   select: first
   costs: {gold: 400000}
   effects: {}
-  requirements: [ELECTRONICS, RESEARCH_LAB, NUCLEAR_POWER_PLANT]
+  requirements: [RESEARCH_LAB]
 
 # ============================================================
 #   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
