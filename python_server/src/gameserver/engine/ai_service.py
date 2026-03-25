@@ -130,18 +130,15 @@ class AIService:
 
     Args:
         upgrade_provider: Item database for critter lookups.
-        templates: AI army templates (kept for future use).
     """
 
     def __init__(
         self,
         upgrade_provider: UpgradeProvider,
-        templates: dict,
         game_config=None,
         hardcoded_waves: list | None = None,
     ) -> None:
         self._upgrades = upgrade_provider
-        self._templates = templates
         self._game_config = game_config
         self._hardcoded_waves: list[dict] = hardcoded_waves or []
         self._params = AIParams()

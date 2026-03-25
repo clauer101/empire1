@@ -44,7 +44,7 @@ MAIN_HOUSE:
   costs: {"gold": 200}
   requirements: [BASE_CAMP]
   effects:
-    gold_offset: 0.05
+    gold_offset: 0.1
 
 EARTH_WALL:
   name: "Earth Wall"
@@ -85,7 +85,7 @@ GRANARY:
   costs: {gold: 400}
   requirements: [AGRICULTURE]
   effects:
-    gold_offset: 0.08
+    gold_offset: 0.121
 
 EPIC_DRAWINGS:
   name: "Epic Drawings"
@@ -105,7 +105,7 @@ EXCHANGE_POST:
   requirements: [CRAFTSMANSHIP]
   effects:
     gold_modifier: 0.1
-    gold_offset: 0.05
+    gold_offset: 0.21
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)
@@ -155,7 +155,8 @@ HARBOR:
   costs: {gold: 1200}
   requirements: [SAILING]
   effects:
-    gold_modifier: 0.1
+    gold_modifier: 0.2
+    travel_time_offset: -1800
 
 SWORD_MAKER:
   name: "Sword Maker"
@@ -185,7 +186,7 @@ MARKET_PLACE:
   costs: {gold: 2400}
   requirements: [CURRENCY]
   effects:
-    gold_modifier: 0.2
+    gold_modifier: 0.3
 
 BOOT_CAMP:
   name: "Boot Camp"
@@ -257,6 +258,7 @@ CARTOGRAPHER:
   costs: {gold: 6000}
   requirements: [CARTOGRAPHY]
   effects:
+    travel_time_offset: -3600
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -368,7 +370,8 @@ MANOR:
   effort: 85000
   costs: {gold: 17000}
   requirements: [FEUDALISM]
-  effects: {gold_offset: 0.1}
+  effects: 
+    gold_offset: 0.3
 
 BANK:
   name: "Bank"
@@ -377,8 +380,8 @@ BANK:
   costs: {gold: 18000}
   requirements: [ECONOMY]
   effects:
-    gold_modifier: 0.3
-    gold_offset: 1.0
+    gold_modifier: 0.4
+    gold_offset: 0.6
 
 ACADEMY:
   name: "Academy"
@@ -424,7 +427,7 @@ THE_KINGS_LAIR:
   requirements: [MONARCHY]
   effects:
     culture_modifier: 0.15
-    gold_offset: 0.1
+    gold_offset: 0.3
 
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
@@ -496,7 +499,8 @@ BOTANIC_GARDENS:
   effort: 220000
   costs: {gold: 44000}
   requirements: [HERBOLOGY]
-  effects: {}
+  effects: 
+    max_life_modifier: 5
 
 CANNON_MANUFACTORY:
   name: "Cannon Manufactory"
@@ -539,7 +543,7 @@ PARLIAMENT:
   requirements: [CONSTITUTION]
   effects:
     culture_modifier: 0.15
-    gold_modifier: 0.1
+    gold_modifier: 0.2
 
 EMPERORS_PALACE:
   name: "Emperor's Palace"
@@ -549,7 +553,7 @@ EMPERORS_PALACE:
   requirements: [MONARCHY]
   effects:
     culture_modifier: 0.2
-    gold_modifier: 0.2
+    gold_modifier: 0.3
 
 STOCK_MARKET:
   name: "Stock Market"
@@ -558,7 +562,7 @@ STOCK_MARKET:
   costs: {gold: 90000}
   requirements: [ECONOMY, PRINTING_PRESS]
   effects:
-    gold_modifier: 0.15
+    gold_modifier: 0.5
 
 # ============================================================
 #   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
@@ -580,7 +584,7 @@ RAIL_ROADS:
   costs: {gold: 150000}
   requirements: [STEAM_ENGINE]
   effects:
-    gold_offset: 0.2
+    travel_time_offset: -3600
 
 VEHICLE_WORKSHOP:
   name: "Vehicle Workshop"
@@ -613,9 +617,9 @@ AIRFIELD:
   description: "Airport for aircraft. Requires combustion engines."
   effort: 566030
   costs: {gold: 300000}
-  requirements: [COMBUSTION_ENGINE]
+  requirements: [AERO_DYNAMICS]
   effects:
-    gold_offset: 0.15
+    travel_time_offset: -3600
 
 HANGAR:
   name: "Hangar"
@@ -630,7 +634,7 @@ HOSPITAL:
   description: "Modern medical facility. Significantly boosts health."
   effort: 609426
   costs: {gold: 340000}
-  requirements: [CHEMISTRY, ELECTRICITY]
+  requirements: [CHEMISTRY]
   effects:
     life_offset: 0.005
     max_life_modifier: 10
@@ -668,6 +672,15 @@ BARRACKS:
 #   MODERNE  (Effort 2.000.000 – 5.300.000)
 # ============================================================
 
+CRYPTOGRAPHERS_GUILD:
+  name: "Cryptographers Guild"
+  description: "Organization for advanced cryptographic research."
+  effort: 947562
+  costs: {gold: 500000}
+  requirements: [CRYPTOLOGY]
+  effects:
+    siege_time_offset: 3600
+
 ROCKET_SILO:
   name: "Rocket Silo"
   description: "Launch facility for chemical rockets."
@@ -681,7 +694,7 @@ RESEARCH_VAULT:
   description: "Secure research storage. Requires advanced technology."
   effort: 917762
   costs: {gold: 500000}
-  requirements: [ELECTRICITY]
+  requirements: [OPTICS]
   effects:
     research_speed_modifier: 0.4
 
@@ -727,7 +740,7 @@ FEDERAL_RESERVE:
   costs: {gold: 650000}
   requirements: [ECONOMY]
   effects:
-    gold_modifier: 0.25
+    gold_modifier: 0.5
 
 SOCIAL_SECURITY_SYSTEM:
   name: "Social Security System"
@@ -744,7 +757,7 @@ EXECUTIVE_CARPOOL:
   costs: {gold: 670000}
   requirements: [COMBUSTION_ENGINE]
   effects:
-    gold_offset: 0.1
+    gold_offset: 0.7
 
 NAVIGATION_SYSTEM:
   name: "Navigation System"
@@ -753,7 +766,7 @@ NAVIGATION_SYSTEM:
   costs: {gold: 700000}
   requirements: [ELECTRICITY]
   effects:
-    gold_offset: 0.1
+    travel_time_offset: -3600
 
 DERIVATIVE_MARKET:
   name: "Derivative Market"
@@ -762,7 +775,7 @@ DERIVATIVE_MARKET:
   costs: {gold: 750000}
   requirements: [ECONOMY]
   effects:
-    gold_modifier: 0.2
+    gold_modifier: 0.5
 
 BOMBING_AREA:
   name: "Bombing Area"
@@ -779,7 +792,7 @@ NUCLEAR_POWER_PLANT:
   costs: {gold: 800000}
   requirements: [ELECTRICITY]
   effects:
-    gold_offset: 0.25
+    gold_offset: 0.75
 
 ROBO_MANUFACTURE:
   name: "Robo Manufacture"
@@ -796,7 +809,8 @@ INTELLIGENCE_AGENCY:
   effort: 1005717
   costs: {gold: 850000}
   requirements: [STEALTH_SECRECY]
-  effects: {}
+  effects: 
+    siege_time_offset: 3600
 
 MECH_WARRIOR_LAB:
   name: "Mech Warrior Lab"
@@ -804,7 +818,7 @@ MECH_WARRIOR_LAB:
   effort: 1183197
   costs: {gold: 1000000}
   requirements: [MECHANICAL_ENGINEERING]
-  effects:
+  effects: []
 
 ELITE_ACADEMY:
   name: "Elite Academy"
@@ -836,9 +850,9 @@ THE_WORLD_WONDER:
   costs: {gold: 8000000}
   requirements: [NUCLEAR_REACTION]
   effects:
-    culture_offset: 1.0
-    gold_offset: 1.0
-    research_speed_modifier: 1.0
+    culture_offset: 2.0
+    gold_offset: 2.0
+    research_speed_modifier: 2.0
 
 SPACE_CENTER:
   name: "Space Center"
@@ -847,15 +861,15 @@ SPACE_CENTER:
   costs: {gold: 12000000}
   requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
-    research_speed_modifier: 2.0
+    research_speed_modifier: 5.0
 
 CYBER_COMMAND:
   name: "Cyber Command"
   description: "Digital warfare and cyber operations headquarters."
   effort: 1979123
   costs: {gold: 14000000}
-  requirements: [COMPUTER_TECHNOLOGY]
-  effects:
+  requirements: [COMPUTER_TECHNOLOGY, BIONICS]
+  effects: []
 
 FUSION_REACTOR:
   name: "Fusion Reactor"
@@ -864,4 +878,4 @@ FUSION_REACTOR:
   costs: {gold: 16000000}
   requirements: [COLD_FUSION]
   effects:
-    gold_offset: 2.0
+    gold_offset: 5.0

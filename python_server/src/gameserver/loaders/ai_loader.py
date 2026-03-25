@@ -21,6 +21,8 @@ def load_ai_templates(path: str | Path = "config/ai_templates.yaml") -> dict[str
         Dict with 'difficulty_tiers' and 'templates' keys.
     """
     path = Path(path)
+    if not path.exists():
+        return {}
     with path.open() as f:
         data = yaml.safe_load(f) or {}
     return data

@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 # Secret key — read from env or use a default (fine for dev/local game server)
 JWT_SECRET: str = os.environ.get("JWT_SECRET", "e3-game-server-secret-key-change-in-prod")
 JWT_ALGORITHM: str = "HS256"
-JWT_EXPIRY_SECONDS: int = 86400  # 24 hours
+JWT_EXPIRY_SECONDS: int = 12*2_592_000  # 30 days
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 

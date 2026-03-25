@@ -256,6 +256,18 @@
       gap: 4px;
     }
 
+    .unit-tile-sprite {
+      display: flex;
+      justify-content: center;
+    }
+    .critter-sprite-canvas {
+      image-rendering: pixelated;
+      width: 32px;
+      height: 32px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.03);
+    }
+
     .unit-select {
       background: transparent;
       color: var(--text);
@@ -454,90 +466,30 @@
   <div id="loading">Lade Daten…</div>
 </div>
 
+<script src="era-map.js"></script>
 <script>
-const ERA_ORDER = [
-  "Steinzeit", "Neolithikum", "Bronzezeit", "Eisenzeit",
-  "Mittelalter", "Renaissance", "Industrialisierung", "Moderne", "Zukunft"
-];
+// ERA_ORDER, ERA_INFO, ERA_CRITTERS, ALL_CRITTERS populated from /api/era-map in init()
+let ERA_ORDER    = [];
+let ERA_INFO     = {};
+let ERA_CRITTERS = {};
+let ALL_CRITTERS = [];
 
-const ERA_INFO = {
-  "Steinzeit":          "Effort 20 – 1.500",
-  "Neolithikum":        "Effort 800 – 7.500",
-  "Bronzezeit":         "Effort 2.500 – 8.000",
-  "Eisenzeit":          "Effort 8.000 – 30.000",
-  "Mittelalter":        "Effort 28.000 – 130.000",
-  "Renaissance":        "Effort 100.000 – 500.000",
-  "Industrialisierung": "Effort 500.000 – 2.000.000",
-  "Moderne":            "Effort 2.000.000 – 5.300.000",
-  "Zukunft":            "Effort 40.000.000 – 100.000.000",
-};
+// CRITTER_STATS populated from /api/critter-stats in init() — {IID: {health, speed, armour, slots}}
+let CRITTER_STATS = {};
 
-// All known critters in era order
-const ERA_CRITTERS = {
-  "Steinzeit":          ["SLAVE", "WARRIOR", "SCOUT"],
-  "Neolithikum":        ["CLUBMAN", "SCOUT", "WARRIOR", "CART"],
-  "Bronzezeit":         ["BOWMAN", "SWORDMAN", "CHARIOT"],
-  "Eisenzeit":          ["PIKENEER", "HORSEMAN_FAST", "HORSEMAN_SLOW", "LEGIONARY", "LARGE_CART"],
-  "Mittelalter":        ["CRUSADER", "KNIGHT", "SAMURAI", "SIEGE_RAM"],
-  "Renaissance":        ["NINJA", "MUSKETEER", "DRAGOONER", "CARGO"],
-  "Industrialisierung": ["SOLDIER", "MOTORBIKE", "SMALL_TANK", "SIEGE_TANK", "TRANSPORTER"],
-  "Moderne":            ["SPECOPS", "HELI"],
-  "Zukunft":            ["MECH_WARRIOR", "THE_SWORDMASTER", "THE_KING", "THE_GENERAL"],
-};
+// CARRIERS: [{iid, era, spawn_on_death}] — critters that spawn units on death
+let CARRIERS = [];
 
-const ALL_CRITTERS = [
-  "SLAVE","WARRIOR","SCOUT",
-  "CLUBMAN","CART",
-  "BOWMAN","SWORDMAN","CHARIOT",
-  "PIKENEER","HORSEMAN_FAST","HORSEMAN_SLOW","LEGIONARY","LARGE_CART",
-  "CRUSADER","KNIGHT","SAMURAI","SIEGE_RAM",
-  "NINJA","MUSKETEER","DRAGOONER","CARGO",
-  "SOLDIER","MOTORBIKE","SMALL_TANK","SIEGE_TANK","TRANSPORTER",
-  "SPECOPS","HELI",
-  "MECH_WARRIOR","THE_SWORDMASTER","THE_KING","THE_GENERAL",
-];
-
-const CRITTER_STATS = {
-  SLAVE:         { speed: 0.2,  health: 1,  armour: 0   },
-  WARRIOR:       { speed: 0.2,  health: 2,  armour: 0   },
-  SCOUT:         { speed: 0.8,  health: 1,  armour: 0   },
-  CLUBMAN:       { speed: 0.2,  health: 2,  armour: 0.5 },
-  BOWMAN:        { speed: 0.2,  health: 3,  armour: 0   },
-  SWORDMAN:      { speed: 0.3,  health: 5,  armour: 1   },
-  CHARIOT:       { speed: 0.25, health: 5,  armour: 0   },
-  PIKENEER:      { speed: 0.2,  health: 6,  armour: 0   },
-  HORSEMAN_SLOW: { speed: 0.10, health: 8,  armour: 0   },
-  HORSEMAN_FAST: { speed: 0.25, health: 7,  armour: 0   },
-  LEGIONARY:     { speed: 0.2,  health: 8,  armour: 1   },
-  CRUSADER:      { speed: 0.2,  health: 10, armour: 1   },
-  KNIGHT:        { speed: 0.15, health: 11, armour: 1   },
-  SAMURAI:       { speed: 0.2,  health: 12, armour: 1   },
-  SIEGE_RAM:     { speed: 0.1,  health: 15, armour: 2   },
-  NINJA:         { speed: 0.25, health: 9,  armour: 0   },
-  MUSKETEER:     { speed: 0.2,  health: 14, armour: 1   },
-  DRAGOONER:     { speed: 0.2,  health: 15, armour: 1   },
-  SOLDIER:       { speed: 0.2,  health: 18, armour: 2   },
-  MOTORBIKE:     { speed: 0.30, health: 20, armour: 2   },
-  SMALL_TANK:    { speed: 0.2,  health: 25, armour: 3   },
-  SIEGE_TANK:    { speed: 0.10, health: 28, armour: 4   },
-  SPECOPS:       { speed: 1.0,  health: 30, armour: 2   },
-  HELI:          { speed: 1.2,  health: 40, armour: 5   },
-  MECH_WARRIOR:     { speed: 0.8,  health: 50, armour: 6   },
-  THE_SWORDMASTER:  { speed: 0.4,  health: 40, armour: 3   },
-  THE_KING:         { speed: 0.4,  health: 70, armour: 6   },
-  THE_GENERAL:      { speed: 1.0,  health: 60, armour: 8   },
-  CART:             { speed: 0.2,  health: 2,  armour: 1   },
-  LARGE_CART:       { speed: 0.3,  health: 7,  armour: 2.5 },
-  CARGO:            { speed: 0.4,  health: 12, armour: 0   },
-  TRANSPORTER:      { speed: 0.5,  health: 50, armour: 10  },
-};
+// CARRIERS_FROM_ERA: {era → [iid,...]} — cumulative carriers available from that era onward
+let CARRIERS_FROM_ERA = {};
 
 function calcDifficulty(army) {
   let score = 0;
   for (const w of (army.waves || [])) {
     const s = CRITTER_STATS[w.critter];
     if (!s) continue;
-    score += w.slots * s.health * (1 + s.armour) * (1 + s.speed);
+    const critterCount = Math.floor(w.slots / (s.slots || 1));
+    score += critterCount * s.health * (1 + s.armour) * (1 + s.speed);
   }
   return Math.round(score);
 }
@@ -664,6 +616,45 @@ function renderAll() {
           bar.appendChild(chip);
         });
         body.appendChild(bar);
+      }
+    }
+
+    // Carrier warning bar
+    const availableCarriers = CARRIERS_FROM_ERA[era] || [];
+    if (availableCarriers.length > 0) {
+      const usedCritters = new Set(items.flatMap(({ army }) => (army.waves || []).map(w => w.critter)));
+      const missingCarriers = availableCarriers.filter(iid => !usedCritters.has(iid));
+      if (missingCarriers.length > 0) {
+        const cbar = document.createElement('div');
+        cbar.className = 'uncovered-bar';
+        cbar.style.borderColor = 'rgba(255,167,38,0.4)';
+        const clbl = document.createElement('span');
+        clbl.className = 'uncovered-label';
+        clbl.style.color = 'var(--warning)';
+        clbl.textContent = '🚛 Carrier fehlt:';
+        cbar.appendChild(clbl);
+        missingCarriers.forEach(iid => {
+          const chip = document.createElement('span');
+          chip.className = 'uncovered-chip';
+          chip.style.cssText = 'color:var(--warning);border-color:rgba(255,167,38,0.4);cursor:pointer;';
+          const c = CARRIERS.find(x => x.iid === iid);
+          const spawns = c ? Object.entries(c.spawn_on_death).map(([k,v]) => `${v}×${k}`).join(', ') : '';
+          chip.title = spawns ? `Spawnt: ${spawns} — klicken zum Hinzufügen` : 'Klicken zum Hinzufügen';
+          chip.textContent = iid;
+          chip.addEventListener('click', () => {
+            // Add a wave with this carrier to every army in this era
+            const stat = CRITTER_STATS[iid];
+            const slots = stat ? stat.slots * 4 : 12; // sensible default: 4 carriers
+            items.forEach(({ army }) => {
+              if (!army.waves) army.waves = [];
+              army.waves.push({ critter: iid, slots });
+            });
+            markDirty();
+            renderAll();
+          });
+          cbar.appendChild(chip);
+        });
+        body.appendChild(cbar);
       }
     }
 
@@ -884,6 +875,34 @@ function buildTriggerRow(army) {
   return row;
 }
 
+// ── Critter sprites ──────────────────────────────────────────
+const SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+
+function critterSpritePath(iid) {
+  const name = iid.toLowerCase();
+  return `/assets/sprites/critters/${name}/${name}`;
+}
+
+function drawCritterSprites(container) {
+  container.querySelectorAll('.critter-sprite-canvas').forEach(canvas => {
+    const baseUrl = canvas.dataset.src;
+    function tryLoad(idx) {
+      if (idx >= SPRITE_EXTS.length) { canvas.style.display = 'none'; return; }
+      const img = new Image();
+      img.onload = () => {
+        const frameW = Math.floor(img.naturalWidth / 4);
+        const frameH = Math.floor(img.naturalHeight / 4);
+        canvas.width  = frameW;
+        canvas.height = frameH;
+        canvas.getContext('2d').drawImage(img, 0, 0, frameW, frameH, 0, 0, frameW, frameH);
+      };
+      img.onerror = () => tryLoad(idx + 1);
+      img.src = baseUrl + SPRITE_EXTS[idx];
+    }
+    tryLoad(0);
+  });
+}
+
 function buildWavesRow(army, refreshDiff) {
   const row = document.createElement('div');
   row.className = 'army-row';
@@ -946,10 +965,27 @@ function buildWavesRow(army, refreshDiff) {
         unit.slots++; count.textContent = unit.slots; markDirty(); refreshDiff?.();
       });
 
+      // Sprite
+      const spriteWrap = document.createElement('div');
+      spriteWrap.className = 'unit-tile-sprite';
+      const canvas = document.createElement('canvas');
+      canvas.className = 'critter-sprite-canvas';
+      canvas.dataset.src = critterSpritePath(unit.critter);
+      canvas.width = 32; canvas.height = 32;
+      spriteWrap.appendChild(canvas);
+
+      // update sprite when critter changes
+      sel.addEventListener('change', () => {
+        canvas.style.display = '';
+        canvas.dataset.src = critterSpritePath(sel.value);
+        drawCritterSprites(tile);
+      });
+
       bottom.append(minus, count, plus);
-      tile.append(top, bottom);
+      tile.append(top, spriteWrap, bottom);
       row.insertBefore(tile, addWaveBtn);
     });
+    drawCritterSprites(row);
   }
 
   const addWaveBtn = document.createElement('button');
@@ -1025,14 +1061,38 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 
 (async () => {
   try {
-    const [wavesRes, itemsRes] = await Promise.all([
-      fetch('/api/ai-waves'),
-      fetch('/api/era-items'),
+    const [wavesRes, eraMapData, critterList] = await Promise.all([
+      fetch('/api/ai-waves').then(r => r.json()),
+      fetchEraMap(),
+      fetch('/api/critter-stats').then(r => r.json()),
     ]);
-    const wavesData = await wavesRes.json();
-    const itemsData = await itemsRes.json();
-    armies   = wavesData.waves || [];
-    eraItems = itemsData.eras  || {};
+
+    // Populate era globals from API
+    ERA_ORDER    = eraMapData.eras || [];
+    ERA_INFO     = eraMapData.info || {};
+    ERA_CRITTERS = eraMapData.critters || {};
+    ALL_CRITTERS = ERA_ORDER.flatMap(e => ERA_CRITTERS[e] || []);
+
+    // Build CRITTER_STATS dict from array response
+    CRITTER_STATS = Object.fromEntries(
+      critterList.map(c => [c.iid, { health: c.health, speed: c.speed, armour: c.armour, slots: c.slots || 1 }])
+    );
+
+    // Carriers = critters with non-empty spawn_on_death
+    CARRIERS = critterList.filter(c => c.spawn_on_death && Object.keys(c.spawn_on_death).length > 0);
+
+    // Build cumulative map: for each era, which carriers are available (introduced in this or earlier era)
+    {
+      const available = [];
+      for (const era of ERA_ORDER) {
+        const newInEra = CARRIERS.filter(c => c.era === era);
+        available.push(...newInEra);
+        CARRIERS_FROM_ERA[era] = available.map(c => c.iid);
+      }
+    }
+
+    armies   = wavesRes.waves || [];
+    eraItems = eraMapData.buildings_knowledge || {};
     document.getElementById('loading').remove();
     renderAll();
   } catch (e) {

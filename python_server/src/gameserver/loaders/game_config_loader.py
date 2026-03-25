@@ -87,7 +87,18 @@ class GameConfig:
     restore_life_after_loss_offset: float = 1.0
 
     # -- Travel & Siege ----------------------------------------------
+    # Era-specific travel offsets (attacker's era determines which one is used).
+    # base_travel_offset is the fallback when no era-specific value is set.
     base_travel_offset: float = 300.0
+    stone_travel_offset: float = 300.0
+    neolithicum_travel_offset: float = 300.0
+    bronze_travel_offset: float = 300.0
+    iron_travel_offset: float = 300.0
+    middle_ages_travel_offset: float = 300.0
+    rennaissance_travel_offset: float = 300.0
+    industrial_travel_offset: float = 300.0
+    modern_travel_offset: float = 300.0
+    diamond_travel_offset: float = 300.0
     base_siege_offset: float = 900.0
 
     # -- Army & Waves ------------------------------------------------

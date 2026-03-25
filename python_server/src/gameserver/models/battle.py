@@ -82,8 +82,8 @@ class BattleState:
     # reason: "died" | "reached"
     removed_critters: list[dict] = field(default_factory=list)
 
-    # Configuration (set at battle creation time)
-    broadcast_interval_ms: float = 250.0  # Configurable from game.yaml
+    # Configuration (set at battle creation time, from game.yaml)
+    broadcast_interval_ms: float = 250.0
 
     # -- Constants -------------------------------------------------------
 

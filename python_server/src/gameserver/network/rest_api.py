@@ -34,6 +34,7 @@ from gameserver.network.rest_models import (
     LoginRequest,
     LoginResponse,
     MapSaveBody,
+    SavedMapRenameBody,
     SendMessageRequest,
     BattleFeedbackRequest,
     SignupRequest,
@@ -518,35 +519,84 @@ def create_app(services: "Services") -> FastAPI:
                 knowledge[iid] = entry
         return {"buildings": buildings, "knowledge": knowledge}
 
-    # Era groupings matching STEINZEIT … ZUKUNFT comments in critters.yaml
+    # ── Era mapping derived from YAML section comments ──────────────────
+    import re as _re
+    from pathlib import Path as _Path
+
+    _ERA_KEYS = [
+        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
+        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
+    ]
+    _ERA_LABELS_DE = {
+        "STEINZEIT": "Steinzeit", "NEOLITHIKUM": "Neolithikum",
+        "BRONZEZEIT": "Bronzezeit", "EISENZEIT": "Eisenzeit",
+        "MITTELALTER": "Mittelalter", "RENAISSANCE": "Renaissance",
+        "INDUSTRIALISIERUNG": "Industrialisierung", "MODERNE": "Moderne",
+        "ZUKUNFT": "Zukunft",
+    }
+    _ERA_LABELS_EN = {
+        "STEINZEIT": "Stone Age", "NEOLITHIKUM": "Neolithic",
+        "BRONZEZEIT": "Bronze Age", "EISENZEIT": "Iron Age",
+        "MITTELALTER": "Middle Ages", "RENAISSANCE": "Renaissance",
+        "INDUSTRIALISIERUNG": "Industrial", "MODERNE": "Modern",
+        "ZUKUNFT": "Future",
+    }
+    _ERA_PATTERNS_KEYS = [
+        ("STEINZEIT",          _re.compile(r'#\s+STEINZEIT')),
+        ("NEOLITHIKUM",        _re.compile(r'#\s+NEOLITHIKUM')),
+        ("BRONZEZEIT",         _re.compile(r'#\s+BRONZEZEIT')),
+        ("EISENZEIT",          _re.compile(r'#\s+EISENZEIT')),
+        ("MITTELALTER",        _re.compile(r'#\s+MITTELALTER')),
+        ("RENAISSANCE",        _re.compile(r'#\s+RENAISSANCE')),
+        ("INDUSTRIALISIERUNG", _re.compile(r'#\s+INDUSTRIALIS')),
+        ("MODERNE",            _re.compile(r'#\s+MODERNE')),
+        ("ZUKUNFT",            _re.compile(r'#\s+ZUKUNFT')),
+    ]
+    _CONFIG_DIR = _Path(__file__).resolve().parents[3] / "config"
+    _ITEM_IID_RE = _re.compile(r'^([A-Z][A-Z0-9_]+):')
+
+    def _parse_yaml_era_groups_gs(path: "_Path") -> "dict[str, list[str]]":
+        result: dict[str, list[str]] = {k: [] for k in _ERA_KEYS}
+        current = _ERA_KEYS[0]
+        for line in path.read_text(encoding="utf-8").split("\n"):
+            for key, pat in _ERA_PATTERNS_KEYS:
+                if pat.search(line):
+                    current = key
+                    break
+            m = _ITEM_IID_RE.match(line)
+            if m:
+                result[current].append(m.group(1))
+        return result
+
+    _critter_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "critters.yaml")
+    _structure_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "structures.yaml")
+    _knowledge_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "knowledge.yaml")
+    _building_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "buildings.yaml")
+
+    # iid → English era label (used by ai-armies and map-overview endpoints)
     _CRITTER_ERAS: dict[str, str] = {
-        iid: era
-        for era, iids in [
-            ("Stone Age",   ["SLAVE", "SCOUT"]),
-            ("Neolithic",   ["CLUBMAN", "WARRIOR", "CART"]),
-            ("Bronze Age",  ["BOWMAN", "SWORDMAN", "CHARIOT"]),
-            ("Iron Age",    ["PIKENEER", "HORSEMAN_SLOW", "HORSEMAN_FAST", "LEGIONARY", "LARGE_CART"]),
-            ("Middle Ages", ["CRUSADER", "KNIGHT", "SAMURAI", "SIEGE_RAM"]),
-            ("Renaissance", ["NINJA", "MUSKETEER", "DRAGOONER", "CARGO"]),
-            ("Industrial",  ["SOLDIER", "MOTORBIKE", "SMALL_TANK", "SIEGE_TANK", "TRANSPORTER"]),
-            ("Modern",      ["SPECOPS", "HELI"]),
-            ("Future",      ["MECH_WARRIOR", "THE_SWORDMASTER", "THE_KING", "THE_GENERAL"]),
-        ]
+        iid: _ERA_LABELS_EN[era]
+        for era, iids in _critter_groups.items()
         for iid in iids
     }
 
-    # Era groupings matching STEINZEIT … ZUKUNFT comments in structures.yaml
+    # ordered [(UPPERCASE_ERA_KEY, [iid, ...]), ...] (used by structures endpoint)
     _STRUCTURE_ERAS: list[tuple[str, list[str]]] = [
-        ("STEINZEIT",         ["BASIC_TOWER", "SLING_TOWER"]),
-        ("NEOLITHIKUM",       ["DOUBLE_SLING_TOWER", "SPIKE_TRAP"]),
-        ("BRONZEZEIT",        ["ARROW_TOWER", "BALLISTA_TOWER", "FIRE_TOWER"]),
-        ("EISENZEIT",         ["CATAPULTS", "ARBELESTE_TOWER"]),
-        ("MITTELALTER",       ["TAR_TOWER", "COAL_TOWER", "HEAVY_TOWER", "BOILING_OIL"]),
-        ("RENAISSANCE",       ["MECHANICAL_BALISTA", "CANNON_TOWER", "RIFLE_TOWER", "COLD_TOWER", "ICE_TOWER"]),
-        ("INDUSTRIALISIERUNG",["FLAME_THROWER", "SHOCK_TOWER", "PARALYZNG_TOWER", "NAPALM_THROWER"]),
-        ("MODERNE",           ["MG_TOWER", "RAPID_FIRE_MG_BUNKER", "RADAR_TOWER", "ANTI_AIR_TOWER", "LASER_TOWER"]),
-        ("ZUKUNFT",           ["SNIPER_TOWER", "ROCKET_TOWER"]),
+        (era, iids) for era, iids in _structure_groups.items() if iids
     ]
+
+    @app.get("/api/era-map")
+    async def get_era_map() -> dict[str, Any]:
+        """Return era order + per-era item IIDs for all categories (no auth required)."""
+        return {
+            "eras": _ERA_KEYS,
+            "labels_de": _ERA_LABELS_DE,
+            "labels_en": _ERA_LABELS_EN,
+            "critters":   _critter_groups,
+            "structures": _structure_groups,
+            "knowledge":  _knowledge_groups,
+            "buildings":  _building_groups,
+        }
 
     @app.get("/api/admin/structures")
     async def admin_structures(_uid: int = Depends(require_admin)) -> dict[str, Any]:
@@ -661,22 +711,21 @@ def create_app(services: "Services") -> FastAPI:
                         queue.append((nb, dist + 1))
 
         # ── Tower analysis ──
-        AGES = [
-            ("Stone Age",   0,          200),
-            ("Neolithic",   200,      1_500),
-            ("Bronze Age",  1_500,    8_000),
-            ("Iron Age",    8_000,   30_000),
-            ("Middle Ages", 30_000, 130_000),
-            ("Renaissance", 130_000, 500_000),
-            ("Industrial",  500_000, 2_000_000),
-            ("Modern",    2_000_000, 999_999_999),
-        ]
-
-        def _cost_to_age(gold: float) -> str:
-            for name, lo, hi in AGES:
-                if lo <= gold < hi:
-                    return name
-            return "Unbekannt"
+        # Ages derived from sections in config/structures.yaml
+        TOWER_AGE: dict[str, str] = {
+            "BASIC_TOWER": "Stone Age", "SLING_TOWER": "Stone Age",
+            "DOUBLE_SLING_TOWER": "Neolithic", "SPIKE_TRAP": "Neolithic",
+            "ARROW_TOWER": "Bronze Age", "BALLISTA_TOWER": "Bronze Age", "FIRE_TOWER": "Bronze Age",
+            "CATAPULTS": "Iron Age", "ARBELESTE_TOWER": "Iron Age",
+            "TAR_TOWER": "Middle Ages", "HEAVY_TOWER": "Middle Ages", "BOILING_OIL": "Middle Ages",
+            "CANNON_TOWER": "Renaissance", "RIFLE_TOWER": "Renaissance",
+            "COLD_TOWER": "Renaissance", "ICE_TOWER": "Renaissance",
+            "FLAME_THROWER": "Industrial", "SHOCK_TOWER": "Industrial",
+            "PARALYZNG_TOWER": "Industrial", "NAPALM_THROWER": "Industrial",
+            "MG_TOWER": "Modern", "RAPID_FIRE_MG_BUNKER": "Modern",
+            "RADAR_TOWER": "Modern", "ANTI_AIR_TOWER": "Modern", "LASER_TOWER": "Modern",
+            "SNIPER_TOWER": "Future", "ROCKET_TOWER": "Future",
+        }
 
         up = services.empire_service._upgrades
         tower_names: list[str] = []
@@ -694,7 +743,7 @@ def create_app(services: "Services") -> FastAPI:
             cost = item.costs.get("gold", 0)
             total_cost += cost
             tower_names.append(tile_type)
-            age = _cost_to_age(cost)
+            age = TOWER_AGE.get(tile_type, "Unknown")
             age_counts[age] = age_counts.get(age, 0) + 1
 
         tower_counts = dict(_Counter(tower_names))
@@ -715,6 +764,237 @@ def create_app(services: "Services") -> FastAPI:
             "age_pct": age_pct,
         }
 
+    @app.get("/api/admin/map-overview")
+    async def admin_map_overview(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
+        """Hex-map + power stats for all fixture empires and live empires."""
+        import yaml as _yaml
+        import math as _math
+        from pathlib import Path as _Path
+        from collections import Counter as _Cnt, deque as _dq2
+
+        HEX_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
+        NON_TOWER = {"path", "castle", "spawnpoint", "empty", "", None}
+
+        def _analyze(tiles: list[dict], source: str, empire_name: str, uid: int) -> dict:
+            # Build dict
+            tile_map: dict[tuple, str] = {}
+            for t in tiles:
+                tt = t["type"]
+                if isinstance(tt, dict):
+                    tt = tt.get("type", "")
+                tile_map[(t["q"], t["r"])] = tt or ""
+
+            # BFS path length
+            walkable = {pos for pos, tt in tile_map.items() if tt in ("path", "spawnpoint", "castle")}
+            start = next((pos for pos, tt in tile_map.items() if tt == "spawnpoint"), None)
+            goal  = next((pos for pos, tt in tile_map.items() if tt == "castle"), None)
+            path_length: int | None = None
+            if start and goal:
+                queue = _dq2([(start, 0)])
+                visited = {start}
+                while queue:
+                    pos, dist = queue.popleft()
+                    if pos == goal:
+                        path_length = dist
+                        break
+                    q, r = pos
+                    for dq, dr in HEX_DIRS:
+                        nb = (q + dq, r + dr)
+                        if nb not in visited and nb in walkable:
+                            visited.add(nb)
+                            queue.append((nb, dist + 1))
+
+            # Tower costs + age distribution — derived from structures.yaml sections
+            TOWER_AGE: dict[str, str] = {
+                iid: _ERA_LABELS_EN[era]
+                for era, iids in _STRUCTURE_ERAS
+                for iid in iids
+            }
+
+            up = services.empire_service._upgrades
+            tower_names: list[str] = []
+            total_cost = 0
+            age_counts: dict[str, int] = {}
+            for tt in tile_map.values():
+                if tt in NON_TOWER:
+                    continue
+                item = up.items.get(tt) if up else None
+                if item is None:
+                    continue
+                cost = item.costs.get("gold", 0)
+                total_cost += cost
+                tower_names.append(tt)
+                age = TOWER_AGE.get(tt, "Unknown")
+                age_counts[age] = age_counts.get(age, 0) + 1
+
+            num_towers = len(tower_names)
+            age_pct = {
+                age: round(cnt / num_towers * 100, 1)
+                for age, cnt in age_counts.items()
+            } if num_towers else {}
+            power = round(total_cost * _math.sqrt(path_length) / 600) if path_length else None
+
+            return {
+                "source":      source,
+                "empire_name": empire_name,
+                "uid":         uid,
+                "tiles":       [{"q": q, "r": r, "type": tt} for (q, r), tt in tile_map.items()],
+                "path_length": path_length,
+                "num_towers":  num_towers,
+                "total_cost":  total_cost,
+                "avg_cost":    round(total_cost / num_towers) if num_towers else 0,
+                "tower_counts": dict(_Cnt(tower_names)),
+                "age_counts":  age_counts,
+                "age_pct":     age_pct,
+                "power":       power,
+            }
+
+        _SAVED_MAPS_PATH = _Path(__file__).parent.parent.parent.parent / "config" / "saved_maps.yaml"
+
+        results: list[dict] = []
+
+        # ── saved_maps.yaml ──
+        if _SAVED_MAPS_PATH.exists():
+            try:
+                data = _yaml.safe_load(_SAVED_MAPS_PATH.read_text())
+                for m in (data.get("maps") or []):
+                    tiles = m.get("hex_map") or []
+                    if tiles:
+                        entry = _analyze(tiles, "saved", m.get("name", m.get("id", "?")), 0)
+                        entry["map_id"] = m.get("id", "")
+                        entry["empire_name"] = m.get("name", entry["empire_name"])
+                        entry["life"] = m.get("life")
+                        results.append(entry)
+            except Exception:
+                pass
+
+        # ── Live empires ──
+        for empire in services.empire_service.all_empires.values():
+            if empire.uid in (0, 100):
+                continue
+            raw = empire.hex_map or {}
+            tiles = []
+            for key, tt in raw.items():
+                q, r = map(int, key.split(","))
+                if isinstance(tt, dict):
+                    tt = tt.get("type", "")
+                tiles.append({"q": q, "r": r, "type": tt or ""})
+            if tiles:
+                results.append(_analyze(tiles, "live", empire.name, empire.uid))
+
+        return results
+
+    _SAVED_MAPS_PATH = (
+        __import__("pathlib").Path(__file__).parent.parent.parent.parent
+        / "config" / "saved_maps.yaml"
+    )
+
+    def _load_saved_maps() -> list[dict]:
+        import yaml as _y
+        if not _SAVED_MAPS_PATH.exists():
+            return []
+        return _y.safe_load(_SAVED_MAPS_PATH.read_text()).get("maps") or []
+
+    def _write_saved_maps(maps: list[dict]) -> None:
+        import yaml as _y
+        _SAVED_MAPS_PATH.write_text(_y.dump({"maps": maps}, allow_unicode=True,
+                                             default_flow_style=False, sort_keys=False))
+
+    @app.post("/api/admin/saved-maps/from-live/{uid}")
+    async def admin_save_live_map(uid: int, _uid: int = Depends(require_admin)) -> dict:
+        """Copy the live hex_map of empire uid into saved_maps.yaml as a new entry."""
+        import time as _time
+        empire = services.empire_service.get(uid)
+        if empire is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
+        raw = empire.hex_map or {}
+        if not raw:
+            raise HTTPException(status_code=400, detail="Empire has no map")
+
+        tiles = []
+        for key, tt in raw.items():
+            q, r = map(int, key.split(","))
+            if isinstance(tt, dict):
+                tt = tt.get("type", "")
+            tiles.append({"q": q, "r": r, "type": tt or ""})
+
+        map_id = f"live_{uid}_{int(_time.time())}"
+        name = f"{empire.name} (Kopie)"
+        maps = _load_saved_maps()
+        maps.append({"id": map_id, "name": name, "hex_map": tiles})
+        _write_saved_maps(maps)
+        return {"ok": True, "map_id": map_id, "name": name}
+
+    @app.delete("/api/admin/saved-maps/{map_id}")
+    async def admin_delete_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict:
+        """Delete a map from saved_maps.yaml by id."""
+        maps = _load_saved_maps()
+        new_maps = [m for m in maps if m.get("id") != map_id]
+        if len(new_maps) == len(maps):
+            raise HTTPException(status_code=404, detail=f"map_id '{map_id}' not found")
+        _write_saved_maps(new_maps)
+        return {"ok": True, "deleted": map_id}
+
+    @app.patch("/api/admin/saved-maps/{map_id}")
+    async def admin_rename_saved_map(map_id: str, body: SavedMapRenameBody,
+                                     _uid: int = Depends(require_admin)) -> dict:
+        """Rename a map in saved_maps.yaml."""
+        maps = _load_saved_maps()
+        for m in maps:
+            if m.get("id") == map_id:
+                m["name"] = body.name.strip()
+                if body.life is not None:
+                    m["life"] = float(body.life)
+                _write_saved_maps(maps)
+                return {"ok": True, "id": map_id, "name": m["name"], "life": m.get("life")}
+        raise HTTPException(status_code=404, detail=f"map_id '{map_id}' not found")
+
+    @app.post("/api/admin/saved-maps/{map_id}/activate")
+    async def admin_activate_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict:
+        """Activate a saved map for uid 4 (eem), auto-saving their current map first."""
+        import time as _time
+        TARGET_UID = 4
+
+        empire = services.empire_service.get(TARGET_UID)
+        if empire is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={TARGET_UID} not found")
+
+        # 1. Backup current map of uid 4
+        raw = empire.hex_map or {}
+        backup_id = None
+        if raw:
+            tiles_backup = []
+            for key, tt in raw.items():
+                q, r = map(int, key.split(","))
+                if isinstance(tt, dict):
+                    tt = tt.get("type", "")
+                tiles_backup.append({"q": q, "r": r, "type": tt or ""})
+            backup_id = f"backup_{TARGET_UID}_{int(_time.time())}"
+            backup_name = f"{empire.name} (Backup {_time.strftime('%Y-%m-%d %H:%M')})"
+            maps = _load_saved_maps()
+            maps.append({"id": backup_id, "name": backup_name, "hex_map": tiles_backup})
+            _write_saved_maps(maps)
+
+        # 2. Load the target map
+        maps = _load_saved_maps()
+        target_map = next((m for m in maps if m.get("id") == map_id), None)
+        if target_map is None:
+            raise HTTPException(status_code=404, detail=f"map_id '{map_id}' not found")
+
+        # 3. Apply map to empire (list of tiles → "q,r" dict)
+        new_hex_map = {}
+        for tile in target_map.get("hex_map", []):
+            new_hex_map[f"{tile['q']},{tile['r']}"] = tile.get("type", "")
+        empire.hex_map = new_hex_map
+
+        return {"ok": True, "backup_id": backup_id}
+
+    _TOWER_ERAS: dict[str, str] = {
+        iid: _ERA_LABELS_EN.get(era_key, era_key)
+        for era_key, iids in _STRUCTURE_ERAS
+        for iid in iids
+    }
+
     @app.get("/api/admin/ai-armies")
     async def admin_ai_armies(_uid: int = Depends(require_admin)) -> dict[str, Any]:
         """Return all hardcoded AI army definitions + critter stats for strength calc."""
@@ -732,9 +1012,10 @@ def create_app(services: "Services") -> FastAPI:
                     for w in (entry.get("waves") or [])
                 ],
             })
-        # Include critter stats so the frontend can compute army strength
+        # Include critter + tower stats for frontend visualisation
         up = services.empire_service._upgrades if services.empire_service else None
         critters: dict[str, Any] = {}
+        towers: dict[str, Any] = {}
         if up:
             for iid, item in up.items.items():
                 if item.item_type == ItemType.CRITTER:
@@ -744,8 +1025,26 @@ def create_app(services: "Services") -> FastAPI:
                         "slots": item.slots,
                         "speed": item.speed,
                         "era": _CRITTER_ERAS.get(iid, "Unbekannt"),
+                        "sprite": f"assets/sprites/critters/{iid.lower()}/{iid.lower()}.png",
                     }
-        return {"armies": armies, "critters": critters}
+            for era_key, iids in _STRUCTURE_ERAS:
+                era_label = _ERA_LABELS_EN.get(era_key, era_key)
+                for iid in iids:
+                    item = up.items.get(iid)
+                    if item is None:
+                        continue
+                    efx = item.effects or {}
+                    towers[iid] = {
+                        "damage": item.damage,
+                        "range": item.range,
+                        "reload": item.reload_time_ms,
+                        "burn_dps": efx.get("burn_dps", 0),
+                        "burn_dur": efx.get("burn_duration", 0),
+                        "slow_dur": efx.get("slow_duration", 0),
+                        "era": era_label,
+                        "sprite": item.sprite or "",
+                    }
+        return {"armies": armies, "critters": critters, "towers": towers}
 
     @app.post("/api/admin/send-ai-attack")
     async def admin_send_ai_attack(

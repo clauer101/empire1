@@ -162,11 +162,9 @@
   <div id="loading" style="color:var(--text-dim);text-align:center;padding:60px">Lade Daten…</div>
 </div>
 
+<script src="era-map.js"></script>
 <script>
-const ERA_ORDER = [
-  "Steinzeit","Neolithikum","Bronzezeit","Eisenzeit",
-  "Mittelalter","Renaissance","Industrialisierung","Moderne","Zukunft"
-];
+let ERA_ORDER = [];
 
 const BASE_BUILD_SPEED    = 1.0;
 const BASE_RESEARCH_SPEED = 0.7;
@@ -437,12 +435,14 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 // ── Load ─────────────────────────────────────────────────────
 (async () => {
   try {
-    const [bRes, kRes] = await Promise.all([
-      fetch('/api/buildings'),
-      fetch('/api/knowledge'),
+    const [bRes, kRes, eraMapData] = await Promise.all([
+      fetch('/api/buildings').then(r => r.json()),
+      fetch('/api/knowledge').then(r => r.json()),
+      fetchEraMap(),
     ]);
-    buildings = await bRes.json();
-    knowledge = await kRes.json();
+    ERA_ORDER = eraMapData.eras || [];
+    buildings = bRes;
+    knowledge = kRes;
     document.getElementById('loading').remove();
     renderAll();
   } catch (e) {

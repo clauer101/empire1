@@ -81,21 +81,45 @@ def _parse_ai_waves():
     return result
 
 
+def _parse_yaml_era_groups(path: Path) -> dict[str, list[str]]:
+    """Parse a YAML file's era section comments → {era_name: [iid, ...]}."""
+    result: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
+    current_era = _ERA_ORDER[0]
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        for era_name, pattern in _ERA_PATTERNS:
+            if pattern.search(line):
+                current_era = era_name
+                break
+        m = _ITEM_IID_RE.match(line)
+        if m:
+            result[current_era].append(m.group(1))
+    return result
+
+
 def _parse_era_items() -> dict:
     """Return {era_name: [iid, ...]} from buildings.yaml + knowledge.yaml."""
     result: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
     for path in (BUILDINGS_PATH, KNOWLEDGE_PATH):
-        raw = path.read_text(encoding="utf-8")
-        current_era = "Steinzeit"
-        for line in raw.split("\n"):
-            for era_name, pattern in _ERA_PATTERNS:
-                if pattern.search(line):
-                    current_era = era_name
-                    break
-            m = _ITEM_IID_RE.match(line)
-            if m:
-                result.setdefault(current_era, []).append(m.group(1))
+        for era, iids in _parse_yaml_era_groups(path).items():
+            result[era].extend(iids)
     return result
+
+
+def _build_era_map() -> dict:
+    """Return comprehensive era map for all YAML categories."""
+    critters_by_era = _parse_yaml_era_groups(CRITTERS_PATH)
+    structures_by_era = _parse_yaml_era_groups(STRUCTURES_PATH)
+    bk: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
+    for path in (BUILDINGS_PATH, KNOWLEDGE_PATH):
+        for era, iids in _parse_yaml_era_groups(path).items():
+            bk[era].extend(iids)
+    return {
+        "eras": _ERA_ORDER,
+        "info": _ERA_INFO,
+        "critters": critters_by_era,
+        "structures": structures_by_era,
+        "buildings_knowledge": bk,
+    }
 
 
 def _write_ai_waves(waves_with_era: list[dict]) -> str:
@@ -258,6 +282,15 @@ async def get_era_items():
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+@app.get("/api/era-map")
+async def get_era_map():
+    """Return era order + item IIDs per era for all YAML categories."""
+    try:
+        return JSONResponse(_build_era_map())
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
 @app.post("/api/ai-waves")
 async def save_ai_waves(request: Request):
     """Save updated AI wave definitions back to the YAML file."""
@@ -409,6 +442,7 @@ def _parse_critters(path: Path) -> list[dict]:
             "scale": item.get("scale", 1),
             "requirements": item.get("requirements", []),
             "animation": item.get("animation", ""),
+            "spawn_on_death": item.get("spawn_on_death") or {},
         })
     return result
 

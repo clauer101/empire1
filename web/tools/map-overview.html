@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Map Overview</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --danger:      #ef5350;
+      --success:     #66bb6a;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+
+    /* ── Filter bar ── */
+    #filterbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px 20px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-label { font-size: 11px; color: var(--text-dim); }
+    .filter-chip {
+      padding: 3px 10px; font-size: 11px; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 20px;
+      cursor: pointer; background: var(--surface); color: var(--text-dim);
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .filter-chip:hover { border-color: var(--text-dim); color: var(--text); }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+    /* ── Grid ── */
+    #content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Empire card ── */
+    .empire-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    .card-header {
+      padding: 8px 12px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline; gap: 8px;
+    }
+    .card-title { font-weight: 700; font-size: 13px; color: var(--text); }
+    .card-uid   { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+    .card-source {
+      margin-left: auto; font-size: 10px; font-family: var(--mono);
+      padding: 1px 6px; border-radius: 3px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text-dim); white-space: nowrap;
+    }
+    .card-source.live { color: var(--success); border-color: var(--success); }
+
+    /* ── SVG map ── */
+    .map-wrap {
+      background: #0a0a12;
+      display: flex; justify-content: center; align-items: center;
+      padding: 10px;
+      min-height: 160px;
+    }
+    .map-wrap svg { display: block; }
+
+    /* ── Stats ── */
+    .card-stats {
+      padding: 10px 12px;
+      display: flex; flex-wrap: wrap; gap: 8px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .stat { display: flex; flex-direction: column; gap: 1px; min-width: 64px; }
+    .stat .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat .val { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; color: var(--accent); }
+    .stat .val.power { color: var(--danger); font-size: 1.2rem; }
+    .life-input {
+      font-family: var(--mono); font-size: 1.05rem; font-weight: 700; color: var(--success);
+      background: transparent; border: none; border-bottom: 1px solid var(--border);
+      width: 64px; outline: none; padding: 0;
+    }
+    .life-input:focus { border-bottom-color: var(--success); }
+
+    /* ── Card actions ── */
+    .card-actions {
+      display: flex; gap: 6px;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+    .act-btn {
+      flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      cursor: pointer; background: var(--surface); color: var(--text-dim);
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+    .act-btn:hover { background: var(--surface-hover, #22222f); color: var(--text); }
+    .act-btn.rename:hover   { border-color: var(--accent); color: var(--accent); }
+    .act-btn.delete:hover   { border-color: var(--danger); color: var(--danger); }
+    .act-btn.activate:hover { border-color: var(--success); color: var(--success); }
+    .act-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── Tower chips ── */
+    .tower-chips {
+      padding: 0 12px 8px;
+      display: flex; flex-wrap: wrap; gap: 3px;
+    }
+    .tower-chip {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: 3px; padding: 1px 5px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    }
+
+    /* ── Age bars ── */
+    .age-bars {
+      padding: 0 12px 10px;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .age-row {
+      display: flex; align-items: center; gap: 5px; font-size: 10px;
+    }
+    .age-name { width: 88px; color: var(--text-dim); flex-shrink: 0; }
+    .age-bar-outer {
+      flex: 1; height: 5px; background: var(--surface-alt);
+      border-radius: 3px; overflow: hidden;
+    }
+    .age-bar-inner { height: 100%; border-radius: 3px; background: var(--accent); }
+    .age-pct { width: 32px; text-align: right; font-family: var(--mono); color: var(--text-dim); }
+
+    /* ── Legend ── */
+    #legend {
+      display: flex; flex-wrap: wrap; gap: 8px 16px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; color: var(--text-dim);
+    }
+    .leg-item { display: flex; align-items: center; gap: 5px; }
+    .leg-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>🗺 Map Overview</h1>
+  <span id="count" style="font-size:12px;color:var(--text-dim)"></span>
+</div>
+
+<div id="filterbar">
+  <span class="filter-label">Quelle:</span>
+  <button class="filter-chip active" data-filter="all">Alle</button>
+  <button class="filter-chip" data-filter="live">Live</button>
+  <button class="filter-chip" data-filter="saved">Gespeichert</button>
+</div>
+
+<div id="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#5c4a32;border:1px solid #7a6545"></div> Path</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7a7a30;border:1px solid #aaaa44"></div> Castle</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#8a2020;border:1px solid #cc4040"></div> Spawnpoint</div>
+  <div class="leg-item" style="color:var(--text-dim);margin-left:4px">Türme:</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#1a5c2a"></div> 1</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#1a3a6a"></div> 2</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#6a2a00"></div> 3</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#5a1a5a"></div> 4</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#5a5a00"></div> 5</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#00504a"></div> 6</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#5a0020"></div> 7</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#003a5a"></div> 8</div>
+  <div class="leg-item" style="color:var(--text-dim);font-size:10px;margin-left:2px">(pro Karte eindeutig)</div>
+</div>
+
+<div id="content"></div>
+
+<script>
+const GS = `${location.protocol}//${location.hostname}:8080`;
+
+function authHeaders() {
+  const t = localStorage.getItem('e3_jwt_token');
+  return t ? { Authorization: 'Bearer ' + t } : {};
+}
+
+// ── Hex geometry (flat-top, axial) ──────────────────────────
+function hexCenter(q, r, size) {
+  return {
+    x: size * 1.5 * q,
+    y: size * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r),
+  };
+}
+
+function hexCornerPoints(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i);
+    pts.push(`${(cx + size * Math.cos(a)).toFixed(2)},${(cy + size * Math.sin(a)).toFixed(2)}`);
+  }
+  return pts.join(' ');
+}
+
+// ── Tile colors ──────────────────────────────────────────────
+const FIXED_COLORS = {
+  '':          { fill: '#1a1a2a', stroke: '#1e1e2e' },
+  empty:       { fill: '#1a1a2a', stroke: '#1e1e2e' },
+  void:        { fill: '#0a0a14', stroke: '#0e0e18' },
+  path:        { fill: '#5c4a32', stroke: '#7a6545' },
+  castle:      { fill: '#7a7a30', stroke: '#aaaa44' },
+  spawnpoint:  { fill: '#8a2020', stroke: '#cc4040' },
+};
+
+// Palette for towers — distinct, readable on dark background
+const TOWER_PALETTE = [
+  { fill: '#1a5c2a', stroke: '#28884a' },  // green
+  { fill: '#1a3a6a', stroke: '#2a5aaa' },  // blue
+  { fill: '#6a2a00', stroke: '#aa4a10' },  // orange
+  { fill: '#5a1a5a', stroke: '#8a3a8a' },  // purple
+  { fill: '#5a5a00', stroke: '#9a9a10' },  // yellow
+  { fill: '#00504a', stroke: '#10847c' },  // teal
+  { fill: '#5a0020', stroke: '#8a1040' },  // crimson
+  { fill: '#003a5a', stroke: '#1060a0' },  // navy
+];
+
+// Build a per-map color lookup: towerType → palette entry
+function buildTowerColorMap(tiles) {
+  const seen = new Set(['', 'empty', 'void', 'path', 'castle', 'spawnpoint']);
+  const map = {};
+  let idx = 0;
+  for (const { type } of tiles) {
+    if (!seen.has(type) && !(type in map)) {
+      map[type] = TOWER_PALETTE[idx % TOWER_PALETTE.length];
+      idx++;
+    }
+    seen.add(type);
+  }
+  return map;
+}
+
+// ── Render one empire as SVG ─────────────────────────────────
+function renderMapSVG(tiles, maxPx = 260) {
+  if (!tiles.length) return '<svg width="120" height="60"></svg>';
+
+  const SIZE = 14;
+  const towerColors = buildTowerColorMap(tiles);
+
+  const centers = tiles.map(t => ({ ...t, ...hexCenter(t.q, t.r, SIZE) }));
+
+  const xs = centers.map(c => c.x);
+  const ys = centers.map(c => c.y);
+  const minX = Math.min(...xs) - SIZE;
+  const minY = Math.min(...ys) - SIZE;
+  const rawW = Math.max(...xs) + SIZE - minX;
+  const rawH = Math.max(...ys) + SIZE - minY;
+
+  const scale = Math.min(maxPx / rawW, (maxPx * 0.75) / rawH, 1.4);
+  const W = Math.ceil(rawW * scale + 4);
+  const H = Math.ceil(rawH * scale + 4);
+  const ox = -minX * scale + 2;
+  const oy = -minY * scale + 2;
+
+  const polys = centers.map(({ q, r, x, y, type }) => {
+    const cx = x * scale + ox;
+    const cy = y * scale + oy;
+    const pts = hexCornerPoints(cx, cy, SIZE * scale);
+    const col = FIXED_COLORS[type] ?? towerColors[type] ?? TOWER_PALETTE[0];
+    const title = type ? `<title>${type} (${q},${r})</title>` : '';
+    return `<polygon points="${pts}" fill="${col.fill}" stroke="${col.stroke}" stroke-width="0.7">${title}</polygon>`;
+  });
+
+  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${polys.join('')}</svg>`;
+}
+
+// ── Format helpers ───────────────────────────────────────────
+function fmtK(n) {
+  if (n == null) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
+  return String(n);
+}
+
+// ── API calls ────────────────────────────────────────────────
+async function apiDelete(mapId) {
+  const r = await fetch(`${GS}/api/admin/saved-maps/${encodeURIComponent(mapId)}`, {
+    method: 'DELETE', headers: authHeaders(),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+}
+
+async function apiPatch(mapId, fields) {
+  const r = await fetch(`${GS}/api/admin/saved-maps/${encodeURIComponent(mapId)}`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── Build card ───────────────────────────────────────────────
+function buildCard(e) {
+  const card = document.createElement('div');
+  card.className = 'empire-card';
+  card.dataset.source = e.source === 'live' ? 'live' : 'fixture';
+
+  const isLive   = e.source === 'live';
+  const isSaved  = e.source === 'saved';
+  const srcLabel = isLive ? 'live' : 'saved';
+
+  const towerChips = Object.entries(e.tower_counts || {})
+    .sort((a, b) => b[1] - a[1])
+    .map(([iid, cnt]) => `<span class="tower-chip">${iid.replace(/_TOWER$/, '')} ×${cnt}</span>`)
+    .join('');
+
+  const ageBars = AGE_ORDER
+    .filter(a => (e.age_pct || {})[a])
+    .map(a => `<div class="age-row">
+      <span class="age-name">${a}</span>
+      <div class="age-bar-outer"><div class="age-bar-inner" style="width:${e.age_pct[a]}%"></div></div>
+      <span class="age-pct">${e.age_pct[a]}%</span>
+    </div>`).join('');
+
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="card-title">${e.empire_name}</span>
+      <span class="card-uid">uid ${e.uid}</span>
+      <span class="card-source${isLive ? ' live' : ''}">${srcLabel}</span>
+    </div>
+    <div class="map-wrap">${renderMapSVG(e.tiles)}</div>
+    <div class="card-stats">
+      <div class="stat">
+        <span class="lbl">Power</span>
+        <span class="val power">⚔ ${fmtK(e.power)}</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">Pfad</span>
+        <span class="val">${e.path_length ?? '—'}</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">Türme</span>
+        <span class="val">${e.num_towers}</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">Gold</span>
+        <span class="val">${fmtK(e.total_cost)}</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">Ø/Turm</span>
+        <span class="val">${fmtK(e.avg_cost)}</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">HP ♥</span>
+        ${isSaved
+          ? `<input class="life-input" type="number" min="1" step="1" value="${e.life ?? ''}" placeholder="—">`
+          : `<span class="val" style="color:var(--success)">${e.life ?? '—'}</span>`}
+      </div>
+    </div>
+    ${towerChips ? `<div class="tower-chips">${towerChips}</div>` : ''}
+    ${ageBars ? `<div class="age-bars">${ageBars}</div>` : ''}
+    <div class="card-actions">
+      ${isSaved
+        ? `<button class="act-btn activate">▶ Aktivieren</button>
+           <button class="act-btn rename">✏ Umbenennen</button>
+           <button class="act-btn delete">🗑 Löschen</button>`
+        : `<button class="act-btn save-copy">💾 Als Kopie speichern</button>`}
+    </div>
+  `;
+
+  if (isSaved) {
+    card.querySelector('.act-btn.activate').addEventListener('click', async (ev) => {
+      if (!confirm(`Map "${e.empire_name}" als aktive Map für uid 4 (eem) setzen?\nDie aktuelle Map von uid 4 wird automatisch gespeichert.`)) return;
+      const btn = ev.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Aktiviert…';
+      try {
+        const r = await fetch(`${GS}/api/admin/saved-maps/${encodeURIComponent(e.map_id)}/activate`, {
+          method: 'POST', headers: authHeaders(),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        btn.textContent = '✓ Aktiv';
+        btn.style.color = 'var(--success)';
+      } catch (err) {
+        alert('Fehler: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = '▶ Aktivieren';
+      }
+    });
+
+    card.querySelector('.act-btn.rename').addEventListener('click', async () => {
+      const newName = prompt('Neuer Name:', e.empire_name);
+      if (!newName || newName.trim() === e.empire_name) return;
+      try {
+        await apiPatch(e.map_id, { name: newName.trim() });
+        e.empire_name = newName.trim();
+        card.querySelector('.card-title').textContent = newName.trim();
+        const entry = allData.find(d => d.map_id === e.map_id);
+        if (entry) entry.empire_name = newName.trim();
+      } catch (err) { alert('Fehler: ' + err.message); }
+    });
+
+    card.querySelector('.life-input').addEventListener('change', async (ev) => {
+      const val = parseFloat(ev.target.value);
+      if (!val || val <= 0) return;
+      try {
+        await apiPatch(e.map_id, { name: e.empire_name, life: val });
+        e.life = val;
+        const entry = allData.find(d => d.map_id === e.map_id);
+        if (entry) entry.life = val;
+        ev.target.style.borderBottomColor = 'var(--success)';
+        setTimeout(() => { ev.target.style.borderBottomColor = ''; }, 1000);
+      } catch (err) { alert('Fehler: ' + err.message); ev.target.value = e.life ?? ''; }
+    });
+
+    card.querySelector('.act-btn.delete').addEventListener('click', async (ev) => {
+      if (!confirm(`Map "${e.empire_name}" wirklich löschen?`)) return;
+      const btn = ev.currentTarget;
+      btn.disabled = true;
+      try {
+        await apiDelete(e.map_id);
+        allData = allData.filter(d => d.map_id !== e.map_id);
+        card.remove();
+        document.getElementById('count').textContent = `${document.querySelectorAll('.empire-card').length} Karten`;
+      } catch (err) { alert('Fehler: ' + err.message); btn.disabled = false; }
+    });
+  } else if (isLive) {
+    card.querySelector('.act-btn.save-copy').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Speichert…';
+      try {
+        const r = await fetch(`${GS}/api/admin/saved-maps/from-live/${e.uid}`, {
+          method: 'POST', headers: authHeaders(),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        btn.textContent = '✓ Gespeichert';
+        btn.style.color = 'var(--success)';
+        // Add new entry to allData so filter picks it up on next render
+        allData.push({ ...e, source: 'saved', map_id: d.map_id, empire_name: d.name });
+      } catch (err) {
+        alert('Fehler: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = '💾 Als Kopie speichern';
+      }
+    });
+  }
+
+  return card;
+}
+
+// ── Filter ───────────────────────────────────────────────────
+let allData = [];
+let activeFilter = 'all';
+
+function applyFilter() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  const filtered = activeFilter === 'all'
+    ? allData
+    : allData.filter(e => e.source === activeFilter);
+  filtered.forEach(e => content.appendChild(buildCard(e)));
+  document.getElementById('count').textContent = `${filtered.length} Karten`;
+}
+
+document.getElementById('filterbar').addEventListener('click', e => {
+  const chip = e.target.closest('.filter-chip');
+  if (!chip) return;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  activeFilter = chip.dataset.filter;
+  applyFilter();
+});
+
+// AGE_ORDER populated at load time from /api/era-map (English labels)
+let AGE_ORDER = [];
+
+// ── Load ─────────────────────────────────────────────────────
+(async () => {
+  try {
+    const [r, eraMapR] = await Promise.all([
+      fetch(`${GS}/api/admin/map-overview`, { headers: authHeaders() }),
+      fetch(`${GS}/api/era-map`,            { headers: authHeaders() }),
+    ]);
+    if (eraMapR.ok) {
+      const em = await eraMapR.json();
+      AGE_ORDER = (em.eras || []).map(k => em.labels_en?.[k] || k);
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    allData = await r.json();
+    applyFilter();
+  } catch (err) {
+    document.getElementById('content').innerHTML =
+      `<p style="color:var(--danger);padding:40px">Fehler: ${err.message}</p>`;
+  }
+})();
+</script>
+</body>
+</html>

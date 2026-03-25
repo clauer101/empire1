@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unit Scatter</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--font); font-size: 13px;
+      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+
+    /* ── Tabs ── */
+    #tabbar {
+      display: flex; gap: 0;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+    }
+    .tab-btn {
+      padding: 9px 20px; font-size: 12px; font-weight: 600;
+      border: none; border-bottom: 2px solid transparent;
+      background: none; color: var(--text-dim); cursor: pointer;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 6px 18px;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .leg-item { display: flex; align-items: center; gap: 6px; color: var(--text-dim); }
+    .leg-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Plot container ── */
+    .section { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .section.active { display: flex; }
+
+    .plot-wrap {
+      flex: 1; min-height: 0;
+      padding: 12px 20px 16px;
+    }
+
+    svg.scatter {
+      display: block; width: 100%; height: 100%;
+      overflow: visible;
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed; z-index: 9999;
+      background: #1e1e2e; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-size: 12px; pointer-events: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      max-width: 240px; line-height: 1.6;
+      opacity: 0; transition: opacity 0.1s;
+    }
+    #tooltip.show { opacity: 1; }
+    #tooltip .tt-name { font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    #tooltip .tt-row { color: var(--text-dim); font-family: var(--mono); font-size: 11px; }
+    #tooltip .tt-cls { font-weight: 600; margin-top: 3px; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>📊 Unit Scatter</h1>
+  <span id="status" style="font-size:11px;font-family:var(--mono);color:var(--text-dim)"></span>
+</div>
+
+<div id="tabbar">
+  <button class="tab-btn active" data-tab="critters">Critters</button>
+  <button class="tab-btn" data-tab="towers">Towers</button>
+</div>
+
+<!-- ── CRITTERS ── -->
+<div class="section active" id="sec-critters">
+  <div class="legend" id="leg-critters">
+    <div class="leg-item"><div class="leg-dot" style="background:#ce93d8"></div> Carrier (slots ≥ 3)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ffb74d"></div> Fast (speed ≥ 0.6)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#64b5f6"></div> Armor (armour ≥ 2)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#81c784"></div> Allrounder</div>
+    <div class="leg-item" style="margin-left:8px;color:var(--text-dim);font-size:10px">Größe = Slots · Power = (HP + Rüstung×2) × Speed</div>
+  </div>
+  <div class="plot-wrap">
+    <svg class="scatter" id="svg-critters"></svg>
+  </div>
+</div>
+
+<!-- ── TOWERS ── -->
+<div class="section" id="sec-towers">
+  <div class="legend" id="leg-towers">
+    <div class="leg-item"><div class="leg-dot" style="background:#ff7043"></div> Feuer (burn)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#4dd0e1"></div> Slow / Stun</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#fff176"></div> Sniper (Range ≥ 4)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#aed581"></div> Rapid (Reload ≤ 1000ms)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#78909c"></div> Allrounder</div>
+    <div class="leg-item" style="margin-left:8px;color:var(--text-dim);font-size:10px">Größe = Range · Power = (Schaden + Burn·Dauer) / Reload</div>
+  </div>
+  <div class="plot-wrap">
+    <svg class="scatter" id="svg-towers"></svg>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Tab switching ──────────────────────────────────────────────
+document.getElementById('tabbar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
+});
+
+// ── Shared config ─────────────────────────────────────────────
+// ERAS populated from /api/era-map (English labels in era order)
+let ERAS = [];
+
+const CRITTER_COLORS = {
+  carrier:    '#ce93d8',
+  fast:       '#ffb74d',
+  armor:      '#64b5f6',
+  allrounder: '#81c784',
+};
+const TOWER_COLORS = {
+  burn:       '#ff7043',
+  slow:       '#4dd0e1',
+  sniper:     '#fff176',
+  rapid:      '#aed581',
+  allrounder: '#78909c',
+};
+
+// ── Tooltip ───────────────────────────────────────────────────
+const tt = document.getElementById('tooltip');
+function showTip(ev, html) {
+  tt.innerHTML = html;
+  tt.classList.add('show');
+  moveTip(ev);
+}
+function moveTip(ev) {
+  const x = ev.clientX + 14, y = ev.clientY - 10;
+  tt.style.left = Math.min(x, window.innerWidth - 260) + 'px';
+  tt.style.top  = Math.max(y, 4) + 'px';
+}
+function hideTip() { tt.classList.remove('show'); }
+
+// ── SVG scatter renderer ──────────────────────────────────────
+function renderScatter(svgEl, points, yLabel, colorMap) {
+  // points: [{iid, name, era, power, cls, r, tipHtml}]
+  const wrap = svgEl.parentElement;
+  const W = Math.max(600, wrap.clientWidth  - 40);
+  const H = Math.max(300, wrap.clientHeight - 32);
+  const ML = 62, MR = 24, MT = 20, MB = 70;
+  const plotW = W - ML - MR;
+  const plotH = H - MT - MB;
+
+  const minPow = Math.max(0.05, Math.min(...points.map(p => p.power)));
+  const maxPow = Math.max(...points.map(p => p.power)) * 1.15;
+  const logMin = Math.log10(minPow);
+  const logMax = Math.log10(maxPow);
+  const scaleY = v => MT + plotH - ((Math.log10(Math.max(v, 0.001)) - logMin) / (logMax - logMin)) * plotH;
+  const eraStep = plotW / (ERAS.length - 1);
+  const eraX = {};
+  ERAS.forEach((e, i) => eraX[e] = ML + i * eraStep);
+
+  // Jitter: group by era, spread horizontally
+  const byEra = {};
+  points.forEach(p => (byEra[p.era] = byEra[p.era] || []).push(p));
+  ERAS.forEach(era => {
+    const grp = byEra[era] || [];
+    grp.sort((a, b) => a.power - b.power);
+    const spread = Math.min(eraStep * 0.46, 12 + grp.length * 11);
+    grp.forEach((p, i) => {
+      const t = grp.length === 1 ? 0 : (i / (grp.length - 1)) - 0.5;
+      p.px = eraX[era] + t * spread * 2;
+      p.py = scaleY(p.power);
+    });
+  });
+
+  // Build SVG
+  const ns = 'http://www.w3.org/2000/svg';
+  svgEl.setAttribute('width', W);
+  svgEl.setAttribute('height', H);
+  svgEl.innerHTML = '';
+
+  // Background
+  const bg = document.createElementNS(ns, 'rect');
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', '#0d0d14');
+  svgEl.appendChild(bg);
+
+  // Grid lines + Y labels (log scale ticks: powers of 10 + midpoints)
+  const logTicks = [];
+  for (let exp = Math.floor(logMin); exp <= Math.ceil(logMax); exp++) {
+    for (const mult of [1, 2, 5]) {
+      const v = mult * Math.pow(10, exp);
+      if (v >= minPow * 0.9 && v <= maxPow) logTicks.push(v);
+    }
+  }
+  logTicks.forEach((v, i) => {
+    const y = scaleY(v);
+    const isMajor = [1,10,100,1000].includes(Math.round(v));
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', ML); line.setAttribute('x2', ML + plotW);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', isMajor ? '#2e2e3e' : '#1a1a26');
+    line.setAttribute('stroke-width', isMajor ? 0.8 : 0.4);
+    svgEl.appendChild(line);
+    const lbl = document.createElementNS(ns, 'text');
+    lbl.setAttribute('x', ML - 6); lbl.setAttribute('y', y + 3.5);
+    lbl.setAttribute('text-anchor', 'end');
+    lbl.setAttribute('fill', isMajor ? '#6a6a7a' : '#44444a');
+    lbl.setAttribute('font-size', isMajor ? '10' : '8');
+    lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+    lbl.textContent = v >= 1 ? v.toFixed(0) : v.toFixed(2);
+    svgEl.appendChild(lbl);
+  });
+
+  // Y axis label
+  const yLbl = document.createElementNS(ns, 'text');
+  yLbl.setAttribute('transform', `rotate(-90) translate(${-(MT + plotH/2)}, 14)`);
+  yLbl.setAttribute('text-anchor', 'middle');
+  yLbl.setAttribute('fill', '#6a6a7a'); yLbl.setAttribute('font-size', '11');
+  yLbl.textContent = yLabel;
+  svgEl.appendChild(yLbl);
+
+  // X axis era labels
+  ERAS.forEach(era => {
+    const x = eraX[era];
+    const tick = document.createElementNS(ns, 'line');
+    tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+    tick.setAttribute('y1', MT + plotH); tick.setAttribute('y2', MT + plotH + 5);
+    tick.setAttribute('stroke', '#3a3a4a'); tick.setAttribute('stroke-width', 1);
+    svgEl.appendChild(tick);
+
+    const vertLine = document.createElementNS(ns, 'line');
+    vertLine.setAttribute('x1', x); vertLine.setAttribute('x2', x);
+    vertLine.setAttribute('y1', MT); vertLine.setAttribute('y2', MT + plotH);
+    vertLine.setAttribute('stroke', '#1a1a28'); vertLine.setAttribute('stroke-width', 0.5);
+    svgEl.appendChild(vertLine);
+
+    const lbl = document.createElementNS(ns, 'text');
+    lbl.setAttribute('x', x); lbl.setAttribute('y', MT + plotH + 18);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('fill', '#6a6a7a'); lbl.setAttribute('font-size', '10');
+    lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+    // Abbreviate era names
+    const short = era.replace(' Age','').replace('Middle ','Mid.').replace('Industrial','Industr.').replace('Renaissance','Renais.');
+    lbl.textContent = short;
+    svgEl.appendChild(lbl);
+  });
+
+  // Axes
+  const axisH = document.createElementNS(ns, 'line');
+  axisH.setAttribute('x1', ML); axisH.setAttribute('x2', ML + plotW);
+  axisH.setAttribute('y1', MT + plotH); axisH.setAttribute('y2', MT + plotH);
+  axisH.setAttribute('stroke', '#3a3a4a'); axisH.setAttribute('stroke-width', 1);
+  svgEl.appendChild(axisH);
+  const axisV = document.createElementNS(ns, 'line');
+  axisV.setAttribute('x1', ML); axisV.setAttribute('x2', ML);
+  axisV.setAttribute('y1', MT); axisV.setAttribute('y2', MT + plotH);
+  axisV.setAttribute('stroke', '#3a3a4a'); axisV.setAttribute('stroke-width', 1);
+  svgEl.appendChild(axisV);
+
+  // Icons + name labels
+  const IMG = 48;
+  const HALF = IMG / 2;
+  const SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+
+  points.forEach(p => {
+    const color = colorMap[p.cls] || '#888';
+
+    // ── Icon via foreignObject ──
+    const fo = document.createElementNS(ns, 'foreignObject');
+    fo.setAttribute('x', p.px - HALF); fo.setAttribute('y', p.py - HALF);
+    fo.setAttribute('width', IMG); fo.setAttribute('height', IMG);
+    fo.setAttribute('pointer-events', 'none');
+
+    if (p.sheet) {
+      // Critter: sprite sheet → canvas, first frame (row 0, col 0)
+      const canvas = document.createElementNS('http://www.w3.org/1999/xhtml', 'canvas');
+      canvas.setAttribute('width', IMG); canvas.setAttribute('height', IMG);
+      canvas.style.cssText = `width:${IMG}px;height:${IMG}px;image-rendering:pixelated`;
+      const base = p.sprite; // base URL without extension
+      const tryLoad = idx => {
+        if (idx >= SPRITE_EXTS.length) return;
+        const image = new Image();
+        image.onload = () => {
+          const fw = Math.floor(image.naturalWidth / 4);
+          const fh = Math.floor(image.naturalHeight / 4);
+          canvas.getContext('2d').drawImage(image, 0, 0, fw, fh, 0, 0, IMG, IMG);
+        };
+        image.onerror = () => tryLoad(idx + 1);
+        image.src = base + SPRITE_EXTS[idx];
+      };
+      tryLoad(0);
+      fo.appendChild(canvas);
+    } else {
+      // Tower: direct sprite image
+      const img = document.createElementNS('http://www.w3.org/1999/xhtml', 'img');
+      img.setAttribute('src', p.sprite);
+      img.style.cssText = `width:${IMG}px;height:${IMG}px;object-fit:contain;image-rendering:pixelated`;
+      img.onerror = () => img.style.display = 'none';
+      fo.appendChild(img);
+    }
+    svgEl.appendChild(fo);
+
+    // Name label below icon
+    const nameEl = document.createElementNS(ns, 'text');
+    nameEl.setAttribute('x', p.px); nameEl.setAttribute('y', p.py + HALF + 10);
+    nameEl.setAttribute('text-anchor', 'middle');
+    nameEl.setAttribute('fill', color); nameEl.setAttribute('fill-opacity', '0.85');
+    nameEl.setAttribute('font-size', '8');
+    nameEl.setAttribute('font-family', 'JetBrains Mono, monospace');
+    nameEl.setAttribute('pointer-events', 'none');
+    nameEl.textContent = p.name;
+    svgEl.appendChild(nameEl);
+
+    // Hit area on top (tooltip)
+    const hit = document.createElementNS(ns, 'rect');
+    hit.setAttribute('x', p.px - HALF); hit.setAttribute('y', p.py - HALF);
+    hit.setAttribute('width', IMG); hit.setAttribute('height', IMG + 12);
+    hit.setAttribute('fill', 'transparent');
+    hit.style.cursor = 'pointer';
+    hit.addEventListener('mouseenter', ev => showTip(ev, p.tipHtml));
+    hit.addEventListener('mousemove', moveTip);
+    hit.addEventListener('mouseleave', hideTip);
+    svgEl.appendChild(hit);
+  });
+}
+
+// ── Critter classification ─────────────────────────────────────
+function classifyCritter(iid, c) {
+  if (c.slots >= 3)   return 'carrier';
+  if (c.speed >= 0.6) return 'fast';
+  if (c.armour >= 2)  return 'armor';
+  return 'allrounder';
+}
+
+function classifyTower(t) {
+  if (t.burn_dps > 0)   return 'burn';
+  if (t.slow_dur > 0)   return 'slow';
+  if (t.range >= 4)     return 'sniper';
+  if (t.reload <= 1000) return 'rapid';
+  return 'allrounder';
+}
+
+function buildTowerPoints(towers) {
+  const clsLabels = {burn:'Feuer', slow:'Slow/Stun', sniper:'Sniper', rapid:'Rapid', allrounder:'Allrounder'};
+  return Object.entries(towers)
+    .filter(([, t]) => t.era && t.era !== 'Unbekannt')
+    .map(([iid, t]) => {
+      const cls = classifyTower(t);
+      const dmgPerShot = t.damage + t.burn_dps * (t.burn_dur / 1000);
+      const power = dmgPerShot / (t.reload / 1000);
+      const burnInfo = t.burn_dps ? `🔥 ${t.burn_dps} DPS × ${t.burn_dur/1000}s` : '';
+      const slowInfo = t.slow_dur ? `❄ ${t.slow_dur}ms slow/stun` : '';
+      const tipHtml = `
+        <div class="tt-name">${iid}</div>
+        <div class="tt-row">Era: ${t.era}</div>
+        <div class="tt-row">Schaden: ${t.damage} · Range: ${t.range} · Reload: ${t.reload}ms</div>
+        ${burnInfo ? `<div class="tt-row">${burnInfo}</div>` : ''}
+        ${slowInfo ? `<div class="tt-row">${slowInfo}</div>` : ''}
+        <div class="tt-row">Effektiv-DPS: <b>${power.toFixed(2)}</b></div>
+        <div class="tt-cls" style="color:${TOWER_COLORS[cls]}">${clsLabels[cls]}</div>
+      `;
+      const spriteUrl = t.sprite ? '/' + t.sprite.replace(/^\//, '') : '';
+      return { iid, name: iid, era: t.era, power, cls, r: 5, sprite: spriteUrl, sheet: false, tipHtml };
+    });
+}
+
+// ── Fetch critters & render ────────────────────────────────────
+const GS = `${location.protocol}//${location.hostname}:8080`;
+
+function authHeaders() {
+  const t = localStorage.getItem('e3_jwt_token');
+  return t ? { Authorization: 'Bearer ' + t } : {};
+}
+
+const statusEl = document.getElementById('status');
+
+function buildCritterPoints(critters) {
+  const clsLabels = {carrier:'Carrier', fast:'Fast', armor:'Armor', allrounder:'Allrounder'};
+  return Object.entries(critters)
+    .filter(([, c]) => c.era && c.era !== 'Unbekannt')
+    .map(([iid, c]) => {
+      const cls = classifyCritter(iid, c);
+      const power = (c.health + c.armour * 2) * c.speed;
+      const tipHtml = `
+        <div class="tt-name">${iid}</div>
+        <div class="tt-row">Era: ${c.era}</div>
+        <div class="tt-row">HP: ${c.health} · Rüstung: ${c.armour} · Speed: ${c.speed}</div>
+        <div class="tt-row">Slots: ${c.slots}</div>
+        <div class="tt-row">Power: <b>${power.toFixed(2)}</b></div>
+        <div class="tt-cls" style="color:${CRITTER_COLORS[cls]}">${clsLabels[cls]}</div>
+      `;
+      const spriteBase = c.sprite ? '/' + c.sprite.replace(/^\//, '').replace(/\.\w+$/, '') : '';
+      return { iid, name: iid, era: c.era, power, cls, r: 5, sprite: spriteBase, sheet: true, tipHtml };
+    });
+}
+
+async function init() {
+  try {
+    const [armiesRes, eraMapRes] = await Promise.all([
+      fetch(`${GS}/api/admin/ai-armies`, { headers: authHeaders() }),
+      fetch(`${GS}/api/era-map`, { headers: authHeaders() }),
+    ]);
+    if (!armiesRes.ok) throw new Error(`HTTP ${armiesRes.status}`);
+    if (!eraMapRes.ok) throw new Error(`era-map HTTP ${eraMapRes.status}`);
+    const d = await armiesRes.json();
+    const eraMapData = await eraMapRes.json();
+    ERAS = (eraMapData.eras || []).map(k => eraMapData.labels_en?.[k] || k);
+
+    renderScatterAndStore(
+      document.getElementById('svg-critters'),
+      buildCritterPoints(d.critters || {}),
+      'Power = (HP + Rüstung×2) × Speed',
+      CRITTER_COLORS,
+    );
+    renderScatterAndStore(
+      document.getElementById('svg-towers'),
+      buildTowerPoints(d.towers || {}),
+      'Effektiv-DPS',
+      TOWER_COLORS,
+    );
+
+    statusEl.style.color = 'var(--text-dim)';
+    statusEl.textContent = `↻ ${new Date().toLocaleTimeString()}`;
+  } catch (err) {
+    statusEl.style.color = '#ef5350';
+    statusEl.textContent = `offline – ${err.message}`;
+  }
+}
+
+// ── Re-render on resize ───────────────────────────────────────
+let lastRenders = [];
+const origRender = renderScatter;
+
+function renderScatterAndStore(svgEl, points, yLabel, colorMap) {
+  renderScatter(svgEl, points, yLabel, colorMap);
+  // store for resize
+  const idx = lastRenders.findIndex(r => r.svgEl === svgEl);
+  const entry = { svgEl, points, yLabel, colorMap };
+  if (idx >= 0) lastRenders[idx] = entry; else lastRenders.push(entry);
+}
+
+const ro = new ResizeObserver(() => {
+  lastRenders.forEach(({ svgEl, points, yLabel, colorMap }) =>
+    renderScatter(svgEl, points, yLabel, colorMap)
+  );
+});
+ro.observe(document.getElementById('sec-critters').querySelector('.plot-wrap'));
+ro.observe(document.getElementById('sec-towers').querySelector('.plot-wrap'));
+
+init();
+</script>
+</body>
+</html>

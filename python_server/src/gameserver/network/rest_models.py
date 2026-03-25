@@ -77,6 +77,11 @@ class MapSaveBody(BaseModel):
     tiles: Dict[str, Any]
 
 
+class SavedMapRenameBody(BaseModel):
+    name: str
+    life: float | None = None
+
+
 class MapSaveResponse(BaseModel):
     success: bool
     error: str = ""

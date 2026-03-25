@@ -364,7 +364,7 @@ MECHANICAL_ENGINEERING:
   description: "Advanced engineering of mechanical systems."
   effort: 205337
   costs: {}
-  requirements: [MECHANICS, PHYSICS, STEEL]
+  requirements: [MECHANICS, STEEL]
   effects: 
     build_speed_modifier: 0.2
 
@@ -480,10 +480,6 @@ ELECTRONICS:
   requirements: [ELECTRICITY, PHYSICS]
   effects: {}
 
-# ============================================================
-#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
-# ============================================================
-
 MASS_PRODUCTION:
   name: "Mass Production"
   description: "Industrial assembly line and standardization."
@@ -498,7 +494,7 @@ NUCLEAR_REACTION:
   description: "Nuclear fission and atomic energy principles."
   effort: 576665
   costs: {}
-  requirements: [PHYSICS, CHEMISTRY, ELECTRICITY]
+  requirements: [PHYSICS, CHEMISTRY]
   effects: {}
 
 CHEMICAL_WARFARE:
@@ -506,7 +502,7 @@ CHEMICAL_WARFARE:
   description: "Chemical weapons development and deployment."
   effort: 547832
   costs: {}
-  requirements: [CHEMISTRY, MILITARY_SERVICE]
+  requirements: [CHEMISTRY, BOMBING_AREA]
   effects: {}
 
 ROCKET_SCIENCE:
@@ -539,7 +535,7 @@ CIVIL_ENGINEERING:
   description: "Infrastructure design and large-scale construction."
   effort: 607016
   costs: {}
-  requirements: [ARCHITECTURE, MECHANICAL_ENGINEERING, STEEL]
+  requirements: [ARCHITECTURE, MECHANICAL_ENGINEERING]
   effects: {}
 
 SATELITE_SYSTEMS:
@@ -555,7 +551,7 @@ COMPUTER_TECHNOLOGY:
   description: "Electronic computing machines and algorithms."
   effort: 539664
   costs: {}
-  requirements: [ELECTRONICS, MATHMATICS, CRYPTOLOGY]
+  requirements: [ELECTRONICS, MATHMATICS]
   effects: {}
 
 SPECIAL_FORCES:
@@ -563,8 +559,12 @@ SPECIAL_FORCES:
   description: "Elite military units with advanced training."
   effort: 690542
   costs: {}
-  requirements: [MILITARY_SERVICE, STEALTH_SECRECY, ELECTRONICS]
+  requirements: [MILITARY_SERVICE, STEALTH_SECRECY]
   effects: {}
+
+# ============================================================
+#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+# ============================================================
 
 BIONICS:
   name: "Bionics"

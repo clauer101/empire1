@@ -33,7 +33,7 @@ from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.game_loop import GameLoop
 from gameserver.engine.statistics import StatisticsService
 from gameserver.engine.upgrade_provider import UpgradeProvider
-from gameserver.loaders.ai_loader import load_ai_templates, load_ai_waves
+from gameserver.loaders.ai_loader import load_ai_waves
 from gameserver.loaders.item_loader import load_items
 from gameserver.loaders.map_loader import load_map
 from gameserver.models.items import ItemDetails
@@ -57,7 +57,6 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 DEFAULT_ITEMS_PATH = "config"
 DEFAULT_MAP_PATH = "config/maps/default.yaml"
-DEFAULT_AI_PATH = "config/ai_templates.yaml"
 DEFAULT_DB_PATH = "gameserver.db"
 DEFAULT_MESSAGES_PATH = "messages.yaml"
 
@@ -72,9 +71,9 @@ class Configuration:
 
     items: list = field(default_factory=list)
     hex_map: Optional[HexMap] = None
-    ai_templates: dict = field(default_factory=dict)
     ai_waves: list = field(default_factory=list)
     game: GameConfig = field(default_factory=GameConfig)
+    knowledge_era_groups: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -108,13 +107,38 @@ class Services:
 # ===================================================================
 
 
+def _parse_knowledge_era_groups(config_dir: str) -> dict[str, list[str]]:
+    """Parse knowledge.yaml section comments to build era → [iid] mapping."""
+    import re
+    era_order = [
+        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
+        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
+    ]
+    patterns = [(k, re.compile(rf'#\s+{k[:11]}')) for k in era_order]
+    item_re = re.compile(r'^([A-Z][A-Z0-9_]+):')
+    result: dict[str, list[str]] = {k: [] for k in era_order}
+    current = era_order[0]
+    knowledge_path = Path(config_dir) / "knowledge.yaml"
+    try:
+        for line in knowledge_path.read_text(encoding="utf-8").splitlines():
+            for key, pat in patterns:
+                if pat.search(line):
+                    current = key
+                    break
+            m = item_re.match(line)
+            if m:
+                result[current].append(m.group(1))
+    except OSError:
+        log.warning("Could not parse knowledge.yaml for era groups: %s", knowledge_path)
+    return result
+
+
 def load_configuration(
     config_dir: str = "config",
     items_path: str = "",
     map_path: str = "",
-    ai_path: str = "",
 ) -> Configuration:
-    """Load items, hex map, and AI templates from YAML files.
+    """Load items, hex map, and AI waves from YAML files.
 
     All loaders are synchronous (pure file I/O + parsing).
 
@@ -122,7 +146,6 @@ def load_configuration(
         config_dir: Base configuration directory (default: "config").
         items_path: Path to the items YAML (default: config_dir).
         map_path: Path to the hex-map YAML (default: config_dir/maps/default.yaml).
-        ai_path: Path to the AI templates YAML (default: config_dir/ai_templates.yaml).
 
     Returns:
         Populated :class:`Configuration` containing items, map, and AI data.
@@ -134,8 +157,6 @@ def load_configuration(
         items_path = config_dir
     if not map_path:
         map_path = os.path.join(config_dir, "maps/default.yaml")
-    if not ai_path:
-        ai_path = os.path.join(config_dir, "ai_templates.yaml")
 
     items = load_items(items_path)
     log.info("  items:        %d loaded from %s", len(items), items_path)
@@ -145,9 +166,6 @@ def load_configuration(
     tile_count = len(hex_map.build_tiles)
     log.info("  map:          %d path tiles, %d build tiles from %s", path_count, tile_count, map_path)
 
-    ai_templates = load_ai_templates(ai_path)
-    log.info("  ai_templates: %d entries from %s", len(ai_templates), ai_path)
-
     ai_waves_path = os.path.join(config_dir, "ai_waves.yaml")
     ai_waves = load_ai_waves(ai_waves_path)
     log.info("  ai_waves:     %d hardcoded entries from %s", len(ai_waves), ai_waves_path)
@@ -155,8 +173,12 @@ def load_configuration(
     game_cfg = load_game_config()
     log.info("  game_config:  loaded")
 
-    return Configuration(items=items, hex_map=hex_map, ai_templates=ai_templates,
-                         ai_waves=ai_waves, game=game_cfg)
+    knowledge_era_groups = _parse_knowledge_era_groups(config_dir)
+    log.info("  knowledge_era_groups: %d eras parsed", len(knowledge_era_groups))
+
+    return Configuration(items=items, hex_map=hex_map,
+                         ai_waves=ai_waves, game=game_cfg,
+                         knowledge_era_groups=knowledge_era_groups)
 
 
 # ===================================================================
@@ -217,10 +239,11 @@ def create_services(config: Configuration, database: Database) -> Services:
 
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
     battle_service = BattleService(items=upgrade_provider.items)
-    attack_service = AttackService(event_bus, gc, empire_service)
+    attack_service = AttackService(event_bus, gc, empire_service,
+                                   knowledge_era_groups=config.knowledge_era_groups)
     army_service = ArmyService(upgrade_provider, event_bus)
-    ai_service = AIService(upgrade_provider, config.ai_templates,
-                            game_config=gc, hardcoded_waves=config.ai_waves)
+    ai_service = AIService(upgrade_provider,
+                           game_config=gc, hardcoded_waves=config.ai_waves)
     statistics = StatisticsService()
 
     game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc, ai_service=ai_service)
@@ -381,6 +404,7 @@ async def start_game_loop(services: Services) -> None:
                 attacks=services.attack_service.get_all_attacks(),
                 battles=[],
             )
+            log.info("Game state saved")
         except Exception:
             log.exception("State save failed — continuing shutdown")
 

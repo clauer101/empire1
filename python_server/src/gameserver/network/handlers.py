@@ -1119,18 +1119,20 @@ async def handle_battle_register(
     attack_svc = svc.attack_service
     attack = None
     
+    ACTIVE_PHASES = {"in_siege", "in_battle"}
+
     # Check if sender is attacker
     for a in attack_svc.get_outgoing(sender_uid):
         if a.defender_uid == target_uid:
-            attack = a
-            break
-    
+            if attack is None or a.phase.value in ACTIVE_PHASES:
+                attack = a
+
     # Check if sender is defender
     if not attack:
         for a in attack_svc.get_incoming(sender_uid):
             if a.attacker_uid == target_uid or a.defender_uid == sender_uid:
-                attack = a
-                break
+                if attack is None or a.phase.value in ACTIVE_PHASES:
+                    attack = a
     
     if not attack:
         log.warning("battle_register: no attack found for uid=%d target=%d", sender_uid, target_uid)
@@ -1479,6 +1481,7 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
         "spy_count": len(empire.spies),
         "attacks_incoming": attacks_incoming,
         "attacks_outgoing": attacks_outgoing,
+        "travel_time_seconds": round(max(1.0, svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_time_offset", 0.0)), 0),
     }
 
 
@@ -2070,9 +2073,20 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
     6. Cleans up the battle from active battles
     """
     svc = _svc()
-    
+    _summary_sent = False
+
     try:
         await battle_svc.run_battle(battle, send_fn, broadcast_interval_ms)
+    except asyncio.TimeoutError:
+        import traceback
+        log.error("[battle] bid=%d asyncio.TimeoutError (unexpected): %s", bid, traceback.format_exc())
+        battle.defender_won = True
+        battle.is_finished = True
+        try:
+            await battle_svc.send_summary(battle, send_fn, loot={})
+            _summary_sent = True
+        except Exception:
+            pass
     except Exception:
         import traceback
         log.error("Battle loop crashed: %s", traceback.format_exc())
@@ -2094,6 +2108,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         # Best-effort summary to connected clients
         try:
             await battle_svc.send_summary(battle, send_fn, loot={})
+            _summary_sent = True
         except Exception:
             pass
 
@@ -2105,7 +2120,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         if battle.defender_won is False:
             loot = _compute_and_apply_loot(battle, svc)
             await battle_svc.send_summary(battle, send_fn, loot)
-        elif not battle.is_finished:
+        elif not _summary_sent:
             # Normal defender-win path (no loot to send)
             await battle_svc.send_summary(battle, send_fn, loot={})
 
@@ -2331,6 +2346,29 @@ def _create_battle_observer_broadcast_handler() -> Callable:
     return _on_battle_observer_broadcast
 
 
+def _abort_battle_setup(attack_id: int, army=None) -> None:
+    """Mark an attack FINISHED when battle creation fails.
+
+    Ensures the attack is never left dangling in IN_BATTLE when the battle
+    loop never starts (e.g. defender has no map, no valid path).
+    Also resets army waves so the attacker can reuse the army.
+    """
+    from gameserver.models.attack import AttackPhase
+    svc = _svc()
+    attack = svc.attack_service.get(attack_id)
+    if attack:
+        attack.phase = AttackPhase.FINISHED
+        log.warning(
+            "[battle:abort] attack_id=%d marked FINISHED because battle setup failed",
+            attack_id,
+        )
+    if army is not None:
+        for wave in army.waves:
+            wave.num_critters_spawned = 0
+            wave.next_critter_ms = 0
+        log.info("[battle:abort] army waves reset for attack_id=%d", attack_id)
+
+
 def _create_battle_start_handler() -> Callable:
     """Create a handler for BattleStartRequested events.
     
@@ -2356,6 +2394,7 @@ def _create_battle_start_handler() -> Callable:
         attacker_empire = svc.empire_service.get(attacker_uid)
         if attacker_empire is None:
             log.error("[battle:start_requested] FAIL: attacker %d not found", attacker_uid)
+            _abort_battle_setup(attack_id)
             return
         
         attacking_army = None
@@ -2367,16 +2406,19 @@ def _create_battle_start_handler() -> Callable:
         if attacking_army is None:
             log.error("[battle:start_requested] FAIL: army %d not found for attacker %d",
                       army_aid, attacker_uid)
+            _abort_battle_setup(attack_id)
             return
         
         # Get defender's empire, map, structures
         defender_empire = svc.empire_service.get(defender_uid)
         if defender_empire is None:
             log.error("[battle:start_requested] FAIL: defender %d not found", defender_uid)
+            _abort_battle_setup(attack_id, attacking_army)
             return
         
         if not defender_empire.hex_map:
             log.error("[battle:start_requested] FAIL: defender %d has no map", defender_uid)
+            _abort_battle_setup(attack_id, attacking_army)
             return
         
         # ── Find path from spawnpoint to castle ──────────────
@@ -2387,6 +2429,7 @@ def _create_battle_start_handler() -> Callable:
         if not critter_path:
             log.error("[battle:start_requested] FAIL: defender %d map has no valid path",
                       defender_uid)
+            _abort_battle_setup(attack_id, attacking_army)
             return
         
         # ── Get defender's structures ────────────────────────
@@ -2530,6 +2573,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     attacker_empire = svc.empire_service.get(attacker_uid)
     if attacker_empire is None:
         log.error("[battle:start_requested] FAIL: attacker %d not found", attacker_uid)
+        _abort_battle_setup(attack_id)
         return
     
     attacking_army = None
@@ -2541,16 +2585,19 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     if attacking_army is None:
         log.error("[battle:start_requested] FAIL: army %d not found for attacker %d",
                   army_aid, attacker_uid)
+        _abort_battle_setup(attack_id)
         return
     
     # Get defender's empire, map, structures
     defender_empire = svc.empire_service.get(defender_uid)
     if defender_empire is None:
         log.error("[battle:start_requested] FAIL: defender %d not found", defender_uid)
+        _abort_battle_setup(attack_id, attacking_army)
         return
     
     if not defender_empire.hex_map:
         log.error("[battle:start_requested] FAIL: defender %d has no map", defender_uid)
+        _abort_battle_setup(attack_id, attacking_army)
         return
     
     # ── Find path from spawnpoint to castle ──────────────
@@ -2561,6 +2608,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     if not critter_path:
         log.error("[battle:start_requested] FAIL: defender %d map has no valid path",
                   defender_uid)
+        _abort_battle_setup(attack_id, attacking_army)
         return
     
     # ── Get defender's structures ────────────────────────

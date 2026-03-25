@@ -63,8 +63,8 @@ async def save_state(
             encoding="utf-8",
         )
         tmp.replace(out)
-        log.info("Game state saved to %s (%d empires, %d attacks, %d battles)",
-                 path, len(empires), len(attacks or []), len(battles or []))
+        log.debug("Game state saved to %s (%d empires, %d attacks, %d battles)",
+                  path, len(empires), len(attacks or []), len(battles or []))
     except Exception:
         log.exception("Failed to save game state to %s", path)
         if tmp.exists():

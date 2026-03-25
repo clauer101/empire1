@@ -241,6 +241,7 @@
           <th></th>
           <th>User</th>
           <th>Empire</th>
+          <th>Era</th>
           <th>Culture</th>
           <th>Gold</th>
           <th>Life</th>
@@ -252,7 +253,7 @@
         </tr>
       </thead>
       <tbody id="empires-body">
-        <tr><td colspan="11" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
+        <tr><td colspan="12" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -377,7 +378,7 @@ function renderEmpires(empires) {
   const tbody = document.getElementById('empires-body');
 
   if (!empires.length) {
-    tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
     return;
   }
 
@@ -408,6 +409,7 @@ function renderEmpires(empires) {
       <td><span class="expand-arrow ${isOpen ? 'open-arrow' : ''}">▶</span><span class="dot ${e.online ? 'online' : 'offline'}"></span></td>
       <td>${e.username || '—'}</td>
       <td style="color:var(--accent)">${e.name}</td>
+      <td style="color:var(--text-dim);font-size:11px">${calcEra(e.knowledge_done)}</td>
       <td>${culture.toLocaleString()}</td>
       <td>${gold.toLocaleString()}</td>
       <td>
@@ -425,7 +427,7 @@ function renderEmpires(empires) {
     detailRow.className = `empire-detail${isOpen ? ' open' : ''}`;
     detailRow.dataset.uid = e.uid;
     const detailTd = document.createElement('td');
-    detailTd.colSpan = 11;
+    detailTd.colSpan = 12;
     detailTd.innerHTML = buildDetailHTML(e);
     detailRow.appendChild(detailTd);
 
@@ -477,6 +479,33 @@ function renderAttacks(attacks) {
   }).join('');
 }
 
+// ── Era calculation ───────────────────────────────────────────────
+let ERA_ORDER = [];
+let ERA_KNOWLEDGE = {};  // era key → [iid, ...]
+let ERA_LABELS_EN = {};
+
+async function loadEraMap() {
+  try {
+    const d = await fetch(`${GS_BASE}/api/era-map`).then(r => r.json());
+    ERA_ORDER    = d.eras || [];
+    ERA_KNOWLEDGE = d.knowledge || {};
+    ERA_LABELS_EN = d.labels_en || {};
+  } catch (_) {}
+}
+
+// Returns the highest era where at least one knowledge iid is completed.
+// Falls back to the first era if none match.
+function calcEra(knowledgeDone) {
+  if (!ERA_ORDER.length) return '';
+  const done = new Set(knowledgeDone);
+  let result = ERA_ORDER[0];
+  for (const era of ERA_ORDER) {
+    const items = ERA_KNOWLEDGE[era] || [];
+    if (items.some(iid => done.has(iid))) result = era;
+  }
+  return ERA_LABELS_EN[result] || result;
+}
+
 // ── Poll ──────────────────────────────────────────────────────────
 async function poll() {
   const connEl = document.getElementById('conn-status');
@@ -505,7 +534,7 @@ async function poll() {
   }
 }
 
-poll();
+loadEraMap().then(poll);
 setInterval(poll, 3000);
 </script>
 </body>
