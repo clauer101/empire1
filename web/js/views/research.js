@@ -127,7 +127,7 @@ function render() {
       <td class="col-name" data-label="Name">
         <div class="item-header" style="display:flex; align-items:flex-start; justify-content:space-between;">
           <div style="flex:1;">
-            <div><strong>${info.name || iid}</strong></div>
+            <div><strong>${status === 'in-progress' ? '🔬 ' : ''}${info.name || iid}</strong></div>
             <div class="research-msg"></div>
             <div class="item-description" style="font-size:0.9em; color:#666; margin-top:4px;">${info.description || '—'}</div>
           </div>

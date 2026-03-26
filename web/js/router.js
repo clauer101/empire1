@@ -93,7 +93,19 @@ class Router {
    */
   currentRoute() {
     const hash = window.location.hash.replace('#', '');
-    return hash || this.defaultRoute;
+    // Support parameterized routes like #replay/123
+    const slashIdx = hash.indexOf('/');
+    return (slashIdx > 0 ? hash.substring(0, slashIdx) : hash) || this.defaultRoute;
+  }
+
+  /**
+   * Get the parameter portion of a parameterized route (e.g. "123" from #replay/123).
+   * @returns {string|null}
+   */
+  routeParam() {
+    const hash = window.location.hash.replace('#', '');
+    const slashIdx = hash.indexOf('/');
+    return slashIdx > 0 ? hash.substring(slashIdx + 1) : null;
   }
 
   _onHashChange() {

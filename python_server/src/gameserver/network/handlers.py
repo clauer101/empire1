@@ -24,7 +24,7 @@ import logging
 import time
 import asyncio
 from collections import deque
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Callable, Iterable, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gameserver.main import Services
@@ -1101,6 +1101,34 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
         log.info("_send_battle_setup: sent to uid=%d (attack_id=%d)", observer_uid, attack.attack_id)
 
 
+def _evict_observer_from_all(
+    uid: int,
+    all_attacks: "Iterable[Attack]",
+    active_battles: "dict[int, BattleState]",
+    exclude_attack_id: "int | None" = None,
+) -> None:
+    """Remove *uid* from every attack's ``_observers`` set and every active
+    ``BattleState.observer_uids`` set, except for the attack identified by
+    *exclude_attack_id* (the one the user is about to subscribe to).
+
+    This guarantees that each UID is subscribed to at most one battle at a time
+    — new subscriptions silently replace old ones.
+    """
+    for a in all_attacks:
+        if a.attack_id == exclude_attack_id:
+            continue
+        if hasattr(a, '_observers') and uid in a._observers:
+            a._observers.discard(uid)
+            log.debug("_evict_observer_from_all: uid=%d removed from attack %d observers", uid, a.attack_id)
+
+    for defender_uid, battle in active_battles.items():
+        if exclude_attack_id is not None and battle.attack_id == exclude_attack_id:
+            continue
+        if uid in battle.observer_uids:
+            battle.observer_uids.discard(uid)
+            log.debug("_evict_observer_from_all: uid=%d removed from battle bid=%d observer_uids", uid, battle.bid)
+
+
 async def handle_battle_register(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
@@ -1109,6 +1137,7 @@ async def handle_battle_register(
     Client subscribes to battle updates for attacks they're involved in.
     """
     target_uid = getattr(message, "target_uid", None)
+    attack_id = getattr(message, "attack_id", None)
     if target_uid is None:
         log.warning("battle_register: missing target_uid")
         return {"type": "error", "message": "Missing target_uid"}
@@ -1121,23 +1150,41 @@ async def handle_battle_register(
     
     ACTIVE_PHASES = {"in_siege", "in_battle"}
 
-    # Check if sender is attacker
-    for a in attack_svc.get_outgoing(sender_uid):
-        if a.defender_uid == target_uid:
-            if attack is None or a.phase.value in ACTIVE_PHASES:
-                attack = a
-
-    # Check if sender is defender
-    if not attack:
+    # If a specific attack_id is provided, use it directly
+    if attack_id is not None:
         for a in attack_svc.get_incoming(sender_uid):
-            if a.attacker_uid == target_uid or a.defender_uid == sender_uid:
+            if a.attack_id == attack_id:
+                attack = a
+                break
+        if not attack:
+            for a in attack_svc.get_outgoing(sender_uid):
+                if a.attack_id == attack_id:
+                    attack = a
+                    break
+
+    # Fallback: pick by target_uid
+    if not attack:
+        # Check if sender is attacker
+        for a in attack_svc.get_outgoing(sender_uid):
+            if a.defender_uid == target_uid:
                 if attack is None or a.phase.value in ACTIVE_PHASES:
                     attack = a
+
+        # Check if sender is defender
+        if not attack:
+            for a in attack_svc.get_incoming(sender_uid):
+                if a.attacker_uid == target_uid or a.defender_uid == sender_uid:
+                    if attack is None or a.phase.value in ACTIVE_PHASES:
+                        attack = a
     
     if not attack:
         log.warning("battle_register: no attack found for uid=%d target=%d", sender_uid, target_uid)
         return {"type": "error", "message": "No active attack found"}
-    
+
+    # Evict sender_uid from all other subscriptions before registering the new one.
+    # This ensures each UID is observing at most one attack / battle at a time.
+    _evict_observer_from_all(sender_uid, attack_svc.get_all_attacks(), _active_battles, exclude_attack_id=attack.attack_id)
+
     # Register observer
     if not hasattr(attack, '_observers'):
         attack._observers = set()
@@ -2142,6 +2189,26 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         if svc.ai_service is not None:
             svc.ai_service.cleanup_inactive_armies(svc.empire_service, svc.attack_service)
 
+        # ── Save replay + send notification messages ─────────────────
+        if battle.recorder is not None:
+            saved_path = battle.recorder.save()
+            if saved_path and svc.message_store:
+                result = "🛡 Defender Victory" if battle.defender_won else "⚔ Attacker Victory"
+                def_name = battle.defender.name if battle.defender else "?"
+                atk_name = battle.attacker.name if battle.attacker else "?"
+                army_name = battle.army.name if battle.army else "?"
+                num_waves = len(battle.army.waves) if battle.army and battle.army.waves else 0
+                body = (
+                    f"{result}\n"
+                    f"🛡 {def_name}  vs  ⚔ {atk_name}\n"
+                    f"Army: {army_name} ({num_waves} waves)\n"
+                    f"▶ Replay: #replay/{bid}"
+                )
+                if battle.defender:
+                    svc.message_store.send(0, battle.defender.uid, body)
+                if battle.attacker and battle.attacker.uid != 0:
+                    svc.message_store.send(0, battle.attacker.uid, body)
+
     except Exception:
         import traceback
         log.error("[battle] bid=%d post-battle cleanup crashed: %s", bid, traceback.format_exc())
@@ -2494,6 +2561,11 @@ def _create_battle_start_handler() -> Callable:
         # Register battle in active battles dictionary
         _active_battles[defender_uid] = battle
         
+        # ── Attach replay recorder ──────────────────────────
+        from gameserver.persistence.replay import ReplayRecorder
+        battle.recorder = ReplayRecorder(bid, defender_uid=defender_uid,
+                                         attacker_uid=attacker_uid)
+        
         log.info("[battle:start_requested] SUCCESS: battle %d created (attacker=%d, defender=%d)",
                  bid, attacker_uid, defender_uid)
         
@@ -2503,6 +2575,9 @@ def _create_battle_start_handler() -> Callable:
             "bid": bid,
             "defender_uid": defender_uid,
             "attacker_uid": attacker_uid,
+            "defender_name": defender_empire.name if defender_empire else "",
+            "attacker_name": attacker_empire.name if attacker_empire else "",
+            "attacker_army_name": attacking_army.name if attacking_army else "",
             "tiles": tiles,  # Defender's hex map
             "structures": [
                 {
@@ -2522,6 +2597,9 @@ def _create_battle_start_handler() -> Callable:
         if svc.server:
             await svc.server.send_to(attacker_uid, setup_msg)
             await svc.server.send_to(defender_uid, setup_msg)
+        
+        # Record setup for replay
+        battle.recorder.record(0, setup_msg)
         
         # ── Launch battle loop ───────────────────────────────
         items = svc.upgrade_provider.items if svc.upgrade_provider else {}

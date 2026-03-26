@@ -255,6 +255,10 @@ def create_services(config: Configuration, database: Database) -> Services:
     message_store = MessageStore(DEFAULT_MESSAGES_PATH)
     message_store.load()
 
+    # Clean up old replay files
+    from gameserver.persistence.replay import cleanup_old_replays
+    cleanup_old_replays()
+
     log.info("  all services created")
 
     svc = Services(

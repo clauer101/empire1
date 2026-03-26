@@ -16,6 +16,7 @@ from gameserver.models.hex import HexCoord
 
 if TYPE_CHECKING:
     from gameserver.models.empire import Army, Empire
+    from gameserver.persistence.replay import ReplayRecorder
 
 
 @dataclass
@@ -84,6 +85,9 @@ class BattleState:
 
     # Configuration (set at battle creation time, from game.yaml)
     broadcast_interval_ms: float = 250.0
+
+    # Replay recorder (set at battle creation to record all events)
+    recorder: ReplayRecorder | None = None
 
     # -- Constants -------------------------------------------------------
 

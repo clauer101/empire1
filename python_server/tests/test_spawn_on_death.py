@@ -131,53 +131,56 @@ class TestSpawnPosition:
             assert child.path_progress >= 0.0
 
     def test_spawn_progress_evenly_spaced(self):
-        """With multiple spawns, critters are evenly spaced with 5% gaps."""
+        """With multiple spawns, critters are evenly spaced within ~1 hex tile."""
         svc = _svc_with_items(SLAVE=_mock_item("SLAVE"))
         c = _critter(path_progress=0.5, spawn_on_death={"SLAVE": 5})
         b = _battle(c)
         svc._critter_died(b, c)
         progresses = sorted([ch.path_progress for ch in b.critters.values()], reverse=True)
-        # Expect in descending order: 0.5 - 0.05 = 0.45, 0.5 - 0.10 = 0.40, 0.5 - 0.15 = 0.35, etc.
-        expected = [0.5 - 0.05 * (i + 1) for i in range(5)]
+        # path has 20 nodes → 19 segments, one_tile = 1/19, spread = 0.8/19
+        path_len = 19
+        spacing = (0.8 / path_len) / 5
+        expected = [0.5 - spacing * (i + 1) for i in range(5)]
         expected.sort(reverse=True)
         for actual, exp in zip(progresses, expected):
             assert actual == pytest.approx(exp, abs=1e-9)
 
     def test_spawn_clamped_at_zero_on_early_path(self):
-        """If dead critter is early on path, some children clamp to 0 rather than negative."""
+        """If dead critter is very early on path, children clamp to 0."""
         svc = _svc_with_items(SLAVE=_mock_item("SLAVE"))
-        c = _critter(path_progress=0.08, spawn_on_death={"SLAVE": 5})
+        # progress=0.001, so all spawns go negative → clamp to 0
+        c = _critter(path_progress=0.001, spawn_on_death={"SLAVE": 5})
         b = _battle(c)
         svc._critter_died(b, c)
         progresses = [ch.path_progress for ch in b.critters.values()]
-        # First 1–2 critters should clamp to 0; rest should be at valid positions
         assert any(p == pytest.approx(0.0) for p in progresses)
 
     def test_fixed_spawn_spacing(self):
-        """Each spawned critter is 5% of path behind the previous one, fixed spacing."""
+        """Spawned critters are evenly spaced within ~1 hex tile behind parent."""
         svc = _svc_with_items(SLAVE=_mock_item("SLAVE"))
         progress = 0.5
         c = _critter(path_progress=progress, spawn_on_death={"SLAVE": 3})
         b = _battle(c)
         svc._critter_died(b, c)
         progresses = sorted([ch.path_progress for ch in b.critters.values()], reverse=True)
-        # Expected in descending: progress - 5%, progress - 10%, progress - 15%
-        assert progresses[0] == pytest.approx(progress - 0.05, abs=1e-9)
-        assert progresses[1] == pytest.approx(progress - 0.10, abs=1e-9)
-        assert progresses[2] == pytest.approx(progress - 0.15, abs=1e-9)
+        path_len = 19  # _long_path(20)
+        spacing = (0.8 / path_len) / 3
+        assert progresses[0] == pytest.approx(progress - spacing * 1, abs=1e-9)
+        assert progresses[1] == pytest.approx(progress - spacing * 2, abs=1e-9)
+        assert progresses[2] == pytest.approx(progress - spacing * 3, abs=1e-9)
 
-    def test_spacing_independent_of_path_length(self):
-        """Spacing is the same (5%) regardless of path length or carrier position."""
+    def test_spacing_scales_to_one_hex_tile(self):
+        """Total spread covers ~0.8 of a hex tile regardless of path length."""
         svc = _svc_with_items(SLAVE=_mock_item("SLAVE"))
-        # Test with short path and carrier near start
+        # Short path: 5 nodes → 4 segments → one_tile = 0.25
         short_path = _long_path(5)
         c1 = Critter(cid=1, iid="CART", health=5.0, max_health=5.0, speed=0.2,
-                     path=short_path, path_progress=0.3, spawn_on_death={"SLAVE": 2})
+                     path=short_path, path_progress=0.9, spawn_on_death={"SLAVE": 2})
         b1 = _battle(c1)
         svc._critter_died(b1, c1)
         progresses1 = sorted([ch.path_progress for ch in b1.critters.values()], reverse=True)
 
-        # Test with long path and carrier in middle
+        # Long path: 50 nodes → 49 segments → one_tile ≈ 0.0204
         long_path = _long_path(50)
         c2 = Critter(cid=10, iid="CART", health=5.0, max_health=5.0, speed=0.2,
                      path=long_path, path_progress=0.5, spawn_on_death={"SLAVE": 2})
@@ -185,12 +188,13 @@ class TestSpawnPosition:
         svc._critter_died(b2, c2)
         progresses2 = sorted([ch.path_progress for ch in b2.critters.values()], reverse=True)
 
-        # Distance between spawned critters should be the same: 5%
-        gap1 = progresses1[0] - progresses1[1]
-        gap2 = progresses2[0] - progresses2[1]
-        assert gap1 == pytest.approx(0.05, abs=1e-9)
-        assert gap2 == pytest.approx(0.05, abs=1e-9)
-        assert gap1 == pytest.approx(gap2, abs=1e-9)
+        # Total spread should be ~0.8 of one hex tile for each path
+        spread1 = c1.path_progress - progresses1[-1]
+        spread2 = c2.path_progress - progresses2[-1]
+        expected_spread1 = 0.8 * (1.0 / 4)   # 0.2
+        expected_spread2 = 0.8 * (1.0 / 49)
+        assert spread1 == pytest.approx(expected_spread1, abs=1e-9)
+        assert spread2 == pytest.approx(expected_spread2, abs=1e-9)
 
 
 # ── Stat inheritance ──────────────────────────────────────────────────────────
