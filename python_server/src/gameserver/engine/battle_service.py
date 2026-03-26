@@ -643,21 +643,30 @@ class BattleService:
             self._spawn_death_critters(battle, critter)
 
     def _spawn_death_critters(self, battle: BattleState, dead: Critter) -> None:
-        """Spawn child critters at the dead critter's position, evenly spaced backwards.
+        """Spawn child critters at the dead critter's position, spread within ~1 hex tile.
 
-        Each spawned critter is placed 5% of the path behind the previous one,
-        ensuring consistent spacing regardless of path length or carrier position.
+        All spawned critters are placed slightly behind the dead carrier,
+        offset backwards along the path but staying within roughly one hex tile.
         """
-        SPAWN_SPACING = 0.05  # 5% of path between each spawned critter
+        path_len = max(len(dead.path) - 1, 1)
+        # 1 hex tile in path_progress units
+        one_tile = 1.0 / path_len
+        # Total spawn count across all types
+        total = sum(dead.spawn_on_death.values())
+        # Spread all spawns within 1.2 of a hex tile
+        spread = one_tile * 1.2
+        spacing = spread / max(total, 1)
+
+        spawn_idx = 0
         for iid, count in dead.spawn_on_death.items():
             for i in range(count):
-                # Position: parent_progress - (i+1) * spacing
-                offset = SPAWN_SPACING * (i + 1)
+                offset = spacing * (spawn_idx + 1)
                 spawn_progress = max(0.0, dead.path_progress - offset)
                 child = self._make_critter_from_item(iid, path=dead.path, path_progress=spawn_progress)
                 battle.critters[child.cid] = child
-                log.info("[SPAWN_ON_DEATH] Critter cid=%d (%s) spawned from dead cid=%d at progress=%.3f (spacing=%.2f%%)",
-                         child.cid, child.iid, dead.cid, spawn_progress, offset * 100)
+                log.info("[SPAWN_ON_DEATH] Critter cid=%d (%s) spawned from dead cid=%d at progress=%.3f",
+                         child.cid, child.iid, dead.cid, spawn_progress)
+                spawn_idx += 1
 
 
     # -- Broadcasting (delta-based, like Java) ---------------------------
@@ -730,6 +739,10 @@ class BattleService:
             "wave_info": wave_info,
         }
         
+        # Record for replay before clearing deltas
+        if battle.recorder is not None:
+            battle.recorder.record(battle.elapsed_ms, msg)
+
         # Send to all observers (snapshot to avoid mutation during async iteration)
         for uid in list(battle.observer_uids):
             await send_fn(uid, msg)
@@ -759,6 +772,11 @@ class BattleService:
             "defender_losses": dict(battle.defender_losses),
             "loot": loot or {},
         }
+
+        # Record summary for replay
+        if battle.recorder is not None:
+            battle.recorder.record(battle.elapsed_ms, msg)
+
         for uid in list(battle.observer_uids):
             await send_fn(uid, msg)
 

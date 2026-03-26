@@ -192,7 +192,7 @@ function renderMessages(data) {
             ${replyBtn}
           </span>
         </div>
-        <div style="word-break:break-word;">${escHtml(m.body)}</div>
+        <div style="word-break:break-word;">${_linkify(escHtml(m.body))}</div>
       </div>
     `;
   }).join('');
@@ -221,6 +221,11 @@ function renderMessages(data) {
     const badge = document.getElementById('nav-msg-badge');
     if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
   }
+}
+
+function _linkify(html) {
+  return html.replace(/#replay\/(\d+)/g,
+    '<a href="#replay/$1" style="color:var(--accent,#4fc3f7);">▶ Replay #$1</a>');
 }
 
 function escAttr(str) {

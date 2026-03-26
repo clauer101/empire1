@@ -174,7 +174,7 @@ function render(data) {
           const wallSecs = researchMultiplier > 0 ? remaining / researchMultiplier : remaining;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
           return `
-            <div class="panel-row"><span class="label">${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
+            <div class="panel-row"><span class="label">🔬 ${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
             <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
               <div style="background:#ffa726;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
             </div>`;
@@ -192,7 +192,7 @@ function render(data) {
           const wallSecs = buildMultiplier > 0 ? remaining / buildMultiplier : remaining;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
           return `
-            <div class="panel-row"><span class="label">${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
+            <div class="panel-row"><span class="label">🔨 ${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
             <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
               <div style="background:#4fc3f7;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
             </div>`;

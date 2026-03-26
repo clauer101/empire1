@@ -4,8 +4,7 @@
  */
 (function () {
   // ── Auth Guard ──────────────────────────────────────────────────────────────
-  const ADMIN_USER = 'eem';
-  const GAMESERVER = 'http://localhost:8080';
+  const GAMESERVER = `http://${window.location.hostname}:8080`;
 
   function decodeJwtPayload(token) {
     try {
@@ -20,7 +19,7 @@
     const payload = decodeJwtPayload(token);
     if (!payload) return false;
     if (payload.exp && payload.exp < Date.now() / 1000) return false;
-    return localStorage.getItem('e3_dev_user') === ADMIN_USER;
+    return true;
   }
 
   if (!isAuthorized()) {

@@ -355,6 +355,26 @@ def create_app(services: "Services") -> FastAPI:
         msg = services.message_store.send(from_uid=AI_UID, to_uid=ADMIN_UID, body=text)
         return {"success": True, "message": msg}
 
+    # =================================================================
+    # Replay endpoints
+    # =================================================================
+
+    @app.get("/api/replays")
+    async def get_replays(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """List available battle replays."""
+        from gameserver.persistence.replay import list_replays
+        replays = list_replays()
+        return {"replays": replays}
+
+    @app.get("/api/replays/{bid}")
+    async def get_replay(bid: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Get a full battle replay by battle ID."""
+        from gameserver.persistence.replay import load_replay
+        data = load_replay(bid)
+        if data is None:
+            raise HTTPException(status_code=404, detail="Replay not found")
+        return data
+
 
     # =================================================================
     # Admin / Dev status — no auth required

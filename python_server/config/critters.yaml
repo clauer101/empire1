@@ -293,7 +293,7 @@ SAMURAI:
   damage: 1
   armour: 0.5
   slots: 1
-  time_between: 1600
+  time_between: 1300
   is_boss: false
   capture: {}
   bonus: {}
@@ -314,8 +314,8 @@ SIEGE_RAM:
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: {CRUSADER: 4}
-  scale: 1
+  spawn_on_death: {CRUSADER: 3}
+  scale: 2.5
   animation: assets/sprites/critters/siege_ram
   requirements: [MECHANICS, THE_KINGS_LAIR]
 
@@ -329,7 +329,7 @@ NINJA:
   name: "Ninja"
   speed: 0.7
   health: 10
-  value: 9
+  value: 39
   damage: 1
   armour: 1
   slots: 1
@@ -346,11 +346,11 @@ MUSKETEER:
   name: "Musketeer"
   speed: 0.45
   health: 17
-  value: 14
+  value: 41
   damage: 1
   armour: 1.5
   slots: 1
-  time_between: 1700
+  time_between: 1500
   is_boss: false
   capture: {}
   bonus: {}
@@ -363,7 +363,7 @@ DRAGOONER:
   name: "Dragoon"
   speed: 0.55
   health: 21
-  value: 15
+  value: 44
   damage: 2
   armour: 2.5
   slots: 1
@@ -380,7 +380,7 @@ CARGO:
   name: "Cargo"
   speed: 0.4
   health: 12
-  value: 28
+  value: 41
   damage: 4
   armour: 0
   slots: 4
@@ -401,7 +401,7 @@ SOLDIER:
   name: "Soldier"
   speed: 0.7
   health: 27
-  value: 30
+  value: 59
   damage: 1
   armour: 6
   slots: 1
@@ -418,7 +418,7 @@ MOTORBIKE:
   name: "Motorbike"
   speed: 1
   health: 19
-  value: 33
+  value: 55
   damage: 3
   armour: 3
   slots: 1
@@ -435,7 +435,7 @@ SMALL_TANK:
   name: "Small Tank"
   speed: 0.3
   health: 33
-  value: 44
+  value: 62
   damage: 2
   armour: 9
   slots: 2
@@ -452,7 +452,7 @@ SIEGE_TANK:
   name: "Siege Tank"
   speed: 0.2
   health: 50
-  value: 47
+  value: 69
   damage: 2
   armour: 12
   slots: 2
@@ -469,7 +469,7 @@ TRANSPORTER:
   name: "Transporter"
   speed: 0.5
   health: 60
-  value: 41
+  value: 61
   damage: 5
   armour: 10
   slots: 4

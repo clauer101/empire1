@@ -202,6 +202,7 @@ class EndSiegeRequest(GameMessage):
 class BattleRegister(GameMessage):
     type: Literal["battle_register"] = "battle_register"
     target_uid: int = 0  # UID of defender or attacker to subscribe to
+    attack_id: Optional[int] = None  # Specific attack to subscribe to (preferred over target_uid lookup)
 
 
 class BattleUnregister(GameMessage):

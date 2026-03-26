@@ -131,6 +131,7 @@ class RestClient {
     const resp = await this._post('/api/auth/login', { username, password });
     if (resp.success && resp.token) {
       this.setToken(resp.token);
+      localStorage.setItem('e3_username', username);
       state.setAuth(resp.uid, username);
       if (resp.summary) {
         state.setSummary(resp.summary);
@@ -156,6 +157,7 @@ class RestClient {
    */
   logout() {
     this.clearToken();
+    localStorage.removeItem('e3_username');
     state.clearAuth();
   }
 
@@ -188,6 +190,7 @@ class RestClient {
         const summary = await this.getSummary();
         if (summary) {
           state.setAuth(summary.uid, summary.name);
+          localStorage.setItem('e3_username', summary.name);
           state.setSummary(summary);
           return true;
         }
@@ -322,6 +325,25 @@ class RestClient {
    */
   async markMessageRead(msgId) {
     return this._post(`/api/messages/${msgId}/read`, {});
+  }
+
+  // ── Replays ───────────────────────────────────────────────
+
+  /**
+   * Fetch a battle replay by battle ID.
+   * @param {number} bid
+   * @returns {Promise<{bid: number, defender_uid: number, attacker_uid: number, events: Array}>}
+   */
+  async getReplay(bid) {
+    return this._get(`/api/replays/${bid}`);
+  }
+
+  /**
+   * List available replays (metadata only).
+   * @returns {Promise<{replays: Array}>}
+   */
+  async getReplays() {
+    return this._get('/api/replays');
   }
 
   /**

@@ -133,7 +133,7 @@ function _wsConnect() {
     _updateWsIndicator(true);
 
     // Register for battle updates
-    _sendWs({ type: 'battle_register', target_uid: _spectateDefenderUid ?? st.summary?.uid });
+    _sendWs({ type: 'battle_register', target_uid: _spectateDefenderUid ?? st.summary?.uid, ...(_pendingAttackId != null ? { attack_id: _pendingAttackId } : {}) });
   });
 
   ws.addEventListener('message', (ev) => {
@@ -1243,10 +1243,10 @@ function _onBattleSetup(msg) {
     active: true,
     bid: msg.bid || null,
     defender_uid: msg.defender_uid || null,
-    defender_name: '',
+    defender_name: msg.defender_name || '',
     attacker_uids: msg.attacker_uids || [],
-    attacker_name: '',
-    attacker_army_name: '',
+    attacker_name: msg.attacker_name || '',
+    attacker_army_name: msg.attacker_army_name || '',
     attacker_username: '',
     elapsed_ms: 0,
     is_finished: false,
