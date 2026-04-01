@@ -142,7 +142,7 @@ class AIService:
         self._game_config = game_config
         self._hardcoded_waves: list[dict] = hardcoded_waves or []
         self._params = AIParams()
-        self._next_army_aid: int = 10_000   # High range to avoid player AID clashes
+        # Army IDs are now allocated globally via empire_service.next_army_id()
         # deque of bool: True = AI won, False = defender won
         self._history: deque[bool] = deque(maxlen=self._params.history_window)
         # Pending battles: attack_id → {defender_uid, army_summary}
@@ -271,6 +271,9 @@ class AIService:
     ) -> None:
         """Register *army* with the AI empire and dispatch the attack."""
         from gameserver.models.empire import Empire as EmpireModel
+
+        # Assign globally unique army ID
+        army.aid = empire_service.next_army_id()
 
         ai_empire = empire_service.get(AI_UID)
         if ai_empire is None:
@@ -431,8 +434,7 @@ class AIService:
             for i, wave in enumerate(waves):
                 wave.next_critter_ms = int(i * initial_delay_ms)
 
-            aid = self._next_army_aid
-            self._next_army_aid += 1
+            aid = 0  # assigned in _send_army via empire_service.next_army_id()
             travel_s = float(entry.get("travel_time", 0) or 0) or (
                 self._game_config.ai_travel_seconds if self._game_config else 30.0
             )
@@ -493,8 +495,7 @@ class AIService:
         for i, wave in enumerate(waves):
             wave.next_critter_ms = int(i  * initial_delay_ms)  # first wave zero delay
 
-        aid = self._next_army_aid
-        self._next_army_aid += 1
+        aid = 0  # assigned in _send_army via empire_service.next_army_id()
         name = last_match.get("name", "Hardcoded Attack")
         travel_s = float(last_match.get("travel_time", 0) or 0) or (
             self._game_config.ai_travel_seconds if self._game_config else 30.0
@@ -592,8 +593,7 @@ class AIService:
                 next_critter_ms=0.0,
             ))
 
-        aid = self._next_army_aid
-        self._next_army_aid += 1
+        aid = 0  # assigned in _send_army via empire_service.next_army_id()
 
         # ── Set initial wave timing (no player effects) ──────────────────
         initial_delay_ms = (

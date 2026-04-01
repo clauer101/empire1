@@ -208,6 +208,28 @@
       font-size: 14px;
       z-index: 10;
     }
+
+    /* ── Mobile ── */
+    @media (max-width: 700px) {
+      body { padding: 10px; }
+      .container {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .tuner { padding: 14px; }
+      .controls {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      canvas { height: 160px; }
+      .copy-section {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .copy-code { font-size: 11px; }
+      h1 { font-size: 1.2rem; margin-bottom: 16px; }
+      #topbar { padding: 8px 10px; margin: -10px -10px 14px -10px; }
+    }
   </style>
 </head>
 <body>

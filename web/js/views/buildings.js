@@ -5,6 +5,7 @@
 import { eventBus } from '../events.js';
 import { formatEffect } from '../i18n.js';
 import { rest } from '../rest.js';
+import { ItemOverlay } from '../lib/item_overlay.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -14,6 +15,8 @@ let st;
 let container;
 let _unsub = [];
 let hideCompleted = true; // default: hide completed items
+/** @type {ItemOverlay} */
+let _overlay = null;
 
 function init(el, _api, _state) {
   container = el;
@@ -26,13 +29,15 @@ function init(el, _api, _state) {
       <div class="empty-state"><div class="empty-icon">▦</div><p>Loading buildings…</p></div>
     </div>
   `;
+  _overlay = new ItemOverlay(_state);
+  _overlay.mount(container);
 }
 
 async function enter() {
   _unsub.push(eventBus.on('state:summary', render));
   _unsub.push(eventBus.on('state:items', render));
   try {
-    await Promise.all([rest.getSummary(), rest.getItems()]);
+    await Promise.all([rest.getSummary(), rest.getItems(), _overlay.ensureEraMap()]);
   } catch (err) {
     container.querySelector('#buildings-content').innerHTML =
       `<div class="error-msg">${err.message}</div>`;
@@ -41,6 +46,7 @@ async function enter() {
 
 function leave() {
   _unsub.forEach(fn => fn());
+  if (_overlay) _overlay.hide();
   _unsub = [];
   hideCompleted = true; // reset to default on leave
 }
@@ -109,9 +115,8 @@ function render() {
     const buildMultiplier = ((summary.base_build_speed ?? 1) + (summary.effects?.build_speed_offset || 0)) * (1 + (summary.effects?.build_speed_modifier || 0));
     const totalSecs  = buildMultiplier > 0 ? fullEffort / buildMultiplier : fullEffort;
     const remainSecs = buildMultiplier > 0 ? remaining  / buildMultiplier : remaining;
-    const durationStr = status === 'in-progress' || (status === 'available' && remaining < fullEffort)
-      ? `${fmtSecs(remainSecs)} remaining / ${fmtSecs(totalSecs)}`
-      : fmtSecs(totalSecs);
+    const durationStr = fmtSecs(remainSecs);
+    const pct = fullEffort > 0 ? Math.max(0, Math.min(100, (1 - remaining / fullEffort) * 100)) : 0;
 
     // Format costs
     const costsStr = fmtCosts(info.costs, summary);
@@ -125,18 +130,19 @@ function render() {
             <div class="item-description" style="font-size:0.9em; color:#666; margin-top:4px;">${info.description || '—'}</div>
           </div>
           <div style="margin-left:12px;">
-            ${status === 'available' 
-              ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button>` 
+            ${status === 'available'
+              ? `<button class="btn-sm build-btn" data-iid="${iid}">Build</button>`
               : `<span class="${badgeClass}">${badgeText}</span>`}
           </div>
         </div>
       </td>
       <td class="col-details" data-label="Details">
         <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums">${durationStr}</span></div>
+        <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px"><div style="background:#4fc3f7;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div></div>
         ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${costsStr}</div>` : ''}
         ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${fmtEffects(info.effects)}</div>` : ''}
         ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u =>
-          `<span class="badge badge--unlock-${u.category} ${completed.has(u.iid) ? 'badge--completed' : ''}" style="margin-right:4px">${u.name}</span>`
+          _overlay.linkBadge(u.iid, u.name, u.category)
         ).join('')}</div>` : ''}
       </td>
     </tr>`;
@@ -164,6 +170,8 @@ function render() {
       render();
     });
   }
+
+  _overlay.bindBadgeClicks(el);
 
   el.querySelectorAll('.build-btn').forEach(btn => {
     btn.addEventListener('click', async () => {

@@ -625,11 +625,8 @@ export class HexGrid {
     if (!this.tiles.has(key)) return;
     const prevType = (this.tiles.get(key) || {}).type;
     this.tiles.set(key, { type: typeId, ...meta });
-    // Recompute path whenever a path-relevant tile changes
-    const pathRelevant = new Set(['path', 'spawnpoint', 'castle', 'empty', 'void']);
-    if (pathRelevant.has(typeId) || pathRelevant.has(prevType)) {
-      this._computePath();
-    }
+    if (typeId === 'castle') this._castlePos = { q, r };
+    // Path is always computed server-side; no client-side recompute needed.
     this._invalidateBase();
     this._dirty = true;
   }
@@ -679,14 +676,19 @@ export class HexGrid {
     this.tiles.clear();
 
     // Only create tiles that exist in the data — no 6x6 prefill
+    this._castlePos = null;
     for (const [key, tileData] of Object.entries(data.tiles)) {
-      this.tiles.set(key, typeof tileData === 'string' ? { type: tileData } : tileData);
+      const td = typeof tileData === 'string' ? { type: tileData } : tileData;
+      this.tiles.set(key, td);
+      if (td.type === 'castle') {
+        const [q, r] = key.split(',').map(Number);
+        this._castlePos = { q, r };
+      }
     }
     // Add void border tiles around real tiles
     this.addVoidNeighbors();
     this.selectedKey = null;
     this._centerGrid();
-    this._computePath();
     this._dirty = true;
   }
 
@@ -787,52 +789,28 @@ export class HexGrid {
   }
 
   /**
-   * Run A* from spawnpoint → castle using path/spawnpoint/castle tiles as walkable.
-   * Stores result in this.battlePath and triggers a base redraw.
-   * Called automatically from fromJSON() and setTile().
+  /**
+   * Set the display path received from the server.
+   * Works in both editor mode and battle mode (for critter movement).
+   * Does NOT change battleActive.
    */
-  _computePath() {
-    // Find spawnpoint and castle tiles
-    let start = null, goal = null;
-    for (const [key, data] of this.tiles) {
-      if (data.type === 'spawnpoint') { const { q, r } = parseKey(key); start = { q, r }; }
-      if (data.type === 'castle')     { const { q, r } = parseKey(key); goal  = { q, r }; this._castlePos = { q, r }; }
-    }
-    if (!start || !goal) {
-      // Clear path if endpoints are missing
-      this.battlePath = null;
-      this._partialReachable = null;
-      this._invalidateBase();
-      this._dirty = true;
+  setDisplayPath(path) {
+    // During battle the path is owned by the server — don't overwrite it
+    if (this.battleActive) {
+      console.log('[HexGrid] setDisplayPath blocked (battle active)');
       return;
     }
-
-    const walkable = new Set(['path', 'spawnpoint', 'castle']);
-    const path = hexAStar(start, goal, (q, r) => {
-      const tile = this.tiles.get(hexKey(q, r));
-      return tile ? walkable.has(tile.type) : false;
-    });
-
-    this.battlePath = path; // null if no path found
-    if (path) {
-      this._partialReachable = null;
-      this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
-    } else {
-      // No full path found — collect ALL walkable tiles so the user can
-      // see every path segment (connected or disconnected) on the map.
-      this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
-      const allWalkable = new Set();
-      for (const [key, data] of this.tiles) {
-        if (walkable.has(data.type)) allWalkable.add(key);
-      }
-      this._partialReachable = allWalkable.size > 0 ? allWalkable : null;
-    }
+    console.log('[HexGrid] setDisplayPath', path ? `${path.length} nodes` : 'null');
+    this.battlePath = path; // [{q,r}, ...] or null
+    this._partialReachable = null;
+    if (path) this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
     this._invalidateBase();
     this._dirty = true;
   }
 
-  /** Store the battle path for all critters. */
+  /** Store the battle path for all critters (also activates battle mode). */
   setBattlePath(path) {
+    console.log('[HexGrid] setBattlePath', path ? `${path.length} nodes` : 'null');
     this.battlePath = path; // [{q,r}, ...]
     this.battleActive = true;
     this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
@@ -932,8 +910,7 @@ export class HexGrid {
     this.battleCritters.clear();
     this.battleShots.clear();
     this.battleActive = false;
-    // Recompute path from map tiles so path stays visible after battle ends
-    this._computePath();
+    // Path stays visible after battle ends (last setDisplayPath value is retained)
     this._dirty = true;
   }
 
@@ -1043,7 +1020,6 @@ export class HexGrid {
       const corners = hexCorners(x, y, sz);
 
       const isHovered = key === this.hoveredKey;
-      const isSelected = key === this.selectedKey;
 
       // Build hex path
       ctx.beginPath();
@@ -1068,22 +1044,12 @@ export class HexGrid {
           ctx.globalAlpha = 1;
         }
 
-        if (isSelected) {
-          ctx.fillStyle = 'rgba(79, 195, 247, 0.40)';
-          ctx.fill();
-        } else if (isHovered) {
+        if (isHovered) {
           ctx.fillStyle = 'rgba(255,255,255,0.12)';
           ctx.fill();
         }
       } else {
-        if (isSelected) {
-          ctx.fillStyle = '#4fc3f7';
-          ctx.globalAlpha = 0.35;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = tileType.color;
-          ctx.fill();
-        } else if (isHovered) {
+        if (isHovered) {
           ctx.fillStyle = tileType.color;
           ctx.fill();
           ctx.fillStyle = 'rgba(255,255,255,0.08)';
@@ -1096,8 +1062,8 @@ export class HexGrid {
 
       ctx.restore();
 
-      ctx.strokeStyle = isSelected ? '#4fc3f7' : isHovered ? '#6a6a8a' : tileType.stroke;
-      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.strokeStyle = isHovered ? '#6a6a8a' : tileType.stroke;
+      ctx.lineWidth = 1;
       ctx.stroke();
     }
 
@@ -1215,8 +1181,12 @@ export class HexGrid {
           for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
           ctx.closePath();
           ctx.clip();
-          const spriteSize = sz * 1.5;
-          ctx.drawImage(bitmap, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
+          const spriteSize = sz * 1.7;
+          // Castle and spawnpoint: shift sprite up by 10% of its size so the
+          // visual centre sits higher in the hex tile (matches isometric look).
+          const yOffset = (data.type === 'castle' || data.type === 'spawnpoint')
+            ? spriteSize * 0.10 : 0;
+          ctx.drawImage(bitmap, x - spriteSize / 2, y - spriteSize / 2 - yOffset, spriteSize, spriteSize);
           ctx.restore();
         } else if (!bitmap) {
           this._ensureSpriteLoaded(tileType.spriteUrl);

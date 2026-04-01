@@ -70,7 +70,7 @@ class ItemDetails:
 
     # Structure
     damage: float = 0.0
-    range: int = 0
+    range: float = 0.0
     reload_time_ms: float = 0.0
     shot_speed: float = 0.0
     shot_type: str = "normal"
@@ -91,3 +91,4 @@ class ItemDetails:
     bonus: dict[str, float] = field(default_factory=dict)
     spawn_on_death: dict[str, int] = field(default_factory=dict)
     scale: float = 1.0
+    animation: str = ""  # Sprite folder path, e.g. assets/sprites/critters/slave

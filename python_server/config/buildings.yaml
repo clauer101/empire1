@@ -17,7 +17,7 @@ BASE_CAMP:
   requirements: []
   effects:
     life_offset: 0.001
-    siege_time_offset: 120.0
+    siege_offset: 120.0
 
 FIRE_PLACE:
   name: "Fire Place"
@@ -53,7 +53,7 @@ EARTH_WALL:
   costs: {gold: 300}
   requirements: [BASE_CAMP]
   effects:
-    siege_time_offset: 1800
+    siege_offset: 1800
     restore_life_after_loss: 1
 
 # ============================================================
@@ -136,7 +136,7 @@ WATCH_TOWER:
   costs: {gold: 1000}
   requirements: [COPPER_BRONZE]
   effects: 
-    siege_time_offset: 900
+    siege_offset: 900
 
 FIELD_HEALER:
   name: "Field Healer"
@@ -145,7 +145,7 @@ FIELD_HEALER:
   costs: {gold: 1200}
   requirements: [HERBOLOGY]
   effects:
-    life_offset: 0.002
+    life_offset: 0.001
     restore_life_after_loss: 2
 
 HARBOR:
@@ -156,7 +156,7 @@ HARBOR:
   requirements: [SAILING]
   effects:
     gold_modifier: 0.2
-    travel_time_offset: -1800
+    travel_offset: -1800
 
 SWORD_MAKER:
   name: "Sword Maker"
@@ -194,7 +194,8 @@ BOOT_CAMP:
   effort: 14000
   costs: {gold: 2800}
   requirements: [DRILL]
-  effects: {}
+  effects:
+    max_life_modifier: 2
 
 CHAPEL:
   name: "Chapel"
@@ -213,7 +214,7 @@ TOWN_GUARD:
   costs: {gold: 3200}
   requirements: [DRILL]
   effects: 
-    siege_time_offset: 1800
+    siege_offset: 1800
 
 LIBRARY:
   name: "Library"
@@ -240,7 +241,7 @@ FORGE:
   costs: {gold: 4400}
   requirements: [IRON]
   effects:
-    build_speed_modifier: 0.4
+    build_speed_offset: 0.2
 
 TREASURE_CHAMBER:
   name: "Treasure Chamber"
@@ -258,30 +259,7 @@ CARTOGRAPHER:
   costs: {gold: 6000}
   requirements: [CARTOGRAPHY]
   effects:
-    travel_time_offset: -3600
-
-# ============================================================
-#   MITTELALTER  (Effort 30.000 – 130.000)
-# ============================================================
-
-WORK_SHOP:
-  name: "Work Shop"
-  description: "General manufacturing hub. Requires mechanical engineering."
-  effort: 35000
-  costs: {gold: 7000}
-  requirements: [MECHANICS]
-  effects:
-    build_speed_modifier: 0.1
-
-THEATER:
-  name: "Theater"
-  description: "Cultural venue. Significantly boosts culture generation."
-  effort: 40000
-  costs: {gold: 8000}
-  requirements: [ARTS]
-  effects:
-    culture_modifier: 0.2
-    culture_offset: 0.3
+    travel_offset: -3600
 
 STABLES:
   name: "Stables"
@@ -298,6 +276,29 @@ RACE_COURSE:
   costs: {gold: 10000}
   requirements: [HORSEBACK_RIDING]
   effects: {}
+
+# ============================================================
+#   MITTELALTER  (Effort 30.000 – 130.000)
+# ============================================================
+
+WORK_SHOP:
+  name: "Work Shop"
+  description: "General manufacturing hub. Requires mechanical engineering."
+  effort: 35000
+  costs: {gold: 7000}
+  requirements: [MECHANICS]
+  effects:
+    build_speed_modifier: 0.15
+
+THEATER:
+  name: "Theater"
+  description: "Cultural venue. Significantly boosts culture generation."
+  effort: 40000
+  costs: {gold: 8000}
+  requirements: [ARTS]
+  effects:
+    culture_modifier: 0.2
+    culture_offset: 0.3
 
 TREADWHEEL_CRANE:
   name: "Treadwheel Crane"
@@ -326,7 +327,7 @@ CHURCH:
   costs: {gold: 12000}
   requirements: [RELIGION]
   effects:
-    culture_offset: 0.15
+    culture_offset: 0.2
 
 FENCING_SCHOOL:
   name: "Fencing School"
@@ -352,7 +353,7 @@ SOVEREIGN_GUARD:
   costs: {gold: 15000}
   requirements: [COMMAND_CHAIN]
   effects: 
-    siege_time_offset: 1800
+    siege_offset: 1800
 
 MONASTERY:
   name: "Monastery"
@@ -361,8 +362,8 @@ MONASTERY:
   costs: {gold: 16000}
   requirements: [RELIGION]
   effects:
-    culture_offset: 0.2
-    research_speed_modifier: 0.3
+    culture_offset: 0.1
+    research_speed_modifier: 0.2
 
 MANOR:
   name: "Manor"
@@ -380,8 +381,8 @@ BANK:
   costs: {gold: 18000}
   requirements: [ECONOMY]
   effects:
-    gold_modifier: 0.4
-    gold_offset: 0.6
+    gold_modifier: 0.2
+    gold_offset: 0.3
 
 ACADEMY:
   name: "Academy"
@@ -399,7 +400,7 @@ CITY_WALLS:
   costs: {gold: 22000}
   requirements: [ARCHITECTURE]
   effects: 
-    siege_time_offset: 3600
+    siege_offset: 3600
 
 CASTLE:
   name: "Castle"
@@ -458,7 +459,7 @@ ARCHIVES:
   costs: {gold: 32000}
   requirements: [PRINTING_PRESS]
   effects:
-    research_speed_modifier: 0.1
+    research_speed_modifier: 0.3
 
 TRIUMPHAL_ARC:
   name: "Triumphal Arc"
@@ -563,6 +564,7 @@ STOCK_MARKET:
   requirements: [ECONOMY, PRINTING_PRESS]
   effects:
     gold_modifier: 0.5
+    gold_offset: 0.1
 
 # ============================================================
 #   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
@@ -584,7 +586,7 @@ RAIL_ROADS:
   costs: {gold: 150000}
   requirements: [STEAM_ENGINE]
   effects:
-    travel_time_offset: -3600
+    travel_offset: -3600
 
 VEHICLE_WORKSHOP:
   name: "Vehicle Workshop"
@@ -610,7 +612,7 @@ ELECTRIC_FENCE:
   costs: {gold: 280000}
   requirements: [ELECTRICITY]
   effects: 
-    siege_time_offset: 3600
+    siege_offset: 3600
 
 AIRFIELD:
   name: "Airfield"
@@ -619,7 +621,7 @@ AIRFIELD:
   costs: {gold: 300000}
   requirements: [AERO_DYNAMICS]
   effects:
-    travel_time_offset: -3600
+    travel_offset: -3600
 
 HANGAR:
   name: "Hangar"
@@ -634,9 +636,9 @@ HOSPITAL:
   description: "Modern medical facility. Significantly boosts health."
   effort: 609426
   costs: {gold: 340000}
-  requirements: [CHEMISTRY]
+  requirements: [MEDICINE]
   effects:
-    life_offset: 0.005
+    life_offset: 0.002
     max_life_modifier: 10
 
 FACTORY:
@@ -656,7 +658,7 @@ EMERGENCY_ROOM:
   costs: {gold: 380000}
   requirements: [ELECTRICITY]
   effects:
-    life_offset: 0.003
+    life_offset: 0.001
     max_life_modifier: 5
     restore_life_after_loss: 5
 
@@ -679,7 +681,7 @@ CRYPTOGRAPHERS_GUILD:
   costs: {gold: 500000}
   requirements: [CRYPTOLOGY]
   effects:
-    siege_time_offset: 3600
+    siege_offset: 3600
 
 ROCKET_SILO:
   name: "Rocket Silo"
@@ -731,7 +733,7 @@ ECHELON_DEFENSE_FACILITY:
   costs: {gold: 640000}
   requirements: [STEALTH_SECRECY]
   effects: 
-    siege_time_offset: 3600
+    siege_offset: 3600
 
 FEDERAL_RESERVE:
   name: "Federal Reserve"
@@ -741,6 +743,7 @@ FEDERAL_RESERVE:
   requirements: [ECONOMY]
   effects:
     gold_modifier: 0.5
+    gold_offset: 0.3
 
 SOCIAL_SECURITY_SYSTEM:
   name: "Social Security System"
@@ -766,7 +769,7 @@ NAVIGATION_SYSTEM:
   costs: {gold: 700000}
   requirements: [ELECTRICITY]
   effects:
-    travel_time_offset: -3600
+    travel_offset: -3600
 
 DERIVATIVE_MARKET:
   name: "Derivative Market"
@@ -776,6 +779,7 @@ DERIVATIVE_MARKET:
   requirements: [ECONOMY]
   effects:
     gold_modifier: 0.5
+    gold_offset: 0.5
 
 BOMBING_AREA:
   name: "Bombing Area"
@@ -810,7 +814,7 @@ INTELLIGENCE_AGENCY:
   costs: {gold: 850000}
   requirements: [STEALTH_SECRECY]
   effects: 
-    siege_time_offset: 3600
+    siege_offset: 3600
 
 MECH_WARRIOR_LAB:
   name: "Mech Warrior Lab"
@@ -850,9 +854,9 @@ THE_WORLD_WONDER:
   costs: {gold: 8000000}
   requirements: [NUCLEAR_REACTION]
   effects:
-    culture_offset: 2.0
-    gold_offset: 2.0
-    research_speed_modifier: 2.0
+    culture_modifier: 5.0
+    gold_modifier: 5.0
+    research_speed_modifier: 5.0
 
 SPACE_CENTER:
   name: "Space Center"

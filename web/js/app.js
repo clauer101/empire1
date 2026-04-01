@@ -10,12 +10,14 @@ import { state } from './state.js';
 import { eventBus } from './events.js';
 import { Router } from './router.js';
 import { debug } from './debug.js';
+import { formatEffect } from './i18n.js';
 
 import loginView   from './views/login.js';
 import dashView    from './views/status.js';
 import buildView   from './views/buildings.js';
 import resView     from './views/research.js';
 import armyView    from './views/army.js';
+import treeView    from './views/techtree.js';
 import battleView  from './views/defense.js';
 import socialView  from './views/social.js';
 import signupView  from './views/signup.js';
@@ -37,7 +39,7 @@ eventBus.on('rest:unauthorized', () => {
 });
 
 // ── Register views ─────────────────────────────────────────
-[loginView, signupView, dashView, buildView, resView, armyView, battleView, socialView, replayView]
+[loginView, signupView, dashView, buildView, resView, armyView, treeView, battleView, socialView, replayView]
   .forEach(v => router.register(v));
 
 // ── Toast notifications for push messages ──────────────────
@@ -71,7 +73,7 @@ function _fmtRes(val, digits = 0) {
 }
 
 function _updateTitleResources(r) {
-  appEl.querySelectorAll('.title-gold').forEach(el => { el.textContent = '🪙 ' + _fmtRes(r.gold); });
+  appEl.querySelectorAll('.title-gold').forEach(el => { el.textContent = '💰 ' + _fmtRes(r.gold); });
   appEl.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(r.culture); });
   appEl.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 1); });
 }
@@ -95,10 +97,95 @@ if (navDefense) {
     // Otherwise the normal hash-change navigation handles it
   });
 }
+const ERA_ROMAN = {
+  STEINZEIT: 'I', NEOLITHIKUM: 'II', BRONZEZEIT: 'III', EISENZEIT: 'IV',
+  MITTELALTER: 'V', RENAISSANCE: 'VI', INDUSTRIALISIERUNG: 'VII',
+  MODERNE: 'VIII', ZUKUNFT: 'IX',
+};
+
+const ERA_LABEL_EN = {
+  STEINZEIT: 'Stone Age', NEOLITHIKUM: 'Neolithic', BRONZEZEIT: 'Bronze Age',
+  EISENZEIT: 'Iron Age', MITTELALTER: 'Middle Ages', RENAISSANCE: 'Renaissance',
+  INDUSTRIALISIERUNG: 'Industrial Age', MODERNE: 'Modern Age', ZUKUNFT: 'Future',
+};
+
+const ERA_SPRITE_KEY = {
+  STEINZEIT: 'stone', NEOLITHIKUM: 'neolithicum', BRONZEZEIT: 'bronze',
+  EISENZEIT: 'iron', MITTELALTER: 'middle_ages', RENAISSANCE: 'renaissance',
+  INDUSTRIALISIERUNG: 'industrial', MODERNE: 'modern', ZUKUNFT: 'future',
+};
+
+let _eraEffects = {}; // loaded from /api/era-map
+
+function _fmtOffset(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
+// ── Era overlay ─────────────────────────────────────────────
+let _eraOverlay = null;
+let _currentEra = null;
+
+function _buildEraOverlay() {
+  const el = document.createElement('div');
+  el.id = 'era-overlay';
+  el.innerHTML = `<div class="era-panel">
+    <button class="era-close">✕</button>
+    <div class="era-numeral"></div>
+    <div class="era-name"></div>
+    <img class="era-base-img" src="" alt="">
+    <div class="era-effects"></div>
+  </div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', (e) => { if (e.target === el) _hideEraOverlay(); });
+  el.querySelector('.era-close').addEventListener('click', _hideEraOverlay);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && _eraOverlay?.classList.contains('visible')) _hideEraOverlay();
+  });
+  return el;
+}
+
+async function _showEraOverlay() {
+  if (!_currentEra) return;
+  if (!_eraOverlay) _eraOverlay = _buildEraOverlay();
+  // Fetch era effects from server if not yet loaded
+  if (!Object.keys(_eraEffects).length) {
+    try {
+      const eraMap = await rest.getEraMap();
+      _eraEffects = eraMap.era_effects || {};
+    } catch (_) { /* use empty */ }
+  }
+  const era = _currentEra;
+  const sprite = ERA_SPRITE_KEY[era] || 'stone';
+  const effects = _eraEffects[era] || {};
+  _eraOverlay.querySelector('.era-numeral').textContent = ERA_ROMAN[era] || '';
+  _eraOverlay.querySelector('.era-name').textContent = ERA_LABEL_EN[era] || era;
+  _eraOverlay.querySelector('.era-base-img').src = `/assets/sprites/bases/base_${sprite}.webp`;
+  const effectRows = Object.entries(effects).map(([k, v]) =>
+    `<div class="era-effect-row">${formatEffect(k, v)}</div>`
+  ).join('');
+  _eraOverlay.querySelector('.era-effects').innerHTML = effectRows;
+  _eraOverlay.classList.add('visible');
+}
+
+function _hideEraOverlay() {
+  _eraOverlay?.classList.remove('visible');
+}
+
+const navBrand = document.getElementById('nav-brand');
+if (navBrand) navBrand.addEventListener('click', _showEraOverlay);
+
 eventBus.on('state:summary', (data) => {
   if (data?.resources) {
     _lastResources = data.resources;
     _updateTitleResources(data.resources);
+  }
+  if (navBrand && data?.current_era) {
+    _currentEra = data.current_era;
+    navBrand.textContent = ERA_ROMAN[data.current_era] || data.current_era;
   }
   const incoming = data?.attacks_incoming || [];
   const hasIncoming = incoming.length > 0;

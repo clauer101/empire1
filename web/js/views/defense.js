@@ -39,8 +39,7 @@ let _pendingAttackId = null;
 /** @type {number|null} defender_uid when spectating an outgoing attack */
 let _spectateDefenderUid = null;
 
-// ── Palette / Map Editor State ──────────────────────────────
-let _activeBrush = null;
+// ── Map Editor State ────────────────────────────────────────
 let _isDirtyPath = false;
 let _autoSaveTimer = null;
 
@@ -73,7 +72,7 @@ function _setBattleTitle(label) {
 
   const goldEl = document.createElement('span');
   goldEl.className = 'title-gold';
-  goldEl.textContent = '🪙 ' + _fmtTitleResource(resources.gold);
+  goldEl.textContent = '💰 ' + _fmtTitleResource(resources.gold);
 
   const cultureEl = document.createElement('span');
   cultureEl.className = 'title-culture';
@@ -365,6 +364,34 @@ const STRUCTURE_COLORS = [
   { color: '#4a5a4a', stroke: '#6a7a6a' },
 ];
 
+// ── Era-dependent castle sprite ─────────────────────────────
+const _ERA_CASTLE_SPRITES = {
+  STEINZEIT:          '/assets/sprites/bases/base_stone.webp',
+  NEOLITHIKUM:        '/assets/sprites/bases/base_neolithicum.webp',
+  BRONZEZEIT:         '/assets/sprites/bases/base_bronze.webp',
+  EISENZEIT:          '/assets/sprites/bases/base_iron.webp',
+  MITTELALTER:        '/assets/sprites/bases/base_middle_ages.webp',
+  RENAISSANCE:        '/assets/sprites/bases/base_renaissance.webp',
+  INDUSTRIALISIERUNG: '/assets/sprites/bases/base_industrial.webp',
+  MODERNE:            '/assets/sprites/bases/base_modern.webp',
+  ZUKUNFT:            '/assets/sprites/bases/base_future.webp',
+};
+
+function _updateCastleSprite(eraKey) {
+  const url = _ERA_CASTLE_SPRITES[eraKey] || '/assets/sprites/bases/base.webp';
+  registerTileType('castle', {
+    label: 'Castle (Target)',
+    color: '#4a4a1a',
+    stroke: '#7a7a30',
+    icon: null,
+    spriteUrl: url,
+  });
+  if (grid) {
+    grid._invalidateBase();
+    grid._dirty = true;
+  }
+}
+
 // ── View lifecycle ──────────────────────────────────────────
 
 function init(el, _api, _state) {
@@ -415,16 +442,12 @@ function init(el, _api, _state) {
         </div>
       </div>
 
-      <!-- Battle Body (Palette + Canvas + Props Panel) -->
+      <!-- Battle Body (Canvas + Props Panel) -->
       <div id="map-error-banner" style="display:none;padding:6px 12px;margin:0;background:#8a3a3a;color:#ffcccc;border-left:4px solid #c85a5a;border-radius:2px;font-size:0.85rem;flex-shrink:0;"></div>
       <div class="battle-view__body">
-        <!-- Tile Palette (left) -->
-        <aside class="battle-palette" id="tile-palette"></aside>
-
         <!-- Canvas Container -->
         <div class="battle-canvas-wrap" id="canvas-wrap">
           <button id="map-save" style="display:none;position:absolute;top:8px;right:8px;z-index:10;font-size:11px;padding:3px 10px;" title="Save path layout">💾 Save</button>
-          <button id="map-info-btn" style="display:none;position:absolute;top:8px;left:8px;z-index:10;width:28px;height:28px;background:rgba(0,0,0,0.65);border:1px solid var(--border);color:var(--text);border-radius:50%;cursor:pointer;font-size:14px;line-height:1;" title="Tower info">ℹ</button>
           <canvas id="battle-canvas"></canvas>
         </div>
 
@@ -445,6 +468,17 @@ function init(el, _api, _state) {
           <h3 id="summary-title">Battle Complete</h3>
           <div id="summary-content"></div>
           <button id="summary-close" class="btn-primary">Close</button>
+        </div>
+      </div>
+
+      <!-- Tile Placement Menu -->
+      <div class="tile-place-menu" id="tile-place-menu" style="display:none;">
+        <div class="tile-place-menu__content">
+          <div class="tile-place-menu__header">
+            <span>Tile belegen</span>
+            <button class="tile-overlay__close" id="tile-place-close">✕</button>
+          </div>
+          <div class="tpm-items" id="tpm-items"></div>
         </div>
       </div>
 
@@ -507,6 +541,26 @@ function init(el, _api, _state) {
   // Bind Save button (path editor)
   container.querySelector('#map-save').addEventListener('click', _saveMap);
 
+  // Bind placement menu close
+  const placeMenu = container.querySelector('#tile-place-menu');
+  container.querySelector('#tile-place-close').addEventListener('click', () => {
+    placeMenu.style.display = 'none';
+  });
+  placeMenu.addEventListener('click', (e) => {
+    if (e.target === placeMenu) placeMenu.style.display = 'none';
+  });
+
+  // Close placement menu & tower overlay on Escape
+  const _onKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      placeMenu.style.display = 'none';
+      const overlay = container.querySelector('#tower-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+  };
+  document.addEventListener('keydown', _onKeyDown);
+  _unsub.push(() => document.removeEventListener('keydown', _onKeyDown));
+
   // Bind tower overlay
   _bindTowerOverlay();
 }
@@ -518,17 +572,6 @@ function _bindTowerOverlay() {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       overlay.style.display = 'none';
-    });
-  }
-
-  // Info button (mobile): show details for active brush
-  const infoBtn = container.querySelector('#map-info-btn');
-  if (infoBtn) {
-    infoBtn.addEventListener('click', () => {
-      if (_activeBrush) {
-        _showTypeDetails(_activeBrush);
-        overlay.style.display = 'flex';
-      }
     });
   }
 
@@ -591,9 +634,11 @@ function _showTileDetails(q, r, tile) {
           if (response && response.tiles) {
             grid.fromJSON({ tiles: response.tiles });
             grid.addVoidNeighbors();
+            const path = response.path ? response.path.map(([q, r]) => ({ q, r })) : null;
+            grid.setDisplayPath(path);
             grid._dirty = true;
           }
-          if (overlay && window.innerWidth <= 1100) overlay.style.display = 'none';
+          if (overlay) overlay.style.display = 'none';
         } else {
           msgEl.textContent = '\u2717 ' + (resp.error || 'Failed to buy tile');
           msgEl.style.color = 'var(--danger)';
@@ -629,23 +674,40 @@ function _showTileDetails(q, r, tile) {
         ).join('')
       : `<span style="font-size:11px;color:var(--muted,#888)">${_selectLabels[_tileSelect]}</span>`;
     const _spriteThumb = t.spriteUrl
-      ? '<div style="text-align:center;margin:6px 0 4px"><span style="display:inline-block;width:56px;height:56px;border-radius:6px;background:' + t.color + ';border:1px solid ' + t.stroke + ';background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;"></span></div>'
+      ? '<div class="props-sprite-thumb" style="text-align:center;margin:6px 0 4px"><span style="display:inline-block;width:56px;height:56px;border-radius:6px;background:' + t.color + ';border:1px solid ' + t.stroke + ';background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;"></span></div>'
       : '';
+    let _efxHtml = '';
+    if (s.effects && Object.keys(s.effects).length > 0) {
+      const _efxParts = [];
+      const ef = s.effects;
+      if (ef.burn_duration || ef.burn_dps) {
+        _efxParts.push('<span>🔥 ' + ((ef.burn_duration || 0) / 1000).toFixed(1) + 's @ ' + (ef.burn_dps || 0) + ' dps</span>');
+      }
+      if (ef.slow_duration || ef.slow_ratio != null) {
+        _efxParts.push('<span>❄ ' + ((ef.slow_duration || 0) / 1000).toFixed(1) + 's @ ' + Math.round((ef.slow_ratio || 0) * 100) + '% speed</span>');
+      }
+      if (ef.splash_radius) {
+        _efxParts.push('<span>💥 ' + ef.splash_radius + ' hex</span>');
+      }
+      Object.entries(ef).forEach(([k, v]) => {
+        if (!['burn_duration','burn_dps','slow_duration','slow_ratio','splash_radius'].includes(k)) {
+          _efxParts.push('<span>' + k + ': ' + v + '</span>');
+        }
+      });
+      _efxHtml = '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' + _efxParts.join('') + '</span></div>';
+    }
     towerInfo =
       _spriteThumb +
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Tower Stats</div>' +
       (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
       '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
-      '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
-      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
+      '<div class="props-row"><span class="label">Range</span><span class="value">🎯 ' + (s.range || 0) + ' hex</span></div>' +
+      '<div class="props-row"><span class="label">Reload</span><span class="value">' + ((s.reload_time_ms || 0) / 1000).toFixed(1) + ' s</span></div>' +
+      _efxHtml +
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Target Select</div>' +
       '<div id="select-btns" style="display:flex;gap:4px;margin-top:4px;">' + _selectBtns + '</div>';
-    if (s.effects && Object.keys(s.effects).length > 0) {
-      towerInfo += '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' +
-        Object.entries(s.effects).map(([k, v]) => '<span>' + k + ': ' + v + '</span>').join('') + '</span></div>';
-    }
   } else if (!['path', 'castle', 'spawnpoint', 'empty'].includes(tile.type)) {
     // Unknown structure tile — don't show details
     return;
@@ -658,7 +720,8 @@ function _showTileDetails(q, r, tile) {
         t.label +
       '</span></div>' +
       towerInfo +
-      (_isDefender
+      (_isDefender && tile.type !== 'path'
+        && !(_battleState.phase === 'in_battle' && (tile.type === 'castle' || tile.type === 'spawnpoint'))
         ? '<div class="props-divider"></div>' +
           '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' + (t.serverData ? ' (no refund)' : '') + '</button>'
         : '') +
@@ -672,11 +735,8 @@ function _showTileDetails(q, r, tile) {
 
   const _doEmpty = () => {
     grid.setTile(q, r, 'empty');
-    _markPathDirty();
-    _autoSave();
-    // Close overlay on mobile
-    if (overlay && window.innerWidth <= 1100) overlay.style.display = 'none';
-    // Clear props panel on desktop
+    _checkPathAndSave();
+    if (overlay) overlay.style.display = 'none';
     if (propsContent) propsContent.innerHTML = '';
   };
 
@@ -713,6 +773,9 @@ async function enter() {
   _debugLogs = [];  // Clear previous debug logs
   _updateDebugPanel();  // Initialize debug panel visibility
   _initCanvas();
+
+  // Apply era-dependent castle sprite for own defense
+  _updateCastleSprite(st.summary?.current_era || 'STEINZEIT');
 
   // Reset battle state so stale data from a previous session is never shown
   _battleState = {
@@ -764,9 +827,12 @@ async function enter() {
   }
 
   // Subscribe to items for structure tile types
-  _unsub.push(eventBus.on('state:items', () => { _registerStructureTileTypes(); _buildPalette(); }));
-  // Rebuild palette when gold changes so unaffordable towers gray out immediately
-  _unsub.push(eventBus.on('state:summary', () => { _buildPalette(); if (!_wsConnected) _connectWsIfNeeded(); }));
+  _unsub.push(eventBus.on('state:items', () => { _registerStructureTileTypes(); }));
+  // Reconnect WS when summary changes (e.g. attack becomes active)
+  _unsub.push(eventBus.on('state:summary', (data) => {
+    if (!_wsConnected) _connectWsIfNeeded();
+    if (_spectateDefenderUid == null && data?.current_era) _updateCastleSprite(data.current_era);
+  }));
 
   // Load items to get structure tiles (via REST)
   try {
@@ -776,21 +842,16 @@ async function enter() {
   }
 
   _registerStructureTileTypes();
-  _buildPalette();
 
   if (_spectateDefenderUid != null) {
-    // Spectating: hide palette and props panel, give canvas full width, update title
-    const palette = container.querySelector('#tile-palette');
-    if (palette) palette.style.display = 'none';
+    // Spectating: hide props panel, give canvas full width, update title
     const props = container.querySelector('#tower-props');
     if (props) props.style.display = 'none';
     const body = container.querySelector('.battle-view__body');
     if (body) body.style.gridTemplateColumns = '1fr';
     _setBattleTitle('👁 Spectating...');
   } else {
-    // Own defense: ensure palette and props are visible
-    const palette = container.querySelector('#tile-palette');
-    if (palette) palette.style.display = '';
+    // Own defense: ensure props panel visible
     const props = container.querySelector('#tower-props');
     if (props) props.style.display = '';
     const body = container.querySelector('.battle-view__body');
@@ -804,6 +865,22 @@ async function enter() {
         grid.addVoidNeighbors();
         grid._centerGrid();
         console.log('[Battle] Map loaded from server');
+        // Apply the server-computed path (null if no valid path exists)
+        const path = response.path ? response.path.map(([q, r]) => ({ q, r })) : null;
+        grid.setDisplayPath(path);
+        if (!path) {
+          let hasSp = false, hasCa = false;
+          for (const [, d] of grid.tiles) {
+            if (d.type === 'spawnpoint') hasSp = true;
+            if (d.type === 'castle') hasCa = true;
+          }
+          if (hasSp && hasCa) {
+            _showPersistentError('⚠️ Kein Pfad von Spawnpoint zu Castle — bitte Hindernisse entfernen.');
+            _markPathDirty();
+          }
+        } else {
+          _clearMapError();
+        }
       }
     } catch (err) {
       console.warn('[Battle] could not load map from server:', err.message);
@@ -829,9 +906,10 @@ function leave() {
   _unsub = [];
   _pendingAttackId = null;
   _spectateDefenderUid = null;
-  _activeBrush = null;
   _isDirtyPath = false;
   clearTimeout(_autoSaveTimer);
+  const menu = container?.querySelector('#tile-place-menu');
+  if (menu) menu.style.display = 'none';
   if (grid) {
     grid.destroy();
     grid = null;
@@ -857,6 +935,8 @@ async function _loadMapBackground() {
 }
 
 let _mapErrorTimeout = null;
+
+/** Show a transient error banner that auto-hides after 2.5 s. */
 function _showMapError(msg) {
   const wrap = container.querySelector('#canvas-wrap');
   if (!wrap) return;
@@ -872,6 +952,32 @@ function _showMapError(msg) {
   _mapErrorTimeout = setTimeout(() => { el.style.opacity = '0'; }, 2500);
 }
 
+/** Show a persistent error banner that stays until _clearMapError() is called. */
+function _showPersistentError(msg) {
+  clearTimeout(_mapErrorTimeout);
+  _mapErrorTimeout = null;
+  const wrap = container.querySelector('#canvas-wrap');
+  if (!wrap) return;
+  let el = wrap.querySelector('.map-error-msg');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'map-error-msg';
+    wrap.insertBefore(el, wrap.firstChild);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+}
+
+/** Hide the persistent error banner. */
+function _clearMapError() {
+  clearTimeout(_mapErrorTimeout);
+  _mapErrorTimeout = null;
+  const wrap = container.querySelector('#canvas-wrap');
+  if (!wrap) return;
+  const el = wrap.querySelector('.map-error-msg');
+  if (el) el.style.opacity = '0';
+}
+
 function _initCanvas() {
   const wrap = container.querySelector('#canvas-wrap');
   const canvas = container.querySelector('#battle-canvas');
@@ -882,66 +988,45 @@ function _initCanvas() {
     rows: 6,
     hexSize: 28,
     onTileClick: (q, r, tile) => {
-      if (_activeBrush && _activeBrush !== 'void') {
-        const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
-        // Always read fresh state from the grid — never rely on the stale `tile` parameter
-        const existingType = grid.getTile(q, r)?.type;
-        if (!existingType || existingType === 'void') return;  // no tile or void — silently ignore
-        if (existingType !== 'empty') {
-          // Only show an error when an existing tower would be replaced
-          const NON_STRUCTURE = new Set(['path', 'castle', 'spawnpoint', 'blocked']);
-          if (!NON_STRUCTURE.has(existingType)) {
-            _showMapError('Tower already here. Use 🗑 Empty Tile to remove it first.');
-          }
-          return;
-        }
-        const brushIsPath = PATH_TYPES.includes(_activeBrush);
-        const replacesPath = PATH_TYPES.includes(existingType);
-        if (_activeBrush === 'spawnpoint') _clearExistingSpawnpoint(q, r);
-        grid.setTile(q, r, _activeBrush);
-        if (brushIsPath || replacesPath) { _markPathDirty(); }
-        else {
-          // Optimistically deduct cost so palette grays out immediately
-          const _cost = getTileType(_activeBrush)?.serverData?.costs?.gold || 0;
-          if (_cost && st.summary?.resources) {
-            st.summary.resources.gold = Math.max(0, (st.summary.resources.gold || 0) - _cost);
-          }
-          _buildPalette();
-          _autoSave();
+      const tileData = tile || grid.getTile(q, r);
+      const isOnPath = grid.battlePath?.some(p => p.q === q && p.r === r);
+      const inBattle = _battleState.phase === 'in_battle';
+
+      // Path tiles
+      if (isOnPath) {
+        if (inBattle) {
+          _showTileDetails(q, r, { type: 'path' });
+        } else if (tileData?.type === 'castle' || tileData?.type === 'spawnpoint') {
+          _showTileDetails(q, r, tileData);
+        } else if (tileData?.type === 'empty' && _spectateDefenderUid == null) {
+          _openPlacementMenu(q, r);
         }
         return;
       }
-      _showTileDetails(q, r, tile || grid.getTile(q, r));
+
+      // void tile → always show details (buy-tile option)
+      if (!tileData || tileData.type === 'void') {
+        _showTileDetails(q, r, tileData);
+        return;
+      }
+
+      // castle / spawnpoint → show details only outside battle
+      if (tileData.type === 'castle' || tileData.type === 'spawnpoint') {
+        if (!inBattle) _showTileDetails(q, r, tileData);
+        return;
+      }
+
+      // empty tile → open placement menu (tower selection)
+      if (tileData.type === 'empty') {
+        if (_spectateDefenderUid == null) _openPlacementMenu(q, r);
+        return;
+      }
+
+      // occupied tile (tower) → always show details
+      _showTileDetails(q, r, tileData);
     },
     onTileHover: null,
-    onTileDrop: (q, r, tileTypeId) => {
-      if (tileTypeId !== 'void') {
-        const PATH_TYPES = ['castle', 'spawnpoint', 'path'];
-        const existingType = grid.getTile(q, r)?.type;
-        if (!existingType || existingType === 'void') return;  // cannot build on void tiles
-        if (existingType !== 'empty') {
-          const NON_STRUCTURE = new Set(['path', 'castle', 'spawnpoint', 'blocked']);
-          if (!NON_STRUCTURE.has(existingType)) {
-            _showMapError('Tower already here. Use 🗑 Empty Tile to remove it first.');
-          }
-          return;
-        }
-        const brushIsPath = PATH_TYPES.includes(tileTypeId);
-        const replacesPath = PATH_TYPES.includes(existingType);
-        if (tileTypeId === 'spawnpoint') _clearExistingSpawnpoint(q, r);
-        grid.setTile(q, r, tileTypeId);
-        if (brushIsPath || replacesPath) { _markPathDirty(); }
-        else {
-          // Optimistically deduct cost so palette grays out immediately
-          const _cost = getTileType(tileTypeId)?.serverData?.costs?.gold || 0;
-          if (_cost && st.summary?.resources) {
-            st.summary.resources.gold = Math.max(0, (st.summary.resources.gold || 0) - _cost);
-          }
-          _buildPalette();
-          _autoSave();
-        }
-      }
-    },
+    onTileDrop: null,
   });
 
   // Set explicit dimensions for full canvas area
@@ -981,17 +1066,19 @@ function _registerStructureTileTypes() {
     grid._invalidateBase();
     grid._dirty = true;
   }
-  // Rebuild palette whenever items load/update
-  _buildPalette();
 }
 
-// ── Palette ─────────────────────────────────────────────────
+// \u2500\u2500 Tile Placement Menu \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
-function _updatePalettePathVisibility() {
-  const pathSec = container.querySelector('#palette-path-section');
-  if (!pathSec) return;
-  const inBattle = _battleState.phase === 'in_battle';
-  pathSec.style.display = inBattle ? 'none' : '';
+function _clearExistingCastle(excludeQ, excludeR) {
+  if (!grid) return;
+  for (const [key, data] of grid.tiles) {
+    if (data.type === 'castle') {
+      const [sq, sr] = key.split(',').map(Number);
+      if (sq === excludeQ && sr === excludeR) continue;
+      grid.setTile(sq, sr, 'empty');
+    }
+  }
 }
 
 function _clearExistingSpawnpoint(excludeQ, excludeR) {
@@ -1005,134 +1092,174 @@ function _clearExistingSpawnpoint(excludeQ, excludeR) {
   }
 }
 
-function _buildPalette() {
-  const palette = container.querySelector('#tile-palette');
-  if (!palette) return;
+/**
+ * Open the tile-placement menu at the given (empty) grid coordinate.
+ * Shows castle/spawnpoint always outside battle; always lists unlocked towers.
+ */
+function _openPlacementMenu(q, r) {
+  if (grid.getTile(q, r)?.type !== 'empty') return;
 
-  palette.innerHTML = '';
+  const menu = container.querySelector('#tile-place-menu');
+  const itemsEl = container.querySelector('#tpm-items');
+  if (!menu || !itemsEl) return;
 
-  // ── Path Section ───────────────────────────────────────
-  const pathSection = document.createElement('div');
-  pathSection.id = 'palette-path-section';
-  pathSection.innerHTML = '<div class="palette-cat-label">Path</div>';
-  for (const typeId of ['castle', 'spawnpoint', 'path']) {
-    pathSection.appendChild(_createPaletteItem(typeId));
+  itemsEl.innerHTML = '';
+
+  const inBattle = _battleState.phase === 'in_battle';
+
+  // Detect already-placed unique tiles
+  let hasCastle = false;
+  let hasSpawnpoint = false;
+  for (const [, tileData] of grid.tiles) {
+    if (tileData.type === 'castle') hasCastle = true;
+    if (tileData.type === 'spawnpoint') hasSpawnpoint = true;
   }
-  palette.appendChild(pathSection);
 
-  // ── Towers Section ─────────────────────────────────────
-  const towerSection = document.createElement('div');
-  towerSection.innerHTML = '<div class="palette-cat-label">Towers</div>';
+  // ── Setup tiles (not during active battle) — always show castle/spawnpoint; moving is allowed
+  if (!inBattle) {
+    const label = document.createElement('div');
+    label.className = 'tpm-section-label';
+    label.textContent = 'Wegpunkte';
+    itemsEl.appendChild(label);
+
+    const setupRow = document.createElement('div');
+    setupRow.className = 'tpm-row';
+    for (const typeId of ['castle', 'spawnpoint']) {
+      const item = _createTpmItem(typeId, q, r, menu);
+      if (typeId === 'castle' && hasCastle) {
+        item.title += ' (verschieben)';
+      } else if (typeId === 'spawnpoint' && hasSpawnpoint) {
+        item.title += ' (verschieben)';
+      }
+      setupRow.appendChild(item);
+    }
+    itemsEl.appendChild(setupRow);
+  }
+
+  // ── Towers ─────────────────────────────────────────────
   const structureIds = Object.keys((st.items || {}).structures || {}).reverse();
   if (structureIds.length > 0) {
+    const towerLabel = document.createElement('div');
+    towerLabel.className = 'tpm-section-label';
+    towerLabel.textContent = 'T\xfcrme';
+    itemsEl.appendChild(towerLabel);
+
+    const towerGrid = document.createElement('div');
+    towerGrid.className = 'tpm-grid';
     for (const iid of structureIds) {
-      towerSection.appendChild(_createPaletteItem(iid));
+      towerGrid.appendChild(_createTpmItem(iid, q, r, menu));
     }
-  } else {
-    const hint = document.createElement('div');
-    hint.className = 'palette-hint';
-    hint.textContent = 'No towers unlocked';
-    towerSection.appendChild(hint);
-  }
-  palette.appendChild(towerSection);
-
-  // Restore active brush highlight after rebuild
-  if (_activeBrush) {
-    palette.querySelectorAll('.palette-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.tileType === _activeBrush);
-    });
+    itemsEl.appendChild(towerGrid);
   }
 
-  _updatePalettePathVisibility();
+  menu.style.display = 'flex';
 }
 
-function _showTypeDetails(typeId) {
+function _createTpmItem(typeId, q, r, menu) {
   const t = getTileType(typeId);
-  const overlayBody = container.querySelector('#tower-overlay-body');
-  const overlay     = container.querySelector('#tower-overlay');
-  const propsContent = container.querySelector('#tower-props-content');
-
   const s = t.serverData;
-  const _currentGold = st.summary?.resources?.gold || 0;
-  const _spriteThumb = t.spriteUrl
-    ? '<span style="display:inline-block;width:28px;height:28px;background:' + t.color + ';border:1px solid ' + t.stroke + ';border-radius:4px;background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;vertical-align:middle;margin-right:6px;"></span>'
-    : '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + ';"></span>';
-  let html = '<div class="props-tile">' +
-    '<div class="props-row"><span class="label">Type</span><span class="value" style="display:flex;align-items:center;">' +
-      _spriteThumb + t.label +
-    '</span></div>';
+  const currentGold = st.summary?.resources?.gold || 0;
+  const goldCost = s?.costs?.gold;
+  const canAfford = !goldCost || currentGold >= goldCost;
 
-  if (s) {
-    const _goldCost = s.costs?.gold;
-    const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
-    html += '<div class="props-divider"></div>' +
-      '<div class="props-section-label">Tower Stats</div>' +
-      (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
-      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
-      '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
-      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>';
-    if (s.effects && Object.keys(s.effects).length > 0) {
-      html += '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' +
-        Object.entries(s.effects).map(([k, v]) => '<span>' + k + ': ' + v + '</span>').join('') + '</span></div>';
+  const card = document.createElement('div');
+  card.className = 'tpm-item' + (canAfford ? '' : ' tpm-item--disabled');
+  card.title = t.label + (goldCost ? ' (\ud83d\udcb0 ' + Math.round(goldCost).toLocaleString() + ')' : '');
+
+  // Sprite
+  const sprite = document.createElement('div');
+  sprite.className = 'tpm-sprite';
+  sprite.style.backgroundColor = t.color;
+  sprite.style.border = '2px solid ' + t.stroke;
+  if (t.spriteUrl) {
+    sprite.style.backgroundImage = 'url(' + t.spriteUrl + ')';
+    if (typeId === 'path') sprite.style.backgroundSize = '50%';
+  }
+  card.appendChild(sprite);
+
+  // Name
+  const name = document.createElement('div');
+  name.className = 'tpm-name';
+  name.textContent = t.label;
+  card.appendChild(name);
+
+  // Cost
+  if (goldCost) {
+    const cost = document.createElement('div');
+    cost.className = 'tpm-cost' + (canAfford ? '' : ' unaffordable');
+    cost.textContent = '\ud83d\udcb0 ' + Math.round(goldCost).toLocaleString();
+    card.appendChild(cost);
+  }
+
+  // Stats (towers only)
+  if (s && (s.damage || s.range || s.reload_time_ms)) {
+    const stats = document.createElement('div');
+    stats.className = 'tpm-stats';
+    const statItems = [];
+    if (s.damage) statItems.push({ text: '\u2694\ufe0f\u202f' + s.damage, tip: 'Damage: ' + s.damage });
+    if (s.range) statItems.push({ text: '\ud83c\udfaf\u202f' + s.range, tip: 'Range: ' + s.range });
+    if (s.reload_time_ms) statItems.push({ text: '\u23f1\ufe0f\u202f' + (s.reload_time_ms / 1000).toFixed(1) + 's', tip: 'Reload Time: ' + (s.reload_time_ms / 1000).toFixed(1) + 's' });
+    statItems.forEach((item) => {
+      const span = document.createElement('span');
+      span.title = item.tip;
+      span.textContent = item.text;
+      stats.appendChild(span);
+    });
+    card.appendChild(stats);
+  }
+
+  // Special effects badge
+  if (s?.effects && Object.keys(s.effects).length > 0) {
+    const efx = document.createElement('div');
+    efx.className = 'tpm-effects';
+    const ef = s.effects;
+    const efxItems = [];
+    if (ef.burn_duration || ef.burn_dps) {
+      const txt = '🔥\u202f' + ((ef.burn_duration || 0) / 1000).toFixed(1) + 's @ ' + (ef.burn_dps || 0) + '\u202fdps';
+      efxItems.push({ text: txt, tip: 'Burn Damage: ' + (ef.burn_dps || 0) + ' dps for ' + ((ef.burn_duration || 0) / 1000).toFixed(1) + 's' });
     }
+    if (ef.slow_duration || ef.slow_ratio != null) {
+      const txt = '❄\u202f' + ((ef.slow_duration || 0) / 1000).toFixed(1) + 's @ ' + Math.round((ef.slow_ratio || 0) * 100) + '%';
+      efxItems.push({ text: txt, tip: 'Slow Effect: ' + Math.round((ef.slow_ratio || 0) * 100) + '% speed for ' + ((ef.slow_duration || 0) / 1000).toFixed(1) + 's' });
+    }
+    if (ef.splash_radius) {
+      efxItems.push({ text: '💥\u202f' + ef.splash_radius, tip: 'Splash Radius: ' + ef.splash_radius + ' tiles' });
+    }
+    efxItems.forEach((item) => {
+      const span = document.createElement('span');
+      span.title = item.tip;
+      span.textContent = item.text;
+      efx.appendChild(span);
+    });
+    card.appendChild(efx);
   }
-  html += '</div>';
 
-  if (propsContent) propsContent.innerHTML = html;
-  if (overlayBody) overlayBody.innerHTML = html;
-}
-
-function _createPaletteItem(typeId) {
-  const t = getTileType(typeId);
-  const item = document.createElement('div');
-  item.className = 'palette-item palette-item--compact';
-  item.dataset.tileType = typeId;
-  item.draggable = true;
-  item.title = t.label;
-  const _palGoldCost = t.serverData?.costs?.gold;
-  const _palCurrentGold = st.summary?.resources?.gold || 0;
-  const _canAfford = !_palGoldCost || _palCurrentGold >= _palGoldCost;
-  if (!_canAfford) {
-    item.classList.add('palette-item--disabled');
-    item.draggable = false;
-    item.title = t.label + ' (Not enough gold: need ' + Math.round(_palGoldCost).toLocaleString() + ')';
-  }
-  const _palCostHtml = _palGoldCost
-    ? '<span class="palette-cost' + (_canAfford ? '' : ' unaffordable') + '">💰' + Math.round(_palGoldCost).toLocaleString() + '</span>'
-    : '';
-  const _spriteStyle = t.spriteUrl
-    ? 'background:' + t.color + ';border-color:' + t.stroke + ';background-image:url(' + t.spriteUrl + ');background-size:contain;background-repeat:no-repeat;background-position:center;'
-    : 'background:' + t.color + ';border-color:' + t.stroke + ';';
-  item.innerHTML =
-    '<span class="palette-swatch" style="' + _spriteStyle + '"></span>' +
-    '<span class="palette-label">' + t.label + '</span>' +
-    _palCostHtml;
-  item.addEventListener('click', () => {
-    if (item.classList.contains('palette-item--disabled')) return;
-    _setActiveBrush(typeId);
-    if (window.innerWidth > 1100) _showTypeDetails(typeId);
-  });
-  item.addEventListener('dragstart', e => {
-    e.dataTransfer.setData('text/tile-type', typeId);
-    e.dataTransfer.effectAllowed = 'copy';
-    item.classList.add('dragging');
-  });
-  item.addEventListener('dragend', () => item.classList.remove('dragging'));
-  return item;
-}
-
-function _setActiveBrush(typeId) {
-  if (_activeBrush === typeId) {
-    _activeBrush = null;
-    container.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
-  } else {
-    _activeBrush = typeId;
-    container.querySelectorAll('.palette-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.tileType === typeId);
+  if (canAfford) {
+    card.addEventListener('click', () => {
+      _placeTile(q, r, typeId);
+      menu.style.display = 'none';
     });
   }
-  const infoBtn = container.querySelector('#map-info-btn');
-  if (infoBtn) infoBtn.style.display = (_activeBrush && window.innerWidth <= 1100) ? '' : 'none';
+
+  return card;
+}
+
+function _placeTile(q, r, typeId) {
+  const existingType = grid.getTile(q, r)?.type;
+  if (!existingType || existingType === 'void') return;
+  if (existingType !== 'empty') {
+    _showMapError('Tile bereits belegt.');
+    return;
+  }
+  if (typeId === 'spawnpoint') _clearExistingSpawnpoint(q, r);
+  if (typeId === 'castle') _clearExistingCastle(q, r);
+  grid.setTile(q, r, typeId);
+  // Deduct tower gold cost immediately (no cost for castle/spawnpoint)
+  const cost = getTileType(typeId)?.serverData?.costs?.gold || 0;
+  if (cost && st.summary?.resources) {
+    st.summary.resources.gold = Math.max(0, (st.summary.resources.gold || 0) - cost);
+  }
+  _checkPathAndSave();
 }
 
 function _markPathDirty() {
@@ -1147,6 +1274,30 @@ function _clearPathDirty() {
   _isDirtyPath = false;
   const btn = container.querySelector('#map-save');
   if (btn) btn.style.display = 'none';
+}
+
+/**
+ * After any tile change: check prerequisites and auto-save.
+ * Only sends a save when both spawnpoint and castle are placed.
+ */
+function _checkPathAndSave() {
+  if (_spectateDefenderUid != null) return;
+  let hasSpawnpoint = false, hasCastle = false;
+  for (const [, data] of grid.tiles) {
+    if (data.type === 'spawnpoint') hasSpawnpoint = true;
+    if (data.type === 'castle') hasCastle = true;
+  }
+  if (!hasCastle) {
+    _showPersistentError('⚠️ Kein Castle platziert');
+    grid.setDisplayPath(null);
+    return;
+  }
+  if (!hasSpawnpoint) {
+    _showPersistentError('⚠️ Kein Spawnpoint platziert');
+    grid.setDisplayPath(null);
+    return;
+  }
+  _autoSave();
 }
 
 async function _saveMap() {
@@ -1177,6 +1328,13 @@ async function _saveMap() {
       if (btn) { btn.textContent = '\u2717 Error'; btn.style.color = 'var(--danger)'; setTimeout(() => { btn.textContent = '\ud83d\udcbe Save'; btn.style.color = ''; btn.disabled = false; }, 2000); }
     } else {
       _clearPathDirty();
+      if (resp?.tiles && grid) {
+        grid.fromJSON({ tiles: resp.tiles });
+        grid.addVoidNeighbors();
+      }
+      const path = resp?.path ? resp.path.map(([q, r]) => ({ q, r })) : null;
+      grid.setDisplayPath(path);
+      if (path) _clearMapError();
       if (errBanner) errBanner.style.display = 'none';
       if (btn) { btn.textContent = '\u2713 Saved'; btn.style.color = 'var(--success)'; setTimeout(() => { btn.textContent = '\ud83d\udcbe Save'; btn.style.color = ''; btn.disabled = false; }, 1200); }
     }
@@ -1193,13 +1351,23 @@ async function _autoSave() {
   if (_spectateDefenderUid != null) return;
   clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(async () => {
+    if (!grid) { console.warn('[Battle] Auto-save skipped: grid destroyed (view left)'); return; }
     try {
       const data = grid.toJSON();
       const resp = await rest.saveMap(data.tiles || {});
       if (resp && resp.success === false) {
-        console.warn('[Battle] Auto-save rejected:', resp.error);
+        _markPathDirty();
+        _showPersistentError('⚠️ ' + (resp.error || 'No valid path'));
+        grid.setDisplayPath(null);
       } else {
-        console.log('[Battle] Auto-saved');
+        _clearPathDirty();
+        if (resp?.tiles && grid) {
+          grid.fromJSON({ tiles: resp.tiles });
+          grid.addVoidNeighbors();
+        }
+        const path = resp?.path ? resp.path.map(([q, r]) => ({ q, r })) : null;
+        grid.setDisplayPath(path);
+        if (path) _clearMapError();
       }
     } catch (err) {
       console.error('[Battle] Auto-save error:', err);
@@ -1228,10 +1396,19 @@ function _onBattleStatus(msg) {
   if ('wave_info' in msg) {
     _battleState.wave_info = msg.wave_info;
   }
-  
+
+  // Activate battle mode when phase transitions to in_battle
+  if (msg.phase === 'in_battle' && grid && !grid.battleActive) {
+    grid.battleActive = true;
+  }
+
+  // Update castle sprite when spectating (defender's era)
+  if (_spectateDefenderUid != null && msg.defender_era) {
+    _updateCastleSprite(msg.defender_era);
+  }
+
   // Update status display
   _updateStatusFromBattleMsg();
-  _updatePalettePathVisibility();
 }
 
 function _onBattleSetup(msg) {
@@ -1275,9 +1452,15 @@ function _onBattleSetup(msg) {
     }
   }
 
-  // Store critter path for rendering
+  // Store critter path for rendering — only lock path during actual battle
   if (msg.path) {
-    grid.setBattlePath(msg.path);
+    if (_battleState.phase === 'in_battle') {
+      grid.setBattlePath(msg.path);
+    } else {
+      // During siege: show path but don't lock it
+      const path = msg.path.map(p => Array.isArray(p) ? { q: p[0], r: p[1] } : p);
+      grid.setDisplayPath(path);
+    }
   }
 
   // Place structures (towers)
@@ -1294,11 +1477,11 @@ function _onBattleSetup(msg) {
     }
   }
 
-  grid.battleActive = true;
+  // Only activate battle mode during actual battle, not siege
+  if (_battleState.phase === 'in_battle') {
+    grid.battleActive = true;
+  }
   grid._dirty = true;
-
-  // Update palette — hide Path section while battle is active
-  _updatePalettePathVisibility();
 
   // Update title with defender name when spectating
   if (_spectateDefenderUid != null) {
@@ -1370,6 +1553,11 @@ function _onStructureUpdate(msg) {
 
 function _onBattleUpdate(msg) {
   if (!msg) return;
+
+  // Battle updates mean we're in active battle — lock the path
+  if (grid && !grid.battleActive) {
+    grid.battleActive = true;
+  }
 
   // Update critter positions (new format: all critters with path_progress)
   if (msg.critters && Array.isArray(msg.critters)) {
@@ -1453,10 +1641,12 @@ function _onBattleSummary(msg) {
   // Keep critters visible briefly, then clean up
   setTimeout(() => {
     grid.clearBattle();
+    // Apply the freshly-computed post-battle path from the server
+    const path = msg.path ? msg.path.map(([q, r]) => ({ q, r })) : null;
+    grid.setDisplayPath(path);
+    if (!path) _showPersistentError('⚠️ No path from spawn to castle — please remove obstacles.');
+    else _clearMapError();
   }, 1500);
-
-  // Restore base palette (castle / path) now that battle is over
-  _updatePalettePathVisibility();
 
   // Show summary overlay
   _showSummary(msg);
@@ -1535,8 +1725,9 @@ function _updateStatusFromBattleMsg() {
         ? -_battleState.time_since_start_s * 1000 : 0;
       const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
       const timeStr = totalCountdownSec > 0 ? `${totalCountdownSec}s` : 'now';
+      const critterCount = Math.floor(wi.slots / (wi.critter_slot_cost || 1));
       nextWaveEl.textContent =
-        `Wave (${wi.wave_index}/${wi.total_waves}): ${wi.slots} ${wi.critter_name}, eta: ${timeStr}`;
+        `Wave (${wi.wave_index}/${wi.total_waves}): ${critterCount}× ${wi.critter_name}, eta: ${timeStr}`;
     } else {
       nextWaveEl.textContent = _battleState.phase === 'in_battle' ? 'All waves done' : '-';
     }
@@ -1583,6 +1774,46 @@ function _showSummary(msg) {
     html += `<p style="text-align:center">${defenderName} successfully defeated ${attackLabel}.</p>`;
   } else {
     html += `<p style="text-align:center">${attackLabel} broke through ${defenderName}'s defenses.</p>`;
+  }
+
+  // ── Battle Statistics ────────────────────────────────────────────
+  {
+    const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
+    const liSt = `style="padding:3px 0"`;
+    html += `<div ${sep}>`;
+    html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">📊 Battle Statistics</strong>`;
+    html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
+
+    // Attacker stats
+    const spawned = msg.critters_spawned ?? 0;
+    const reached = msg.critters_reached ?? 0;
+    const killed = msg.critters_killed ?? 0;
+    const waves = msg.num_waves ?? 0;
+    html += `<li ${liSt}>⚔ Attacker: ${spawned} critters in ${waves} waves — ${reached} reached goal, ${killed} killed</li>`;
+
+    // Defender stats
+    const towers = msg.num_towers ?? 0;
+    const goldEarned = Math.round(msg.defender_gold_earned ?? 0);
+    html += `<li ${liSt}>🛡 Defender: ${towers} towers — ${goldEarned} gold earned</li>`;
+
+    // Duration
+    if (msg.duration_s > 0) {
+      const dur = msg.duration_s;
+      const dm = Math.floor(dur / 60);
+      const ds = Math.floor(dur % 60);
+      html += `<li ${liSt}>⏱ Duration: ${dm > 0 ? dm + 'm ' : ''}${ds}s</li>`;
+    }
+
+    html += '</ul></div>';
+  }
+
+  // ── Gold earned by defender ────────────────────────────────────────
+  if (isDefender && msg.defender_gold_earned > 0) {
+    const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
+    html += `<div ${sep}>`;
+    html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">💰 Gold Earned</strong>`;
+    html += `<p style="margin:5px 0 0 0">+${Math.round(msg.defender_gold_earned).toLocaleString()} Gold from defeated attackers</p>`;
+    html += `</div>`;
   }
 
   // ── Loot section (only on defender loss) ──────────────────────────

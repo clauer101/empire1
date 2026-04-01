@@ -6,7 +6,8 @@
       "Bash(python -m pytest tests/test_combat_effects.py tests/test_shot_damage_application.py -v)",
       "Bash(/home/eem/empire1/.venv/bin/python -m pytest tests/test_combat_effects.py tests/test_shot_damage_application.py -v)",
       "Bash(/home/eem/empire1/.venv/bin/python -m pytest tests/test_shot_damage_application.py -v)",
-      "Bash(/home/eem/empire1/.venv/bin/pip install:*)"
+      "Bash(/home/eem/empire1/.venv/bin/pip install:*)",
+      "Bash(python -m pytest tests/test_structure_targeting.py -v)"
     ]
   }
 }

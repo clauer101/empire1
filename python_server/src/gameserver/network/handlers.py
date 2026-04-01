@@ -208,17 +208,55 @@ async def handle_item_request(
         critters[item.iid] = {
             "name": item.name,
             "requirements": list(item.requirements),
+            "health": item.health,
+            "speed": item.speed,
+            "armour": item.armour,
+            "damage": item.critter_damage,
+            "slots": item.slots,
+            "is_boss": item.is_boss,
         }
 
     # Full catalog — ALL items regardless of requirements, used by client
     # for "Required for" reverse-dependency mapping across the entire tech tree.
     catalog = {}
     for item in up.items.values():
-        catalog[item.iid] = {
+        entry: dict[str, Any] = {
             "name": item.name,
             "item_type": item.item_type.value,
             "requirements": list(item.requirements),
         }
+        if item.item_type == ItemType.STRUCTURE:
+            entry.update({
+                "damage": item.damage,
+                "range": item.range,
+                "reload_time_ms": item.reload_time_ms,
+                "costs": dict(item.costs),
+                "effects": dict(item.effects),
+                "description": item.description,
+            })
+        elif item.item_type == ItemType.CRITTER:
+            entry.update({
+                "health": item.health,
+                "speed": item.speed,
+                "armour": item.armour,
+                "damage": item.critter_damage,
+                "slots": item.slots,
+                "is_boss": item.is_boss,
+            })
+        elif item.item_type == ItemType.KNOWLEDGE:
+            entry.update({
+                "effort": item.effort,
+                "effects": dict(item.effects),
+                "description": item.description,
+            })
+        elif item.item_type == ItemType.BUILDING:
+            entry.update({
+                "effort": item.effort,
+                "costs": dict(item.costs),
+                "effects": dict(item.effects),
+                "description": item.description,
+            })
+        catalog[item.iid] = entry
 
     return {
         "type": "item_response",
@@ -257,16 +295,22 @@ async def handle_military_request(
                 "wave_id": wave.wave_id,
                 "iid": wave.iid,
                 "slots": wave.slots,
+                "next_slot_price": round(svc.empire_service._critter_slot_price(wave.slots + 1), 2),
             })
         
+        army_wave_count = len(army.waves)
         armies.append({
             "aid": army.aid,
             "name": army.name,
             "waves": waves,
+            "next_wave_price": round(svc.empire_service._wave_price(army_wave_count + 1), 2),
         })
 
-    # Get available critters based on completed research
+    # Get available critters based on completed research AND buildings
     completed: set[str] = set()
+    for iid, remaining in empire.buildings.items():
+        if remaining <= 0:
+            completed.add(iid)
     for iid, remaining in empire.knowledge.items():
         if remaining <= 0:
             completed.add(iid)
@@ -277,6 +321,12 @@ async def handle_military_request(
             "iid": critter.iid,
             "name": critter.name,
             "slots": critter.slots,
+            "health": critter.health,
+            "armour": critter.armour,
+            "speed": critter.speed,
+            "time_between_ms": critter.time_between_ms,
+            "is_boss": critter.is_boss,
+            "animation": critter.animation,
         })
 
     # Ongoing attacks
@@ -559,9 +609,8 @@ async def handle_new_army(
     # Deduct gold
     empire.resources['gold'] -= army_price
     
-    # Find next available army ID
-    max_aid = max([a.aid for a in empire.armies], default=0)
-    new_aid = max_aid + 1
+    # Get globally unique army ID
+    new_aid = svc.empire_service.next_army_id()
     
     # Create new army with no waves
     new_army = Army(
@@ -989,6 +1038,7 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
         "attacker_username": attacker_username,
         "time_since_start_s": time_since_start_s,
         "wave_info": wave_info,
+        "defender_era": svc.empire_service.get_current_era(defender_empire),
     }
     
     if svc.server:
@@ -1000,40 +1050,27 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
     
     This includes the defender's map, structures, and paths.
     """
-    from gameserver.engine.battle_service import find_hex_path
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
     from gameserver.models.hex import HexCoord
-    
+
     svc = _svc()
-    
+
     # Get defender empire (owner of the map)
     defender_empire = svc.empire_service.get(attack.defender_uid)
     if not defender_empire:
         log.warning("_send_battle_setup: defender %d not found", attack.defender_uid)
         return
-    
+
     if not defender_empire.hex_map:
         log.warning("_send_battle_setup: defender %d has no map", attack.defender_uid)
         return
-    
-    # ── Parse map to find spawn and castle ──────────────
+
     tiles = defender_empire.hex_map
-    spawn_pos: tuple[int, int] | None = None
-    castle_pos: tuple[int, int] | None = None
-    passable: set[tuple[int, int]] = set()
-    
-    for key, tile_type in tiles.items():
-        q, r = map(int, key.split(","))
-        if tile_type in ("spawnpoint", "path", "castle"):
-            passable.add((q, r))
-        if tile_type == "spawnpoint" and spawn_pos is None:
-            spawn_pos = (q, r)
-        elif tile_type == "castle":
-            castle_pos = (q, r)
-    
-    # Calculate path
-    hex_path = []
-    if spawn_pos and castle_pos:
-        hex_path = find_hex_path(spawn_pos, castle_pos, passable)
+
+    # Compute path using the canonical pathfinder (traverses empty, path, spawnpoint, castle)
+    normalized = {k: _tile_type(v) for k, v in tiles.items()}
+    computed_path = find_path_from_spawn_to_castle(normalized)
+    hex_path = computed_path if computed_path else []
     
     # ── Get structures ───────────────────────────────────
     # Load structures from hex_map tiles and create Structure objects
@@ -1528,7 +1565,8 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
         "spy_count": len(empire.spies),
         "attacks_incoming": attacks_incoming,
         "attacks_outgoing": attacks_outgoing,
-        "travel_time_seconds": round(max(1.0, svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_time_offset", 0.0)), 0),
+        "travel_time_seconds": round(max(1.0, svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_offset", 0.0)), 0),
+        "current_era": svc.empire_service.get_current_era(empire),
     }
 
 
@@ -1620,10 +1658,17 @@ async def handle_map_load_request(
     
     # Get hex_map from Empire object (or use empty dict if not present)
     hex_map = getattr(empire, 'hex_map', {}) or {}
-    
+
+    # Compute and return the path so the client never needs to pathfind itself
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+    normalized = {k: _tile_type(v) for k, v in hex_map.items()}
+    computed_path = find_path_from_spawn_to_castle(normalized)
+    path_data = [[c.q, c.r] for c in computed_path] if computed_path else None
+
     return {
         "type": "map_load_response",
         "tiles": hex_map,
+        "path": path_data,
     }
 
 
@@ -1690,12 +1735,14 @@ async def handle_map_save_request(
     spawnpoint_count = type_counts.get('spawnpoint', 0)
     errors: list[str] = []
 
-    if castle_count != 1:
+    if castle_count > 1:
         errors.append(
-            f"Map must contain exactly 1 castle (found {castle_count})"
+            f"Map must contain at most 1 castle (found {castle_count})"
         )
-    if spawnpoint_count < 1:
-        errors.append("Map must contain at least 1 spawnpoint")
+    if castle_count == 0:
+        errors.append("Kein Castle platziert")
+    if spawnpoint_count == 0:
+        errors.append("Kein Spawnpoint platziert")
 
     # Void tiles must not be overwritten
     old_tiles_for_void = empire.hex_map or {}
@@ -1704,9 +1751,9 @@ async def handle_map_save_request(
             errors.append(f"Cannot place '{_tile_type(tile_val)}' on a void tile at {tile_key}")
             break
     
-    # Check path connectivity (only if basic requirements are met)
+    # Check path connectivity (only when both castle and spawnpoint exist)
     if not errors and not _has_path_from_spawn_to_castle(tiles):
-        errors.append("No passable path found from spawnpoint to castle")
+        errors.append("Weg verbaut – kein Pfad vom Spawnpoint zum Castle")
 
     if errors:
         log.warning(
@@ -1718,6 +1765,27 @@ async def handle_map_save_request(
             "success": False,
             "error": "; ".join(errors),
         }
+
+    # -- Reject new structures on the active critter path during battle --
+    battle = _active_battles.get(target_uid)
+    if battle is not None and battle.critter_path:
+        path_keys = {f"{c.q},{c.r}" for c in battle.critter_path}
+        old_tiles = empire.hex_map or {}
+        from gameserver.models.items import ItemType as _ItemType
+        structure_iids_check = {
+            item.iid
+            for item in svc.upgrade_provider.get_by_type(_ItemType.STRUCTURE)
+        }
+        for tile_key, tile_val in tiles.items():
+            tile_type = _tile_type(tile_val)
+            if tile_key in path_keys and tile_type in structure_iids_check:
+                old_type = _tile_type(old_tiles.get(tile_key, ''))
+                if old_type != tile_type:
+                    return {
+                        "type": "map_save_response",
+                        "success": False,
+                        "error": f"Cannot place tower on active critter path at {tile_key}",
+                    }
 
     # -- Structure cost check ----------------------------------------
     from gameserver.models.items import ItemType as _ItemType
@@ -1785,9 +1853,22 @@ async def handle_map_save_request(
                 for uid in battle.observer_uids:
                     asyncio.create_task(svc.server.send_to(uid, structure_update_msg))
 
+    # Return the path for the client to display.
+    # During an active battle the critter path is fixed — return battle.critter_path
+    # so the displayed path never changes while critters are moving.
+    # Outside of battle, recompute from the saved tiles.
+    if battle is not None and battle.critter_path:
+        path_data = [[c.q, c.r] for c in battle.critter_path]
+    else:
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+        computed_path = find_path_from_spawn_to_castle({k: _tile_type(v) for k, v in tiles.items()})
+        path_data = [[c.q, c.r] for c in computed_path] if computed_path else None
+
     return {
         "type": "map_save_response",
         "success": True,
+        "path": path_data,
+        "tiles": empire.hex_map,
     }
 
 
@@ -1904,9 +1985,8 @@ async def handle_buy_wave_request(
             "error": f"Army {aid} not found",
         }
     
-    # Calculate cost based on total waves across all armies
-    total_waves = sum(len(a.waves) for a in empire.armies)
-    wave_price = svc.empire_service._wave_price(total_waves + 1)
+    # Calculate cost based on waves in this specific army
+    wave_price = svc.empire_service._wave_price(len(army.waves) + 1)
     
     # Check if player has enough gold
     current_gold = empire.resources.get('gold', 0.0)
@@ -2179,7 +2259,14 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         else:
             log.warning("[battle] Could not find attack_id=%d to mark FINISHED (bid=%d)", battle.attack_id, bid)
 
+        # ── Reset army waves so attacker can re-use the army ─────────────
         from gameserver.engine.ai_service import AI_UID
+        if battle.army is not None and (battle.attacker is None or battle.attacker.uid != AI_UID):
+            for wave in battle.army.waves:
+                wave.num_critters_spawned = 0
+                wave.next_critter_ms = 0
+            log.info("[battle] bid=%d army '%s' waves reset after battle end", bid, battle.army.name)
+
         if (svc.ai_service is not None
                 and battle.attacker is not None
                 and battle.attacker.uid == AI_UID
@@ -2198,10 +2285,16 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                 atk_name = battle.attacker.name if battle.attacker else "?"
                 army_name = battle.army.name if battle.army else "?"
                 num_waves = len(battle.army.waves) if battle.army and battle.army.waves else 0
+                dur_s = battle.elapsed_ms / 1000
+                dur_m, dur_sec = int(dur_s // 60), int(dur_s % 60)
+                dur_str = f"{dur_m}m {dur_sec}s" if dur_m > 0 else f"{dur_sec}s"
                 body = (
                     f"{result}\n"
                     f"🛡 {def_name}  vs  ⚔ {atk_name}\n"
                     f"Army: {army_name} ({num_waves} waves)\n"
+                    f"⚔ {battle.critters_spawned} spawned, {battle.critters_killed} killed, {battle.critters_reached} reached\n"
+                    f"🛡 {len(battle.structures)} towers, +{int(battle.defender_gold_earned)} gold\n"
+                    f"⏱ {dur_str}\n"
                     f"▶ Replay: #replay/{bid}"
                 )
                 if battle.defender:
@@ -2601,6 +2694,18 @@ def _create_battle_start_handler() -> Callable:
         # Record setup for replay
         battle.recorder.record(0, setup_msg)
         
+        # ── Initialise wave timers ────────────────────────────────────────
+        # Wave i starts at i × initial_wave_delay_ms. First wave (i=0) spawns
+        # immediately; subsequent waves are staggered by initial_wave_delay_ms.
+        _initial_delay_ms = (
+            svc.game_config.initial_wave_delay_ms
+            if svc.game_config and hasattr(svc.game_config, "initial_wave_delay_ms")
+            else 15000.0
+        )
+        for _i, _wave in enumerate(attacking_army.waves):
+            _wave.next_critter_ms = int(_i * _initial_delay_ms)
+            _wave.num_critters_spawned = 0  # reset spawn count on battle start
+
         # ── Launch battle loop ───────────────────────────────
         items = svc.upgrade_provider.items if svc.upgrade_provider else {}
         battle_svc = BattleService(items=items)

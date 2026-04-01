@@ -800,91 +800,6 @@ maps:
   - q: 3
     r: 0
     type: ARBELESTE_TOWER
-- id: live_3_1774129668
-  name: Stone/Neo
-  life: 10
-  hex_map:
-  - q: -1
-    r: 0
-    type: DOUBLE_SLING_TOWER
-  - q: -1
-    r: 1
-    type: path
-  - q: -1
-    r: 2
-    type: path
-  - q: -1
-    r: 3
-    type: DOUBLE_SLING_TOWER
-  - q: -2
-    r: 1
-    type: DOUBLE_SLING_TOWER
-  - q: -2
-    r: 2
-    type: BALLISTA_TOWER
-  - q: -2
-    r: 3
-    type: DOUBLE_SLING_TOWER
-  - q: 0
-    r: -1
-    type: DOUBLE_SLING_TOWER
-  - q: 0
-    r: 0
-    type: path
-  - q: 0
-    r: 1
-    type: BASIC_TOWER
-  - q: 0
-    r: 2
-    type: path
-  - q: 0
-    r: 3
-    type: DOUBLE_SLING_TOWER
-  - q: 1
-    r: -1
-    type: BASIC_TOWER
-  - q: 1
-    r: 0
-    type: path
-  - q: 1
-    r: 1
-    type: BASIC_TOWER
-  - q: 1
-    r: 2
-    type: path
-  - q: 1
-    r: 3
-    type: DOUBLE_SLING_TOWER
-  - q: 2
-    r: -1
-    type: BASIC_TOWER
-  - q: 2
-    r: 0
-    type: path
-  - q: 2
-    r: 1
-    type: BASIC_TOWER
-  - q: 2
-    r: 2
-    type: path
-  - q: 3
-    r: -1
-    type: BASIC_TOWER
-  - q: 3
-    r: 0
-    type: path
-  - q: 3
-    r: 1
-    type: BASIC_TOWER
-  - q: 3
-    r: 2
-    type: castle
-  - q: 4
-    r: -1
-    type: BASIC_TOWER
-  - q: 4
-    r: 0
-    type: spawnpoint
 - id: live_4_1774162533
   name: Bronze
   hex_map:
@@ -1210,3 +1125,256 @@ maps:
     r: -5
     type: empty
   life: 10.0
+- id: live_4_1774628767
+  name: Middle Ages
+  hex_map:
+  - q: -1
+    r: -1
+    type: empty
+  - q: -1
+    r: 0
+    type: TAR_TOWER
+  - q: -1
+    r: 1
+    type: BOILING_OIL
+  - q: -1
+    r: 2
+    type: empty
+  - q: -1
+    r: 3
+    type: BOILING_OIL
+  - q: -1
+    r: 4
+    type: empty
+  - q: -2
+    r: 0
+    type: empty
+  - q: -2
+    r: 1
+    type: empty
+  - q: -2
+    r: 2
+    type: empty
+  - q: -2
+    r: 3
+    type: HEAVY_TOWER
+  - q: -2
+    r: 4
+    type: empty
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
+  - q: -3
+    r: 2
+    type: FIRE_TOWER
+  - q: -3
+    r: 3
+    type: BALLISTA_TOWER
+  - q: -3
+    r: 4
+    type: spawnpoint
+  - q: 0
+    r: -1
+    type: HEAVY_TOWER
+  - q: 0
+    r: -2
+    type: empty
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: CATAPULTS
+  - q: 0
+    r: 2
+    type: empty
+  - q: 0
+    r: 3
+    type: HEAVY_TOWER
+  - q: 0
+    r: 4
+    type: empty
+  - q: 1
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 1
+    r: -2
+    type: empty
+  - q: 1
+    r: 0
+    type: empty
+  - q: 1
+    r: 1
+    type: TAR_TOWER
+  - q: 1
+    r: 2
+    type: empty
+  - q: 1
+    r: 3
+    type: BOILING_OIL
+  - q: 1
+    r: 4
+    type: empty
+  - q: 2
+    r: -1
+    type: HEAVY_TOWER
+  - q: 2
+    r: -2
+    type: empty
+  - q: 2
+    r: 0
+    type: empty
+  - q: 2
+    r: 1
+    type: empty
+  - q: 2
+    r: 2
+    type: HEAVY_TOWER
+  - q: 2
+    r: 3
+    type: empty
+  - q: 3
+    r: -1
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: -2
+    type: empty
+  - q: 3
+    r: 0
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: 1
+    type: TAR_TOWER
+  - q: 3
+    r: 2
+    type: empty
+  - q: 3
+    r: 3
+    type: empty
+  - q: 4
+    r: -1
+    type: empty
+  - q: 4
+    r: -2
+    type: empty
+  - q: 4
+    r: 0
+    type: empty
+  - q: 4
+    r: 1
+    type: empty
+- id: live_7_1774675022
+  name: Neolith
+  hex_map:
+  - q: -1
+    r: 1
+    type: BASIC_TOWER
+  - q: -1
+    r: 2
+    type: empty
+  - q: -1
+    r: 3
+    type: empty
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: empty
+  - q: 0
+    r: 2
+    type: DOUBLE_SLING_TOWER
+  - q: 0
+    r: 3
+    type: empty
+  - q: 1
+    r: 0
+    type: BASIC_TOWER
+  - q: 1
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 2
+    type: empty
+  - q: 2
+    r: 1
+    type: empty
+  - q: 2
+    r: 0
+    type: empty
+  - q: 2
+    r: -1
+    type: spawnpoint
+  - q: 2
+    r: 2
+    type: empty
+- id: live_4_1774794556
+  name: 1 Basic Tower
+  hex_map:
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 0
+    type: spawnpoint
+- id: live_4_1774794588
+  name: '1 Basic Tower (len: 3)'
+  hex_map:
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 0
+    type: empty
+  - q: 1
+    r: 1
+    type: spawnpoint
+- id: live_4_1774795155
+  name: '1 Basic Tower (len: 4)'
+  hex_map:
+  - q: 0
+    r: 0
+    
+    type: castle
+  - q: 0
+    r: 1
+    type: BASIC_TOWER
+  - q: 1
+    r: 0
+    type: empty
+  - q: 1
+    r: 1
+    type: empty
+  - q: 0
+    r: 2
+    type: spawnpoint
+  - q: 2
+    r: 0
+    type: empty
+- id: live_4_1774795443
+  name: '2 Basic Tower (len: 4)'
+  hex_map:
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: BASIC_TOWER
+  - q: 0
+    r: 2
+    type: spawnpoint
+  - q: 1
+    r: 0
+    type: empty
+  - q: 1
+    r: 1
+    type: empty
+  - q: 2
+    r: 0
+    type: BASIC_TOWER

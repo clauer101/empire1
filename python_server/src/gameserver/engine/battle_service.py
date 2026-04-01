@@ -3,11 +3,13 @@
 Runs each battle as an independent asyncio task with ~15ms tick rate.
 
 Tick order (must be preserved):
-1. step_shots     — decrement flight time, apply damage on arrival
-2. step_critters  — movement along hex path + burn tick
-3. step_towers    — acquire targets + fire
-4. step_armies    — wave timers + critter spawning
-5. broadcast      — send delta to observers (throttled to 250ms)
+1. step_critters  — movement along hex path + burn tick; marks reached_goal
+2. step_towers    — acquire targets + fire (skips reached_goal critters)
+3. step_shots     — decrement flight time, apply damage on arrival;
+                    can still kill reached_goal critters at the gate
+4. flush_reached  — apply castle damage or critter_died for reached critters
+5. step_armies    — wave timers + critter spawning
+6. broadcast      — send delta to observers (throttled to 250ms)
 
 Architecture (Java-equivalent):
   Server computes movement & combat; sends delta events every 250ms.
@@ -194,10 +196,20 @@ class BattleService:
     # ── Deterministic tick (also used by tests) ────────────────
 
     def tick(self, battle: BattleState, dt_ms: float) -> None:
-        """Execute one deterministic battle tick."""
-        self._step_shots(battle, dt_ms)
+        """Execute one deterministic battle tick.
+
+        Tick order (critters move first so in-flight shots can intercept
+        critters that reach the goal in the same tick):
+        1. step_critters  — move + mark reached_goal (don't remove yet)
+        2. step_towers    — fire at live critters (skips reached_goal)
+        3. step_shots     — arriving shots can still kill reached_goal critters
+        4. flush_reached  — apply castle damage or critter_died for reached
+        5. step_armies    — spawn new critters
+        """
         self._step_critters(battle, dt_ms)
         self._step_towers(battle, dt_ms)
+        self._step_shots(battle, dt_ms)
+        self._flush_reached(battle)
         self._step_armies(battle, dt_ms)
         battle.elapsed_ms += dt_ms
         battle.broadcast_timer_ms -= dt_ms
@@ -294,17 +306,30 @@ class BattleService:
     # -- Critter movement ------------------------------------------------
 
     def _step_critters(self, battle: BattleState, dt_ms: float) -> None:
-        """Move all critters, handle finish/death."""
+        """Move all critters, handle death, mark those that reach the goal.
+
+        Critters that reach path_progress >= 1.0 are marked reached_goal=True
+        but NOT removed here.  _flush_reached (called after _step_shots) handles
+        removal so that in-flight shots from previous ticks can still intercept
+        them at the castle gate.
+        """
         for cid, critter in list(battle.critters.items()):
-            # Move critter first (if alive and not finished yet)
+            if critter.reached_goal:
+                # Already at the gate — will be flushed after shots resolve.
+                # Check if a shot killed it between steps.
+                if critter.health <= 0:
+                    self._critter_died(battle, critter)
+                continue
+
+            # Move critter (if alive and still on path)
             if critter.health > 0 and critter.path_progress < 1.0:
                 self._move_critter(battle, critter, dt_ms)
-            
-            # Then check final state once (after movement)
+
+            # Check final state after movement
             if critter.health <= 0:
                 self._critter_died(battle, critter)
             elif critter.path_progress >= 1.0:
-                self._critter_finished(battle, critter)
+                critter.reached_goal = True  # defer removal until after shots
                     
 
 
@@ -415,7 +440,7 @@ class BattleService:
         tq, tr = float(structure.position.q), float(structure.position.r)
 
         for critter in battle.critters.values():
-            if not critter.path:
+            if not critter.path or critter.reached_goal:
                 continue
 
             # Interpolated critter position (between two hex centers)
@@ -436,6 +461,20 @@ class BattleService:
             return random.choice(in_range)
         # default: "first" — highest path_progress
         return max(in_range, key=lambda c: c.path_progress)
+
+    def _flush_reached(self, battle: BattleState) -> None:
+        """Process critters marked reached_goal after shots have been applied.
+
+        Called after _step_shots so that in-flight shots had a chance to kill
+        critters at the gate before they deal castle damage.
+        """
+        for critter in list(battle.critters.values()):
+            if not critter.reached_goal:
+                continue
+            if critter.health <= 0:
+                self._critter_died(battle, critter)
+            else:
+                self._critter_finished(battle, critter)
 
     # -- Army wave dispatch ---------
 
@@ -545,6 +584,7 @@ class BattleService:
                 critter.path = battle.critter_path
                 
                 battle.critters[critter.cid] = critter
+                battle.critters_spawned += 1
                 log.info("[SPAWN] Critter cid=%d (%s) spawned from wave %d (progress=%d/%d, path_length=%d)",
                          critter.cid, critter.iid, wave.wave_id, wave.num_critters_spawned, wave.slots, len(critter.path))
 
@@ -590,6 +630,7 @@ class BattleService:
         Attacker gains the capture resources, defender loses life.
         """
         battle.removed_critters.append({"cid": critter.cid, "reason": "reached", "path_progress": critter.path_progress, "damage": critter.damage})
+        battle.critters_reached += 1
         # Remove critter from battle
         del battle.critters[critter.cid]
         
@@ -627,12 +668,14 @@ class BattleService:
         Spawns child critters if spawn_on_death is configured.
         """
         battle.removed_critters.append({"cid": critter.cid, "reason": "died", "path_progress": critter.path_progress, "value": critter.value})
+        battle.critters_killed += 1
         del battle.critters[critter.cid]
 
         # Award gold to defender
         if battle.defender and critter.value > 0:
             gold = battle.defender.resources.get("gold", 0.0)
             battle.defender.resources["gold"] = gold + critter.value
+            battle.defender_gold_earned += critter.value
             log.info("[KILLED] Critter cid=%d (%s) killed — defender awarded %.1f gold (total: %.1f)",
                      critter.cid, critter.iid, critter.value, battle.defender.resources["gold"])
         else:
@@ -716,12 +759,14 @@ class BattleService:
                 if w.num_critters_spawned == 0:
                     item = self._items_by_iid.get(w.iid)
                     critter_name = item.name if item else w.iid
+                    critter_slot_cost = max(1, int(getattr(item, "slots", 1) or 1)) if item else 1
                     wave_info = {
                         "wave_index": i + 1,
                         "total_waves": total_waves,
                         "iid": w.iid,
                         "critter_name": critter_name,
                         "slots": w.slots,
+                        "critter_slot_cost": critter_slot_cost,
                         "spawned": 0,
                         "next_critter_ms": max(0.0, w.next_critter_ms),
                     }
@@ -770,8 +815,31 @@ class BattleService:
             "army_name": battle.army.name if battle.army else "",
             "attacker_gains": dict(battle.attacker_gains),  # Dict of {uid: {resource: amount}}
             "defender_losses": dict(battle.defender_losses),
+            "defender_gold_earned": battle.defender_gold_earned,
+            "critters_spawned": battle.critters_spawned,
+            "critters_killed": battle.critters_killed,
+            "critters_reached": battle.critters_reached,
+            "duration_s": round(battle.elapsed_ms / 1000, 1),
+            "num_waves": len(battle.army.waves) if battle.army and battle.army.waves else 0,
+            "num_towers": len(battle.structures),
             "loot": loot or {},
         }
+
+        # Recompute the path from the defender's current tiles now that the battle is
+        # over, so the client immediately shows the up-to-date (possibly changed) path.
+        if battle.defender and getattr(battle.defender, 'hex_map', None):
+            from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+
+            def _tile_type_local(v: object) -> str:
+                if isinstance(v, dict):
+                    return str(v.get('type', 'empty'))
+                return str(v) if v else 'empty'
+
+            normalized = {k: _tile_type_local(v) for k, v in battle.defender.hex_map.items()}
+            computed_path = find_path_from_spawn_to_castle(normalized)
+            msg["path"] = [[c.q, c.r] for c in computed_path] if computed_path else None
+        else:
+            msg["path"] = None
 
         # Record summary for replay
         if battle.recorder is not None:

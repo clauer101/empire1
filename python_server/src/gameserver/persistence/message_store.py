@@ -103,7 +103,7 @@ class MessageStore:
             "to_uid": to_uid,
             "body_b64": _encode(body),
             "sent_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "read": False,
+            "read": from_uid == 0,  # AI/system messages are pre-read
         }
         self._next_id += 1
         self._messages.append(msg)

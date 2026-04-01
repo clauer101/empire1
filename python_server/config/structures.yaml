@@ -39,7 +39,7 @@ SLING_TOWER:
   select: first
   costs: {gold: 150}
   effects: {}
-  requirements: [EARTH_WALL]
+  requirements: [MAIN_HOUSE]
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 200 – 1.500)
@@ -58,7 +58,7 @@ DOUBLE_SLING_TOWER:
   select: first
   costs: {gold: 300}
   effects: {}
-  requirements: [CRAFTSMANSHIP, TOOL_SHOP, MAIN_HOUSE]
+  requirements: [CRAFTSMANSHIP, EARTH_WALL]
 
 SPIKE_TRAP:
   name: "Spike Trap"
@@ -131,9 +131,9 @@ FIRE_TOWER:
 CATAPULTS:
   name: "Catapult"
   sprite: "assets/sprites/structures/catapults/catapults.webp"
-  damage: 7
+  damage: 6
   range: 2
-  reload_time: 3500
+  reload_time: 3600
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
@@ -165,7 +165,7 @@ ARBELESTE_TOWER:
 TAR_TOWER:
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
-  damage: 4
+  damage: 3
   range: 1
   reload_time: 3000
   shot_speed: 1
@@ -174,7 +174,7 @@ TAR_TOWER:
   max_level: 1
   select: first
   costs: {gold: 40000}
-  effects: {slow_duration: 4000, slow_ratio: 0.4}   # slows to 40% speed for 4s
+  effects: {slow_duration: 3000, slow_ratio: 0.4}   # slows to 40% speed for 4s
   requirements: [HERBOLOGY, WORK_SHOP]
 
 HEAVY_TOWER:
@@ -182,8 +182,8 @@ HEAVY_TOWER:
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
   damage: 10
   range: 1
-  reload_time: 3600
-  shot_speed: 1
+  reload_time: 3200
+  shot_speed: 2.5
   shot_sprite: "assets/sprites/hud/shot.webp"
   upgrade_costs: {}
   max_level: 1
@@ -204,7 +204,7 @@ BOILING_OIL:
   max_level: 1
   select: first
   costs: {gold: 47000}
-  effects: {burn_duration: 5000, burn_dps: 3.0}    # burns for 3 dps over 5s
+  effects: {burn_duration: 2000, burn_dps: 3}   # burns for 3 dps over 5s
   requirements: [CITY_WALLS]
 
 # ============================================================
@@ -337,7 +337,7 @@ NAPALM_THROWER:
   select: first
   costs: {gold: 140000}
   effects: {burn_dps: 5, burn_duration: 2000}
-  requirements: [WMD_SITE]
+  requirements: [WMD_SITE, CHEMICAL_WARFARE]
 
 MG_TOWER:
   name: "MG Bunker"
@@ -382,7 +382,7 @@ RADAR_TOWER:
   select: first
   costs: {gold: 250000}
   effects: {}
-  requirements: [SATELITE_SYSTEMS]
+  requirements: [SATELLITE_SYSTEMS]
 
 ANTI_AIR_TOWER:
   name: "Anti-Air Tower"

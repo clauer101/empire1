@@ -34,7 +34,7 @@ class Structure:
     iid: str
     position: HexCoord
     damage: float
-    range: int
+    range: float
     reload_time_ms: float
     shot_speed: float
     shot_type: str = "normal"

@@ -18,10 +18,10 @@ import json
 import logging
 from typing import Any, TYPE_CHECKING
 
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from gameserver.network.jwt_auth import create_token, get_current_uid
+from gameserver.network.jwt_auth import create_token, get_current_uid, verify_token
 from gameserver.network.rest_models import (
     ArmyCreateRequest,
     ArmyRenameRequest,
@@ -99,6 +99,26 @@ def create_app(services: "Services") -> FastAPI:
         allow_headers=["*"],
     )
 
+    # -- last_seen tracker (throttled to once per 60s per user) ----------
+    _last_seen_cache: dict[int, float] = {}
+
+    @app.middleware("http")
+    async def track_last_seen(request: Request, call_next):
+        response = await call_next(request)
+        if services.database is not None:
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                try:
+                    uid = verify_token(auth[7:])
+                    import time
+                    now = time.time()
+                    if now - _last_seen_cache.get(uid, 0) > 60:
+                        _last_seen_cache[uid] = now
+                        await services.database.update_last_seen(uid)
+                except Exception:
+                    pass
+        return response
+
     # =================================================================
     # Auth (unprotected)
     # =================================================================
@@ -171,14 +191,18 @@ def create_app(services: "Services") -> FastAPI:
                 uid_to_user[row["uid"]] = row["username"]
         empires = []
         for empire in services.empire_service.all_empires.values():
-            if empire.uid == 0:  # skip AI empire
+            # Skip AI / NPC empires: no registered user account in the DB
+            if empire.uid != uid and empire.uid not in uid_to_user:
                 continue
+            era_key = services.empire_service.get_current_era(empire)
+            era_idx = services.empire_service._ERA_ORDER.index(era_key) + 1 if era_key in services.empire_service._ERA_ORDER else 1
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
                 "username": uid_to_user.get(empire.uid, ""),
                 "culture": round(empire.resources.get("culture", 0.0), 1),
                 "is_self": empire.uid == uid,
+                "era": era_idx,
             })
         empires.sort(key=lambda e: e["culture"], reverse=True)
         return {"empires": empires}
@@ -475,9 +499,14 @@ def create_app(services: "Services") -> FastAPI:
 
     @app.delete("/api/admin/users/{username}")
     async def admin_delete_user(username: str, _uid: int = Depends(require_admin)) -> dict:
-        """Delete a user account by username."""
+        """Delete a user account and their in-memory empire by username."""
         if services.database is None:
             return {"ok": False, "error": "no database"}
+        user = await services.database.get_user(username)
+        if user is not None:
+            uid_to_remove = user["uid"]
+            if services.empire_service is not None:
+                services.empire_service.unregister(uid_to_remove)
         deleted = await services.database.delete_user(username)
         return {"ok": deleted}
 
@@ -605,6 +634,31 @@ def create_app(services: "Services") -> FastAPI:
         (era, iids) for era, iids in _structure_groups.items() if iids
     ]
 
+    # Map game.yaml era_effects keys (lowercase English) → uppercase German era keys
+    _ERA_EFFECT_KEY_MAP = {
+        "stone": "STEINZEIT", "neolithicum": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
+        "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "rennaissance": "RENAISSANCE",
+        "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
+    }
+
+    def _load_era_effects() -> dict[str, dict[str, float]]:
+        """Read era_effects from game.yaml, keyed by uppercase era key."""
+        import yaml as _yaml
+        p = _CONFIG_DIR / "game.yaml"
+        if not p.exists():
+            return {}
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        effects_raw = raw.get("era_effects", {})
+        result: dict[str, dict[str, float]] = {}
+        for eng_key, vals in effects_raw.items():
+            era_key = _ERA_EFFECT_KEY_MAP.get(eng_key)
+            if era_key and isinstance(vals, dict):
+                result[era_key] = vals
+        return result
+
+    _era_effects_data = _load_era_effects()
+
     @app.get("/api/era-map")
     async def get_era_map() -> dict[str, Any]:
         """Return era order + per-era item IIDs for all categories (no auth required)."""
@@ -616,6 +670,7 @@ def create_app(services: "Services") -> FastAPI:
             "structures": _structure_groups,
             "knowledge":  _knowledge_groups,
             "buildings":  _building_groups,
+            "era_effects": _era_effects_data,
         }
 
     @app.get("/api/admin/structures")
@@ -1116,9 +1171,7 @@ def create_app(services: "Services") -> FastAPI:
             else 15000.0
         )
 
-        aid = services.ai_service._next_army_aid if services.ai_service else 9000
-        if services.ai_service:
-            services.ai_service._next_army_aid += 1
+        aid = services.empire_service.next_army_id()
 
         waves = []
         for i, w in enumerate(waves_raw):

@@ -196,6 +196,18 @@
     #no-attacks {
       padding: 18px 14px; color: var(--text-dim); font-size: 12px;
     }
+
+    /* ── Mobile ── */
+    @media (max-width: 700px) {
+      #content { padding: 12px 8px 40px; gap: 14px; }
+      #topbar { padding: 8px 10px; gap: 8px; }
+      .stat { min-width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 10px 14px; }
+      .stat:last-child { border-bottom: none; }
+      table { display: block; overflow-x: auto; }
+      th, td { white-space: nowrap; }
+      .detail-inner { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 10px 10px; }
+      .card-header { padding: 8px 10px; }
+    }
   </style>
 </head>
 <body>
