@@ -40,7 +40,9 @@ def validate_path(path: list[HexCoord]) -> bool:
 def find_path_from_spawn_to_castle(tiles: dict[str, str]) -> Optional[list[HexCoord]]:
     """Find a path from any spawnpoint to the castle using BFS.
     
-    Traverses only spawnpoint, path, and castle tiles via 6-connected hex neighbors.
+    Traverses spawnpoint, path, empty, and castle tiles via 6-connected hex neighbors.
+    Explicit path tiles are supported for backwards compatibility but are no longer
+    required — the shortest route through empty land is used automatically.
     
     Args:
         tiles: Dict of {"q,r": "tile_type"} where tile_type is 'castle', 'spawnpoint', etc.
@@ -109,7 +111,7 @@ def find_path_from_spawn_to_castle(tiles: dict[str, str]) -> Optional[list[HexCo
                     tile_type = tiles.get(key)
                     
                     # Only traverse through passable tiles
-                    if tile_type in ('spawnpoint', 'path', 'castle'):
+                    if tile_type in ('spawnpoint', 'path', 'empty', 'castle'):
                         visited.add((nq, nr))
                         parent[(nq, nr)] = (q, r)
                         queue.append((nq, nr))

@@ -58,6 +58,21 @@
       border-bottom: 1px solid var(--border);
     }
     .group-header:first-child { margin-top: 0; }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 600px) {
+      .page-wrap { padding: 16px 8px; }
+      h1 { font-size: 15px; margin-bottom: 14px; }
+      .filter-bar { gap: 6px; }
+      .filter-bar input { min-width: 0; width: 100%; flex-basis: 100%; }
+      .effect-header { padding: 8px 10px; gap: 6px; }
+      .effect-items.open { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px; padding: 0 2px 4px; }
+      .item-card { padding: 6px 8px; }
+      .item-meta { flex-wrap: wrap; gap: 4px; }
+      .item-value-input { width: 64px; }
+      .effect-key { font-size: 11px; }
+      .group-header { padding: 4px 2px 3px; margin: 10px 0 6px; }
+    }
   </style>
 </head>
 <body>
@@ -84,8 +99,8 @@ const EFFECT_LABELS = {
   build_speed_offset:             'Build Speed +',
   research_speed_modifier:        'Research Speed Multiplier',
   // Travel & Siege — implemented
-  travel_time_offset:             'Travel Time −s (attacker)',
-  siege_time_offset:              'Siege Time +s (defender)',
+  travel_offset:                  'Travel Time −s (attacker)',
+  siege_offset:                   'Siege Time +s (defender)',
   // Battle — NOT yet implemented in engine
   wave_delay_offset:              'Wave Delay Offset ⚠',
   wave_delay_modifier:            'Wave Delay Multiplier ⚠',
@@ -123,7 +138,7 @@ const EFFECT_GROUPS = [
   },
   {
     label: '⚔ Travel & Siege',
-    keys: ['travel_time_offset','siege_time_offset'],
+    keys: ['travel_offset','siege_offset'],
   },
   {
     label: '🏹 Battle (⚠ not yet applied)',

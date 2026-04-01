@@ -306,9 +306,10 @@ class TestFindPath:
         assert find_path_from_spawn_to_castle(tiles) is None
 
     def test_blocked_path_returns_none(self):
+        # A tower (structure) blocks the only route between spawn and castle
         tiles = self._tiles({
             (0, 0): "spawnpoint",
-            (1, 0): "empty",   # wall — not walkable
+            (1, 0): "tower_basic",   # structure — not walkable
             (2, 0): "castle",
         })
         assert find_path_from_spawn_to_castle(tiles) is None

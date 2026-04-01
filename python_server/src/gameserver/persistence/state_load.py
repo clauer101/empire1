@@ -221,11 +221,17 @@ def _deserialize_critter(d: dict[str, Any]) -> Critter:
 
 
 def _deserialize_critter_wave(d: dict[str, Any]) -> CritterWave:
+    slots = d.get("slots", 0)
+    num_spawned = d.get("num_critters_spawned", d.get("critters_spawned", 0))
+    # Reset spawn count on load — a completed wave from a past battle must not
+    # prevent the army from being used again after a server restart.
+    if num_spawned >= slots:
+        num_spawned = 0
     return CritterWave(
         wave_id=d["wave_id"],
         iid=d.get("iid", "SLAVE"),
-        slots=d.get("slots", 0),
-        num_critters_spawned=d.get("num_critters_spawned", d.get("critters_spawned", 0)),
+        slots=slots,
+        num_critters_spawned=num_spawned,
         next_critter_ms=d.get("next_critter_ms", 0.0),
     )
 

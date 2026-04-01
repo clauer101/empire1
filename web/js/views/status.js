@@ -19,6 +19,9 @@ let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
 
+const _ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+function _toRoman(n) { return _ROMAN[n] || String(n); }
+
 function init(el, _api, _state) {
   container = el;
   api = _api;
@@ -131,7 +134,7 @@ function render(data) {
 
       <div class="panel">
         <div class="panel-header">Resources <button class="prod-info-btn" id="resources-detail-btn" title="Show income details">🔍</button></div>
-        <div class="panel-row"><span class="label"><span style="display:inline-block;width:13px;height:13px;background:linear-gradient(135deg,#FFE566,#FFD700 50%,#E6AC00);border-radius:50%;vertical-align:middle;margin-right:3px;box-shadow:0 1px 2px rgba(0,0,0,.35)"></span> Gold</span><span class="value">${fmt(r.gold)} <span style="color:#888;font-size:0.85em">(+${calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold).toFixed(2)}/s)</span></span></div>
+        <div class="panel-row"><span class="label">💰 Gold</span><span class="value">${fmt(r.gold)} <span style="color:#888;font-size:0.85em">(+${calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold).toFixed(2)}/s)</span></span></div>
         <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)} <span style="color:#888;font-size:0.85em">(+${calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture).toFixed(2)}/s)</span></span></div>
         <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0).toFixed(3)}/s)</span></span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
@@ -782,7 +785,7 @@ function renderEmpiresSection(empires) {
   const rows = empires.map((e, i) => `
     <div class="panel-row" style="display:grid;grid-template-columns:24px 1fr 90px 56px 46px;gap:6px;align-items:center;">
       <span style="color:#888;font-size:0.85em;">${i + 1}</span>
-      <span class="label" style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent, #4fc3f7)' : 'inherit'};">${e.name}${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.85em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</span>
+      <span class="label" style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent, #4fc3f7)' : 'inherit'};">${e.name} <span class="era-roman" style="font-size:0.8em;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.85em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</span>
       <span class="value" style="color:#ffa726;">${fmtNumber(e.culture)} ✦</span>
       ${e.is_self
         ? '<span></span><span></span>'

@@ -41,7 +41,6 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Early Barbarians Raid"
-    main_age: "Stone Age"
     travel_time: 120
     trigger:
       items: [FIRE_PLACE]
@@ -50,7 +49,6 @@ armies:
         slots: 6
 
   - name: "Barbarians"
-    main_age: "Neolithic"
     travel_time: 120
     trigger:
       items: [SHRINE, MYSTIC]
@@ -61,48 +59,42 @@ armies:
         slots: 6
 
   - name: "Wild Barbarians"
-    main_age: "Neolithic"
     travel_time: 120
     trigger:
-      items: [POTTERY, CRAFTMANSHIP, GRANARY]
+      items: [POTTERY, CRAFTMANSHIP, GRANARY, DOMESTICATION]
     waves:
       - critter: SCOUT
-        slots: 10
-      - critter: WARRIOR
         slots: 6
+      - critter: WARRIOR
+        slots: 1
       - critter: CLUBMAN
         slots: 6
 
   - name: "Rude Barbarians"
-    main_age: "Bronze Age"
     travel_time: 150
     trigger:
       items: [EARTH_WALL, ALPHABET_WRITING, HERBOLOGY, EPIC_DRAWINGS]
     waves:
       - critter: CLUBMAN
-        slots: 10
+        slots: 5
       - critter: SCOUT
-        slots: 12
-      - critter: SWORDMAN
-        slots: 3
+        slots: 7
+      - critter: WARRIOR
+        slots: 2
 
   - name: "Angry Barbarians"
-    main_age: "Neolithic"
     travel_time: 150
     trigger:
       items: [HORSEBACK_RIDING, EXCHANGE_POST, MAIN_HOUSE]
     waves:
       - critter: CLUBMAN
-        slots: 8
+        slots: 6
       - critter: SCOUT
         slots: 8
-      - critter: SWORDMAN
-        slots: 4
-      - critter: WARRIOR
-        slots: 8
+      - critter: CART
+        slots: 2
 
   - name: "Stone Eaters"
-    main_age: "Neolithic"
     travel_time: 180
     trigger:
       items: [STONE_CIRCLE, CRAFTSMANSHIP]
@@ -110,128 +102,103 @@ armies:
       - critter: SCOUT
         slots: 4
       - critter: SCOUT
-        slots: 4
-      - critter: CLUBMAN
-        slots: 6
-      - critter: SCOUT
-        slots: 8
-      - critter: CLUBMAN
         slots: 10
 
   - name: "Hunter Hunters"
-    main_age: "Neolithic"
     travel_time: 180
     trigger:
       items: [HUNTING]
     waves:
       - critter: SLAVE
-        slots: 2
-      - critter: WARRIOR
         slots: 4
-      - critter: SLAVE
+      - critter: SCOUT
+        slots: 7
+      - critter: SCOUT
         slots: 6
-      - critter: SCOUT
-        slots: 8
-      - critter: CLUBMAN
-        slots: 10
-      - critter: SCOUT
-        slots: 12
 
   # ──────────────────────────────────────────────────────────
   #   NEOLITHIKUM  (Effort 800 – 7.500)
   # ──────────────────────────────────────────────────────────
 
   - name: "Potter Plunderers"
-    main_age: "Bronze Age"
     travel_time: 300
     trigger:
-      items: [POTTERY]
+      items: [POTTERY, EPIC_DRAWINGS]
     waves:
       - critter: WARRIOR
-        slots: 8
-      - critter: CHARIOT
-        slots: 10
+        slots: 4
       - critter: SCOUT
-        slots: 11
+        slots: 6
+      - critter: SCOUT
+        slots: 6
       - critter: WARRIOR
-        slots: 8
-      - critter: CART
-        slots: 10
+        slots: 3
 
   - name: "Harvest Raiders"
-    main_age: "Bronze Age"
     travel_time: 300
     trigger:
       items: [AGRICULTURE, GRANARY]
     waves:
-      - critter: CHARIOT
-        slots: 8
+      - critter: CART
+        slots: 3
       - critter: WARRIOR
-        slots: 8
+        slots: 2
       - critter: SCOUT
-        slots: 8
-      - critter: CHARIOT
-        slots: 8
+        slots: 5
+      - critter: CLUBMAN
+        slots: 6
       - critter: WARRIOR
-        slots: 10
+        slots: 5
 
   - name: "Shrine Destroyers"
-    main_age: "Bronze Age"
     travel_time: 420
     trigger:
       items: [SHRINE, EXCHANGE_POST]
     waves:
       - critter: CLUBMAN
-        slots: 9
+        slots: 4
       - critter: WARRIOR
-        slots: 7
-      - critter: SWORDMAN
-        slots: 7
-      - critter: CHARIOT
-        slots: 9
+        slots: 5
       - critter: CART
-        slots: 10
+        slots: 3
+      - critter: SCOUT
+        slots: 4
+      - critter: CART
+        slots: 3
 
   - name: "Epic Plunder"
-    main_age: "Bronze Age"
     travel_time: 420
     trigger:
-      items: [EPIC_DRAWINGS, HERBOLOGY, ALPHABET_WRITING]
+      items: [HERBOLOGY, ALPHABET_WRITING]
     waves:
-      - critter: SWORDMAN
-        slots: 14
-      - critter: BOWMAN
-        slots: 16
-      - critter: PIKENEER
-        slots: 17
-      - critter: CART
-        slots: 18
       - critter: WARRIOR
-        slots: 20
+        slots: 5
+      - critter: CART
+        slots: 6
+      - critter: WARRIOR
+        slots: 5
+      - critter: CART
+        slots: 6
 
   - name: "Tool Thieves"
-    main_age: "Iron Age"
     travel_time: 120
     trigger:
       items: [TOOL_SHOP]
     waves:
-      - critter: SWORDMAN
-        slots: 14
+      - critter: BOWMAN
+        slots: 3
       - critter: WARRIOR
-        slots: 16
+        slots: 7
       - critter: CART
-        slots: 17
+        slots: 9
       - critter: WARRIOR
-        slots: 18
-      - critter: HORSEMAN_SLOW
-        slots: 20
+        slots: 4
 
   # ──────────────────────────────────────────────────────────
   #   BRONZEZEIT  (Effort 2.500 – 8.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Bronze Age Marauders"
-    main_age: "Bronze Age"
     travel_time: 600
     trigger:
       items: [COPPER_BRONZE]
@@ -246,11 +213,8 @@ armies:
         slots: 17
       - critter: BOWMAN
         slots: 20
-      - critter: SWORDMAN
-        slots: 12
 
   - name: "Zealous Crusade"
-    main_age: "Bronze Age"
     travel_time: 600
     trigger:
       items: [RELIGION]
@@ -264,12 +228,9 @@ armies:
       - critter: BOWMAN
         slots: 17
       - critter: CART
-        slots: 24
-      - critter: SWORDMAN
         slots: 17
 
   - name: "War Drummers"
-    main_age: "Bronze Age"
     travel_time: 600
     trigger:
       items: [MUSIC, HORSEBACK_RIDING]
@@ -277,37 +238,31 @@ armies:
       - critter: BOWMAN
         slots: 12
       - critter: CLUBMAN
-        slots: 14
+        slots: 12
       - critter: SWORDMAN
-        slots: 14
+        slots: 12
       - critter: BOWMAN
-        slots: 15
+        slots: 13
       - critter: SWORDMAN
-        slots: 16
-      - critter: SWORDMAN
-        slots: 16
+        slots: 9
 
   - name: "Bow Maker's Rivals"
-    main_age: "Bronze Age"
     travel_time: 630
     trigger:
       items: [BOW_MAKER]
     waves:
       - critter: BOWMAN
-        slots: 14
-      - critter: CLUBMAN
         slots: 12
+      - critter: CLUBMAN
+        slots: 10
       - critter: SWORDMAN
-        slots: 14
+        slots: 12
       - critter: BOWMAN
-        slots: 17
-      - critter: CHARIOT
-        slots: 18
-      - critter: CHARIOT
         slots: 15
+      - critter: CHARIOT
+        slots: 16
 
   - name: "Sea Raiders"
-    main_age: "Bronze Age"
     travel_time: 630
     trigger:
       items: [SAILING]
@@ -315,37 +270,31 @@ armies:
       - critter: BOWMAN
         slots: 11
       - critter: SCOUT
-        slots: 15
+        slots: 13
       - critter: SWORDMAN
-        slots: 15
+        slots: 13
       - critter: SWORDMAN
-        slots: 16
+        slots: 14
       - critter: CHARIOT
-        slots: 15
-      - critter: CHARIOT
-        slots: 16
+        slots: 13
 
   - name: "Medic Station Raid"
-    main_age: "Bronze Age"
     travel_time: 630
     trigger:
       items: [MEDICUS]
     waves:
       - critter: BOWMAN
-        slots: 18
+        slots: 10
       - critter: SWORDMAN
         slots: 9
       - critter: BOWMAN
         slots: 14
       - critter: SWORDMAN
-        slots: 17
+        slots: 14
       - critter: CHARIOT
-        slots: 16
-      - critter: CHARIOT
-        slots: 19
+        slots: 12
 
   - name: "Watch Tower Breach"
-    main_age: "Bronze Age"
     travel_time: 630
     trigger:
       items: [WATCH_TOWER]
@@ -353,39 +302,27 @@ armies:
       - critter: SWORDMAN
         slots: 11
       - critter: BOWMAN
-        slots: 16
+        slots: 12
       - critter: SWORDMAN
         slots: 14
       - critter: BOWMAN
-        slots: 18
-      - critter: SWORDMAN
         slots: 15
-      - critter: CHARIOT
-        slots: 18
 
   - name: "Currency Wars"
-    main_age: "Bronze Age"
     travel_time: 630
     trigger:
       items: [CURRENCY]
     waves:
       - critter: SWORDMAN
-        slots: 14
+        slots: 10
       - critter: BOWMAN
-        slots: 15
+        slots: 11
       - critter: SWORDMAN
-        slots: 16
-      - critter: CHARIOT
-        slots: 17
-      - critter: CHARIOT
-        slots: 18
+        slots: 12
       - critter: HORSEMAN_SLOW
-        slots: 19
-      - critter: CHARIOT
-        slots: 20
+        slots: 10
 
   - name: "Field Healer Hunt"
-    main_age: "Bronze Age"
     travel_time: 630
     trigger:
       items: [FIELD_HEALER]
@@ -398,36 +335,26 @@ armies:
         slots: 16
       - critter: BOWMAN
         slots: 17
-      - critter: BOWMAN
-        slots: 18
-      - critter: LEGIONARY
-        slots: 19
       - critter: CHARIOT
         slots: 20
 
   - name: "Harbor Blockade"
-    main_age: "Bronze Age"
     travel_time: 660
     trigger:
       items: [HARBOR]
     waves:
       - critter: SWORDMAN
+        slots: 12
+      - critter: CHARIOT
+        slots: 13
+      - critter: CHARIOT
+        slots: 14
+      - critter: CHARIOT
+        slots: 15
+      - critter: SWORDMAN
         slots: 16
-      - critter: CHARIOT
-        slots: 17
-      - critter: CHARIOT
-        slots: 18
-      - critter: CHARIOT
-        slots: 18
-      - critter: CHARIOT
-        slots: 18
-      - critter: SWORDMAN
-        slots: 19
-      - critter: SWORDMAN
-        slots: 20
 
   - name: "Drilled Swords"
-    main_age: "Bronze Age"
     travel_time: 660
     trigger:
       items: [DRILL]
@@ -443,12 +370,9 @@ armies:
       - critter: CHARIOT
         slots: 16
       - critter: SWORDMAN
-        slots: 19
-      - critter: SWORDMAN
         slots: 14
 
   - name: "Iron Blade Strike"
-    main_age: "Bronze Age"
     travel_time: 660
     trigger:
       items: [SWORD_MAKER]
@@ -463,40 +387,32 @@ armies:
         slots: 17
       - critter: BOWMAN
         slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 19
-      - critter: CHARIOT
-        slots: 20
 
   # ──────────────────────────────────────────────────────────
   #   EISENZEIT  (Effort 8.000 – 30.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Artisan Warriors"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [ARTS]
     waves:
-      - critter: LARGE_CART
-        slots: 14
       - critter: SWORDMAN
+        slots: 10
+      - critter: HORSEMAN_SLOW
+        slots: 10
+      - critter: LEGIONARY
+        slots: 11
+      - critter: PIKENEER
+        slots: 12
+      - critter: HORSEMAN_SLOW
+        slots: 12
+      - critter: PIKENEER
+        slots: 13
+      - critter: LEGIONARY
         slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: PIKENEER
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: PIKENEER
-        slots: 19
-      - critter: LEGIONARY
-        slots: 20
 
   - name: "Notice Board Burning"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [BULLETIN_BOARD]
@@ -514,12 +430,9 @@ armies:
       - critter: HORSEMAN_FAST
         slots: 18
       - critter: HORSEMAN_FAST
-        slots: 19
-      - critter: HORSEMAN_SLOW
-        slots: 20
+        slots: 16
 
   - name: "Mechanical Assault"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [MECHANICS]
@@ -542,7 +455,6 @@ armies:
         slots: 20
 
   - name: "Market Place Looting"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [MARKET_PLACE]
@@ -552,43 +464,39 @@ armies:
       - critter: HORSEMAN_FAST
         slots: 15
       - critter: HORSEMAN_SLOW
-        slots: 16
+        slots: 13
       - critter: LEGIONARY
-        slots: 17
-      - critter: LARGE_CART
-        slots: 17
+        slots: 14
       - critter: HORSEMAN_SLOW
-        slots: 18
+        slots: 15
       - critter: HORSEMAN_SLOW
-        slots: 19
-      - critter: HORSEMAN_SLOW
+        slots: 16
+      - critter: HORSEMAN_FAST
         slots: 20
 
   - name: "Numerology of War"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [MATHMATICS]
     waves:
       - critter: PIKENEER
-        slots: 14
+        slots: 12
       - critter: SWORDMAN
-        slots: 15
+        slots: 13
       - critter: PIKENEER
-        slots: 16
+        slots: 14
       - critter: LARGE_CART
+        slots: 15
+      - critter: HORSEMAN_SLOW
+        slots: 16
+      - critter: LEGIONARY
         slots: 17
       - critter: HORSEMAN_SLOW
-        slots: 17
+        slots: 16
       - critter: LEGIONARY
-        slots: 18
-      - critter: HORSEMAN_SLOW
-        slots: 19
-      - critter: LEGIONARY
-        slots: 20
+        slots: 22
 
   - name: "War Maps Desecrated"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [CARTOGRAPHY]
@@ -608,33 +516,31 @@ armies:
       - critter: LARGE_CART
         slots: 19
       - critter: HORSEMAN_SLOW
-        slots: 20
+        slots: 23
 
   - name: "Boot Camp Assault"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [BOOT_CAMP]
     waves:
       - critter: LEGIONARY
-        slots: 14
+        slots: 13
       - critter: PIKENEER
+        slots: 14
+      - critter: LEGIONARY
+        slots: 14
+      - critter: HORSEMAN_FAST
+        slots: 15
+      - critter: LARGE_CART
         slots: 15
       - critter: LEGIONARY
         slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: LARGE_CART
-        slots: 17
-      - critter: LEGIONARY
-        slots: 18
       - critter: HORSEMAN_SLOW
-        slots: 19
+        slots: 17
       - critter: HORSEMAN_SLOW
-        slots: 20
+        slots: 23
 
   - name: "Laws Broken"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [LAWS]
@@ -654,10 +560,9 @@ armies:
       - critter: LEGIONARY
         slots: 19
       - critter: PIKENEER
-        slots: 20
+        slots: 22
 
   - name: "Chapel Siege"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [CHAPEL]
@@ -677,10 +582,9 @@ armies:
       - critter: PIKENEER
         slots: 19
       - critter: PIKENEER
-        slots: 20
+        slots: 23
 
   - name: "Town Guard Overwhelmed"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [TOWN_GUARD]
@@ -698,12 +602,11 @@ armies:
       - critter: LARGE_CART
         slots: 18
       - critter: HORSEMAN_SLOW
-        slots: 19
-      - critter: HORSEMAN_SLOW
-        slots: 20
+        slots: 23
+      - critter: LARGE_CART
+        slots: 22
 
   - name: "Iron Tide"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [IRON]
@@ -726,7 +629,6 @@ armies:
         slots: 20
 
   - name: "Library Burned"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [LIBRARY]
@@ -749,32 +651,28 @@ armies:
         slots: 20
 
   - name: "Architectural Conquest"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [ARCHITECTURE]
     waves:
       - critter: LEGIONARY
-        slots: 14
+        slots: 10
       - critter: HORSEMAN_SLOW
-        slots: 15
+        slots: 11
       - critter: PIKENEER
-        slots: 16
+        slots: 12
       - critter: HORSEMAN_SLOW
         slots: 16
       - critter: LEGIONARY
         slots: 17
       - critter: HORSEMAN_SLOW
-        slots: 18
+        slots: 16
       - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: LEGIONARY
-        slots: 19
+        slots: 15
       - critter: LARGE_CART
-        slots: 20
+        slots: 17
 
   - name: "Lore Collection Razed"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [LORE_COLLECTION]
@@ -784,20 +682,19 @@ armies:
       - critter: PIKENEER
         slots: 15
       - critter: HORSEMAN_SLOW
-        slots: 16
+        slots: 15
       - critter: LEGIONARY
-        slots: 17
+        slots: 16
       - critter: HORSEMAN_FAST
-        slots: 17
+        slots: 16
       - critter: LARGE_CART
-        slots: 18
+        slots: 17
       - critter: HORSEMAN_SLOW
-        slots: 19
+        slots: 15
       - critter: HORSEMAN_SLOW
-        slots: 20
+        slots: 16
 
   - name: "Forge Sabotage"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [FORGE]
@@ -820,7 +717,6 @@ armies:
         slots: 20
 
   - name: "Ancient Paintings Burned"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [PAINTING]
@@ -843,30 +739,28 @@ armies:
         slots: 20
 
   - name: "Treasure Hunt"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [TREASURE_CHAMBER]
     waves:
       - critter: LEGIONARY
-        slots: 14
+        slots: 13
       - critter: HORSEMAN_FAST
-        slots: 15
+        slots: 14
       - critter: LARGE_CART
+        slots: 15
+      - critter: HORSEMAN_FAST
         slots: 16
       - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 17
+        slots: 16
       - critter: PIKENEER
-        slots: 18
+        slots: 17
       - critter: HORSEMAN_SLOW
-        slots: 19
+        slots: 18
       - critter: HORSEMAN_FAST
-        slots: 20
+        slots: 19
 
   - name: "Iron Work Razed"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [IRON_WORK]
@@ -889,7 +783,6 @@ armies:
         slots: 20
 
   - name: "Literary Armies"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [LITRATURE]
@@ -912,7 +805,6 @@ armies:
         slots: 20
 
   - name: "Cartographer's Ruin"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [CARTOGRAPHER]
@@ -937,26 +829,69 @@ armies:
         slots: 20
 
   - name: "Scientific Siege"
-    main_age: "Iron Age"
     travel_time: 900
     trigger:
       items: [SCIENCE]
     waves:
       - critter: LEGIONARY
-        slots: 14
+        slots: 12
       - critter: HORSEMAN_FAST
+        slots: 13
+      - critter: HORSEMAN_SLOW
+        slots: 14
+      - critter: LEGIONARY
+        slots: 15
+      - critter: LEGIONARY
         slots: 15
       - critter: HORSEMAN_SLOW
         slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: LEGIONARY
-        slots: 17
       - critter: HORSEMAN_SLOW
+        slots: 17
+      - critter: HORSEMAN_FAST
+        slots: 18
+
+  - name: "Stables Raid"
+    travel_time: 120
+    trigger:
+      items: [STABLES]
+    waves:
+      - critter: LEGIONARY
+        slots: 5
+      - critter: CHARIOT
+        slots: 4
+      - critter: HORSEMAN_SLOW
+        slots: 14
+      - critter: HORSEMAN_SLOW
+        slots: 15
+      - critter: HORSEMAN_FAST
+        slots: 17
+      - critter: HORSEMAN_FAST
         slots: 18
       - critter: HORSEMAN_SLOW
-        slots: 19
+        slots: 21
+      - critter: LEGIONARY
+        slots: 18
+
+  - name: "Race Course Massacre"
+    travel_time: 120
+    trigger:
+      items: []
+    waves:
+      - critter: LEGIONARY
+        slots: 9
+      - critter: HORSEMAN_SLOW
+        slots: 8
+      - critter: HORSEMAN_SLOW
+        slots: 10
+      - critter: PIKENEER
+        slots: 12
+      - critter: HORSEMAN_SLOW
+        slots: 14
       - critter: HORSEMAN_FAST
+        slots: 16
+      - critter: CRUSADER
+        slots: 11
+      - critter: LEGIONARY
         slots: 20
 
   # ──────────────────────────────────────────────────────────
@@ -964,7 +899,6 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Command Chain Broken"
-    main_age: "Middle Ages"
     travel_time: 240
     trigger:
       items: [COMMAND_CHAIN]
@@ -983,9 +917,16 @@ armies:
         slots: 21
       - critter: KNIGHT
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: LARGE_CART
+        slots: 18
+      - critter: SAMURAI
+        slots: 20
+      - critter: SIEGE_RAM
+        slots: 22
 
   - name: "Workshop Wreckers"
-    main_age: "Middle Ages"
     travel_time: 240
     trigger:
       items: [WORK_SHOP]
@@ -1004,9 +945,16 @@ armies:
         slots: 21
       - critter: KNIGHT
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: KNIGHT
+        slots: 18
+      - critter: LARGE_CART
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
 
   - name: "Battle Tactics"
-    main_age: "Middle Ages"
     travel_time: 240
     trigger:
       items: [TACTICS]
@@ -1025,9 +973,16 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Fanatic Onslaught"
-    main_age: "Middle Ages"
     travel_time: 240
     trigger:
       items: [FANATISM]
@@ -1046,9 +1001,16 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: LARGE_CART
+        slots: 18
+      - critter: CRUSADER
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
 
   - name: "Theater in Flames"
-    main_age: "Middle Ages"
     travel_time: 240
     trigger:
       items: [THEATER]
@@ -1067,9 +1029,16 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
+      - critter: SIEGE_RAM
+        slots: 16
+      - critter: CRUSADER
+        slots: 18
+      - critter: CRUSADER
+        slots: 20
+      - critter: SIEGE_RAM
+        slots: 22
 
   - name: "Holy War Declared"
-    main_age: "Middle Ages"
     travel_time: 270
     trigger:
       items: [HOLY_WAR]
@@ -1088,30 +1057,16 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
-
-  - name: "Stable Raid"
-    main_age: "Middle Ages"
-    travel_time: 270
-    trigger:
-      items: [STABLES]
-    waves:
-      - critter: KNIGHT
-        slots: 16
       - critter: CRUSADER
-        slots: 17
-      - critter: SIEGE_RAM
+        slots: 16
+      - critter: SAMURAI
         slots: 18
       - critter: KNIGHT
-        slots: 19
-      - critter: CRUSADER
         slots: 20
-      - critter: SIEGE_RAM
-        slots: 21
-      - critter: CRUSADER
+      - critter: KNIGHT
         slots: 22
 
   - name: "Economy Disruption"
-    main_age: "Middle Ages"
     travel_time: 270
     trigger:
       items: [ECONOMY]
@@ -1130,30 +1085,16 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
-
-  - name: "Race Course Massacre"
-    main_age: "Middle Ages"
-    travel_time: 270
-    trigger:
-      items: [RACE_COURSE]
-    waves:
       - critter: KNIGHT
         slots: 16
-      - critter: CRUSADER
-        slots: 17
-      - critter: CRUSADER
+      - critter: SIEGE_RAM
         slots: 18
-      - critter: CRUSADER
-        slots: 19
-      - critter: SAMURAI
+      - critter: KNIGHT
         slots: 20
       - critter: SIEGE_RAM
-        slots: 21
-      - critter: KNIGHT
         slots: 22
 
   - name: "Siege Machinery"
-    main_age: "Middle Ages"
     travel_time: 270
     trigger:
       items: [TREADWHEEL_CRANE]
@@ -1172,9 +1113,16 @@ armies:
         slots: 21
       - critter: KNIGHT
         slots: 22
+      - critter: SIEGE_RAM
+        slots: 16
+      - critter: KNIGHT
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Temple Defiled"
-    main_age: "Middle Ages"
     travel_time: 270
     trigger:
       items: [TEMPLE]
@@ -1193,9 +1141,16 @@ armies:
         slots: 21
       - critter: KNIGHT
         slots: 22
+      - critter: SIEGE_RAM
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: SAMURAI
+        slots: 22
 
   - name: "Church Razed"
-    main_age: "Middle Ages"
     travel_time: 270
     trigger:
       items: [CHURCH]
@@ -1214,9 +1169,16 @@ armies:
         slots: 21
       - critter: SIEGE_RAM
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Feudal Uprising"
-    main_age: "Middle Ages"
     travel_time: 270
     trigger:
       items: [FEUDALISM]
@@ -1235,9 +1197,16 @@ armies:
         slots: 21
       - critter: SIEGE_RAM
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: SIEGE_RAM
+        slots: 18
+      - critter: SAMURAI
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Fencing School Sacked"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [FENCING_SCHOOL]
@@ -1256,9 +1225,16 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: CRUSADER
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
 
   - name: "Guild Blockade"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [GUILD]
@@ -1277,9 +1253,16 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: SIEGE_RAM
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
 
   - name: "Sovereign Guard Clash"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [SOVEREIGN_GUARD]
@@ -1298,9 +1281,16 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
+      - critter: SIEGE_RAM
+        slots: 16
+      - critter: KNIGHT
+        slots: 18
+      - critter: SAMURAI
+        slots: 20
+      - critter: SAMURAI
+        slots: 22
 
   - name: "Monastery Sacked"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [MONASTERY]
@@ -1319,9 +1309,16 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: KNIGHT
+        slots: 16
+      - critter: KNIGHT
+        slots: 18
+      - critter: CRUSADER
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Royal Court Siege"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [MONARCHY]
@@ -1340,9 +1337,16 @@ armies:
         slots: 21
       - critter: KNIGHT
         slots: 22
+      - critter: SIEGE_RAM
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: SAMURAI
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
 
   - name: "Manor Plundered"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [MANOR]
@@ -1361,9 +1365,16 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: CRUSADER
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Bank Heist"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [BANK]
@@ -1382,9 +1393,16 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
+      - critter: KNIGHT
+        slots: 16
+      - critter: KNIGHT
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
 
   - name: "Steel Blades Advance"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [STEEL]
@@ -1403,9 +1421,18 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: SAMURAI
+        slots: 22
+      - critter: SAMURAI
+        slots: 24
 
   - name: "Academy Sacked"
-    main_age: "Middle Ages"
     travel_time: 300
     trigger:
       items: [ACADEMY]
@@ -1424,9 +1451,18 @@ armies:
         slots: 21
       - critter: SIEGE_RAM
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: CRUSADER
+        slots: 18
+      - critter: CRUSADER
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
+      - critter: SAMURAI
+        slots: 24
 
   - name: "Gunpowder Plot"
-    main_age: "Middle Ages"
     travel_time: 330
     trigger:
       items: [GUNPOWDER]
@@ -1445,9 +1481,18 @@ armies:
         slots: 21
       - critter: SAMURAI
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: SIEGE_RAM
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: SIEGE_RAM
+        slots: 22
+      - critter: CRUSADER
+        slots: 24
 
   - name: "City Walls Stormed"
-    main_age: "Middle Ages"
     travel_time: 330
     trigger:
       items: [CITY_WALLS]
@@ -1466,9 +1511,18 @@ armies:
         slots: 21
       - critter: KNIGHT
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: SAMURAI
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
+      - critter: SIEGE_RAM
+        slots: 24
 
   - name: "Castle Besieged"
-    main_age: "Middle Ages"
     travel_time: 330
     trigger:
       items: [CASTLE]
@@ -1487,9 +1541,18 @@ armies:
         slots: 21
       - critter: SIEGE_RAM
         slots: 22
+      - critter: KNIGHT
+        slots: 16
+      - critter: SIEGE_RAM
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
+      - critter: CRUSADER
+        slots: 24
 
   - name: "Museum Looted"
-    main_age: "Middle Ages"
     travel_time: 330
     trigger:
       items: [MUSEUM]
@@ -1508,9 +1571,18 @@ armies:
         slots: 21
       - critter: CRUSADER
         slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: SIEGE_RAM
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
+      - critter: SIEGE_RAM
+        slots: 24
 
   - name: "King's Lair Stormed"
-    main_age: "Middle Ages"
     travel_time: 330
     trigger:
       items: [THE_KINGS_LAIR]
@@ -1529,13 +1601,22 @@ armies:
         slots: 21
       - critter: THE_KING
         slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: CRUSADER
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 20
+      - critter: SIEGE_RAM
+        slots: 22
+      - critter: CRUSADER
+        slots: 24
 
   # ──────────────────────────────────────────────────────────
   #   RENAISSANCE  (Effort 100.000 – 500.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Printing Press Destroyed"
-    main_age: "Renaissance"
     travel_time: 330
     trigger:
       items: [PRINTING_PRESS]
@@ -1568,7 +1649,6 @@ armies:
         slots: 24
 
   - name: "Cathedral Siege"
-    main_age: "Renaissance"
     travel_time: 330
     trigger:
       items: [CATHEDRAL]
@@ -1601,7 +1681,6 @@ armies:
         slots: 24
 
   - name: "Shadow Operatives"
-    main_age: "Renaissance"
     travel_time: 330
     trigger:
       items: [STEALTH_SECRECY]
@@ -1634,7 +1713,6 @@ armies:
         slots: 24
 
   - name: "Laboratory Raid"
-    main_age: "Renaissance"
     travel_time: 360
     trigger:
       items: [LABORATORY]
@@ -1667,7 +1745,6 @@ armies:
         slots: 24
 
   - name: "Archive Burning"
-    main_age: "Renaissance"
     travel_time: 360
     trigger:
       items: [ARCHIVES]
@@ -1700,7 +1777,6 @@ armies:
         slots: 24
 
   - name: "Triumphal Arc Demolished"
-    main_age: "Renaissance"
     travel_time: 360
     trigger:
       items: [TRIUMPHAL_ARC]
@@ -1733,7 +1809,6 @@ armies:
         slots: 24
 
   - name: "Constitutional Crisis"
-    main_age: "Renaissance"
     travel_time: 360
     trigger:
       items: [CONSTITUTION]
@@ -1766,7 +1841,6 @@ armies:
         slots: 24
 
   - name: "Courthouse Stormed"
-    main_age: "Renaissance"
     travel_time: 360
     trigger:
       items: [COURTHOUSE]
@@ -1799,7 +1873,6 @@ armies:
         slots: 24
 
   - name: "Parade Ground Ambush"
-    main_age: "Renaissance"
     travel_time: 390
     trigger:
       items: [PARADE_GROUND]
@@ -1832,7 +1905,6 @@ armies:
         slots: 24
 
   - name: "Gunsmith Targeted"
-    main_age: "Renaissance"
     travel_time: 390
     trigger:
       items: [GUNSMITH]
@@ -1865,7 +1937,6 @@ armies:
         slots: 24
 
   - name: "Botanical Warfare"
-    main_age: "Renaissance"
     travel_time: 390
     trigger:
       items: [BOTANIC_GARDENS]
@@ -1898,7 +1969,6 @@ armies:
         slots: 24
 
   - name: "Strategic War Begins"
-    main_age: "Renaissance"
     travel_time: 390
     trigger:
       items: [STRATEGIC_WARFARE]
@@ -1931,7 +2001,6 @@ armies:
         slots: 24
 
   - name: "Cannon Factory Sabotage"
-    main_age: "Renaissance"
     travel_time: 390
     trigger:
       items: [CANNON_MANUFACTORY]
@@ -1964,7 +2033,6 @@ armies:
         slots: 24
 
   - name: "Secret Order Exposed"
-    main_age: "Renaissance"
     travel_time: 390
     trigger:
       items: [SECRET_ORDER]
@@ -1997,7 +2065,6 @@ armies:
         slots: 24
 
   - name: "University Burned"
-    main_age: "Renaissance"
     travel_time: 420
     trigger:
       items: [UNIVERSITY]
@@ -2030,7 +2097,6 @@ armies:
         slots: 24
 
   - name: "Natural Philosophy End"
-    main_age: "Renaissance"
     travel_time: 420
     trigger:
       items: [PHYSICS]
@@ -2063,7 +2129,6 @@ armies:
         slots: 24
 
   - name: "High Court Siege"
-    main_age: "Renaissance"
     travel_time: 420
     trigger:
       items: [HIGH_COURT]
@@ -2096,7 +2161,6 @@ armies:
         slots: 24
 
   - name: "Parliament Dissolved by Force"
-    main_age: "Renaissance"
     travel_time: 420
     trigger:
       items: [PARLIAMENT]
@@ -2129,7 +2193,6 @@ armies:
         slots: 24
 
   - name: "Imperial Palace Siege"
-    main_age: "Renaissance"
     travel_time: 420
     trigger:
       items: [EMPERORS_PALACE]
@@ -2162,7 +2225,6 @@ armies:
         slots: 24
 
   - name: "Alchemical Assault"
-    main_age: "Renaissance"
     travel_time: 450
     trigger:
       items: [CHEMISTRY]
@@ -2195,7 +2257,6 @@ armies:
         slots: 24
 
   - name: "Stock Market Crash Force"
-    main_age: "Renaissance"
     travel_time: 450
     trigger:
       items: [STOCK_MARKET]
@@ -2228,7 +2289,6 @@ armies:
         slots: 24
 
   - name: "Mechanical Engineering War"
-    main_age: "Renaissance"
     travel_time: 450
     trigger:
       items: [MECHANICAL_ENGINEERING]
@@ -2265,7 +2325,6 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Heavy Equipment Sabotage"
-    main_age: "Industrial"
     travel_time: 450
     trigger:
       items: [HEAVY_EQUIPMENT]
@@ -2312,7 +2371,6 @@ armies:
         slots: 30
 
   - name: "Optical Spies"
-    main_age: "Industrial"
     travel_time: 450
     trigger:
       items: [OPTICS]
@@ -2357,7 +2415,6 @@ armies:
         slots: 30
 
   - name: "Ballistic Impact"
-    main_age: "Industrial"
     travel_time: 480
     trigger:
       items: [BALLISTICS]
@@ -2404,7 +2461,6 @@ armies:
         slots: 30
 
   - name: "Steam Engine Explosion"
-    main_age: "Industrial"
     travel_time: 480
     trigger:
       items: [STEAM_ENGINE]
@@ -2451,7 +2507,6 @@ armies:
         slots: 30
 
   - name: "Rail Road Ambush"
-    main_age: "Industrial"
     travel_time: 480
     trigger:
       items: [RAIL_ROADS]
@@ -2498,7 +2553,6 @@ armies:
         slots: 30
 
   - name: "Vehicle Workshop Raid"
-    main_age: "Industrial"
     travel_time: 480
     trigger:
       items: [VEHICLE_WORKSHOP]
@@ -2545,7 +2599,6 @@ armies:
         slots: 30
 
   - name: "Sanitation Sabotage"
-    main_age: "Industrial"
     travel_time: 480
     trigger:
       items: [SANITATION]
@@ -2592,7 +2645,6 @@ armies:
         slots: 30
 
   - name: "Electrical Blackout Strike"
-    main_age: "Industrial"
     travel_time: 510
     trigger:
       items: [ELECTRICITY]
@@ -2639,7 +2691,6 @@ armies:
         slots: 30
 
   - name: "Defense Department Overrun"
-    main_age: "Industrial"
     travel_time: 510
     trigger:
       items: [DEFENSE_DEPARTMENT]
@@ -2686,7 +2737,6 @@ armies:
         slots: 30
 
   - name: "Electric Fence Dismantled"
-    main_age: "Industrial"
     travel_time: 510
     trigger:
       items: [ELECTRIC_FENCE]
@@ -2733,7 +2783,6 @@ armies:
         slots: 30
 
   - name: "Airfield Bombed"
-    main_age: "Industrial"
     travel_time: 540
     trigger:
       items: [AIRFIELD]
@@ -2780,7 +2829,6 @@ armies:
         slots: 30
 
   - name: "Combustion Engine Revolution"
-    main_age: "Industrial"
     travel_time: 540
     trigger:
       items: [COMBUSTION_ENGINE]
@@ -2827,7 +2875,6 @@ armies:
         slots: 30
 
   - name: "Hangar Raid"
-    main_age: "Industrial"
     travel_time: 540
     trigger:
       items: [HANGAR]
@@ -2874,7 +2921,6 @@ armies:
         slots: 30
 
   - name: "Hospital Siege"
-    main_age: "Industrial"
     travel_time: 540
     trigger:
       items: [HOSPITAL]
@@ -2921,7 +2967,6 @@ armies:
         slots: 30
 
   - name: "Factory Seizure"
-    main_age: "Industrial"
     travel_time: 540
     trigger:
       items: [FACTORY]
@@ -2968,7 +3013,6 @@ armies:
         slots: 30
 
   - name: "Emergency Room Overwhelmed"
-    main_age: "Industrial"
     travel_time: 570
     trigger:
       items: [EMERGENCY_ROOM]
@@ -3015,7 +3059,6 @@ armies:
         slots: 30
 
   - name: "Barracks Invasion"
-    main_age: "Industrial"
     travel_time: 570
     trigger:
       items: [BARRACKS]
@@ -3066,7 +3109,6 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Armour Pierced"
-    main_age: "Modern"
     travel_time: 570
     trigger:
       items: [KNO_ARMOUR]
@@ -3123,7 +3165,6 @@ armies:
         slots: 30
 
   - name: "Rocket Silo Raid"
-    main_age: "Modern"
     travel_time: 570
     trigger:
       items: [ROCKET_SILO]
@@ -3180,7 +3221,6 @@ armies:
         slots: 30
 
   - name: "Research Vault Cracked"
-    main_age: "Modern"
     travel_time: 570
     trigger:
       items: [RESEARCH_VAULT]
@@ -3237,7 +3277,6 @@ armies:
         slots: 30
 
   - name: "WMD Site Neutralised"
-    main_age: "Modern"
     travel_time: 600
     trigger:
       items: [WMD_SITE]
@@ -3294,7 +3333,6 @@ armies:
         slots: 30
 
   - name: "Arts Gallery Torched"
-    main_age: "Modern"
     travel_time: 600
     trigger:
       items: [ARTS_GALLERY]
@@ -3351,7 +3389,6 @@ armies:
         slots: 30
 
   - name: "Research Lab Sabotage"
-    main_age: "Modern"
     travel_time: 600
     trigger:
       items: [RESEARCH_LAB]
@@ -3408,7 +3445,6 @@ armies:
         slots: 30
 
   - name: "Echelon Compromise"
-    main_age: "Modern"
     travel_time: 600
     trigger:
       items: [ECHELON_DEFENSE_FACILITY]
@@ -3465,7 +3501,6 @@ armies:
         slots: 30
 
   - name: "Federal Reserve Raided"
-    main_age: "Modern"
     travel_time: 600
     trigger:
       items: [FEDERAL_RESERVE]
@@ -3522,7 +3557,6 @@ armies:
         slots: 30
 
   - name: "Social Order Collapse"
-    main_age: "Modern"
     travel_time: 630
     trigger:
       items: [SOCIAL_SECURITY_SYSTEM]
@@ -3579,7 +3613,6 @@ armies:
         slots: 30
 
   - name: "Social Sciences War"
-    main_age: "Modern"
     travel_time: 630
     trigger:
       items: [SOCIAL_SCIENCES]
@@ -3636,7 +3669,6 @@ armies:
         slots: 30
 
   - name: "Executive Ambush"
-    main_age: "Modern"
     travel_time: 630
     trigger:
       items: [EXECUTIVE_CARPOOL]
@@ -3693,7 +3725,6 @@ armies:
         slots: 30
 
   - name: "Navigation Jammed"
-    main_age: "Modern"
     travel_time: 630
     trigger:
       items: [NAVIGATION_SYSTEM]
@@ -3750,7 +3781,6 @@ armies:
         slots: 30
 
   - name: "Medical Corps Destroyed"
-    main_age: "Modern"
     travel_time: 660
     trigger:
       items: [MEDICINE]
@@ -3807,7 +3837,6 @@ armies:
         slots: 30
 
   - name: "Derivative Crash Strike"
-    main_age: "Modern"
     travel_time: 660
     trigger:
       items: [DERIVATIVE_MARKET]
@@ -3864,7 +3893,6 @@ armies:
         slots: 30
 
   - name: "Bombing Area Attacked"
-    main_age: "Modern"
     travel_time: 660
     trigger:
       items: [BOMBING_AREA]
@@ -3921,7 +3949,6 @@ armies:
         slots: 30
 
   - name: "Nuclear Plant Threatened"
-    main_age: "Modern"
     travel_time: 660
     trigger:
       items: [NUCLEAR_POWER_PLANT]
@@ -3978,7 +4005,6 @@ armies:
         slots: 30
 
   - name: "Robo Manufacture Seized"
-    main_age: "Modern"
     travel_time: 660
     trigger:
       items: [ROBO_MANUFACTURE]
@@ -4035,7 +4061,6 @@ armies:
         slots: 30
 
   - name: "Cryptology Deciphered"
-    main_age: "Modern"
     travel_time: 690
     trigger:
       items: [CRYPTOLOGY]
@@ -4092,7 +4117,6 @@ armies:
         slots: 30
 
   - name: "Military Draft Disrupted"
-    main_age: "Modern"
     travel_time: 690
     trigger:
       items: [MILITARY_SERVICE]
@@ -4149,7 +4173,6 @@ armies:
         slots: 30
 
   - name: "Aviation Grounded"
-    main_age: "Modern"
     travel_time: 690
     trigger:
       items: [AVIATION]
@@ -4206,7 +4229,6 @@ armies:
         slots: 30
 
   - name: "Electronics Jammed"
-    main_age: "Modern"
     travel_time: 690
     trigger:
       items: [ELECTRONICS]
@@ -4263,7 +4285,6 @@ armies:
         slots: 30
 
   - name: "Intelligence Agency Burned"
-    main_age: "Modern"
     travel_time: 690
     trigger:
       items: [INTELLIGENCE_AGENCY]
@@ -4320,7 +4341,6 @@ armies:
         slots: 30
 
   - name: "Mech Warrior Lab Raided"
-    main_age: "Modern"
     travel_time: 720
     trigger:
       items: [MECH_WARRIOR_LAB]
@@ -4377,7 +4397,6 @@ armies:
         slots: 30
 
   - name: "Elite Academy Purged"
-    main_age: "Modern"
     travel_time: 720
     trigger:
       items: [ELITE_ACADEMY]
@@ -4434,7 +4453,6 @@ armies:
         slots: 30
 
   - name: "Recruiting Office Stormed"
-    main_age: "Modern"
     travel_time: 720
     trigger:
       items: [RECRUITING_OFFICE]
@@ -4495,7 +4513,6 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Mass Production Disrupted"
-    main_age: "Future"
     travel_time: 720
     trigger:
       items: [MASS_PRODUCTION]
@@ -4560,7 +4577,6 @@ armies:
         slots: 30
 
   - name: "Fission Chain Reaction"
-    main_age: "Future"
     travel_time: 720
     trigger:
       items: [NUCLEAR_REACTION]
@@ -4625,7 +4641,6 @@ armies:
         slots: 30
 
   - name: "World Wonder Threatened"
-    main_age: "Future"
     travel_time: 750
     trigger:
       items: [THE_WORLD_WONDER]
@@ -4690,7 +4705,6 @@ armies:
         slots: 30
 
   - name: "Chemical Warfare Deployment"
-    main_age: "Future"
     travel_time: 750
     trigger:
       items: [CHEMICAL_WARFARE]
@@ -4755,7 +4769,6 @@ armies:
         slots: 30
 
   - name: "Rocket Science Grounded"
-    main_age: "Future"
     travel_time: 780
     trigger:
       items: [ROCKET_SCIENCE]
@@ -4820,7 +4833,6 @@ armies:
         slots: 30
 
   - name: "Aero Dynamic Supremacy"
-    main_age: "Future"
     travel_time: 780
     trigger:
       items: [AERO_DYNAMICS]
@@ -4885,7 +4897,6 @@ armies:
         slots: 30
 
   - name: "Globalisation Crushed"
-    main_age: "Future"
     travel_time: 780
     trigger:
       items: [GLOBALIZATION_STRATEGIES]
@@ -4950,7 +4961,6 @@ armies:
         slots: 30
 
   - name: "Civil Infrastructure Demolished"
-    main_age: "Future"
     travel_time: 810
     trigger:
       items: [CIVIL_ENGINEERING]
@@ -5015,7 +5025,6 @@ armies:
         slots: 30
 
   - name: "Space Center Attacked"
-    main_age: "Future"
     travel_time: 810
     trigger:
       items: [SPACE_CENTER]
@@ -5080,7 +5089,6 @@ armies:
         slots: 30
 
   - name: "Satellite Network Jammed"
-    main_age: "Future"
     travel_time: 810
     trigger:
       items: [SATELITE_SYSTEMS]
@@ -5143,7 +5151,6 @@ armies:
         slots: 30
 
   - name: "Cyber Command Hacked"
-    main_age: "Future"
     travel_time: 840
     trigger:
       items: [CYBER_COMMAND]
@@ -5206,7 +5213,6 @@ armies:
         slots: 30
 
   - name: "Computer Network Crash"
-    main_age: "Future"
     travel_time: 840
     trigger:
       items: [COMPUTER_TECHNOLOGY]
@@ -5269,7 +5275,6 @@ armies:
         slots: 30
 
   - name: "Special Forces Ambush"
-    main_age: "Future"
     travel_time: 840
     trigger:
       items: [SPECIAL_FORCES]
@@ -5332,7 +5337,6 @@ armies:
         slots: 30
 
   - name: "Bionic Uprising"
-    main_age: "Future"
     travel_time: 870
     trigger:
       items: [BIONICS]
@@ -5395,7 +5399,6 @@ armies:
         slots: 30
 
   - name: "Composite Armour Pierced"
-    main_age: "Future"
     travel_time: 870
     trigger:
       items: [FIBER_COMPOSITE]
@@ -5460,7 +5463,6 @@ armies:
         slots: 30
 
   - name: "Fusion Reactor Critical"
-    main_age: "Future"
     travel_time: 900
     trigger:
       items: [FUSION_REACTOR]
@@ -5525,7 +5527,6 @@ armies:
         slots: 30
 
   - name: "Cold Fusion Annihilation"
-    main_age: "Future"
     travel_time: 900
     trigger:
       items: [COLD_FUSION]

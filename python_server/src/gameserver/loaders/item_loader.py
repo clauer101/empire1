@@ -43,7 +43,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             requirements=attrs.get("requirements", []),
             effects=attrs.get("effects") or {},
             damage=float(attrs.get("damage", 0)),
-            range=int(attrs.get("range", 0)),
+            range=float(attrs.get("range", 0)),
             reload_time_ms=float(attrs.get("reload_time", 0)),
             shot_speed=float(attrs.get("shot_speed", 0)),
             shot_type=attrs.get("shot_type", "normal"),
@@ -62,6 +62,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             bonus=attrs.get("bonus", {}),
             spawn_on_death=attrs.get("spawn_on_death", {}),
             scale=float(attrs.get("scale", 1.0)),
+            animation=attrs.get("animation", ""),
         ))
     return items
 

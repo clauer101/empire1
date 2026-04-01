@@ -35,8 +35,14 @@ class EmpireService:
         event_bus: Event bus for inter-service communication.
     """
 
+    _ERA_ORDER: list[str] = [
+        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
+        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
+    ]
+
     def __init__(self, upgrade_provider: UpgradeProvider, event_bus: EventBus,
-                 game_config: GameConfig | None = None) -> None:
+                 game_config: GameConfig | None = None,
+                 knowledge_era_groups: dict[str, list[str]] | None = None) -> None:
         self._upgrades = upgrade_provider
         self._events = event_bus
         self._empires: dict[int, Empire] = {}  # uid → Empire
@@ -50,6 +56,29 @@ class EmpireService:
         self._citizen_effect = _gc.citizen_effect
         self._base_build_speed = _gc.base_build_speed
         self._base_research_speed = _gc.base_research_speed
+        self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
+        self._next_aid: int = 1  # global army ID counter
+
+    # -- Army ID allocation ----------------------------------------------
+
+    def next_army_id(self) -> int:
+        """Return a globally unique army ID and increment the counter."""
+        aid = self._next_aid
+        self._next_aid += 1
+        return aid
+
+    def sync_aid_counter(self) -> None:
+        """Set _next_aid above the highest AID across all empires.
+
+        Call after loading state so new IDs never collide with existing ones.
+        """
+        max_aid = 0
+        for empire in self._empires.values():
+            for army in empire.armies:
+                if army.aid > max_aid:
+                    max_aid = army.aid
+        self._next_aid = max_aid + 1
+        log.info("Army ID counter synced: next_aid=%d", self._next_aid)
 
     # -- Empire registry -------------------------------------------------
 
@@ -78,6 +107,28 @@ class EmpireService:
     def all_empires(self) -> dict[int, Empire]:
         """Read-only access to all managed empires."""
         return self._empires
+
+    # -- Era -------------------------------------------------------------
+
+    def get_current_era(self, empire: Empire) -> str:
+        """Return the current era key for the given empire.
+
+        Criterion: the first completed knowledge item of an era unlocks that
+        era.  The empire's era is the highest era in which at least one
+        knowledge item has been completed (remaining effort == 0).
+
+        Returns the era key string (e.g. ``"EISENZEIT"``).  Falls back to
+        ``"STEINZEIT"`` when no knowledge has been completed yet.
+        """
+        if not self._knowledge_era_groups:
+            return self._ERA_ORDER[0]
+        done = {iid for iid, remaining in empire.knowledge.items() if remaining == 0.0}
+        current = self._ERA_ORDER[0]
+        for era_key in self._ERA_ORDER:
+            items = self._knowledge_era_groups.get(era_key, [])
+            if any(iid in done for iid in items):
+                current = era_key
+        return current
 
     # -- Tick ------------------------------------------------------------
 
@@ -174,16 +225,15 @@ class EmpireService:
     # -- Effects ---------------------------------------------------------
 
     def _apply_effects(self, empire: Empire, iid: str) -> None:
-        """Add the effects of a completed item to the empire."""
-        effects = self._upgrades.get_effects(iid)
-        for key, value in effects.items():
-            empire.effects[key] = empire.effects.get(key, 0.0) + value
-        if effects:
-            log.info("Empire %d: applied effects for %s: %s", empire.uid, iid, effects)
-        self._recalculate_max_life(empire)
+        """Add the effects of a completed item to the empire.
+
+        Performs a full recalculate because completing an item may change
+        the empire's era, which has its own set of effects.
+        """
+        self.recalculate_effects(empire)
 
     def recalculate_effects(self, empire: Empire) -> None:
-        """Rebuild empire effects from all completed buildings and knowledge.
+        """Rebuild empire effects from all completed buildings, knowledge, and current era.
 
         Call this on server startup / state restore to ensure effects
         match the actually completed items.
@@ -199,6 +249,12 @@ class EmpireService:
                 effects = self._upgrades.get_effects(iid)
                 for key, value in effects.items():
                     empire.effects[key] = empire.effects.get(key, 0.0) + value
+        # Apply era-specific effects from game config
+        era_effects_all = getattr(self._gc, "era_effects", {})
+        era_key = self.get_current_era(empire)
+        era_fx = era_effects_all.get(era_key, {})
+        for key, value in era_fx.items():
+            empire.effects[key] = empire.effects.get(key, 0.0) + value
         self._recalculate_max_life(empire)
         log.info("Empire %d: recalculated effects → %s", empire.uid, empire.effects)
 

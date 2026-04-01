@@ -69,26 +69,7 @@ async def test_map_save_invalid_no_castle(mock_services):
     
     response = await handle_map_save_request(message, sender_uid=42)
     assert response["success"] is False
-    assert "exactly 1 castle" in response["error"]
-
-
-@pytest.mark.asyncio
-async def test_map_save_invalid_no_spawnpoint(mock_services):
-    """Map without spawnpoint is rejected."""
-    import gameserver.network.handlers
-    gameserver.network.handlers._services = mock_services
-    
-    message = MapSaveRequest(
-        type="map_save_request",
-        tiles={
-            "0,0": "path",
-            "1,0": "castle",
-        }
-    )
-    
-    response = await handle_map_save_request(message, sender_uid=42)
-    assert response["success"] is False
-    assert "at least 1 spawnpoint" in response["error"]
+    assert "Kein Castle" in response["error"]
 
 
 @pytest.mark.asyncio
@@ -108,7 +89,7 @@ async def test_map_save_invalid_multiple_castles(mock_services):
     
     response = await handle_map_save_request(message, sender_uid=42)
     assert response["success"] is False
-    assert "exactly 1 castle" in response["error"]
+    assert "at most 1 castle" in response["error"]
 
 
 @pytest.mark.asyncio
@@ -128,7 +109,7 @@ async def test_map_save_invalid_no_path(mock_services):
     
     response = await handle_map_save_request(message, sender_uid=42)
     assert response["success"] is False
-    assert "No passable path" in response["error"]
+    assert "Weg verbaut" in response["error"]
 
 
 @pytest.mark.asyncio

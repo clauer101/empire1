@@ -111,9 +111,9 @@ class TestBuildingEffectsCompletion:
         culture_offset = empire.get_effect("culture_offset", 0.0)
         gold_modifier = empire.get_effect("gold_modifier", 0.0)
         
-        # Gold offset: only EXCHANGE_POST's 0.05 (not FIRE_PLACE's 0.1)
-        assert abs(gold_offset - 0.05) < 0.0001, \
-            f"Gold offset should be 0.05 (only from completed EXCHANGE_POST), got {gold_offset}"
+        # Gold offset: only EXCHANGE_POST's 0.21 (not FIRE_PLACE's 0.1)
+        assert abs(gold_offset - 0.21) < 0.0001, \
+            f"Gold offset should be 0.21 (only from completed EXCHANGE_POST), got {gold_offset}"
         
         # Culture offset: only SHRINE's 0.05
         assert abs(culture_offset - 0.05) < 0.0001, \

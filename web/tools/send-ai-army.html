@@ -285,6 +285,29 @@
     #toast.show { opacity: 1; transform: translateY(0); }
     #toast.ok  { background: #1a3a1a; border: 1px solid var(--success); color: var(--success); }
     #toast.err { background: #3a0a0a; border: 1px solid var(--danger);  color: var(--danger); }
+
+    /* ── Mobile (extends existing 700px query) ── */
+    @media (max-width: 700px) {
+      body { overflow: auto; }
+      #content { padding: 8px 8px; gap: 8px; grid-template-rows: auto; }
+      .card-body { padding: 10px; }
+      .card-header { padding: 6px 10px; }
+      .wave-critter { width: auto; min-width: 60px; flex: 1; }
+      .wave-slots { width: auto; min-width: 30px; }
+      .wave-hp { width: auto; min-width: 40px; }
+      .wave-row { flex-wrap: wrap; gap: 4px; }
+      .age-name { width: 70px; font-size: 10px; }
+      .age-pct { width: 32px; font-size: 10px; }
+      .stat-box { min-width: 70px; }
+      .stat-box .val { font-size: 0.95rem; }
+      #launch-card .card-body { gap: 10px; }
+      input[type="number"] { width: 100px; font-size: 12px; padding: 5px 8px; }
+      #preview { min-width: 0; font-size: 11px; }
+      #send-btn { padding: 8px 16px; font-size: 12px; }
+      #topbar { padding: 8px 10px; }
+      .empire-btn { padding: 6px 10px; }
+      .army-btn { padding: 7px 10px; }
+    }
   </style>
 </head>
 <body>
@@ -373,7 +396,9 @@ function armyStrength(waves) {
   return Math.round(total);
 }
 
-// ── Era detection by travel_time ──────────────────────────────────
+// ── Era detection ─────────────────────────────────────────────────
+// Primary: use the most advanced critter era in the army's waves.
+// Fallback: travel_time bucketing (for armies with unknown critters).
 const ERA_BREAKS = [
   [120,  'Stone Age'],
   [300,  'Neolithic'],
@@ -390,6 +415,20 @@ function travelToEra(t) {
   if (!t) return 'Unbekannt';
   for (const [max, era] of ERA_BREAKS) if (t <= max) return era;
   return 'Zukunft';
+}
+
+function armyEra(army) {
+  if (army.main_age) return army.main_age;
+  // Determine era from the most advanced critter across all waves
+  let bestIdx = -1;
+  let bestEra = null;
+  for (const w of army.waves) {
+    const c = critterStats[w.critter.toUpperCase()];
+    if (!c?.era) continue;
+    const idx = ERA_ORDER.indexOf(c.era);
+    if (idx > bestIdx) { bestIdx = idx; bestEra = c.era; }
+  }
+  return bestEra || travelToEra(army.travel_time);
 }
 
 function fmtK(n) {
@@ -560,6 +599,26 @@ function buildArmyBtn(army) {
     </div>`;
   }).join('');
 
+  // Era distribution
+  const byEra = {};
+  for (const w of army.waves) {
+    const iid = w.critter.toUpperCase();
+    const era = critterStats[iid]?.era || 'Unbekannt';
+    byEra[era] = (byEra[era] || 0) + w.slots;
+  }
+  const eraBars = ERA_ORDER
+    .filter(e => byEra[e])
+    .map(era => {
+      const slots = byEra[era];
+      const pct = Math.round(slots / totalSlots * 100);
+      return `<div class="age-row">
+        <span class="age-name">${era}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%"></div></div>
+        <span class="age-pct">${pct}%</span>
+        <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${slots} sl</span>
+      </div>`;
+    }).join('');
+
   btn.innerHTML = `
     <div class="army-header">
       <span class="army-name">${army.name}</span>
@@ -568,6 +627,7 @@ function buildArmyBtn(army) {
     <div class="army-travel">✈ ${army.travel_time ?? '?'}s · ${army.waves.length} Wellen · ${totalSlots} Slots</div>
     ${triggerStr ? `<div class="army-trigger">${triggerStr}</div>` : ''}
     <div class="wave-rows">${waveRows}</div>
+    ${eraBars ? `<div class="age-bars" style="margin-top:5px">${eraBars}</div>` : ''}
   `;
   btn.addEventListener('click', () => {
     document.querySelectorAll('.army-btn').forEach(b => b.classList.remove('selected'));
@@ -600,7 +660,7 @@ function renderArmies(armies) {
   // Group by era, preserving ERA_BREAKS order
   armiesByEra = {};
   armies.forEach(army => {
-    const era = army.main_age || travelToEra(army.travel_time);
+    const era = armyEra(army);
     (armiesByEra[era] = armiesByEra[era] || []).push(army);
   });
 

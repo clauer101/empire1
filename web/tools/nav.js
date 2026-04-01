@@ -41,6 +41,7 @@
     { name: '📊 Scatter',  href: 'critter-scatter.html' },
     { name: '⚔ AI Army',  href: 'send-ai-army.html' },
     { name: '🗺 Maps',     href: 'map-overview.html' },
+    { name: '🌳 Tree',    href: 'tech-tree.html' },
   ];
 
   const current = window.location.pathname.split('/').pop() || 'index.html';
@@ -54,6 +55,8 @@
       padding: 0 12px; height: 38px;
       font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
     }
     #dev-nav .nav-brand {
       color: #58a6ff; font-weight: bold; margin-right: 8px;

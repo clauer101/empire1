@@ -137,9 +137,9 @@ class TestSpawnPosition:
         b = _battle(c)
         svc._critter_died(b, c)
         progresses = sorted([ch.path_progress for ch in b.critters.values()], reverse=True)
-        # path has 20 nodes → 19 segments, one_tile = 1/19, spread = 0.8/19
+        # path has 20 nodes → 19 segments, one_tile = 1/19, spread = 1.2/19
         path_len = 19
-        spacing = (0.8 / path_len) / 5
+        spacing = (1.2 / path_len) / 5
         expected = [0.5 - spacing * (i + 1) for i in range(5)]
         expected.sort(reverse=True)
         for actual, exp in zip(progresses, expected):
@@ -164,7 +164,7 @@ class TestSpawnPosition:
         svc._critter_died(b, c)
         progresses = sorted([ch.path_progress for ch in b.critters.values()], reverse=True)
         path_len = 19  # _long_path(20)
-        spacing = (0.8 / path_len) / 3
+        spacing = (1.2 / path_len) / 3
         assert progresses[0] == pytest.approx(progress - spacing * 1, abs=1e-9)
         assert progresses[1] == pytest.approx(progress - spacing * 2, abs=1e-9)
         assert progresses[2] == pytest.approx(progress - spacing * 3, abs=1e-9)
@@ -188,11 +188,11 @@ class TestSpawnPosition:
         svc._critter_died(b2, c2)
         progresses2 = sorted([ch.path_progress for ch in b2.critters.values()], reverse=True)
 
-        # Total spread should be ~0.8 of one hex tile for each path
+        # Total spread should be ~1.2 of one hex tile for each path
         spread1 = c1.path_progress - progresses1[-1]
         spread2 = c2.path_progress - progresses2[-1]
-        expected_spread1 = 0.8 * (1.0 / 4)   # 0.2
-        expected_spread2 = 0.8 * (1.0 / 49)
+        expected_spread1 = 1.2 * (1.0 / 4)   # 0.3
+        expected_spread2 = 1.2 * (1.0 / 49)
         assert spread1 == pytest.approx(expected_spread1, abs=1e-9)
         assert spread2 == pytest.approx(expected_spread2, abs=1e-9)
 

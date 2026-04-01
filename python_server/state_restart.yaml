@@ -30,7 +30,7 @@ empires:
     type: castle
   - q: 0
     r: 1
-    type: path
+    type: empty
   - q: 1
     r: 0
     type: spawnpoint

@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tech Tree</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --purple:      #ab47bc;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --node-w:      220px;
+      --node-gap-x:  60px;
+      --node-gap-y:  24px;
+      --row-cols:    3;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ─────────────────────────────────────────────── */
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #load-status { font-size: 12px; color: var(--text-dim); }
+
+    /* ── Tree container ──────────────────────────────────────── */
+    #tree-wrap {
+      max-width: 900px; margin: 0 auto; padding: 20px 20px 80px;
+      position: relative;
+    }
+
+    /* ── Era sections ────────────────────────────────────────── */
+    .era-section {
+      position: relative;
+      padding: 28px 16px 20px;
+      margin-bottom: 0;
+      border-radius: 0;
+    }
+    .era-section:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    .era-section:last-child  { border-radius: 0 0 var(--radius) var(--radius); }
+
+    .era-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, #3a3a5a 20%, #3a3a5a 80%, transparent 100%);
+      margin: 0;
+    }
+
+    .era-label {
+      display: flex; align-items: baseline; gap: 10px;
+      margin-bottom: 18px; padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .era-label .era-roman {
+      font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.18);
+      font-family: 'Times New Roman', serif; letter-spacing: 2px;
+    }
+    .era-label .era-name {
+      font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.5);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    /* Era background tints */
+    .era-bg-0 { background: rgba(139,119, 80, 0.06); } /* Steinzeit - earthy */
+    .era-bg-1 { background: rgba(120,140, 80, 0.06); } /* Neolithikum - greenish */
+    .era-bg-2 { background: rgba(180,140, 60, 0.06); } /* Bronzezeit - bronze */
+    .era-bg-3 { background: rgba(140,150,170, 0.06); } /* Eisenzeit - iron grey */
+    .era-bg-4 { background: rgba(160,100,100, 0.06); } /* Mittelalter - deep red */
+    .era-bg-5 { background: rgba(160,140,100, 0.06); } /* Renaissance - golden */
+    .era-bg-6 { background: rgba(100,120,140, 0.06); } /* Industrie - steel blue */
+    .era-bg-7 { background: rgba( 80,140,160, 0.06); } /* Moderne - teal */
+    .era-bg-8 { background: rgba(100, 80,160, 0.06); } /* Zukunft - purple */
+
+    /* ── Node rows ───────────────────────────────────────────── */
+    .node-row {
+      display: flex; justify-content: center; gap: var(--node-gap-x);
+      margin-bottom: var(--node-gap-y);
+      position: relative;
+    }
+    .node-row:last-child { margin-bottom: 0; }
+
+    /* ── Knowledge node ──────────────────────────────────────── */
+    .tech-node {
+      width: var(--node-w);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+    .tech-node:hover,
+    .tech-node.hl {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(79,195,247,0.15);
+    }
+    .tech-node.dimmed {
+      opacity: 0.2;
+      transition: opacity 0.2s;
+    }
+    .tech-node .node-name {
+      font-weight: 700; font-size: 13px; margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tech-node .node-effort {
+      font-size: 11px; color: var(--text-dim); font-family: var(--mono);
+      margin-bottom: 6px;
+    }
+    .tech-node .node-effects {
+      font-size: 11px; color: var(--success);
+      margin-bottom: 6px;
+    }
+    .tech-node .node-effects:empty { display: none; }
+
+    /* Unlocks ribbon under the node */
+    .unlocks-strip {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      margin-top: 6px; padding-top: 6px;
+      border-top: 1px dashed rgba(255,255,255,0.08);
+    }
+    .unlocks-strip:empty { display: none; }
+
+    .unlock-badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 3px;
+      white-space: nowrap; line-height: 1.4;
+    }
+    .unlock-badge.cat-building   { background: rgba(79,195,247,0.15); color: #4fc3f7; }
+    .unlock-badge.cat-structure  { background: rgba(239,83,80,0.15);  color: #ef5350; }
+    .unlock-badge.cat-critter    { background: rgba(255,167,38,0.15); color: #ffa726; }
+    .unlock-badge.cat-knowledge  { background: rgba(102,187,106,0.15); color: #66bb6a; }
+
+    /* ── SVG connector lines ─────────────────────────────────── */
+    #connector-svg {
+      position: absolute; top: 0; left: 0;
+      pointer-events: none; z-index: 0;
+    }
+    #connector-svg line {
+      stroke: #3a3a5a; stroke-width: 1.5;
+      transition: stroke 0.2s, stroke-width 0.2s, opacity 0.2s;
+    }
+    #connector-svg line.hl {
+      stroke: var(--accent); stroke-width: 2.5;
+    }
+    #connector-svg line.dimmed {
+      opacity: 0.1;
+    }
+
+    /* ── Loading / error ─────────────────────────────────────── */
+    .loading-msg {
+      text-align: center; padding: 60px 20px; color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    /* ── Legend ───────────────────────────────────────────────── */
+    .legend {
+      display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim);
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 2px;
+    }
+
+    /* ── Detail overlay ───────────────────────────────────────── */
+    .detail-overlay {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.6);
+      justify-content: center; align-items: center;
+    }
+    .detail-overlay.visible { display: flex; }
+    .detail-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+      max-width: 440px; width: 90vw; max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .detail-panel .dp-close {
+      position: absolute; top: 8px; right: 12px;
+      background: none; border: none; color: var(--text-dim);
+      font-size: 18px; cursor: pointer; line-height: 1;
+    }
+    .detail-panel .dp-close:hover { color: var(--text); }
+    .detail-panel .dp-name {
+      font-size: 16px; font-weight: 700; margin-bottom: 2px;
+    }
+    .detail-panel .dp-iid {
+      font-size: 11px; color: var(--text-dim); font-family: var(--mono);
+      margin-bottom: 10px;
+    }
+    .detail-panel .dp-row {
+      margin-bottom: 6px; font-size: 13px;
+    }
+    .detail-panel .dp-label {
+      color: var(--text-dim); margin-right: 4px;
+    }
+    .detail-panel .dp-effects {
+      color: var(--success);
+    }
+    .detail-panel .dp-section {
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .detail-panel .dp-section-title {
+      font-size: 11px; font-weight: 700; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+    }
+    .detail-panel .dp-unlocks {
+      display: flex; flex-wrap: wrap; gap: 5px;
+    }
+    .detail-panel .dp-link {
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .detail-panel .dp-link:hover {
+      opacity: 0.75;
+    }
+    .detail-panel .dp-props {
+      display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;
+      font-size: 12px; margin: 6px 0;
+    }
+    .detail-panel .dp-props .dp-label { white-space: nowrap; }
+    .detail-panel .dp-desc {
+      font-size: 12px; color: var(--text-dim); margin-bottom: 8px;
+      font-style: italic;
+    }
+    .detail-panel .dp-back {
+      background: none; border: none; color: var(--accent);
+      font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 8px;
+    }
+    .detail-panel .dp-back:hover { text-decoration: underline; }
+
+    @media (max-width: 700px) {
+      :root {
+        --node-w: 140px;
+        --node-gap-x: 16px;
+        --node-gap-y: 16px;
+      }
+      #tree-wrap { padding: 12px 4px 60px; }
+      .era-label .era-roman { font-size: 16px; }
+      .era-label .era-name { font-size: 12px; }
+      .era-section { padding: 16px 6px 12px; }
+      .tech-node .node-name { font-size: 11px; }
+      .tech-node .node-effort { font-size: 10px; }
+      .tech-node { padding: 6px 8px; }
+      .unlock-badge { font-size: 9px; }
+      #topbar { flex-wrap: wrap; height: auto; padding: 6px 12px; }
+      .legend { font-size: 10px; }
+    }
+    @media (max-width: 480px) {
+      :root {
+        --node-w: calc((100vw - 40px) / 3);
+        --node-gap-x: 6px;
+        --node-gap-y: 12px;
+      }
+      #tree-wrap { padding: 8px 2px 40px; }
+      .era-section { padding: 12px 4px 10px; }
+      .tech-node { padding: 4px 5px; }
+      .tech-node .node-name { font-size: 10px; }
+      .tech-node .node-effort { font-size: 9px; margin-bottom: 3px; }
+      .tech-node .node-effects { font-size: 9px; margin-bottom: 3px; }
+      .unlock-badge { font-size: 8px; padding: 1px 4px; }
+      .unlocks-strip { gap: 2px; margin-top: 3px; padding-top: 3px; }
+      .era-label { margin-bottom: 10px; padding-bottom: 4px; }
+      .era-label .era-roman { font-size: 14px; }
+      .era-label .era-name { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <script src="nav.js"></script>
+
+  <div id="topbar">
+    <h1>🌳 Tech Tree</h1>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(79,195,247,0.5)"></div> Building</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(239,83,80,0.5)"></div> Tower</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,167,38,0.5)"></div> Critter</div>
+    </div>
+    <span id="load-status"></span>
+  </div>
+
+  <div id="tree-wrap">
+    <div class="loading-msg" id="loading">Loading tech tree…</div>
+    <svg id="connector-svg"></svg>
+    <div id="tree-content"></div>
+  </div>
+
+  <div class="detail-overlay" id="detail-overlay">
+    <div class="detail-panel" id="detail-panel"></div>
+  </div>
+
+
+<script>
+const GS = `http://${location.hostname}:8000`;
+
+const ERA_ROMAN = {
+  'Steinzeit':          'I',
+  'Neolithikum':        'II',
+  'Bronzezeit':         'III',
+  'Eisenzeit':          'IV',
+  'Mittelalter':        'V',
+  'Renaissance':        'VI',
+  'Industrialisierung': 'VII',
+  'Moderne':            'VIII',
+  'Zukunft':            'IX',
+};
+
+/* ─── Data loading ─────────────────────────────────────────────────────── */
+
+let ALL_KNOWLEDGE = {};   // iid → {name, era, requirements, effects, effort}
+let ALL_BUILDINGS  = {};   // iid → {name, era, requirements}
+let ALL_STRUCTURES = {};   // iid → {name, era, requirements}
+let ALL_CRITTERS   = {};   // iid → {name, era, requirements}
+let ERA_ORDER      = [];
+
+async function loadData() {
+  const status = document.getElementById('load-status');
+  status.textContent = 'Fetching…';
+  try {
+    const [eraMap, knowledge, buildings, structures, critters] = await Promise.all([
+      fetch(`${GS}/api/era-map`).then(r => r.json()),
+      fetch(`${GS}/api/knowledge`).then(r => r.json()),
+      fetch(`${GS}/api/buildings`).then(r => r.json()),
+      fetch(`${GS}/api/structure-stats`).then(r => r.json()),
+      fetch(`${GS}/api/critter-stats`).then(r => r.json()),
+    ]);
+
+    ERA_ORDER = eraMap.eras;
+
+    for (const k of knowledge) ALL_KNOWLEDGE[k.iid] = k;
+    for (const b of buildings)  ALL_BUILDINGS[b.iid]  = b;
+    for (const s of structures) ALL_STRUCTURES[s.iid] = s;
+    for (const c of critters)   ALL_CRITTERS[c.iid]   = c;
+
+    status.textContent = `${Object.keys(ALL_KNOWLEDGE).length} techs`;
+    return true;
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+    document.getElementById('loading').textContent = `Failed to load: ${err.message}`;
+    return false;
+  }
+}
+
+/* ─── Build the dependency graph & layout ──────────────────────────────── */
+
+/**
+ * Build a reverse-requirements map: which items does each knowledge unlock?
+ * Returns { knowledgeIid: [{iid, name, category}, ...] }
+ */
+function buildUnlocksMap() {
+  const map = {};
+  const addUnlock = (reqIid, item, category) => {
+    if (!map[reqIid]) map[reqIid] = [];
+    map[reqIid].push({ iid: item.iid, name: item.name, category });
+  };
+  for (const b of Object.values(ALL_BUILDINGS)) {
+    for (const req of (b.requirements || [])) {
+      if (req in ALL_KNOWLEDGE) addUnlock(req, b, 'building');
+    }
+  }
+  for (const s of Object.values(ALL_STRUCTURES)) {
+    for (const req of (s.requirements || [])) {
+      if (req in ALL_KNOWLEDGE) addUnlock(req, s, 'structure');
+    }
+  }
+  for (const c of Object.values(ALL_CRITTERS)) {
+    for (const req of (c.requirements || [])) {
+      if (req in ALL_KNOWLEDGE) addUnlock(req, c, 'critter');
+    }
+  }
+  return map;
+}
+
+/**
+ * Assign each knowledge node to a "row" using topological sorting.
+ * Nodes within the same era are laid out row-by-row, max 3 per row.
+ */
+function layoutNodes() {
+  // Group knowledge by era
+  const byEra = {};
+  for (const era of ERA_ORDER) byEra[era] = [];
+  for (const k of Object.values(ALL_KNOWLEDGE)) {
+    const era = k.era || 'Steinzeit';
+    if (!byEra[era]) byEra[era] = [];
+    byEra[era].push(k);
+  }
+
+  // Within each era, topological sort based on requirements
+  const result = {}; // era → [[iid, iid, iid], [iid, ...], ...]
+  for (const era of ERA_ORDER) {
+    const items = byEra[era] || [];
+    if (items.length === 0) { result[era] = []; continue; }
+
+    // Build in-degree count (only within-era + resolved cross-era deps)
+    const placed = new Set();
+    const allPlaced = new Set(); // all already placed from previous eras
+    for (const prevEra of ERA_ORDER) {
+      if (prevEra === era) break;
+      for (const k of (byEra[prevEra] || [])) allPlaced.add(k.iid);
+    }
+
+    const remaining = new Map(items.map(k => [k.iid, k]));
+    const rows = [];
+
+    while (remaining.size > 0) {
+      // Find items whose ALL requirements are satisfied (placed or cross-era)
+      const ready = [];
+      for (const [iid, k] of remaining) {
+        const reqs = (k.requirements || []).filter(r => r in ALL_KNOWLEDGE);
+        const satisfied = reqs.every(r => placed.has(r) || allPlaced.has(r));
+        if (satisfied) ready.push(iid);
+      }
+
+      if (ready.length === 0) {
+        // Circular or missing deps — just dump remaining
+        ready.push(...remaining.keys());
+      }
+
+      // Sort ready items by effort for consistent ordering
+      ready.sort((a, b) => (remaining.get(a).effort || 0) - (remaining.get(b).effort || 0));
+
+      // Chunk into rows of max 3
+      for (let i = 0; i < ready.length; i += 3) {
+        rows.push(ready.slice(i, i + 3));
+      }
+
+      for (const iid of ready) {
+        placed.add(iid);
+        remaining.delete(iid);
+      }
+    }
+
+    result[era] = rows;
+  }
+
+  return result;
+}
+
+/* ─── Format helpers ───────────────────────────────────────────────────── */
+
+function fmtEffort(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
+  return String(Math.round(n));
+}
+
+function fmtEffects(effects) {
+  if (!effects || Object.keys(effects).length === 0) return '';
+  return Object.entries(effects).map(([k, v]) => {
+    const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const sign = v > 0 ? '+' : '';
+    if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
+    return `${name}: ${sign}${v}`;
+  }).join(', ');
+}
+
+/* ─── Render ───────────────────────────────────────────────────────────── */
+
+function render(layout, unlocksMap) {
+  const content = document.getElementById('tree-content');
+  content.innerHTML = '';
+
+  ERA_ORDER.forEach((era, eraIdx) => {
+    const rows = layout[era];
+    if (!rows || rows.length === 0) return;
+
+    // Era divider (except first)
+    if (eraIdx > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'era-divider';
+      content.appendChild(divider);
+    }
+
+    const section = document.createElement('div');
+    section.className = `era-section era-bg-${eraIdx}`;
+
+    // Era label
+    const label = document.createElement('div');
+    label.className = 'era-label';
+    label.innerHTML = `
+      <span class="era-roman">${ERA_ROMAN[era] || ''}</span>
+      <span class="era-name">${era}</span>
+    `;
+    section.appendChild(label);
+
+    // Rows of nodes
+    for (const row of rows) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'node-row';
+
+      for (const iid of row) {
+        const k = ALL_KNOWLEDGE[iid];
+        if (!k) continue;
+
+        const node = document.createElement('div');
+        node.className = 'tech-node';
+        node.dataset.iid = iid;
+
+        const effectsStr = fmtEffects(k.effects);
+        const unlocks = unlocksMap[iid] || [];
+
+        let unlocksHtml = '';
+        if (unlocks.length > 0) {
+          unlocksHtml = `<div class="unlocks-strip">` +
+            unlocks.map(u =>
+              `<span class="unlock-badge cat-${u.category}" title="${u.iid}">${u.name}</span>`
+            ).join('') +
+          `</div>`;
+        }
+
+        node.innerHTML = `
+          <div class="node-name" title="${iid}">${k.name || iid}</div>
+          <div class="node-effort">⏱ ${fmtEffort(k.effort)}</div>
+          ${effectsStr ? `<div class="node-effects">✦ ${effectsStr}</div>` : ''}
+          ${unlocksHtml}
+        `;
+
+        // Desktop: hover highlight, click opens overlay
+        // Mobile: first tap = highlight, second tap = overlay
+        node.addEventListener('mouseenter', () => {
+          if (_isTouchDevice) return;
+          highlightChain(iid);
+        });
+        node.addEventListener('mouseleave', () => {
+          if (_isTouchDevice) return;
+          clearHighlight();
+        });
+        node.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (_isTouchDevice) {
+            if (_activeNode === iid) {
+              showOverlay(iid);
+            } else {
+              clearHighlight();
+              _activeNode = iid;
+              highlightChain(iid);
+            }
+          } else {
+            showOverlay(iid);
+          }
+        });
+
+        rowEl.appendChild(node);
+      }
+
+      section.appendChild(rowEl);
+    }
+
+    content.appendChild(section);
+  });
+
+  document.getElementById('loading').style.display = 'none';
+
+  // Draw connector lines after DOM settles
+  requestAnimationFrame(() => {
+    requestAnimationFrame(drawConnectors);
+  });
+}
+
+/* ─── SVG Connectors ───────────────────────────────────────────────────── */
+
+function drawConnectors() {
+  const svg = document.getElementById('connector-svg');
+  const wrap = document.getElementById('tree-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+
+  // Size SVG to content
+  svg.setAttribute('width', wrap.scrollWidth);
+  svg.setAttribute('height', wrap.scrollHeight);
+  svg.innerHTML = '';
+
+  // Build node positions map: iid → {cx, top, bottom}
+  const nodePos = {};
+  wrap.querySelectorAll('.tech-node').forEach(el => {
+    const rect = el.getBoundingClientRect();
+    nodePos[el.dataset.iid] = {
+      cx: rect.left + rect.width / 2 - wrapRect.left + wrap.scrollLeft,
+      top: rect.top - wrapRect.top + wrap.scrollTop,
+      bottom: rect.bottom - wrapRect.top + wrap.scrollTop,
+    };
+  });
+
+  // Draw lines: from each node's requirements to itself
+  for (const [iid, k] of Object.entries(ALL_KNOWLEDGE)) {
+    const target = nodePos[iid];
+    if (!target) continue;
+    for (const req of (k.requirements || [])) {
+      const source = nodePos[req];
+      if (!source) continue; // cross-category req (building etc)
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', source.cx);
+      line.setAttribute('y1', source.bottom);
+      line.setAttribute('x2', target.cx);
+      line.setAttribute('y2', target.top);
+      line.dataset.from = req;
+      line.dataset.to = iid;
+      svg.appendChild(line);
+    }
+  }
+}
+
+/* ─── Highlight chain ──────────────────────────────────────────────────── */
+
+/**
+ * Collect all ancestors (recursively up) and descendants (recursively down)
+ * of the given knowledge iid, then highlight those nodes and their connecting lines.
+ */
+function highlightChain(iid) {
+  const connected = new Set([iid]);
+
+  // Direct prerequisites
+  for (const req of (ALL_KNOWLEDGE[iid]?.requirements || [])) {
+    if (req in ALL_KNOWLEDGE) connected.add(req);
+  }
+
+  // Direct successors (who directly requires this)
+  for (const [kid, k] of Object.entries(ALL_KNOWLEDGE)) {
+    if ((k.requirements || []).includes(iid)) connected.add(kid);
+  }
+
+  // Highlight/dim nodes
+  document.querySelectorAll('.tech-node').forEach(el => {
+    if (connected.has(el.dataset.iid)) {
+      el.classList.add('hl');
+      el.classList.remove('dimmed');
+    } else {
+      el.classList.add('dimmed');
+      el.classList.remove('hl');
+    }
+  });
+
+  // Highlight/dim lines
+  document.querySelectorAll('#connector-svg line').forEach(line => {
+    if (connected.has(line.dataset.from) && connected.has(line.dataset.to)) {
+      line.classList.add('hl');
+      line.classList.remove('dimmed');
+    } else {
+      line.classList.add('dimmed');
+      line.classList.remove('hl');
+    }
+  });
+}
+
+function clearHighlight() {
+  document.querySelectorAll('.tech-node.hl, .tech-node.dimmed').forEach(el => {
+    el.classList.remove('hl', 'dimmed');
+  });
+  document.querySelectorAll('#connector-svg line.hl, #connector-svg line.dimmed').forEach(line => {
+    line.classList.remove('hl', 'dimmed');
+  });
+}
+
+/* ─── Detail overlay ───────────────────────────────────────────────────── */
+
+let _unlocksMap = {};
+let _overlayHistory = [];
+
+function _linkBadge(iid, name, category) {
+  return `<span class="unlock-badge dp-link cat-${category}" data-iid="${iid}" data-cat="${category}">${name}</span>`;
+}
+
+function _reqLinks(requirements) {
+  return (requirements || []).map(r => {
+    if (ALL_KNOWLEDGE[r]) return _linkBadge(r, ALL_KNOWLEDGE[r].name, 'knowledge');
+    if (ALL_BUILDINGS[r]) return _linkBadge(r, ALL_BUILDINGS[r].name, 'building');
+    if (ALL_STRUCTURES[r]) return _linkBadge(r, ALL_STRUCTURES[r].name, 'structure');
+    if (ALL_CRITTERS[r]) return _linkBadge(r, ALL_CRITTERS[r].name, 'critter');
+    return `<span class="unlock-badge">${r}</span>`;
+  }).join(' ');
+}
+
+function _fmtItemEffects(effects) {
+  if (!effects || Object.keys(effects).length === 0) return '';
+  return Object.entries(effects).map(([k, v]) => {
+    if (k === 'burn_duration') return `🔥 ${(v / 1000).toFixed(1)}s burn`;
+    if (k === 'burn_dps') return `🔥 ${v} dps`;
+    if (k === 'slow_duration') return `❄ ${(v / 1000).toFixed(1)}s slow`;
+    if (k === 'slow_ratio') return `❄ ${Math.round(v * 100)}% speed`;
+    if (k === 'splash_radius') return `💥 ${v} hex`;
+    const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const sign = v > 0 ? '+' : '';
+    if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
+    return `${name}: ${sign}${v}`;
+  }).join(', ');
+}
+
+function showOverlay(iid, category) {
+  // Determine what type of item this is
+  if (!category) {
+    if (ALL_KNOWLEDGE[iid]) category = 'knowledge';
+    else if (ALL_BUILDINGS[iid]) category = 'building';
+    else if (ALL_STRUCTURES[iid]) category = 'structure';
+    else if (ALL_CRITTERS[iid]) category = 'critter';
+    else return;
+  }
+
+  _overlayHistory.push({ iid, category });
+
+  const panel = document.getElementById('detail-panel');
+  let html = `<button class="dp-close" id="dp-close">&times;</button>`;
+
+  if (_overlayHistory.length > 1) {
+    html += `<button class="dp-back" id="dp-back">← Back</button>`;
+  }
+
+  if (category === 'knowledge') {
+    const k = ALL_KNOWLEDGE[iid];
+    if (!k) return;
+    const effectsStr = fmtEffects(k.effects);
+    const unlocks = _unlocksMap[iid] || [];
+    const reqs = _reqLinks(k.requirements);
+
+    html += `
+      <div class="dp-name">🔬 ${k.name || iid}</div>
+      <div class="dp-iid">${iid}</div>
+      ${k.description ? `<div class="dp-desc">${k.description}</div>` : ''}
+      <div class="dp-props">
+        <span class="dp-label">Era:</span><span>${k.era}</span>
+        <span class="dp-label">Effort:</span><span>${fmtEffort(k.effort)}</span>
+      </div>
+      ${effectsStr ? `<div class="dp-row dp-effects">✦ ${effectsStr}</div>` : ''}
+      ${reqs ? `<div class="dp-section"><div class="dp-section-title">Requirements</div><div class="dp-unlocks">${reqs}</div></div>` : ''}
+      ${unlocks.length > 0 ? `<div class="dp-section"><div class="dp-section-title">Unlocks</div><div class="dp-unlocks">${unlocks.map(u =>
+        _linkBadge(u.iid, u.name, u.category)
+      ).join('')}</div></div>` : ''}
+    `;
+
+  } else if (category === 'building') {
+    const b = ALL_BUILDINGS[iid];
+    if (!b) return;
+    const effectsStr = _fmtItemEffects(b.effects);
+    const reqs = _reqLinks(b.requirements);
+    const costsStr = Object.entries(b.costs || {}).map(([r, v]) => {
+      const icon = r === 'gold' ? '💰' : r === 'culture' ? '📚' : r === 'life' ? '❤️' : '';
+      return `${icon} ${Math.round(v)} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
+    }).join(', ');
+
+    html += `
+      <div class="dp-name">🏗 ${b.name || iid}</div>
+      <div class="dp-iid">${iid}</div>
+      ${b.description ? `<div class="dp-desc">${b.description}</div>` : ''}
+      <div class="dp-props">
+        <span class="dp-label">Era:</span><span>${b.era}</span>
+        <span class="dp-label">Effort:</span><span>${fmtEffort(b.effort)}</span>
+        ${costsStr ? `<span class="dp-label">Costs:</span><span>${costsStr}</span>` : ''}
+      </div>
+      ${effectsStr ? `<div class="dp-row dp-effects">✦ ${effectsStr}</div>` : ''}
+      ${reqs ? `<div class="dp-section"><div class="dp-section-title">Requirements</div><div class="dp-unlocks">${reqs}</div></div>` : ''}
+    `;
+
+  } else if (category === 'structure') {
+    const s = ALL_STRUCTURES[iid];
+    if (!s) return;
+    const effectsStr = _fmtItemEffects(s.effects);
+    const reqs = _reqLinks(s.requirements);
+    const costsStr = Object.entries(s.costs || {}).map(([r, v]) => {
+      const icon = r === 'gold' ? '💰' : r === 'culture' ? '📚' : r === 'life' ? '❤️' : '';
+      return `${icon} ${Math.round(v)} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
+    }).join(', ');
+
+    html += `
+      <div class="dp-name">🗼 ${s.name || iid}</div>
+      <div class="dp-iid">${iid}</div>
+      <div class="dp-props">
+        <span class="dp-label">Era:</span><span>${s.era}</span>
+        <span class="dp-label">Damage:</span><span>${s.damage}</span>
+        <span class="dp-label">Range:</span><span>🎯 ${s.range} hex</span>
+        <span class="dp-label">Reload:</span><span>${(s.reload_time / 1000).toFixed(1)}s</span>
+        ${costsStr ? `<span class="dp-label">Costs:</span><span>${costsStr}</span>` : ''}
+      </div>
+      ${effectsStr ? `<div class="dp-row dp-effects">✦ ${effectsStr}</div>` : ''}
+      ${reqs ? `<div class="dp-section"><div class="dp-section-title">Requirements</div><div class="dp-unlocks">${reqs}</div></div>` : ''}
+    `;
+
+  } else if (category === 'critter') {
+    const c = ALL_CRITTERS[iid];
+    if (!c) return;
+    const reqs = _reqLinks(c.requirements);
+
+    html += `
+      <div class="dp-name">${c.is_boss ? '👑 ' : '🗡 '}${c.name || iid}</div>
+      <div class="dp-iid">${iid}</div>
+      <div class="dp-props">
+        <span class="dp-label">Era:</span><span>${c.era}</span>
+        <span class="dp-label">Health:</span><span>❤ ${c.health}</span>
+        <span class="dp-label">Speed:</span><span>⚡ ${c.speed.toFixed(2)}</span>
+        ${c.armour ? `<span class="dp-label">Armour:</span><span>🛡 ${c.armour}</span>` : ''}
+        <span class="dp-label">Damage:</span><span>${c.damage}</span>
+        <span class="dp-label">Slots:</span><span>${c.slots}</span>
+      </div>
+      ${reqs ? `<div class="dp-section"><div class="dp-section-title">Requirements</div><div class="dp-unlocks">${reqs}</div></div>` : ''}
+    `;
+  }
+
+  panel.innerHTML = html;
+
+  // Bind close
+  document.getElementById('dp-close').addEventListener('click', hideOverlay);
+
+  // Bind back
+  const backBtn = document.getElementById('dp-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      _overlayHistory.pop(); // remove current
+      const prev = _overlayHistory.pop(); // get previous (showOverlay will re-push)
+      if (prev) showOverlay(prev.iid, prev.category);
+    });
+  }
+
+  // Bind clickable badges
+  panel.querySelectorAll('.dp-link').forEach(badge => {
+    badge.addEventListener('click', () => {
+      showOverlay(badge.dataset.iid, badge.dataset.cat);
+    });
+  });
+
+  document.getElementById('detail-overlay').classList.add('visible');
+}
+
+function hideOverlay() {
+  document.getElementById('detail-overlay').classList.remove('visible');
+}
+
+// Close overlay on backdrop click
+document.getElementById('detail-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) hideOverlay();
+});
+
+/* ─── Mobile support ───────────────────────────────────────────────────── */
+
+const _isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+let _activeNode = null;
+
+// Close highlight on tap outside (mobile)
+document.addEventListener('click', (e) => {
+  if (!_isTouchDevice || !_activeNode) return;
+  if (e.target.closest('.tech-node') || e.target.closest('.detail-overlay')) return;
+  clearHighlight();
+  _activeNode = null;
+});
+
+/* ─── Resize handler ───────────────────────────────────────────────────── */
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(drawConnectors, 150);
+});
+
+/* ─── Init ─────────────────────────────────────────────────────────────── */
+
+(async () => {
+  const ok = await loadData();
+  if (!ok) return;
+  _unlocksMap = buildUnlocksMap();
+  const layout = layoutNodes();
+  render(layout, _unlocksMap);
+})();
+</script>
+</body>
+</html>

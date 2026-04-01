@@ -355,6 +355,16 @@ class RestClient {
     return this._post(`/api/attack/${attackId}/skip-siege`, {});
   }
 
+  // ── Era Map (public, no auth) ────────────────────────────
+
+  /**
+   * Fetch era groupings for all item categories.
+   * @returns {Promise<{eras: string[], labels_de: object, labels_en: object, knowledge: object, buildings: object, structures: object, critters: object}>}
+   */
+  async getEraMap() {
+    return this._get('/api/era-map');
+  }
+
   // ── Building / Research ───────────────────────────────────
 
   /**

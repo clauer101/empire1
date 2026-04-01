@@ -70,6 +70,11 @@ class Critter:
     burn_remaining_ms: float = 0.0
     burn_dps: float = 0.0
 
+    # Set to True when path_progress >= 1.0 (critter "at the gate").
+    # Stays in battle.critters for one more shot-phase so in-flight shots
+    # can still intercept it before it deals castle damage.
+    reached_goal: bool = False
+
     # Visual scale (from ItemDetails.scale)
     scale: float = 1.0
 

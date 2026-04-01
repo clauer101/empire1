@@ -140,6 +140,24 @@
     }
     button.save-btn:hover { opacity: .85; }
     button.save-btn:disabled { opacity: .4; cursor: default; }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 700px) {
+      #topbar { padding: 8px 10px; gap: 8px; }
+      .tab-bar { margin: 0 10px; flex-wrap: wrap; gap: 2px; }
+      .tab-btn { padding: 6px 12px; font-size: 12px; }
+      #content { padding: 10px 8px 40px; }
+      .era-header { padding: 8px 10px; gap: 6px; flex-wrap: wrap; }
+      .era-name { font-size: 0.75rem; }
+      .item-main { padding: 8px 10px; }
+      .item-top { gap: 6px; }
+      .effort-input { width: 70px; }
+      .effort-row { gap: 4px; flex-wrap: wrap; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .item-detail { padding: 8px 10px; }
+      .bulk-btns { margin-left: 4px; }
+      .effect-badge { font-size: 9px; padding: 1px 4px; }
+    }
   </style>
 </head>
 <body>

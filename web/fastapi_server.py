@@ -413,6 +413,22 @@ async def save_knowledge(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+_SPRITE_EXTS = [".png", ".webp", ".jpg"]
+
+
+def _resolve_sprite(animation: str) -> str:
+    """Given an animation folder path, find the actual sprite file with extension."""
+    if not animation:
+        return ""
+    folder = animation.lstrip("/")
+    name = folder.split("/")[-1]
+    for ext in _SPRITE_EXTS:
+        candidate = WEB_DIR / folder / (name + ext)
+        if candidate.exists():
+            return f"{folder}/{name}{ext}"
+    return f"{folder}/{name}.png"  # fallback
+
+
 def _parse_critters(path: Path) -> list[dict]:
     """Parse critters.yaml → list of critter stats annotated with era."""
     raw = path.read_text(encoding="utf-8")
@@ -431,6 +447,7 @@ def _parse_critters(path: Path) -> list[dict]:
     for iid, item in data.items():
         if not isinstance(item, dict):
             continue
+        animation = item.get("animation", "")
         result.append({
             "iid": iid, "era": iid_to_era.get(iid, "Steinzeit"),
             "name": item.get("name", iid),
@@ -441,7 +458,8 @@ def _parse_critters(path: Path) -> list[dict]:
             "is_boss": item.get("is_boss", False),
             "scale": item.get("scale", 1),
             "requirements": item.get("requirements", []),
-            "animation": item.get("animation", ""),
+            "animation": animation,
+            "sprite": _resolve_sprite(animation),
             "spawn_on_death": item.get("spawn_on_death") or {},
         })
     return result

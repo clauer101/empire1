@@ -445,11 +445,42 @@
       flex-shrink: 0;
     }
 
+    /* ── Era distribution bars ── */
+    .era-dist-bars { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+    .era-dist-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+    .era-dist-name { width: 90px; color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
+    .era-dist-bar-outer { flex: 1; height: 5px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
+    .era-dist-bar-inner { height: 100%; border-radius: 3px; background: var(--accent); }
+    .era-dist-pct { width: 32px; text-align: right; font-family: var(--mono); color: var(--text-dim); }
+
     /* ── Loading ── */
     #loading {
       color: var(--text-dim);
       text-align: center;
       padding: 60px;
+    }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 700px) {
+      #topbar { padding: 8px 10px; gap: 8px; }
+      #content { padding: 12px 8px 40px; gap: 8px; }
+      .era-header { padding: 8px 10px; gap: 6px; flex-wrap: wrap; }
+      .era-name { font-size: 0.75rem; }
+      .wave-main { padding: 8px 10px; }
+      .wave-name-input { width: 100%; }
+      .wave-row { grid-template-columns: 1fr auto; }
+      .wave-top { gap: 6px; }
+      .army-row { gap: 4px; }
+      .unit-tile { min-width: 70px; padding: 3px 4px; }
+      .trigger-add-input { width: 100px; }
+      .era-dist-name { width: 60px; font-size: 9px; }
+      .era-dist-pct { width: 28px; }
+      .travel-input { width: 50px; }
+      .add-wave-btn { margin: 6px 10px; padding: 6px 10px; }
+      .uncovered-bar { padding: 4px 10px; }
+      .era-time-ctrl { margin-left: 4px; }
+      .era-rand-btn { margin-left: 4px; padding: 2px 6px; }
+      .bulk-btns { margin-left: 4px; }
     }
   </style>
 </head>
@@ -514,9 +545,14 @@ function markDirty() {
 }
 
 function critterOptions(selected) {
-  return ALL_CRITTERS.map(c =>
-    `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`
-  ).join('');
+  return ERA_ORDER.map(era => {
+    const critters = ERA_CRITTERS[era] || [];
+    if (!critters.length) return '';
+    const opts = critters.map(c =>
+      `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`
+    ).join('');
+    return `<optgroup label="${era}">${opts}</optgroup>`;
+  }).join('');
 }
 
 // ── Render ───────────────────────────────────────────────────
@@ -799,9 +835,38 @@ function buildArmyRow(army, idx) {
   // Trigger row
   main.appendChild(buildTriggerRow(army));
 
+  // Era distribution bars
+  const eraDistDiv = document.createElement('div');
+  eraDistDiv.className = 'era-dist-bars';
+
+  function refreshEraBars() {
+    const waves = army.waves || [];
+    const totalSlots = waves.reduce((s, w) => s + (w.slots || 0), 0);
+    const byEra = {};
+    for (const w of waves) {
+      const era = CRITTER_STATS[w.critter]?.era || 'Unbekannt';
+      byEra[era] = (byEra[era] || 0) + (w.slots || 0);
+    }
+    eraDistDiv.innerHTML = ERA_ORDER
+      .filter(e => byEra[e])
+      .map(era => {
+        const slots = byEra[era];
+        const pct = totalSlots ? Math.round(slots / totalSlots * 100) : 0;
+        return `<div class="era-dist-row">
+          <span class="era-dist-name">${era}</span>
+          <div class="era-dist-bar-outer"><div class="era-dist-bar-inner" style="width:${pct}%"></div></div>
+          <span class="era-dist-pct">${pct}%</span>
+          <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono);width:36px;text-align:right">${slots} sl</span>
+        </div>`;
+      }).join('');
+  }
+
+  refreshEraBars();
+
   // Waves (critter/slot units) row
-  const refreshDiff = () => renderDiffBadge(diffBadge, army);
+  const refreshDiff = () => { renderDiffBadge(diffBadge, army); refreshEraBars(); };
   main.appendChild(buildWavesRow(army, refreshDiff));
+  main.appendChild(eraDistDiv);
 
   row.appendChild(main);
 
@@ -1075,7 +1140,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 
     // Build CRITTER_STATS dict from array response
     CRITTER_STATS = Object.fromEntries(
-      critterList.map(c => [c.iid, { health: c.health, speed: c.speed, armour: c.armour, slots: c.slots || 1 }])
+      critterList.map(c => [c.iid, { health: c.health, speed: c.speed, armour: c.armour, slots: c.slots || 1, era: c.era }])
     );
 
     // Carriers = critters with non-empty spawn_on_death

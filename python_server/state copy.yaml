@@ -1,0 +1,685 @@
+meta:
+  version: 1
+  saved_at: '2026-03-27T16:26:59'
+  saved_at_unix: 1774628819.3800738
+empires:
+- uid: 4
+  name: Empire1
+  resources:
+    gold: 238744.47884234905
+    culture: 1134056.1709156109
+    life: 12.0
+  buildings:
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    EARTH_WALL: 0.0
+    TOOL_SHOP: 0.0
+    SHRINE: 0.0
+    GRANARY: 0.0
+    EPIC_DRAWINGS: 0.0
+    EXCHANGE_POST: 0.0
+    WATCH_TOWER: 0.0
+    BOW_MAKER: 0.0
+    MEDICUS: 0.0
+    TOWN_GUARD: 0.0
+    FIELD_HEALER: 0.0
+    HARBOR: 0.0
+    SWORD_MAKER: 0.0
+    BULLETIN_BOARD: 0.0
+    MARKET_PLACE: 0.0
+    BOOT_CAMP: 0.0
+    CHAPEL: 0.0
+    LORE_COLLECTION: 0.0
+    LIBRARY: 0.0
+    FORGE: 0.0
+    TREASURE_CHAMBER: 0.0
+    WORK_SHOP: 0.0
+    CARTOGRAPHER: 0.0
+    STABLES: 0.0
+    THEATER: 0.0
+    CATHEDRAL: 0.0
+    RACE_COURSE: 0.0
+    TEMPLE: 0.0
+    TREADWHEEL_CRANE: 0.0
+    FENCING_SCHOOL: 0.0
+    SOVEREIGN_GUARD: 0.0
+    ACADEMY: 0.0
+    CITY_WALLS: 0.0
+    GUILD: 0.0
+    MONASTERY: 0.0
+    LABORATORY: 0.0
+    BANK: 0.0
+    MUSEUM: 51668.21827045378
+  build_queue: MUSEUM
+  knowledge:
+    HUNTING: 0.0
+    MYSTIC: 0.0
+    CRAFTSMANSHIP: 0.0
+    DOMESTICATION: 0.0
+    ALPHABET_WRITING: 0.0
+    MUSIC: 0.0
+    POTTERY: 0.0
+    COPPER_BRONZE: 0.0
+    HERBOLOGY: 0.0
+    AGRICULTURE: 0.0
+    CURRENCY: 0.0
+    RELIGION: 0.0
+    SAILING: 0.0
+    HORSEBACK_RIDING: 0.0
+    DRILL: 0.0
+    ARTS: 0.0
+    MECHANICS: 0.0
+    MATHMATICS: 0.0
+    CARTOGRAPHY: 0.0
+    LAWS: 0.0
+    IRON: 0.0
+    ARCHITECTURE: 0.0
+    PAINTING: 0.0
+    SCIENCE: 0.0
+    LITRATURE: 0.0
+    COMMAND_CHAIN: 0.0
+    TACTICS: 0.0
+    ECONOMY: 0.0
+    FANATISM: 0.0
+    HOLY_WAR: 0.0
+    GUNPOWDER: 0.0
+    FEUDALISM: 0.0
+    PHYSICS: 0.0
+    PRINTING_PRESS: 0.0
+    MONARCHY: 75070.72798996785
+  research_queue: MONARCHY
+  citizens:
+    merchant: 0
+    scientist: 24
+    artist: 0
+  effects:
+    life_offset: 0.003
+    siege_offset: 10020.0
+    gold_offset: 1.8310000000000002
+    culture_offset: 1.75
+    restore_life_after_loss: 5.0
+    build_speed_modifier: 2.1999999999999997
+    research_speed_modifier: 2.5500000000000003
+    gold_modifier: 1.2
+    max_life_modifier: 2.0
+    travel_offset: -5400.0
+    culture_modifier: 0.6499999999999999
+  artefacts: []
+  max_life: 12.0
+  structures: {}
+  armies:
+  - aid: 1
+    uid: 4
+    name: Na, wer is denn da?
+    waves:
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 11
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 11
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: KNIGHT
+      slots: 20
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  - aid: 2
+    uid: 4
+    name: Bloooob
+    waves:
+    - wave_id: 1
+      iid: KNIGHT
+      slots: 6
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: KNIGHT
+      slots: 4
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: -1
+    r: -1
+    type: empty
+  - q: -1
+    r: 0
+    type: TAR_TOWER
+  - q: -1
+    r: 1
+    type: BOILING_OIL
+  - q: -1
+    r: 2
+    type: empty
+  - q: -1
+    r: 3
+    type: BOILING_OIL
+  - q: -1
+    r: 4
+    type: empty
+  - q: -2
+    r: 0
+    type: empty
+  - q: -2
+    r: 1
+    type: empty
+  - q: -2
+    r: 2
+    type: empty
+  - q: -2
+    r: 3
+    type: HEAVY_TOWER
+  - q: -2
+    r: 4
+    type: empty
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
+  - q: -3
+    r: 2
+    type: FIRE_TOWER
+  - q: -3
+    r: 3
+    type: BALLISTA_TOWER
+  - q: -3
+    r: 4
+    type: spawnpoint
+  - q: 0
+    r: -1
+    type: HEAVY_TOWER
+  - q: 0
+    r: -2
+    type: empty
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: CATAPULTS
+  - q: 0
+    r: 2
+    type: empty
+  - q: 0
+    r: 3
+    type:
+      type: HEAVY_TOWER
+      select: last
+  - q: 0
+    r: 4
+    type: empty
+  - q: 1
+    r: -1
+    type: BALLISTA_TOWER
+  - q: 1
+    r: -2
+    type: empty
+  - q: 1
+    r: 0
+    type: empty
+  - q: 1
+    r: 1
+    type: TAR_TOWER
+  - q: 1
+    r: 2
+    type: empty
+  - q: 1
+    r: 3
+    type: BOILING_OIL
+  - q: 1
+    r: 4
+    type: empty
+  - q: 2
+    r: -1
+    type: HEAVY_TOWER
+  - q: 2
+    r: -2
+    type: empty
+  - q: 2
+    r: 0
+    type: empty
+  - q: 2
+    r: 1
+    type: empty
+  - q: 2
+    r: 2
+    type: HEAVY_TOWER
+  - q: 2
+    r: 3
+    type: empty
+  - q: 3
+    r: -1
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: -2
+    type: empty
+  - q: 3
+    r: 0
+    type: ARBELESTE_TOWER
+  - q: 3
+    r: 1
+    type: TAR_TOWER
+  - q: 3
+    r: 2
+    type: empty
+  - q: 3
+    r: 3
+    type: empty
+  - q: 4
+    r: -1
+    type: empty
+  - q: 4
+    r: -2
+    type: empty
+  - q: 4
+    r: 0
+    type: empty
+  - q: 4
+    r: 1
+    type: empty
+- uid: 3
+  name: Bikini Bottom
+  resources:
+    gold: 297965.5565721796
+    culture: 1219705.4497443528
+    life: 9.148981912062975
+  buildings:
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    SHRINE: 0.0
+    TOOL_SHOP: 0.0
+    EARTH_WALL: 0.0
+    EPIC_DRAWINGS: 0.0
+    GRANARY: 0.0
+    BOW_MAKER: 0.0
+    MEDICUS: 0.0
+    EXCHANGE_POST: 0.0
+    WATCH_TOWER: 0.0
+    BULLETIN_BOARD: 0.0
+    BOOT_CAMP: 0.0
+    FIELD_HEALER: 0.0
+    HARBOR: 0.0
+    SWORD_MAKER: 0.0
+    LIBRARY: 0.0
+    MARKET_PLACE: 0.0
+    MONASTERY: 0.0
+    CHAPEL: 0.0
+    BOTANIC_GARDENS: 0.0
+    TOWN_GUARD: 0.0
+    LORE_COLLECTION: 0.0
+    TREASURE_CHAMBER: 0.0
+    CHURCH: 0.0
+    WORK_SHOP: 0.0
+    CARTOGRAPHER: 0.0
+    THEATER: 0.0
+    BANK: 0.0
+    FORGE: 0.0
+    STABLES: 44991.892704883285
+    TREADWHEEL_CRANE: 0.0
+    TEMPLE: 0.0
+  build_queue: null
+  knowledge:
+    HUNTING: 0.0
+    MYSTIC: 0.0
+    DOMESTICATION: 0.0
+    CRAFTSMANSHIP: 0.0
+    POTTERY: 0.0
+    HORSEBACK_RIDING: 0.0
+    HERBOLOGY: 0.0
+    AGRICULTURE: 0.0
+    MUSIC: 0.0
+    ALPHABET_WRITING: 0.0
+    COPPER_BRONZE: 0.0
+    RELIGION: 0.0
+    SAILING: 0.0
+    DRILL: 0.0
+    CURRENCY: 0.0
+    ARTS: 0.0
+    FANATISM: 0.0
+    HOLY_WAR: 0.0
+    MECHANICS: 0.0
+    LITRATURE: 0.0
+    MATHMATICS: 0.0
+    PRINTING_PRESS: 0.0
+    CARTOGRAPHY: 0.0
+    LAWS: 0.0
+    ECONOMY: 0.0
+    IRON: 0.0
+    FEUDALISM: 0.0
+    ARCHITECTURE: 0.0
+    SCIENCE: 0.0
+    PAINTING: 0.0
+    COMMAND_CHAIN: 40936.77566962515
+  research_queue: COMMAND_CHAIN
+  citizens:
+    merchant: 7
+    scientist: 7
+    artist: 10
+  effects:
+    life_offset: 0.003
+    siege_offset: 4620.0
+    gold_offset: 1.8310000000000002
+    culture_offset: 1.7
+    build_speed_modifier: 1.9000000000000001
+    restore_life_after_loss: 5.0
+    research_speed_modifier: 2.0
+    max_life_modifier: 7.0
+    gold_modifier: 1.2
+    travel_offset: -5400.0
+    culture_modifier: 0.6499999999999999
+  artefacts: []
+  max_life: 17.0
+  structures: {}
+  armies:
+  - aid: 1
+    uid: 3
+    name: Munchkins
+    waves:
+    - wave_id: 1
+      iid: SCOUT
+      slots: 10
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CLUBMAN
+      slots: 20
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 10
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 4
+      iid: CHARIOT
+      slots: 10
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 10
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 10
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CHARIOT
+      slots: 5
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: -1
+    r: -1
+    type: FIRE_TOWER
+  - q: -1
+    r: 0
+    type: path
+  - q: -1
+    r: 1
+    type: TAR_TOWER
+  - q: -1
+    r: 2
+    type: path
+  - q: -1
+    r: 3
+    type: FIRE_TOWER
+  - q: -1
+    r: 4
+    type: CATAPULTS
+  - q: -2
+    r: 0
+    type: FIRE_TOWER
+  - q: -2
+    r: 1
+    type: path
+  - q: -2
+    r: 2
+    type: path
+  - q: -2
+    r: 3
+    type: FIRE_TOWER
+  - q: -2
+    r: 4
+    type: CATAPULTS
+  - q: -3
+    r: 1
+    type: FIRE_TOWER
+  - q: -3
+    r: 2
+    type: FIRE_TOWER
+  - q: -3
+    r: 3
+    type: FIRE_TOWER
+  - q: -3
+    r: 4
+    type: CATAPULTS
+  - q: 0
+    r: -1
+    type: TAR_TOWER
+  - q: 0
+    r: -2
+    type: HEAVY_TOWER
+  - q: 0
+    r: 0
+    type: path
+  - q: 0
+    r: 1
+    type: CATAPULTS
+  - q: 0
+    r: 2
+    type: path
+  - q: 0
+    r: 3
+    type: CATAPULTS
+  - q: 0
+    r: 4
+    type: TAR_TOWER
+  - q: 1
+    r: -1
+    type: TAR_TOWER
+  - q: 1
+    r: -2
+    type: CATAPULTS
+  - q: 1
+    r: 0
+    type: path
+  - q: 1
+    r: 1
+    type: CATAPULTS
+  - q: 1
+    r: 2
+    type: path
+  - q: 1
+    r: 3
+    type: FIRE_TOWER
+  - q: 1
+    r: 4
+    type: TAR_TOWER
+  - q: 2
+    r: -1
+    type: FIRE_TOWER
+  - q: 2
+    r: -2
+    type: TAR_TOWER
+  - q: 2
+    r: 0
+    type: path
+  - q: 2
+    r: 1
+    type: CATAPULTS
+  - q: 2
+    r: 2
+    type: path
+  - q: 2
+    r: 3
+    type: FIRE_TOWER
+  - q: 3
+    r: -1
+    type: FIRE_TOWER
+  - q: 3
+    r: -2
+    type: CATAPULTS
+  - q: 3
+    r: 0
+    type: path
+  - q: 3
+    r: 1
+    type: CATAPULTS
+  - q: 3
+    r: 2
+    type: castle
+  - q: 4
+    r: -1
+    type: ARROW_TOWER
+  - q: 4
+    r: -2
+    type: CATAPULTS
+  - q: 4
+    r: 0
+    type: spawnpoint
+- uid: 100
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 0.0
+    life: 0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map: []
+- uid: 0
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 797076.6493067872
+    life: 10.0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies:
+  - aid: 10001
+    uid: 0
+    name: Hunter Hunters
+    waves:
+    - wave_id: 1
+      iid: SLAVE
+      slots: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: WARRIOR
+      slots: 4
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: SLAVE
+      slots: 6
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: SCOUT
+      slots: 8
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: CLUBMAN
+      slots: 10
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: SCOUT
+      slots: 12
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+  spies: []
+  bosses: {}
+  hex_map: []
+- uid: 6
+  name: KundK Monarchie
+  resources:
+    gold: 119.54023259358945
+    culture: 0.0
+    life: 4.310270963785938
+  buildings:
+    INIT: 0.0
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 989.9908286789432
+  build_queue: null
+  knowledge:
+    HUNTING: 0.0
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects:
+    life_offset: 0.001
+    siege_offset: 120.0
+    gold_offset: 0.1
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: spawnpoint
+  - q: 1
+    r: 0
+    type: empty
+attacks:
+- attack_id: 32
+  attacker_uid: 0
+  defender_uid: 6
+  army_aid: 10001
+  phase: travelling
+  eta_seconds: 75.91752440808341
+  total_eta_seconds: 180.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+battles: []

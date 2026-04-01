@@ -388,6 +388,8 @@ function _onSetup(msg) {
 
     grid.battleActive = true;
     grid._dirty = true;
+
+    _loadMapBackground();
   }
 
   // Update header
@@ -483,6 +485,21 @@ function _onStatus(msg) {
     const army = msg.attacker_army_name || msg.attacker_name || '';
     const user = msg.attacker_username;
     atkEl.textContent = user ? `${army} (${user})` : army;
+  }
+}
+
+// ── Map background ──────────────────────────────────────────
+
+async function _loadMapBackground() {
+  try {
+    const res = await fetch('/api/maps');
+    if (!res.ok) return;
+    const { maps } = await res.json();
+    if (maps && maps.length > 0 && grid) {
+      await grid.setMapBackground(maps[0].url);
+    }
+  } catch (e) {
+    console.warn('[Replay] map background not loaded:', e.message);
   }
 }
 

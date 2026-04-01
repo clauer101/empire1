@@ -88,6 +88,17 @@
     #tooltip .tt-name { font-weight: 700; color: var(--text); margin-bottom: 3px; }
     #tooltip .tt-row { color: var(--text-dim); font-family: var(--mono); font-size: 11px; }
     #tooltip .tt-cls { font-weight: 600; margin-top: 3px; }
+
+    /* ── Mobile ── */
+    @media (max-width: 700px) {
+      body { height: auto; min-height: calc(100vh - 38px); overflow: auto; }
+      #topbar { padding: 8px 10px; gap: 8px; }
+      #tabbar { padding: 0 10px; }
+      .tab-btn { padding: 8px 12px; font-size: 11px; }
+      .legend { flex-direction: column; gap: 4px; padding: 8px 12px; font-size: 10px; }
+      .plot-wrap { padding: 8px 8px 12px; min-height: 320px; }
+      svg.scatter { min-height: 300px; }
+    }
   </style>
 </head>
 <body>

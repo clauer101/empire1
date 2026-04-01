@@ -173,6 +173,29 @@
     }
     .leg-item { display: flex; align-items: center; gap: 5px; }
     .leg-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      #content {
+        grid-template-columns: 1fr;
+        padding: 10px 8px 40px;
+      }
+      .empire-card { font-size: 12px; }
+      .card-header { padding: 6px 8px; }
+      .card-stats { padding: 8px 8px; gap: 6px 10px; }
+      .stat { min-width: 48px; }
+      .stat .val { font-size: 0.9rem; }
+      .life-input { width: 50px; font-size: 0.9rem; }
+      .age-name { width: auto; min-width: 60px; font-size: 9px; }
+      .age-pct { width: 28px; font-size: 9px; }
+      .tower-chips { padding: 0 8px 6px; }
+      .age-bars { padding: 0 8px 8px; }
+      .card-actions { padding: 6px 8px; }
+      .act-btn { padding: 4px 6px; font-size: 10px; }
+      #topbar { padding: 8px 10px; }
+      #filterbar { padding: 8px 10px; }
+      #legend { padding: 8px 10px; gap: 6px 10px; font-size: 10px; }
+    }
   </style>
 </head>
 <body>

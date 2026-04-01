@@ -142,6 +142,16 @@
     #toast.show { opacity: 1; }
     #toast.ok  { border-color: var(--success); color: var(--success); }
     #toast.err { border-color: var(--danger);  color: var(--danger);  }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      #content { padding: 12px 8px 40px; gap: 18px; }
+      .card { padding: 12px 10px; }
+      .form-grid { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+      th, td { white-space: nowrap; }
+      #topbar { padding: 8px 10px; gap: 8px; }
+    }
   </style>
 </head>
 <body>
@@ -163,12 +173,13 @@
             <th>Empire</th>
             <th>Email</th>
             <th>Created</th>
+            <th>Last Seen</th>
             <th>Reset Password</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="users-body">
-          <tr><td colspan="7" style="color:var(--text-dim);text-align:center">Loading…</td></tr>
+          <tr><td colspan="8" style="color:var(--text-dim);text-align:center">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -231,7 +242,7 @@
     function renderUsers(users) {
       const tbody = document.getElementById('users-body');
       if (!users.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim);text-align:center">No users</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim);text-align:center">No users</td></tr>';
         return;
       }
       tbody.innerHTML = users.map(u => `
@@ -241,6 +252,7 @@
           <td>${u.empire_name || '—'}</td>
           <td>${u.email || '—'}</td>
           <td>${(u.created_at || '').slice(0, 16)}</td>
+          <td>${(u.last_seen || '—').slice(0, 16)}</td>
           <td>
             <div class="pw-row">
               <input type="password" id="pw-${u.uid}" placeholder="new password" />

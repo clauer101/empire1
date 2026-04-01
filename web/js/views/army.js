@@ -13,17 +13,7 @@ let st;
 let container;
 let _unsub = [];
 let _availableCritters = [];
-
-/**
- * Calculate critter slot price based on current slots in wave.
- * Matches server-side sigmoid formula from empire_service.py
- * @param {number} slotNumber - The slot number (1-based)
- * @returns {number} Price in gold
- */
-function calculateCritterSlotPrice(slotNumber) {
-  const maxv = 13000, minv = 25, spread = 15, steep = 6;
-  return minv + (maxv - minv) / (1 + Math.exp((-7 * slotNumber) / spread + steep));
-}
+let _empiresCache = [];
 
 function init(el, _api, _state) {
   container = el;
@@ -52,13 +42,38 @@ function init(el, _api, _state) {
     </div>
 
     <!-- ── Armies Overview ────────────────────────────── -->
-    <h3>Your Armies</h3>
+    <h3>Your Armies <span style="font-size:11px;font-weight:400;color:var(--text-dim)">— regenerated after each battle</span></h3>
     <div id="army-list" class="army-tiles">
       <div class="empty-state"><div class="empty-icon">⚔</div><p>Loading armies…</p></div>
+    </div>
+
+    <!-- ── Critter Picker Overlay ──────────────────────── -->
+    <div class="tile-overlay" id="critter-overlay" style="display:none;">
+      <div class="tile-overlay__content" style="width:min(680px,95vw)">
+        <div class="tile-overlay__header">
+          <h3>Critter wählen</h3>
+          <button class="tile-overlay__close" id="critter-overlay-close">✕</button>
+        </div>
+        <div class="tile-overlay__body" id="critter-overlay-body"></div>
+      </div>
     </div>
   `;
 
   container.querySelector('#create-army-btn').addEventListener('click', onCreateArmy);
+
+  // Bind critter overlay close
+  const critterOverlay = container.querySelector('#critter-overlay');
+  const _closeOverlay = () => critterOverlay.classList.remove('is-open');
+  container.querySelector('#critter-overlay-close').addEventListener('click', _closeOverlay);
+  critterOverlay.addEventListener('click', (e) => {
+    if (e.target === critterOverlay) _closeOverlay();
+  });
+  // Close on Escape
+  const _onKeyDown = (e) => {
+    if (e.key === 'Escape') _closeOverlay();
+  };
+  document.addEventListener('keydown', _onKeyDown);
+  _unsub.push(() => document.removeEventListener('keydown', _onKeyDown));
 }
 
 async function enter() {
@@ -67,6 +82,7 @@ async function enter() {
   _unsub.push(eventBus.on('state:summary', updateCreateArmyButton));
   
   // Load once on entry
+  _loadEmpires();
   try {
     await rest.getSummary();
     updateCreateArmyButton();
@@ -300,20 +316,115 @@ async function onAddWave(e) {
   }
 }
 
-async function onChangeCritter(e) {
-  const select = e.currentTarget;
-  const aid = parseInt(select.getAttribute('data-aid'), 10);
-  const waveIdx = parseInt(select.getAttribute('data-wave-idx'), 10);
-  const critterIid = select.value;
-
+async function onChangeCritter(aid, waveIdx, critterIid) {
   if (!critterIid) return;
-
   try {
     await rest.changeWave(aid, waveIdx, critterIid);
     await rest.getMilitary();
   } catch (err) {
     console.error('Failed to change critter:', err);
   }
+}
+
+const _SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+
+/**
+ * Initialize canvas elements with class .critter-sprite-canvas.
+ * Uses data-sprite (exact resolved path) when available.
+ * Falls back to data-animation folder or data-iid with extension probing.
+ * Extracts the first frame (top-left) from a 4×4 sprite sheet,
+ * preserving the original aspect ratio (letterboxed into the canvas).
+ */
+function _initCritterCanvases(el) {
+  el.querySelectorAll('.critter-sprite-canvas').forEach(canvas => {
+    const drawFrame = (img) => {
+      const ctx = canvas.getContext('2d');
+      const fw = img.width / 4;
+      const fh = img.height / 4;
+      const scale = Math.min(canvas.width / fw, canvas.height / fh);
+      const dx = Math.floor((canvas.width  - fw * scale) / 2);
+      const dy = Math.floor((canvas.height - fh * scale) / 2);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, fw, fh, dx, dy, fw * scale, fh * scale);
+    };
+
+    // If we have an exact resolved path, use it directly
+    const sprite = canvas.dataset.sprite;
+    if (sprite) {
+      const img = new Image();
+      img.onload = () => drawFrame(img);
+      img.onerror = () => { canvas.style.display = 'none'; };
+      img.src = sprite;
+      return;
+    }
+
+    // Fallback: probe extensions
+    let baseUrl;
+    const anim = canvas.dataset.animation;
+    if (anim) {
+      const folder = anim.replace(/^\//, '');
+      const name = folder.split('/').pop();
+      baseUrl = `${folder}/${name}`;
+    } else {
+      const iid = canvas.dataset.iid;
+      baseUrl = `assets/sprites/critters/${iid.toLowerCase()}/${iid.toLowerCase()}`;
+    }
+    function tryLoad(idx) {
+      if (idx >= _SPRITE_EXTS.length) { canvas.style.display = 'none'; return; }
+      const img = new Image();
+      img.onload = () => drawFrame(img);
+      img.onerror = () => tryLoad(idx + 1);
+      img.src = baseUrl + _SPRITE_EXTS[idx];
+    }
+    tryLoad(0);
+  });
+}
+
+/**
+ * Open the critter picker overlay for a specific wave.
+ * Shows all available critters as tiles with stats.
+ */
+function _openCritterOverlay(aid, waveIdx, currentIid) {
+  const overlay = container.querySelector('#critter-overlay');
+  const body = container.querySelector('#critter-overlay-body');
+  if (!overlay || !body) return;
+
+  const currentGold = st.summary?.resources?.gold || 0;
+
+  body.innerHTML = `
+    <div class="critter-picker-grid">
+      ${[..._availableCritters].reverse().map(c => {
+        const isSelected = c.iid === currentIid;
+        return `
+          <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}"
+              data-iid="${c.iid}">
+            <div class="cpt-sprite">
+              <canvas class="critter-sprite-canvas" data-iid="${c.iid}" data-sprite="${c.sprite || ''}" data-animation="${c.animation || ''}" width="64" height="64"></canvas>
+            </div>
+            <div class="cpt-name">${c.name}${c.is_boss ? ' 👑' : ''}</div>
+            <div class="cpt-stats">
+              <span class="cpt-stat cpt-hp" title="Health">❤ ${(c.health || 0).toFixed(1)}</span>
+              ${c.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${c.armour}</span>` : ''}
+              <span class="cpt-stat cpt-spd" title="Speed">⚡ ${(c.speed || 0).toFixed(2)}</span>
+              ${c.slots > 1 ? `<span class="cpt-stat cpt-slots" title="Slot cost">${c.slots} Slots</span>` : ''}
+            </div>
+          </button>`;
+      }).join('')}
+    </div>
+  `;
+
+  _initCritterCanvases(body);
+
+  // Bind tile clicks
+  body.querySelectorAll('.critter-pick-tile').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const iid = btn.dataset.iid;
+      overlay.classList.remove('is-open');
+      await onChangeCritter(aid, waveIdx, iid);
+    });
+  });
+
+  overlay.classList.add('is-open');
 }
 
 async function onIncreaseSlots(e) {
@@ -338,7 +449,7 @@ async function onIncreaseSlots(e) {
       await rest.getSummary();
       await rest.getMilitary();
     } else {
-      showMessage(btn.closest('.wave-tile'), `✗ ${resp.error || 'Failed to add critter'}`, 'error');
+      showMessage(btn.closest('.wave-tile'), `✗ ${resp.error || 'Failed to add slot'}`, 'error');
     }
   } catch (err) {
     console.error('Failed to increase critter count:', err);
@@ -427,6 +538,104 @@ function critterCountInWave(waveSlots, critterSlots = 1) {
   return Math.floor(waveSlots / critterSlots);
 }
 
+// ── Empire Autocomplete ──────────────────────────────────────────
+
+async function _loadEmpires() {
+  try {
+    const resp = await rest.getEmpires();
+    _empiresCache = resp.empires || [];
+  } catch (err) {
+    console.warn('Failed to load empire list:', err);
+  }
+}
+
+function _escHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _hilite(str, q) {
+  if (!q) return _escHtml(str);
+  const s = String(str);
+  const idx = s.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return _escHtml(s);
+  return _escHtml(s.slice(0, idx))
+    + '<mark class="eac-hl">' + _escHtml(s.slice(idx, idx + q.length)) + '</mark>'
+    + _escHtml(s.slice(idx + q.length));
+}
+
+function _bindAutocomplete(input) {
+  const dropdown = input.nextElementSibling;
+  if (!dropdown || !dropdown.classList.contains('empire-ac-dropdown')) return;
+
+  let _activeIdx = -1;
+  let _filtered = [];
+
+  function _render(items, q) {
+    _filtered = items;
+    _activeIdx = -1;
+    if (!items.length) { dropdown.style.display = 'none'; return; }
+    const shown = items.slice(0, 12);
+    dropdown.innerHTML = shown.map((e, i) =>
+      `<div class="empire-ac-item" data-idx="${i}">
+        <span class="eac-label">${_hilite(e.name, q)} <span class="eac-meta">${e.username ? '(@' + _hilite(e.username, q) + ', ' : '('}uid:${_hilite(String(e.uid), q)})${e.is_self ? ' <em>(you)</em>' : ''}</span></span>
+      </div>`
+    ).join('');
+    dropdown.style.display = 'block';
+    dropdown.querySelectorAll('.empire-ac-item').forEach(el => {
+      el.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        _selectItem(parseInt(el.dataset.idx, 10));
+      });
+    });
+  }
+
+  function _selectItem(idx) {
+    const empire = _filtered[idx];
+    if (!empire) return;
+    input.value = empire.name;
+    dropdown.style.display = 'none';
+  }
+
+  function _highlight() {
+    dropdown.querySelectorAll('.empire-ac-item').forEach((el, i) => {
+      el.classList.toggle('empire-ac-item--active', i === _activeIdx);
+    });
+  }
+
+  function _search() {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { dropdown.style.display = 'none'; return; }
+    const matches = _empiresCache.filter(e =>
+      e.name.toLowerCase().includes(q) ||
+      (e.username || '').toLowerCase().includes(q) ||
+      String(e.uid).includes(q)
+    );
+    _render(matches, q);
+  }
+
+  input.addEventListener('input', _search);
+  input.addEventListener('focus', () => { if (input.value.trim()) _search(); });
+  input.addEventListener('blur', () => { setTimeout(() => { dropdown.style.display = 'none'; }, 150); });
+  input.addEventListener('keydown', e => {
+    if (dropdown.style.display === 'none') return;
+    const count = Math.min(_filtered.length, 12);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _activeIdx = Math.min(_activeIdx + 1, count - 1);
+      _highlight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _activeIdx = Math.max(_activeIdx - 1, 0);
+      _highlight();
+    } else if (e.key === 'Enter' && _activeIdx >= 0) {
+      e.preventDefault();
+      _selectItem(_activeIdx);
+    } else if (e.key === 'Escape') {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
 function renderArmies(data) {
   const el = container.querySelector('#army-list');
   if (!data) {
@@ -434,7 +643,9 @@ function renderArmies(data) {
     return;
   }
 
-  // Preserve target-uid input values before re-render
+  // Preserve scroll position and target-uid input values before re-render
+  const scrollY = window.scrollY;
+
   const savedTargets = {};
   el.querySelectorAll('.target-uid-input').forEach(inp => {
     if (inp.value) savedTargets[inp.dataset.aid] = inp.value;
@@ -449,10 +660,7 @@ function renderArmies(data) {
     return;
   }
 
-  // Get prices from summary
-  const wavePrice = st.summary?.wave_price || 0;
   const currentGold = st.summary?.resources?.gold || 0;
-  const canAffordWave = currentGold >= wavePrice;
 
   const travelTime = st.summary?.travel_time_seconds;
   const travelLabel = travelTime ? fmtTravelTime(travelTime) : '';
@@ -467,7 +675,10 @@ function renderArmies(data) {
         </button>
       </div>
       <div class="army-attack-row">
-        <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" />
+        <div class="empire-ac-wrap">
+          <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" autocomplete="off" />
+          <div class="empire-ac-dropdown"></div>
+        </div>
         <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;">
           <span>⚔ Attack</span>
           ${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}
@@ -476,52 +687,49 @@ function renderArmies(data) {
       <div class="waves-container">
         ${(a.waves || []).length > 0 ? `
           ${(a.waves || []).map((w, i) => {
-            // Calculate slot price for this specific wave
-            const nextSlotPrice = calculateCritterSlotPrice((w.slots || 0) + 1);
+            const nextSlotPrice = w.next_slot_price || 0;
             const canAffordSlot = currentGold >= nextSlotPrice;
             const selectedCritter = _availableCritters.find(c => c.iid === w.iid);
             const critterSlotCost = selectedCritter?.slots || 1;
             const numCritters = critterCountInWave(w.slots || 0, critterSlotCost);
             return `
             <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
-              <div class="wave-tile-header">
-                <select class="wave-critter-select" data-aid="${a.aid}" data-wave-idx="${i}">
-                  <option value="">-- Select --</option>
-                  ${_availableCritters.map(c => `
-                    <option value="${c.iid}" ${c.iid === w.iid ? 'selected' : ''}>
-                      ${c.name}
-                    </option>
-                  `).join('')}
-                </select>
-              </div>
-              <div class="wave-tile-body">
-                <div class="wave-tile-count-block">
-                  <div class="wave-tile-count">${numCritters}</div>
-                  <div class="wave-tile-slots-label" title="Wave slot capacity">${w.slots || 0} slots</div>
-                </div>
+              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}">
+                <span class="wave-tile__edit-hint">✎</span>
+                ${selectedCritter
+                  ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${selectedCritter.iid}" data-sprite="${selectedCritter.sprite || ''}" data-animation="${selectedCritter.animation || ''}" width="72" height="72"
+                        style="image-rendering:pixelated;"></canvas>`
+                  : `<div class="wave-tile__no-critter">＋</div>`
+                }
+                <div class="wave-tile__count">${selectedCritter ? numCritters : ''}</div>
+              </button>
+              <div class="wave-tile__footer">
+                <span class="wave-tile__slots">${w.slots || 0} sl</span>
                 <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}"
-                  title="${canAffordSlot ? `Add critter (${Math.round(nextSlotPrice)} gold)` : `Not enough gold (${Math.round(nextSlotPrice)} needed)`}"
+                  title="${canAffordSlot ? `Add slot (${Math.round(nextSlotPrice)} gold)` : `Not enough gold (${Math.round(nextSlotPrice)} needed)`}"
                   ${canAffordSlot ? '' : 'style="opacity:0.5;cursor:not-allowed;"'}
                   data-price="${Math.round(nextSlotPrice)}"
                   data-can-afford="${canAffordSlot}">
-                  <span class="wave-slots-increase__icon">+</span>
-                  <span class="wave-slots-increase__price" style="color:${canAffordSlot ? 'var(--text)' : 'var(--danger)'};">💰${Math.round(nextSlotPrice)}</span>
+                  + <span style="color:${canAffordSlot ? 'var(--accent)' : 'var(--danger)'};">💰${Math.round(nextSlotPrice)}</span>
                 </button>
               </div>
-              ${w.spawn_interval_ms ? `<div class="wave-tile-footer"><span class="wave-time">${w.spawn_interval_ms}ms</span></div>` : ''}
             </div>
           `;}).join('')}
         ` : ''}
-        <div class="wave-tile wave-tile-add" data-aid="${a.aid}" 
-          title="${canAffordWave ? `Add wave (${Math.round(wavePrice)} gold)` : `Not enough gold (${Math.round(wavePrice)} needed)`}"
-          style="${canAffordWave ? '' : 'opacity:0.5;cursor:not-allowed;'}"
-          data-price="${Math.round(wavePrice)}"
-          data-can-afford="${canAffordWave}">
-          <div class="wave-tile-plus">+</div>
-          <div style="font-size:11px;margin-top:4px;color:${canAffordWave ? 'var(--text)' : 'var(--danger)'};">
-            💰 ${Math.round(wavePrice)}
-          </div>
-        </div>
+        ${(() => {
+          const wp = a.next_wave_price || 0;
+          const canAff = currentGold >= wp;
+          return `<div class="wave-tile wave-tile-add" data-aid="${a.aid}"
+            title="${canAff ? `Add wave (${Math.round(wp)} gold)` : `Not enough gold (${Math.round(wp)} needed)`}"
+            style="${canAff ? '' : 'opacity:0.5;cursor:not-allowed;'}"
+            data-price="${Math.round(wp)}"
+            data-can-afford="${canAff}">
+            <div class="wave-tile-plus">+</div>
+            <div style="font-size:11px;margin-top:4px;color:${canAff ? 'var(--text)' : 'var(--danger)'};">
+              💰 ${Math.round(wp)}
+            </div>
+          </div>`;
+        })()}
       </div>
       ${idx < armies.length - 1 ? '<div class="army-separator"></div>' : ''}
     </div>
@@ -537,9 +745,15 @@ function renderArmies(data) {
     btn.addEventListener('click', (e) => onAddWave(e));
   });
 
-  // Attach critter select listeners
-  el.querySelectorAll('.wave-critter-select').forEach(select => {
-    select.addEventListener('change', (e) => onChangeCritter(e));
+  // Attach critter picker button listeners
+  el.querySelectorAll('.wave-critter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const aid = parseInt(btn.getAttribute('data-aid'), 10);
+      const waveIdx = parseInt(btn.getAttribute('data-wave-idx'), 10);
+      const currentIid = btn.getAttribute('data-current-iid') || '';
+      _openCritterOverlay(aid, waveIdx, currentIid);
+    });
   });
 
   // Attach slots button listeners
@@ -557,6 +771,15 @@ function renderArmies(data) {
     const inp = el.querySelector(`.target-uid-input[data-aid="${aid}"]`);
     if (inp) inp.value = val;
   });
+
+  // Initialize critter sprite canvases (wave buttons)
+  _initCritterCanvases(el);
+
+  // Bind autocomplete on all target-empire inputs
+  el.querySelectorAll('.target-uid-input').forEach(_bindAutocomplete);
+
+  // Restore scroll position after re-render
+  requestAnimationFrame(() => window.scrollTo(0, scrollY));
 }
 
 export default {

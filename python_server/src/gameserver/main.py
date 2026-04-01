@@ -170,7 +170,7 @@ def load_configuration(
     ai_waves = load_ai_waves(ai_waves_path)
     log.info("  ai_waves:     %d hardcoded entries from %s", len(ai_waves), ai_waves_path)
 
-    game_cfg = load_game_config()
+    game_cfg = load_game_config(os.path.join(config_dir, "game.yaml"))
     log.info("  game_config:  loaded")
 
     knowledge_era_groups = _parse_knowledge_era_groups(config_dir)
@@ -237,7 +237,8 @@ def create_services(config: Configuration, database: Database) -> Services:
     upgrade_provider.load(config.items)
     log.info("  upgrade_provider: %d items registered", len(config.items))
 
-    empire_service = EmpireService(upgrade_provider, event_bus, gc)
+    empire_service = EmpireService(upgrade_provider, event_bus, gc,
+                                   knowledge_era_groups=config.knowledge_era_groups)
     battle_service = BattleService(items=upgrade_provider.items)
     attack_service = AttackService(event_bus, gc, empire_service,
                                    knowledge_era_groups=config.knowledge_era_groups)
@@ -468,6 +469,7 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
             services.empire_service.register(empire)
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
+        services.empire_service.sync_aid_counter()
         # Restore attacks (also advances the ID counter)
         if saved_state.attacks:
             services.attack_service.restore_attacks(saved_state.attacks)

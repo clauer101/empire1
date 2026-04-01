@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     email TEXT NOT NULL DEFAULT '',
     empire_name TEXT NOT NULL DEFAULT '',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMP
 );
 """
 
@@ -43,6 +44,11 @@ class Database:
         self._conn = await aiosqlite.connect(self._db_path)
         self._conn.row_factory = aiosqlite.Row
         await self._conn.executescript(_SCHEMA)
+        # Migrate: add last_seen column if missing
+        try:
+            await self._conn.execute("SELECT last_seen FROM users LIMIT 1")
+        except Exception:
+            await self._conn.execute("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP")
         await self._conn.commit()
         log.info("Database connected: %s", self._db_path)
 
@@ -111,11 +117,20 @@ class Database:
             log.info("Deleted user %s", username)
         return deleted
 
+    async def update_last_seen(self, uid: int) -> None:
+        """Update the last_seen timestamp for a user."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE uid = ?",
+            (uid,),
+        )
+        await self._conn.commit()
+
     async def list_users(self) -> list[dict]:
         """Return all user accounts (without password hashes)."""
         assert self._conn is not None
         async with self._conn.execute(
-            "SELECT uid, username, email, empire_name, created_at FROM users ORDER BY uid",
+            "SELECT uid, username, email, empire_name, created_at, last_seen FROM users ORDER BY uid",
         ) as cursor:
             rows = await cursor.fetchall()
             return [
@@ -125,6 +140,7 @@ class Database:
                     "email": r[2],
                     "empire_name": r[3],
                     "created_at": str(r[4]) if r[4] else "",
+                    "last_seen": str(r[5]) if r[5] else "",
                 }
                 for r in rows
             ]

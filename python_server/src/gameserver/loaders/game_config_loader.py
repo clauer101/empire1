@@ -101,6 +101,10 @@ class GameConfig:
     diamond_travel_offset: float = 300.0
     base_siege_offset: float = 900.0
 
+    # Generic per-era effects dict: { "STEINZEIT": {"gold_offset": 5.0, ...}, ... }
+    # Applied to empire.effects when era is determined.
+    era_effects: Dict[str, Dict[str, float]] = field(default_factory=dict)
+
     # -- Army & Waves ------------------------------------------------
     waves_per_level: float = 1.0
     slot_adder_per_ai_level: float = 2.0
@@ -149,8 +153,7 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
     """
     p = Path(path)
     if not p.exists():
-        log.warning("Game config not found at %s — using defaults", p)
-        return GameConfig()
+        raise FileNotFoundError(f"Game config not found at {p} — this file is required")
 
     with p.open() as f:
         raw = yaml.safe_load(f) or {}
@@ -175,9 +178,42 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
     else:
         prices = Prices()
 
-    # Build config from flat keys + nested spy_costs
-    cfg = GameConfig(spy_costs=spy, prices=prices, **{
+    # Handle nested era_effects → flatten travel/siege to legacy fields
+    # AND build generic era_effects dict for empire effect system
+    _ERA_YAML_TO_FIELD = {
+        "stone": "stone", "neolithicum": "neolithicum", "bronze": "bronze",
+        "iron": "iron", "middle_ages": "middle_ages", "rennaissance": "rennaissance",
+        "industrial": "industrial", "modern": "modern", "future": "diamond",
+    }
+    _ERA_YAML_TO_KEY = {
+        "stone": "STEINZEIT", "neolithicum": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
+        "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "rennaissance": "RENAISSANCE",
+        "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
+    }
+    era_raw = raw.pop("era_effects", None)
+    era_effects_dict: Dict[str, Dict[str, float]] = {}
+    if isinstance(era_raw, dict):
+        for yaml_key, vals in era_raw.items():
+            if not isinstance(vals, dict):
+                continue
+            field_prefix = _ERA_YAML_TO_FIELD.get(yaml_key, yaml_key)
+            era_key = _ERA_YAML_TO_KEY.get(yaml_key)
+            # Legacy flat fields for travel/siege
+            if "travel_offset" in vals:
+                raw[f"{field_prefix}_travel_offset"] = vals["travel_offset"]
+            if "siege_offset" in vals:
+                if "base_siege_offset" not in raw:
+                    raw["base_siege_offset"] = vals["siege_offset"]
+            # Generic era effects (everything except travel/siege)
+            if era_key:
+                generic = {k: v for k, v in vals.items()
+                           if k not in ("travel_offset", "siege_offset")}
+                if generic:
+                    era_effects_dict[era_key] = generic
+
+    # Build config from flat keys + nested spy_costs + era_effects
+    cfg = GameConfig(spy_costs=spy, prices=prices, era_effects=era_effects_dict, **{
         k: v for k, v in raw.items()
-        if k in GameConfig.__dataclass_fields__
+        if k in GameConfig.__dataclass_fields__ and k != "era_effects"
     })
     return cfg

@@ -280,9 +280,10 @@ class TestBattleIntegration:
         
         initial_life = defender.resources["life"]
         
-        # Step critters (will move to path_progress >= 1.0)
+        # Step critters (marks reached_goal), then flush (applies damage and removes)
         service._step_critters(battle, 100.0)
-        
+        service._flush_reached(battle)
+
         # Verify critter removed and life reduced
         assert 1 not in battle.critters, "Critter should be removed"
         assert defender.resources["life"] == initial_life - 1.0, "Life should decrease by 1"
@@ -391,7 +392,8 @@ class TestCritterKillGoldReward:
         )
         battle = BattleState(bid=1, defender=defender, attacker=None, critters={1: critter})
 
-        service._step_critters(battle, 200.0)  # moves to >= 1.0 → triggers _critter_finished
+        service._step_critters(battle, 200.0)  # moves to >= 1.0 → marks reached_goal
+        service._flush_reached(battle)          # triggers _critter_finished
 
         assert defender.resources["gold"] == pytest.approx(50.0), \
             "Escaped critter should not award gold"

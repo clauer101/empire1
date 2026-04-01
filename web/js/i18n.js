@@ -13,12 +13,12 @@ export const dict = {
   build_speed_modifier: 'Accelerates building construction by a multiplier',
   build_speed_offset: 'Accelerates building construction by a fixed amount',
   research_speed_modifier: 'Accelerates research by a multiplier',
-  incoming_siege_time_offset: 'Increases siege time of incoming armies by a fixed amount',
-  outgoing_siege_time_offset: 'Decreases siege time of outgoing armies by a fixed amount',
-  incoming_travel_time_offset: 'Increases travel time of incoming armies by a fixed amount',
-  outgoing_travel_time_offset: 'Decreases travel time of outgoing armies by a fixed amount',
-  wave_delay_offset: 'Decreases delay between battle waves by a fixed amount',
+  siege_offset: 'Siege time offset',
+  travel_offset: 'Travel time offset',
+  wave_delay_offset: 'Decreases delay between battle waves',
   wave_delay_modifier: 'Decreases delay between battle waves by a multiplier',
+  max_life_modifier: 'Increases maximum life',
+  restore_life_after_loss_offset: 'Restores life after a lost battle',
 
   // Common UI labels
   effort: 'Effort',
@@ -48,12 +48,68 @@ export function t(key) {
 }
 
 /**
+ * Per-effect formatting metadata.
+ *
+ * scale:    multiply the raw value before display  (e.g. 100 for % modifiers)
+ * unit:     string appended after the number
+ * decimals: fixed decimal places (null = auto, trims trailing zeros)
+ *
+ * Modifiers (0.5 → "50%"):  scale:100, unit:'%', decimals:0
+ * Time offsets (seconds):   unit:'s',  decimals:0
+ * Production offsets (/s):  unit:'/s', decimals:2
+ */
+export const effectMeta = {
+  gold_offset:                   { unit: '/s',  decimals: 2 },
+  gold_modifier:                 { scale: 100, unit: '%',   decimals: 0 },
+  culture_offset:                { unit: '/s',  decimals: 2 },
+  culture_modifier:              { scale: 100, unit: '%',   decimals: 0 },
+  life_offset:                   { unit: '/s',    decimals: 3 },
+  build_speed_offset:            { unit: '/s',  decimals: 2 },
+  build_speed_modifier:          { scale: 100, unit: '%',   decimals: 0 },
+  research_speed_modifier:       { scale: 100, unit: '%',   decimals: 0 },
+  siege_offset:                  { fmt: 'duration' },
+  travel_offset:                 { fmt: 'duration' },
+  wave_delay_offset:             { unit: 's',   decimals: 1 },
+  wave_delay_modifier:           { scale: 100, unit: '%',   decimals: 0 },
+  max_life_modifier:             { unit: '',    decimals: 1 },
+  restore_life_after_loss_offset:{ unit: '',    decimals: 0 },
+};
+
+/**
  * Format effect key with its translated description
  */
+function _fmtDuration(secs) {
+  const sign = secs < 0 ? '-' : '';
+  secs = Math.abs(secs);
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = Math.floor(secs % 60);
+  if (h > 0 && m > 0) return `${sign}${h}h ${m}m`;
+  if (h > 0) return `${sign}${h}h`;
+  if (m > 0 && s > 0) return `${sign}${m}m ${s}s`;
+  if (m > 0) return `${sign}${m}m`;
+  return `${sign}${s}s`;
+}
+
 export function formatEffect(key, value) {
   const description = dict[key] || key;
-  const roundedValue = Math.round(value * 100) / 100;  // Round to 2 decimals max
-  return `${description}${roundedValue > 0 ? ` (+${roundedValue})` : ` (${roundedValue})`}`;
+  const meta = effectMeta[key] || {};
+
+  if (meta.fmt === 'duration') {
+    return `${description} (${_fmtDuration(value)})`;
+  }
+
+  const scale = meta.scale ?? 1;
+  const unit  = meta.unit  ?? '';
+  const decimals = meta.decimals;
+
+  const scaled = value * scale;
+  const formatted = decimals != null
+    ? scaled.toFixed(decimals)
+    : (Math.round(scaled * 100) / 100).toString();
+
+  const sign = scaled > 0 ? '+' : '';
+  return `${description} (${sign}${formatted}${unit})`;
 }
 
 export default { dict, t, formatEffect };

@@ -90,7 +90,7 @@ COPPER_BRONZE:
   description: "Metallurgy techniques for bronze age advancement."
   effort: 2756
   costs: {}
-  requirements: [CRAFTSMANSHIP]
+  requirements: [AGRICULTURE]
   effects: {}
 
 RELIGION:
@@ -106,7 +106,7 @@ MUSIC:
   description: "Musical composition and performance arts."
   effort: 4410
   costs: {}
-  requirements: [MYSTIC, CRAFTSMANSHIP]
+  requirements: [ALPHABET_WRITING, CRAFTSMANSHIP]
   effects: 
     culture_offset: 0.2
     culture_modifier: 0.2
@@ -124,7 +124,7 @@ HORSEBACK_RIDING:
   description: "Mastery of mounted combat and horse training."
   effort: 5513
   costs: {}
-  requirements: [DOMESTICATION]
+  requirements: [RELIGION, DOMESTICATION]
   effects: {}
 
 CURRENCY:
@@ -160,7 +160,7 @@ MECHANICS:
   description: "Understanding of mechanical systems and machines."
   effort: 14071
   costs: {}
-  requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
+  requirements: [DRILL, COPPER_BRONZE]
   effects: {}
 
 MATHMATICS:
@@ -168,7 +168,7 @@ MATHMATICS:
   description: "Mathematical sciences and numerical computation."
   effort: 15479
   costs: {}
-  requirements: [ALPHABET_WRITING]
+  requirements: [ALPHABET_WRITING, CURRENCY]
   effects: {}
 
 CARTOGRAPHY:
@@ -184,7 +184,7 @@ LAWS:
   description: "Development of legal systems and justice frameworks."
   effort: 19699
   costs: {}
-  requirements: [ALPHABET_WRITING, RELIGION]
+  requirements: [ARTS, RELIGION]
   effects: {}
 
 IRON:
@@ -254,7 +254,7 @@ FANATISM:
   description: "Zealous commitment to ideological or religious causes."
   effort: 75831
   costs: {}
-  requirements: [RELIGION, DRILL]
+  requirements: [RELIGION, COMMAND_CHAIN]
   effects: {}
 
 HOLY_WAR:
@@ -271,9 +271,7 @@ ECONOMY:
   effort: 83592
   costs: {}
   requirements: [CURRENCY, LAWS]
-  effects: 
-    gold_modifier: 0.2
-    gold_offset: 0.2
+  effects: {}
 
 FEUDALISM:
   name: "Feudalism"
@@ -288,7 +286,7 @@ MONARCHY:
   description: "Absolute rule by a single monarch or dynasty."
   effort: 114704
   costs: {}
-  requirements: [FEUDALISM, COMMAND_CHAIN]
+  requirements: [ECONOMY, COMMAND_CHAIN]
   effects: {}
 
 GUNPOWDER:
@@ -296,7 +294,7 @@ GUNPOWDER:
   description: "Explosive powder technology for weapons."
   effort: 105909
   costs: {}
-  requirements: [IRON, SCIENCE]
+  requirements: [SCIENCE]
   effects: {}
 
 STEEL:
@@ -304,7 +302,7 @@ STEEL:
   description: "Advanced iron alloy production for superior tools."
   effort: 127410
   costs: {}
-  requirements: [IRON, MECHANICS]
+  requirements: [IRON, ECONOMY]
   effects: {}
 
 # ============================================================
@@ -314,47 +312,47 @@ STEEL:
 PRINTING_PRESS:
   name: "Printing Press"
   description: "Mass production of printed materials and information."
-  effort: 188567
+  effort: 307157
   costs: {}
-  requirements: [MECHANICS, LITRATURE]
+  requirements: [STEEL, LITRATURE]
   effects: {}
 
 STEALTH_SECRECY:
   name: "Stealth & Secrecy"
   description: "Clandestine operations and intelligence gathering."
-  effort: 177296
+  effort: 288796
   costs: {}
-  requirements: [TACTICS, COMMAND_CHAIN]
+  requirements: [TACTICS]
   effects: {}
 
 CONSTITUTION:
   name: "Constitution"
   description: "Governmental framework and citizen rights principles."
-  effort: 182326
+  effort: 296990
   costs: {}
-  requirements: [LAWS, MONARCHY, PRINTING_PRESS]
+  requirements: [FANATISM, MONARCHY]
   effects: {}
 
 STRATEGIC_WARFARE:
   name: "Strategic Warfare"
   description: "Large-scale military strategy and campaign planning."
-  effort: 200000
+  effort: 325779
   costs: {}
-  requirements: [TACTICS, GUNPOWDER, STEALTH_SECRECY]
+  requirements: [TACTICS, STEALTH_SECRECY]
   effects: {}
 
 PHYSICS:
   name: "Physics"
   description: "Laws of motion, forces, and natural philosophy."
-  effort: 183774
+  effort: 299349
   costs: {}
-  requirements: [SCIENCE, MATHMATICS]
+  requirements: [STEEL, MATHMATICS]
   effects: {}
 
 CHEMISTRY:
   name: "Chemistry"
   description: "Study of matter, elements, and chemical reactions."
-  effort: 220527
+  effort: 359216
   costs: {}
   requirements: [SCIENCE, PHYSICS]
   effects: {}
@@ -362,9 +360,9 @@ CHEMISTRY:
 MECHANICAL_ENGINEERING:
   name: "Mechanical Engineering"
   description: "Advanced engineering of mechanical systems."
-  effort: 205337
+  effort: 334471
   costs: {}
-  requirements: [MECHANICS, STEEL]
+  requirements: [MECHANICS, PHYSICS]
   effects: 
     build_speed_modifier: 0.2
 
@@ -375,50 +373,67 @@ MECHANICAL_ENGINEERING:
 OPTICS:
   name: "Optics"
   description: "Lens crafting, telescopes, and periscopes technology."
-  effort: 236086
+  effort: 515346
   costs: {}
-  requirements: [PHYSICS]
+  requirements: [MECHANICAL_ENGINEERING, PHYSICS]
   effects: {}
 
 BALLISTICS:
   name: "Ballistics"
   description: "Science of projectile trajectories and artillery."
-  effort: 211884
+  effort: 462516
   costs: {}
-  requirements: [PHYSICS, GUNPOWDER]
+  requirements: [STRATEGIC_WARFARE, GUNPOWDER]
   effects: {}
 
 STEAM_ENGINE:
   name: "Steam Engine"
   description: "Industrial steam power technology and machines."
-  effort: 211884
+  effort: 462516
   costs: {}
-  requirements: [MECHANICAL_ENGINEERING, CHEMISTRY]
+  requirements: [PHYSICS, CHEMISTRY]
   effects: {}
 
 SANITATION:
   name: "Sanitation"
   description: "Public hygiene and sanitary infrastructure systems."
-  effort: 252245
+  effort: 550619
   costs: {}
-  requirements: [CHEMISTRY]
+  requirements: [CHEMISTRY, STEAM_ENGINE]
   effects: {}
 
 ELECTRICITY:
   name: "Electricity"
   description: "Electrical power generation and transmission."
-  effort: 221358
+  effort: 483195
   costs: {}
-  requirements: [PHYSICS, CHEMISTRY]
+  requirements: [PHYSICS, STEAM_ENGINE]
   effects: {}
 
 COMBUSTION_ENGINE:
   name: "Combustion Engine"
   description: "Internal combustion engine technology development."
-  effort: 263520
+  effort: 575231
   costs: {}
-  requirements: [STEAM_ENGINE, CHEMISTRY]
+  requirements: [STEAM_ENGINE]
   effects: {}
+
+SOCIAL_SCIENCES:
+  name: "Social Sciences"
+  description: "Human behavior and societal development studies."
+  effort: 588053
+  costs: {}
+  requirements: [CONSTITUTION, SANITATION]
+  effects: {}
+
+MEDICINE:
+  name: "Medicine"
+  description: "Advanced medical science and treatment techniques."
+  effort: 677303
+  costs: {}
+  requirements: [HERBOLOGY, SANITATION]
+  effects: {}
+
 
 # ============================================================
 #   MODERNE  (Effort 2.000.000 – 50.000.000)
@@ -427,47 +442,31 @@ COMBUSTION_ENGINE:
 KNO_ARMOUR:
   name: "Armour"
   description: "Advanced body protection and defensive equipment."
-  effort: 317751
+  effort: 660581
   costs: {}
-  requirements: [STEEL, MECHANICAL_ENGINEERING]
-  effects: {}
-
-SOCIAL_SCIENCES:
-  name: "Social Sciences"
-  description: "Human behavior and societal development studies."
-  effort: 282863
-  costs: {}
-  requirements: [CONSTITUTION, PRINTING_PRESS]
-  effects: {}
-
-MEDICINE:
-  name: "Medicine"
-  description: "Advanced medical science and treatment techniques."
-  effort: 325795
-  costs: {}
-  requirements: [HERBOLOGY, CHEMISTRY]
+  requirements: [BALLISTICS, ELECTRICITY]
   effects: {}
 
 CRYPTOLOGY:
   name: "Cryptology"
   description: "Code making and code breaking science."
-  effort: 364210
+  effort: 757169
   costs: {}
-  requirements: [MATHMATICS, STEALTH_SECRECY, ELECTRICITY]
+  requirements: [MATHMATICS, SOCIAL_SCIENCES]
   effects: {}
 
 MILITARY_SERVICE:
   name: "Military Service"
   description: "Organized military conscription and service systems."
-  effort: 364210
+  effort: 757169
   costs: {}
-  requirements: [STRATEGIC_WARFARE, CONSTITUTION]
+  requirements: [CRYPTOLOGY, GLOBALIZATION_STRATEGIES]
   effects: {}
 
 AVIATION:
   name: "Aviation"
   description: "Fixed-wing aircraft design and flight technology."
-  effort: 364210
+  effort: 757169
   costs: {}
   requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
   effects: {}
@@ -475,15 +474,15 @@ AVIATION:
 ELECTRONICS:
   name: "Electronics"
   description: "Electronic components and circuits development."
-  effort: 364210
+  effort: 757169
   costs: {}
-  requirements: [ELECTRICITY, PHYSICS]
+  requirements: [ELECTRICITY, OPTICS]
   effects: {}
 
 MASS_PRODUCTION:
   name: "Mass Production"
   description: "Industrial assembly line and standardization."
-  effort: 547832
+  effort: 1138902
   costs: {}
   requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
   effects: 
@@ -492,31 +491,32 @@ MASS_PRODUCTION:
 NUCLEAR_REACTION:
   name: "Nuclear Reaction"
   description: "Nuclear fission and atomic energy principles."
-  effort: 576665
+  effort: 1198844
   costs: {}
-  requirements: [PHYSICS, CHEMISTRY]
+  requirements: [PHYSICS, CHEMISTRY, ELECTRICITY]
   effects: {}
 
 CHEMICAL_WARFARE:
   name: "Chemical Warfare"
   description: "Chemical weapons development and deployment."
-  effort: 547832
+  effort: 1138902
   costs: {}
   requirements: [CHEMISTRY, BOMBING_AREA]
-  effects: {}
+  effects:
+    life_offset: 0.1
 
 ROCKET_SCIENCE:
   name: "Rocket Science"
   description: "Propulsion and rocket engineering technology."
-  effort: 576665
+  effort: 1198844
   costs: {}
-  requirements: [PHYSICS, COMBUSTION_ENGINE]
+  requirements: [BALLISTICS, COMBUSTION_ENGINE]
   effects: {}
 
 AERO_DYNAMICS:
   name: "Aero Dynamics"
   description: "Physics of flight and aeronautical engineering."
-  effort: 607016
+  effort: 1261944
   costs: {}
   requirements: [PHYSICS, AVIATION]
   effects: {}
@@ -524,7 +524,7 @@ AERO_DYNAMICS:
 GLOBALIZATION_STRATEGIES:
   name: "Globalization Strategies"
   description: "International trade and global economic integration."
-  effort: 576665
+  effort: 1198844
   costs: {}
   requirements: [ECONOMY, ELECTRONICS, SOCIAL_SCIENCES]
   effects: 
@@ -533,15 +533,15 @@ GLOBALIZATION_STRATEGIES:
 CIVIL_ENGINEERING:
   name: "Civil Engineering"
   description: "Infrastructure design and large-scale construction."
-  effort: 607016
+  effort: 1261944
   costs: {}
-  requirements: [ARCHITECTURE, MECHANICAL_ENGINEERING]
+  requirements: [SOCIAL_SCIENCES, STEAM_ENGINE]
   effects: {}
 
-SATELITE_SYSTEMS:
+SATELLITE_SYSTEMS:
   name: "Satellite Systems"
   description: "Orbiting spacecraft for communication and observation."
-  effort: 607016
+  effort: 1261944
   costs: {}
   requirements: [ELECTRONICS, AVIATION]
   effects: {}
@@ -549,7 +549,7 @@ SATELITE_SYSTEMS:
 COMPUTER_TECHNOLOGY:
   name: "Computer Technology"
   description: "Electronic computing machines and algorithms."
-  effort: 539664
+  effort: 1121921
   costs: {}
   requirements: [ELECTRONICS, MATHMATICS]
   effects: {}
@@ -557,9 +557,9 @@ COMPUTER_TECHNOLOGY:
 SPECIAL_FORCES:
   name: "Special Forces"
   description: "Elite military units with advanced training."
-  effort: 690542
+  effort: 1435586
   costs: {}
-  requirements: [MILITARY_SERVICE, STEALTH_SECRECY]
+  requirements: [MILITARY_SERVICE, SATELLITE_SYSTEMS]
   effects: {}
 
 # ============================================================
@@ -569,23 +569,23 @@ SPECIAL_FORCES:
 BIONICS:
   name: "Bionics"
   description: "Integration of biological and mechanical systems."
-  effort: 656015
+  effort: 1827637
   costs: {}
-  requirements: [MEDICINE, ELECTRONICS]
+  requirements: [MILITARY_SERVICE, COMPUTER_TECHNOLOGY]
   effects: {}
 
 FIBER_COMPOSITE:
   name: "Fiber Composite"
   description: "Advanced composite material engineering technology."
-  effort: 656015
+  effort: 1827637
   costs: {}
-  requirements: [CHEMISTRY, MASS_PRODUCTION]
+  requirements: [AERO_DYNAMICS, MASS_PRODUCTION]
   effects: {}
 
 COLD_FUSION:
   name: "Cold Fusion"
   description: "Low-temperature nuclear fusion research and development."
-  effort: 690542
+  effort: 1923823
   costs: {}
-  requirements: [NUCLEAR_REACTION, PHYSICS]
+  requirements: [NUCLEAR_REACTION, SATELLITE_SYSTEMS]
   effects: {}

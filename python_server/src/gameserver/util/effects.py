@@ -38,8 +38,8 @@ SLOT_OFFSET = "slot_offset"
 SLOT_ADDER_PER_LEVEL = "slot_adder_per_level"
 
 # -- Travel & Siege ------------------------------------------------------
-TRAVEL_TIME_OFFSET = "travel_time_offset"  # only attacker can modify this
-SIEGE_TIME_OFFSET = "siege_time_offset"  # only defender can modify this
+TRAVEL_TIME_OFFSET = "travel_offset"  # only attacker can modify this
+SIEGE_TIME_OFFSET = "siege_offset"  # only defender can modify this
 
 RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately restore life after losing a battle
 

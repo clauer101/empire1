@@ -78,6 +78,12 @@ class BattleState:
     # Summary
     attacker_gains: dict[int, dict[str, float]] = field(default_factory=dict)
     defender_losses: dict[str, float] = field(default_factory=dict)
+    defender_gold_earned: float = 0.0  # Gold earned by defender from killing critters
+
+    # Stats counters
+    critters_spawned: int = 0
+    critters_killed: int = 0
+    critters_reached: int = 0
 
     # Critters removed since last broadcast: [{cid, reason, path_progress}]
     # reason: "died" | "reached"
