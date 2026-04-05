@@ -65,7 +65,16 @@ function _setBattleTitle(label) {
   if (!titleEl) return;
 
   const resources = st?.summary?.resources || {};
-  titleEl.textContent = label;
+  titleEl.textContent = '';
+  const labelSpan = document.createElement('span');
+  labelSpan.textContent = label + ' ';
+  const efxBtn = document.createElement('button');
+  efxBtn.id = 'defense-effects-btn';
+  efxBtn.className = 'prod-info-btn';
+  efxBtn.title = 'Show defense effects';
+  efxBtn.textContent = '🔍';
+  labelSpan.appendChild(efxBtn);
+  titleEl.appendChild(labelSpan);
 
   const resourceWrap = document.createElement('span');
   resourceWrap.className = 'title-resources';
@@ -392,12 +401,92 @@ function _updateCastleSprite(eraKey) {
   }
 }
 
+// ── Defense Effects Overlay ─────────────────────────────────
+
+function _defEffectRows(effectKey, completedBuildings, completedResearch, items, fmt) {
+  const rows = [];
+  for (const iid of (completedBuildings || [])) {
+    const item = items?.buildings?.[iid];
+    const val = item?.effects?.[effectKey];
+    if (val) rows.push(`<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`);
+  }
+  for (const iid of (completedResearch || [])) {
+    const item = items?.knowledge?.[iid];
+    const val = item?.effects?.[effectKey];
+    if (val) rows.push(`<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`);
+  }
+  if (!rows.length) return `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
+  return rows.join('');
+}
+
+function _showDefenseEffectsOverlay() {
+  document.querySelector('.def-effects-overlay')?.remove();
+
+  const summary = st.summary || {};
+  const effects = summary.effects || {};
+  const completedBuildings = summary.completed_buildings || [];
+  const completedResearch = summary.completed_research || [];
+  const items = st.items || {};
+
+  const siegeTotal   = effects.siege_offset || 0;
+  const waveTotal    = effects.wave_delay_offset || 0;
+  const restoreTotal = effects.restore_life_after_loss_offset || 0;
+
+  function section(icon, title, color, totalStr, rowsHtml) {
+    return `
+      <div class="prod-overlay-section">
+        <div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>
+        ${rowsHtml}
+        <div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px">
+          <span class="label" style="color:#ddd;font-weight:bold">Total</span>
+          <span class="value" style="color:#fff;font-weight:bold">${totalStr}</span>
+        </div>
+      </div>`;
+  }
+
+  const siegeRows   = _defEffectRows('siege_offset',            completedBuildings, completedResearch, items, v => `+${v.toFixed(0)}s`);
+  const waveRows    = _defEffectRows('wave_delay_offset',       completedBuildings, completedResearch, items, v => `+${(v/1000).toFixed(1)}s`);
+  const restoreRows = _defEffectRows('restore_life_after_loss_offset', completedBuildings, completedResearch, items, v => `+${v.toFixed(1)} ❤`);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'prod-overlay def-effects-overlay';
+  overlay.innerHTML = `
+    <div class="prod-overlay-box">
+      <button class="prod-overlay-close" title="Close">✕</button>
+      <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
+      ${section('⏳', 'Siege Delay',          '#ffa726', `+${siegeTotal.toFixed(0)}s`,            siegeRows)}
+      ${section('🌊', 'Wave Delay',           '#4fc3f7', `+${(waveTotal/1000).toFixed(1)}s`,      waveRows)}
+      ${section('❤',  'Restore Life on Loss', '#e05c5c', `+${restoreTotal.toFixed(1)}`,           restoreRows)}
+    </div>`;
+
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+}
+
 // ── View lifecycle ──────────────────────────────────────────
 
 function init(el, _api, _state) {
   container = el;
   // api parameter is no longer used — battle manages its own WS
   st = _state;
+
+  // Inject shared overlay styles (same block as status.js — skipped if already present)
+  if (!document.getElementById('dashboard-grid-style')) {
+    const s = document.createElement('style');
+    s.id = 'dashboard-grid-style';
+    s.textContent = `
+      .prod-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto}
+      .prod-overlay-box{background:var(--panel-bg,#1e1e1e);border:1px solid var(--border-color,#444);border-radius:8px;width:100%;max-width:480px;padding:16px 18px;position:relative}
+      .prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
+      .prod-overlay-section{margin-bottom:14px}
+      .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
+      .prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
+      .prod-info-btn:hover{opacity:1}
+    `;
+    document.head.appendChild(s);
+  }
 
   container.innerHTML = `
     <div class="battle-view">
@@ -501,6 +590,11 @@ function init(el, _api, _state) {
       </div>
     </div>
   `;
+
+  // Bind defense effects info button (delegation — button is recreated by _setBattleTitle)
+  container.addEventListener('click', e => {
+    if (e.target.id === 'defense-effects-btn') _showDefenseEffectsOverlay();
+  });
 
   // Bind summary close button
   container.querySelector('#summary-close').addEventListener('click', () => {
@@ -661,9 +755,10 @@ function _showTileDetails(q, r, tile) {
 
   // ── Tower tile info ──────────────────────────────────────
   let towerInfo = '';
+  let _goldCost;
   if (t.serverData) {
     const s = t.serverData;
-    const _goldCost = s.costs?.gold;
+    _goldCost = s.costs?.gold;
     const _currentGold = st.summary?.resources?.gold || 0;
     const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
     const _tileSelect = (tile && tile.select) || s.select || 'first';
@@ -723,14 +818,15 @@ function _showTileDetails(q, r, tile) {
       (_isDefender && tile.type !== 'path'
         && !(_battleState.phase === 'in_battle' && (tile.type === 'castle' || tile.type === 'spawnpoint'))
         ? '<div class="props-divider"></div>' +
-          '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' + (t.serverData ? ' (no refund)' : '') + '</button>'
+          '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' + (_goldCost ? ' (💰 ' + Math.round(_goldCost * 0.3).toLocaleString() + ' refund)' : '') + '</button>'
         : '') +
     '</div>';
 
   if (propsContent) propsContent.innerHTML = detailsHTML;
   if (overlayBody) {
     overlayBody.innerHTML = detailsHTML;
-    if (window.innerWidth <= 1100) overlay.style.display = 'flex';
+    const _hasContent = towerInfo || tile.type !== 'empty';
+    if (window.innerWidth <= 1100 && _hasContent) overlay.style.display = 'flex';
   }
 
   const _doEmpty = () => {

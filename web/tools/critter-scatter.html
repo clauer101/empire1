@@ -136,7 +136,7 @@
     <div class="leg-item"><div class="leg-dot" style="background:#fff176"></div> Sniper (Range ≥ 4)</div>
     <div class="leg-item"><div class="leg-dot" style="background:#aed581"></div> Rapid (Reload ≤ 1000ms)</div>
     <div class="leg-item"><div class="leg-dot" style="background:#78909c"></div> Allrounder</div>
-    <div class="leg-item" style="margin-left:8px;color:var(--text-dim);font-size:10px">Größe = Range · Power = (Schaden + Burn·Dauer) / Reload</div>
+    <div class="leg-item" style="margin-left:8px;color:var(--text-dim);font-size:10px">Größe = Range · Power = (Schaden + Burn·Dauer + Slow-Effekt) / Reload</div>
   </div>
   <div class="plot-wrap">
     <svg class="scatter" id="svg-towers"></svg>
@@ -395,10 +395,12 @@ function buildTowerPoints(towers) {
     .filter(([, t]) => t.era && t.era !== 'Unbekannt')
     .map(([iid, t]) => {
       const cls = classifyTower(t);
-      const dmgPerShot = t.damage + t.burn_dps * (t.burn_dur / 1000);
+      const slowEffect = t.slow_dur ? (1 - (t.slow_ratio || 0)) * (t.slow_dur / 1000) : 0;
+      const dmgPerShot = t.damage + t.burn_dps * (t.burn_dur / 1000) + slowEffect;
       const power = dmgPerShot / (t.reload / 1000);
       const burnInfo = t.burn_dps ? `🔥 ${t.burn_dps} DPS × ${t.burn_dur/1000}s` : '';
-      const slowInfo = t.slow_dur ? `❄ ${t.slow_dur}ms slow/stun` : '';
+      const slowLabel = t.slow_ratio === 0 ? 'Stun' : `Slow ${Math.round((1-(t.slow_ratio||0))*100)}%`;
+      const slowInfo = t.slow_dur ? `❄ ${slowLabel} × ${t.slow_dur/1000}s` : '';
       const tipHtml = `
         <div class="tt-name">${iid}</div>
         <div class="tt-row">Era: ${t.era}</div>

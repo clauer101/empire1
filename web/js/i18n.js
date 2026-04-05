@@ -13,12 +13,12 @@ export const dict = {
   build_speed_modifier: 'Accelerates building construction by a multiplier',
   build_speed_offset: 'Accelerates building construction by a fixed amount',
   research_speed_modifier: 'Accelerates research by a multiplier',
-  siege_offset: 'Siege time offset',
-  travel_offset: 'Travel time offset',
-  wave_delay_offset: 'Decreases delay between battle waves',
-  wave_delay_modifier: 'Decreases delay between battle waves by a multiplier',
+  siege_offset: 'Modifies siege time of armies',
+  travel_offset: 'Modifies travel time of armies',
+  wave_delay_offset: 'Increases delay between incoming waves',
   max_life_modifier: 'Increases maximum life',
   restore_life_after_loss_offset: 'Restores life after a lost battle',
+  tower_sell_refund_modifier: 'Increases tower sell refund',
 
   // Common UI labels
   effort: 'Effort',
@@ -73,6 +73,7 @@ export const effectMeta = {
   wave_delay_modifier:           { scale: 100, unit: '%',   decimals: 0 },
   max_life_modifier:             { unit: '',    decimals: 1 },
   restore_life_after_loss_offset:{ unit: '',    decimals: 0 },
+  tower_sell_refund_modifier:    { scale: 100, unit: '%',   decimals: 0 },
 };
 
 /**

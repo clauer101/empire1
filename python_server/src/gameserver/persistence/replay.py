@@ -1,9 +1,10 @@
 """Battle replay — records and stores battle replays.
 
 Records all battle events (setup, updates, summary) as a timeline
-and saves them as JSON for later playback.
+and saves them as gzipped JSON for later playback.
 
-File format (replays/{bid}.json):
+File format (replays/{bid}.json.gz):
+    gzip-compressed JSON:
     {
         "bid": 42,
         "defender_uid": 4,
@@ -20,9 +21,9 @@ File format (replays/{bid}.json):
 
 from __future__ import annotations
 
+import gzip
 import json
 import logging
-import os
 import time
 from pathlib import Path
 from typing import Any
@@ -57,39 +58,64 @@ class ReplayRecorder:
         self._events.append({"t": timestamp_ms, **event})
 
     def save(self) -> Path | None:
-        """Save the replay to disk as JSON. Returns the file path or None on error."""
+        """Save the replay to disk as gzipped JSON. Returns the file path or None on error."""
         self._replay_dir.mkdir(parents=True, exist_ok=True)
-        target = self._replay_dir / f"{self.bid}.json"
+        target = self._replay_dir / f"{self.bid}.json.gz"
         tmp = target.with_suffix(".tmp")
-        payload = {
+        payload = json.dumps({
             "bid": self.bid,
             "defender_uid": self.defender_uid,
             "attacker_uid": self.attacker_uid,
             "created_at": time.time(),
             "events": self._events,
-        }
+        }, separators=(",", ":")).encode("utf-8")
         try:
-            tmp.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+            with gzip.open(tmp, "wb", compresslevel=6) as f:
+                f.write(payload)
             tmp.replace(target)
-            log.info("Replay saved: %s (%d events)", target, len(self._events))
+            log.info("Replay saved: %s (%d events, %d bytes compressed)",
+                     target, len(self._events), target.stat().st_size)
             return target
         except Exception:
             log.exception("Failed to save replay %s", target)
-            if tmp.exists():
-                tmp.unlink(missing_ok=True)
+            tmp.unlink(missing_ok=True)
             return None
 
 
 def load_replay(bid: int, replay_dir: str = DEFAULT_REPLAY_DIR) -> dict[str, Any] | None:
-    """Load a replay from disk by battle ID. Returns parsed JSON or None."""
-    path = Path(replay_dir) / f"{bid}.json"
-    if not path.exists():
-        return None
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        log.exception("Failed to load replay %s", path)
-        return None
+    """Load a replay from disk by battle ID. Returns parsed JSON or None.
+
+    Tries .json.gz first, falls back to legacy .json.
+    """
+    d = Path(replay_dir)
+    gz_path = d / f"{bid}.json.gz"
+    if gz_path.exists():
+        try:
+            return json.loads(gzip.decompress(gz_path.read_bytes()).decode("utf-8"))
+        except Exception:
+            log.exception("Failed to load replay %s", gz_path)
+            return None
+    # Legacy fallback
+    json_path = d / f"{bid}.json"
+    if json_path.exists():
+        try:
+            return json.loads(json_path.read_text(encoding="utf-8"))
+        except Exception:
+            log.exception("Failed to load replay %s", json_path)
+            return None
+    return None
+
+
+def get_replay_path(bid: int, replay_dir: str = DEFAULT_REPLAY_DIR) -> Path | None:
+    """Return the path to a replay file (gz preferred), or None if not found."""
+    d = Path(replay_dir)
+    gz = d / f"{bid}.json.gz"
+    if gz.exists():
+        return gz
+    legacy = d / f"{bid}.json"
+    if legacy.exists():
+        return legacy
+    return None
 
 
 def list_replays(replay_dir: str = DEFAULT_REPLAY_DIR) -> list[dict[str, Any]]:
@@ -98,9 +124,21 @@ def list_replays(replay_dir: str = DEFAULT_REPLAY_DIR) -> list[dict[str, Any]]:
     if not d.is_dir():
         return []
     result = []
-    for f in sorted(d.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+    # Collect all replay files (.json.gz preferred; skip .json if .gz sibling exists)
+    gz_bids: set[str] = set()
+    files: list[tuple[Path, bool]] = []  # (path, is_gz)
+    for f in d.glob("*.json.gz"):
+        gz_bids.add(f.stem.removesuffix(".json"))
+        files.append((f, True))
+    for f in d.glob("*.json"):
+        bid_str = f.stem
+        if bid_str not in gz_bids:
+            files.append((f, False))
+    files.sort(key=lambda x: x[0].stat().st_mtime, reverse=True)
+    for path, is_gz in files:
         try:
-            raw = json.loads(f.read_text(encoding="utf-8"))
+            raw_bytes = gzip.decompress(path.read_bytes()) if is_gz else path.read_bytes()
+            raw = json.loads(raw_bytes.decode("utf-8"))
             result.append({
                 "bid": raw.get("bid"),
                 "defender_uid": raw.get("defender_uid"),
@@ -121,13 +159,14 @@ def cleanup_old_replays(replay_dir: str = DEFAULT_REPLAY_DIR,
         return 0
     cutoff = time.time() - max_age_days * 86400
     deleted = 0
-    for f in d.glob("*.json"):
-        try:
-            if f.stat().st_mtime < cutoff:
-                f.unlink()
-                deleted += 1
-        except Exception:
-            continue
+    for pattern in ("*.json.gz", "*.json"):
+        for f in d.glob(pattern):
+            try:
+                if f.stat().st_mtime < cutoff:
+                    f.unlink()
+                    deleted += 1
+            except Exception:
+                continue
     if deleted:
         log.info("Replay cleanup: deleted %d files older than %d days", deleted, max_age_days)
     return deleted

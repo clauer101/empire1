@@ -197,6 +197,17 @@
       padding: 18px 14px; color: var(--text-dim); font-size: 12px;
     }
 
+    /* ── Age bars (same as send-ai-army.html) ── */
+    .age-bars { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+    .age-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .age-name { width: 90px; color: var(--text-dim); }
+    .age-bar-outer {
+      flex: 1; height: 6px; background: var(--surface-alt);
+      border-radius: 3px; overflow: hidden;
+    }
+    .age-bar-inner { height: 100%; border-radius: 3px; }
+    .age-pct { width: 38px; text-align: right; font-family: var(--mono); color: var(--text-dim); }
+
     /* ── Mobile ── */
     @media (max-width: 700px) {
       #content { padding: 12px 8px 40px; gap: 14px; }
@@ -314,6 +325,8 @@ function pct(val, total) {
 
 // ── Empire detail HTML ────────────────────────────────────────────
 function buildDetailHTML(e) {
+  const towerStats = buildTowerStats(e.hex_tiles);
+  const mapSVG     = buildHexMapSVG(e.hex_tiles);
   // Resources
   let resRows = Object.entries(e.resources).map(([k, v]) =>
     `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`
@@ -366,20 +379,26 @@ function buildDetailHTML(e) {
       ${citRows}
     </div>
     <div class="detail-section">
-      <div class="detail-title">Buildings (${e.buildings_done.length} done, ${Object.keys(e.buildings_wip).length} in progress)</div>
-      ${bldgDone}${bldgWip || ''}
-    </div>
-    <div class="detail-section">
-      <div class="detail-title">Knowledge (${e.knowledge_done.length} done, ${Object.keys(e.knowledge_wip).length} in progress)</div>
-      ${knowDone}${knowWip || ''}
-    </div>
-    <div class="detail-section">
       <div class="detail-title">Armies (${e.armies.length})</div>
       ${armyHTML}
     </div>
     <div class="detail-section">
       <div class="detail-title">Artefacts</div>
       ${artHTML}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Towers (${towerStats.count})</div>
+      ${towerStats.eraHTML || '<span style="color:var(--text-dim);font-size:11px">none</span>'}
+      <div class="detail-title" style="margin-top:8px">Map (${(e.hex_tiles || []).length})</div>
+      ${mapSVG}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Buildings (${e.buildings_done.length} done, ${Object.keys(e.buildings_wip).length} in progress)</div>
+      ${bldgDone}${bldgWip || ''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Knowledge (${e.knowledge_done.length} done, ${Object.keys(e.knowledge_wip).length} in progress)</div>
+      ${knowDone}${knowWip || ''}
     </div>
   </div>`;
 }
@@ -402,8 +421,10 @@ function renderEmpires(empires) {
   tbody.innerHTML = '';
 
   empires.forEach(e => {
-    const lifePct = e.max_life > 0
-      ? Math.round((e.resources.life / e.max_life) * 100) : 0;
+    const life    = e.resources?.life ?? 0;
+    const maxLife = e.max_life > 0 ? e.max_life : 10;
+    const lifePct = Math.max(0, Math.min(100, Math.round((life / maxLife) * 100)));
+    const lifeColor = lifePct > 60 ? '#66bb6a' : lifePct > 25 ? '#ffa726' : '#ef5350';
     const culture = e.resources.culture ?? 0;
     const gold = e.resources.gold ?? 0;
     const totalCit = Object.values(e.citizens).reduce((a, b) => a + b, 0);
@@ -425,8 +446,8 @@ function renderEmpires(empires) {
       <td>${culture.toLocaleString()}</td>
       <td>${gold.toLocaleString()}</td>
       <td>
-        <span class="bar-outer"><span class="bar-inner" style="width:${lifePct}%"></span></span>
-        <span style="color:var(--text-dim);margin-left:5px">${e.resources.life}/${e.max_life}</span>
+        <span class="bar-outer"><span class="bar-inner" style="width:${lifePct}%;background:${lifeColor}"></span></span>
+        <span style="color:var(--text-dim);margin-left:5px">${life}/${maxLife}</span>
       </td>
       <td>${totalCit}</td>
       <td>${e.buildings_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.buildings_done.length + Object.keys(e.buildings_wip).length}</span></td>
@@ -489,6 +510,115 @@ function renderAttacks(attacks) {
       <td>${siegeBar} <span style="color:var(--text-dim);font-size:11px">${fmtSec(a.siege_s)}</span></td>
     </tr>`;
   }).join('');
+}
+
+// ── Tower era mapping ────────────────────────────────────────────
+const TOWER_ERA = {
+  BASIC_TOWER: 'Steinzeit',    SLING_TOWER: 'Steinzeit',
+  DOUBLE_SLING_TOWER: 'Neolith.', SPIKE_TRAP: 'Neolith.',
+  ARROW_TOWER: 'Bronze',       BALLISTA_TOWER: 'Bronze',    FIRE_TOWER: 'Bronze',
+  CATAPULTS: 'Eisenzeit',      ARBELESTE_TOWER: 'Eisenzeit',
+  TAR_TOWER: 'Mittelalter',    HEAVY_TOWER: 'Mittelalter',  BOILING_OIL: 'Mittelalter',
+  CANNON_TOWER: 'Renaissance', RIFLE_TOWER: 'Renaissance',  COLD_TOWER: 'Renaissance', ICE_TOWER: 'Renaissance',
+  FLAME_THROWER: 'Industrie',  SHOCK_TOWER: 'Industrie',    PARALYZNG_TOWER: 'Industrie',
+  NAPALM_THROWER: 'Moderne',   MG_TOWER: 'Moderne',         RAPID_FIRE_MG_BUNKER: 'Moderne',
+  RADAR_TOWER: 'Moderne',      ANTI_AIR_TOWER: 'Moderne',   LASER_TOWER: 'Moderne',
+  SNIPER_TOWER: 'Zukunft',     ROCKET_TOWER: 'Zukunft',
+};
+
+const ERA_COLORS = {
+  'Steinzeit':   '#8B7355',
+  'Neolith.':    '#A0887A',
+  'Bronze':      '#CD7F32',
+  'Eisenzeit':   '#888888',
+  'Mittelalter': '#6B8A8A',
+  'Renaissance': '#8B6914',
+  'Industrie':   '#FF6B35',
+  'Moderne':     '#4B9CD3',
+  'Zukunft':     '#9B59B6',
+};
+
+const TILE_COLORS = {
+  castle:    '#4fc3f7',
+  spawnpoint:'#ef5350',
+  path:      '#1e3a20',
+  empty:     '#111118',
+  BASIC_TOWER: '#8B7355',    SLING_TOWER: '#8B7355',
+  DOUBLE_SLING_TOWER:'#A0887A', SPIKE_TRAP:'#A0887A',
+  ARROW_TOWER:'#CD7F32',     BALLISTA_TOWER:'#CD7F32', FIRE_TOWER:'#CD7F32',
+  CATAPULTS:'#888888',       ARBELESTE_TOWER:'#888888',
+  TAR_TOWER:'#6B8A8A',       HEAVY_TOWER:'#6B8A8A',    BOILING_OIL:'#6B8A8A',
+  CANNON_TOWER:'#8B6914',    RIFLE_TOWER:'#8B6914',    COLD_TOWER:'#8B6914', ICE_TOWER:'#8B6914',
+  FLAME_THROWER:'#FF6B35',   SHOCK_TOWER:'#FF6B35',    PARALYZNG_TOWER:'#FF6B35',
+  NAPALM_THROWER:'#4B9CD3',  MG_TOWER:'#4B9CD3',       RAPID_FIRE_MG_BUNKER:'#4B9CD3',
+  RADAR_TOWER:'#4B9CD3',     ANTI_AIR_TOWER:'#4B9CD3', LASER_TOWER:'#4B9CD3',
+  SNIPER_TOWER:'#9B59B6',    ROCKET_TOWER:'#9B59B6',
+};
+
+const NON_TOWER = new Set(['castle','spawnpoint','path','empty','']);
+
+function buildHexMapSVG(tiles) {
+  if (!tiles || tiles.length === 0)
+    return '<span style="color:var(--text-dim);font-size:11px">no map</span>';
+
+  const S = 5;
+  const pts = tiles.map(t => ({
+    x: S * Math.sqrt(3) * (t.q + t.r / 2),
+    y: S * 1.5 * t.r,
+    type: t.type,
+  }));
+
+  const minX = Math.min(...pts.map(p => p.x)) - S * Math.sqrt(3);
+  const minY = Math.min(...pts.map(p => p.y)) - S * 2;
+  const maxX = Math.max(...pts.map(p => p.x)) + S * Math.sqrt(3);
+  const maxY = Math.max(...pts.map(p => p.y)) + S * 2;
+
+  function hexPoly(cx, cy) {
+    return Array.from({length: 6}, (_, i) => {
+      const a = Math.PI / 180 * (60 * i - 30);
+      return `${(cx + S * Math.cos(a)).toFixed(1)},${(cy + S * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+  }
+
+  const polys = pts.map(p => {
+    const cx = (p.x - minX).toFixed(1);
+    const cy = (p.y - minY).toFixed(1);
+    const fill = TILE_COLORS[p.type] || '#1a1a28';
+    return `<polygon points="${hexPoly(p.x - minX, p.y - minY)}" fill="${fill}" stroke="#0d0d14" stroke-width="0.5"/>`;
+  });
+
+  const W = (maxX - minX).toFixed(0);
+  const H = (maxY - minY).toFixed(0);
+  return `<svg width="${W}" height="${H}" style="display:block;border-radius:3px">${polys.join('')}</svg>`;
+}
+
+const ERA_ORDER_STATUS = ['Steinzeit','Neolith.','Bronze','Eisenzeit','Mittelalter','Renaissance','Industrie','Moderne','Zukunft'];
+
+function buildTowerStats(tiles) {
+  if (!tiles) return {count: 0, eraHTML: ''};
+  const towers = tiles.filter(t => !NON_TOWER.has(t.type));
+  const byEra = {};
+  for (const t of towers) {
+    const era = TOWER_ERA[t.type] || '?';
+    byEra[era] = (byEra[era] || 0) + 1;
+  }
+  const maxCount = Math.max(1, ...Object.values(byEra));
+  const total = Object.values(byEra).reduce((a, b) => a + b, 0);
+  const rows = ERA_ORDER_STATUS
+    .filter(era => byEra[era])
+    .map(era => {
+      const cnt = byEra[era];
+      const barPct = Math.round(cnt / maxCount * 100);
+      const pct = Math.round(cnt / total * 100);
+      const col = ERA_COLORS[era] || '#888888';
+      return `<div class="age-row">
+        <span class="age-name">${era}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${barPct}%;background:${col}"></div></div>
+        <span class="age-pct">${pct}%</span>
+        <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${cnt}×</span>
+      </div>`;
+    }).join('');
+  return {count: towers.length, eraHTML: rows ? `<div class="age-bars">${rows}</div>` : ''};
 }
 
 // ── Era calculation ───────────────────────────────────────────────

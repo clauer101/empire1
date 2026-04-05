@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="../css/style.css">
   <script src="nav.js" defer></script>
   <style>
+    :root { --surface: #14141f; --surface-alt: #1a1a28; --surface-hover: #22222f; }
     body { background: var(--bg); color: var(--text); font-family: var(--font); padding: 0; margin: 0; min-height: 100vh; overflow-y: auto; }
-    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; position: relative; z-index: 1; background: var(--bg); }
     .effect-block { margin-bottom: 28px; }
     .effect-header {
       display: flex; align-items: center; gap: 10px;
@@ -125,6 +126,8 @@ const EFFECT_LABELS = {
   knowledge_steal_modifier:       'Knowledge Steal Modifier ⚠',
   artefact_steal_chance_modifier: 'Artefact Steal Chance ⚠',
   destroy_wonder_percent:         'Destroy Wonder % ⚠',
+  // Structures — NOT yet implemented
+  tower_sell_refund_modifier:     'Tower Sell Refund Modifier ⚠',
   // Spy — NOT yet implemented
   spy_disguise_chance:            'Spy Disguise Chance ⚠',
 };
@@ -157,6 +160,10 @@ const EFFECT_GROUPS = [
     label: '💀 Loot (⚠ not yet applied)',
     keys: ['capture_gold','capture_culture','culture_steal_modifier',
            'knowledge_steal_modifier','artefact_steal_chance_modifier','destroy_wonder_percent'],
+  },
+  {
+    label: '🏗 Structures (⚠ not yet applied)',
+    keys: ['tower_sell_refund_modifier'],
   },
   {
     label: '🕵 Spy (⚠ not yet applied)',

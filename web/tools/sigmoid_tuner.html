@@ -296,47 +296,33 @@
     
     <!-- Tile Price -->
     <div class="tuner">
-      <h2>🗺️ Tile Price (Gold)</h2>
+      <h2>🗺️ Tile Price — f(x) = u + (i * y) * (i + z)^v</h2>
       <div class="controls">
         <div class="control">
-          <label>MAX Value</label>
-          <input type="range" id="tile-max" min="1000" max="100000" step="1000" value="47000">
-          <div class="value-display">
-            <span>MAX:</span>
-            <span id="tile-max-val">47000</span>
-          </div>
+          <label>U (base offset)</label>
+          <input type="range" id="tile-u" min="0" max="1000" step="1" value="0">
+          <div class="value-display"><span>U:</span><span id="tile-u-val">0</span></div>
         </div>
         <div class="control">
-          <label>MIN Value</label>
-          <input type="range" id="tile-min" min="1" max="2000" step="1" value="100">
-          <div class="value-display">
-            <span>MIN:</span>
-            <span id="tile-min-val">100</span>
-          </div>
+          <label>Y (scale)</label>
+          <input type="range" id="tile-y" min="0" max="10" step="0.1" value="1">
+          <div class="value-display"><span>Y:</span><span id="tile-y-val">1</span></div>
         </div>
         <div class="control">
-          <label>SPREAD</label>
-          <input type="range" id="tile-spread" min="1" max="50" step="0.5" value="29">
-          <div class="value-display">
-            <span>SPREAD:</span>
-            <span id="tile-spread-val">29</span>
-          </div>
+          <label>Z (offset)</label>
+          <input type="range" id="tile-z" min="0" max="20" step="0.5" value="2">
+          <div class="value-display"><span>Z:</span><span id="tile-z-val">2</span></div>
         </div>
         <div class="control">
-          <label>STEEP</label>
-          <input type="range" id="tile-steep" min="1" max="20" step="0.5" value="8.5">
-          <div class="value-display">
-            <span>STEEP:</span>
-            <span id="tile-steep-val">8.5</span>
-          </div>
+          <label>V (exponent)</label>
+          <input type="range" id="tile-v" min="0.1" max="5" step="0.05" value="2">
+          <div class="value-display"><span>V:</span><span id="tile-v-val">2</span></div>
         </div>
       </div>
       <canvas id="tile-canvas"></canvas>
       <div class="table-container">
         <table id="tile-table">
-          <thead>
-            <tr><th>#</th><th>Price</th></tr>
-          </thead>
+          <thead><tr><th>#</th><th>Price</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -345,50 +331,36 @@
         <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
-    
+
     <!-- Wave Price -->
     <div class="tuner">
-      <h2>🌊 Wave Price (Gold)</h2>
+      <h2>🌊 Wave Price — f(x) = u + (i * y) * (i + z)^v</h2>
       <div class="controls">
         <div class="control">
-          <label>MAX Value</label>
-          <input type="range" id="wave-max" min="1000" max="100000" step="1000" value="28000">
-          <div class="value-display">
-            <span>MAX:</span>
-            <span id="wave-max-val">28000</span>
-          </div>
+          <label>U (base offset)</label>
+          <input type="range" id="wave-u" min="0" max="1000" step="1" value="0">
+          <div class="value-display"><span>U:</span><span id="wave-u-val">0</span></div>
         </div>
         <div class="control">
-          <label>MIN Value</label>
-          <input type="range" id="wave-min" min="1" max="2000" step="1" value="100">
-          <div class="value-display">
-            <span>MIN:</span>
-            <span id="wave-min-val">100</span>
-          </div>
+          <label>Y (scale)</label>
+          <input type="range" id="wave-y" min="0" max="10" step="0.1" value="1">
+          <div class="value-display"><span>Y:</span><span id="wave-y-val">1</span></div>
         </div>
         <div class="control">
-          <label>SPREAD</label>
-          <input type="range" id="wave-spread" min="1" max="50" step="0.5" value="12">
-          <div class="value-display">
-            <span>SPREAD:</span>
-            <span id="wave-spread-val">12</span>
-          </div>
+          <label>Z (offset)</label>
+          <input type="range" id="wave-z" min="0" max="20" step="0.5" value="2">
+          <div class="value-display"><span>Z:</span><span id="wave-z-val">2</span></div>
         </div>
         <div class="control">
-          <label>STEEP</label>
-          <input type="range" id="wave-steep" min="1" max="20" step="0.5" value="7">
-          <div class="value-display">
-            <span>STEEP:</span>
-            <span id="wave-steep-val">7</span>
-          </div>
+          <label>V (exponent)</label>
+          <input type="range" id="wave-v" min="0.1" max="5" step="0.05" value="2">
+          <div class="value-display"><span>V:</span><span id="wave-v-val">2</span></div>
         </div>
       </div>
       <canvas id="wave-canvas"></canvas>
       <div class="table-container">
         <table id="wave-table">
-          <thead>
-            <tr><th>#</th><th>Price</th></tr>
-          </thead>
+          <thead><tr><th>#</th><th>Price</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -400,38 +372,38 @@
     
     <!-- Critter Slot Price -->
     <div class="tuner">
-      <h2>🐛 Critter Slot Price (Gold)</h2>
+      <h2>🐛 Critter Slot Price — f(x) = u + (i * y) * (i + z)^v</h2>
       <div class="controls">
         <div class="control">
-          <label>MAX Value</label>
-          <input type="range" id="critter-max" min="1000" max="100000" step="1000" value="18000">
+          <label>U (base offset)</label>
+          <input type="range" id="critter-u" min="0" max="100" step="1" value="0">
           <div class="value-display">
-            <span>MAX:</span>
-            <span id="critter-max-val">18000</span>
+            <span>U:</span>
+            <span id="critter-u-val">0</span>
           </div>
         </div>
         <div class="control">
-          <label>MIN Value</label>
-          <input type="range" id="critter-min" min="1" max="2000" step="1" value="25">
+          <label>Y (scale)</label>
+          <input type="range" id="critter-y" min="0" max="10" step="0.1" value="1">
           <div class="value-display">
-            <span>MIN:</span>
-            <span id="critter-min-val">25</span>
+            <span>Y:</span>
+            <span id="critter-y-val">1</span>
           </div>
         </div>
         <div class="control">
-          <label>SPREAD</label>
-          <input type="range" id="critter-spread" min="1" max="50" step="0.5" value="15">
+          <label>Z (offset)</label>
+          <input type="range" id="critter-z" min="0" max="20" step="0.5" value="2">
           <div class="value-display">
-            <span>SPREAD:</span>
-            <span id="critter-spread-val">15</span>
+            <span>Z:</span>
+            <span id="critter-z-val">2</span>
           </div>
         </div>
         <div class="control">
-          <label>STEEP</label>
-          <input type="range" id="critter-steep" min="1" max="20" step="0.5" value="6">
+          <label>V (exponent)</label>
+          <input type="range" id="critter-v" min="0.1" max="5" step="0.05" value="2">
           <div class="value-display">
-            <span>STEEP:</span>
-            <span id="critter-steep-val">6</span>
+            <span>V:</span>
+            <span id="critter-v-val">2</span>
           </div>
         </div>
       </div>
@@ -452,39 +424,27 @@
     
     <!-- Army Price -->
     <div class="tuner">
-      <h2>⚔️ Army Price (Gold)</h2>
+      <h2>⚔️ Army Price — f(x) = u + (i * y) * (i + z)^v</h2>
       <div class="controls">
         <div class="control">
-          <label>MAX Value</label>
-          <input type="range" id="army-max" min="1000" max="100000" step="1000" value="75000">
-          <div class="value-display">
-            <span>MAX:</span>
-            <span id="army-max-val">75000</span>
-          </div>
+          <label>U (base offset)</label>
+          <input type="range" id="army-u" min="0" max="1000" step="1" value="0">
+          <div class="value-display"><span>U:</span><span id="army-u-val">0</span></div>
         </div>
         <div class="control">
-          <label>MIN Value</label>
-          <input type="range" id="army-min" min="1" max="2000" step="1" value="1000">
-          <div class="value-display">
-            <span>MIN:</span>
-            <span id="army-min-val">1000</span>
-          </div>
+          <label>Y (scale)</label>
+          <input type="range" id="army-y" min="0" max="10" step="0.1" value="1">
+          <div class="value-display"><span>Y:</span><span id="army-y-val">1</span></div>
         </div>
         <div class="control">
-          <label>SPREAD</label>
-          <input type="range" id="army-spread" min="1" max="50" step="0.5" value="7">
-          <div class="value-display">
-            <span>SPREAD:</span>
-            <span id="army-spread-val">7</span>
-          </div>
+          <label>Z (offset)</label>
+          <input type="range" id="army-z" min="0" max="20" step="0.5" value="2">
+          <div class="value-display"><span>Z:</span><span id="army-z-val">2</span></div>
         </div>
         <div class="control">
-          <label>STEEP</label>
-          <input type="range" id="army-steep" min="1" max="20" step="0.5" value="6">
-          <div class="value-display">
-            <span>STEEP:</span>
-            <span id="army-steep-val">6</span>
-          </div>
+          <label>V (exponent)</label>
+          <input type="range" id="army-v" min="0.1" max="5" step="0.05" value="2">
+          <div class="value-display"><span>V:</span><span id="army-v-val">2</span></div>
         </div>
       </div>
       <canvas id="army-canvas"></canvas>
@@ -515,18 +475,27 @@
     }
 
     // Initialize tuners
-    const tuners = ['tile', 'wave', 'critter', 'army'];
-    
-    // Citizen tuner uses u/y/z/v params
-    ['u', 'y', 'z', 'v'].forEach(param => {
-      const slider = document.getElementById(`citizen-${param}`);
-      const display = document.getElementById(`citizen-${param}-val`);
-      slider.addEventListener('input', (e) => {
-        display.textContent = e.target.value;
-        updateCitizen();
+    const tuners = [];
+
+    // All power-decay tuners use u/y/z/v params
+    const POWER_TUNERS = {
+      citizen: updateCitizen,
+      tile:    () => updatePowerDecay('tile'),
+      wave:    () => updatePowerDecay('wave'),
+      critter: updateCritter,
+      army:    () => updatePowerDecay('army'),
+    };
+    Object.entries(POWER_TUNERS).forEach(([prefix, fn]) => {
+      ['u', 'y', 'z', 'v'].forEach(param => {
+        const slider = document.getElementById(`${prefix}-${param}`);
+        const display = document.getElementById(`${prefix}-${param}-val`);
+        slider.addEventListener('input', (e) => {
+          display.textContent = e.target.value;
+          fn();
+        });
       });
+      fn();
     });
-    updateCitizen();
 
     tuners.forEach(name => {
       const params = ['max', 'min', 'spread', 'steep'];
@@ -566,7 +535,7 @@
       const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
       const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
       ctx.clearRect(0, 0, w, h);
-      const points = 30;
+      const points = 100;
       const values = Array.from({length: points}, (_, i) => powerDecay(i + 1, p.u, p.y, p.z, p.v));
       const maxVal = Math.max(...values);
       ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1;
@@ -595,7 +564,7 @@
     function updateTableCitizen(p) {
       const tbody = document.querySelector('#citizen-table tbody');
       tbody.innerHTML = '';
-      for (let i = 1; i <= 30; i++) {
+      for (let i = 1; i <= 100; i++) {
         const val = powerDecay(i, p.u, p.y, p.z, p.v);
         const row = document.createElement('tr');
         row.innerHTML = `<td>#${i}</td><td>${val.toFixed(2)}</td>`;
@@ -627,8 +596,8 @@
       
       ctx.clearRect(0, 0, w, h);
       
-      // Calculate values for 30 points
-      const points = 30;
+      // Calculate values for 100 points
+      const points = 100;
       const values = [];
       let maxVal = 0;
       
@@ -692,7 +661,7 @@
       const tbody = document.querySelector(`#${name}-table tbody`);
       tbody.innerHTML = '';
       
-      for (let i = 1; i <= 30; i++) {
+      for (let i = 1; i <= 100; i++) {
         const val = sigmoid(i, params.max, params.min, params.spread, params.steep);
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -703,6 +672,60 @@
       }
     }
     
+    function updateCritter() { updatePowerDecay('critter'); }
+
+    function getPowerParams(prefix) {
+      return {
+        u: parseFloat(document.getElementById(`${prefix}-u`).value),
+        y: parseFloat(document.getElementById(`${prefix}-y`).value),
+        z: parseFloat(document.getElementById(`${prefix}-z`).value),
+        v: parseFloat(document.getElementById(`${prefix}-v`).value),
+      };
+    }
+
+    function updatePowerDecay(prefix) {
+      const p = getPowerParams(prefix);
+      const canvas = document.getElementById(`${prefix}-canvas`);
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.clearRect(0, 0, w, h);
+      const points = 100;
+      const values = Array.from({length: points}, (_, i) => powerDecay(i + 1, p.u, p.y, p.z, p.v));
+      const maxVal = Math.max(...values);
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const y = (h / 5) * i;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 3; ctx.beginPath();
+      values.forEach((val, i) => {
+        const x = (w / (points - 1)) * i;
+        const y = h - (val / maxVal) * h * 0.9 - h * 0.05;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = '#4fc3f7';
+      values.forEach((val, i) => {
+        const x = (w / (points - 1)) * i;
+        const y = h - (val / maxVal) * h * 0.9 - h * 0.05;
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = '#aaa'; ctx.font = `${12 * window.devicePixelRatio}px monospace`;
+      ctx.textAlign = 'left';  ctx.fillText(`#1: ${values[0].toFixed(1)}`, 10, 20);
+      ctx.textAlign = 'right'; ctx.fillText(`#${points}: ${values[points-1].toFixed(1)}`, w - 10, 20);
+      const tbody = document.querySelector(`#${prefix}-table tbody`);
+      tbody.innerHTML = '';
+      for (let i = 1; i <= 100; i++) {
+        const val = powerDecay(i, p.u, p.y, p.z, p.v);
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>#${i}</td><td>${val.toFixed(2)}</td>`;
+        tbody.appendChild(row);
+      }
+      document.getElementById(`${prefix}-code`).value =
+        `u, y, z, v = ${Math.round(p.u)}, ${Math.round(p.y)}, ${p.z}, ${p.v}`;
+    }
+
     function updateCode(name, params) {
       const code = `maxv, minv, spread, steep = ${Math.round(params.max)}, ${Math.round(params.min)}, ${params.spread}, ${params.steep}`;
       document.getElementById(`${name}-code`).value = code;
@@ -711,13 +734,11 @@
     async function saveAll() {
       const prices = {
         citizen: getCitizenParams(),
-        tile:    { maxv: getParams('tile').max,    minv: getParams('tile').min,    spread: getParams('tile').spread,    steep: getParams('tile').steep },
-        wave:    { maxv: getParams('wave').max,    minv: getParams('wave').min,    spread: getParams('wave').spread,    steep: getParams('wave').steep },
-        critter_slot: { maxv: getParams('critter').max, minv: getParams('critter').min, spread: getParams('critter').spread, steep: getParams('critter').steep },
-        army:    { maxv: getParams('army').max,    minv: getParams('army').min,    spread: getParams('army').spread,    steep: getParams('army').steep },
+        tile:         getPowerParams('tile'),
+        wave:         getPowerParams('wave'),
+        critter_slot: getPowerParams('critter'),
+        army:         getPowerParams('army'),
       };
-      // citizen uses u/y/z/v keys
-      prices.citizen = { u: prices.citizen.u, y: prices.citizen.y, z: prices.citizen.z, v: prices.citizen.v };
 
       const btns = document.querySelectorAll('button');
       const topbarBtn = document.getElementById('save-all-btn');
@@ -762,19 +783,27 @@
           set('citizen-z', c.z ?? 1.5); set('citizen-v', c.v ?? 3.3);
           updateCitizen();
         }
+        const setPower = (prefix, d, defaults) => {
+          if (!d) return;
+          ['u','y','z','v'].forEach(k => {
+            const el = document.getElementById(`${prefix}-${k}`);
+            if (el) { el.value = d[k] ?? defaults[k]; document.getElementById(`${prefix}-${k}-val`).textContent = el.value; }
+          });
+          updatePowerDecay(prefix);
+        };
         const setSigmoid = (name, d) => {
           if (!d) return;
-          const set = (param, val) => {
+          ['max','min','spread','steep'].forEach((param, i) => {
+            const key = ['maxv','minv','spread','steep'][i];
             const el = document.getElementById(`${name}-${param}`);
-            if (el) { el.value = val; document.getElementById(`${name}-${param}-val`).textContent = val; }
-          };
-          set('max', d.maxv); set('min', d.minv); set('spread', d.spread); set('steep', d.steep);
+            if (el) { el.value = d[key]; document.getElementById(`${name}-${param}-val`).textContent = d[key]; }
+          });
           update(name);
         };
-        setSigmoid('tile', p.tile);
-        setSigmoid('wave', p.wave);
-        setSigmoid('critter', p.critter_slot);
-        setSigmoid('army', p.army);
+        setPower('tile',    p.tile,         {u:0,y:1,z:2,v:2});
+        setPower('wave',    p.wave,         {u:0,y:1,z:2,v:2});
+        setPower('critter', p.critter_slot, {u:0,y:1,z:2,v:2});
+        setPower('army',    p.army,         {u:0,y:1,z:2,v:2});
       } catch (e) {
         console.warn('Could not load prices from server:', e);
       }

@@ -82,6 +82,19 @@ function init(el, _api, _state) {
         </div>
       </div>
 
+      <!-- Download Progress -->
+      <div class="battle-status__item" id="replay-progress-wrap" style="grid-column:1/-1;display:none;">
+        <div style="width:100%;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span class="label">Loading replay…</span>
+            <span class="label" id="replay-progress-label"></span>
+          </div>
+          <div style="height:6px;background:var(--border,#333);border-radius:3px;overflow:hidden;">
+            <div id="replay-progress-bar" style="height:100%;width:0%;background:var(--accent,#4fc3f7);border-radius:3px;transition:width 0.1s linear;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Playback Controls -->
       <div class="battle-status__item" style="grid-column:1/-1;">
         <div style="display:flex;gap:8px;align-items:center;justify-content:center;width:100%;">
@@ -119,7 +132,17 @@ function init(el, _api, _state) {
   playBtn.style.cursor = 'not-allowed';
   playBtn.addEventListener('click', _togglePlay);
   container.querySelector('#replay-speed').addEventListener('change', (e) => {
-    _speed = parseFloat(e.target.value) || 1;
+    const newSpeed = parseFloat(e.target.value) || 1;
+    if (_playing) {
+      // Capture current game-time position, then re-anchor _startTime so
+      // elapsed stays continuous from this moment at the new speed.
+      const current = _elapsedMs();
+      _speed = newSpeed;
+      _startTime = performance.now() - current / _speed;
+    } else {
+      // Paused: _pausedAt already holds the correct position; just update speed.
+      _speed = newSpeed;
+    }
   });
   container.querySelector('#replay-summary-close').addEventListener('click', () => {
     container.querySelector('#replay-summary').style.display = 'none';
@@ -150,9 +173,9 @@ async function enter() {
   }
   _registerStructureTileTypes();
 
-  // Fetch replay data
+  // Fetch replay data with progress tracking
   try {
-    const data = await rest.getReplay(_bid);
+    const data = await _fetchWithProgress(`/api/replays/${_bid}`, container);
     if (!data || !data.events || data.events.length === 0) {
       _setStatus('Replay not found or empty');
       return;
@@ -549,6 +572,103 @@ function _fmtTime(ms) {
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
   return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+// ── Fetch with progress ─────────────────────────────────────
+
+async function _fetchWithProgress(url, scope) {
+  const wrap = scope.querySelector('#replay-progress-wrap');
+  const bar  = scope.querySelector('#replay-progress-bar');
+  const lbl  = scope.querySelector('#replay-progress-label');
+
+  if (wrap) wrap.style.display = '';
+
+  const headers = {};
+  const token = localStorage.getItem('e3_jwt_token');
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const fullUrl = rest.baseUrl ? `${rest.baseUrl}${url}` : url;
+  const response = await fetch(fullUrl, { headers });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  const total = parseInt(response.headers.get('Content-Length') || '0', 10);
+  const isGzip = (response.headers.get('Content-Type') || '').includes('gzip');
+
+  // Track compressed bytes from the raw body stream for accurate progress
+  const rawReader = response.body.getReader();
+  const compressedChunks = [];
+  let received = 0;
+
+  // Indeterminate animation when Content-Length is unknown
+  let indeterminateId = null;
+  if (!total && bar) {
+    let pos = 0;
+    indeterminateId = setInterval(() => {
+      pos = (pos + 2) % 100;
+      bar.style.width = '20%';
+      bar.style.marginLeft = pos + '%';
+    }, 30);
+  }
+
+  while (true) {
+    const { done, value } = await rawReader.read();
+    if (done) break;
+    compressedChunks.push(value);
+    received += value.length;
+    if (total && bar) {
+      const pct = Math.min(100, Math.round(received / total * 100));
+      bar.style.width = pct + '%';
+      if (lbl) lbl.textContent = `${_fmtBytes(received)} / ${_fmtBytes(total)}`;
+    } else if (lbl) {
+      lbl.textContent = _fmtBytes(received);
+    }
+  }
+
+  if (indeterminateId) {
+    clearInterval(indeterminateId);
+    bar.style.marginLeft = '0';
+  }
+  if (bar) bar.style.width = '100%';
+  if (wrap) wrap.style.display = 'none';
+
+  // Reassemble compressed bytes
+  const compressed = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of compressedChunks) { compressed.set(chunk, offset); offset += chunk.length; }
+
+  // Decompress if needed, then parse JSON
+  let jsonBytes;
+  if (isGzip && typeof DecompressionStream !== 'undefined') {
+    const ds = new DecompressionStream('gzip');
+    const writer = ds.writable.getWriter();
+    const outChunks = [];
+    const outReader = ds.readable.getReader();
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await outReader.read();
+        if (done) break;
+        outChunks.push(value);
+      }
+    };
+    const pumpPromise = pump();
+    await writer.write(compressed);
+    await writer.close();
+    await pumpPromise;
+    let total2 = 0;
+    for (const c of outChunks) total2 += c.length;
+    jsonBytes = new Uint8Array(total2);
+    let off2 = 0;
+    for (const c of outChunks) { jsonBytes.set(c, off2); off2 += c.length; }
+  } else {
+    jsonBytes = compressed;
+  }
+  return JSON.parse(new TextDecoder().decode(jsonBytes));
+}
+
+function _fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 // ── Export ──────────────────────────────────────────────────

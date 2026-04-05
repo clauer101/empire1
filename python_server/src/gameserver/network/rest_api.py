@@ -165,8 +165,8 @@ def create_app(services: "Services") -> FastAPI:
     async def get_summary(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         msg = _stub_message()
         resp = await handle_summary_request(msg, uid)
-        if resp and services.message_store:
-            resp["unread_messages"] = services.message_store.unread_count(uid)
+        if resp and services.database:
+            resp["unread_messages"] = await services.database.unread_count(uid)
         return resp or {"error": "No data"}
 
     @app.get("/api/empire/items")
@@ -321,53 +321,67 @@ def create_app(services: "Services") -> FastAPI:
 
     @app.post("/api/messages")
     async def send_message(body: SendMessageRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
-        """Send a message to another player."""
+        """Send a message. to_uid=None/0 = global chat, otherwise private."""
         if not body.body.strip():
             return {"success": False, "error": "Message body cannot be empty"}
-        if body.to_uid == uid:
+        to_uid = body.to_uid or 0
+        if to_uid != 0 and to_uid == uid:
             return {"success": False, "error": "Cannot send message to yourself"}
-        msg = services.message_store.send(from_uid=uid, to_uid=body.to_uid, body=body.body.strip())
+        msg = await services.database.send_message(from_uid=uid, to_uid=to_uid, body=body.body.strip())
         return {"success": True, "message": msg}
 
     @app.get("/api/messages")
     async def get_messages(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
-        """Return inbox + sent messages for the current player."""
-        # 1. Empire names from live game state (most accurate)
+        """Return global chat, private messages and battle reports for the current player."""
+        # Empire names from live game state + DB fallback
         uid_to_name: dict[int, str] = {
             e.uid: e.name
             for e in services.empire_service.all_empires.values()
         }
-        # 2. Fill gaps with DB usernames / empire_name
+        uid_to_username: dict[int, str] = {}
         if services.database is not None:
             for row in await services.database.list_users():
                 if row["uid"] not in uid_to_name:
                     uid_to_name[row["uid"]] = (
                         row.get("empire_name") or row.get("username") or f"UID {row['uid']}"
                     )
+                uid_to_username[row["uid"]] = row.get("username") or ""
 
         def _name(u: int) -> str:
+            if u == 0:
+                return "System"
             return uid_to_name.get(u) or f"UID {u}"
 
-        inbox = services.message_store.get_inbox(uid)
-        sent = services.message_store.get_sent(uid)
-        unread = services.message_store.unread_count(uid)
+        def _username(u: int) -> str:
+            return uid_to_username.get(u) or ""
 
         def _annotate(m: dict) -> dict:
             return {
                 **m,
                 "from_name": _name(m["from_uid"]),
-                "to_name":   _name(m["to_uid"]),
+                "to_name": _name(m["to_uid"]),
+                "from_username": _username(m["from_uid"]),
+                "to_username": _username(m["to_uid"]),
             }
+
+        global_msgs   = await services.database.get_global()
+        private_msgs  = await services.database.get_private_for(uid)
+        battle_reports = await services.database.get_battle_reports_for(uid)
+        unread_private = await services.database.unread_count_private(uid)
+        unread_battle  = await services.database.unread_count_battle(uid)
+
         return {
-            "inbox": [_annotate(m) for m in inbox],
-            "sent":  [_annotate(m) for m in sent],
-            "unread": unread,
+            "global":         [_annotate(m) for m in global_msgs],
+            "private":        [_annotate(m) for m in private_msgs],
+            "battle_reports": [_annotate(m) for m in battle_reports],
+            "unread_private": unread_private,
+            "unread_battle":  unread_battle,
         }
 
     @app.post("/api/messages/{msg_id}/read")
     async def mark_read(msg_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Mark a message as read."""
-        ok = services.message_store.mark_read(uid, msg_id)
+        ok = await services.database.mark_read(uid, msg_id)
         return {"success": ok}
 
     @app.post("/api/battle-feedback")
@@ -376,7 +390,7 @@ def create_app(services: "Services") -> FastAPI:
         AI_UID = 0
         ADMIN_UID = 4
         text = f"[{body.rating}] Army: {body.army_name} (reported by UID {uid})"
-        msg = services.message_store.send(from_uid=AI_UID, to_uid=ADMIN_UID, body=text)
+        msg = await services.database.send_message(from_uid=AI_UID, to_uid=ADMIN_UID, body=text)
         return {"success": True, "message": msg}
 
     # =================================================================
@@ -391,13 +405,27 @@ def create_app(services: "Services") -> FastAPI:
         return {"replays": replays}
 
     @app.get("/api/replays/{bid}")
-    async def get_replay(bid: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
-        """Get a full battle replay by battle ID."""
-        from gameserver.persistence.replay import load_replay
-        data = load_replay(bid)
-        if data is None:
+    async def get_replay(bid: int, uid: int = Depends(get_current_uid)):
+        """Get a full battle replay by battle ID.
+
+        Returns raw gzip bytes for .json.gz files (client decompresses via
+        DecompressionStream) or plain JSON for legacy .json files.
+        """
+        from gameserver.persistence.replay import get_replay_path
+        from starlette.responses import Response, JSONResponse
+        path = get_replay_path(bid)
+        if path is None:
             raise HTTPException(status_code=404, detail="Replay not found")
-        return data
+        if path.suffix == ".gz":
+            data = path.read_bytes()
+            return Response(
+                content=data,
+                media_type="application/gzip",
+                headers={"Content-Length": str(len(data))},
+            )
+        # Legacy plain JSON
+        import json as _json
+        return JSONResponse(content=_json.loads(path.read_text(encoding="utf-8")))
 
 
     # =================================================================
@@ -446,6 +474,15 @@ def create_app(services: "Services") -> FastAPI:
                     ],
                 })
 
+            hex_tiles = []
+            for key, val in empire.hex_map.items():
+                try:
+                    q, r = map(int, key.split(','))
+                    tile_type = val.get('type', '') if isinstance(val, dict) else val
+                    hex_tiles.append({"q": q, "r": r, "type": tile_type})
+                except (ValueError, AttributeError):
+                    pass
+
             empires_out.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -462,6 +499,7 @@ def create_app(services: "Services") -> FastAPI:
                 "knowledge_done": knowledge_done,
                 "knowledge_wip": knowledge_wip,
                 "armies": armies_out,
+                "hex_tiles": hex_tiles,
             })
         empires_out.sort(key=lambda e: e["resources"].get("culture", 0), reverse=True)
 
@@ -489,6 +527,30 @@ def create_app(services: "Services") -> FastAPI:
             "empires": empires_out,
             "attacks": attacks_out,
         }
+
+    @app.post("/api/admin/restart")
+    async def admin_restart(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Save state and restart the server process via os.execv."""
+        import os
+        import sys
+
+        async def _do_restart() -> None:
+            await asyncio.sleep(0.5)
+            if services.empire_service is not None:
+                try:
+                    from gameserver.persistence.state_save import save_state
+                    await save_state(
+                        empires=services.empire_service.all_empires,
+                        attacks=services.attack_service.get_all_attacks(),
+                        battles=[],
+                    )
+                except Exception:
+                    log.exception("State save failed before restart")
+            log.info("Restarting server process via os.execv …")
+            os.execv(sys.executable, [sys.executable, '-m', 'gameserver.main'] + sys.argv[1:])
+
+        asyncio.create_task(_do_restart())
+        return {"ok": True, "message": "State saved — restarting …"}
 
     @app.get("/api/admin/users")
     async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict]:

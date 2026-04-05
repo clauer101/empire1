@@ -102,7 +102,7 @@ class MessageStore:
             "from_uid": from_uid,
             "to_uid": to_uid,
             "body_b64": _encode(body),
-            "sent_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "sent_at": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "read": from_uid == 0,  # AI/system messages are pre-read
         }
         self._next_id += 1
@@ -126,6 +126,47 @@ class MessageStore:
             for m in reversed(self._messages)
             if m["from_uid"] == uid
         ]
+
+    def get_global(self, limit: int = 200) -> list[dict[str, Any]]:
+        """Return global chat messages (to_uid=0, from real players), oldest first."""
+        result = [
+            self._to_dto(m)
+            for m in self._messages
+            if m["to_uid"] == 0 and m["from_uid"] != 0
+        ]
+        return result[-limit:]
+
+    def get_private_for(self, uid: int) -> list[dict[str, Any]]:
+        """Return private messages where uid is sender or receiver (excludes system/global)."""
+        return [
+            self._to_dto(m)
+            for m in reversed(self._messages)
+            if (m["to_uid"] == uid or m["from_uid"] == uid)
+            and m["to_uid"] != 0
+            and m["from_uid"] != 0
+        ]
+
+    def get_battle_reports_for(self, uid: int) -> list[dict[str, Any]]:
+        """Return system/battle-report messages sent to uid (from_uid=0)."""
+        return [
+            self._to_dto(m)
+            for m in reversed(self._messages)
+            if m["to_uid"] == uid and m["from_uid"] == 0
+        ]
+
+    def unread_count_private(self, uid: int) -> int:
+        """Unread private messages for uid."""
+        return sum(
+            1 for m in self._messages
+            if m["to_uid"] == uid and m["from_uid"] != 0 and not m.get("read", False)
+        )
+
+    def unread_count_battle(self, uid: int) -> int:
+        """Unread battle reports for uid."""
+        return sum(
+            1 for m in self._messages
+            if m["to_uid"] == uid and m["from_uid"] == 0 and not m.get("read", False)
+        )
 
     def get_all_for(self, uid: int) -> list[dict[str, Any]]:
         """Return inbox + sent combined, newest first."""
