@@ -2676,7 +2676,9 @@ label {
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 24px 0;
   z-index: 999;
   animation: fadeIn 0.3s ease-out;
 }
@@ -2700,6 +2702,7 @@ label {
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.4s ease-out;
+  margin: auto;
 }
 
 @keyframes slideUp {

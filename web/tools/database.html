@@ -229,6 +229,16 @@
       el.className = ok ? 'ok' : 'err';
     }
 
+    function fmtBerlin(s) {
+      if (!s || s === '—') return '—';
+      const utc = s.trim().replace(' ', 'T').replace(/Z?$/, 'Z');
+      return new Date(utc).toLocaleString('de-DE', {
+        timeZone: 'Europe/Berlin',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
     async function loadUsers() {
       try {
         const users = await api('GET', '/api/admin/users');
@@ -251,8 +261,8 @@
           <td>${u.username}</td>
           <td>${u.empire_name || '—'}</td>
           <td>${u.email || '—'}</td>
-          <td>${(u.created_at || '').slice(0, 16)}</td>
-          <td>${(u.last_seen || '—').slice(0, 16)}</td>
+          <td>${fmtBerlin(u.created_at)}</td>
+          <td>${fmtBerlin(u.last_seen)}</td>
           <td>
             <div class="pw-row">
               <input type="password" id="pw-${u.uid}" placeholder="new password" />

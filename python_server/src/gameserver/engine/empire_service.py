@@ -214,8 +214,8 @@ class EmpireService:
         if remaining <= 0:
             remaining = 0.0
             empire.research_queue = None
-            self._apply_effects(empire, iid)
             empire.knowledge[iid] = remaining
+            self._apply_effects(empire, iid)
             log.info("Empire %d: knowledge %s completed", empire.uid, iid)
             from gameserver.util.events import ItemCompleted
             self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
@@ -378,19 +378,19 @@ class EmpireService:
 
     def _tile_price(self, i: int) -> float:
         p = self._gc.prices.tile
-        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
+        return p.u + (i * p.y) * (i + p.z) ** p.v
 
     def _wave_price(self, i: int) -> float:
         p = self._gc.prices.wave
-        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
+        return p.u + (i * p.y) * (i + p.z) ** p.v
 
     def _critter_slot_price(self, i: int) -> float:
         p = self._gc.prices.critter_slot
-        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
+        return p.u + (i * p.y) * (i + p.z) ** p.v
 
     def _army_price(self, i: int) -> float:
         p = self._gc.prices.army
-        return self._sigmoid(i, p.maxv, p.minv, p.spread, p.steep)
+        return p.u + (i * p.y) * (i + p.z) ** p.v
 
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:

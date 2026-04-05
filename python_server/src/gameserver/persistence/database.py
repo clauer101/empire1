@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_seen TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_uid INTEGER NOT NULL,
+    to_uid INTEGER NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    read INTEGER NOT NULL DEFAULT 0
+);
 """
 
 
@@ -145,17 +153,186 @@ class Database:
                 for r in rows
             ]
 
+    async def delete_old_messages(self, max_age_days: int = 7) -> int:
+        """Delete messages older than max_age_days. Returns number of deleted rows."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "DELETE FROM messages WHERE sent_at < datetime('now', ?)",
+            (f"-{max_age_days} days",),
+        ) as cursor:
+            deleted = cursor.rowcount
+        await self._conn.commit()
+        if deleted:
+            log.info("MessageStore: deleted %d messages older than %d days", deleted, max_age_days)
+        return deleted
+
     # -- Message operations ----------------------------------------------
 
-    async def get_messages(self, uid: int, limit: int = 50) -> list[dict]:
-        """Get messages for a user."""
-        # TODO: implement
-        return []
+    async def send_message(self, from_uid: int, to_uid: int, body: str) -> dict:
+        """Store a new message and return it as a dict."""
+        assert self._conn is not None
+        read = 1 if from_uid == 0 else 0  # system/AI messages pre-read
+        async with self._conn.execute(
+            "INSERT INTO messages (from_uid, to_uid, body, read) VALUES (?, ?, ?, ?)",
+            (from_uid, to_uid, body, read),
+        ) as cursor:
+            msg_id = cursor.lastrowid
+        await self._conn.commit()
+        log.info("MessageStore: message %d from uid=%d to uid=%d", msg_id, from_uid, to_uid)
+        async with self._conn.execute(
+            "SELECT id, from_uid, to_uid, body, sent_at, read FROM messages WHERE id = ?",
+            (msg_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return self._msg_row_to_dict(row)
 
-    async def send_message(self, from_uid: int, to_uid: int, text: str) -> None:
-        """Store a user message."""
-        # TODO: implement
-        pass
+    async def get_inbox(self, uid: int) -> list[dict]:
+        """Return all messages received by uid, newest first."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT id, from_uid, to_uid, body, sent_at, read FROM messages WHERE to_uid = ? ORDER BY id DESC",
+            (uid,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [self._msg_row_to_dict(r) for r in rows]
+
+    async def get_sent(self, uid: int) -> list[dict]:
+        """Return all messages sent by uid, newest first."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT id, from_uid, to_uid, body, sent_at, read FROM messages WHERE from_uid = ? ORDER BY id DESC",
+            (uid,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [self._msg_row_to_dict(r) for r in rows]
+
+    async def mark_read(self, uid: int, msg_id: int) -> bool:
+        """Mark a message as read. Returns True if found."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "UPDATE messages SET read = 1 WHERE id = ? AND to_uid = ?",
+            (msg_id, uid),
+        ) as cursor:
+            updated = cursor.rowcount > 0
+        if updated:
+            await self._conn.commit()
+        return updated
+
+    async def unread_count(self, uid: int) -> int:
+        """Number of unread inbox messages for uid."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT COUNT(*) FROM messages WHERE to_uid = ? AND read = 0",
+            (uid,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return row[0] if row else 0
+
+    async def get_global(self, limit: int = 200) -> list[dict]:
+        """Return global chat messages (to_uid=0, from real players), oldest first."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT id, from_uid, to_uid, body, sent_at, read FROM messages "
+            "WHERE to_uid = 0 AND from_uid != 0 ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return list(reversed([self._msg_row_to_dict(r) for r in rows]))
+
+    async def get_private_for(self, uid: int) -> list[dict]:
+        """Return private messages where uid is sender or receiver (no global, no battle reports)."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT id, from_uid, to_uid, body, sent_at, read FROM messages "
+            "WHERE (to_uid = ? OR from_uid = ?) AND to_uid != 0 AND from_uid != 0 ORDER BY id DESC",
+            (uid, uid),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [self._msg_row_to_dict(r) for r in rows]
+
+    async def get_battle_reports_for(self, uid: int) -> list[dict]:
+        """Return system/battle-report messages sent to uid (from_uid=0)."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT id, from_uid, to_uid, body, sent_at, read FROM messages "
+            "WHERE to_uid = ? AND from_uid = 0 ORDER BY id DESC",
+            (uid,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [self._msg_row_to_dict(r) for r in rows]
+
+    async def unread_count_private(self, uid: int) -> int:
+        """Unread private messages for uid (excludes battle reports and global)."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT COUNT(*) FROM messages WHERE to_uid = ? AND from_uid != 0 AND read = 0",
+            (uid,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return row[0] if row else 0
+
+    async def unread_count_battle(self, uid: int) -> int:
+        """Unread battle report messages for uid."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT COUNT(*) FROM messages WHERE to_uid = ? AND from_uid = 0 AND read = 0",
+            (uid,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return row[0] if row else 0
+
+    async def migrate_messages_from_yaml(self, yaml_path: str) -> int:
+        """Import messages from the old YAML file. Returns number of messages imported."""
+        import base64
+        from pathlib import Path
+        import yaml as _yaml
+
+        path = Path(yaml_path)
+        if not path.exists():
+            return 0
+        assert self._conn is not None
+
+        # Check if messages table already has data
+        async with self._conn.execute("SELECT COUNT(*) FROM messages") as cursor:
+            row = await cursor.fetchone()
+        if row and row[0] > 0:
+            log.info("MessageStore: DB already has %d messages, skipping YAML migration", row[0])
+            return 0
+
+        try:
+            data = _yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            messages = data.get("messages", []) or []
+        except Exception:
+            log.exception("MessageStore: failed to read YAML for migration")
+            return 0
+
+        count = 0
+        for m in messages:
+            try:
+                body_b64 = m.get("body_b64", "")
+                body = base64.b64decode(body_b64.encode("ascii")).decode("utf-8")
+            except Exception:
+                body = ""
+            read = 1 if m.get("read", False) else 0
+            sent_at = m.get("sent_at", None)
+            await self._conn.execute(
+                "INSERT INTO messages (id, from_uid, to_uid, body, sent_at, read) VALUES (?, ?, ?, ?, ?, ?)",
+                (m["id"], m["from_uid"], m["to_uid"], body, sent_at, read),
+            )
+            count += 1
+        await self._conn.commit()
+        log.info("MessageStore: migrated %d messages from %s", count, yaml_path)
+        return count
+
+    def _msg_row_to_dict(self, row) -> dict:
+        return {
+            "id": row[0],
+            "from_uid": row[1],
+            "to_uid": row[2],
+            "body": row[3],
+            "sent_at": str(row[4]) if row[4] else "",
+            "read": bool(row[5]),
+        }
 
     # -- Ranking operations ----------------------------------------------
 

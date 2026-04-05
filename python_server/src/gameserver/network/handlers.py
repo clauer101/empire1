@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
 from gameserver.models.messages import GameMessage, MapSaveRequest
 from gameserver.models.attack import AttackPhase, Attack
+from gameserver.util import effects as fx
 
 log = logging.getLogger(__name__)
 
@@ -1818,6 +1819,28 @@ async def handle_map_save_request(
             target_uid, total_gold_cost,
         )
 
+    # -- Sell refund: structures removed in this save ----------------
+    cfg = svc.empire_service._gc if hasattr(svc.empire_service, '_gc') else None
+    base_refund = getattr(cfg, 'tower_sell_refund', 0.5) if cfg else 0.5
+    refund_modifier = empire.get_effect("tower_sell_refund_modifier", 0.0)
+    refund_rate = base_refund * (1.0 + refund_modifier)
+    total_refund = 0.0
+    for tile_key, old_val in old_tiles.items():
+        old_type = _tile_type(old_val)
+        if old_type in structure_iids:
+            new_type = _tile_type(tiles.get(tile_key, 'empty'))
+            if new_type != old_type:
+                # Structure was removed or replaced — refund for removal
+                item = svc.upgrade_provider.get(old_type)
+                if item:
+                    total_refund += item.costs.get("gold", 0.0) * refund_rate
+    if total_refund > 0:
+        empire.resources["gold"] = empire.resources.get("gold", 0.0) + total_refund
+        log.info(
+            "Empire %d: refunded %.0f gold for sold structures (rate=%.0f%%)",
+            target_uid, total_refund, refund_rate * 100,
+        )
+
     # -- Persist -----------------------------------------------------
     tile_count = len(tiles)
     empire.hex_map = tiles
@@ -2279,28 +2302,64 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         # ── Save replay + send notification messages ─────────────────
         if battle.recorder is not None:
             saved_path = battle.recorder.save()
-            if saved_path and svc.message_store:
-                result = "🛡 Defender Victory" if battle.defender_won else "⚔ Attacker Victory"
-                def_name = battle.defender.name if battle.defender else "?"
-                atk_name = battle.attacker.name if battle.attacker else "?"
+            if saved_path and svc.database:
+                def_name  = battle.defender.name if battle.defender else "?"
+                atk_name  = battle.attacker.name if battle.attacker else "?"
                 army_name = battle.army.name if battle.army else "?"
                 num_waves = len(battle.army.waves) if battle.army and battle.army.waves else 0
                 dur_s = battle.elapsed_ms / 1000
                 dur_m, dur_sec = int(dur_s // 60), int(dur_s % 60)
                 dur_str = f"{dur_m}m {dur_sec}s" if dur_m > 0 else f"{dur_sec}s"
-                body = (
-                    f"{result}\n"
-                    f"🛡 {def_name}  vs  ⚔ {atk_name}\n"
-                    f"Army: {army_name} ({num_waves} waves)\n"
-                    f"⚔ {battle.critters_spawned} spawned, {battle.critters_killed} killed, {battle.critters_reached} reached\n"
-                    f"🛡 {len(battle.structures)} towers, +{int(battle.defender_gold_earned)} gold\n"
-                    f"⏱ {dur_str}\n"
+                defender_won = bool(battle.defender_won)
+
+                # Attacker gains summary (skip for AI attacker uid=0)
+                gains_lines = ""
+                if battle.attacker and battle.attacker.uid != 0:
+                    gains = battle.attacker_gains.get(battle.attacker.uid, {})
+                    if gains:
+                        parts = ", ".join(f"+{int(v)} {k}" for k, v in gains.items() if v > 0)
+                        if parts:
+                            gains_lines = f"💰 Captured: {parts}\n"
+
+                # ── Defender message ──────────────────────────────────────
+                def_result = "🛡 You Won!" if defender_won else "💀 You Lost!"
+                def_body = (
+                    f"{def_result}\n"
+                    f"────────────────────\n"
+                    f"⚔ Attacker:  {atk_name}\n"
+                    f"📋 Army:      {army_name} ({num_waves} waves)\n"
+                    f"────────────────────\n"
+                    f"🐛 Spawned:   {battle.critters_spawned}\n"
+                    f"💀 Killed:    {battle.critters_killed}\n"
+                    f"🏰 Reached:   {battle.critters_reached}\n"
+                    f"🗼 Towers:    {len(battle.structures)}\n"
+                    f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
+                    f"⏱ Duration:  {dur_str}\n"
+                    f"────────────────────\n"
                     f"▶ Replay: #replay/{bid}"
                 )
+
+                # ── Attacker message ──────────────────────────────────────
+                atk_result = "⚔ You Won!" if not defender_won else "💀 You Lost!"
+                atk_body = (
+                    f"{atk_result}\n"
+                    f"────────────────────\n"
+                    f"🛡 Defender:  {def_name}\n"
+                    f"📋 Army:      {army_name} ({num_waves} waves)\n"
+                    f"────────────────────\n"
+                    f"🐛 Spawned:   {battle.critters_spawned}\n"
+                    f"💀 Killed:    {battle.critters_killed}\n"
+                    f"🏰 Reached:   {battle.critters_reached}\n"
+                    f"{gains_lines}"
+                    f"⏱ Duration:  {dur_str}\n"
+                    f"────────────────────\n"
+                    f"▶ Replay: #replay/{bid}"
+                )
+
                 if battle.defender:
-                    svc.message_store.send(0, battle.defender.uid, body)
+                    await svc.database.send_message(0, battle.defender.uid, def_body)
                 if battle.attacker and battle.attacker.uid != 0:
-                    svc.message_store.send(0, battle.attacker.uid, body)
+                    await svc.database.send_message(0, battle.attacker.uid, atk_body)
 
     except Exception:
         import traceback
@@ -2345,17 +2404,27 @@ def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
         max_pct = getattr(cfg, 'max_lose_knowledge', 0.15) if cfg else 0.15
         pct = _random.uniform(min_pct, max_pct)
         gain = effort * pct
-        # Credit attacker with culture (only in resources, NOT in attacker_gains
-        # — it is displayed separately via loot["knowledge"]).
-        attacker.resources["culture"] = attacker.resources.get("culture", 0.0) + gain
+        # Credit attacker: reduce remaining research effort for the stolen item.
+        # The attacker may not have the item in their knowledge dict yet (that's
+        # why it was stealable); initialise it to full effort then subtract gain.
+        attacker_remaining = attacker.knowledge.get(chosen_iid, effort)
+        attacker.knowledge[chosen_iid] = max(0.0, attacker_remaining - gain)
+        # Penalise defender: stolen effort is added back on top of what remains.
+        # If already completed (remaining=0), this re-opens it.
+        current_remaining = defender.knowledge.get(chosen_iid, 0.0)
+        defender.knowledge[chosen_iid] = current_remaining + gain
         loot["knowledge"] = {
             "iid": chosen_iid,
             "name": item.name if item else chosen_iid,
             "pct": round(pct * 100, 1),
             "amount": round(gain, 1),
         }
-        log.info("[LOOT] Knowledge stolen from uid=%d: %s (%.1f%% of effort %.0f = %.1f culture)",
-                 defender.uid, chosen_iid, pct * 100, effort, gain)
+        log.info(
+            "[LOOT] Knowledge stolen from uid=%d: %s (%.1f%% of effort %.0f = %.1f) "
+            "— attacker uid=%d remaining %.1f, defender remaining now %.1f",
+            defender.uid, chosen_iid, pct * 100, effort, gain,
+            attacker.uid, attacker.knowledge[chosen_iid], defender.knowledge[chosen_iid],
+        )
     
     # ── 2. Culture theft ────────────────────────────────────────────────
     min_c = getattr(cfg, 'min_lose_culture', 0.01) if cfg else 0.01
@@ -2697,14 +2766,22 @@ def _create_battle_start_handler() -> Callable:
         # ── Initialise wave timers ────────────────────────────────────────
         # Wave i starts at i × initial_wave_delay_ms. First wave (i=0) spawns
         # immediately; subsequent waves are staggered by initial_wave_delay_ms.
+        # Defender's wave_delay_offset effect adds extra delay to every wave.
         _initial_delay_ms = (
             svc.game_config.initial_wave_delay_ms
             if svc.game_config and hasattr(svc.game_config, "initial_wave_delay_ms")
             else 15000.0
         )
+        _wave_delay_offset_ms = (
+            defender_empire.get_effect(fx.WAVE_DELAY_OFFSET, 0.0)
+            if defender_empire else 0.0
+        )
+        log.info("[battle:wave_timers] defender=%d wave_delay_offset=%.0fms initial_delay=%.0fms",
+                 defender_uid, _wave_delay_offset_ms, _initial_delay_ms)
         for _i, _wave in enumerate(attacking_army.waves):
-            _wave.next_critter_ms = int(_i * _initial_delay_ms)
+            _wave.next_critter_ms = int(_i * _initial_delay_ms) + (_i + 1) * _wave_delay_offset_ms
             _wave.num_critters_spawned = 0  # reset spawn count on battle start
+            log.info("[battle:wave_timers] wave[%d] next_critter_ms=%.0f", _i, _wave.next_critter_ms)
 
         # ── Launch battle loop ───────────────────────────────
         items = svc.upgrade_provider.items if svc.upgrade_provider else {}
@@ -2877,14 +2954,19 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         await svc.server.send_to(defender_uid, setup_msg)
     
     # ── Initialise wave timers ────────────────────────────────────────
-    # Wave i starts at (i+1) × initial_wave_delay_ms (no player effects).
+    # Wave i starts at (i+1) × initial_wave_delay_ms.
+    # Defender's wave_delay_offset effect adds extra delay to every wave.
     _initial_delay_ms = (
         svc.game_config.initial_wave_delay_ms
         if svc.game_config and hasattr(svc.game_config, "initial_wave_delay_ms")
         else 15000.0
     )
+    _wave_delay_offset_ms = (
+        defender_empire.get_effect(fx.WAVE_DELAY_OFFSET, 0.0)
+        if defender_empire else 0.0
+    )
     for _i, _wave in enumerate(attacking_army.waves):
-        _wave.next_critter_ms = int((_i + 1) * _initial_delay_ms)
+        _wave.next_critter_ms = int((_i + 1) * _initial_delay_ms) + _wave_delay_offset_ms
         _wave.num_critters_spawned = 0  # reset spawn count on battle start
 
     # ── Launch battle loop ───────────────────────────────

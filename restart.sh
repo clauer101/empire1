@@ -43,6 +43,11 @@ WEB_PORT="8000"
 GRACEFUL_TIMEOUT=10
 KILL_TIMEOUT=5
 
+# -- Farben --------------------------------------------------------
+RED='\033[1;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
 # -- Hilfsfunktionen -----------------------------------------------
 
 find_server_pids() {
@@ -172,9 +177,13 @@ start_gameserver() {
         echo "       DevTools: http://$(hostname -I | awk '{print $1}'):${WEB_PORT}/tools"
         echo "       WebSocket: ws://$(hostname -I | awk '{print $1}'):8765/"
     else
-        echo "[FEHLER] GameServer konnte nicht gestartet werden." >&2
-        echo "         Siehe Log: $LOG" >&2
+        echo -e "${RED}╔══════════════════════════════════════════╗${NC}" >&2
+        echo -e "${RED}║  FEHLER: GameServer konnte nicht starten ║${NC}" >&2
+        echo -e "${RED}╚══════════════════════════════════════════╝${NC}" >&2
+        echo -e "${YELLOW}Log: $LOG${NC}" >&2
+        echo -e "${YELLOW}── Letzte Zeilen ──────────────────────────${NC}" >&2
         tail -20 "$LOG" >&2
+        echo -e "${YELLOW}───────────────────────────────────────────${NC}" >&2
         return 1
     fi
 }

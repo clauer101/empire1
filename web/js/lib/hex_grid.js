@@ -304,42 +304,58 @@ export class HexGrid {
   // ── Event binding ──────────────────────────────────────────
 
   _bindEvents() {
+    // Store bound handlers so destroy() can remove them
+    this._handlers = {
+      mousemove:  (e) => this._onMouseMove(e),
+      mousedown:  (e) => this._onMouseDown(e),
+      mouseup:    (e) => this._onMouseUp(e),
+      mouseleave: ()  => this._onMouseLeave(),
+      wheel:      (e) => this._onWheel(e),
+      click:      (e) => this._onClick(e),
+      touchstart: (e) => this._onTouchStart(e),
+      touchmove:  (e) => this._onTouchMove(e),
+      touchend:   (e) => this._onTouchEnd(e),
+      touchcancel:(e) => this._onTouchEnd(e),
+      dragover:   (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        const hex = this._eventToHex(e);
+        if (hex) {
+          this.hoveredKey = hexKey(hex.q, hex.r);
+          this._dirty = true;
+        }
+      },
+      drop:       (e) => {
+        e.preventDefault();
+        const tileTypeId = e.dataTransfer.getData('text/tile-type');
+        if (!tileTypeId) return;
+        const hex = this._eventToHex(e);
+        if (hex) {
+          const key = hexKey(hex.q, hex.r);
+          if (this.tiles.has(key)) {
+            if (this.onTileDrop) this.onTileDrop(hex.q, hex.r, tileTypeId);
+          }
+        }
+      },
+    };
+
     // Mouse events
-    this.canvas.addEventListener('mousemove', (e) => this._onMouseMove(e));
-    this.canvas.addEventListener('mousedown', (e) => this._onMouseDown(e));
-    this.canvas.addEventListener('mouseup', (e) => this._onMouseUp(e));
-    this.canvas.addEventListener('mouseleave', () => this._onMouseLeave());
-    this.canvas.addEventListener('wheel', (e) => this._onWheel(e), { passive: false });
-    this.canvas.addEventListener('click', (e) => this._onClick(e));
+    this.canvas.addEventListener('mousemove',  this._handlers.mousemove);
+    this.canvas.addEventListener('mousedown',  this._handlers.mousedown);
+    this.canvas.addEventListener('mouseup',    this._handlers.mouseup);
+    this.canvas.addEventListener('mouseleave', this._handlers.mouseleave);
+    this.canvas.addEventListener('wheel',      this._handlers.wheel, { passive: false });
+    this.canvas.addEventListener('click',      this._handlers.click);
 
     // Touch events for mobile
-    this.canvas.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: false });
-    this.canvas.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
-    this.canvas.addEventListener('touchend', (e) => this._onTouchEnd(e), { passive: false });
-    this.canvas.addEventListener('touchcancel', (e) => this._onTouchEnd(e), { passive: false });
+    this.canvas.addEventListener('touchstart',  this._handlers.touchstart,  { passive: false });
+    this.canvas.addEventListener('touchmove',   this._handlers.touchmove,   { passive: false });
+    this.canvas.addEventListener('touchend',    this._handlers.touchend,    { passive: false });
+    this.canvas.addEventListener('touchcancel', this._handlers.touchcancel, { passive: false });
 
     // Drag-and-drop
-    this.canvas.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-      const hex = this._eventToHex(e);
-      if (hex) {
-        this.hoveredKey = hexKey(hex.q, hex.r);
-        this._dirty = true;
-      }
-    });
-    this.canvas.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const tileTypeId = e.dataTransfer.getData('text/tile-type');
-      if (!tileTypeId) return;
-      const hex = this._eventToHex(e);
-      if (hex) {
-        const key = hexKey(hex.q, hex.r);
-        if (this.tiles.has(key)) {
-          if (this.onTileDrop) this.onTileDrop(hex.q, hex.r, tileTypeId);
-        }
-      }
-    });
+    this.canvas.addEventListener('dragover', this._handlers.dragover);
+    this.canvas.addEventListener('drop',     this._handlers.drop);
 
     // Resize
     this._resizeObserver = new ResizeObserver(() => {
@@ -1453,5 +1469,27 @@ export class HexGrid {
   destroy() {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     if (this._resizeObserver) this._resizeObserver.disconnect();
+    if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
+
+    // Remove all event listeners to prevent stale handlers on re-enter
+    if (this._handlers) {
+      this.canvas.removeEventListener('mousemove',  this._handlers.mousemove);
+      this.canvas.removeEventListener('mousedown',  this._handlers.mousedown);
+      this.canvas.removeEventListener('mouseup',    this._handlers.mouseup);
+      this.canvas.removeEventListener('mouseleave', this._handlers.mouseleave);
+      this.canvas.removeEventListener('wheel',      this._handlers.wheel);
+      this.canvas.removeEventListener('click',      this._handlers.click);
+      this.canvas.removeEventListener('touchstart',  this._handlers.touchstart);
+      this.canvas.removeEventListener('touchmove',   this._handlers.touchmove);
+      this.canvas.removeEventListener('touchend',    this._handlers.touchend);
+      this.canvas.removeEventListener('touchcancel', this._handlers.touchcancel);
+      this.canvas.removeEventListener('dragover',    this._handlers.dragover);
+      this.canvas.removeEventListener('drop',        this._handlers.drop);
+      this._handlers = null;
+    }
+
+    // Clear callbacks to release closure references
+    this.onTileClick = null;
+    this.onTileDrop = null;
   }
 }

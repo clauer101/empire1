@@ -42,7 +42,6 @@ from gameserver.network.auth import AuthService
 from gameserver.network.router import Router
 from gameserver.network.server import Server
 from gameserver.persistence.database import Database
-from gameserver.persistence.message_store import MessageStore
 from gameserver.persistence.state_load import RestoredState, load_state
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
@@ -59,7 +58,6 @@ DEFAULT_ITEMS_PATH = "config"
 DEFAULT_MAP_PATH = "config/maps/default.yaml"
 DEFAULT_DB_PATH = "gameserver.db"
 DEFAULT_MESSAGES_PATH = "messages.yaml"
-
 # ---------------------------------------------------------------------------
 # Container for all loaded configuration
 # ---------------------------------------------------------------------------
@@ -99,7 +97,6 @@ class Services:
     router: Optional[Router] = None
     server: Optional[Server] = None
     database: Optional[Database] = None
-    message_store: Optional[MessageStore] = None
 
 
 # ===================================================================
@@ -253,9 +250,6 @@ def create_services(config: Configuration, database: Database) -> Services:
     router = Router()
     server = Server(router, port=gc.ws_port)
 
-    message_store = MessageStore(DEFAULT_MESSAGES_PATH)
-    message_store.load()
-
     # Clean up old replay files
     from gameserver.persistence.replay import cleanup_old_replays
     cleanup_old_replays()
@@ -277,7 +271,6 @@ def create_services(config: Configuration, database: Database) -> Services:
         router=router,
         server=server,
         database=database,
-        message_store=message_store,
     )
 
     return svc
@@ -367,6 +360,14 @@ async def start_network(services: Services) -> None:
     services._rest_task = asyncio.create_task(rest_server.serve())
     log.info("  REST API listening on http://0.0.0.0:%d", rest_port)
 
+    async def _message_cleanup_loop() -> None:
+        while True:
+            await asyncio.sleep(24 * 3600)  # run once per day
+            if services.database is not None:
+                await services.database.delete_old_messages(max_age_days=7)
+
+    services._cleanup_task = asyncio.create_task(_message_cleanup_loop())
+
 
 
 # ===================================================================
@@ -426,6 +427,9 @@ async def start_game_loop(services: Services) -> None:
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
         log.info("  REST API server stopped")
+    cleanup_task = getattr(services, "_cleanup_task", None)
+    if cleanup_task is not None:
+        cleanup_task.cancel()
     if services.database is not None:
         await services.database.close()
         log.info("  database closed")
@@ -459,6 +463,9 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
 
     # 3. Create services
     services = create_services(config, database)
+
+    # Migrate messages from old YAML file to DB (one-time, no-op if already done)
+    await database.migrate_messages_from_yaml(DEFAULT_MESSAGES_PATH)
 
     # 4. Wire event handlers
     wire_events(services)

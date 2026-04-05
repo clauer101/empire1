@@ -119,7 +119,8 @@ function render() {
     const pct = fullEffort > 0 ? Math.max(0, Math.min(100, (1 - remaining / fullEffort) * 100)) : 0;
 
     // Format costs
-    const costsStr = fmtCosts(info.costs, summary);
+    const wasStarted = stored != null && stored < fullEffort;
+    const costsStr = fmtCosts(info.costs, summary, wasStarted);
 
     return `<tr>
       <td class="col-name" data-label="Name">
@@ -222,26 +223,28 @@ function fmtEffects(effects) {
   return `<ul class="effects-list">${items}</ul>`;
 }
 
-function fmtCosts(costs, summary) {
+function fmtCosts(costs, summary, wasStarted = false) {
   if (!costs || Object.keys(costs).length === 0) return '—';
-  
+
   const currentResources = summary?.resources || {};
-  
+
   return Object.entries(costs)
     .map(([resource, cost]) => {
       const current = currentResources[resource] || 0;
       const canAfford = current >= cost;
       const color = canAfford ? 'var(--text)' : 'var(--danger)';
-      
+      const strike = wasStarted && resource === 'gold';
+
       // Format resource name with icon
       let icon = '';
       if (resource === 'gold') icon = '💰';
       else if (resource === 'culture') icon = '📚';
       else if (resource === 'life') icon = '❤️';
-      
+
       const resourceName = resource.charAt(0).toUpperCase() + resource.slice(1);
-      
-      return `<span style="color:${color};margin-right:12px;white-space:nowrap;">${icon} ${Math.round(cost)} ${resourceName}</span>`;
+      const extraStyle = strike ? 'text-decoration:line-through;opacity:0.45;' : '';
+
+      return `<span style="color:${color};margin-right:12px;white-space:nowrap;${extraStyle}">${icon} ${Math.round(cost)} ${resourceName}</span>`;
     })
     .join('');
 }

@@ -40,10 +40,10 @@ class SigmoidPrice:
 class Prices:
     """Purchase price parameters for all buyable items."""
     citizen: CitizenPrice = field(default_factory=CitizenPrice)
-    tile: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=47000, minv=100, spread=29, steep=8.5))
-    wave: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=28000, minv=100, spread=12, steep=7))
-    critter_slot: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=13000, minv=25, spread=23, steep=7))
-    army: SigmoidPrice = field(default_factory=lambda: SigmoidPrice(maxv=75000, minv=1000, spread=7, steep=6))
+    tile: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
+    wave: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
+    critter_slot: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
+    army: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
 
 
 @dataclass
@@ -126,6 +126,9 @@ class GameConfig:
     # -- Spy costs ---------------------------------------------------
     spy_costs: SpyCosts = field(default_factory=SpyCosts)
 
+    # -- Structures --------------------------------------------------
+    tower_sell_refund: float = 0.5  # fraction of build cost refunded when selling a tower
+
     # -- Auth validation ---------------------------------------------
     min_username_length: int = 2
     max_username_length: int = 20
@@ -170,10 +173,10 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         citizen_raw = prices_raw.get("citizen", {})
         prices = Prices(
             citizen=CitizenPrice(**citizen_raw) if isinstance(citizen_raw, dict) else CitizenPrice(),
-            tile=SigmoidPrice(**prices_raw["tile"]) if "tile" in prices_raw else SigmoidPrice(maxv=47000, minv=100, spread=29, steep=8.5),
-            wave=SigmoidPrice(**prices_raw["wave"]) if "wave" in prices_raw else SigmoidPrice(maxv=28000, minv=100, spread=12, steep=7),
-            critter_slot=SigmoidPrice(**prices_raw["critter_slot"]) if "critter_slot" in prices_raw else SigmoidPrice(maxv=13000, minv=25, spread=23, steep=7),
-            army=SigmoidPrice(**prices_raw["army"]) if "army" in prices_raw else SigmoidPrice(maxv=75000, minv=1000, spread=7, steep=6),
+            tile=CitizenPrice(**prices_raw["tile"]) if "tile" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
+            wave=CitizenPrice(**prices_raw["wave"]) if "wave" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
+            critter_slot=CitizenPrice(**prices_raw["critter_slot"]) if "critter_slot" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
+            army=CitizenPrice(**prices_raw["army"]) if "army" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
         )
     else:
         prices = Prices()

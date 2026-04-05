@@ -305,7 +305,8 @@ class RestClient {
    * @returns {Promise<{success: boolean, message?: object, error?: string}>}
    */
   async sendMessage(toUid, body) {
-    return this._post('/api/messages', { to_uid: toUid, body });
+    // toUid=null/0 → global chat
+    return this._post('/api/messages', { to_uid: toUid || 0, body });
   }
 
   /**

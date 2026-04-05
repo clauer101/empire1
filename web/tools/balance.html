@@ -700,12 +700,12 @@
     const section = document.createElement('div');
     section.className = 'era-section';
     section.innerHTML = `
-      <div class="era-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+      <div class="era-header collapsed" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
         <span class="arrow">&#9660;</span>
         <span class="era-name">${era}</span>
         <span class="era-info">${ec.length} Critters &middot; ${et.length} Towers (${accumulatedTowers.length} total)</span>
       </div>
-      <div class="era-body">
+      <div class="era-body hidden">
         <div class="balance-grid">
           <div>
             <div class="column-header">Critters (Attack)</div>
@@ -731,12 +731,12 @@
     const extra = document.createElement('div');
     extra.className = 'era-section';
     extra.innerHTML = `
-      <div class="era-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+      <div class="era-header collapsed" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
         <span class="arrow">&#9660;</span>
         <span class="era-name">Bosses / Helden</span>
         <span class="era-info">${bossCritters.length} Einheiten</span>
       </div>
-      <div class="era-body">
+      <div class="era-body hidden">
         ${bossCritters.map(c => renderCritterCard(c, '')).join('')}
       </div>`;
     contentEl.appendChild(extra);

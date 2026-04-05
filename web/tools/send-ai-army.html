@@ -677,7 +677,8 @@ function renderArmies(armies) {
     tabBar.appendChild(tab);
   });
 
-  showEraTab(eras[0]);
+  if (activeEra && armiesByEra[activeEra]) showEraTab(activeEra);
+  else document.getElementById('army-list').innerHTML = '';
 }
 
 // ── Army analysis panel ───────────────────────────────────────────

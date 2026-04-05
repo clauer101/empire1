@@ -907,13 +907,13 @@ armies:
         slots: 16
       - critter: LEGIONARY
         slots: 17
-      - critter: SAMURAI
+      - critter: LEGIONARY
         slots: 18
       - critter: SAMURAI
         slots: 19
       - critter: CRUSADER
         slots: 20
-      - critter: SIEGE_RAM
+      - critter: LARGE_CART
         slots: 21
       - critter: KNIGHT
         slots: 22
@@ -1469,19 +1469,19 @@ armies:
     waves:
       - critter: SAMURAI
         slots: 16
-      - critter: KNIGHT
+      - critter: HORSEMAN_SLOW
         slots: 17
       - critter: CRUSADER
         slots: 18
       - critter: KNIGHT
         slots: 19
-      - critter: CRUSADER
+      - critter: LEGIONARY
         slots: 20
       - critter: SIEGE_RAM
         slots: 21
       - critter: SAMURAI
         slots: 22
-      - critter: CRUSADER
+      - critter: PIKENEER
         slots: 16
       - critter: SIEGE_RAM
         slots: 18

@@ -125,7 +125,7 @@ class AttackRequest(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
-    to_uid: int
+    to_uid: Optional[int] = None  # None or 0 = global chat
     body: str
 
 

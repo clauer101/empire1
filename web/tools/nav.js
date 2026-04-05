@@ -31,6 +31,7 @@
   const TOOLS = [
     { name: '🏠 Index',    href: 'index.html' },
     { name: '📊 Status',   href: 'status.html' },
+    { name: '🔁 Restart',  href: 'restart.html' },
     { name: '⚔ Sprite',   href: 'sprite.html' },
     { name: '🌊 AI Waves', href: 'ai-waves.html' },
     { name: '⏱ Effort',   href: 'effort-tuner.html' },
