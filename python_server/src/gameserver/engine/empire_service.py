@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from gameserver.util.events import EventBus
 
 from gameserver.models.empire import Empire
+from gameserver.util.eras import ERA_ORDER
 
 log = logging.getLogger(__name__)
 
@@ -35,10 +36,7 @@ class EmpireService:
         event_bus: Event bus for inter-service communication.
     """
 
-    _ERA_ORDER: list[str] = [
-        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
-        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
-    ]
+    _ERA_ORDER: list[str] = ERA_ORDER
 
     def __init__(self, upgrade_provider: UpgradeProvider, event_bus: EventBus,
                  game_config: GameConfig | None = None,

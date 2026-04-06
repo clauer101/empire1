@@ -12,6 +12,7 @@
  */
 
 import { rest } from '../rest.js';
+import { fmtEffort } from './format.js';
 
 export class ItemOverlay {
   constructor(state) {
@@ -224,12 +225,7 @@ export class ItemOverlay {
 
   // ── Format helpers ────────────────────────────────────────
 
-  _fmtEffort(n) {
-    if (n == null) return '—';
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
-    return String(Math.round(n));
-  }
+  _fmtEffort(n) { return fmtEffort(n); }
 
   _fmtEffects(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';

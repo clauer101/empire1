@@ -1080,7 +1080,7 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
         structures_dict = dict(defender_empire.structures)
     
     # Also load structures from hex_map tiles (for backwards compatibility)
-    from gameserver.models.structure import Structure
+    from gameserver.models.structure import Structure, structure_from_item
     from gameserver.models.hex import HexCoord
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
@@ -1094,18 +1094,9 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
                 # Parse q,r from key "q,r"
                 q, r = map(int, tile_key.split(","))
                 # Create Structure object with stats from item config
-                structure = Structure(
-                    sid=structure_sid,
-                    iid=tile_type,
-                    position=HexCoord(q, r),
-                    damage=getattr(item, "damage", 1.0),
-                    range=getattr(item, "range", 1),
-                    reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
-                    shot_speed=getattr(item, "shot_speed", 1.0),
-                    shot_type=getattr(item, "shot_type", "normal"),
-                    shot_sprite=getattr(item, "shot_sprite", ""),
-                    select=_tile_select(tile_val, getattr(item, "select", "first")),
-                    effects=getattr(item, "effects", {}),
+                structure = structure_from_item(
+                    sid=structure_sid, iid=tile_type, position=HexCoord(q, r),
+                    item=item, select_override=_tile_select(tile_val, getattr(item, "select", "first")),
                 )
                 structures_dict[structure_sid] = structure
                 structure_sid += 1
@@ -1821,7 +1812,7 @@ async def handle_map_save_request(
 
     # -- Sell refund: structures removed in this save ----------------
     cfg = svc.empire_service._gc if hasattr(svc.empire_service, '_gc') else None
-    base_refund = getattr(cfg, 'tower_sell_refund', 0.5) if cfg else 0.5
+    base_refund = getattr(cfg, 'tower_sell_refund', 0.3) if cfg else 0.3
     refund_modifier = empire.get_effect("tower_sell_refund_modifier", 0.0)
     refund_rate = base_refund * (1.0 + refund_modifier)
     total_refund = 0.0
@@ -2147,7 +2138,7 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict
 
     Returns list of newly added SIDs.
     """
-    from gameserver.models.structure import Structure
+    from gameserver.models.structure import Structure, structure_from_item
     from gameserver.models.hex import HexCoord
 
     NON_STRUCTURE = {"empty", "path", "spawnpoint", "castle", "blocked", "void"}
@@ -2189,18 +2180,9 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict
         item = items_dict.get(tile_type)
         if not item:
             continue
-        structure = Structure(
-            sid=next_sid,
-            iid=tile_type,
-            position=HexCoord(q, r),
-            damage=getattr(item, "damage", 1.0),
-            range=getattr(item, "range", 1),
-            reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
-            shot_speed=getattr(item, "shot_speed", 1.0),
-            shot_type=getattr(item, "shot_type", "normal"),
-            shot_sprite=getattr(item, "shot_sprite", ""),
-            select=tile_select if tile_select != 'first' else getattr(item, "select", "first"),
-            effects=getattr(item, "effects", {}),
+        structure = structure_from_item(
+            sid=next_sid, iid=tile_type, position=HexCoord(q, r),
+            item=item, select_override=tile_select,
         )
         battle.structures[next_sid] = structure
         new_sids.append(next_sid)
@@ -2669,7 +2651,7 @@ def _create_battle_start_handler() -> Callable:
             structures_dict = dict(defender_empire.structures)
         
         # Also load structures from hex_map tiles (for backwards compatibility)
-        from gameserver.models.structure import Structure
+        from gameserver.models.structure import Structure, structure_from_item
         from gameserver.models.hex import HexCoord
         structure_sid = 1
         items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
@@ -2683,24 +2665,15 @@ def _create_battle_start_handler() -> Callable:
                     # Parse q,r from key "q,r"
                     q, r = map(int, tile_key.split(","))
                     # Create Structure object with stats from item config
-                    structure = Structure(
-                        sid=structure_sid,
-                        iid=tile_type,
-                        position=HexCoord(q, r),
-                        damage=getattr(item, "damage", 1.0),
-                        range=getattr(item, "range", 1),
-                        reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
-                        shot_speed=getattr(item, "shot_speed", 1.0),
-                        shot_type=getattr(item, "shot_type", "normal"),
-                        shot_sprite=getattr(item, "shot_sprite", ""),
-                        select=_tile_select(tile_val, getattr(item, "select", "first")),
-                        effects=getattr(item, "effects", {}),
+                    structure = structure_from_item(
+                        sid=structure_sid, iid=tile_type, position=HexCoord(q, r),
+                        item=item, select_override=_tile_select(tile_val, getattr(item, "select", "first")),
                     )
                     structures_dict[structure_sid] = structure
                     structure_sid += 1
                     log.debug("[battle:start_requested] Loaded structure sid=%d iid=%s at (%d,%d)",
                              structure.sid, structure.iid, q, r)
-        
+
         # ── Create BattleState ───────────────────────────────
         bid = _next_bid
         _next_bid += 1
@@ -2769,11 +2742,7 @@ def _create_battle_start_handler() -> Callable:
         # Wave i starts at i × initial_wave_delay_ms. First wave (i=0) spawns
         # immediately; subsequent waves are staggered by initial_wave_delay_ms.
         # Defender's wave_delay_offset effect adds extra delay to every wave.
-        _initial_delay_ms = (
-            svc.game_config.initial_wave_delay_ms
-            if svc.game_config and hasattr(svc.game_config, "initial_wave_delay_ms")
-            else 15000.0
-        )
+        _initial_delay_ms = svc.game_config.initial_wave_delay_ms
         _wave_delay_offset_ms = (
             defender_empire.get_effect(fx.WAVE_DELAY_OFFSET, 0.0)
             if defender_empire else 0.0
@@ -2880,7 +2849,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         structures_dict = dict(defender_empire.structures)
     
     # Also load structures from hex_map tiles (for backwards compatibility)
-    from gameserver.models.structure import Structure
+    from gameserver.models.structure import Structure, structure_from_item
     from gameserver.models.hex import HexCoord
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
@@ -2894,18 +2863,9 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
                 # Parse q,r from key "q,r"
                 q, r = map(int, tile_key.split(","))
                 # Create Structure object with stats from item config
-                structure = Structure(
-                    sid=structure_sid,
-                    iid=tile_type,
-                    position=HexCoord(q, r),
-                    damage=getattr(item, "damage", 1.0),
-                    range=getattr(item, "range", 1),
-                    reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
-                    shot_speed=getattr(item, "shot_speed", 1.0),
-                    shot_type=getattr(item, "shot_type", "normal"),
-                    shot_sprite=getattr(item, "shot_sprite", ""),
-                    select=_tile_select(tile_val, getattr(item, "select", "first")),
-                    effects=getattr(item, "effects", {}),
+                structure = structure_from_item(
+                    sid=structure_sid, iid=tile_type, position=HexCoord(q, r),
+                    item=item, select_override=_tile_select(tile_val, getattr(item, "select", "first")),
                 )
                 structures_dict[structure_sid] = structure
                 structure_sid += 1
@@ -2958,11 +2918,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     # ── Initialise wave timers ────────────────────────────────────────
     # Wave i starts at (i+1) × initial_wave_delay_ms.
     # Defender's wave_delay_offset effect adds extra delay to every wave.
-    _initial_delay_ms = (
-        svc.game_config.initial_wave_delay_ms
-        if svc.game_config and hasattr(svc.game_config, "initial_wave_delay_ms")
-        else 15000.0
-    )
+    _initial_delay_ms = svc.game_config.initial_wave_delay_ms
     _wave_delay_offset_ms = (
         defender_empire.get_effect(fx.WAVE_DELAY_OFFSET, 0.0)
         if defender_empire else 0.0

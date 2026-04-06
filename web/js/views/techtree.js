@@ -5,6 +5,8 @@
 import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
+import { fmtEffort } from '../lib/format.js';
+import { ERA_ROMAN } from '../lib/eras.js';
 
 /** @type {import('../state.js').StateStore} */
 let st;
@@ -19,17 +21,6 @@ let _overlay = null;
 let _eraMap = null;       // from /api/era-map
 let _unlocksMap = {};     // reverse dependency map
 
-const ERA_ROMAN = {
-  STEINZEIT:          'I',
-  NEOLITHIKUM:        'II',
-  BRONZEZEIT:         'III',
-  EISENZEIT:          'IV',
-  MITTELALTER:        'V',
-  RENAISSANCE:        'VI',
-  INDUSTRIALISIERUNG: 'VII',
-  MODERNE:            'VIII',
-  ZUKUNFT:            'IX',
-};
 
 const _isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 let _activeNode = null;
@@ -164,12 +155,7 @@ function _layoutNodes() {
 
 /* ── Format helpers ──────────────────────────────────────── */
 
-function _fmtEffort(n) {
-  if (n == null) return '—';
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
-  return String(Math.round(n));
-}
+const _fmtEffort = fmtEffort;
 
 function _fmtEffects(effects) {
   if (!effects || Object.keys(effects).length === 0) return '';

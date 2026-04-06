@@ -2,7 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(python3 -c \":*)",
-      "Bash(bash run_tests.sh --match=test_citizen_upgrade)",
+      "Bash(bash run_tests.sh*)",
       "Bash(python -m pytest tests/test_combat_effects.py tests/test_shot_damage_application.py -v)",
       "Bash(/home/eem/empire1/.venv/bin/python -m pytest tests/test_combat_effects.py tests/test_shot_damage_application.py -v)",
       "Bash(/home/eem/empire1/.venv/bin/python -m pytest tests/test_shot_damage_application.py -v)",

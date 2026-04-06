@@ -1,11 +1,15 @@
 """Test that building effects are only applied when buildings are fully completed."""
 
+from pathlib import Path
+
 import pytest
 from gameserver.models.empire import Empire
 from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.loaders.item_loader import load_items
 from gameserver.util.events import EventBus
+
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
 
 class TestBuildingEffectsCompletion:
@@ -14,7 +18,7 @@ class TestBuildingEffectsCompletion:
     @pytest.fixture
     def upgrade_provider(self):
         """Load items from YAML."""
-        items = load_items("config")
+        items = load_items(CONFIG_DIR)
         provider = UpgradeProvider()
         provider.load(items)
         return provider

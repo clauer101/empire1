@@ -287,7 +287,7 @@ FLAME_THROWER:
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 3000, burn_dps: 3}   # burns for 4 dps over 4s
+  effects: {burn_duration: 3000, burn_dps: 5}   # burns for 4 dps over 4s
   requirements: [HEAVY_EQUIPMENT]
 
 SHOCK_TOWER:
@@ -317,7 +317,7 @@ PARALYZNG_TOWER:
   max_level: 1
   select: first
   costs: {gold: 100000}
-  effects: {slow_duration: 800, slow_ratio: 0}   # stun: stops completely for 3s
+  effects: {slow_duration: 1200, slow_ratio: 0}   # stun: stops completely for 3s
   requirements: [HOSPITAL]
 
 # ============================================================

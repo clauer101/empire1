@@ -6,7 +6,7 @@ import pytest
 
 from gameserver.engine.empire_service import EmpireService
 from gameserver.models.empire import Empire
-from gameserver.util.constants import CITIZEN_EFFECT
+CITIZEN_EFFECT: float = 0.03  # per-citizen modifier (matches game.yaml citizen_effect)
 
 
 @pytest.fixture

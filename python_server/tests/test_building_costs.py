@@ -1,5 +1,7 @@
 """Unit tests for building cost deduction in build_item."""
 
+from pathlib import Path
+
 import pytest
 from gameserver.models.empire import Empire
 from gameserver.engine.empire_service import EmpireService
@@ -7,10 +9,12 @@ from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.loaders.item_loader import load_items
 from gameserver.util.events import EventBus
 
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+
 
 def _make_items():
     """Load all items from config directory."""
-    return load_items("config")
+    return load_items(CONFIG_DIR)
 
 
 def _make_service():

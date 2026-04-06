@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from gameserver.util.events import EventBus
 
 from gameserver.models.attack import Attack, AttackPhase
+from gameserver.util.eras import ERA_ORDER, ERA_TRAVEL_FIELD
 
 log = logging.getLogger(__name__)
 
@@ -32,22 +33,8 @@ class AttackService:
         empire_service: Empire service for defender lookups.
     """
 
-    # Maps ERA_KEY → GameConfig field name for travel offset.
-    _ERA_TRAVEL_FIELD: dict[str, str] = {
-        "STEINZEIT":          "stone_travel_offset",
-        "NEOLITHIKUM":        "neolithicum_travel_offset",
-        "BRONZEZEIT":         "bronze_travel_offset",
-        "EISENZEIT":          "iron_travel_offset",
-        "MITTELALTER":        "middle_ages_travel_offset",
-        "RENAISSANCE":        "rennaissance_travel_offset",
-        "INDUSTRIALISIERUNG": "industrial_travel_offset",
-        "MODERNE":            "modern_travel_offset",
-        "ZUKUNFT":            "diamond_travel_offset",
-    }
-    _ERA_ORDER: list[str] = [
-        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
-        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
-    ]
+    _ERA_TRAVEL_FIELD: dict[str, str] = ERA_TRAVEL_FIELD
+    _ERA_ORDER: list[str] = ERA_ORDER
 
     def __init__(self, event_bus: EventBus,
                  game_config: GameConfig | None = None,

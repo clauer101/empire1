@@ -139,7 +139,8 @@ class AIService:
         hardcoded_waves: list | None = None,
     ) -> None:
         self._upgrades = upgrade_provider
-        self._game_config = game_config
+        from gameserver.loaders.game_config_loader import GameConfig as _GC
+        self._game_config: _GC = game_config or _GC()
         self._hardcoded_waves: list[dict] = hardcoded_waves or []
         self._params = AIParams()
         # Army IDs are now allocated globally via empire_service.next_army_id()
@@ -378,7 +379,7 @@ class AIService:
         tile_score = structure_tiles * 1_000.0 * p.tile_weight
 
         total = building_score + research_score + culture_score + tile_score
-        return max(total, 500.0)   # Floor so new players still get attacked
+        return max(total, self._game_config.ai_min_player_score)
 
     def _match_waves_for_item(
         self,
@@ -428,9 +429,7 @@ class AIService:
                     next_critter_ms=0,
                 ))
 
-            initial_delay_ms = (
-                self._game_config.initial_wave_delay_ms if self._game_config else 15000.0
-            )
+            initial_delay_ms = self._game_config.initial_wave_delay_ms
             for i, wave in enumerate(waves):
                 wave.next_critter_ms = int(i * initial_delay_ms)
 
@@ -596,10 +595,7 @@ class AIService:
         aid = 0  # assigned in _send_army via empire_service.next_army_id()
 
         # ── Set initial wave timing (no player effects) ──────────────────
-        initial_delay_ms = (
-            self._game_config.initial_wave_delay_ms
-            if self._game_config else 15000.0
-        )
+        initial_delay_ms = self._game_config.initial_wave_delay_ms
         for i, wave in enumerate(waves):
             wave.next_critter_ms = int(i * initial_delay_ms)  # first wave zero delay
 

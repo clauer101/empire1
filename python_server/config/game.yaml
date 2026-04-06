@@ -4,6 +4,7 @@ broadcast_interval_ms: 250.0
 min_keep_alive_ms: 10000.0
 initial_wave_delay_ms: 15000.0
 splash_flight_ms: 500.0
+default_reload_time_ms: 2000.0
 base_gold_per_sec: 0.0
 base_culture_per_sec: 0.0
 citizen_effect: 0.03
@@ -42,6 +43,7 @@ era_effects:
   future:
     travel_offset: 18000.0
 ai_travel_seconds: 60.0
+ai_min_player_score: 500.0
 waves_per_level: 1.0
 slot_adder_per_ai_level: 2.0
 default_spawn_interval_ms: 2000.0
@@ -76,7 +78,7 @@ prices:
     u: 0
     y: 1
     z: 2.5
-    v: 2.55
+    v: 2.45
   army:
     u: 211
     y: 2.4
