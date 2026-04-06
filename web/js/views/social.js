@@ -405,8 +405,14 @@ function _hilite(str, q) {
 }
 
 function _linkify(html) {
-  return html.replace(/#replay\/(\d+)/g,
-    '<a href="#replay/$1" style="color:var(--accent,#4fc3f7);">▶ Replay #$1</a>');
+  // Match both new datetime keys (20260101_120000_42) and legacy numeric bids
+  return html.replace(/#replay\/([\w]+)/g, (_, key) => {
+    const parts = key.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(\d+)$/);
+    const label = parts
+      ? `${parts[1]}-${parts[2]}-${parts[3]} ${parts[4]}:${parts[5]}:${parts[6]} #${parts[7]}`
+      : `#${key}`;
+    return `<a href="#replay/${key}" style="color:var(--accent,#4fc3f7);">▶ Replay ${label}</a>`;
+  });
 }
 
 function _fmtTime(sent_at) {

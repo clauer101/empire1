@@ -1816,8 +1816,11 @@ function _updateStatusFromBattleMsg() {
   if (nextWaveEl) {
     const wi = _battleState.wave_info;
     if (wi) {
-      // During siege, time_since_start_s is negative (= -siege_remaining_s)
-      const siegeRemainingMs = _battleState.time_since_start_s < 0
+      // During siege, time_since_start_s is negative (= -siege_remaining_s).
+      // Guard with phase check: when attack_phase_changed fires before the next
+      // battle_status arrives, time_since_start_s can still be stale-negative
+      // even though the battle has started — avoid adding phantom siege time.
+      const siegeRemainingMs = _battleState.phase === 'in_siege' && _battleState.time_since_start_s < 0
         ? -_battleState.time_since_start_s * 1000 : 0;
       const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
       const timeStr = totalCountdownSec > 0 ? `${totalCountdownSec}s` : 'now';

@@ -331,12 +331,12 @@ class RestClient {
   // ── Replays ───────────────────────────────────────────────
 
   /**
-   * Fetch a battle replay by battle ID.
-   * @param {number} bid
-   * @returns {Promise<{bid: number, defender_uid: number, attacker_uid: number, events: Array}>}
+   * Fetch a battle replay by replay key (e.g. '20260101_120000_42').
+   * @param {string} replayKey
+   * @returns {Promise<{bid: number, replay_key: string, defender_uid: number, attacker_uid: number, events: Array}>}
    */
-  async getReplay(bid) {
-    return this._get(`/api/replays/${bid}`);
+  async getReplay(replayKey) {
+    return this._get(`/api/replays/${replayKey}`);
   }
 
   /**

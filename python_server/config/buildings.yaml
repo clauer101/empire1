@@ -291,7 +291,7 @@ WORK_SHOP:
   costs: {gold: 17000}
   requirements: [MECHANICS]
   effects:
-    build_speed_modifier: 0.15
+    build_speed_offset: 0.15
 
 THEATER:
   name: "Theater"
@@ -365,7 +365,7 @@ MONASTERY:
   requirements: [RELIGION]
   effects:
     culture_offset: 0.1
-    research_speed_modifier: 0.15
+    research_speed_modifier: 0.35
 
 MANOR:
   name: "Manor"
@@ -455,7 +455,7 @@ LABORATORY:
   costs: {gold: 60000}
   requirements: [SCIENCE]
   effects:
-    research_speed_modifier: 0.3
+    research_speed_modifier: 0.5
 
 ARCHIVES:
   name: "Archives"
@@ -464,7 +464,7 @@ ARCHIVES:
   costs: {gold: 62000}
   requirements: [PRINTING_PRESS]
   effects:
-    research_speed_modifier: 0.2
+    research_speed_modifier: 0.5
     culture_offset: 0.1
 
 TRIUMPHAL_ARC:
@@ -534,7 +534,7 @@ UNIVERSITY:
   costs: {gold: 76000}
   requirements: [PRINTING_PRESS, SCIENCE]
   effects:
-    research_speed_modifier: 0.3
+    research_speed_modifier: 1
 
 HIGH_COURT:
   name: "High Court"
@@ -733,7 +733,7 @@ ARTS_GALLERY:
   description: "Elite art exhibition and commerce facility."
   effort: 891674
   costs: {gold: 620000}
-  requirements: [PAINTING]
+  requirements: [PAINTING, SOCIAL_SCIENCE]
   effects:
     culture_offset: 0.3
 
@@ -742,16 +742,16 @@ RESEARCH_LAB:
   description: "High-tech scientific research facility."
   effort: 795107
   costs: {gold: 640000}
-  requirements: [SCIENCE]
+  requirements: [SCIENCE, COMPUTER_TECHNOLOGY]
   effects:
-    research_speed_modifier: 0.4
+    research_speed_modifier: 0.6
 
 ECHELON_DEFENSE_FACILITY:
   name: "Echelon Defense Facility"
   description: "Classified military surveillance and defense complex."
   effort: 795107
   costs: {gold: 640000}
-  requirements: [STEALTH_SECRECY]
+  requirements: [STEALTH_SECRECY, COMPUTER_TECHNOLOGY]
   effects: 
     siege_offset: 3600
     wave_delay_offset: 2000
@@ -823,7 +823,7 @@ INTELLIGENCE_AGENCY:
   description: "Covert operations and espionage headquarters."
   effort: 1005717
   costs: {gold: 850000}
-  requirements: [STEALTH_SECRECY]
+  requirements: [STEALTH_SECRECY, SPECIAL_FORCES]
   effects: 
     siege_offset: 3600
 
@@ -840,7 +840,7 @@ ELITE_ACADEMY:
   description: "Ultimate officer training and leadership development."
   effort: 1183197
   costs: {gold: 1000000}
-  requirements: [COMMAND_CHAIN]
+  requirements: [COMMAND_CHAIN, CRYPTOLOGY]
   effects:
     research_speed_modifier: 0.25
 
@@ -867,7 +867,7 @@ THE_WORLD_WONDER:
   effects:
     culture_modifier: 5.0
     gold_modifier: 10
-    research_speed_modifier: 5.0
+    research_speed_modifier: 5
 
 SPACE_CENTER:
   name: "Space Center"
@@ -876,7 +876,7 @@ SPACE_CENTER:
   costs: {gold: 12000000}
   requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
-    research_speed_modifier: 5.0
+    research_speed_modifier: 5
 
 CYBER_COMMAND:
   name: "Cyber Command"

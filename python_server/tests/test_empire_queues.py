@@ -113,7 +113,47 @@ class TestResearchQueue:
         empire.research_queue = "fire"
         empire.effects["research_speed_modifier"] = 0.5
 
-        speed = 1.0 + 0.5  # base + effect
+        # (base + offset) * (1 + modifier) = (1.0 + 0) * (1 + 0.5) = 1.5
+        speed = 1.0 * (1 + 0.5)
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.knowledge["fire"] == pytest.approx(10.0 - speed)
+
+    def test_research_speed_offset_bonus(self, service: EmpireService, empire: Empire):
+        """research_speed_offset adds to base before multiplier is applied."""
+        empire.knowledge["fire"] = 10.0
+        empire.research_queue = "fire"
+        empire.effects["research_speed_offset"] = 0.2
+
+        # (base + offset) * (1 + modifier) = (1.0 + 0.2) * 1.0 = 1.2
+        speed = (1.0 + 0.2) * 1.0
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.knowledge["fire"] == pytest.approx(10.0 - speed)
+
+    def test_research_speed_offset_and_modifier_combined(self, service: EmpireService, empire: Empire):
+        """offset and modifier stack multiplicatively: (base+offset)*(1+modifier)."""
+        empire.knowledge["fire"] = 10.0
+        empire.research_queue = "fire"
+        empire.effects["research_speed_offset"] = 0.2
+        empire.effects["research_speed_modifier"] = 0.5
+
+        # (1.0 + 0.2) * (1 + 0.5) = 1.2 * 1.5 = 1.8
+        speed = (1.0 + 0.2) * (1.0 + 0.5)
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.knowledge["fire"] == pytest.approx(10.0 - speed)
+
+    def test_research_speed_offset_with_scientists(self, service: EmpireService, empire: Empire):
+        """offset, modifier and scientist bonus all combine correctly."""
+        empire.knowledge["fire"] = 10.0
+        empire.research_queue = "fire"
+        empire.effects["research_speed_offset"] = 0.2
+        empire.citizens["scientist"] = 10
+
+        # (base + offset) * (1 + modifier + scientists * citizen_effect)
+        # = (1.0 + 0.2) * (1 + 0 + 10 * CITIZEN_EFFECT)
+        speed = (1.0 + 0.2) * (1.0 + 10 * CITIZEN_EFFECT)
         service._progress_knowledge(empire, dt=1.0)
 
         assert empire.knowledge["fire"] == pytest.approx(10.0 - speed)
@@ -124,6 +164,92 @@ class TestResearchQueue:
 
         service._progress_knowledge(empire, dt=1.0)
 
+        assert empire.research_queue is None
+
+
+# ── Research speed formula contract ───────────────────────────────────
+#
+# The formula MUST be:  speed = (base + offset) * (1 + modifier + n_sci * citizen_effect)
+#
+# Both empire_service._progress_knowledge() AND the frontend research.js
+# calculate the remaining wall-clock time from this formula. Any deviation
+# between the two causes the UI to show wrong durations (the bug that was
+# previously present in research.js where `offset` was not applied).
+#
+# These tests pin the exact formula end-to-end so a regression will fail
+# loudly rather than silently showing wrong numbers in the UI.
+
+
+class TestResearchSpeedFormulaContract:
+    """Pin the research speed formula so backend/frontend regressions are caught."""
+
+    def test_offset_applied_before_multiplier(self, service: EmpireService, empire: Empire):
+        """Core invariant: offset adds to base FIRST, then the whole sum is multiplied.
+
+        (base + offset) * (1 + modifier)  ≠  base * (1 + modifier) + offset
+        """
+        empire.knowledge["fire"] = 10.0
+        empire.research_queue = "fire"
+        empire.effects["research_speed_offset"] = 0.5
+        empire.effects["research_speed_modifier"] = 1.0  # 2× multiplier
+
+        # Correct:  (1.0 + 0.5) * (1 + 1.0) = 1.5 * 2 = 3.0
+        # Wrong:     1.0 * (1 + 1.0) + 0.5   = 2.0 + 0.5 = 2.5
+        expected_speed = (1.0 + 0.5) * (1.0 + 1.0)
+        wrong_speed    =  1.0 * (1.0 + 1.0) + 0.5
+
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.knowledge["fire"] == pytest.approx(10.0 - expected_speed)
+        assert empire.knowledge["fire"] != pytest.approx(10.0 - wrong_speed)
+
+    def test_recalculate_effects_feeds_offset_into_progress(
+        self, service: EmpireService, empire: Empire
+    ):
+        """End-to-end: a completed building with research_speed_offset is picked up
+        by recalculate_effects and then used correctly in _progress_knowledge.
+
+        This mirrors how the server populates summary.effects for the frontend.
+        """
+        # Simulate a completed building that grants research_speed_offset=0.2
+        empire.buildings["scriptorium"] = 0.0  # 0 remaining = completed
+        service._upgrades.get_effects.return_value = {"research_speed_offset": 0.2}
+        service.recalculate_effects(empire)
+
+        assert empire.effects.get("research_speed_offset") == pytest.approx(0.2)
+
+        # Now research should use that offset
+        empire.knowledge["fire"] = 10.0
+        empire.research_queue = "fire"
+        service._upgrades.get_effects.return_value = {}  # knowledge item has no extra effects
+
+        expected_speed = (1.0 + 0.2) * 1.0  # no modifier, no scientists
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.knowledge["fire"] == pytest.approx(10.0 - expected_speed)
+
+    def test_duration_formula(self, service: EmpireService, empire: Empire):
+        """Documents the exact wall-clock duration formula used by both server and UI.
+
+        Given effort E and speed factors, the expected duration is:
+            duration = E / ((base + offset) * (1 + modifier + scientists * citizen_effect))
+        """
+        effort = 360.0
+        empire.knowledge["fire"] = effort
+        empire.research_queue = "fire"
+        empire.effects["research_speed_offset"] = 0.2
+        empire.effects["research_speed_modifier"] = 0.5
+        empire.citizens["scientist"] = 4
+
+        base     = service._base_research_speed  # 1.0
+        offset   = 0.2
+        modifier = 0.5
+        speed    = (base + offset) * (1.0 + modifier + 4 * CITIZEN_EFFECT)
+        expected_duration = effort / speed
+
+        # Advance by the expected duration — should be exactly done
+        service._progress_knowledge(empire, dt=expected_duration)
+        assert empire.knowledge["fire"] == pytest.approx(0.0, abs=1e-9)
         assert empire.research_queue is None
 
 

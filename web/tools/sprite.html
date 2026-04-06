@@ -114,8 +114,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 4px;
-      width: fit-content;
-      margin: 0 auto;
+      width: 100%;
     }
 
     .frame-cell {
@@ -446,8 +445,6 @@ async function switchToSheet(c) {
       const fc  = document.createElement('canvas');
       fc.width  = sprite.frameW;
       fc.height = sprite.frameH;
-      fc.style.width    = (sprite.frameW * 2) + 'px';
-      fc.style.maxWidth = '100%';
       const ctx = fc.getContext('2d');
       sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
       const lbl = document.createElement('div');

@@ -3,10 +3,11 @@
 Records all battle events (setup, updates, summary) as a timeline
 and saves them as gzipped JSON for later playback.
 
-File format (replays/{bid}.json.gz):
+File format (replays/{YYYYMMDD_HHMMSS}_{bid}.json.gz):
     gzip-compressed JSON:
     {
         "bid": 42,
+        "replay_key": "20260101_120000_42",
         "defender_uid": 4,
         "attacker_uid": 0,
         "created_at": 1774415000.0,
@@ -21,6 +22,7 @@ File format (replays/{bid}.json.gz):
 
 from __future__ import annotations
 
+import datetime
 import gzip
 import json
 import logging
@@ -52,6 +54,9 @@ class ReplayRecorder:
         self.attacker_uid = attacker_uid
         self._replay_dir = Path(replay_dir)
         self._events: list[dict[str, Any]] = []
+        self.created_at = time.time()
+        dt = datetime.datetime.utcfromtimestamp(self.created_at)
+        self.replay_key = dt.strftime("%Y%m%d_%H%M%S") + f"_{bid}"
 
     def record(self, timestamp_ms: float, event: dict[str, Any]) -> None:
         """Record a battle event with timestamp."""
@@ -60,13 +65,14 @@ class ReplayRecorder:
     def save(self) -> Path | None:
         """Save the replay to disk as gzipped JSON. Returns the file path or None on error."""
         self._replay_dir.mkdir(parents=True, exist_ok=True)
-        target = self._replay_dir / f"{self.bid}.json.gz"
+        target = self._replay_dir / f"{self.replay_key}.json.gz"
         tmp = target.with_suffix(".tmp")
         payload = json.dumps({
             "bid": self.bid,
+            "replay_key": self.replay_key,
             "defender_uid": self.defender_uid,
             "attacker_uid": self.attacker_uid,
-            "created_at": time.time(),
+            "created_at": self.created_at,
             "events": self._events,
         }, separators=(",", ":")).encode("utf-8")
         try:
@@ -82,21 +88,20 @@ class ReplayRecorder:
             return None
 
 
-def load_replay(bid: int, replay_dir: str = DEFAULT_REPLAY_DIR) -> dict[str, Any] | None:
-    """Load a replay from disk by battle ID. Returns parsed JSON or None.
+def load_replay(key: str, replay_dir: str = DEFAULT_REPLAY_DIR) -> dict[str, Any] | None:
+    """Load a replay from disk by replay key. Returns parsed JSON or None.
 
     Tries .json.gz first, falls back to legacy .json.
     """
     d = Path(replay_dir)
-    gz_path = d / f"{bid}.json.gz"
+    gz_path = d / f"{key}.json.gz"
     if gz_path.exists():
         try:
             return json.loads(gzip.decompress(gz_path.read_bytes()).decode("utf-8"))
         except Exception:
             log.exception("Failed to load replay %s", gz_path)
             return None
-    # Legacy fallback
-    json_path = d / f"{bid}.json"
+    json_path = d / f"{key}.json"
     if json_path.exists():
         try:
             return json.loads(json_path.read_text(encoding="utf-8"))
@@ -106,13 +111,17 @@ def load_replay(bid: int, replay_dir: str = DEFAULT_REPLAY_DIR) -> dict[str, Any
     return None
 
 
-def get_replay_path(bid: int, replay_dir: str = DEFAULT_REPLAY_DIR) -> Path | None:
-    """Return the path to a replay file (gz preferred), or None if not found."""
+def get_replay_path(key: str, replay_dir: str = DEFAULT_REPLAY_DIR) -> Path | None:
+    """Return the path to a replay file (gz preferred), or None if not found.
+
+    key may be a datetime-based replay key (e.g. '20260101_120000_42')
+    or a legacy numeric string (e.g. '42').
+    """
     d = Path(replay_dir)
-    gz = d / f"{bid}.json.gz"
+    gz = d / f"{key}.json.gz"
     if gz.exists():
         return gz
-    legacy = d / f"{bid}.json"
+    legacy = d / f"{key}.json"
     if legacy.exists():
         return legacy
     return None
@@ -125,22 +134,26 @@ def list_replays(replay_dir: str = DEFAULT_REPLAY_DIR) -> list[dict[str, Any]]:
         return []
     result = []
     # Collect all replay files (.json.gz preferred; skip .json if .gz sibling exists)
-    gz_bids: set[str] = set()
+    gz_keys: set[str] = set()
     files: list[tuple[Path, bool]] = []  # (path, is_gz)
     for f in d.glob("*.json.gz"):
-        gz_bids.add(f.stem.removesuffix(".json"))
+        gz_keys.add(f.stem.removesuffix(".json"))
         files.append((f, True))
     for f in d.glob("*.json"):
-        bid_str = f.stem
-        if bid_str not in gz_bids:
+        key_str = f.stem
+        if key_str not in gz_keys:
             files.append((f, False))
     files.sort(key=lambda x: x[0].stat().st_mtime, reverse=True)
     for path, is_gz in files:
         try:
             raw_bytes = gzip.decompress(path.read_bytes()) if is_gz else path.read_bytes()
             raw = json.loads(raw_bytes.decode("utf-8"))
+            # replay_key: prefer value stored in JSON, fall back to filename stem
+            stem = path.stem.removesuffix(".json")
+            replay_key = raw.get("replay_key") or stem
             result.append({
                 "bid": raw.get("bid"),
+                "replay_key": replay_key,
                 "defender_uid": raw.get("defender_uid"),
                 "attacker_uid": raw.get("attacker_uid"),
                 "created_at": raw.get("created_at"),

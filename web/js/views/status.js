@@ -8,6 +8,7 @@
 import { eventBus } from '../events.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
 import { rest } from '../rest.js';
+import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -171,9 +172,7 @@ function render(data) {
           const remaining = data.knowledge?.[iid] ?? 0;
           const effort = st?.items?.knowledge?.[iid]?.effort || 0;
           const itemName = st?.items?.knowledge?.[iid]?.name || iid;
-          // Research speed: base_research_speed * (1 + research_speed_modifier + scientists * citizen_effect)
-          const scientistBonus = (data.citizens?.scientist || 0) * (data.citizen_effect || 0);
-          const researchMultiplier = (data.base_research_speed ?? 1) * (1 + (data.effects?.research_speed_modifier || 0) + scientistBonus);
+          const researchMultiplier = calcResearchSpeed(data);
           const wallSecs = researchMultiplier > 0 ? remaining / researchMultiplier : remaining;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
           return `
@@ -190,8 +189,7 @@ function render(data) {
           const remaining = data.buildings?.[iid] ?? 0;
           const effort = st?.items?.buildings?.[iid]?.effort || 0;
           const itemName = st?.items?.buildings?.[iid]?.name || iid;
-          // Build speed: (base_build_speed + build_speed_offset) * (1 + build_speed_modifier)
-          const buildMultiplier = ((data.base_build_speed ?? 1) + (data.effects?.build_speed_offset || 0)) * (1 + (data.effects?.build_speed_modifier || 0));
+          const buildMultiplier = calcBuildSpeed(data);
           const wallSecs = buildMultiplier > 0 ? remaining / buildMultiplier : remaining;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
           return `
@@ -476,7 +474,7 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
   const buildModifier = effects?.build_speed_modifier || 0;
   const totalOffset   = baseBuildSpeed + buildOffset;
   const multiplier    = 1 + buildModifier;
-  const effective     = totalOffset * multiplier;
+  const effective     = calcBuildSpeed({ base_build_speed: baseBuildSpeed, effects });
 
   let html = '';
   html += `<div class="panel-row"><span class="label">+${baseBuildSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
@@ -518,14 +516,30 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
 
 function renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, baseResearchSpeed) {
   baseResearchSpeed   = baseResearchSpeed ?? 1.0;
+  const researchOffset   = effects?.research_speed_offset   || 0;
+  const researchModifier = effects?.research_speed_modifier || 0;
   const scientistCount = citizens?.scientist || 0;
   const scientistBonus = scientistCount * citizenEffect;
-  const researchModifier = effects?.research_speed_modifier || 0;
+  const totalOffset   = baseResearchSpeed + researchOffset;
   const multiplier    = 1 + researchModifier + scientistBonus;
-  const effective     = baseResearchSpeed * multiplier;
+  const effective     = calcResearchSpeed({ base_research_speed: baseResearchSpeed, effects, citizens, citizen_effect: citizenEffect });
 
   let html = '';
-  html += `<div class="panel-row"><span class="label">${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
+  html += `<div class="panel-row"><span class="label">+${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
+  if (completedBuildings && items?.buildings) {
+    for (const iid of completedBuildings) {
+      const item = items.buildings[iid];
+      if (item?.effects?.research_speed_offset > 0)
+        html += `<div class="panel-row"><span class="label">+${item.effects.research_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+    }
+  }
+  if (completedResearch && items?.knowledge) {
+    for (const iid of completedResearch) {
+      const item = items.knowledge[iid];
+      if (item?.effects?.research_speed_offset > 0)
+        html += `<div class="panel-row"><span class="label">+${item.effects.research_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+    }
+  }
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row"><span class="label">+${(scientistBonus * 100).toFixed(0)}%</span><span class="value">(${scientistCount} 🔭 × ${citizenEffect})</span></div>`;
   if (completedBuildings && items?.buildings) {
@@ -543,7 +557,7 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
     }
   }
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${baseResearchSpeed.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
+  html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
 }
 

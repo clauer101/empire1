@@ -20,18 +20,25 @@ era_effects:
     travel_offset: 300.0
   neolithicum:
     travel_offset: 900.0
+    gold_offset: 0.05
   bronze:
     travel_offset: 3600.0
+    gold_offset: 0.2
   iron:
     travel_offset: 7200.0
+    gold_offset: 0.5
   middle_ages:
     travel_offset: 10800.0
+    gold_offset: 1.0
   rennaissance:
     travel_offset: 12600.0
+    gold_offset: 1.5
   industrial:
     travel_offset: 14400.0
+    gold_offset: 2.0
   modern:
     travel_offset: 16200.0
+    gold_offset: 3.0
   future:
     travel_offset: 18000.0
 ai_travel_seconds: 60.0

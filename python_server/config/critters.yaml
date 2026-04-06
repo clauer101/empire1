@@ -270,8 +270,8 @@ CRUSADER:
 
 KNIGHT:
   name: "Knight"
-  speed: 0.35
-  health: 30
+  speed: 0.4
+  health: 32
   value: 44
   damage: 1
   armour: 6
