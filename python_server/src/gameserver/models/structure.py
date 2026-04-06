@@ -45,3 +45,36 @@ class Structure:
     # Transient battle state
     focus_cid: int | None = field(default=None, repr=False)
     reload_remaining_ms: float = field(default=0.0, repr=False)
+
+
+def structure_from_item(
+    sid: int,
+    iid: str,
+    position: HexCoord,
+    item: object,
+    select_override: str | None = None,
+) -> Structure:
+    """Create a Structure from an ItemDetails-like config object.
+
+    Args:
+        sid: Unique structure instance ID.
+        iid: Item type identifier.
+        position: Hex coordinate.
+        item: ItemDetails (or similar) with optional damage/range/reload_time_ms/etc.
+        select_override: If set and not 'first', overrides the item's select strategy.
+    """
+    item_select = getattr(item, "select", "first")
+    select = select_override if select_override and select_override != "first" else item_select
+    return Structure(
+        sid=sid,
+        iid=iid,
+        position=position,
+        damage=getattr(item, "damage", 1.0),
+        range=getattr(item, "range", 1),
+        reload_time_ms=getattr(item, "reload_time_ms", 2000.0),
+        shot_speed=getattr(item, "shot_speed", 1.0),
+        shot_type=getattr(item, "shot_type", "normal"),
+        shot_sprite=getattr(item, "shot_sprite", ""),
+        select=select,
+        effects=getattr(item, "effects", {}),
+    )

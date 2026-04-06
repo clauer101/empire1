@@ -8,6 +8,7 @@
  */
 
 import { rest } from '../rest.js';
+import { escHtml, escAttr, hilite } from '../lib/html.js';
 
 /** @type {import('../state.js').StateStore} */
 let st;
@@ -384,25 +385,9 @@ function _bindAtMentionAutocomplete(input, dropdown) {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-function _esc(str) {
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function _escAttr(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-function _hilite(str, q) {
-  if (!q) return _esc(str);
-  const s = String(str);
-  const idx = s.toLowerCase().indexOf(q.toLowerCase());
-  if (idx === -1) return _esc(s);
-  return _esc(s.slice(0, idx))
-    + '<mark class="eac-hl">' + _esc(s.slice(idx, idx + q.length)) + '</mark>'
-    + _esc(s.slice(idx + q.length));
-}
+const _esc = escHtml;
+const _escAttr = escAttr;
+const _hilite = (str, q) => hilite(str, q);
 
 function _linkify(html) {
   // Match both new datetime keys (20260101_120000_42) and legacy numeric bids

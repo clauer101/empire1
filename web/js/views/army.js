@@ -4,6 +4,7 @@
 
 import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
+import { escHtml, hilite } from '../lib/html.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -549,19 +550,8 @@ async function _loadEmpires() {
   }
 }
 
-function _escHtml(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function _hilite(str, q) {
-  if (!q) return _escHtml(str);
-  const s = String(str);
-  const idx = s.toLowerCase().indexOf(q.toLowerCase());
-  if (idx === -1) return _escHtml(s);
-  return _escHtml(s.slice(0, idx))
-    + '<mark class="eac-hl">' + _escHtml(s.slice(idx, idx + q.length)) + '</mark>'
-    + _escHtml(s.slice(idx + q.length));
-}
+const _escHtml = escHtml;
+const _hilite = (str, q) => hilite(str, q);
 
 function _bindAutocomplete(input) {
   const dropdown = input.nextElementSibling;

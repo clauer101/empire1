@@ -578,27 +578,6 @@ function _tryLoadFromStorage() {
   }
 }
 
-let _autoSaveTimeout = null;
-
-function _autoSave() {
-  // Debounce server save (max every 1 second)
-  if (_autoSaveTimeout) clearTimeout(_autoSaveTimeout);
-  _autoSaveTimeout = setTimeout(async function() {
-    try {
-      const data = grid.toJSON();
-      const tiles = data.tiles || {};
-      const resp = await rest.saveMap(tiles);
-      if (resp && resp.success === false) {
-        console.warn('[Composer] ⚠ Auto-save rejected:', resp.error);
-      } else {
-        console.log('[Composer] ✓ Auto-saved to server');
-      }
-    } catch (err) {
-      console.error('[Composer] ✗ Server save failed:', err.message);
-    }
-  }, 1000);  // Reduced from 2000ms to 1000ms for faster persistence
-}
-
 // ── Export ───────────────────────────────────────────────────
 
 export default {

@@ -3237,3 +3237,30 @@ label {
   .tt-era-name { font-size: 10px; }
   #tt-wrap { padding: 6px 2px 30px; }
 }
+
+/* ── Dashboard grid (moved from status.js) ───────────────── */
+.dashboard-4col{display:grid;gap:8px;grid-template-columns:repeat(4,1fr)}
+.dashboard-2col{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
+@media(max-width:700px){.dashboard-4col,.dashboard-2col{grid-template-columns:1fr}}
+.csl-wrap{padding:4px 0 8px}
+.csl-track{position:relative;height:18px;border-radius:9px;overflow:visible;margin:8px 4px}
+.csl-seg{position:absolute;top:0;height:100%;transition:left .1s,width .1s}
+.csl-seg:first-child{border-radius:9px 0 0 9px}
+.csl-seg:last-child{border-radius:0 9px 9px 0}
+.csl-merchant{background:#4fc3f7}
+.csl-scientist{background:#ffa726}
+.csl-artist{background:#81c784}
+.csl-handle{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;margin-left:-12px;border-radius:50%;border:3px solid rgba(0,0,0,.35);cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.55);z-index:2;touch-action:none;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;user-select:none}
+.csl-handle:active{cursor:grabbing;filter:brightness(1.2)}
+.csl-labels{display:flex;justify-content:space-between;font-size:0.82em;margin-top:4px;padding:0 4px}
+.csl-lbl{display:flex;flex-direction:column;align-items:center;gap:1px}
+.csl-lbl span{color:#bbb;font-size:0.9em}
+.csl-lbl strong{font-size:1.1em}
+.csl-hint{font-size:0.8em;color:#888;text-align:center;margin-bottom:2px;font-style:italic}
+.prod-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto}
+.prod-overlay-box{background:var(--panel-bg,#1e1e1e);border:1px solid var(--border-color,#444);border-radius:8px;width:100%;max-width:480px;padding:16px 18px;position:relative}
+.prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
+.prod-overlay-section{margin-bottom:14px}
+.prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
+.prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
+.prod-info-btn:hover{opacity:1}

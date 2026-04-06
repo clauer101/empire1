@@ -1,11 +1,15 @@
 """Tests for tower sell refund on map save."""
 
+from pathlib import Path
+
 import pytest
 
 from gameserver.models.empire import Empire
 from gameserver.models.messages import MapSaveRequest
 from gameserver.network.handlers import handle_map_save_request
 from gameserver.main import Services
+
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
 
 @pytest.fixture
@@ -17,7 +21,7 @@ def mock_services():
 
     svc = Services()
     svc.event_bus = EventBus()
-    items = load_items()
+    items = load_items(CONFIG_DIR)
     svc.upgrade_provider = UpgradeProvider()
     svc.upgrade_provider.load(items)
     svc.empire_service = EmpireService(svc.upgrade_provider, svc.event_bus)

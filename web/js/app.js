@@ -11,6 +11,7 @@ import { eventBus } from './events.js';
 import { Router } from './router.js';
 import { debug } from './debug.js';
 import { formatEffect } from './i18n.js';
+import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
 
 import loginView   from './views/login.js';
 import dashView    from './views/status.js';
@@ -97,23 +98,6 @@ if (navDefense) {
     // Otherwise the normal hash-change navigation handles it
   });
 }
-const ERA_ROMAN = {
-  STEINZEIT: 'I', NEOLITHIKUM: 'II', BRONZEZEIT: 'III', EISENZEIT: 'IV',
-  MITTELALTER: 'V', RENAISSANCE: 'VI', INDUSTRIALISIERUNG: 'VII',
-  MODERNE: 'VIII', ZUKUNFT: 'IX',
-};
-
-const ERA_LABEL_EN = {
-  STEINZEIT: 'Stone Age', NEOLITHIKUM: 'Neolithic', BRONZEZEIT: 'Bronze Age',
-  EISENZEIT: 'Iron Age', MITTELALTER: 'Middle Ages', RENAISSANCE: 'Renaissance',
-  INDUSTRIALISIERUNG: 'Industrial Age', MODERNE: 'Modern Age', ZUKUNFT: 'Future',
-};
-
-const ERA_SPRITE_KEY = {
-  STEINZEIT: 'stone', NEOLITHIKUM: 'neolithicum', BRONZEZEIT: 'bronze',
-  EISENZEIT: 'iron', MITTELALTER: 'middle_ages', RENAISSANCE: 'renaissance',
-  INDUSTRIALISIERUNG: 'industrial', MODERNE: 'modern', ZUKUNFT: 'future',
-};
 
 let _eraEffects = {}; // loaded from /api/era-map
 

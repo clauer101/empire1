@@ -69,8 +69,9 @@ class GameConfig:
     battle_tick_ms: float = 15.0
     broadcast_interval_ms: float = 250.0
     min_keep_alive_ms: float = 10_000.0
-    initial_wave_delay_ms: float = 0.0
+    initial_wave_delay_ms: float = 15000.0
     splash_flight_ms: float = 500.0
+    default_reload_time_ms: float = 2000.0
 
     # -- Economy -----------------------------------------------------
     base_gold_per_sec: float = 1.0
@@ -112,6 +113,7 @@ class GameConfig:
 
     # -- AI attack schedule ------------------------------------------
     ai_travel_seconds: float = 30.0
+    ai_min_player_score: float = 500.0
 
     # -- Battle strategy / loot --------------------------------------
     min_lose_knowledge: float = 0.03
@@ -127,7 +129,7 @@ class GameConfig:
     spy_costs: SpyCosts = field(default_factory=SpyCosts)
 
     # -- Structures --------------------------------------------------
-    tower_sell_refund: float = 0.5  # fraction of build cost refunded when selling a tower
+    tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower
 
     # -- Auth validation ---------------------------------------------
     min_username_length: int = 2
@@ -183,16 +185,9 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
 
     # Handle nested era_effects → flatten travel/siege to legacy fields
     # AND build generic era_effects dict for empire effect system
-    _ERA_YAML_TO_FIELD = {
-        "stone": "stone", "neolithicum": "neolithicum", "bronze": "bronze",
-        "iron": "iron", "middle_ages": "middle_ages", "rennaissance": "rennaissance",
-        "industrial": "industrial", "modern": "modern", "future": "diamond",
-    }
-    _ERA_YAML_TO_KEY = {
-        "stone": "STEINZEIT", "neolithicum": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
-        "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "rennaissance": "RENAISSANCE",
-        "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
-    }
+    from gameserver.util.eras import ERA_YAML_TO_FIELD, ERA_YAML_TO_KEY
+    _ERA_YAML_TO_FIELD = ERA_YAML_TO_FIELD
+    _ERA_YAML_TO_KEY = ERA_YAML_TO_KEY
     era_raw = raw.pop("era_effects", None)
     era_effects_dict: Dict[str, Dict[str, float]] = {}
     if isinstance(era_raw, dict):

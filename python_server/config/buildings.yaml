@@ -733,7 +733,7 @@ ARTS_GALLERY:
   description: "Elite art exhibition and commerce facility."
   effort: 891674
   costs: {gold: 620000}
-  requirements: [PAINTING, SOCIAL_SCIENCE]
+  requirements: [PAINTING, SOCIAL_SCIENCES]
   effects:
     culture_offset: 0.3
 

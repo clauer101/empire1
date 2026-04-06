@@ -70,24 +70,5 @@
 
   <script type="module" src="js/app.js?v=20260214f"></script>
 
-  <!-- iOS scroll bounce fix: prevent body from handling touch events >
-  <script>
-    (function () {
-      var appEl = null, navEl = null;
-      function getApp() { return appEl || (appEl = document.getElementById('app')); }
-      function getNav() { return navEl || (navEl = document.getElementById('main-nav')); }
-      document.addEventListener('touchmove', function (e) {
-        var app = getApp(), nav = getNav();
-        var node = e.target;
-        while (node && node !== document.body) {
-          if (node === app) return; // inside #app — allow vertical scroll
-          if (node === nav) return; // inside #main-nav — allow horizontal scroll
-          node = node.parentNode;
-        }
-        // Outside scrollable containers — block body scroll/bounce
-        e.preventDefault();
-      }, { passive: false });
-    })();
-  </script-->
 </body>
 </html>

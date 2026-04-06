@@ -1089,6 +1089,39 @@ export class HexGrid {
       const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
       const pathW = sz * 0.38;
       const visitedEdges = new Set();
+
+      // Soft edge: collect all edges first, draw blurred shadow in one pass
+      if (pathBmp && pathBmp !== 'loading') {
+        const edgePairs = [];
+        for (const key of this._partialReachable) {
+          const { q, r } = parseKey(key);
+          const p1 = hexToPixel(q, r, sz);
+          for (const nb of hexNeighbors(q, r)) {
+            const nKey = hexKey(nb.q, nb.r);
+            if (!this._partialReachable.has(nKey)) continue;
+            const edgeKey = key < nKey ? key + '|' + nKey : nKey + '|' + key;
+            if (visitedEdges.has(edgeKey)) continue;
+            visitedEdges.add(edgeKey);
+            edgePairs.push([p1, hexToPixel(nb.q, nb.r, sz)]);
+          }
+        }
+        ctx.save();
+        ctx.filter = 'blur(6px)';
+        ctx.strokeStyle = 'rgba(70, 48, 20, 0.5)';
+        ctx.lineWidth = pathW * 2.2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        for (const [p1, p2] of edgePairs) {
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+        ctx.filter = 'none';
+        ctx.restore();
+        visitedEdges.clear();
+      }
+
       ctx.save();
       ctx.globalAlpha = 0.75;
       for (const key of this._partialReachable) {
@@ -1145,6 +1178,20 @@ export class HexGrid {
       const points = this.battlePath.map(p => hexToPixel(p.q, p.r, sz));
 
       if (pathBmp && pathBmp !== 'loading') {
+        // Soft edge: blurred shadow pass blends path into the green map
+        ctx.save();
+        ctx.filter = 'blur(6px)';
+        ctx.strokeStyle = 'rgba(70, 48, 20, 0.5)';
+        ctx.lineWidth = pathW * 2.2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
+        ctx.filter = 'none';
+        ctx.restore();
+
         for (let i = 0; i < points.length - 1; i++) {
           const p1 = points[i];
           const p2 = points[i + 1];
@@ -1185,29 +1232,6 @@ export class HexGrid {
       const { q, r } = parseKey(key);
       const tileType = getTileType(data.type);
       const { x, y } = hexToPixel(q, r, sz);
-      const corners = hexCorners(x, y, sz);
-
-      // Structure sprite overlay (path is rendered separately in Pass 2)
-      if (tileType.spriteUrl && data.type !== 'void' && data.type !== 'path') {
-        const bitmap = this._spriteCache.get(tileType.spriteUrl);
-        if (bitmap && bitmap !== 'loading') {
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(corners[0].x, corners[0].y);
-          for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
-          ctx.closePath();
-          ctx.clip();
-          const spriteSize = sz * 1.7;
-          // Castle and spawnpoint: shift sprite up by 10% of its size so the
-          // visual centre sits higher in the hex tile (matches isometric look).
-          const yOffset = (data.type === 'castle' || data.type === 'spawnpoint')
-            ? spriteSize * 0.10 : 0;
-          ctx.drawImage(bitmap, x - spriteSize / 2, y - spriteSize / 2 - yOffset, spriteSize, spriteSize);
-          ctx.restore();
-        } else if (!bitmap) {
-          this._ensureSpriteLoaded(tileType.spriteUrl);
-        }
-      }
 
       // Icon fallback text
       if (tileType.icon && !tileType.spriteUrl && sz * this.zoom > 12) {
@@ -1226,6 +1250,21 @@ export class HexGrid {
         ctx.textBaseline = 'bottom';
         ctx.fillText(`${q},${r}`, x, y + sz * 0.75);
       }
+    }
+
+    // ── Pass 4: Structure sprites (unclipped — may overlap tile above) ───
+    for (const [key, data] of this.tiles) {
+      const tileType = getTileType(data.type);
+      if (!tileType.spriteUrl || data.type === 'void' || data.type === 'path') continue;
+      const bitmap = this._spriteCache.get(tileType.spriteUrl);
+      if (!bitmap) { this._ensureSpriteLoaded(tileType.spriteUrl); continue; }
+      if (bitmap === 'loading') continue;
+      const { q, r } = parseKey(key);
+      const { x, y } = hexToPixel(q, r, sz);
+      const spriteSize = sz * 1.7;
+      const yOffset = (data.type === 'castle' || data.type === 'spawnpoint')
+        ? spriteSize * 0.10 : spriteSize * 0.15;
+      ctx.drawImage(bitmap, x - spriteSize / 2, y - spriteSize / 2 - yOffset, spriteSize, spriteSize);
     }
 
     ctx.restore();

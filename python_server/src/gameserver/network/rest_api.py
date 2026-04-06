@@ -634,24 +634,7 @@ def create_app(services: "Services") -> FastAPI:
     import re as _re
     from pathlib import Path as _Path
 
-    _ERA_KEYS = [
-        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
-        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
-    ]
-    _ERA_LABELS_DE = {
-        "STEINZEIT": "Steinzeit", "NEOLITHIKUM": "Neolithikum",
-        "BRONZEZEIT": "Bronzezeit", "EISENZEIT": "Eisenzeit",
-        "MITTELALTER": "Mittelalter", "RENAISSANCE": "Renaissance",
-        "INDUSTRIALISIERUNG": "Industrialisierung", "MODERNE": "Moderne",
-        "ZUKUNFT": "Zukunft",
-    }
-    _ERA_LABELS_EN = {
-        "STEINZEIT": "Stone Age", "NEOLITHIKUM": "Neolithic",
-        "BRONZEZEIT": "Bronze Age", "EISENZEIT": "Iron Age",
-        "MITTELALTER": "Middle Ages", "RENAISSANCE": "Renaissance",
-        "INDUSTRIALISIERUNG": "Industrial", "MODERNE": "Modern",
-        "ZUKUNFT": "Future",
-    }
+    from gameserver.util.eras import ERA_ORDER as _ERA_KEYS, ERA_LABELS_DE as _ERA_LABELS_DE, ERA_LABELS_EN as _ERA_LABELS_EN
     _ERA_PATTERNS_KEYS = [
         ("STEINZEIT",          _re.compile(r'#\s+STEINZEIT')),
         ("NEOLITHIKUM",        _re.compile(r'#\s+NEOLITHIKUM')),
@@ -697,11 +680,7 @@ def create_app(services: "Services") -> FastAPI:
     ]
 
     # Map game.yaml era_effects keys (lowercase English) → uppercase German era keys
-    _ERA_EFFECT_KEY_MAP = {
-        "stone": "STEINZEIT", "neolithicum": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
-        "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "rennaissance": "RENAISSANCE",
-        "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
-    }
+    from gameserver.util.eras import ERA_YAML_TO_KEY as _ERA_EFFECT_KEY_MAP
 
     def _load_era_effects() -> dict[str, dict[str, float]]:
         """Read era_effects from game.yaml, keyed by uppercase era key."""
@@ -1227,11 +1206,7 @@ def create_app(services: "Services") -> FastAPI:
         if not waves_raw:
             raise HTTPException(status_code=400, detail="No waves defined")
 
-        initial_delay_ms = (
-            services.ai_service._game_config.initial_wave_delay_ms
-            if services.ai_service and services.ai_service._game_config
-            else 15000.0
-        )
+        initial_delay_ms = services.ai_service._game_config.initial_wave_delay_ms
 
         aid = services.empire_service.next_army_id()
 

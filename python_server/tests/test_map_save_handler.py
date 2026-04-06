@@ -1,5 +1,7 @@
 """Integration tests for map_save_request handler validation."""
 
+from pathlib import Path
+
 import pytest
 
 from gameserver.models.empire import Empire
@@ -16,12 +18,13 @@ def mock_services():
     from gameserver.engine.upgrade_provider import UpgradeProvider
     from gameserver.util.events import EventBus
     from gameserver.loaders.item_loader import load_items
-    
+
     svc = Services()
     svc.event_bus = EventBus()
-    
+
     # Load items for upgrade provider
-    items = load_items()
+    config_dir = Path(__file__).resolve().parent.parent / "config"
+    items = load_items(config_dir)
     svc.upgrade_provider = UpgradeProvider()
     svc.upgrade_provider.load(items)
     svc.empire_service = EmpireService(svc.upgrade_provider, svc.event_bus)
