@@ -207,9 +207,9 @@ class EmpireService:
             empire.research_queue = None
             return
 
-        # Research speed: base * (1 + modifier + n_scientists * citizen_effect)
+        # Research speed: (base + offset) * (1 + modifier + n_scientists * citizen_effect)
         scientist_count = empire.citizens.get("scientist", 0)
-        speed = self._base_research_speed * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self._citizen_effect)
+        speed = (self._base_research_speed + empire.get_effect("research_speed_offset", 0.0)) * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self._citizen_effect)
         remaining -= dt * speed
         if remaining <= 0:
             remaining = 0.0

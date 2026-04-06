@@ -150,7 +150,7 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
-  // Get battle ID from router param
+  // Get replay key from router param (e.g. '20260101_120000_42' or legacy numeric bid)
   const hash = window.location.hash.replace('#', '');
   const slashIdx = hash.indexOf('/');
   _bid = slashIdx > 0 ? hash.substring(slashIdx + 1) : null;
@@ -162,7 +162,12 @@ async function enter() {
 
   _reset();
   _initCanvas();
-  _setTitle(`📽 Replay — Battle #${_bid}`);
+  // Show date/time from key if available (format: YYYYMMDD_HHMMSS_bid)
+  const keyParts = _bid.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(\d+)$/);
+  const titleLabel = keyParts
+    ? `${keyParts[1]}-${keyParts[2]}-${keyParts[3]} ${keyParts[4]}:${keyParts[5]}:${keyParts[6]} #${keyParts[7]}`
+    : `#${_bid}`;
+  _setTitle(`📽 Replay — Battle ${titleLabel}`);
   _setStatus('Loading…');
 
   // Load structure tile types from items

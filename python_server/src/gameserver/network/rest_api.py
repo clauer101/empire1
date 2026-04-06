@@ -404,16 +404,16 @@ def create_app(services: "Services") -> FastAPI:
         replays = list_replays()
         return {"replays": replays}
 
-    @app.get("/api/replays/{bid}")
-    async def get_replay(bid: int, uid: int = Depends(get_current_uid)):
-        """Get a full battle replay by battle ID.
+    @app.get("/api/replays/{key}")
+    async def get_replay(key: str, uid: int = Depends(get_current_uid)):
+        """Get a full battle replay by replay key (e.g. '20260101_120000_42').
 
         Returns raw gzip bytes for .json.gz files (client decompresses via
         DecompressionStream) or plain JSON for legacy .json files.
         """
         from gameserver.persistence.replay import get_replay_path
         from starlette.responses import Response, JSONResponse
-        path = get_replay_path(bid)
+        path = get_replay_path(key)
         if path is None:
             raise HTTPException(status_code=404, detail="Replay not found")
         if path.suffix == ".gz":

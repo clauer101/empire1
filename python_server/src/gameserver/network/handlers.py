@@ -2302,6 +2302,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         # ── Save replay + send notification messages ─────────────────
         if battle.recorder is not None:
             saved_path = battle.recorder.save()
+            replay_key = battle.recorder.replay_key
             if saved_path and svc.database:
                 def_name  = battle.defender.name if battle.defender else "?"
                 atk_name  = battle.attacker.name if battle.attacker else "?"
@@ -2336,7 +2337,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                     f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
                     f"⏱ Duration:  {dur_str}\n"
                     f"────────────────────\n"
-                    f"▶ Replay: #replay/{bid}"
+                    f"▶ Replay: #replay/{replay_key}"
                 )
 
                 # ── Attacker message ──────────────────────────────────────
@@ -2353,7 +2354,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                     f"{gains_lines}"
                     f"⏱ Duration:  {dur_str}\n"
                     f"────────────────────\n"
-                    f"▶ Replay: #replay/{bid}"
+                    f"▶ Replay: #replay/{replay_key}"
                 )
 
                 if battle.defender:
@@ -2735,6 +2736,7 @@ def _create_battle_start_handler() -> Callable:
         setup_msg = {
             "type": "battle_setup",
             "bid": bid,
+            "replay_key": battle.recorder.replay_key,
             "defender_uid": defender_uid,
             "attacker_uid": attacker_uid,
             "defender_name": defender_empire.name if defender_empire else "",

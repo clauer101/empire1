@@ -147,6 +147,11 @@ class Router {
       }
     }
 
+    // Hide all views that are not the target (guards against init() overwriting display:none)
+    this._viewElements.forEach((el, id) => {
+      if (id !== viewId) el.style.display = 'none';
+    });
+
     // Enter new view
     const view = this._views.get(viewId);
     const el = this._viewElements.get(viewId);

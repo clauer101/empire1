@@ -6,6 +6,7 @@ import { eventBus } from '../events.js';
 import { formatEffect } from '../i18n.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
+import { calcBuildSpeed } from '../lib/speed.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -108,11 +109,10 @@ function render() {
     const badgeClass = `badge badge--${status}`;
     const badgeText = status === 'in-progress' ? 'building' : status;
 
-    // Build speed: (base_build_speed + build_speed_offset) * (1 + build_speed_modifier)
     const fullEffort = info.effort;
     const stored = summary.buildings?.[iid];
     const remaining = (stored != null && stored < fullEffort) ? stored : fullEffort;
-    const buildMultiplier = ((summary.base_build_speed ?? 1) + (summary.effects?.build_speed_offset || 0)) * (1 + (summary.effects?.build_speed_modifier || 0));
+    const buildMultiplier = calcBuildSpeed(summary);
     const totalSecs  = buildMultiplier > 0 ? fullEffort / buildMultiplier : fullEffort;
     const remainSecs = buildMultiplier > 0 ? remaining  / buildMultiplier : remaining;
     const durationStr = fmtSecs(remainSecs);

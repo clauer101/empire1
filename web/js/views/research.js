@@ -6,6 +6,7 @@ import { eventBus } from '../events.js';
 import { formatEffect } from '../i18n.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
+import { calcResearchSpeed } from '../lib/speed.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -108,13 +109,10 @@ function render() {
     const badgeClass = `badge badge--${status}`;
     const badgeText = status === 'in-progress' ? 'researching' : status;
 
-    // Calculate wall-clock duration with empire effects
-    // Research speed: base_research_speed * (1 + research_speed_modifier + n_scientists * citizen_effect)
     const fullEffort = info.effort;
     const stored = summary.knowledge?.[iid];
     const remaining = (stored != null && stored < fullEffort) ? stored : fullEffort;
-    const scientistBonus = (summary.citizens?.scientist || 0) * (summary.citizen_effect || 0);
-    const researchMultiplier = (summary.base_research_speed ?? 1) * (1 + (summary.effects?.research_speed_modifier || 0) + scientistBonus);
+    const researchMultiplier = calcResearchSpeed(summary);
     const totalSecs  = researchMultiplier > 0 ? fullEffort / researchMultiplier : fullEffort;
     const remainSecs = researchMultiplier > 0 ? remaining  / researchMultiplier : remaining;
 

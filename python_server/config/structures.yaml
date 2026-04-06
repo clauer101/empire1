@@ -86,7 +86,7 @@ ARROW_TOWER:
   range: 2
   reload_time: 1500
   shot_speed: 3
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/arrow.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -101,7 +101,7 @@ BALLISTA_TOWER:
   range: 1.5
   reload_time: 3200
   shot_speed: 2
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/bolt.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -116,7 +116,7 @@ FIRE_TOWER:
   range: 1.5
   reload_time: 3000
   shot_speed: 1
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/fireball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -146,11 +146,11 @@ CATAPULTS:
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
   sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
-  damage: 10
+  damage: 9
   range: 1.5
   reload_time: 2800
   shot_speed: 1
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/bolt.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -169,7 +169,7 @@ TAR_TOWER:
   range: 1.5
   reload_time: 2400
   shot_speed: 1
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/tarball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -199,7 +199,7 @@ BOILING_OIL:
   range: 1.5
   reload_time: 2800
   shot_speed: 1
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/fireball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -248,7 +248,7 @@ COLD_TOWER:
   range: 2
   reload_time: 900
   shot_speed: 5
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/iceball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -263,7 +263,7 @@ ICE_TOWER:
   range: 3
   reload_time: 2400
   shot_speed: 2
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/iceball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -282,7 +282,7 @@ FLAME_THROWER:
   range: 1.5
   reload_time: 2300
   shot_speed: 3
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/fireball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -297,7 +297,7 @@ SHOCK_TOWER:
   range: 2
   reload_time: 1800
   shot_speed: 5
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/bolt.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -312,7 +312,7 @@ PARALYZNG_TOWER:
   range: 2
   reload_time: 2400
   shot_speed: 1
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/bolt.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -331,7 +331,7 @@ NAPALM_THROWER:
   range: 1.5
   reload_time: 2000
   shot_speed: 2
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/fireball.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -406,7 +406,7 @@ LASER_TOWER:
   range: 6
   reload_time: 1500
   shot_speed: 10
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/bolt.webp"
   upgrade_costs: {}
   max_level: 1
   select: first
