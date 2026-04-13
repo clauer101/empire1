@@ -83,6 +83,25 @@ async function refreshEmpires() {
     const sec = container.querySelector('#empires-section');
     if (sec) sec.innerHTML = renderEmpiresSection(_empiresData);
     bindEmpiresEvents();
+
+    // Re-render attack lists now that empire names are known
+    const summary = st.summary;
+    if (summary) {
+      const incEl = container.querySelector('#attacks-incoming-list');
+      const outEl = container.querySelector('#attacks-outgoing-list');
+      if (incEl) {
+        const inc = summary.attacks_incoming || [];
+        incEl.innerHTML = inc.length
+          ? inc.map(a => _attackEntry(a, 'in')).join('')
+          : `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
+      }
+      if (outEl) {
+        const out = summary.attacks_outgoing || [];
+        outEl.innerHTML = out.length
+          ? out.map(a => _attackEntry(a, 'out')).join('')
+          : `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
+      }
+    }
   } catch (err) {
     console.error('[dashboard] getEmpires failed:', err);
   }
@@ -118,18 +137,18 @@ function render(data) {
 
       <div class="panel">
         <div class="panel-header">Incoming</div>
-        ${(() => {
+        <div id="attacks-incoming-list">${(() => {
           const inc = data.attacks_incoming || [];
           if (!inc.length) return `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
           return inc.map(a => _attackEntry(a, 'in')).join('');
-        })()}
+        })()}</div>
 
         <div class="panel-header" style="margin-top:8px">Outgoing</div>
-        ${(() => {
+        <div id="attacks-outgoing-list">${(() => {
           const out = data.attacks_outgoing || [];
           if (!out.length) return `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
           return out.map(a => _attackEntry(a, 'out')).join('');
-        })()}
+        })()}</div>
 
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
         <div class="panel-header">Research</div>
@@ -445,37 +464,51 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
 
   let html = '';
   html += `<div class="panel-row"><span class="label">+${baseBuildSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
+  let itemBuildOffset = 0;
   if (completedBuildings && items?.buildings) {
     for (const iid of completedBuildings) {
       const item = items.buildings[iid];
-      if (item?.effects?.build_speed_offset > 0)
+      if (item?.effects?.build_speed_offset > 0) {
+        itemBuildOffset += item.effects.build_speed_offset;
         html += `<div class="panel-row"><span class="label">+${item.effects.build_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+      }
     }
   }
   if (completedResearch && items?.knowledge) {
     for (const iid of completedResearch) {
       const item = items.knowledge[iid];
-      if (item?.effects?.build_speed_offset > 0)
+      if (item?.effects?.build_speed_offset > 0) {
+        itemBuildOffset += item.effects.build_speed_offset;
         html += `<div class="panel-row"><span class="label">+${item.effects.build_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+      }
     }
   }
+  const eraBuildOffset = buildOffset - itemBuildOffset;
+  if (eraBuildOffset > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${eraBuildOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  if (buildModifier > 0) {
-    if (completedBuildings && items?.buildings) {
-      for (const iid of completedBuildings) {
-        const item = items.buildings[iid];
-        if (item?.effects?.build_speed_modifier > 0)
-          html += `<div class="panel-row"><span class="label">+${(item.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-    if (completedResearch && items?.knowledge) {
-      for (const iid of completedResearch) {
-        const item = items.knowledge[iid];
-        if (item?.effects?.build_speed_modifier > 0)
-          html += `<div class="panel-row"><span class="label">+${(item.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
+  let itemBuildModifier = 0;
+  if (completedBuildings && items?.buildings) {
+    for (const iid of completedBuildings) {
+      const item = items.buildings[iid];
+      if (item?.effects?.build_speed_modifier > 0) {
+        itemBuildModifier += item.effects.build_speed_modifier;
+        html += `<div class="panel-row"><span class="label">+${(item.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
   }
+  if (completedResearch && items?.knowledge) {
+    for (const iid of completedResearch) {
+      const item = items.knowledge[iid];
+      if (item?.effects?.build_speed_modifier > 0) {
+        itemBuildModifier += item.effects.build_speed_modifier;
+        html += `<div class="panel-row"><span class="label">+${(item.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
+      }
+    }
+  }
+  const eraBuildModifier = buildModifier - itemBuildModifier;
+  if (eraBuildModifier > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${(eraBuildModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
@@ -493,36 +526,52 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
 
   let html = '';
   html += `<div class="panel-row"><span class="label">+${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
+  let itemResearchOffset = 0;
   if (completedBuildings && items?.buildings) {
     for (const iid of completedBuildings) {
       const item = items.buildings[iid];
-      if (item?.effects?.research_speed_offset > 0)
+      if (item?.effects?.research_speed_offset > 0) {
+        itemResearchOffset += item.effects.research_speed_offset;
         html += `<div class="panel-row"><span class="label">+${item.effects.research_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+      }
     }
   }
   if (completedResearch && items?.knowledge) {
     for (const iid of completedResearch) {
       const item = items.knowledge[iid];
-      if (item?.effects?.research_speed_offset > 0)
+      if (item?.effects?.research_speed_offset > 0) {
+        itemResearchOffset += item.effects.research_speed_offset;
         html += `<div class="panel-row"><span class="label">+${item.effects.research_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
+      }
     }
   }
+  const eraResearchOffset = researchOffset - itemResearchOffset;
+  if (eraResearchOffset > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${eraResearchOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row"><span class="label">+${(scientistBonus * 100).toFixed(0)}%</span><span class="value">(${scientistCount} 🔭 × ${citizenEffect})</span></div>`;
+  let itemResearchModifier = 0;
   if (completedBuildings && items?.buildings) {
     for (const iid of completedBuildings) {
       const item = items.buildings[iid];
-      if (item?.effects?.research_speed_modifier > 0)
+      if (item?.effects?.research_speed_modifier > 0) {
+        itemResearchModifier += item.effects.research_speed_modifier;
         html += `<div class="panel-row"><span class="label">+${(item.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
+      }
     }
   }
   if (completedResearch && items?.knowledge) {
     for (const iid of completedResearch) {
       const item = items.knowledge[iid];
-      if (item?.effects?.research_speed_modifier > 0)
+      if (item?.effects?.research_speed_modifier > 0) {
+        itemResearchModifier += item.effects.research_speed_modifier;
         html += `<div class="panel-row"><span class="label">+${(item.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
+      }
     }
   }
+  const eraResearchModifier = researchModifier - itemResearchModifier;
+  if (eraResearchModifier > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${(eraResearchModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
@@ -592,6 +641,14 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   }
   addOffsetSources(items);
 
+  // Era offset contribution (difference between aggregated backend value and item sum)
+  const eraOffset = (effects[effectOffsetKey] || 0) - (totalOffset - baseAmount);
+  if (eraOffset > 0.0005) {
+    const decimals = resourceType === 'life' ? 3 : 2;
+    html += `<div class="panel-row"><span class="label">+${eraOffset.toFixed(decimals)}</span><span class="value">(Era)</span></div>`;
+    totalOffset += eraOffset;
+  }
+
   // For life, only show offset without multiplier
   if (resourceType === 'life') {
     const color = '#90ee90';
@@ -599,15 +656,15 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
     html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${totalOffset.toFixed(3)}/s</span></div>`;
     return html;
   }
-  
+
   // Separator line
   html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
-  
+
   // Citizen bonus percentage
   const citizenBonus = citizenCount * citizenEffect;
   html += `<div class="panel-row"><span class="label">+${(citizenBonus * 100).toFixed(0)}%</span><span class="value">(${citizenCount} ${citizenType}s × ${citizenEffect})</span></div>`;
-  
-  // Effect modifiers from buildings
+
+  // Effect modifiers from buildings/research
   let totalModifier = citizenBonus;
   for (const iid of (completedBuildings.concat(completedResearch))) {
     const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
@@ -617,7 +674,14 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
       html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
-  
+
+  // Era modifier contribution
+  const eraModifier = effectModifierKey ? (effects[effectModifierKey] || 0) - (totalModifier - citizenBonus) : 0;
+  if (eraModifier > 0.0005) {
+    totalModifier += eraModifier;
+    html += `<div class="panel-row"><span class="label">+${(eraModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
+  }
+
   // Final calculation line
   const multiplier = 1 + totalModifier;
   const total = totalOffset * multiplier;
@@ -632,6 +696,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
 // ── Attacks status bar ───────────────────────────────────
 
 function _resolveEmpireName(uid) {
+  if (uid === 0 || uid === '0') return 'AI';
   if (_empiresData) {
     const e = _empiresData.find(x => x.uid === uid);
     if (e) return e.name;
@@ -666,13 +731,17 @@ const PHASE_LABEL = {
 function _attackEntry(a, direction) {
   const pInfo = PHASE_LABEL[a.phase] || { text: a.phase, cls: '' };
   const otherUid  = direction === 'in' ? a.attacker_uid : a.defender_uid;
-  const rawName   = direction === 'in'
-    ? (a.army_name || _resolveEmpireName(otherUid))
-    : _resolveEmpireName(otherUid);
-  const username  = direction === 'in'
+  const empireName = _resolveEmpireName(otherUid);
+  const isAI = otherUid === 0 || otherUid === '0';
+  const username  = isAI ? '' : (direction === 'in'
     ? (a.attacker_username || _resolveEmpireUsername(otherUid))
-    : _resolveEmpireUsername(otherUid);
-  const empName   = username ? `${rawName} (${username})` : rawName;
+    : _resolveEmpireUsername(otherUid));
+  const empLabel  = isAI ? 'AI' : (username ? `${empireName} (${username})` : empireName);
+  const armyName  = a.army_name || '';
+  // Show army name as primary label; empire/username as secondary hint
+  const empName   = armyName
+    ? `${armyName}<span class="atk-empire-hint"> · ${empLabel}</span>`
+    : empLabel;
 
   const showWatch = direction === 'out' && (a.phase === 'in_siege' || a.phase === 'in_battle');
 

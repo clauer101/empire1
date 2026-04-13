@@ -1,13 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -c \":*)",
-      "Bash(bash run_tests.sh*)",
-      "Bash(python -m pytest tests/test_combat_effects.py tests/test_shot_damage_application.py -v)",
-      "Bash(/home/eem/empire1/.venv/bin/python -m pytest tests/test_combat_effects.py tests/test_shot_damage_application.py -v)",
-      "Bash(/home/eem/empire1/.venv/bin/python -m pytest tests/test_shot_damage_application.py -v)",
-      "Bash(/home/eem/empire1/.venv/bin/pip install:*)",
-      "Bash(python -m pytest tests/test_structure_targeting.py -v)"
+      "Bash(rtk git:*)",
+      "Bash(rtk gain:*)",
+      "Bash(rtk discover:*)"
+    ],
+    "additionalDirectories": [
+      "/home/eem/.claude/hooks",
+      "/home/eem/.claude"
     ]
   }
 }

@@ -172,6 +172,7 @@ async def handle_item_request(
             "costs": dict(item.costs),
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
+            "image": item.image,
         }
 
     knowledge = {}
@@ -183,6 +184,7 @@ async def handle_item_request(
             "costs": dict(item.costs),
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
+            "image": item.image,
         }
 
     # Structures (towers) — available based on research
@@ -234,6 +236,8 @@ async def handle_item_request(
                 "costs": dict(item.costs),
                 "effects": dict(item.effects),
                 "description": item.description,
+                "sprite": item.sprite,
+                "select": item.select,
             })
         elif item.item_type == ItemType.CRITTER:
             entry.update({
@@ -249,6 +253,7 @@ async def handle_item_request(
                 "effort": item.effort,
                 "effects": dict(item.effects),
                 "description": item.description,
+                "image": item.image,
             })
         elif item.item_type == ItemType.BUILDING:
             entry.update({
@@ -256,6 +261,7 @@ async def handle_item_request(
                 "costs": dict(item.costs),
                 "effects": dict(item.effects),
                 "description": item.description,
+                "image": item.image,
             })
         catalog[item.iid] = entry
 
@@ -328,7 +334,16 @@ async def handle_military_request(
             "time_between_ms": critter.time_between_ms,
             "is_boss": critter.is_boss,
             "animation": critter.animation,
+            "sprite": critter.sprite,
         })
+
+    # Sprite lookup for all critters (including locked) so the frontend
+    # can render sprites for critters already placed in waves.
+    from gameserver.models.items import ItemType as _ItemType2
+    critter_sprites = {
+        c.iid: {"sprite": c.sprite, "animation": c.animation}
+        for c in svc.upgrade_provider.get_by_type(_ItemType2.CRITTER)
+    } if svc.upgrade_provider else {}
 
     # Ongoing attacks
     _uid_to_username: dict[int, str] = {}
@@ -367,6 +382,7 @@ async def handle_military_request(
         "attacks_incoming": incoming,
         "attacks_outgoing": outgoing,
         "available_critters": available_critters,
+        "critter_sprites": critter_sprites,
     }
 
 
@@ -1014,6 +1030,7 @@ async def _send_battle_state_to_observer(attack: Attack, observer_uid: int) -> N
                     "iid": w.iid,
                     "critter_name": critter_name,
                     "slots": w.slots,
+                    "critter_slot_cost": item.slots if item else 1,
                     "next_critter_ms": max(0.0, w.next_critter_ms),
                 }
                 break
@@ -2304,6 +2321,21 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                         if parts:
                             gains_lines = f"💰 Captured: {parts}\n"
 
+                # Loot lines (culture + knowledge stolen)
+                loot_atk_lines = ""
+                loot_def_lines = ""
+                if loot:
+                    culture_stolen = loot.get("culture", 0.0)
+                    knowledge_loot = loot.get("knowledge")
+                    if culture_stolen > 0:
+                        loot_atk_lines += f"🎭 Stolen culture:    +{culture_stolen:.1f}\n"
+                        loot_def_lines += f"🎭 Culture stolen:    -{culture_stolen:.1f}\n"
+                    if knowledge_loot:
+                        k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
+                        k_pct  = knowledge_loot.get("pct", 0.0) * 100
+                        loot_atk_lines += f"📚 Stolen knowledge: {k_name} ({k_pct:.0f}%)\n"
+                        loot_def_lines += f"📚 Knowledge stolen: {k_name} ({k_pct:.0f}%)\n"
+
                 # ── Defender message ──────────────────────────────────────
                 def_result = "🛡 You Won!" if defender_won else "💀 You Lost!"
                 def_body = (
@@ -2317,6 +2349,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                     f"🏰 Reached:   {battle.critters_reached}\n"
                     f"🗼 Towers:    {len(battle.structures)}\n"
                     f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
+                    f"{loot_def_lines}"
                     f"⏱ Duration:  {dur_str}\n"
                     f"────────────────────\n"
                     f"▶ Replay: #replay/{replay_key}"
@@ -2334,6 +2367,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                     f"💀 Killed:    {battle.critters_killed}\n"
                     f"🏰 Reached:   {battle.critters_reached}\n"
                     f"{gains_lines}"
+                    f"{loot_atk_lines}"
                     f"⏱ Duration:  {dur_str}\n"
                     f"────────────────────\n"
                     f"▶ Replay: #replay/{replay_key}"

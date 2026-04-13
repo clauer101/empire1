@@ -917,6 +917,7 @@ export class HexGrid {
       path_progress: data.path_progress,
       origin_q: data.origin_q,
       origin_r: data.origin_r,
+      projectile_y_offset: data.projectile_y_offset ?? 0.0,
     });
     this.battleActive = true;
   }
@@ -1364,22 +1365,26 @@ export class HexGrid {
 
   /** Get interpolated pixel position of a shot between origin and target critter center. */
   _getShotPixelPos(shot, sz) {
-    // Get origin position (tower hex)
+    // Get origin position (tower hex), shifted up by projectile_y_offset * tower sprite height
     const originPos = hexToPixel(shot.origin_q, shot.origin_r, sz);
-    
+    const towerSpriteH = sz * 1.7;
+    const adjustedOrigin = {
+      x: originPos.x,
+      y: originPos.y - (shot.projectile_y_offset ?? 0.0) * towerSpriteH,
+    };
+
     // Get target critter visual center
     const targetCritter = this.battleCritters.get(shot.target_cid);
     if (!targetCritter) {
-      // Target critter not found (died?) - use origin
-      return originPos;
+      return adjustedOrigin;
     }
-    
+
     const targetPos = this._getCritterVisualCenter(targetCritter, sz);
-    
-    // Interpolate between origin and target based on path_progress
-    const x = originPos.x + (targetPos.x - originPos.x) * shot.path_progress;
-    const y = originPos.y + (targetPos.y - originPos.y) * shot.path_progress;
-    
+
+    // Interpolate between adjusted origin and target based on path_progress
+    const x = adjustedOrigin.x + (targetPos.x - adjustedOrigin.x) * shot.path_progress;
+    const y = adjustedOrigin.y + (targetPos.y - adjustedOrigin.y) * shot.path_progress;
+
     return { x, y };
   }
 
@@ -1389,14 +1394,22 @@ export class HexGrid {
 
     // Draw battle shots (transform already applied by _render)
     for (const [shot_id, shot] of this.battleShots) {
+      // Skip shots whose target has already died
+      if (!this.battleCritters.has(shot.target_cid)) continue;
+
       const { x, y } = this._getShotPixelPos(shot, sz);
 
       // --- Sprite rendering (rotated toward target) ---
       if (shot.shot_sprite) {
         const bmp = this._spriteCache.get(shot.shot_sprite);
         if (bmp && bmp !== 'loading') {
-          // Compute direction angle from origin to current target visual center
-          const originPos = hexToPixel(shot.origin_q, shot.origin_r, sz);
+          // Compute direction angle from adjusted origin to current target visual center
+          const rawOrigin = hexToPixel(shot.origin_q, shot.origin_r, sz);
+          const towerSpriteH = sz * 1.7;
+          const originPos = {
+            x: rawOrigin.x,
+            y: rawOrigin.y - (shot.projectile_y_offset ?? 0.0) * towerSpriteH,
+          };
           const targetCritter = this.battleCritters.get(shot.target_cid);
           let angle = 0;
           if (targetCritter) {

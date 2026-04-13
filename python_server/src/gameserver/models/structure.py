@@ -39,6 +39,7 @@ class Structure:
     shot_speed: float
     shot_type: str = "normal"
     shot_sprite: str = ""  # Sprite URL for the projectile visual
+    projectile_y_offset: float = 0.0  # Vertical origin offset as fraction of tower sprite height
     select: str = "first"  # Targeting strategy: first | last | random
     effects: dict[str, float] = field(default_factory=dict)
 
@@ -75,6 +76,7 @@ def structure_from_item(
         shot_speed=getattr(item, "shot_speed", 1.0),
         shot_type=getattr(item, "shot_type", "normal"),
         shot_sprite=getattr(item, "shot_sprite", ""),
+        projectile_y_offset=getattr(item, "projectile_y_offset", 0.0),
         select=select,
         effects=getattr(item, "effects", {}),
     )

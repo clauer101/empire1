@@ -19,6 +19,7 @@ BASIC_TOWER:
   reload_time: 2000
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.2
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -34,6 +35,7 @@ SLING_TOWER:
   reload_time: 1800
   shot_speed: 1.2
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -53,6 +55,7 @@ DOUBLE_SLING_TOWER:
   reload_time: 1800
   shot_speed: 1.4
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -68,6 +71,7 @@ SPIKE_TRAP:
   reload_time: 3000
   shot_speed: 0.7
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.1
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -87,6 +91,7 @@ ARROW_TOWER:
   reload_time: 1500
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/arrow.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -102,6 +107,7 @@ BALLISTA_TOWER:
   reload_time: 3200
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -117,6 +123,7 @@ FIRE_TOWER:
   reload_time: 3000
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/fireball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -136,6 +143,7 @@ CATAPULTS:
   reload_time: 3600
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.2
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -151,6 +159,7 @@ ARBELESTE_TOWER:
   reload_time: 2800
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -170,6 +179,7 @@ TAR_TOWER:
   reload_time: 2400
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/tarball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -180,11 +190,12 @@ TAR_TOWER:
 HEAVY_TOWER:
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
-  damage: 20
+  damage: 23
   range: 1.5
-  reload_time: 2600
+  reload_time: 3200
   shot_speed: 2.5
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -195,11 +206,12 @@ HEAVY_TOWER:
 BOILING_OIL:
   name: "Boiling Oil"
   sprite: "assets/sprites/structures/boiling_oil/boiling_oil.webp"
-  damage: 6
+  damage: 4
   range: 1.5
-  reload_time: 2800
+  reload_time: 2400
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/fireball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -207,48 +219,51 @@ BOILING_OIL:
   effects: {burn_duration: 2000, burn_dps: 3}   # burns for 3 dps over 5s
   requirements: [CITY_WALLS]
 
-# ============================================================
-#   RENAISSANCE  (Effort 130.000 – 500.000)
-# ============================================================
-
 CANNON_TOWER:
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 32
+  damage: 21
   range: 2
-  reload_time: 3600
+  reload_time: 3900
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
   costs: {gold: 78000}
-  effects: {}
-  requirements: [CANNON_MANUFACTORY, BALLISTICS]
+  effects: {splash_radius: 0.4}
+  requirements: [CANNON_MANUFACTORY]
+
+# ============================================================
+#   RENAISSANCE  (Effort 130.000 – 500.000)
+# ============================================================
 
 RIFLE_TOWER:
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
-  damage: 19
+  damage: 16
   range: 1.5
-  reload_time: 1700
+  reload_time: 1300
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
   costs: {gold: 85000}
   effects: {}
-  requirements: [GUNSMITH]
+  requirements: [GUNSMITH, CONSTITUTION]
 
 COLD_TOWER:
   name: "Cold Tower"
   sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
-  damage: 10
+  damage: 5
   range: 2
   reload_time: 900
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/iceball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -264,11 +279,12 @@ ICE_TOWER:
   reload_time: 2400
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/iceball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
   costs: {gold: 64000}
-  effects: {slow_duration: 3500, slow_ratio: 0.1}   # slows to 30% speed for 4s
+  effects: {slow_duration: 3500, slow_ratio: 0.2}   # slows to 30% speed for 4s
   requirements: [CHEMISTRY, PHYSICS]
 
 # ============================================================
@@ -283,6 +299,7 @@ FLAME_THROWER:
   reload_time: 2300
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/fireball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -294,10 +311,11 @@ SHOCK_TOWER:
   name: "Shock Tower"
   sprite: "assets/sprites/structures/shock_tower/shock_tower.webp"
   damage: 15
-  range: 2
+  range: 1.5
   reload_time: 1800
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  projectile_y_offset: 0.2
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -305,19 +323,36 @@ SHOCK_TOWER:
   effects: {slow_duration: 1500, slow_ratio: 0.4}
   requirements: [ELECTRIC_FENCE]
 
+GATLING_TOWER:
+  name: "Gatling Tower"
+  sprite: "assets/sprites/structures/gatling_tower/gatling_tower.webp"
+  damage: 11
+  range: 1.5
+  reload_time: 800
+  shot_speed: 6
+  shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
+  upgrade_costs: {}
+  max_level: 1
+  select: first
+  costs: {gold: 125000}
+  effects: {}
+  requirements: [FACTORY, STEAM_ENGINE]
+
 PARALYZNG_TOWER:
   name: "Paralyzing Tower"
   sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
   damage: 11
-  range: 2
+  range: 1.5
   reload_time: 2400
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  projectile_y_offset: 0.2
   upgrade_costs: {}
   max_level: 1
   select: first
   costs: {gold: 100000}
-  effects: {slow_duration: 1200, slow_ratio: 0}   # stun: stops completely for 3s
+  effects: {slow_duration: 1200, slow_ratio: 0.05}   # stun: stops completely for 3s
   requirements: [HOSPITAL]
 
 # ============================================================
@@ -332,6 +367,7 @@ NAPALM_THROWER:
   reload_time: 2000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/fireball.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -347,6 +383,7 @@ MG_TOWER:
   reload_time: 700
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.1
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -362,6 +399,7 @@ RAPID_FIRE_MG_BUNKER:
   reload_time: 500
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -377,6 +415,7 @@ RADAR_TOWER:
   reload_time: 700
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -392,6 +431,7 @@ ANTI_AIR_TOWER:
   reload_time: 1400
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -407,6 +447,7 @@ LASER_TOWER:
   reload_time: 1500
   shot_speed: 10
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -426,6 +467,7 @@ SNIPER_TOWER:
   reload_time: 2700
   shot_speed: 10
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
@@ -441,6 +483,7 @@ ROCKET_TOWER:
   reload_time: 3500
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
+  projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first

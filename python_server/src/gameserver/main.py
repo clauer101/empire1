@@ -104,8 +104,8 @@ class Services:
 # ===================================================================
 
 
-def _parse_knowledge_era_groups(config_dir: str) -> dict[str, list[str]]:
-    """Parse knowledge.yaml section comments to build era → [iid] mapping."""
+def _parse_era_groups_from_yaml(yaml_path: Path) -> dict[str, list[str]]:
+    """Parse a YAML file's section comments to build era → [iid] mapping."""
     import re
     era_order = [
         "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
@@ -115,9 +115,8 @@ def _parse_knowledge_era_groups(config_dir: str) -> dict[str, list[str]]:
     item_re = re.compile(r'^([A-Z][A-Z0-9_]+):')
     result: dict[str, list[str]] = {k: [] for k in era_order}
     current = era_order[0]
-    knowledge_path = Path(config_dir) / "knowledge.yaml"
     try:
-        for line in knowledge_path.read_text(encoding="utf-8").splitlines():
+        for line in yaml_path.read_text(encoding="utf-8").splitlines():
             for key, pat in patterns:
                 if pat.search(line):
                     current = key
@@ -126,8 +125,12 @@ def _parse_knowledge_era_groups(config_dir: str) -> dict[str, list[str]]:
             if m:
                 result[current].append(m.group(1))
     except OSError:
-        log.warning("Could not parse knowledge.yaml for era groups: %s", knowledge_path)
+        log.warning("Could not parse %s for era groups", yaml_path)
     return result
+
+
+def _parse_knowledge_era_groups(config_dir: str) -> dict[str, list[str]]:
+    return _parse_era_groups_from_yaml(Path(config_dir) / "knowledge.yaml")
 
 
 def load_configuration(

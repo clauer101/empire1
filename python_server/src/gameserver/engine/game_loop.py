@@ -141,4 +141,8 @@ class GameLoop:
         # 4. Update statistics
         # TODO: self._stats.update()
 
-        # 5. Scripted AI attacks are triggered via ItemCompleted events, not polled.
+        # 5. Barbarian periodic attacks (Bernoulli trial every 60 s per player)
+        if self._ai is not None:
+            self._ai.tick_barbarians(dt, self._empires, self._attacks)
+
+        # 6. Scripted AI attacks are triggered via ItemCompleted events, not polled.

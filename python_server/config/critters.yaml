@@ -247,6 +247,23 @@ LARGE_CART:
   animation: assets/sprites/critters/large_cart
   requirements: [BOOT_CAMP, IRON]
 
+THE_SWORDMASTER:
+  name: "The Swordmaster"
+  speed: 0.4
+  health: 121
+  value: 100
+  damage: 7
+  armour: 3
+  slots: 999
+  time_between: 2000
+  is_boss: true
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  scale: 1
+  animation: assets/sprites/critters/the_swordmaster
+  requirements: [CASTLE]
+
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
 # ============================================================
@@ -266,17 +283,17 @@ CRUSADER:
   spawn_on_death: null
   scale: 1
   animation: assets/sprites/critters/crusader
-  requirements: [HOLY_WAR, FANATISM]
+  requirements: [HOLY_WAR]
 
 KNIGHT:
   name: "Knight"
   speed: 0.4
-  health: 32
+  health: 44
   value: 44
   damage: 1
   armour: 6
   slots: 2
-  time_between: 1500
+  time_between: 1900
   is_boss: false
   capture: {}
   bonus: {}
@@ -305,7 +322,7 @@ SAMURAI:
 SIEGE_RAM:
   name: "Siege Ram"
   speed: 0.2
-  health: 24
+  health: 22
   value: 230
   damage: 3
   armour: 4
@@ -319,16 +336,65 @@ SIEGE_RAM:
   animation: assets/sprites/critters/siege_ram
   requirements: [MECHANICS, THE_KINGS_LAIR]
 
+CONDOTTERI:
+  name: "Condotteri"
+  speed: 0.6
+  health: 58
+  value: 78
+  damage: 2
+  armour: 2.5
+  slots: 1
+  time_between: 1000
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  scale: 2.0
+  animation: assets/sprites/critters/condotteri
+  requirements: [STEEL, FANATISM]
 
+HANDGUNNER:
+  name: "Handgunner"
+  speed: 0.7
+  health: 54
+  value: 71
+  damage: 1
+  armour: 4.5
+  slots: 1
+  time_between: 1200
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  scale: 0.8
+  animation: assets/sprites/critters/handgunner
+  requirements: [COMMAND_CHAIN, GUNPOWDER]
 
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
 # ============================================================
 
+THE_KING:
+  name: "The King"
+  speed: 0.4
+  health: 580
+  value: 1000
+  damage: 10
+  armour: 5
+  slots: 999
+  time_between: 2000
+  is_boss: true
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  scale: 1
+  animation: assets/sprites/critters/the_king
+  requirements: [PARLIAMENT]
+
 NINJA:
   name: "Ninja"
   speed: 0.95
-  health: 38
+  health: 52
   value: 68
   damage: 1
   armour: 2.5
@@ -345,10 +411,10 @@ NINJA:
 MUSKETEER:
   name: "Musketeer"
   speed: 0.6
-  health: 54
+  health: 86
   value: 71
   damage: 1
-  armour: 4.5
+  armour: 6
   slots: 1
   time_between: 1200
   is_boss: false
@@ -357,15 +423,15 @@ MUSKETEER:
   spawn_on_death: null
   scale: 0.8
   animation: assets/sprites/critters/musketeer
-  requirements: [GUNPOWDER, GUNSMITH]
+  requirements: [CONSTITUTION, GUNSMITH]
 
 DRAGOONER:
   name: "Dragoon"
-  speed: 0.7
-  health: 58
+  speed: 0.75
+  health: 97
   value: 78
   damage: 2
-  armour: 2.5
+  armour: 3.5
   slots: 1
   time_between: 1000
   is_boss: false
@@ -374,15 +440,15 @@ DRAGOONER:
   spawn_on_death: null
   scale: 2.0
   animation: assets/sprites/critters/dragooner
-  requirements: [GUNPOWDER, HORSEBACK_RIDING, GUNSMITH]
+  requirements: [STRATEGIC_WARFARE,  GUNSMITH]
 
 CARGO:
   name: "Cargo"
-  speed: 0.9
-  health: 35
+  speed: 0.8
+  health: 49
   value: 334
   damage: 4
-  armour: 2
+  armour: 2.5
   slots: 4
   time_between: 2000
   is_boss: false
@@ -427,13 +493,13 @@ MOTORBIKE:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 2.5
   animation: assets/sprites/critters/motorbike
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 SMALL_TANK:
   name: "Small Tank"
-  speed: 0.4
+  speed: 0.3
   health: 112
   value: 154
   damage: 2
@@ -444,26 +510,9 @@ SMALL_TANK:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.2
   animation: assets/sprites/critters/small_tank
-  requirements: [KNO_ARMOUR, FACTORY]
-
-SIEGE_TANK:
-  name: "Siege Tank"
-  speed: 0.3
-  health: 139
-  value: 157
-  damage: 2
-  armour: 14
-  slots: 2
-  time_between: 1100
-  is_boss: false
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  scale: 1
-  animation: assets/sprites/critters/siege_tank
-  requirements: [KNO_ARMOUR, PARADE_GROUND]
+  requirements: [COMBUSTION_ENGINE, FACTORY]
 
 TRANSPORTER:
   name: "Transporter"
@@ -472,19 +521,36 @@ TRANSPORTER:
   value: 347
   damage: 5
   armour: 10
-  slots: 4
+  slots: 10
   time_between: 1900
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: {MOTORBIKE: 2}
-  scale: 1
+  spawn_on_death: {SOLDIER: 8}
+  scale: 1.2
   animation: assets/sprites/critters/transporter
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 # ============================================================
 #   MODERNE  (Effort 2.000.000 – 5.300.000)
 # ============================================================
+
+SIEGE_TANK:
+  name: "Siege Tank"
+  speed: 0.2
+  health: 169
+  value: 457
+  damage: 2
+  armour: 14
+  slots: 2
+  time_between: 1100
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  scale: 1.3
+  animation: assets/sprites/critters/siege_tank
+  requirements: [KNO_ARMOUR, COMPUTER_TECHNOLOGY]
 
 SPECOPS:
   name: "Special Ops"
@@ -501,15 +567,15 @@ SPECOPS:
   spawn_on_death: null
   scale: 1
   animation: assets/sprites/critters/specops
-  requirements: [SPECIAL_FORCES, ELITE_ACADEMY, CYBER_COMMAND]
+  requirements: [SPECIAL_FORCES, ELITE_ACADEMY]
 
 HELI:
   name: "Helicopter"
-  speed: 1.3
+  speed: 1.2
   health: 75
   value: 312
   damage: 1
-  armour: 6
+  armour: 5
   slots: 1
   time_between: 900
   is_boss: false
@@ -519,6 +585,23 @@ HELI:
   scale: 1
   animation: assets/sprites/critters/heli
   requirements: [AVIATION, HANGAR]
+
+THE_GENERAL:
+  name: "The General"
+  speed: 0.4
+  health: 1270
+  value: 5000
+  damage: 18
+  armour: 15
+  slots: 999
+  time_between: 2000
+  is_boss: true
+  capture: {}
+  bonus: {}
+  spawn_on_death: null
+  scale: 1
+  animation: assets/sprites/critters/the_general
+  requirements: [ELITE_ACADEMY]
 
 # ============================================================
 #   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
@@ -539,59 +622,4 @@ MECH_WARRIOR:
   spawn_on_death: {SPECOPS: 2}
   scale: 1
   animation: assets/sprites/critters/mech_warrior
-  requirements: [MECH_WARRIOR_LAB, COMPUTER_TECHNOLOGY, FIBER_COMPOSITE]
-
-# ============================================================
-#   BOSSES / HELDEN
-# ============================================================
-
-THE_SWORDMASTER:
-  name: "The Swordmaster"
-  speed: 0.4
-  health: 50
-  value: 100
-  damage: 10
-  armour: 3
-  slots: 999
-  time_between: 2000
-  is_boss: true
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  scale: 1
-  animation: assets/sprites/critters/the_swordmaster
-  requirements: [CASTLE]
-
-THE_KING:
-  name: "The King"
-  speed: 0.4
-  health: 80
-  value: 1000
-  damage: 20
-  armour: 6
-  slots: 999
-  time_between: 2000
-  is_boss: true
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  scale: 1
-  animation: assets/sprites/critters/the_king
-  requirements: [PARLIAMENT]
-
-THE_GENERAL:
-  name: "The General"
-  speed: 0.4
-  health: 170
-  value: 5000
-  damage: 50
-  armour: 30
-  slots: 999
-  time_between: 2000
-  is_boss: true
-  capture: {}
-  bonus: {}
-  spawn_on_death: null
-  scale: 1
-  animation: assets/sprites/critters/the_general
-  requirements: [ELITE_ACADEMY]
+  requirements: [MECH_WARRIOR_LAB]

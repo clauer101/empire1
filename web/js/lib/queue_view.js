@@ -152,15 +152,17 @@ export function createQueueView(cfg) {
       const pct = fullEffort > 0 ? Math.max(0, Math.min(100, (1 - remaining / fullEffort) * 100)) : 0;
       const wasStarted = stored != null && stored < fullEffort;
 
+      const imgUrl = info.image ? `/${info.image}/${info.image.split('/').pop()}.webp` : '';
       return `<tr>
-        <td class="col-name" data-label="Name">
-          <div class="item-header" style="display:flex; align-items:flex-start; justify-content:space-between;">
-            <div style="flex:1;">
-              <div><strong>${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong></div>
+        <td class="col-name" data-label="Name" style="padding:0;">
+          <div class="item-header" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;overflow:hidden;height:100%;padding:8px 12px;box-sizing:border-box;">
+            ${imgUrl ? `<div class="item-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;filter:blur(0.2px);transform:scale(1.02);" data-bg="${imgUrl}"></div><div class="item-bg-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;"></div>` : ''}
+            <div style="flex:1;position:relative;">
+              <div><strong style="font-size:1.1em;">${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong></div>
               <div class="${cfg.msgClass}"></div>
-              <div class="item-description" style="font-size:0.9em; color:#666; margin-top:4px;">${info.description || '—'}</div>
+              <div class="item-description" style="font-size:0.9em; color:#aaa; margin-top:4px;">${info.description || '—'}</div>
             </div>
-            <div style="margin-left:12px;">
+            <div style="margin-left:12px;position:relative;">
               ${status === 'available'
                 ? `<button class="btn-sm ${cfg.btnClass}" data-iid="${iid}">${cfg.actionLabel}</button>`
                 : `<span class="badge badge--${status}">${badgeText}</span>`}
@@ -190,6 +192,17 @@ export function createQueueView(cfg) {
         <tbody>${rows}</tbody>
       </table>
     `;
+
+    el.querySelectorAll('.item-bg[data-bg]').forEach(bgDiv => {
+      const url = bgDiv.dataset.bg;
+      const img = new Image();
+      img.onload = () => {
+        bgDiv.style.backgroundImage = `url('${url}')`;
+        const overlay = bgDiv.nextElementSibling;
+        if (overlay && overlay.classList.contains('item-bg-overlay')) overlay.style.display = '';
+      };
+      img.src = url;
+    });
 
     el.querySelector(`#${cfg.toggleId}`).addEventListener('change', (e) => {
       hideCompleted = e.target.checked;

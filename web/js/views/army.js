@@ -14,6 +14,7 @@ let st;
 let container;
 let _unsub = [];
 let _availableCritters = [];
+let _critterSprites = {};  // iid → {sprite, animation} for all critters incl. locked
 let _empiresCache = [];
 
 function init(el, _api, _state) {
@@ -408,6 +409,7 @@ function _openCritterOverlay(aid, waveIdx, currentIid) {
               ${c.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${c.armour}</span>` : ''}
               <span class="cpt-stat cpt-spd" title="Speed">⚡ ${(c.speed || 0).toFixed(2)}</span>
               ${c.slots > 1 ? `<span class="cpt-stat cpt-slots" title="Slot cost">${c.slots} Slots</span>` : ''}
+              ${c.time_between_ms ? `<span class="cpt-stat cpt-interval" title="Time between spawns">⏱ ${(c.time_between_ms / 1000).toFixed(1)}s</span>` : ''}
             </div>
           </button>`;
       }).join('')}
@@ -641,8 +643,9 @@ function renderArmies(data) {
     if (inp.value) savedTargets[inp.dataset.aid] = inp.value;
   });
 
-  // Store available critters
+  // Store available critters and sprite lookup for all critters (incl. locked)
   _availableCritters = data.available_critters || [];
+  _critterSprites = data.critter_sprites || {};
 
   const armies = data.armies || [];
   if (armies.length === 0) {
@@ -680,18 +683,20 @@ function renderArmies(data) {
             const nextSlotPrice = w.next_slot_price || 0;
             const canAffordSlot = currentGold >= nextSlotPrice;
             const selectedCritter = _availableCritters.find(c => c.iid === w.iid);
+            const spriteInfo = _critterSprites[w.iid] || {};
             const critterSlotCost = selectedCritter?.slots || 1;
             const numCritters = critterCountInWave(w.slots || 0, critterSlotCost);
+            const hasSprite = w.iid && (spriteInfo.sprite || spriteInfo.animation);
             return `
             <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
               <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}">
                 <span class="wave-tile__edit-hint">✎</span>
-                ${selectedCritter
-                  ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${selectedCritter.iid}" data-sprite="${selectedCritter.sprite || ''}" data-animation="${selectedCritter.animation || ''}" width="72" height="72"
+                ${hasSprite
+                  ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
                         style="image-rendering:pixelated;"></canvas>`
                   : `<div class="wave-tile__no-critter">＋</div>`
                 }
-                <div class="wave-tile__count">${selectedCritter ? numCritters : ''}</div>
+                <div class="wave-tile__count">${hasSprite ? numCritters : ''}</div>
               </button>
               <div class="wave-tile__footer">
                 <span class="wave-tile__slots">${w.slots || 0} sl</span>
@@ -700,7 +705,8 @@ function renderArmies(data) {
                   ${canAffordSlot ? '' : 'style="opacity:0.5;cursor:not-allowed;"'}
                   data-price="${Math.round(nextSlotPrice)}"
                   data-can-afford="${canAffordSlot}">
-                  + <span style="color:${canAffordSlot ? 'var(--accent)' : 'var(--danger)'};">💰${Math.round(nextSlotPrice)}</span>
+                  <span>+</span>
+                  <span style="color:${canAffordSlot ? 'var(--accent)' : 'var(--danger)'}; font-size:9px; font-weight:500; white-space:normal; text-align:center; word-break:break-all;">💰${Math.round(nextSlotPrice)}</span>
                 </button>
               </div>
             </div>

@@ -79,6 +79,8 @@
 
     .btn-danger  { background: var(--danger);  color: #fff; }
     .btn-success { background: var(--success); color: #0d0d14; }
+    .btn-warning { background: var(--warning); color: #0d0d14; }
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
     /* Status line */
     #status {
@@ -135,9 +137,14 @@
       Speichert den Game-State und startet den Gameserver-Prozess neu.<br>
       Alle verbundenen Clients verlieren kurzzeitig die Verbindung.
     </p>
-    <button class="btn-danger" id="btn-restart" onclick="doRestart()">
-      Jetzt neu starten
-    </button>
+    <div class="btn-row">
+      <button class="btn-danger" id="btn-restart" onclick="doRestart()">
+        Gameserver neu starten
+      </button>
+      <button class="btn-warning" id="btn-restart-both" onclick="doRestartBoth()">
+        Beide neu starten
+      </button>
+    </div>
   </div>
 
   <div id="status">
@@ -174,6 +181,15 @@
       document.getElementById('status-text').textContent = msg;
     }
 
+    function disableAll() {
+      document.getElementById('btn-restart').disabled = true;
+      document.getElementById('btn-restart-both').disabled = true;
+    }
+    function enableAll() {
+      document.getElementById('btn-restart').disabled = false;
+      document.getElementById('btn-restart-both').disabled = false;
+    }
+
     async function pollUntilBack(maxMs = 30000) {
       const start = Date.now();
       while (Date.now() - start < maxMs) {
@@ -187,7 +203,7 @@
             const elapsed = ((Date.now() - start) / 1000).toFixed(1);
             log(`Server wieder erreichbar nach ${elapsed}s`, 'ok');
             setStatus('Server läuft wieder', 'ok');
-            document.getElementById('btn-restart').disabled = false;
+            enableAll();
             return;
           }
         } catch {
@@ -196,12 +212,46 @@
       }
       log('Timeout: Server nicht erreichbar nach 30s', 'err');
       setStatus('Server nicht erreichbar — manuell prüfen', 'err');
-      document.getElementById('btn-restart').disabled = false;
+      enableAll();
+    }
+
+    async function doRestartBoth() {
+      disableAll();
+      setStatus('Beide Server werden neu gestartet …', 'warn');
+      log('Sende Restart-Request an Gameserver …');
+
+      // 1) Gameserver restart
+      try {
+        const r = await fetch(API + '/api/admin/restart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        });
+        const data = await r.json();
+        if (data.ok) {
+          log(`Gameserver: ${data.message}`, 'ok');
+        } else {
+          log(`Gameserver-Fehler: ${data.detail || JSON.stringify(data)}`, 'err');
+        }
+      } catch {
+        log('Gameserver-Verbindung getrennt (startet neu) …', 'ok');
+      }
+
+      // 2) Web server restart (brief delay so response can be sent)
+      log('Sende Restart-Request an Webserver …');
+      try {
+        await fetch('/api/admin/restart-web', { method: 'POST' });
+      } catch {
+        // expected — web server drops connection
+      }
+      log('Webserver-Verbindung getrennt (startet neu) …', 'ok');
+
+      setStatus('Warte auf Neustart beider Server …', 'warn');
+      await new Promise(r => setTimeout(r, 3000));
+      await pollUntilBack();
     }
 
     async function doRestart() {
-      const btn = document.getElementById('btn-restart');
-      btn.disabled = true;
+      disableAll();
       setStatus('Restart-Befehl wird gesendet …', 'warn');
       log('Sende Restart-Request …');
 
@@ -221,7 +271,7 @@
         } else {
           log(`Fehler: ${data.detail || JSON.stringify(data)}`, 'err');
           setStatus('Restart fehlgeschlagen', 'err');
-          btn.disabled = false;
+          enableAll();
         }
       } catch (e) {
         // Connection dropped = server is restarting — poll for recovery

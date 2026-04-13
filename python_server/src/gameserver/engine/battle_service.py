@@ -388,16 +388,22 @@ class BattleService:
 
     def _step_towers(self, battle: BattleState, dt_ms: float) -> None:
         """Towers acquire targets and fire shots."""
+        defender_fx: dict = battle.defender.effects if battle.defender else {}
+        damage_mult = 1.0 + defender_fx.get("damage_modifier", 0.0)
+        range_mult  = 1.0 + defender_fx.get("range_modifier",  0.0)
+        reload_mult = 1.0 + defender_fx.get("reload_modifier", 0.0)
+
         for sid, structure in battle.structures.items():
-            # Decrement reload timer
+            # Decrement reload timer (reload_modifier speeds up reload)
             if structure.reload_remaining_ms > 0:
-                structure.reload_remaining_ms -= dt_ms
-            
+                structure.reload_remaining_ms -= dt_ms * (1.0 + reload_mult - 1.0)
+
             # Check if tower is ready to fire
             if structure.reload_remaining_ms <= 0:
-                # Find target: most-advanced critter in range
-                target = self._find_target(battle, structure)
-                
+                effective_range = structure.range * range_mult
+                # Find target: most-advanced critter in effective range
+                target = self._find_target(battle, structure, range_override=effective_range)
+
                 if target:
                     # Flight distance using interpolated critter position
                     cq, cr = critter_hex_pos(target.path, target.path_progress)
@@ -405,10 +411,10 @@ class BattleService:
                         float(structure.position.q), float(structure.position.r), cq, cr
                     )
                     flight_time_ms = (distance / structure.shot_speed) * 1000.0 if structure.shot_speed > 0 else 0.0
-                    
-                    # Create shot
+
+                    # Create shot (damage scaled by damage_modifier)
                     shot = Shot(
-                        damage=structure.damage,
+                        damage=structure.damage * damage_mult,
                         target_cid=target.cid,
                         source_sid=sid,
                         effects=dict(structure.effects),
@@ -427,17 +433,23 @@ class BattleService:
                     log.debug("[SHOT] Tower sid=%d fired at critter cid=%d (distance=%.1f, flight_time=%.0fms)",
                              sid, target.cid, distance, flight_time_ms)
     
-    def _find_target(self, battle: BattleState, structure: Structure) -> Critter | None:
+    def _find_target(self, battle: BattleState, structure: Structure,
+                     range_override: float | None = None) -> Critter | None:
         """Find a critter within range using the structure's targeting strategy.
 
         Strategies:
           first  — most-advanced critter (highest path_progress, closest to finish)
           last   — least-advanced critter (lowest path_progress, furthest from spawn)
           random — random critter among those in range
+
+        Args:
+            range_override: If set, use this range instead of structure.range
+                            (used when range_modifier effect is active).
         """
         in_range: list[Critter] = []
 
         tq, tr = float(structure.position.q), float(structure.position.r)
+        effective_range = range_override if range_override is not None else structure.range
 
         for critter in battle.critters.values():
             if not critter.path or critter.reached_goal:
@@ -448,7 +460,7 @@ class BattleService:
 
             # Check if in range (continuous hex-world distance)
             distance = hex_world_distance(tq, tr, cq, cr)
-            if distance <= structure.range:
+            if distance <= effective_range:
                 in_range.append(critter)
 
         if not in_range:
@@ -496,18 +508,33 @@ class BattleService:
         """Get interval between waves (wave_start_ms) for a wave."""
         return 10000.0  # Fallback default
 
-    def _make_critter_from_item(self, iid: str, path: list, path_progress: float = 0.0) -> Critter:
-        """Create a Critter from item config, placing it at path_progress."""
+    def _make_critter_from_item(self, iid: str, path: list, path_progress: float = 0.0,
+                                attacker_effects: "dict | None" = None) -> Critter:
+        """Create a Critter from item config, placing it at path_progress.
+
+        Args:
+            attacker_effects: Empire effects dict of the attacker. When provided,
+                speed_modifier, health_modifier, and armour_modifier are applied.
+        """
         item = self._items_by_iid.get(iid)
+        health = getattr(item, 'health', 1.0) if item else 1.0
+        speed  = getattr(item, 'speed', 0.15) if item else 0.15
+        armour = getattr(item, 'armour', 0.0) if item else 0.0
+
+        if attacker_effects:
+            health *= (1.0 + attacker_effects.get("health_modifier", 0.0))
+            speed  *= (1.0 + attacker_effects.get("speed_modifier",  0.0))
+            armour *= (1.0 + attacker_effects.get("armour_modifier", 0.0))
+
         return Critter(
             cid=_new_cid(),
             iid=iid,
             path=path,
             path_progress=path_progress,
-            health=getattr(item, 'health', 1.0) if item else 1.0,
-            max_health=getattr(item, 'health', 1.0) if item else 1.0,
-            speed=getattr(item, 'speed', 0.15) if item else 0.15,
-            armour=getattr(item, 'armour', 0.0) if item else 0.0,
+            health=health,
+            max_health=health,
+            speed=speed,
+            armour=armour,
             scale=getattr(item, 'scale', 1.0) if item else 1.0,
             value=getattr(item, 'value', getattr(item, 'health', 1.0) if item else 1.0) if item else 1.0,
             damage=getattr(item, 'critter_damage', 1.0) if item else 1.0,
@@ -575,13 +602,21 @@ class BattleService:
             log.warning("[_step_armies] Battle %d has no critter path", battle.bid)
             return
         
+        attacker_effects = battle.attacker.effects if battle.attacker else None
+
         # Step all waves up to and including the next wave
         for wave in battle.army.waves:
-            new_critters = self._step_wave(wave, dt_ms)            
-            
+            new_critters = self._step_wave(wave, dt_ms)
+
             for critter in new_critters:
                 # Set the critter's path from the precomputed battle path
                 critter.path = battle.critter_path
+                # Re-apply attacker modifiers (spawn sets base stats; modifiers scale them)
+                if attacker_effects:
+                    critter.health     *= (1.0 + attacker_effects.get("health_modifier", 0.0))
+                    critter.max_health  = critter.health
+                    critter.speed      *= (1.0 + attacker_effects.get("speed_modifier",  0.0))
+                    critter.armour     *= (1.0 + attacker_effects.get("armour_modifier", 0.0))
                 
                 battle.critters[critter.cid] = critter
                 battle.critters_spawned += 1
@@ -743,6 +778,7 @@ class BattleService:
                 "target_cid": shot.target_cid,
                 "shot_type": _shot_visual_type(shot.effects),
                 "shot_sprite": src_struct.shot_sprite if src_struct else "",
+                "projectile_y_offset": src_struct.projectile_y_offset if src_struct else 0.0,
                 "path_progress": shot.path_progress,
                 "origin_q": shot.origin.q if shot.origin else 0,
                 "origin_r": shot.origin.r if shot.origin else 0,

@@ -453,6 +453,9 @@ def create_app(services: "Services") -> FastAPI:
             services.server.connected_uids if services.server else []
         )
 
+        from gameserver.engine.power_service import compute_power
+        up = services.empire_service._upgrades if services.empire_service else None
+
         empires_out = []
         for empire in services.empire_service.all_empires.values():
             if empire.uid == 0:
@@ -483,6 +486,8 @@ def create_app(services: "Services") -> FastAPI:
                 except (ValueError, AttributeError):
                     pass
 
+            power = compute_power(empire, up).to_dict() if up else {"economy": 0, "attack": 0, "defense": 0, "total": 0}
+
             empires_out.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -500,14 +505,30 @@ def create_app(services: "Services") -> FastAPI:
                 "knowledge_wip": knowledge_wip,
                 "armies": armies_out,
                 "hex_tiles": hex_tiles,
+                "power": power,
             })
         empires_out.sort(key=lambda e: e["resources"].get("culture", 0), reverse=True)
+
+        # Build a lookup: (uid, aid) → army
+        all_armies: dict[tuple[int, int], Any] = {}
+        for emp in services.empire_service.all_empires.values():
+            for army in emp.armies:
+                all_armies[(emp.uid, army.aid)] = army
 
         attacks_out = []
         for atk in services.attack_service.get_all_attacks():
             attacker_name = uid_to_user.get(atk.attacker_uid, f"uid:{atk.attacker_uid}")
             if atk.attacker_uid == 0:
                 attacker_name = "AI"
+            army = all_armies.get((atk.attacker_uid, atk.army_aid))
+            waves_out = []
+            army_name = ""
+            if army:
+                army_name = army.name or ""
+                waves_out = [
+                    {"iid": w.iid, "slots": w.slots}
+                    for w in army.waves
+                ]
             attacks_out.append({
                 "id": atk.attack_id,
                 "attacker_uid": atk.attacker_uid,
@@ -518,6 +539,8 @@ def create_app(services: "Services") -> FastAPI:
                 "total_eta_s": round(atk.total_eta_seconds, 0),
                 "siege_s": round(atk.siege_remaining_seconds, 0),
                 "total_siege_s": round(atk.total_siege_seconds, 0),
+                "army_name": army_name,
+                "waves": waves_out,
             })
 
         return {

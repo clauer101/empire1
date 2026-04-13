@@ -272,11 +272,12 @@
           <th>Buildings</th>
           <th>Knowledge</th>
           <th>Armies</th>
+          <th>⚡ Total</th>
           <th>Queue</th>
         </tr>
       </thead>
       <tbody id="empires-body">
-        <tr><td colspan="12" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
+        <tr><td colspan="13" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -286,11 +287,14 @@
     <div class="card-header">
       Active Attacks
       <span class="badge" id="atk-count">0</span>
+      <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">click row to expand</span>
     </div>
     <table id="atk-table">
       <thead>
         <tr>
+          <th></th>
           <th>#</th>
+          <th>Army</th>
           <th>Attacker</th>
           <th>Defender</th>
           <th>Phase</th>
@@ -307,6 +311,13 @@
 
 <script>
 const GS_BASE = `${location.protocol}//${location.hostname}:8080`;
+
+function fmtPow(v) {
+  if (v === undefined || v === null) return '—';
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
+  if (v >= 1_000)     return (v / 1_000).toFixed(1) + 'k';
+  return Math.round(v).toString();
+}
 
 function fmtSec(s) {
   if (s === undefined || s === null) return '—';
@@ -369,7 +380,21 @@ function buildDetailHTML(e) {
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
     : e.artefacts.map(a => `<span class="chip art">${a}</span>`).join('');
 
+  const pw = e.power || {};
+  const powerHTML = `
+    <div class="detail-row"><span class="detail-key" style="color:#66bb6a">⬆ Economy</span><span class="detail-val">${fmtPow(pw.economy)}</span></div>
+    <div class="detail-row"><span class="detail-key" style="color:#ef5350">⚔ Attack</span><span class="detail-val">${fmtPow(pw.attack)}</span></div>
+    <div class="detail-row"><span class="detail-key" style="color:#4fc3f7">🛡 Defense</span><span class="detail-val">${fmtPow(pw.defense)}</span></div>
+    <div class="detail-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px">
+      <span class="detail-key" style="color:var(--warning);font-weight:700">⚡ Total</span>
+      <span class="detail-val" style="color:var(--warning);font-weight:700">${fmtPow(pw.total)}</span>
+    </div>`;
+
   return `<div class="detail-inner">
+    <div class="detail-section">
+      <div class="detail-title">Power</div>
+      ${powerHTML}
+    </div>
     <div class="detail-section">
       <div class="detail-title">Resources</div>
       ${resRows}
@@ -409,7 +434,7 @@ function renderEmpires(empires) {
   const tbody = document.getElementById('empires-body');
 
   if (!empires.length) {
-    tbody.innerHTML = '<tr><td colspan="12" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
     return;
   }
 
@@ -453,6 +478,12 @@ function renderEmpires(empires) {
       <td>${e.buildings_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.buildings_done.length + Object.keys(e.buildings_wip).length}</span></td>
       <td>${e.knowledge_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.knowledge_done.length + Object.keys(e.knowledge_wip).length}</span></td>
       <td>${e.armies.length}</td>
+      <td style="font-family:var(--mono);font-size:11px">
+        <span title="Economy"  style="color:#66bb6a">⬆${fmtPow(e.power?.economy)}</span>
+        <span title="Attack"   style="color:#ef5350;margin-left:4px">⚔${fmtPow(e.power?.attack)}</span>
+        <span title="Defense"  style="color:#4fc3f7;margin-left:4px">🛡${fmtPow(e.power?.defense)}</span>
+        <span title="Total"    style="color:var(--warning);margin-left:4px;font-weight:700">=${fmtPow(e.power?.total)}</span>
+      </td>
       <td style="color:var(--text-dim);font-size:11px">${queueStr}</td>
     `;
 
@@ -460,7 +491,7 @@ function renderEmpires(empires) {
     detailRow.className = `empire-detail${isOpen ? ' open' : ''}`;
     detailRow.dataset.uid = e.uid;
     const detailTd = document.createElement('td');
-    detailTd.colSpan = 12;
+    detailTd.colSpan = 13;
     detailTd.innerHTML = buildDetailHTML(e);
     detailRow.appendChild(detailTd);
 
@@ -490,26 +521,68 @@ function renderAttacks(attacks) {
   }
   noAtk.style.display = 'none';
 
-  tbody.innerHTML = attacks.map(a => {
+  // Preserve open rows across refreshes
+  const openIds = new Set(
+    [...tbody.querySelectorAll('.atk-detail.open')].map(r => parseInt(r.dataset.id))
+  );
+
+  tbody.innerHTML = '';
+
+  attacks.forEach(a => {
     const travelPct  = a.phase === 'travelling' ? pct(a.total_eta_s - a.eta_s, a.total_eta_s) : 100;
     const siegePct   = a.phase === 'in_siege'   ? pct(a.total_siege_s - a.siege_s, a.total_siege_s) : (a.phase === 'in_battle' || a.phase === 'finished' ? 100 : 0);
     const travelBar  = `<span class="prog-outer"><span class="prog-inner prog-travel" style="width:${travelPct}%"></span></span>`;
     const siegeBar   = a.siege_s > 0
       ? `<span class="prog-outer"><span class="prog-inner prog-siege" style="width:${siegePct}%"></span></span>`
       : '';
-
     const isAI = a.attacker_uid === 0;
-    const attackerStyle = isAI ? 'color:var(--danger)' : '';
+    const isOpen = openIds.has(a.id);
 
-    return `<tr>
+    const mainRow = document.createElement('tr');
+    mainRow.className = 'empire-row';
+    mainRow.dataset.id = a.id;
+    mainRow.innerHTML = `
+      <td><span class="expand-arrow ${isOpen ? 'open-arrow' : ''}">▶</span></td>
       <td style="color:var(--text-dim)">${a.id}</td>
-      <td style="${attackerStyle}">${a.attacker}</td>
+      <td style="color:${isAI ? 'var(--danger)' : 'var(--accent)'};font-size:12px">${a.army_name || '—'}</td>
+      <td style="${isAI ? 'color:var(--danger)' : ''}">${a.attacker}</td>
       <td>${a.defender}</td>
       <td><span class="phase ${a.phase}">${a.phase.replace('_', ' ')}</span></td>
       <td>${travelBar} <span style="color:var(--text-dim);font-size:11px">${fmtSec(a.eta_s)}</span></td>
       <td>${siegeBar} <span style="color:var(--text-dim);font-size:11px">${fmtSec(a.siege_s)}</span></td>
-    </tr>`;
-  }).join('');
+    `;
+
+    // Detail row
+    const waves = a.waves || [];
+    const waveRows = waves.map((w, i) =>
+      `<div class="detail-row">
+        <span class="detail-key" style="color:var(--text-dim)">Wave ${i + 1}</span>
+        <span class="detail-val">${w.iid} <span style="color:var(--text-dim)">×${w.slots} slots</span></span>
+      </div>`
+    ).join('');
+
+    const detailRow = document.createElement('tr');
+    detailRow.className = `atk-detail empire-detail${isOpen ? ' open' : ''}`;
+    detailRow.dataset.id = a.id;
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.innerHTML = `<div style="padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap">
+      <div class="detail-section" style="min-width:160px">
+        <div class="detail-title">${a.army_name || 'Army'} — ${waves.length} wave${waves.length !== 1 ? 's' : ''}</div>
+        ${waveRows || '<span style="color:var(--text-dim);font-size:11px">no wave data</span>'}
+      </div>
+    </div>`;
+    detailRow.appendChild(td);
+
+    mainRow.addEventListener('click', () => {
+      const arrow = mainRow.querySelector('.expand-arrow');
+      if (detailRow.classList.toggle('open')) arrow.classList.add('open-arrow');
+      else arrow.classList.remove('open-arrow');
+    });
+
+    tbody.appendChild(mainRow);
+    tbody.appendChild(detailRow);
+  });
 }
 
 // ── Tower era mapping ────────────────────────────────────────────

@@ -23,6 +23,8 @@ let _data = null;
 let _empiresCache = [];
 /** poll interval handle */
 let _pollInterval = null;
+/** expanded battle report message IDs */
+let _openBattleReportIds = new Set();
 
 // ── Init ────────────────────────────────────────────────────────────
 
@@ -37,7 +39,7 @@ function _renderShell() {
   container.innerHTML = `
     <h2 class="battle-title">💬 Chat<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
 
-    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-shrink:0;">
       <button id="tab-chat"   class="tab-btn active-tab">Chat</button>
       <button id="tab-battle" class="tab-btn">Battle Reports</button>
     </div>
@@ -183,13 +185,16 @@ function _render(data) {
 }
 
 function _renderChat(el, globalMsgs, privateMsgs, myUid) {
+  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
   const combined = [
     ...globalMsgs.map(m => ({ ...m, _private: false })),
     ...privateMsgs.map(m => ({ ...m, _private: true })),
-  ].sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
+  ]
+    .filter(m => new Date(m.sent_at).getTime() >= cutoff)
+    .sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
 
   if (!combined.length) {
-    el.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="empty-icon">💬</div><p>No messages yet. Say hi!</p></div>';
+    el.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="empty-icon">💬</div><p>No messages in the last 3 days.</p></div>';
     return;
   }
   el.innerHTML = combined.map(m => {
@@ -223,24 +228,77 @@ function _renderChat(el, globalMsgs, privateMsgs, myUid) {
 
 
 
+function _parseBattleReportSummary(body) {
+  // Body lines: result, separator, opponent line, ...rest
+  const lines = body.split('\n');
+  const result = lines[0] || '';
+  // Find opponent line (starts with ⚔ Attacker or 🛡 Defender or ⚔ or 🛡 after separator)
+  const opponentLine = lines.find((l, i) => i > 0 && /^[⚔🛡]/.test(l.trimStart()) && !l.includes('──'));
+  const opponent = opponentLine ? opponentLine.replace(/^[⚔🛡]\s*\w+:\s*/u, '').trim() : '';
+  return { result, opponent };
+}
+
 function _renderBattleReports(el, messages, myUid) {
+  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  messages = messages.filter(m => new Date(m.sent_at).getTime() >= cutoff);
   if (!messages.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports yet</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports in the last 3 days.</p></div>';
     return;
   }
-  el.innerHTML = messages.map(m => {
+  el.innerHTML = messages.map((m, idx) => {
     const unreadDot = !m.read
       ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
       : '';
+    const { result, opponent } = _parseBattleReportSummary(m.body || '');
+    const detailId = 'br-detail-' + idx;
+    const won = /Won/i.test(result);
+    const resultColor = won ? 'var(--success,#66bb6a)' : 'var(--danger,#ef5350)';
     return `
-      <div class="panel" style="margin-bottom:6px;padding:10px 14px;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:6px;">
-          <span style="display:flex;align-items:center;">${unreadDot}⚔ Battle Report</span>
-          <span>${_fmtTime(m.sent_at)}</span>
+      <div class="panel" style="margin-bottom:6px;padding:0;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
+        <button class="br-header" data-target="${detailId}" data-msg-id="${m.id}"
+          style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+                 padding:10px 14px;background:none;border:none;cursor:pointer;text-align:left;">
+          <span style="display:flex;align-items:center;gap:6px;min-width:0;">
+            ${unreadDot}
+            <span style="font-weight:600;color:${resultColor};white-space:nowrap;">${_esc(result)}</span>
+            ${opponent ? '<span style="color:var(--text-dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">vs ' + _esc(opponent) + '</span>' : ''}
+          </span>
+          <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="font-size:11px;color:var(--text-dim);">${_fmtTime(m.sent_at)}</span>
+            <span class="br-chevron" style="font-size:11px;color:var(--text-dim);">▼</span>
+          </span>
+        </button>
+        <div id="${detailId}" style="display:none;padding:0 14px 12px;">
+          <div style="font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${_linkify(_esc(m.body))}</div>
         </div>
-        <div style="font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${_linkify(_esc(m.body))}</div>
       </div>`;
   }).join('');
+
+  // Restore open state
+  el.querySelectorAll('.br-header').forEach(btn => {
+    const msgId = btn.dataset.msgId;
+    const detail = el.querySelector('#' + btn.dataset.target);
+    if (detail && msgId && _openBattleReportIds.has(msgId)) {
+      detail.style.display = '';
+      btn.querySelector('.br-chevron').textContent = '▲';
+    }
+  });
+
+  // Bind toggle
+  el.querySelectorAll('.br-header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const detail = el.querySelector('#' + btn.dataset.target);
+      if (!detail) return;
+      const open = detail.style.display !== 'none';
+      detail.style.display = open ? 'none' : '';
+      btn.querySelector('.br-chevron').textContent = open ? '▼' : '▲';
+      const msgId = btn.dataset.msgId;
+      if (msgId) {
+        if (open) _openBattleReportIds.delete(msgId);
+        else _openBattleReportIds.add(msgId);
+      }
+    });
+  });
 }
 
 // ── Send ─────────────────────────────────────────────────────────────
