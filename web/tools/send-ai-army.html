@@ -273,6 +273,22 @@
     #send-btn:hover { opacity: 0.85; }
     #send-btn:disabled { opacity: 0.3; cursor: default; }
 
+    /* ── Random army button ── */
+    .random-army-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 12px;
+      background: transparent;
+      border: 1px dashed var(--warning);
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--warning);
+      font-family: var(--font); font-size: 12px; font-weight: 600;
+      transition: background 0.12s, opacity 0.12s;
+      width: 100%;
+    }
+    .random-army-btn:hover { background: rgba(255,167,38,0.08); }
+    .random-army-btn:disabled { opacity: 0.35; cursor: default; }
+
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 24px; right: 24px; z-index: 9999;
@@ -646,9 +662,53 @@ function showEraTab(era) {
   );
   const list = document.getElementById('army-list');
   list.innerHTML = '';
+
+  // ── Random army button ──
+  const deEra = eraEnToDE[era];
+  if (deEra) {
+    const randBtn = document.createElement('button');
+    randBtn.className = 'random-army-btn';
+    randBtn.textContent = '🎲 Random Army generieren';
+    randBtn.addEventListener('click', async () => {
+      randBtn.disabled = true;
+      randBtn.textContent = '🎲 Generiere…';
+      let generatedName = null;
+      try {
+        const seed = Math.floor(Math.random() * 100000);
+        const r = await fetch(`/api/ai-generator/generate?era=${encodeURIComponent(deEra)}&seed=${seed}`);
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+
+        generatedName = data.name || `🎲 ${era}`;
+        const army = {
+          name: generatedName,
+          waves: data.waves,
+          travel_time: null,
+          trigger: null,
+          _random: true,
+        };
+        // Deselect others, select this
+        list.querySelectorAll('.army-btn').forEach(b => b.classList.remove('selected'));
+        const btn = buildArmyBtn(army);
+        btn.classList.add('selected');
+        // Insert after random button
+        randBtn.after(btn);
+        selectedArmy = army;
+        renderArmyAnalysis(army);
+        updatePreview();
+      } catch (e) {
+        toast(`Fehler: ${e.message}`, 'err');
+      } finally {
+        randBtn.disabled = false;
+        randBtn.textContent = generatedName ? `🎲 ${generatedName}` : '🎲 Random Army generieren';
+      }
+    });
+    list.appendChild(randBtn);
+  }
+
   (armiesByEra[era] || []).forEach(army => list.appendChild(buildArmyBtn(army)));
   // re-select if already chosen
-  if (selectedArmy) {
+  if (selectedArmy && !selectedArmy._random) {
     list.querySelectorAll('.army-btn').forEach(btn => {
       if (btn.querySelector('.army-name')?.textContent === selectedArmy.name)
         btn.classList.add('selected');
@@ -684,6 +744,8 @@ function renderArmies(armies) {
 // ── Army analysis panel ───────────────────────────────────────────
 // ERA_ORDER populated from /api/era-map at load time
 let ERA_ORDER = [];
+// Maps English era label → German display name for the generate API
+let eraEnToDE = {};
 
 function renderArmyAnalysis(army) {
   const panel = document.getElementById('army-analysis');
@@ -847,6 +909,13 @@ async function loadAll() {
     if (eraMapR.ok) {
       const em = await eraMapR.json();
       ERA_ORDER = (em.eras || []).map(k => em.labels_en?.[k] || k);
+      // Build English label → German display name mapping for the generate API
+      // em.eras = ["STEINZEIT", ...], labels_en = {"STEINZEIT": "Stone Age"}, labels_de = {"STEINZEIT": "Steinzeit"}
+      (em.eras || []).forEach(key => {
+        const en = em.labels_en?.[key];
+        const de = em.labels_de?.[key];
+        if (en && de) eraEnToDE[en] = de;
+      });
     }
 
     if (armiesR.ok) {

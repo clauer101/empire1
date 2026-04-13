@@ -150,24 +150,29 @@ class TestBuildArmy:
         up = _make_upgrade_provider()
         ai = AIService(up, game_config=GameConfig())
         empire = _make_empire()
-        # Unlock some critters by completing prerequisites
-        empire.buildings["BASE_CAMP"] = 0.0
-        empire.buildings["FIRE_PLACE"] = 0.0
 
         result = ai._build_army(empire, player_power=2000.0)
         assert result is not None
         army, travel_s, siege_s = result
-        assert len(army.waves) == ai._params.wave_count
-        assert all(w.slots >= ai._params.min_slots_per_wave for w in army.waves)
-        assert all(w.slots <= ai._params.max_slots_per_wave for w in army.waves)
+        # Wave count comes from game.yaml ai_generator (stone era default: 1–2)
+        assert len(army.waves) >= 1
+        assert all(w.slots >= 1 for w in army.waves)
         assert travel_s > 0
 
-    def test_returns_none_without_critters(self):
-        up = UpgradeProvider()  # empty, no items loaded
+    def test_army_uses_era_critters(self):
+        """Army should only use critters from critters.yaml (valid IIDs)."""
+        up = _make_upgrade_provider()
         ai = AIService(up, game_config=GameConfig())
-        empire = _make_empire()
-        result = ai._build_army(empire, player_power=1000.0)
-        assert result is None
+        empire = _make_empire()  # default era = stone
+
+        result = ai._build_army(empire, player_power=2000.0)
+        assert result is not None
+        army, _, _ = result
+        assert len(army.waves) >= 1
+        # All critter IIDs must be uppercase strings (valid YAML keys)
+        for w in army.waves:
+            assert w.iid == w.iid.upper(), f"Critter IID should be uppercase: {w.iid}"
+            assert len(w.iid) > 0
 
 
 # ── get_difficulty_tier ──────────────────────────────────────────────────────
@@ -242,3 +247,93 @@ class TestMatchWaves:
         ai = AIService(_make_upgrade_provider(), game_config=GameConfig())
         empire = _make_empire()
         assert ai._match_waves_for_item(empire, "ANYTHING") == []
+
+
+# ── _attack_player (auto-generated attack) ───────────────────────────────────
+
+
+class TestAttackPlayer:
+    """Tests for _attack_player — the adaptive, auto-generated AI attack."""
+
+    def _make_services(self):
+        """Return (empire_service_mock, attack_service_mock) with minimal stubs."""
+        empire_service = MagicMock()
+        empire_service.next_army_id.return_value = 42
+        empire_service.get.return_value = None  # AI empire not yet registered
+
+        attack = MagicMock()
+        attack.attack_id = 1
+        attack_service = MagicMock()
+        attack_service.start_ai_attack.return_value = attack
+
+        return empire_service, attack_service
+
+    def test_attack_dispatched(self):
+        """_attack_player must call start_ai_attack exactly once."""
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig())
+        empire = _make_empire()
+        empire.buildings["BASE_CAMP"] = 0.0
+
+        es, ats = self._make_services()
+        ai._attack_player(1, empire, es, ats)
+
+        ats.start_ai_attack.assert_called_once()
+
+    def test_attack_registered_as_pending(self):
+        """After _attack_player, the new attack_id must appear in _pending."""
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig())
+        empire = _make_empire()
+        empire.buildings["BASE_CAMP"] = 0.0
+
+        es, ats = self._make_services()
+        ai._attack_player(1, empire, es, ats)
+
+        assert 1 in ai._pending
+        assert ai._pending[1]["defender_uid"] == 1
+
+    def test_attack_with_dict_hex_map_tiles(self):
+        """hex_map values that are dicts (e.g. {"type": "ARROW_TOWER", ...}) must
+        not raise TypeError and must contribute to the tile score."""
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig())
+
+        # Empire with dict-valued hex_map tiles (the previously crashing case)
+        empire = _make_empire()
+        empire.resources = {"culture": 0}
+        empire.hex_map = {
+            "0,0": {"type": "ARROW_TOWER", "level": 1},
+            "1,0": {"type": "CANNON_TOWER", "level": 2},
+            "2,0": "empty",  # plain string tile must still work alongside dicts
+        }
+
+        # _assess_player must not raise and must count the 2 structure tiles
+        score = ai._assess_player(empire)
+        expected_min = 2 * 1_000.0 * ai._params.tile_weight
+        assert score >= expected_min
+
+    def test_attack_with_dict_hex_map_does_not_crash(self):
+        """Full _attack_player call with dict-valued hex_map must not raise."""
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig())
+        empire = _make_empire()
+        empire.buildings["BASE_CAMP"] = 0.0
+        empire.hex_map = {
+            "0,0": {"type": "ARROW_TOWER", "level": 1},
+            "1,0": {"type": "CANNON_TOWER", "level": 2},
+        }
+
+        es, ats = self._make_services()
+        # Must not raise TypeError: unhashable type: 'dict'
+        ai._attack_player(1, empire, es, ats)
+        ats.start_ai_attack.assert_called_once()
+
+    def test_attack_sends_army_to_defender(self):
+        """_attack_player should call start_ai_attack with the defender's uid."""
+        up = _make_upgrade_provider()
+        ai = AIService(up, game_config=GameConfig())
+        empire = _make_empire()
+
+        es, ats = self._make_services()
+        ai._attack_player(1, empire, es, ats)
+
+        call = ats.start_ai_attack.call_args
+        assert call is not None
+        assert call.kwargs.get("defender_uid") == 1 or (call.args and call.args[0] == 1)

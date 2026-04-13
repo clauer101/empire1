@@ -14,7 +14,7 @@ import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
 
 import loginView   from './views/login.js';
-import dashView    from './views/status.js';
+import dashView    from './views/status.js?v=20260413a';
 import buildView   from './views/buildings.js';
 import resView     from './views/research.js';
 import armyView    from './views/army.js';

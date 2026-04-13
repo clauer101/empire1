@@ -409,7 +409,8 @@ function _highlightChain(iid) {
   });
 
   container.querySelectorAll('#tt-svg line').forEach(line => {
-    if (connected.has(line.dataset.from) && connected.has(line.dataset.to)) {
+    const directlyConnected = line.dataset.from === iid || line.dataset.to === iid;
+    if (directlyConnected) {
       line.classList.add('hl');
       line.classList.remove('dimmed');
     } else {

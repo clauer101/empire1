@@ -140,6 +140,16 @@
     }
     button.save-btn:hover { opacity: .85; }
     button.save-btn:disabled { opacity: .4; cursor: default; }
+    button.save-btn.gold-btn { background: var(--warning); }
+
+    .gold-input {
+      background: var(--surface-alt); color: var(--warning);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 7px; font-family: var(--mono); font-size: 12px;
+      width: 100px; text-align: right; outline: none;
+    }
+    .gold-input:focus { border-color: var(--warning); }
+    .gold-label { color: var(--warning); font-size: 11px; }
 
     /* ── Mobile responsive ── */
     @media (max-width: 700px) {
@@ -166,7 +176,8 @@
 <div id="topbar">
   <h1>Effort Tuner</h1>
   <span id="save-status"></span>
-  <button class="save-btn" id="save-btn" disabled>Speichern</button>
+  <button class="save-btn gold-btn" id="save-gold-btn" disabled>💰 Gold speichern</button>
+  <button class="save-btn" id="save-btn" disabled>Effort speichern</button>
 </div>
 
 <div style="padding: 10px 20px 0; max-width:1100px; margin: 0 auto;">
@@ -191,6 +202,7 @@ let buildings = [];
 let knowledge = [];
 let _tab = 'buildings';
 let dirty = false;
+let dirtyGold = false;
 
 // ── Speed effect keys ─────────────────────────────────────────
 const BUILD_EFFECTS    = ['build_speed_modifier','build_speed_offset'];
@@ -253,6 +265,7 @@ function setTab(tab) {
   _tab = tab;
   document.getElementById('tab-buildings').classList.toggle('active', tab === 'buildings');
   document.getElementById('tab-knowledge').classList.toggle('active', tab === 'knowledge');
+  document.getElementById('save-gold-btn').style.display = tab === 'buildings' ? '' : 'none';
   renderAll();
 }
 
@@ -260,6 +273,13 @@ function setTab(tab) {
 function markDirty() {
   dirty = true;
   document.getElementById('save-btn').disabled = false;
+  const st = document.getElementById('save-status');
+  st.textContent = ''; st.className = '';
+}
+
+function markDirtyGold() {
+  dirtyGold = true;
+  document.getElementById('save-gold-btn').disabled = false;
   const st = document.getElementById('save-status');
   st.textContent = ''; st.className = '';
 }
@@ -283,6 +303,10 @@ function renderAll() {
 
     const speedBefore = calcCumulativeSpeed(era, isResearch);
 
+    const goldBulkBtns = isResearch ? '' :
+      '<button class="bulk-btn gold-bulk-btn" data-era="' + era + '" data-pct="-5" style="color:var(--warning);border-color:var(--warning)">−5% 💰</button>' +
+      '<button class="bulk-btn gold-bulk-btn" data-era="' + era + '" data-pct="5" style="color:var(--warning);border-color:var(--warning)">+5% 💰</button>';
+
     section.innerHTML = `
       <div class="era-header">
         <span class="era-arrow">&#9660;</span>
@@ -292,8 +316,9 @@ function renderAll() {
         </span>
         <span class="era-count">${eraItems.length}</span>
         <div class="bulk-btns">
-          <button class="bulk-btn" data-era="${era}" data-pct="-5">−5%</button>
-          <button class="bulk-btn" data-era="${era}" data-pct="5">+5%</button>
+          <button class="bulk-btn" data-era="${era}" data-pct="-5" style="color:var(--accent);border-color:var(--accent)">−5% Effort</button>
+          <button class="bulk-btn" data-era="${era}" data-pct="5" style="color:var(--accent);border-color:var(--accent)">+5% Effort</button>
+          ${goldBulkBtns}
         </div>
       </div>
       <div class="era-body"></div>
@@ -304,13 +329,25 @@ function renderAll() {
       section.classList.toggle('collapsed');
     });
 
-    section.querySelectorAll('.bulk-btn').forEach(btn => {
+    section.querySelectorAll('.bulk-btn:not(.gold-bulk-btn)').forEach(btn => {
       btn.addEventListener('click', () => {
         const pct = parseFloat(btn.dataset.pct) / 100;
         eraItems.forEach(it => {
           it.effort = Math.max(1, Math.round(it.effort * (1 + pct)));
         });
         markDirty();
+        renderAll();
+      });
+    });
+
+    section.querySelectorAll('.gold-bulk-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pct = parseFloat(btn.dataset.pct) / 100;
+        eraItems.forEach(it => {
+          const cur = it.costs?.gold ?? 0;
+          it.costs = { ...(it.costs || {}), gold: Math.max(1, Math.round(cur * (1 + pct))) };
+        });
+        markDirtyGold();
         renderAll();
       });
     });
@@ -334,6 +371,14 @@ function renderAll() {
         }
       }
 
+      const goldVal = item.costs?.gold ?? 0;
+      const goldRow = isResearch ? '' :
+        '<div class="effort-row">' +
+          '<span class="gold-label">💰 Gold:</span>' +
+          '<button class="bulk-btn item-gold-btn" data-pct="-5" style="color:var(--warning);border-color:var(--warning)">−5%</button>' +
+          '<input class="gold-input" type="number" min="0" step="1" value="' + goldVal + '" data-iid="' + item.iid + '" />' +
+          '<button class="bulk-btn item-gold-btn" data-pct="5" style="color:var(--warning);border-color:var(--warning)">+5%</button>' +
+        '</div>';
       row.innerHTML = `
         <div class="item-main">
           <div class="item-top">
@@ -343,11 +388,12 @@ function renderAll() {
           </div>
           <div class="effort-row">
             <span class="effort-label">Effort:</span>
-            <button class="bulk-btn item-pct-btn" data-pct="-5">−5%</button>
+            <button class="bulk-btn item-pct-btn" data-pct="-5" style="color:var(--accent);border-color:var(--accent)">−5%</button>
             <input class="effort-input" type="number" min="1" step="1" value="${item.effort}" data-iid="${item.iid}" />
-            <button class="bulk-btn item-pct-btn" data-pct="5">+5%</button>
+            <button class="bulk-btn item-pct-btn" data-pct="5" style="color:var(--accent);border-color:var(--accent)">+5%</button>
             <span class="effort-label">${fmtTime(item.effort / speedBefore)} @ ${speedBefore.toFixed(2)}x</span>
           </div>
+          ${goldRow}
         </div>
         <button class="item-detail-btn" title="Zeitschätzung">⏱</button>
       `;
@@ -366,6 +412,24 @@ function renderAll() {
           input.value = item.effort;
           timeLabel().textContent = `${fmtTime(item.effort / speedBefore)} @ ${speedBefore.toFixed(2)}x`;
           markDirty();
+        });
+      });
+
+      const goldInput = row.querySelector('.gold-input');
+      if (goldInput) {
+        goldInput.addEventListener('input', () => {
+          const v = parseInt(goldInput.value);
+          if (v >= 0) { item.costs = { ...(item.costs || {}), gold: v }; markDirtyGold(); }
+        });
+      }
+      row.querySelectorAll('.item-gold-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pct = parseFloat(btn.dataset.pct) / 100;
+          const cur = item.costs?.gold ?? 0;
+          const next = Math.max(1, Math.round(cur * (1 + pct)));
+          item.costs = { ...(item.costs || {}), gold: next };
+          goldInput.value = next;
+          markDirtyGold();
         });
       });
 
@@ -425,7 +489,7 @@ function buildDetailHTML(item, era, isResearch) {
   `;
 }
 
-// ── Save ─────────────────────────────────────────────────────
+// ── Save Effort ──────────────────────────────────────────────
 document.getElementById('save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('save-btn');
   const st  = document.getElementById('save-status');
@@ -441,8 +505,33 @@ document.getElementById('save-btn').addEventListener('click', async () => {
       body: JSON.stringify(updates),
     });
     const data = await r.json();
-    if (data.success) { st.textContent = 'Gespeichert!'; st.className = 'ok'; dirty = false; }
+    if (data.success) { st.textContent = 'Effort gespeichert!'; st.className = 'ok'; dirty = false; }
     else throw new Error(data.error || 'Fehler');
+  } catch (e) {
+    st.textContent = `Fehler: ${e.message}`; st.className = 'err';
+    btn.disabled = false;
+  }
+  setTimeout(() => { st.textContent = ''; st.className = ''; }, 3000);
+});
+
+// ── Save Gold ────────────────────────────────────────────────
+document.getElementById('save-gold-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-gold-btn');
+  const st  = document.getElementById('save-status');
+  btn.disabled = true; st.textContent = 'Speichert Gold…'; st.className = '';
+  try {
+    const items = _tab === 'buildings' ? buildings : knowledge;
+    const updates = {};
+    items.forEach(it => { updates[it.iid] = it.costs?.gold ?? 0; });
+    const endpoint = _tab === 'buildings' ? '/api/buildings-gold' : '/api/knowledge-gold';
+    const r = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    const data = await r.json();
+    if (data.success) { st.textContent = '💰 Gold gespeichert!'; st.className = 'ok'; dirtyGold = false; }
+    else throw new Error(data.error || data.detail || `HTTP ${r.status}`);
   } catch (e) {
     st.textContent = `Fehler: ${e.message}`; st.className = 'err';
     btn.disabled = false;

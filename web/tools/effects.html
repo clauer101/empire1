@@ -94,6 +94,7 @@ const EFFECT_LABELS = {
   culture_offset:                 'Culture / tick',
   culture_modifier:               'Culture Multiplier',
   life_offset:                    'Life Regen / tick',
+  life_modifier:                  'Life Regen Multiplier',
   max_life_modifier:              'Max Life +',
   restore_life_after_loss_offset: 'Life Restored after Loss (offset)',
   build_speed_modifier:           'Build Speed Multiplier',
@@ -103,19 +104,19 @@ const EFFECT_LABELS = {
   // Travel & Siege — implemented
   travel_offset:                  'Travel Time −s (attacker)',
   siege_offset:                   'Siege Time +s (defender)',
-  // Battle — NOT yet implemented in engine
-  wave_delay_offset:              'Wave Delay Offset ⚠',
+  // Battle — implemented
+  wave_delay_offset:              'Wave Delay Offset',
   wave_delay_modifier:            'Wave Delay Multiplier ⚠',
-  // Critter buffs — NOT yet implemented
-  speed_modifier:                 'Critter Speed Multiplier ⚠',
-  health_modifier:                'Critter Health Multiplier ⚠',
-  armour_modifier:                'Critter Armour Multiplier ⚠',
+  // Critter buffs — implemented (applied to spawned critters via attacker empire)
+  speed_modifier:                 'Critter Speed Multiplier',
+  health_modifier:                'Critter Health Multiplier',
+  armour_modifier:                'Critter Armour Multiplier',
   slot_offset:                    'Wave Slots + ⚠',
   slot_adder_per_level:           'Wave Slots per Level + ⚠',
-  // Tower buffs — NOT yet implemented
-  damage_modifier:                'Tower Damage Multiplier ⚠',
-  range_modifier:                 'Tower Range Multiplier ⚠',
-  reload_modifier:                'Tower Reload Multiplier ⚠',
+  // Tower buffs — implemented (applied via defender empire)
+  damage_modifier:                'Tower Damage Multiplier',
+  range_modifier:                 'Tower Range Multiplier',
+  reload_modifier:                'Tower Reload Speed Multiplier',
   slow_target:                    'Tower Slow Chance ⚠',
   slow_target_duration:           'Tower Slow Duration ⚠',
   burn_target:                    'Tower Burn Chance ⚠',
@@ -137,7 +138,7 @@ const EFFECT_GROUPS = [
   {
     label: '💰 Economy',
     keys: ['gold_offset','gold_modifier','culture_offset','culture_modifier',
-           'life_offset','max_life_modifier','restore_life_after_loss_offset',
+           'life_offset','life_modifier','max_life_modifier','restore_life_after_loss_offset',
            'build_speed_modifier','build_speed_offset','research_speed_offset','research_speed_modifier'],
   },
   {
@@ -145,15 +146,15 @@ const EFFECT_GROUPS = [
     keys: ['travel_offset','siege_offset'],
   },
   {
-    label: '🏹 Battle (⚠ not yet applied)',
+    label: '🏹 Battle',
     keys: ['wave_delay_offset','wave_delay_modifier'],
   },
   {
-    label: '🐛 Critter Buffs (⚠ not yet applied)',
+    label: '🐛 Critter Buffs (attacker empire)',
     keys: ['speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level'],
   },
   {
-    label: '🗼 Tower Buffs (⚠ not yet applied)',
+    label: '🗼 Tower Buffs (defender empire)',
     keys: ['damage_modifier','range_modifier','reload_modifier',
            'slow_target','slow_target_duration','burn_target','burn_target_duration'],
   },

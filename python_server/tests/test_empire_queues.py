@@ -280,3 +280,60 @@ class TestStepIntegration:
         assert empire.buildings["old"] == 2.0
         assert empire.knowledge["old_k"] == 2.0
 
+
+# ── Effects recalculated on completion ────────────────────────────────
+
+
+class TestEffectsRecalculatedOnCompletion:
+    """empire.effects must be updated immediately when a building or research completes.
+
+    Regression guard: if recalculate_effects() is not called on completion,
+    the empire continues playing with stale (missing) effects until the next
+    server restart.
+    """
+
+    def test_building_completion_updates_effects(self, service: EmpireService, empire: Empire):
+        """Completing a building must populate empire.effects with its effects."""
+        empire.buildings["granary"] = 1.0
+        empire.build_queue = "granary"
+        service._upgrades.get_effects.return_value = {"gold_offset": 5.0}
+
+        assert empire.effects.get("gold_offset", 0.0) == 0.0  # not yet active
+
+        service._progress_buildings(empire, dt=1.0)
+
+        assert empire.buildings["granary"] == 0.0
+        assert empire.effects.get("gold_offset") == pytest.approx(5.0)
+
+    def test_research_completion_updates_effects(self, service: EmpireService, empire: Empire):
+        """Completing a research item must populate empire.effects with its effects."""
+        empire.knowledge["iron_smelting"] = 1.0
+        empire.research_queue = "iron_smelting"
+        service._upgrades.get_effects.return_value = {"damage_modifier": 0.2}
+
+        assert empire.effects.get("damage_modifier", 0.0) == 0.0
+
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.knowledge["iron_smelting"] == 0.0
+        assert empire.effects.get("damage_modifier") == pytest.approx(0.2)
+
+    def test_multiple_completed_items_stack_effects(self, service: EmpireService, empire: Empire):
+        """Effects from all completed items accumulate correctly after recalculate."""
+        empire.buildings["granary"] = 0.0   # already complete
+        empire.buildings["mill"] = 0.0      # already complete
+        empire.knowledge["iron_smelting"] = 0.0  # already complete
+
+        def get_effects(iid):
+            return {
+                "granary": {"gold_offset": 5.0},
+                "mill": {"gold_offset": 3.0},
+                "iron_smelting": {"damage_modifier": 0.2},
+            }.get(iid, {})
+
+        service._upgrades.get_effects.side_effect = get_effects
+        service.recalculate_effects(empire)
+
+        assert empire.effects.get("gold_offset") == pytest.approx(8.0)
+        assert empire.effects.get("damage_modifier") == pytest.approx(0.2)
+

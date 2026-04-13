@@ -75,6 +75,7 @@ class ItemDetails:
     shot_speed: float = 0.0
     shot_type: str = "normal"
     shot_sprite: str = ""  # Sprite URL for the projectile visual
+    projectile_y_offset: float = 0.0  # Vertical origin offset as fraction of tower sprite height
     select: str = "first"  # Targeting strategy: first | last | random
     sprite: str | None = None
 
@@ -92,3 +93,4 @@ class ItemDetails:
     spawn_on_death: dict[str, int] = field(default_factory=dict)
     scale: float = 1.0
     animation: str = ""  # Sprite folder path, e.g. assets/sprites/critters/slave
+    image: str = ""  # Image path prefix, e.g. assets/sprites/buildings/hangar

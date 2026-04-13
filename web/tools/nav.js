@@ -32,17 +32,18 @@
     { name: '🏠 Index',    href: 'index.html' },
     { name: '📊 Status',   href: 'status.html' },
     { name: '🔁 Restart',  href: 'restart.html' },
-    { name: '⚔ Sprite',   href: 'sprite.html' },
-    { name: '🌊 AI Waves', href: 'ai-waves.html' },
-    { name: '⏱ Effort',   href: 'effort-tuner.html' },
     { name: '🗄️ Database', href: 'database.html' },
+    // { name: '⚔ Sprite',   href: 'sprite.html' },
+    { name: '🌊 AI Waves', href: 'ai-waves.html' },
+    // { name: '⏱ Effort',   href: 'effort-tuner.html' },
+    
     { name: '🎛️ Sigmoid', href: 'sigmoid_tuner.html' },
-    { name: '⚡ Effects',  href: 'effects.html' },
+    // { name: '⚡ Effects',  href: 'effects.html' },
     { name: '⚖ Balance',  href: 'balance.html' },
-    { name: '📊 Scatter',  href: 'critter-scatter.html' },
+    // { name: '📊 Scatter',  href: 'critter-scatter.html' },
     { name: '⚔ AI Army',  href: 'send-ai-army.html' },
     { name: '🗺 Maps',     href: 'map-overview.html' },
-    { name: '🌳 Tree',    href: 'tech-tree.html' },
+    // { name: '🌳 Tree',    href: 'tech-tree.html' },
   ];
 
   const current = window.location.pathname.split('/').pop() || 'index.html';

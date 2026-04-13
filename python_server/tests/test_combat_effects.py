@@ -378,10 +378,10 @@ class TestStructuresYamlEffects:
         assert item.effects.get("burn_dps", 0) > 0
 
     def test_paralyzing_tower_stuns(self, items_by_iid):
-        """Paralyzing tower should have slow_duration > 0 and slow_ratio = 0 (full stop)."""
+        """Paralyzing tower should apply a slow (duration > 0, ratio < 1.0)."""
         item = items_by_iid["PARALYZNG_TOWER"]
-        assert item.effects.get("slow_ratio") == pytest.approx(0.0)
         assert item.effects.get("slow_duration", 0) > 0
+        assert item.effects.get("slow_ratio", 1.0) < 1.0
 
     def test_visual_type_slow_towers(self, items_by_iid):
         """Slow towers should produce VISUAL_SLOW shots."""

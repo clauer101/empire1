@@ -253,8 +253,20 @@ function _initCanvas() {
 function _registerStructureTileTypes() {
   const items = st.items || {};
   const structures = items.structures || {};
+  const catalog = items.catalog || {};
+
+  // Collect all structure iids: unlocked ones from structures, plus any
+  // catalog entries of type STRUCTURE that may be locked but placed on the map.
+  const allStructureIids = new Set([
+    ...Object.keys(structures),
+    ...Object.entries(catalog)
+      .filter(([, v]) => v.item_type === 'structure')
+      .map(([iid]) => iid),
+  ]);
+
   let colorIdx = 0;
-  for (const [iid, info] of Object.entries(structures)) {
+  for (const iid of allStructureIids) {
+    const info = structures[iid] || catalog[iid] || {};
     const c = STRUCTURE_COLORS[colorIdx % STRUCTURE_COLORS.length];
     colorIdx++;
     registerTileType(iid, {

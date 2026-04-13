@@ -115,6 +115,17 @@ class GameConfig:
     ai_travel_seconds: float = 30.0
     ai_min_player_score: float = 500.0
 
+    # -- Barbarian attacks -------------------------------------------
+    # Probability per minute (Bernoulli trial) that barbarians attack.
+    # Keys are lowercase English era names (same as era_effects keys).
+    barbarians_aggressiveness: Dict[str, float] = field(default_factory=dict)
+
+    # -- AI army generator per era -----------------------------------
+    # Keys are lowercase YAML era names (e.g. "rennaissance").
+    # Each entry: {min_waves, max_waves, min_slots, max_slots,
+    #              min_previous_era, max_previous_era, min_next_era, max_next_era}
+    ai_generator: Dict[str, Dict[str, int]] = field(default_factory=dict)
+
     # -- Battle strategy / loot --------------------------------------
     min_lose_knowledge: float = 0.03
     max_lose_knowledge: float = 0.15
@@ -209,9 +220,31 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
                 if generic:
                     era_effects_dict[era_key] = generic
 
+    # Handle ai_generator: {era_yaml_key: {min_waves, max_waves, ...}}
+    ai_generator_raw = raw.pop("ai_generator", None)
+    ai_generator: Dict[str, Dict[str, int]] = (
+        {k: {ik: int(iv) for ik, iv in v.items() if isinstance(iv, (int, float))}
+         for k, v in ai_generator_raw.items() if isinstance(v, dict)}
+        if isinstance(ai_generator_raw, dict) else {}
+    )
+
+    # Handle nested barbarians_aggressiveness (already a flat {era_key: float} dict)
+    barbarians_raw = raw.pop("barbarians_aggressiveness", None)
+    barbarians_aggressiveness: Dict[str, float] = (
+        {k: float(v) for k, v in barbarians_raw.items() if isinstance(v, (int, float))}
+        if isinstance(barbarians_raw, dict) else {}
+    )
+
     # Build config from flat keys + nested spy_costs + era_effects
-    cfg = GameConfig(spy_costs=spy, prices=prices, era_effects=era_effects_dict, **{
-        k: v for k, v in raw.items()
-        if k in GameConfig.__dataclass_fields__ and k != "era_effects"
-    })
+    cfg = GameConfig(
+        spy_costs=spy,
+        prices=prices,
+        era_effects=era_effects_dict,
+        barbarians_aggressiveness=barbarians_aggressiveness,
+        ai_generator=ai_generator,
+        **{
+            k: v for k, v in raw.items()
+            if k in GameConfig.__dataclass_fields__ and k not in ("era_effects", "barbarians_aggressiveness")
+        },
+    )
     return cfg

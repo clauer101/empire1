@@ -25,6 +25,56 @@ import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { debug } from '../debug.js';
 
+// ── Tower era statistics ─────────────────────────────────────
+const _TOWER_ERA = {
+  BASIC_TOWER: 'Steinzeit',    SLING_TOWER: 'Steinzeit',
+  DOUBLE_SLING_TOWER: 'Neolith.', SPIKE_TRAP: 'Neolith.',
+  ARROW_TOWER: 'Bronze',       BALLISTA_TOWER: 'Bronze',    FIRE_TOWER: 'Bronze',
+  CATAPULTS: 'Eisenzeit',      ARBELESTE_TOWER: 'Eisenzeit',
+  TAR_TOWER: 'Mittelalter',    HEAVY_TOWER: 'Mittelalter',  BOILING_OIL: 'Mittelalter',
+  CANNON_TOWER: 'Renaissance', RIFLE_TOWER: 'Renaissance',  COLD_TOWER: 'Renaissance', ICE_TOWER: 'Renaissance',
+  FLAME_THROWER: 'Industrie',  SHOCK_TOWER: 'Industrie',    PARALYZNG_TOWER: 'Industrie', GATLING_TOWER: 'Industrie',
+  NAPALM_THROWER: 'Moderne',   MG_TOWER: 'Moderne',         RAPID_FIRE_MG_BUNKER: 'Moderne',
+  RADAR_TOWER: 'Moderne',      ANTI_AIR_TOWER: 'Moderne',   LASER_TOWER: 'Moderne',
+  SNIPER_TOWER: 'Zukunft',     ROCKET_TOWER: 'Zukunft',
+};
+const _ERA_COLORS = {
+  'Steinzeit':   '#8B7355', 'Neolith.':    '#A0887A', 'Bronze':      '#CD7F32',
+  'Eisenzeit':   '#888888', 'Mittelalter': '#6B8A8A', 'Renaissance': '#8B6914',
+  'Industrie':   '#FF6B35', 'Moderne':     '#4B9CD3', 'Zukunft':     '#9B59B6',
+};
+const _ERA_ORDER_STAT = ['Steinzeit','Neolith.','Bronze','Eisenzeit','Mittelalter','Renaissance','Industrie','Moderne','Zukunft'];
+const _NON_TOWER = new Set(['castle','spawnpoint','path','empty','void','']);
+
+function _buildEraStatsHTML(tiles) {
+  if (!tiles) return '';
+  const towers = tiles.filter(t => !_NON_TOWER.has(t.type));
+  if (!towers.length) return '<div style="color:var(--text-dim);font-size:11px;padding:4px 0;">No towers placed</div>';
+  const byEra = {};
+  for (const t of towers) {
+    const era = _TOWER_ERA[t.type] || '?';
+    byEra[era] = (byEra[era] || 0) + 1;
+  }
+  const total = Object.values(byEra).reduce((a, b) => a + b, 0);
+  const maxCount = Math.max(1, ...Object.values(byEra));
+  const rows = _ERA_ORDER_STAT
+    .filter(era => byEra[era])
+    .map(era => {
+      const cnt = byEra[era];
+      const barPct = Math.round(cnt / maxCount * 100);
+      const pct = Math.round(cnt / total * 100);
+      const col = _ERA_COLORS[era] || '#888';
+      return `<div class="age-row">
+        <span class="age-name">${era}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${barPct}%;background:${col}"></div></div>
+        <span class="age-pct">${pct}%</span>
+        <span style="color:var(--text-dim);font-size:10px;font-family:monospace">${cnt}×</span>
+      </div>`;
+    }).join('');
+  return `<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${towers.length} towers total</div><div class="age-bars">${rows}</div>`;
+}
+
+
 /** @type {import('../state.js').StateStore} */
 let st;
 /** @type {HTMLElement} */
@@ -180,6 +230,7 @@ function _wsConnect() {
 function _updateBattleStatusVisibility(visible) {
   const info = container?.querySelector('#battle-status-info');
   if (info) info.style.display = visible ? 'contents' : 'none';
+  requestAnimationFrame(_fitCanvas);
 }
 
 /**
@@ -448,12 +499,21 @@ function _showDefenseEffectsOverlay() {
   const waveRows    = _defEffectRows('wave_delay_offset',       completedBuildings, completedResearch, items, v => `+${(v/1000).toFixed(1)}s`);
   const restoreRows = _defEffectRows('restore_life_after_loss_offset', completedBuildings, completedResearch, items, v => `+${v.toFixed(1)} ❤`);
 
+  // Era distribution
+  const tiles = grid ? [...grid.tiles.values()] : [];
+  const eraStatsHTML = `
+    <div class="prod-overlay-section">
+      <div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>
+      ${_buildEraStatsHTML(tiles)}
+    </div>`;
+
   const overlay = document.createElement('div');
   overlay.className = 'prod-overlay def-effects-overlay';
   overlay.innerHTML = `
     <div class="prod-overlay-box">
       <button class="prod-overlay-close" title="Close">✕</button>
       <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
+      ${eraStatsHTML}
       ${section('⏳', 'Siege Delay',          '#ffa726', `+${siegeTotal.toFixed(0)}s`,            siegeRows)}
       ${section('🌊', 'Wave Delay',           '#4fc3f7', `+${(waveTotal/1000).toFixed(1)}s`,      waveRows)}
       ${section('❤',  'Restore Life on Loss', '#e05c5c', `+${restoreTotal.toFixed(1)}`,           restoreRows)}
@@ -865,10 +925,25 @@ function _showTileDetails(q, r, tile) {
   });
 }
 
+function _fitCanvas() {
+  const wrap = container.querySelector('#canvas-wrap');
+  if (!wrap) return;
+  const body = container.querySelector('.battle-view__body');
+  if (!body) return;
+  // Measure how far the canvas body starts from the top of the viewport.
+  // Use calc(100dvh - Xpx) so the height is always viewport-relative.
+  const topOffset = Math.round(body.getBoundingClientRect().top);
+  const appStyle = getComputedStyle(document.getElementById('app') || document.body);
+  const padBottom = parseFloat(appStyle.paddingBottom) || 0;
+  wrap.style.height = `calc(100dvh - ${topOffset + padBottom}px)`;
+  grid?._resize();
+}
+
 async function enter() {
   _debugLogs = [];  // Clear previous debug logs
   _updateDebugPanel();  // Initialize debug panel visibility
   _initCanvas();
+  requestAnimationFrame(_fitCanvas);
 
   // Apply era-dependent castle sprite for own defense
   _updateCastleSprite(st.summary?.current_era || 'STEINZEIT');
@@ -998,6 +1073,8 @@ async function enter() {
 }
 
 function leave() {
+  const wrap = container.querySelector('#canvas-wrap');
+  if (wrap) wrap.style.height = '';
   _unsub.forEach(fn => fn());
   _unsub = [];
   _pendingAttackId = null;
@@ -1141,9 +1218,19 @@ function _initCanvas() {
 function _registerStructureTileTypes() {
   const items = st.items || {};
   const structures = items.structures || {};
+  const catalog = items.catalog || {};
+
+  // Include locked structures from catalog so placed-but-locked towers render correctly.
+  const allStructureIids = new Set([
+    ...Object.keys(structures),
+    ...Object.entries(catalog)
+      .filter(([, v]) => v.item_type === 'structure')
+      .map(([iid]) => iid),
+  ]);
 
   let colorIdx = 0;
-  for (const [iid, info] of Object.entries(structures)) {
+  for (const iid of allStructureIids) {
+    const info = structures[iid] || catalog[iid] || {};
     const colorDef = STRUCTURE_COLORS[colorIdx % STRUCTURE_COLORS.length];
     colorIdx++;
     registerTileType(iid, {
@@ -1795,7 +1882,9 @@ function _updateStatusFromBattleMsg() {
   
   // Update phase
   let statusText = 'Waiting...';
-  if (_battleState.phase === 'in_siege') {
+  if (_battleState.phase === 'travelling') {
+    statusText = '🚶 Traveling';
+  } else if (_battleState.phase === 'in_siege') {
     statusText = '🛡 Siege';
   } else if (_battleState.phase === 'in_battle') {
     statusText = '⚔ Battle';
@@ -1815,7 +1904,21 @@ function _updateStatusFromBattleMsg() {
   const nextWaveEl = container.querySelector('#battle-next-wave');
   if (nextWaveEl) {
     const wi = _battleState.wave_info;
-    if (wi) {
+    if (_battleState.phase === 'travelling') {
+      // During travel: show arrival countdown from the attack summary
+      const attackSummary = (st.summary?.attacks_incoming || []).find(a => a.attack_id === _pendingAttackId)
+        || (st.summary?.attacks_outgoing || []).find(a => a.attack_id === _pendingAttackId);
+      const etaSec = attackSummary?.eta_seconds ?? null;
+      if (wi && etaSec !== null) {
+        const critterCount = Math.max(1, Math.floor(wi.slots / (wi.critter_slot_cost || 1)));
+        nextWaveEl.textContent =
+          `Wave (${wi.wave_index}/${wi.total_waves}): ${critterCount}× ${wi.critter_name}, eta: ${Math.ceil(etaSec)}s`;
+      } else if (etaSec !== null) {
+        nextWaveEl.textContent = `Arriving in ${Math.ceil(etaSec)}s`;
+      } else {
+        nextWaveEl.textContent = '-';
+      }
+    } else if (wi) {
       // During siege, time_since_start_s is negative (= -siege_remaining_s).
       // Guard with phase check: when attack_phase_changed fires before the next
       // battle_status arrives, time_since_start_s can still be stale-negative
@@ -1824,18 +1927,20 @@ function _updateStatusFromBattleMsg() {
         ? -_battleState.time_since_start_s * 1000 : 0;
       const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
       const timeStr = totalCountdownSec > 0 ? `${totalCountdownSec}s` : 'now';
-      const critterCount = Math.floor(wi.slots / (wi.critter_slot_cost || 1));
+      const critterCount = Math.max(1, Math.floor(wi.slots / (wi.critter_slot_cost || 1)));
       nextWaveEl.textContent =
         `Wave (${wi.wave_index}/${wi.total_waves}): ${critterCount}× ${wi.critter_name}, eta: ${timeStr}`;
     } else {
       nextWaveEl.textContent = _battleState.phase === 'in_battle' ? 'All waves done' : '-';
     }
   }
-  
-  // Update time
+
+  // Update time — hide elapsed timer during travel (battle not yet started)
   const elapsedEl = container.querySelector('#battle-elapsed');
   if (elapsedEl) {
-    elapsedEl.textContent = _formatTime(_battleState.time_since_start_s * 1000);
+    elapsedEl.textContent = _battleState.phase === 'travelling'
+      ? '--:--'
+      : _formatTime(_battleState.time_since_start_s * 1000);
   }
 }
 

@@ -218,7 +218,9 @@ body::before {
   overflow-y: auto;
   padding: 24px 28px;
   min-height: 0;
+  height: 100%;
 }
+
 
 /* individual view wrappers */
 .view {
@@ -1385,13 +1387,15 @@ label {
 .wave-slots-btn.wave-slots-increase {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 0px;
   font-size: 10px;
   font-weight: 700;
   padding: 2px 4px;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .wave-tile-header {
@@ -2345,6 +2349,10 @@ label {
   gap: 8px;
 }
 
+.battle-view > .battle-title {
+  margin-bottom: 0;
+}
+
 .battle-header {
   display: flex;
   justify-content: space-between;
@@ -2356,11 +2364,10 @@ label {
 
 .battle-title {
   font-size: 18px;
-  font-weight: 700;
-  color: var(--accent);
+  font-weight: 600;
+  color: var(--text-bright);
   margin: 0 0 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--accent-dim);
+  letter-spacing: .3px;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -2419,6 +2426,7 @@ label {
 .battle-view__body {
   display: grid;
   grid-template-columns: 1fr 160px;
+  grid-template-rows: 1fr;
   gap: 8px;
   flex: 1;
   min-height: 0;
@@ -2616,7 +2624,8 @@ label {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  min-height: 400px;
+  min-height: 0;
+  height: 100%;
 }
 
 .battle-canvas-wrap canvas {
@@ -2912,8 +2921,10 @@ label {
 }
 .atk-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 .atk-progress-wrap {
   height: 4px;
@@ -2970,9 +2981,9 @@ label {
 
 .atk-name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .atk-cd {
   color: var(--text-muted, #aaa);
@@ -3149,7 +3160,7 @@ label {
 .tt-unlocks:empty { display: none; }
 .tt-ubadge {
   font-size: 10px; padding: 2px 6px; border-radius: 3px;
-  white-space: nowrap; line-height: 1.4;
+  line-height: 1.4; display: inline-block;
 }
 .tt-cat-building  { background: rgba(79,195,247,0.15); color: #4fc3f7; }
 .tt-cat-structure { background: rgba(239,83,80,0.15);  color: #ef5350; }
@@ -3264,3 +3275,11 @@ label {
 .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
 .prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
 .prod-info-btn:hover{opacity:1}
+
+/* ── Age bars (tower era distribution) ── */
+.age-bars{display:flex;flex-direction:column;gap:3px;width:100%}
+.age-row{display:flex;align-items:center;gap:6px;font-size:11px}
+.age-name{width:72px;color:var(--text-dim);white-space:nowrap}
+.age-bar-outer{flex:1;height:6px;background:var(--surface-alt,#1a1f2e);border-radius:3px;overflow:hidden}
+.age-bar-inner{height:100%;border-radius:3px}
+.age-pct{width:32px;text-align:right;font-family:monospace;color:var(--text-dim)}

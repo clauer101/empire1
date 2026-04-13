@@ -159,11 +159,13 @@ class EmpireService:
         culture_offset = empire.get_effect("culture_offset", 0.0)
         empire.resources["culture"] += ((self._base_culture + culture_offset) * (1 + culture_modifier)) * dt
 
-        # Life: offset only (restore_life)
+        # Life regeneration: life_offset is the base regen rate, life_modifier scales it
         life_offset = empire.get_effect("life_offset", 0.0)
         if life_offset > 0:
+            life_modifier = empire.get_effect("life_modifier", 0.0)
+            regen = life_offset * (1.0 + life_modifier)
             empire.resources["life"] = min(
-                empire.resources.get("life", 0.0) + life_offset * dt,
+                empire.resources.get("life", 0.0) + regen * dt,
                 empire.max_life,
             )
 
@@ -186,8 +188,8 @@ class EmpireService:
         if remaining <= 0:
             remaining = 0.0
             empire.build_queue = None
-            self._apply_effects(empire, iid)
             empire.buildings[iid] = remaining
+            self._apply_effects(empire, iid)
             log.info("Empire %d: building %s completed", empire.uid, iid)
             from gameserver.util.events import ItemCompleted
             self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))

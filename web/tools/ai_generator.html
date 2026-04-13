@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Army Generator</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #22222f;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --danger:      #ef5350;
+      --success:     #66bb6a;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+
+    /* ── Page layout ── */
+    #page {
+      max-width: 1200px; margin: 0 auto;
+      padding: 20px 16px 60px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .card-header {
+      padding: 8px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 0.75rem;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    #save-status { font-size: 11px; min-width: 80px; }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+
+    /* ── Era table ── */
+    .tbl-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table.era-tbl {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 600px;
+      font-size: 12px;
+    }
+
+    table.era-tbl th,
+    table.era-tbl td {
+      border: 1px solid var(--border);
+      padding: 0;
+      text-align: center;
+    }
+
+    /* Row label column */
+    table.era-tbl th.row-label,
+    table.era-tbl td.row-label {
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 6px 10px;
+      white-space: nowrap;
+      text-align: left;
+      min-width: 120px;
+      font-weight: 600;
+    }
+
+    /* Header row */
+    table.era-tbl thead th {
+      background: var(--surface-alt);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 6px;
+      white-space: nowrap;
+    }
+
+    /* Data cells */
+    table.era-tbl td.val-cell {
+      background: var(--bg);
+      min-width: 110px;
+    }
+    table.era-tbl tbody tr:hover td.val-cell { background: var(--surface-alt); }
+
+    /* Range pair inside one cell */
+    .range-pair {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 6px;
+    }
+    .range-pair input {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: center;
+      padding: 4px 2px;
+      outline: none;
+      transition: border-color 0.12s;
+    }
+    .range-pair input:focus {
+      border-color: var(--accent);
+      background: rgba(79,195,247,0.08);
+    }
+    .range-sep {
+      color: var(--text-dim);
+      font-size: 11px;
+      flex-shrink: 0;
+      padding: 0 1px;
+    }
+    .range-field {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 2px;
+    }
+    .range-field input {
+      flex: unset;
+      -moz-appearance: textfield;
+    }
+    .range-field input::-webkit-outer-spin-button,
+    .range-field input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .range-btns {
+      display: flex;
+      gap: 2px;
+    }
+    .range-btns button {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--text-dim);
+      font-size: 11px;
+      line-height: 1;
+      padding: 2px 0;
+      cursor: pointer;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .range-btns button:hover { color: var(--text); border-color: var(--text-dim); }
+
+    /* Row color coding */
+    tr.row-waves    td.row-label { color: #4fc3f7; }
+    tr.row-slots    td.row-label { color: #ffa726; }
+    tr.row-prev-era td.row-label { color: #ce93d8; }
+    tr.row-next-era td.row-label { color: #80cbc4; }
+    tr.row-waves    .range-pair input { color: #4fc3f7; }
+    tr.row-slots    .range-pair input { color: #ffa726; }
+    tr.row-prev-era .range-pair input { color: #ce93d8; }
+    tr.row-next-era .range-pair input { color: #80cbc4; }
+
+    /* ── Controls + Preview row ── */
+    #bottom-row {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 16px;
+    }
+
+    /* ── Controls ── */
+    .ctrl-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+    .field-group { display: flex; flex-direction: column; gap: 4px; }
+    .field-group label { font-size: 11px; color: var(--text-dim); }
+
+    select.ctrl-select, input.ctrl-input {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono); font-size: 13px;
+      padding: 6px 10px; width: 100%;
+      outline: none; transition: border-color 0.12s;
+    }
+    select.ctrl-select { cursor: pointer; }
+    select.ctrl-select option { background: var(--surface-alt); }
+    input.ctrl-input:focus, select.ctrl-select:focus { border-color: var(--accent); }
+
+    #gen-btn {
+      background: var(--accent); color: #000;
+      border: none; border-radius: var(--radius);
+      padding: 9px 20px; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: opacity 0.15s; width: 100%;
+    }
+    #gen-btn:hover { opacity: 0.85; }
+    #gen-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── Army preview ── */
+    #army-preview {
+      padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      min-height: 180px;
+    }
+    .preview-empty {
+      color: var(--text-dim); font-size: 12px; text-align: center;
+      padding: 40px 20px;
+    }
+
+    /* ── Wave tile ── */
+    .wave-tile {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 13px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .wave-tile-top { display: flex; align-items: center; gap: 8px; }
+    .wave-num  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 18px; flex-shrink: 0; }
+    .wave-critter { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); flex: 1; }
+    .wave-slots { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+    .wave-count { font-family: var(--mono); font-size: 11px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+    .wave-stats { display: flex; gap: 10px; font-family: var(--mono); font-size: 10px; padding-left: 26px; }
+    .wave-stat-hp  { color: var(--warning); }
+    .wave-stat-arm { color: #ce93d8; }
+    .wave-stat-spd { color: var(--success); }
+    .wave-stat-eff { color: var(--text-dim); }
+
+    /* ── Army header ── */
+    #army-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    .army-title { font-weight: 700; font-size: 0.85rem; color: var(--text); flex: 1; }
+    .army-diff-badge {
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 3px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+
+    /* ── Era dist ── */
+    .era-dist { display: flex; flex-direction: column; gap: 3px; }
+    .era-dist-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+    .era-dist-name { width: 100px; color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
+    .era-dist-bar-outer { flex: 1; height: 4px; background: var(--surface-alt); border-radius: 2px; overflow: hidden; }
+    .era-dist-bar-inner { height: 100%; border-radius: 2px; background: var(--accent); }
+    .era-dist-pct { width: 32px; text-align: right; font-family: var(--mono); color: var(--text-dim); }
+
+    /* ── Misc ── */
+    .small-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s;
+    }
+    .small-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    #loading { color: var(--text-dim); text-align: center; padding: 60px; }
+
+    @media (max-width: 700px) {
+      #page { padding: 10px 8px 40px; gap: 10px; }
+      #topbar { padding: 8px 10px; }
+      #bottom-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>🤖 AI Army Generator</h1>
+</div>
+
+<div id="page">
+  <div id="loading">Lade Daten…</div>
+</div>
+
+<script>
+// ── Data globals ─────────────────────────────────────────────────────────────
+let ERA_ORDER    = [];
+let ERA_INFO     = {};
+let ERA_CRITTERS = {};
+let CRITTER_STATS = {};
+
+
+// ── Default table values (indexed by era position) ──────────────────────────
+// These scale roughly as the game progresses through eras.
+const DEFAULTS = {
+  min_waves:        [1, 1, 2, 2, 3, 3, 4, 4, 5],
+  max_waves:        [2, 2, 3, 3, 4, 4, 5, 5, 6],
+  min_slots:        [4, 6, 8, 10, 14, 18, 24, 30, 40],
+  max_slots:        [8, 12, 16, 20, 28, 36, 48, 60, 80],
+  min_previous_era: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  max_previous_era: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  min_next_era:     [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  max_next_era:     [0, 0, 0, 0, 0, 0, 0, 0, 0],
+};
+
+// Live table values — updated when user edits cells
+// tableValues[row][eraIndex] = number
+const tableValues = {
+  min_waves: [],
+  max_waves: [],
+  min_slots: [],
+  max_slots: [],
+  min_previous_era: [],
+  max_previous_era: [],
+  min_next_era: [],
+  max_next_era: [],
+};
+
+// Each row pairs min+max into one cell
+const ROWS = [
+  { label: 'Waves',        cls: 'row-waves',    minKey: 'min_waves',        maxKey: 'max_waves',        min: 1,    max: 20  },
+  { label: 'Slots/Wave',   cls: 'row-slots',    minKey: 'min_slots',        maxKey: 'max_slots',        min: 1,    max: 500 },
+  { label: 'Previous Era', cls: 'row-prev-era', minKey: 'min_previous_era', maxKey: 'max_previous_era', min: -500, max: 500 },
+  { label: 'Next Era',     cls: 'row-next-era', minKey: 'min_next_era',     maxKey: 'max_next_era',     min: -500, max: 500 },
+];
+
+// ── Army difficulty (from ai-waves.html formula) ─────────────────────────────
+function calcDifficulty(waves) {
+  let score = 0;
+  for (const w of waves) {
+    const s = CRITTER_STATS[w.critter];
+    if (!s) continue;
+    score += Math.floor(w.slots / (s.slots || 1)) * s.health * (1 + s.armour) * (1 + s.speed);
+  }
+  return Math.round(score);
+}
+
+function fmtK(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return (n / 1000).toFixed(1) + 'k';
+  return String(Math.round(n));
+}
+
+// ── Build page ───────────────────────────────────────────────────────────────
+function buildPage() {
+  const page = document.getElementById('page');
+  page.innerHTML = '';
+
+  // ── Table card ──────────────────────────────────────────────────────────
+  const tableCard = document.createElement('div');
+  tableCard.className = 'card';
+
+  const tableHeader = document.createElement('div');
+  tableHeader.className = 'card-header';
+  tableHeader.innerHTML = `
+    <span>Zeitalter-Konfiguration</span>
+    <div class="card-header-actions">
+      <span id="save-status"></span>
+      <button class="small-btn" id="save-btn" style="border-color:var(--accent);color:var(--accent)">💾 Speichern</button>
+    </div>
+  `;
+  tableCard.appendChild(tableHeader);
+
+  const tblWrap = document.createElement('div');
+  tblWrap.className = 'tbl-wrap';
+
+  const table = document.createElement('table');
+  table.className = 'era-tbl';
+
+  // Head row: empty corner + one th per era
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const cornerTh = document.createElement('th');
+  cornerTh.className = 'row-label';
+  cornerTh.textContent = '';
+  headRow.appendChild(cornerTh);
+
+  ERA_ORDER.forEach(era => {
+    const th = document.createElement('th');
+    th.textContent = era;
+    th.title = ERA_INFO[era] || '';
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  // Body rows: one per pair (Waves, Slots)
+  const tbody = document.createElement('tbody');
+  ROWS.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.className = row.cls;
+
+    const labelTd = document.createElement('td');
+    labelTd.className = 'row-label';
+    labelTd.textContent = row.label;
+    tr.appendChild(labelTd);
+
+    ERA_ORDER.forEach((era, eraIdx) => {
+      const td = document.createElement('td');
+      td.className = 'val-cell';
+
+      const pair = document.createElement('div');
+      pair.className = 'range-pair';
+
+      function makeField(key) {
+        const field = document.createElement('div');
+        field.className = 'range-field';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = row.min;
+        input.max = row.max;
+        input.step = 1;
+        input.value = tableValues[key][eraIdx];
+        input.dataset.row = key;
+        input.dataset.era = eraIdx;
+        input.title = key.replace('_', ' ');
+
+        function commit(v) {
+          v = Math.max(row.min, Math.min(row.max, v));
+          tableValues[key][eraIdx] = v;
+          input.value = v;
+        }
+        input.addEventListener('input', () => {
+          const v = parseInt(input.value);
+          if (!isNaN(v)) tableValues[key][eraIdx] = v;
+        });
+        input.addEventListener('blur', () => commit(parseInt(input.value) || row.min));
+
+        const btns = document.createElement('div');
+        btns.className = 'range-btns';
+        const minusBtn = document.createElement('button');
+        minusBtn.textContent = '−';
+        minusBtn.addEventListener('click', () => commit(tableValues[key][eraIdx] - 1));
+        const plusBtn = document.createElement('button');
+        plusBtn.textContent = '+';
+        plusBtn.addEventListener('click', () => commit(tableValues[key][eraIdx] + 1));
+        btns.appendChild(minusBtn);
+        btns.appendChild(plusBtn);
+
+        field.appendChild(input);
+        field.appendChild(btns);
+        return field;
+      }
+
+      const sep = document.createElement('span');
+      sep.className = 'range-sep';
+      sep.textContent = '–';
+
+      pair.appendChild(makeField(row.minKey));
+      pair.appendChild(sep);
+      pair.appendChild(makeField(row.maxKey));
+
+      td.appendChild(pair);
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  tblWrap.appendChild(table);
+  tableCard.appendChild(tblWrap);
+  page.appendChild(tableCard);
+
+  // ── Bottom row: controls + preview ──────────────────────────────────────
+  const bottomRow = document.createElement('div');
+  bottomRow.id = 'bottom-row';
+
+  // Controls card
+  const ctrlCard = document.createElement('div');
+  ctrlCard.className = 'card';
+  ctrlCard.innerHTML = '<div class="card-header">Generierung</div>';
+
+  const ctrlBody = document.createElement('div');
+  ctrlBody.className = 'ctrl-body';
+
+  // Era selector
+  const eraGroup = document.createElement('div');
+  eraGroup.className = 'field-group';
+  eraGroup.innerHTML = '<label>Zeitalter</label>';
+  const eraSel = document.createElement('select');
+  eraSel.className = 'ctrl-select';
+  eraSel.id = 'ctrl-era';
+  ERA_ORDER.forEach(era => {
+    const opt = document.createElement('option');
+    opt.value = era;
+    opt.textContent = era;
+    eraSel.appendChild(opt);
+  });
+  eraSel.value = ERA_ORDER[Math.floor(ERA_ORDER.length / 2)] || ERA_ORDER[0] || '';
+  eraGroup.appendChild(eraSel);
+  ctrlBody.appendChild(eraGroup);
+
+  // Seed input
+  const seedGroup = document.createElement('div');
+  seedGroup.className = 'field-group';
+  seedGroup.innerHTML = '<label>Zufalls-Seed</label>';
+  const seedInput = document.createElement('input');
+  seedInput.type = 'number';
+  seedInput.className = 'ctrl-input';
+  seedInput.id = 'ctrl-seed';
+  seedInput.min = 0; seedInput.max = 99999; seedInput.value = 42;
+  seedGroup.appendChild(seedInput);
+  ctrlBody.appendChild(seedGroup);
+
+  // Generate button
+  const genBtn = document.createElement('button');
+  genBtn.id = 'gen-btn';
+  genBtn.textContent = '⚡ Armee generieren';
+  genBtn.addEventListener('click', generate);
+  ctrlBody.appendChild(genBtn);
+
+  ctrlCard.appendChild(ctrlBody);
+  bottomRow.appendChild(ctrlCard);
+
+  // Preview card
+  const previewCard = document.createElement('div');
+  previewCard.className = 'card';
+  previewCard.innerHTML = `
+    <div class="card-header">Generierte Armee</div>
+    <div id="army-header" style="display:none">
+      <span class="army-title" id="army-title">—</span>
+      <span class="army-diff-badge" id="army-diff-badge">⚔ —</span>
+    </div>
+    <div id="army-preview"><div class="preview-empty">Wähle ein Zeitalter und klicke „Generieren".</div></div>
+    <div id="era-dist-section" style="padding:10px 14px;border-top:1px solid var(--border);display:none">
+      <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Ären-Verteilung</div>
+      <div class="era-dist" id="era-dist"></div>
+    </div>
+  `;
+  bottomRow.appendChild(previewCard);
+
+  page.appendChild(bottomRow);
+
+  // ── Save button ───────────────────────────────────────────────────────────
+  document.getElementById('save-btn').addEventListener('click', saveToServer);
+}
+
+function syncInputsFromValues() {
+  document.querySelectorAll('.era-tbl input[data-row]').forEach(input => {
+    input.value = tableValues[input.dataset.row][parseInt(input.dataset.era)];
+  });
+}
+
+async function saveToServer() {
+  const btn = document.getElementById('save-btn');
+  const status = document.getElementById('save-status');
+  btn.disabled = true;
+  status.textContent = '…';
+  status.className = '';
+
+  // Serialise as { era_name: { min_waves, max_waves, min_slots, max_slots } }
+  const payload = {};
+  ERA_ORDER.forEach((era, i) => {
+    payload[era] = {
+      min_waves:        tableValues.min_waves[i],
+      max_waves:        tableValues.max_waves[i],
+      min_slots:        tableValues.min_slots[i],
+      max_slots:        tableValues.max_slots[i],
+      min_previous_era: tableValues.min_previous_era[i],
+      max_previous_era: tableValues.max_previous_era[i],
+      min_next_era:     tableValues.min_next_era[i],
+      max_next_era:     tableValues.max_next_era[i],
+    };
+  });
+
+  try {
+    const r = await fetch('/api/ai-generator', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    let data;
+    try { data = await r.json(); } catch (_) { throw new Error(`HTTP ${r.status}: ${await r.text().catch(() => '(no body)')}`); }
+    if (data.success) {
+      status.textContent = '✓ Gespeichert';
+      status.className = 'ok';
+    } else {
+      throw new Error(data.error ? `HTTP ${r.status}: ${data.error}` : `HTTP ${r.status}`);
+    }
+  } catch (e) {
+    console.error('[ai-generator save]', e);
+    status.textContent = '✗ ' + e.message;
+    status.className = 'err';
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => { status.textContent = ''; status.className = ''; }, 4000);
+  }
+}
+
+// ── Init table values from defaults ─────────────────────────────────────────
+function initTableValues() {
+  ROWS.forEach(row => {
+    [row.minKey, row.maxKey].forEach(key => {
+      const def = DEFAULTS[key];
+      tableValues[key] = ERA_ORDER.map((_, i) => i < def.length ? def[i] : def[def.length - 1]);
+    });
+  });
+}
+
+// ── Load table values from server (game.yaml), fall back to defaults ─────────
+async function loadTableValues() {
+  initTableValues(); // always start with defaults so all eras are present
+  try {
+    const r = await fetch('/api/ai-generator');
+    const data = await r.json();
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) return;
+    // data = { era_name: { min_waves, max_waves, min_slots, max_slots } }
+    ERA_ORDER.forEach((era, i) => {
+      const col = data[era];
+      if (!col) return;
+      if (col.min_waves        != null) tableValues.min_waves[i]        = col.min_waves;
+      if (col.max_waves        != null) tableValues.max_waves[i]        = col.max_waves;
+      if (col.min_slots        != null) tableValues.min_slots[i]        = col.min_slots;
+      if (col.max_slots        != null) tableValues.max_slots[i]        = col.max_slots;
+      if (col.min_previous_era != null) tableValues.min_previous_era[i] = col.min_previous_era;
+      if (col.max_previous_era != null) tableValues.max_previous_era[i] = col.max_previous_era;
+      if (col.min_next_era     != null) tableValues.min_next_era[i]     = col.min_next_era;
+      if (col.max_next_era     != null) tableValues.max_next_era[i]     = col.max_next_era;
+    });
+  } catch (_) {
+    // Server not reachable — defaults remain
+  }
+}
+
+// ── Generate army (via backend) ───────────────────────────────────────────────
+async function generate() {
+  const era       = document.getElementById('ctrl-era').value;
+  const seedInput = document.getElementById('ctrl-seed');
+  const seed      = Math.floor(Math.random() * 100000);
+  seedInput.value = seed;
+
+  const genBtn = document.getElementById('gen-btn');
+  genBtn.disabled = true;
+
+  try {
+    const r = await fetch(`/api/ai-generator/generate?era=${encodeURIComponent(era)}&seed=${seed}`);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    renderArmy(data.era, data.seed, data.waves);
+  } catch (e) {
+    document.getElementById('army-preview').innerHTML =
+      `<div class="preview-empty" style="color:var(--danger)">Fehler: ${e.message}</div>`;
+  } finally {
+    genBtn.disabled = false;
+  }
+}
+
+// ── Render army ───────────────────────────────────────────────────────────────
+function renderArmy(era, seed, waves) {
+  const preview  = document.getElementById('army-preview');
+  const header   = document.getElementById('army-header');
+  const titleEl  = document.getElementById('army-title');
+  const diffEl   = document.getElementById('army-diff-badge');
+  const distSec  = document.getElementById('era-dist-section');
+
+  const difficulty = calcDifficulty(waves);
+  const totalSlots = waves.reduce((a, w) => a + w.slots, 0);
+
+  header.style.display = 'flex';
+  titleEl.textContent = `${era}  ·  ${waves.length} Wellen  ·  ${totalSlots} Slots  ·  Seed ${seed}`;
+  diffEl.textContent = `⚔ ${difficulty}`;
+  diffEl.style.color = difficulty < 100 ? 'var(--success)' : difficulty < 800 ? 'var(--warning)' : 'var(--danger)';
+
+  preview.innerHTML = '';
+
+  waves.forEach((w, i) => {
+    const s = CRITTER_STATS[w.critter] || {};
+    const count = Math.floor(w.slots / (s.slots || 1));
+    const eHp   = s.health !== undefined ? (s.health + s.armour).toFixed(1) : '?';
+
+    const tile = document.createElement('div');
+    tile.className = 'wave-tile';
+    tile.innerHTML = `
+      <div class="wave-tile-top">
+        <span class="wave-num">${i + 1}.</span>
+        <span class="wave-critter">${w.critter}</span>
+        <span class="wave-slots">${w.slots} Slots</span>
+        <span class="wave-count">×${count}</span>
+      </div>
+      <div class="wave-stats">
+        ${s.health  !== undefined ? `<span class="wave-stat-hp">❤ ${s.health}</span>` : ''}
+        ${s.armour  ? `<span class="wave-stat-arm">🛡 ${s.armour}</span>` : ''}
+        ${s.speed   !== undefined ? `<span class="wave-stat-spd">⚡ ${s.speed}</span>` : ''}
+        ${s.health  !== undefined ? `<span class="wave-stat-eff">${eHp} eHP</span>` : ''}
+      </div>
+    `;
+    preview.appendChild(tile);
+  });
+
+  // Era distribution
+  const byEra = {};
+  for (const w of waves) {
+    const e = CRITTER_STATS[w.critter]?.era || 'Unbekannt';
+    byEra[e] = (byEra[e] || 0) + w.slots;
+  }
+  const distEl = document.getElementById('era-dist');
+  distEl.innerHTML = ERA_ORDER.filter(e => byEra[e]).map(e => {
+    const pct = Math.round(byEra[e] / totalSlots * 100);
+    return `<div class="era-dist-row">
+      <span class="era-dist-name">${e}</span>
+      <div class="era-dist-bar-outer"><div class="era-dist-bar-inner" style="width:${pct}%"></div></div>
+      <span class="era-dist-pct">${pct}%</span>
+      <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono);width:34px;text-align:right">${byEra[e]} sl</span>
+    </div>`;
+  }).join('');
+  distSec.style.display = '';
+}
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+(async () => {
+  const loading = document.getElementById('loading');
+  try {
+    const [eraMapData, critterList] = await Promise.all([
+      fetch('/api/era-map').then(r => r.json()),
+      fetch('/api/critter-stats').then(r => r.json()),
+    ]);
+
+    ERA_ORDER    = eraMapData.eras     || [];
+    ERA_INFO     = eraMapData.info     || {};
+    ERA_CRITTERS = eraMapData.critters || {};
+
+    CRITTER_STATS = Object.fromEntries(
+      critterList.map(c => [c.iid, {
+        health: c.health, speed: c.speed,
+        armour: c.armour, slots: c.slots || 1, era: c.era,
+      }])
+    );
+
+    await loadTableValues();
+    loading.remove();
+    buildPage();
+  } catch (e) {
+    loading.textContent = `Fehler beim Laden: ${e.message}`;
+  }
+})();
+</script>
+</body>
+</html>

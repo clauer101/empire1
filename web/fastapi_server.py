@@ -57,6 +57,20 @@ _ERA_INFO = {
 
 _ERA_ORDER = list(_ERA_INFO.keys())
 
+# Maps German display names → English internal keys (used in game.yaml)
+_ERA_TO_INTERNAL = {
+    "Steinzeit":          "stone",
+    "Neolithikum":        "neolithicum",
+    "Bronzezeit":         "bronze",
+    "Eisenzeit":          "iron",
+    "Mittelalter":        "middle_ages",
+    "Renaissance":        "rennaissance",
+    "Industrialisierung": "industrial",
+    "Moderne":            "modern",
+    "Zukunft":            "future",
+}
+_INTERNAL_TO_ERA = {v: k for k, v in _ERA_TO_INTERNAL.items()}
+
 
 def _parse_ai_waves():
     """Read ai_waves.yaml, annotate each wave with its era."""
@@ -331,6 +345,83 @@ async def save_prices(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+@app.get("/api/ai-generator")
+async def get_ai_generator():
+    """Return the ai_generator section from game.yaml, keyed by German display names."""
+    try:
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        stored = raw.get("ai_generator", {})
+        # Re-key from English internal names to German display names for the client
+        result = {}
+        for key, val in stored.items():
+            display = _INTERNAL_TO_ERA.get(key, key)
+            result[display] = val
+        return JSONResponse(result)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/ai-generator")
+async def save_ai_generator(request: Request):
+    """Update the ai_generator section in game.yaml using English internal keys."""
+    try:
+        data = await request.json()
+        # Convert German display names → English internal keys
+        converted = {}
+        for display_name, val in data.items():
+            internal = _ERA_TO_INTERNAL.get(display_name, display_name)
+            converted[internal] = val
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        raw["ai_generator"] = converted
+        GAME_CONFIG_PATH.write_text(
+            yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+# ── Army generation ───────────────────────────────────────────────────────────
+
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).parent.parent / "python_server" / "src"))
+from gameserver.util.army_generator import (
+    generate_army as _gen_army,
+    parse_critter_era_groups as _parse_critter_era_groups,
+    parse_slot_by_iid as _parse_slot_by_iid,
+    ERA_DE_TO_INTERNAL as _ERA_DE_TO_INTERNAL,
+)
+
+
+def _generate_army(era: str, seed: int) -> dict:
+    """Generate an AI army for *era* (German display name) using the shared generator."""
+    raw_cfg = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+    ai_generator_cfg = raw_cfg.get("ai_generator", {})
+    era_internal = _ERA_DE_TO_INTERNAL.get(era, era)
+    critter_era_groups = _parse_critter_era_groups(CRITTERS_PATH)
+    slot_by_iid = _parse_slot_by_iid(CRITTERS_PATH)
+    result = _gen_army(
+        era_internal=era_internal,
+        ai_generator_cfg=ai_generator_cfg,
+        critter_era_groups=critter_era_groups,
+        slot_by_iid=slot_by_iid,
+        seed=seed,
+    )
+    return {"era": era, "seed": seed, "name": result["name"], "waves": result["waves"]}
+
+
+@app.get("/api/ai-generator/generate")
+async def generate_ai_army(era: str, seed: int):
+    """Generate an AI army for the given era and seed."""
+    try:
+        return JSONResponse(_generate_army(era, seed))
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
 def _parse_items_full(path: Path) -> list[dict]:
     """Parse buildings/knowledge YAML → list of items annotated with era."""
     raw = path.read_text(encoding="utf-8")
@@ -408,6 +499,75 @@ async def save_knowledge(request: Request):
     try:
         updates = await request.json()
         _save_efforts(KNOWLEDGE_PATH, updates)
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+def _save_gold_costs(path: Path, updates: dict) -> None:
+    """Patch gold cost values in a YAML file, preserving all comments.
+    updates: {iid: gold_value, ...}
+    Handles both inline `costs: {gold: N}` and block-style costs sections.
+    """
+    lines = path.read_text(encoding="utf-8").split("\n")
+    result = []
+    current_iid = None
+    in_costs = False
+    for line in lines:
+        m = _ITEM_IID_RE.match(line)
+        if m:
+            current_iid = m.group(1)
+            in_costs = False
+            result.append(line)
+            continue
+        if current_iid in updates:
+            # Inline: costs: {gold: 123}
+            im = re.match(r'^(\s+costs:\s*\{(?:[^}]*,\s*)?gold:\s*)\d+(\s*(?:,\s*[^}]*)?\}.*)', line)
+            if im:
+                line = f"{im.group(1)}{int(updates[current_iid])}{im.group(2)}"
+                result.append(line)
+                continue
+            # Inline costs with only gold: costs: {gold: 123}
+            im2 = re.match(r'^(\s+costs:\s*\{gold:\s*)\d+(\}.*)', line)
+            if im2:
+                line = f"{im2.group(1)}{int(updates[current_iid])}{im2.group(2)}"
+                result.append(line)
+                continue
+            # Block-style: detect `costs:` line
+            if re.match(r'^\s+costs:\s*$', line):
+                in_costs = True
+                result.append(line)
+                continue
+            # Block-style gold line inside costs block
+            if in_costs:
+                gm = re.match(r'^(\s+gold:\s*)\d+(.*)', line)
+                if gm:
+                    line = f"{gm.group(1)}{int(updates[current_iid])}{gm.group(2)}"
+                    in_costs = False
+                    result.append(line)
+                    continue
+                # leaving costs block if indent drops
+                if re.match(r'^\s{0,4}\S', line):
+                    in_costs = False
+        result.append(line)
+    path.write_text("\n".join(result), encoding="utf-8")
+
+
+@app.post("/api/buildings-gold")
+async def save_buildings_gold(request: Request):
+    try:
+        updates = await request.json()  # {iid: gold, ...}
+        _save_gold_costs(BUILDINGS_PATH, updates)
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/knowledge-gold")
+async def save_knowledge_gold(request: Request):
+    try:
+        updates = await request.json()  # {iid: gold, ...}
+        _save_gold_costs(KNOWLEDGE_PATH, updates)
         return JSONResponse({"success": True})
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)
@@ -850,6 +1010,21 @@ async def list_critters():
             })
 
     return JSONResponse({"critters": result})
+
+
+@app.post("/api/admin/restart-web")
+async def restart_web():
+    """Restart the web server process via os.execv (self-restart)."""
+    import asyncio
+    import os
+    import sys
+
+    async def _do_restart() -> None:
+        await asyncio.sleep(0.3)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    asyncio.create_task(_do_restart())
+    return JSONResponse({"ok": True, "message": "Web server restarting …"})
 
 
 app.mount(
