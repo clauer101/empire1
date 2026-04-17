@@ -695,6 +695,27 @@ async def handle_new_attack(
             "_debug": f"Input: target_uid={defender_uid_raw}, opponent_name={opponent_name!r}, army_aid={army_aid}",
         }
 
+    # Era check: attacker cannot attack a defender in a lower era
+    from gameserver.util.eras import ERA_ORDER, ERA_LABELS_DE
+    attacker_empire = svc.empire_service.get(target_uid)
+    defender_empire = svc.empire_service.get(defender_uid)
+    if attacker_empire is not None and defender_empire is not None:
+        attacker_era = svc.empire_service.get_current_era(attacker_empire)
+        defender_era = svc.empire_service.get_current_era(defender_empire)
+        attacker_era_idx = ERA_ORDER.index(attacker_era) if attacker_era in ERA_ORDER else 0
+        defender_era_idx = ERA_ORDER.index(defender_era) if defender_era in ERA_ORDER else 0
+        if defender_era_idx < attacker_era_idx - 1:
+            attacker_label = ERA_LABELS_DE.get(attacker_era, attacker_era)
+            defender_label = ERA_LABELS_DE.get(defender_era, defender_era)
+            return {
+                "type": "attack_response",
+                "success": False,
+                "error": (
+                    f"{defender_empire.name} is in the {defender_label} era — "
+                    f"you ({attacker_label}) can only attack empires in the same or a higher era."
+                ),
+            }
+
     result = svc.attack_service.start_attack(
         attacker_uid=target_uid,
         defender_uid=defender_uid,

@@ -44,7 +44,7 @@ CLUBMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/clubman
   requirements: [HUNTING]
 
@@ -61,7 +61,7 @@ SCOUT:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2
+  scale: 1.8
   animation: assets/sprites/critters/scout
   requirements: [HUNTING]
 
@@ -72,7 +72,7 @@ SCOUT:
 WARRIOR:
   name: "Warrior"
   speed: 0.2
-  health: 2
+  health: 3
   value: 6
   damage: 1
   armour: 0.5
@@ -82,7 +82,7 @@ WARRIOR:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 0.9
   animation: assets/sprites/critters/warrior
   requirements: [CRAFTSMANSHIP, GRANARY]
 
@@ -99,7 +99,7 @@ CART:
   capture: {}
   bonus: {}
   spawn_on_death: {CLUBMAN: 5}
-  scale: 3
+  scale: 1.3
   animation: assets/sprites/critters/cart
   requirements: [DOMESTICATION, TOOL_SHOP]
 
@@ -109,8 +109,8 @@ CART:
 
 BOWMAN:
   name: "Bowman"
-  speed: 0.4
-  health: 4
+  speed: 0.45
+  health: 5
   value: 12
   damage: 2
   armour: 0.5
@@ -120,31 +120,31 @@ BOWMAN:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/bowman
   requirements: [CRAFTSMANSHIP, BOW_MAKER]
 
 SWORDMAN:
   name: "Swordman"
   speed: 0.3
-  health: 7
+  health: 6
   value: 15
   damage: 2
-  armour: 2
+  armour: 1.5
   slots: 1
   time_between: 1700
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/swordman
   requirements: [COPPER_BRONZE, SWORD_MAKER]
 
 CHARIOT:
   name: "Chariot"
   speed: 0.65
-  health: 5
+  health: 6
   value: 17
   damage: 1
   armour: 0.5
@@ -154,7 +154,7 @@ CHARIOT:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2.5
+  scale: 2.0
   animation: assets/sprites/critters/chariot
   requirements: [HORSEBACK_RIDING, COPPER_BRONZE]
 
@@ -175,14 +175,14 @@ PIKENEER:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/pikeneer
   requirements: [COPPER_BRONZE, DRILL]
 
 HORSEMAN_SLOW:
   name: "Heavy Horseman"
-  speed: 0.25
-  health: 20
+  speed: 0.3
+  health: 21
   value: 27
   damage: 2
   armour: 2.5
@@ -192,7 +192,7 @@ HORSEMAN_SLOW:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2
+  scale: 1.8
   animation: assets/sprites/critters/horseman_slow
   requirements: [HORSEBACK_RIDING, STABLES]
 
@@ -216,7 +216,7 @@ HORSEMAN_FAST:
 LEGIONARY:
   name: "Legionary"
   speed: 0.35
-  health: 11
+  health: 12
   value: 26
   damage: 1
   armour: 2.5
@@ -226,13 +226,13 @@ LEGIONARY:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/legionary
   requirements: [FORGE, LORE_COLLECTION]
 
 LARGE_CART:
   name: "Large Cart"
-  speed: 0.3
+  speed: 0.35
   health: 7
   value: 130
   damage: 3
@@ -243,7 +243,7 @@ LARGE_CART:
   capture: {}
   bonus: {}
   spawn_on_death: {PIKENEER: 4}
-  scale: 3
+  scale: 2.0
   animation: assets/sprites/critters/large_cart
   requirements: [BOOT_CAMP, IRON]
 
@@ -260,7 +260,7 @@ THE_SWORDMASTER:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/the_swordmaster
   requirements: [CASTLE]
 
@@ -271,7 +271,7 @@ THE_SWORDMASTER:
 CRUSADER:
   name: "Crusader"
   speed: 0.5
-  health: 42
+  health: 40
   value: 44
   damage: 2
   armour: 2.5
@@ -281,14 +281,14 @@ CRUSADER:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/crusader
   requirements: [HOLY_WAR]
 
 KNIGHT:
   name: "Knight"
   speed: 0.4
-  health: 44
+  health: 42
   value: 44
   damage: 1
   armour: 6
@@ -298,14 +298,14 @@ KNIGHT:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/knight
   requirements: [FEUDALISM, COMMAND_CHAIN]
 
 SAMURAI:
   name: "Samurai"
   speed: 0.85
-  health: 17
+  health: 16
   value: 46
   damage: 1
   armour: 2.5
@@ -315,31 +315,31 @@ SAMURAI:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/samurai
   requirements: [TACTICS, FENCING_SCHOOL]
 
 SIEGE_RAM:
   name: "Siege Ram"
   speed: 0.2
-  health: 22
+  health: 21
   value: 230
   damage: 3
-  armour: 4
+  armour: 3.5
   slots: 3
   time_between: 2300
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: {CRUSADER: 3}
-  scale: 2.5
+  scale: 2.0
   animation: assets/sprites/critters/siege_ram
   requirements: [MECHANICS, THE_KINGS_LAIR]
 
 CONDOTTERI:
   name: "Condotteri"
   speed: 0.6
-  health: 58
+  health: 57
   value: 78
   damage: 2
   armour: 2.5
@@ -349,14 +349,14 @@ CONDOTTERI:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2.0
+  scale: 1.0
   animation: assets/sprites/critters/condotteri
   requirements: [STEEL, FANATISM]
 
 HANDGUNNER:
   name: "Handgunner"
   speed: 0.7
-  health: 54
+  health: 53
   value: 71
   damage: 1
   armour: 4.5
@@ -366,7 +366,7 @@ HANDGUNNER:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 0.8
+  scale: 1.0
   animation: assets/sprites/critters/handgunner
   requirements: [COMMAND_CHAIN, GUNPOWDER]
 
@@ -387,7 +387,7 @@ THE_KING:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.2
   animation: assets/sprites/critters/the_king
   requirements: [PARLIAMENT]
 
@@ -397,55 +397,55 @@ NINJA:
   health: 52
   value: 68
   damage: 1
-  armour: 2.5
+  armour: 3
   slots: 1
   time_between: 1100
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/ninja
   requirements: [STEALTH_SECRECY, SECRET_ORDER]
 
 MUSKETEER:
   name: "Musketeer"
   speed: 0.6
-  health: 86
+  health: 87
   value: 71
   damage: 1
   armour: 6
   slots: 1
-  time_between: 1200
+  time_between: 900
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 0.8
+  scale: 1.0
   animation: assets/sprites/critters/musketeer
   requirements: [CONSTITUTION, GUNSMITH]
 
 DRAGOONER:
   name: "Dragoon"
   speed: 0.75
-  health: 97
-  value: 78
+  health: 112
+  value: 82
   damage: 2
-  armour: 3.5
-  slots: 1
+  armour: 4
+  slots: 1.2
   time_between: 1000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2.0
+  scale: 1.3
   animation: assets/sprites/critters/dragooner
   requirements: [STRATEGIC_WARFARE,  GUNSMITH]
 
 CARGO:
   name: "Cargo"
   speed: 0.8
-  health: 49
+  health: 53
   value: 334
   damage: 4
   armour: 2.5
@@ -455,7 +455,7 @@ CARGO:
   capture: {}
   bonus: {}
   spawn_on_death: {MUSKETEER: 3}
-  scale: 1.5
+  scale: 2.0
   animation: assets/sprites/critters/cargo
   requirements: [PHYSICS, MECHANICAL_ENGINEERING]
 
@@ -465,69 +465,69 @@ CARGO:
 
 SOLDIER:
   name: "Soldier"
-  speed: 0.7
-  health: 91
+  speed: 0.75
+  health: 126
   value: 110
   damage: 1
   armour: 6
   slots: 1
-  time_between: 1000
+  time_between: 900
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/the_general
-  requirements: [BARRACKS, CONSTITUTION, MILITARY_SERVICE]
+  requirements: [BARRACKS, CONSTITUTION, BALLISTICS]
 
 MOTORBIKE:
   name: "Motorbike"
   speed: 1
-  health: 78
+  health: 91
   value: 134
   damage: 3
-  armour: 5
+  armour: 4.5
   slots: 1
   time_between: 700
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2.5
+  scale: 2.4
   animation: assets/sprites/critters/motorbike
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 SMALL_TANK:
   name: "Small Tank"
   speed: 0.3
-  health: 112
+  health: 123
   value: 154
   damage: 2
-  armour: 9
+  armour: 8
   slots: 2
   time_between: 1000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1.2
+  scale: 2.0
   animation: assets/sprites/critters/small_tank
   requirements: [COMBUSTION_ENGINE, FACTORY]
 
 TRANSPORTER:
   name: "Transporter"
-  speed: 0.5
-  health: 105
+  speed: 0.4
+  health: 97
   value: 347
   damage: 5
-  armour: 10
+  armour: 7.5
   slots: 10
   time_between: 1900
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: {SOLDIER: 8}
-  scale: 1.2
+  scale: 2.0
   animation: assets/sprites/critters/transporter
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
@@ -548,7 +548,7 @@ SIEGE_TANK:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1.3
+  scale: 2.5
   animation: assets/sprites/critters/siege_tank
   requirements: [KNO_ARMOUR, COMPUTER_TECHNOLOGY]
 
@@ -565,7 +565,7 @@ SPECOPS:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/specops
   requirements: [SPECIAL_FORCES, ELITE_ACADEMY]
 
@@ -582,7 +582,7 @@ HELI:
   capture: {}
   bonus: {}
   spawn_on_death: {SOLDIER: 2}
-  scale: 1
+  scale: 2.0
   animation: assets/sprites/critters/heli
   requirements: [AVIATION, HANGAR]
 
@@ -599,7 +599,7 @@ THE_GENERAL:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1
+  scale: 1.0
   animation: assets/sprites/critters/the_general
   requirements: [ELITE_ACADEMY]
 
@@ -620,6 +620,6 @@ MECH_WARRIOR:
   capture: {}
   bonus: {}
   spawn_on_death: {SPECOPS: 2}
-  scale: 1
+  scale: 2.0
   animation: assets/sprites/critters/mech_warrior
   requirements: [MECH_WARRIOR_LAB]

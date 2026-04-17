@@ -60,7 +60,7 @@ _SPLASH_BONUS       = 25.0   # per tower with splash
 _DAMAGE_MOD_BONUS   = 1.5    # multiplier contribution of damage_modifier
 _RANGE_MOD_BONUS    = 1.0    # multiplier contribution of range_modifier
 _RELOAD_MOD_BONUS   = 1.0    # multiplier contribution of reload_modifier
-_SCIENTIST_W        = 15.0   # per scientist (faster research → faster defense)
+_PATH_REF_LENGTH    = 6.0    # reference path length (score is neutral at this length)
 
 # total_power weights
 _ECONOMY_W  = 0.3
@@ -213,12 +213,14 @@ def attack_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
 # Defense power
 # ---------------------------------------------------------------------------
 
-def defense_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
-    """Score based on placed tower DPS, range coverage, and special effects.
+def defense_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: int | None = None) -> float:
+    """Score based on placed tower DPS, range coverage, special effects, and path length.
 
     Effective DPS = damage / (reload_ms / 1000), factoring in empire modifiers.
-    Range extends the zone of control and stacks with DPS.
+    A longer path multiplies the score because critters spend more time under fire.
+    path_length=None disables the path multiplier (neutral factor 1.0).
     """
+    import math
     from gameserver.models.items import ItemType
 
     score = 0.0
@@ -261,11 +263,12 @@ def defense_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
     # ── Life pool (absorbs critter damage before losing) ─────────────
     score += empire.max_life * 10.0
 
-    # ── Scientists accelerate research → faster unlocks → better defense
-    score += empire.citizens.get("scientist", 0) * _SCIENTIST_W
-
     # ── Artefacts (any artefact grants a bonus) ───────────────────────
     score += len(empire.artefacts) * 150.0
+
+    # ── Path length multiplier ────────────────────────────────────────
+    if path_length and path_length > 0:
+        score *= math.sqrt(path_length / _PATH_REF_LENGTH)
 
     return max(0.0, score)
 
@@ -283,10 +286,10 @@ def total_power(economy: float, attack: float, defense: float) -> float:
 # Convenience: compute all four at once
 # ---------------------------------------------------------------------------
 
-def compute_power(empire: "Empire", upgrades: "UpgradeProvider") -> PowerReport:
+def compute_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: int | None = None) -> PowerReport:
     """Compute all four power scores for an empire."""
     eco = economy_power(empire, upgrades)
     atk = attack_power(empire,  upgrades)
-    dfn = defense_power(empire, upgrades)
+    dfn = defense_power(empire, upgrades, path_length=path_length)
     tot = total_power(eco, atk, dfn)
     return PowerReport(economy=eco, attack=atk, defense=dfn, total=tot)

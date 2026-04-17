@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battle Simulator</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+
+    #content { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; display: flex; flex-direction: column; gap: 20px; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+    }
+    .section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 14px;
+    }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--text-dim); flex: 1; min-width: 160px; }
+    select, input[type=number] {
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--mono); font-size: 12px; padding: 7px 10px; outline: none;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+    button {
+      cursor: pointer; border: none; border-radius: var(--radius);
+      padding: 8px 20px; font-size: 13px; font-family: inherit; font-weight: 600;
+      transition: opacity .15s;
+    }
+    button:hover:not(:disabled) { opacity: .85; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #0d0d14; }
+    .btn-stop    { background: var(--danger); color: #fff; }
+
+    /* Progress */
+    #progress-wrap { display: none; flex-direction: column; gap: 8px; }
+    .progress-bar-outer {
+      height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%; background: var(--accent); border-radius: 3px;
+      width: 0%; transition: width .3s ease;
+    }
+    .progress-bar-inner.indeterminate {
+      width: 30%; animation: slide 1.2s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0%   { margin-left: 0%;   width: 30%; }
+      50%  { margin-left: 70%;  width: 30%; }
+      100% { margin-left: 0%;   width: 30%; }
+    }
+    #progress-label { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+
+    /* Output table */
+    #output-wrap { display: none; }
+    #summary-bar {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      padding: 10px 14px; background: var(--surface-alt);
+      border-radius: var(--radius); margin-bottom: 12px; font-family: var(--mono);
+    }
+    .summary-item { display: flex; flex-direction: column; gap: 2px; }
+    .summary-item .s-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+    .summary-item .s-val   { font-size: 15px; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: var(--surface-alt); color: var(--text-dim);
+      font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 7px 10px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 12px; }
+    tr:hover td { background: #1a1a28; }
+    .win  { color: var(--success); }
+    .loss { color: var(--danger); }
+
+    /* Age bars */
+    #map-age-bars { display: none; margin-top: 8px; }
+    .age-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 11px; }
+    .age-name { width: 90px; color: var(--text-dim); flex-shrink: 0; font-family: var(--mono); }
+    .age-bar-outer { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .age-bar-inner { height: 100%; border-radius: 3px; background: var(--accent); }
+    .age-pct { width: 34px; text-align: right; color: var(--text-dim); font-family: var(--mono); }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>BATTLE SIMULATOR</h1>
+</div>
+
+<div id="content">
+
+  <div class="card">
+    <div class="section-title">Parameters</div>
+    <div class="form-row">
+      <label>
+        Map
+        <select id="sel-map"><option value="">Loading…</option></select>
+        <span id="map-power" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:3px;"></span>
+        <div id="map-age-bars"></div>
+      </label>
+      <label>
+        Era
+        <select id="sel-era">
+          <option value="steinzeit">Steinzeit</option>
+          <option value="neolithikum">Neolithikum</option>
+          <option value="bronzezeit">Bronzezeit</option>
+          <option value="eisenzeit">Eisenzeit</option>
+          <option value="mittelalter" selected>Mittelalter</option>
+          <option value="renaissance">Renaissance</option>
+          <option value="industrialisierung">Industrialisierung</option>
+          <option value="moderne">Moderne</option>
+          <option value="zukunft">Zukunft</option>
+        </select>
+      </label>
+<label style="max-width:100px;">
+        N (battles)
+        <input type="number" id="inp-n" value="20" min="1" max="500" />
+      </label>
+      <button class="btn-primary" id="btn-run">▶ Run</button>
+      <button class="btn-stop"    id="btn-stop" disabled>■ Stop</button>
+    </div>
+  </div>
+
+  <div class="card" id="progress-card" style="display:none;">
+    <div id="progress-wrap">
+      <div id="progress-label">Running…</div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner indeterminate" id="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="output-wrap">
+    <div class="section-title" id="output-title">Results</div>
+    <div id="summary-bar"></div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px">#</th>
+          <th>Army</th>
+          <th>Result</th>
+          <th style="text-align:right">Life</th>
+          <th style="text-align:right">Killed</th>
+          <th style="text-align:right">Reached</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="nav.js"></script>
+<script>
+const API = `http://${window.location.hostname}:8000`;
+
+// ── Load maps ─────────────────────────────────────────────────
+let _mapPower   = {};   // name → defense power
+let _mapAgePct  = {};   // name → {era_label: pct}
+
+async function loadMaps() {
+  try {
+    const resp = await fetch(`${API}/api/saved-maps`);
+    const data = await resp.json();
+    _mapPower  = data.power   || {};
+    _mapAgePct = data.age_pct || {};
+    const sel = document.getElementById('sel-map');
+    sel.innerHTML = data.maps.map(n =>
+      `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`
+    ).join('');
+    updateLifeField();
+  } catch(e) {
+    document.getElementById('sel-map').innerHTML = '<option value="">Error loading maps</option>';
+  }
+}
+
+function updateLifeField() {
+  const mapName = document.getElementById('sel-map').value;
+  const p = _mapPower[mapName];
+  document.getElementById('map-power').textContent = p != null ? `⚔ Power: ${p.toLocaleString()}` : '';
+
+  const agePct = _mapAgePct[mapName] || {};
+  const barsEl = document.getElementById('map-age-bars');
+  const entries = Object.entries(agePct).sort((a, b) => b[1] - a[1]);
+  if (entries.length) {
+    barsEl.style.display = 'block';
+    barsEl.innerHTML = entries.map(([era, pct]) => `
+      <div class="age-row">
+        <span class="age-name">${era}</span>
+        <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%"></div></div>
+        <span class="age-pct">${pct}%</span>
+      </div>`).join('');
+  } else {
+    barsEl.style.display = 'none';
+    barsEl.innerHTML = '';
+  }
+}
+
+document.getElementById('sel-map').addEventListener('change', updateLifeField);
+
+loadMaps();
+
+// ── Sim state ─────────────────────────────────────────────────
+let evtSource = null;
+let rowCount  = 0;
+let wins = 0, losses = 0;
+
+function resetOutput() {
+  rowCount = wins = losses = 0;
+  document.getElementById('results-body').innerHTML = '';
+  document.getElementById('summary-bar').innerHTML  = '';
+}
+
+// Parse a result line like:
+//  "1   Angry Barbarians   🛡 10/10  (17k / 0r)"
+//  "2   Epic Plunder       ⚔ 0/10  (3k / 9r)"
+function parseLine(line) {
+  // Match: leading number, army name, icon + stats
+  const m = line.match(/^(\d+)\s{2,}(.+?)\s{2,}([🛡⚔])\s+(\d+)\/(\d+)\s+\((\d+)k\s*\/\s*(\d+)r\)/u);
+  if (!m) return null;
+  return {
+    idx:     parseInt(m[1]),
+    army:    m[2].trim(),
+    win:     m[3] === '🛡',
+    life:    parseInt(m[4]),
+    maxLife: parseInt(m[5]),
+    killed:  parseInt(m[6]),
+    reached: parseInt(m[7]),
+  };
+}
+
+function addRow(r) {
+  const tbody = document.getElementById('results-body');
+  const tr = document.createElement('tr');
+  const cls = r.win ? 'win' : 'loss';
+  tr.innerHTML = `
+    <td style="color:var(--text-dim)">${r.idx}</td>
+    <td>${r.army}</td>
+    <td class="${cls}">${r.win ? '🛡 Defender' : '⚔ Attacker'}</td>
+    <td style="text-align:right;${r.win ? '' : 'color:var(--danger)'}">${r.life}/${r.maxLife}</td>
+    <td style="text-align:right">${r.killed}</td>
+    <td style="text-align:right;${r.reached > 0 ? 'color:var(--danger)' : ''}">${r.reached}</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function updateSummary(n) {
+  const total  = wins + losses;
+  const winPct = total ? Math.round(100 * wins / total) : 0;
+  document.getElementById('summary-bar').innerHTML = `
+    <div class="summary-item"><div class="s-label">Battles</div><div class="s-val">${total}/${n}</div></div>
+    <div class="summary-item"><div class="s-label">Defender wins</div><div class="s-val" style="color:var(--success)">${wins}</div></div>
+    <div class="summary-item"><div class="s-label">Attacker wins</div><div class="s-val" style="color:var(--danger)">${losses}</div></div>
+    <div class="summary-item"><div class="s-label">Win rate</div><div class="s-val">${winPct}%</div></div>
+  `;
+}
+
+function updateProgress(done, total) {
+  const bar   = document.getElementById('progress-bar');
+  const label = document.getElementById('progress-label');
+  if (total > 0) {
+    bar.classList.remove('indeterminate');
+    bar.style.width = Math.round(100 * done / total) + '%';
+    label.textContent = `Battle ${done} / ${total}`;
+  } else {
+    bar.classList.add('indeterminate');
+    label.textContent = 'Starting…';
+  }
+}
+
+// ── Run ───────────────────────────────────────────────────────
+document.getElementById('btn-run').addEventListener('click', () => {
+  const mapName = document.getElementById('sel-map').value;
+  const era     = document.getElementById('sel-era').value;
+  const n       = parseInt(document.getElementById('inp-n').value) || 10;
+
+  if (!mapName) { alert('Select a map first.'); return; }
+  if (evtSource) { evtSource.close(); evtSource = null; }
+
+  resetOutput();
+  document.getElementById('progress-card').style.display = 'block';
+  document.getElementById('progress-wrap').style.display  = 'flex';
+  document.getElementById('output-wrap').style.display    = 'block';
+  document.getElementById('output-title').textContent     =
+    `Results — ${mapName} · ${era} · N=${n}`;
+  document.getElementById('btn-run').disabled  = true;
+  document.getElementById('btn-stop').disabled = false;
+  updateProgress(0, n);
+
+  const url = `${API}/api/tools/sim-map?map_name=${encodeURIComponent(mapName)}&era=${encodeURIComponent(era)}&n=${n}`;
+  evtSource = new EventSource(url);
+
+  evtSource.onmessage = (e) => {
+    const raw = JSON.parse(e.data);
+    if (raw === '__DONE__') {
+      finish(n);
+      return;
+    }
+    const r = parseLine(raw);
+    if (r) {
+      r.win ? wins++ : losses++;
+      rowCount++;
+      addRow(r);
+      updateProgress(rowCount, n);
+      updateSummary(n);
+    }
+  };
+
+  evtSource.onerror = () => {
+    finish(n);
+  };
+});
+
+document.getElementById('btn-stop').addEventListener('click', () => {
+  if (evtSource) { evtSource.close(); evtSource = null; }
+  finish(parseInt(document.getElementById('inp-n').value) || 0);
+});
+
+function finish(n) {
+  if (evtSource) { evtSource.close(); evtSource = null; }
+  document.getElementById('btn-run').disabled  = false;
+  document.getElementById('btn-stop').disabled = true;
+  const bar = document.getElementById('progress-bar');
+  bar.classList.remove('indeterminate');
+  bar.style.width = '100%';
+  bar.style.background = 'var(--success)';
+  document.getElementById('progress-label').textContent = `Done — ${wins + losses} battles simulated`;
+  updateSummary(n);
+}
+</script>
+</body>
+</html>

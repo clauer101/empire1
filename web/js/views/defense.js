@@ -27,23 +27,23 @@ import { debug } from '../debug.js';
 
 // ── Tower era statistics ─────────────────────────────────────
 const _TOWER_ERA = {
-  BASIC_TOWER: 'Steinzeit',    SLING_TOWER: 'Steinzeit',
+  BASIC_TOWER: 'Stone Age',    SLING_TOWER: 'Stone Age',
   DOUBLE_SLING_TOWER: 'Neolith.', SPIKE_TRAP: 'Neolith.',
   ARROW_TOWER: 'Bronze',       BALLISTA_TOWER: 'Bronze',    FIRE_TOWER: 'Bronze',
-  CATAPULTS: 'Eisenzeit',      ARBELESTE_TOWER: 'Eisenzeit',
-  TAR_TOWER: 'Mittelalter',    HEAVY_TOWER: 'Mittelalter',  BOILING_OIL: 'Mittelalter',
+  CATAPULTS: 'Iron Age',       ARBELESTE_TOWER: 'Iron Age',
+  TAR_TOWER: 'Medieval',       HEAVY_TOWER: 'Medieval',     BOILING_OIL: 'Medieval',
   CANNON_TOWER: 'Renaissance', RIFLE_TOWER: 'Renaissance',  COLD_TOWER: 'Renaissance', ICE_TOWER: 'Renaissance',
-  FLAME_THROWER: 'Industrie',  SHOCK_TOWER: 'Industrie',    PARALYZNG_TOWER: 'Industrie', GATLING_TOWER: 'Industrie',
-  NAPALM_THROWER: 'Moderne',   MG_TOWER: 'Moderne',         RAPID_FIRE_MG_BUNKER: 'Moderne',
-  RADAR_TOWER: 'Moderne',      ANTI_AIR_TOWER: 'Moderne',   LASER_TOWER: 'Moderne',
-  SNIPER_TOWER: 'Zukunft',     ROCKET_TOWER: 'Zukunft',
+  FLAME_THROWER: 'Industrial', SHOCK_TOWER: 'Industrial',   PARALYZNG_TOWER: 'Industrial', GATLING_TOWER: 'Industrial',
+  NAPALM_THROWER: 'Modern',    MG_TOWER: 'Modern',          RAPID_FIRE_MG_BUNKER: 'Modern',
+  RADAR_TOWER: 'Modern',       ANTI_AIR_TOWER: 'Modern',    LASER_TOWER: 'Modern',
+  SNIPER_TOWER: 'Future',      ROCKET_TOWER: 'Future',
 };
 const _ERA_COLORS = {
-  'Steinzeit':   '#8B7355', 'Neolith.':    '#A0887A', 'Bronze':      '#CD7F32',
-  'Eisenzeit':   '#888888', 'Mittelalter': '#6B8A8A', 'Renaissance': '#8B6914',
-  'Industrie':   '#FF6B35', 'Moderne':     '#4B9CD3', 'Zukunft':     '#9B59B6',
+  'Stone Age':   '#8B7355', 'Neolith.':    '#A0887A', 'Bronze':      '#CD7F32',
+  'Iron Age':    '#888888', 'Medieval':    '#6B8A8A', 'Renaissance': '#8B6914',
+  'Industrial':  '#FF6B35', 'Modern':      '#4B9CD3', 'Future':      '#9B59B6',
 };
-const _ERA_ORDER_STAT = ['Steinzeit','Neolith.','Bronze','Eisenzeit','Mittelalter','Renaissance','Industrie','Moderne','Zukunft'];
+const _ERA_ORDER_STAT = ['Stone Age','Neolith.','Bronze','Iron Age','Medieval','Renaissance','Industrial','Modern','Future'];
 const _NON_TOWER = new Set(['castle','spawnpoint','path','empty','void','']);
 
 function _buildEraStatsHTML(tiles) {
@@ -88,6 +88,27 @@ let grid = null;
 let _pendingAttackId = null;
 /** @type {number|null} defender_uid when spectating an outgoing attack */
 let _spectateDefenderUid = null;
+/** @type {string|null} last era key passed to _updateCastleSprite — skip re-render if unchanged */
+let _lastCastleEra = null;
+/** iid.toUpperCase() → Roman numeral string e.g. "III" */
+let _structureEraRoman = {};
+
+const _ROMAN_NUMERALS = ['I','II','III','IV','V','VI','VII','VIII','IX'];
+async function _loadStructureEraMap() {
+  try {
+    const resp = await rest.getEraMap();
+    const eras = resp.eras || [];
+    const map  = resp.structures || {};
+    _structureEraRoman = {};
+    for (const [era, iids] of Object.entries(map)) {
+      const idx = eras.indexOf(era);
+      const roman = idx >= 0 ? _ROMAN_NUMERALS[idx] : '';
+      for (const iid of iids) _structureEraRoman[iid.toUpperCase()] = roman;
+    }
+  } catch (e) {
+    console.warn('[defense] era-map load failed:', e);
+  }
+}
 
 // ── Map Editor State ────────────────────────────────────────
 let _isDirtyPath = false;
@@ -438,6 +459,8 @@ const _ERA_CASTLE_SPRITES = {
 };
 
 function _updateCastleSprite(eraKey) {
+  if (eraKey === _lastCastleEra) return;   // era unchanged — skip expensive base invalidation
+  _lastCastleEra = eraKey;
   const url = _ERA_CASTLE_SPRITES[eraKey] || '/assets/sprites/bases/base.webp';
   registerTileType('castle', {
     label: 'Castle (Target)',
@@ -1007,7 +1030,7 @@ async function enter() {
 
   // Load items to get structure tiles (via REST)
   try {
-    await rest.getItems();
+    await Promise.all([rest.getItems(), _loadStructureEraMap()]);
   } catch (err) {
     console.warn('[Battle] could not load items:', err.message);
   }
@@ -1079,6 +1102,7 @@ function leave() {
   _unsub = [];
   _pendingAttackId = null;
   _spectateDefenderUid = null;
+  _lastCastleEra = null;
   _isDirtyPath = false;
   clearTimeout(_autoSaveTimer);
   const menu = container?.querySelector('#tile-place-menu');
@@ -1302,7 +1326,7 @@ function _openPlacementMenu(q, r) {
   if (!inBattle) {
     const label = document.createElement('div');
     label.className = 'tpm-section-label';
-    label.textContent = 'Wegpunkte';
+    label.textContent = 'Waypoints';
     itemsEl.appendChild(label);
 
     const setupRow = document.createElement('div');
@@ -1310,9 +1334,9 @@ function _openPlacementMenu(q, r) {
     for (const typeId of ['castle', 'spawnpoint']) {
       const item = _createTpmItem(typeId, q, r, menu);
       if (typeId === 'castle' && hasCastle) {
-        item.title += ' (verschieben)';
+        item.title += ' (move)';
       } else if (typeId === 'spawnpoint' && hasSpawnpoint) {
-        item.title += ' (verschieben)';
+        item.title += ' (move)';
       }
       setupRow.appendChild(item);
     }
@@ -1324,7 +1348,7 @@ function _openPlacementMenu(q, r) {
   if (structureIds.length > 0) {
     const towerLabel = document.createElement('div');
     towerLabel.className = 'tpm-section-label';
-    towerLabel.textContent = 'T\xfcrme';
+    towerLabel.textContent = 'Towers';
     itemsEl.appendChild(towerLabel);
 
     const towerGrid = document.createElement('div');
@@ -1360,10 +1384,22 @@ function _createTpmItem(typeId, q, r, menu) {
   }
   card.appendChild(sprite);
 
-  // Name
+  // Name + era Roman numeral
   const name = document.createElement('div');
   name.className = 'tpm-name';
-  name.textContent = t.label;
+  name.style.cssText = 'display:flex;align-items:baseline;gap:3px;overflow:hidden;';
+  const eraRoman = _structureEraRoman[typeId.toUpperCase()];
+  const labelSpan = document.createElement('span');
+  labelSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  labelSpan.textContent = t.label;
+  name.appendChild(labelSpan);
+  if (eraRoman) {
+    const era = document.createElement('span');
+    era.className = 'era-roman-badge';
+    era.style.cssText = 'font-size:9px;flex-shrink:0;';
+    era.textContent = eraRoman;
+    name.appendChild(era);
+  }
   card.appendChild(name);
 
   // Cost

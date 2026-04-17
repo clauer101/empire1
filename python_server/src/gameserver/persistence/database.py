@@ -125,6 +125,17 @@ class Database:
             log.info("Deleted user %s", username)
         return deleted
 
+    async def rename_empire(self, uid: int, empire_name: str) -> bool:
+        """Update the empire_name for a user by uid. Returns True if updated."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "UPDATE users SET empire_name = ? WHERE uid = ?",
+            (empire_name, uid),
+        ) as cursor:
+            updated = cursor.rowcount > 0
+        await self._conn.commit()
+        return updated
+
     async def update_last_seen(self, uid: int) -> None:
         """Update the last_seen timestamp for a user."""
         assert self._conn is not None

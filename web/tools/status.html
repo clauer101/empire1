@@ -368,10 +368,12 @@ function buildDetailHTML(e) {
   let armyHTML = e.armies.length === 0
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
     : e.armies.map(a => {
-        const waves = a.waves.map(w => `${w.iid}×${w.slots}`).join(', ');
-        return `<div class="detail-row">
-          <span class="detail-key">${a.name || 'Army ' + a.aid}</span>
-          <span class="detail-val" style="font-size:10px;color:var(--text-dim)">${waves}</span>
+        const waveList = a.waves.map(w =>
+          `<li style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${w.iid} <span style="color:var(--text)">×${w.slots}</span></li>`
+        ).join('');
+        return `<div style="margin-bottom:6px">
+          <div class="detail-key" style="margin-bottom:2px">${a.name || 'Army ' + a.aid}</div>
+          <ul style="list-style:none;padding-left:10px;margin:0">${waveList}</ul>
         </div>`;
       }).join('');
 

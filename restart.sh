@@ -239,7 +239,7 @@ start_server() {
 # -- Argument-Parsing ------------------------------------------------
 
 STATE_FILE=""
-ENABLE_CACHE=true
+ENABLE_CACHE=false
 CMD="restart"
 SUBCMD=""
 

@@ -174,12 +174,13 @@
             <th>Email</th>
             <th>Created</th>
             <th>Last Seen</th>
+            <th>Rename Empire</th>
             <th>Reset Password</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="users-body">
-          <tr><td colspan="8" style="color:var(--text-dim);text-align:center">Loading…</td></tr>
+          <tr><td colspan="9" style="color:var(--text-dim);text-align:center">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -265,6 +266,12 @@
           <td>${fmtBerlin(u.last_seen)}</td>
           <td>
             <div class="pw-row">
+              <input type="text" id="en-${u.uid}" placeholder="new empire name" value="${(u.empire_name || '').replace(/"/g, '&quot;')}" />
+              <button class="btn-warn" onclick="renameEmpire(${u.uid})">Set</button>
+            </div>
+          </td>
+          <td>
+            <div class="pw-row">
               <input type="password" id="pw-${u.uid}" placeholder="new password" />
               <button class="btn-warn" onclick="resetPw('${u.username}', ${u.uid})">Set</button>
             </div>
@@ -274,6 +281,14 @@
           </td>
         </tr>
       `).join('');
+    }
+
+    async function renameEmpire(uid) {
+      const name = document.getElementById(`en-${uid}`).value.trim();
+      if (!name) { toast('Enter a name first', false); return; }
+      const res = await api('PUT', `/api/admin/users/${uid}/empire_name`, { empire_name: name });
+      if (res.ok) { toast(`Empire renamed`); loadUsers(); }
+      else toast(res.error || 'Failed', false);
     }
 
     async function deleteUser(username) {

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Critter Sprites</title>
+  <style>
+    :root {
+      --bg:       #0d0d14;
+      --surface:  #14141f;
+      --border:   #2a2a3a;
+      --accent:   #4fc3f7;
+      --text:     #e0e0e6;
+      --text-dim: #9999a8;
+      --radius:   6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #topbar label { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+    #topbar input[type=range] { width: 110px; }
+    #zoom-val { font-size: 12px; color: var(--accent); min-width: 28px; }
+
+    #content { padding: 24px 20px 60px; }
+
+    .era-section { margin-bottom: 32px; }
+    .era-heading {
+      font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); padding-bottom: 6px; margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid-canvas-wrap { position: relative; }
+    canvas.grid-canvas { display: block; image-rendering: pixelated; }
+
+    /* GIF overlay grid */
+    .gif-overlay {
+      position: absolute; top: 0; left: 0; pointer-events: none;
+    }
+    .gif-overlay img {
+      position: absolute;
+      image-rendering: pixelated;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>CRITTER SPRITES</h1>
+  <label>
+    Zoom
+    <input type="range" id="zoom-slider" min="1" max="8" step="0.5" value="4" />
+    <span id="zoom-val">4×</span>
+  </label>
+  <label>
+    Direction
+    <select id="dir-select">
+      <option value="forward">Forward</option>
+      <option value="left">Left</option>
+      <option value="right">Right</option>
+      <option value="backward">Backward</option>
+    </select>
+  </label>
+  <label>
+    Target height
+    <input type="number" id="target-h" value="13" min="1" max="200" style="width:52px;background:#1a1a28;border:1px solid #2a2a3a;border-radius:4px;color:#e0e0e6;font-size:12px;padding:3px 6px;" />
+    px
+  </label>
+  <button id="btn-normalize" class="btn-primary" style="cursor:pointer;border:none;border-radius:6px;padding:5px 12px;font-size:12px;background:#4fc3f7;color:#0d0d14;font-weight:600;">Normalize scales</button>
+  <span id="status" style="font-size:12px;color:var(--text-dim)">Loading…</span>
+</div>
+
+<div id="content"></div>
+
+<script type="module">
+  import { CritterSprite } from '../js/lib/critter_sprite.js';
+
+  const HEX_SIZE   = 28;
+  const BASE_SCALE = 0.467;
+
+  const ERA_ORDER = [
+    'Steinzeit','Neolithikum','Bronzezeit','Eisenzeit',
+    'Mittelalter','Renaissance','Industrialisierung','Moderne','Zukunft',
+  ];
+
+  let zoomFactor = 4;
+  let direction  = 'forward';
+  let critters   = [];   // { name, sprite, scale, era }
+  let rafId      = null;
+
+  // ── Load ──────────────────────────────────────────────────────────────────
+  async function loadAll() {
+    const [manifestResp, statsArr] = await Promise.all([
+      fetch('/api/critters').then(r => r.json()),
+      fetch('/api/critter-stats').then(r => r.json()).catch(() => []),
+    ]);
+    const statsMap = new Map();
+    for (const c of (Array.isArray(statsArr) ? statsArr : [])) {
+      statsMap.set(c.iid.toLowerCase(), c);
+    }
+    const entries = manifestResp.critters || [];
+    document.getElementById('status').textContent = `${entries.length} critters`;
+
+    critters = await Promise.all(entries.map(async entry => {
+      const sprite = CritterSprite.fromManifest(entry);
+      await sprite.load().catch(() => {});
+      const st = statsMap.get(entry.name.toLowerCase());
+      return { name: entry.name, sprite, scale: st?.scale ?? 1.0, era: st?.era ?? 'Steinzeit' };
+    }));
+
+    buildGrid();
+    startLoop();
+  }
+
+  // ── Layout helpers ─────────────────────────────────────────────────────────
+  // Cell size = tallest sprite across all loaded critters at current zoom + padding
+  function cellSize() {
+    let maxH = 1;
+    for (const c of critters) {
+      const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
+      const aspect  = (c.sprite.frameW > 0 && c.sprite.frameH > 0)
+        ? c.sprite.frameH / c.sprite.frameW : 1;
+      maxH = Math.max(maxH, spriteW * aspect);
+    }
+    return Math.ceil(maxH) + 12;
+  }
+
+  const COLS = 8;  // critters per row per era
+
+  // ── Build DOM ──────────────────────────────────────────────────────────────
+  function buildGrid() {
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+
+    const byEra = new Map(ERA_ORDER.map(e => [e, []]));
+    for (const c of critters) {
+      const era = c.era || 'Steinzeit';
+      if (!byEra.has(era)) byEra.set(era, []);
+      byEra.get(era).push(c);
+    }
+
+    const cell = cellSize();
+
+    for (const era of ERA_ORDER) {
+      const group = byEra.get(era) || [];
+      if (group.length === 0) continue;
+
+      const section = document.createElement('div');
+      section.className = 'era-section';
+
+      const heading = document.createElement('div');
+      heading.className = 'era-heading';
+      heading.textContent = `${era}  (${group.length})`;
+      section.appendChild(heading);
+
+      const cols  = Math.min(COLS, group.length);
+      const rows  = Math.ceil(group.length / COLS);
+      const W     = cols * cell;
+      const H     = rows * cell;
+      const dpr   = window.devicePixelRatio || 1;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'grid-canvas-wrap';
+      wrap.style.width  = W + 'px';
+      wrap.style.height = H + 'px';
+
+      // ── Canvas for spritesheet critters ──
+      const canvas = document.createElement('canvas');
+      canvas.className = 'grid-canvas';
+      canvas.width  = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      canvas.style.width  = W + 'px';
+      canvas.style.height = H + 'px';
+      canvas.dataset.era  = era;
+      wrap.appendChild(canvas);
+
+      // ── GIF overlay ──
+      const gifDiv = document.createElement('div');
+      gifDiv.className = 'gif-overlay';
+      gifDiv.style.width  = W + 'px';
+      gifDiv.style.height = H + 'px';
+      gifDiv.dataset.era  = era;
+
+      group.forEach((c, i) => {
+        const col = i % COLS;
+        const row = Math.floor(i / COLS);
+        const cx  = col * cell + cell / 2;
+        const cy  = row * cell + cell / 2;
+
+        if (c.sprite.type === 'gifs') {
+          const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
+          const img = c.sprite.getImg(direction);
+          if (img) {
+            const el = img.cloneNode();
+            el.style.width  = spriteW + 'px';
+            el.style.height = 'auto';
+            el.style.left   = cx + 'px';
+            el.style.top    = cy + 'px';
+            el.dataset.critter = c.name;
+            gifDiv.appendChild(el);
+          }
+        }
+
+        // draw label below sprite on canvas (done in RAF loop for consistency)
+      });
+
+      wrap.appendChild(gifDiv);
+      section.appendChild(wrap);
+      content.appendChild(section);
+    }
+  }
+
+  // ── RAF loop: draw spritesheet critters + labels onto each era canvas ──────
+  function startLoop() {
+    if (rafId) cancelAnimationFrame(rafId);
+
+    const byEra = new Map(ERA_ORDER.map(e => [e, []]));
+    for (const c of critters) {
+      const era = c.era || 'Steinzeit';
+      if (!byEra.has(era)) byEra.set(era, []);
+      byEra.get(era).push(c);
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+
+    function loop(ts) {
+      const cell = cellSize();
+
+      for (const era of ERA_ORDER) {
+        const group = byEra.get(era) || [];
+        if (group.length === 0) continue;
+
+        const canvas = document.querySelector(`canvas.grid-canvas[data-era="${era}"]`);
+        if (!canvas) continue;
+        const ctx = canvas.getContext('2d');
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Grid lines
+        ctx.strokeStyle = '#1e1e2e';
+        ctx.lineWidth   = 1;
+        const cols = Math.min(COLS, group.length);
+        const rows = Math.ceil(group.length / COLS);
+        for (let c = 0; c <= cols; c++) {
+          ctx.beginPath(); ctx.moveTo(c * cell, 0); ctx.lineTo(c * cell, rows * cell); ctx.stroke();
+        }
+        for (let r = 0; r <= rows; r++) {
+          ctx.beginPath(); ctx.moveTo(0, r * cell); ctx.lineTo(cols * cell, r * cell); ctx.stroke();
+        }
+
+        group.forEach((c, i) => {
+          const col = i % COLS;
+          const row = Math.floor(i / COLS);
+          const cx  = col * cell + cell / 2;
+          const cy  = row * cell + cell / 2;
+
+          // Spritesheet: draw animated frame
+          if (c.sprite.type === 'spritesheet' && c.sprite.ready) {
+            const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
+            c.sprite.draw(ctx, direction, ts, cx, cy, spriteW);
+          }
+
+          // Label: name below center
+          const labelY = row * cell + cell - 3;
+          ctx.font      = `${Math.max(8, Math.round(cell * 0.11))}px monospace`;
+          ctx.fillStyle = '#666';
+          ctx.textAlign = 'center';
+          ctx.fillText(c.name, cx, labelY);
+        });
+
+        ctx.restore();
+      }
+
+      rafId = requestAnimationFrame(loop);
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // ── Rebuild on control change ──────────────────────────────────────────────
+  function rebuild() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    buildGrid();
+    startLoop();
+  }
+
+  document.getElementById('zoom-slider').addEventListener('input', e => {
+    zoomFactor = parseFloat(e.target.value);
+    document.getElementById('zoom-val').textContent = zoomFactor + '×';
+    rebuild();
+  });
+  document.getElementById('dir-select').addEventListener('change', e => {
+    direction = e.target.value;
+    rebuild();
+  });
+
+  // ── Normalize scales ────────────────────────────────────────────────────────
+  document.getElementById('btn-normalize').addEventListener('click', async () => {
+    const targetH = parseFloat(document.getElementById('target-h').value) || 13;
+    const btn = document.getElementById('btn-normalize');
+
+    // Compute required scale per critter:
+    //   renderedH = HEX_SIZE * BASE_SCALE * scale * (frameH / frameW)
+    //   => scale = targetH / (HEX_SIZE * BASE_SCALE * (frameH / frameW))
+    const changes = {};
+    const preview = [];
+    for (const c of critters) {
+      if (!c.sprite.ready || c.sprite.frameW === 0 || c.sprite.frameH === 0) continue;
+      const aspectRatio = c.sprite.frameH / c.sprite.frameW;
+      const newScale    = targetH / (HEX_SIZE * BASE_SCALE * aspectRatio);
+      const rounded     = Math.round(newScale * 100) / 100;
+      changes[c.name.toUpperCase()] = { scale: rounded };
+      preview.push(`${c.name}: ${c.scale} → ${rounded}`);
+    }
+
+    if (Object.keys(changes).length === 0) {
+      alert('No sprites loaded yet.');
+      return;
+    }
+
+    const msg = `Normalizing ${Object.keys(changes).length} critters to ${targetH}px height.\n\nFirst few:\n${preview.slice(0, 8).join('\n')}\n\nApply?`;
+    if (!confirm(msg)) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const resp = await fetch('/api/critter-stats', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(changes),
+      });
+      const result = await resp.json();
+      if (result.ok) {
+        // Update local scale values and re-render
+        const newScaleMap = new Map(
+          Object.entries(changes).map(([iid, v]) => [iid.toLowerCase(), v.scale])
+        );
+        for (const c of critters) {
+          const s = newScaleMap.get(c.name.toLowerCase());
+          if (s != null) c.scale = s;
+        }
+        rebuild();
+        document.getElementById('status').textContent = `✓ ${Object.keys(changes).length} scales updated`;
+      } else {
+        alert('Error: ' + JSON.stringify(result));
+      }
+    } catch (e) {
+      alert('Request failed: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Normalize scales';
+    }
+  });
+
+  function authHeaders() {
+    const token = localStorage.getItem('e3_jwt_token');
+    return token ? { 'Authorization': 'Bearer ' + token } : {};
+  }
+
+  loadAll();
+</script>
+
+<script src="nav.js"></script>
+</body>
+</html>

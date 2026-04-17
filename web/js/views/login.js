@@ -18,15 +18,15 @@ const _CRITTERS = [
   ['horseman_fast','png',  1  ],   // 80×80
   ['legionary',    'webp', 2/3],   // 170×256
   ['swordman',     'png',  2/3],
-  ['ninja',        'png',  2/3],
-  ['musketeer',    'png',  2/3],
+  ['ninja',        'webp', 2/3],
+  ['musketeer',    'webp', 2/3],
   ['the_king',     'png',  2/3],   // 39×58
   ['mech_warrior', 'webp', 1  ],   // 50×50
   ['specops',      'png',  2/3],
-  ['dragooner',    'png',  1  ],   // 80×80
-  ['samurai',      'png',  2/3],
-  ['crusader',     'png',  2/3],
-  ['siege_tank',   'png',  1  ],   // 80×80
+  ['dragooner',    'webp', 1  ],   // 80×80
+  ['samurai',      'webp', 2/3],
+  ['crusader',     'webp', 2/3],
+  ['siege_tank',   'webp', 1  ],   // 80×80
   ['pikeneer',     'png',  2/3],
 ];
 

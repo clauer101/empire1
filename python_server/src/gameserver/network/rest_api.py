@@ -486,7 +486,13 @@ def create_app(services: "Services") -> FastAPI:
                 except (ValueError, AttributeError):
                     pass
 
-            power = compute_power(empire, up).to_dict() if up else {"economy": 0, "attack": 0, "defense": 0, "total": 0}
+            from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle as _find_path
+            try:
+                _nm = {f"{t['q']},{t['r']}": (t["type"] if t["type"] else "empty") for t in hex_tiles}
+                _pl = len(_find_path(_nm)) - 1 if _find_path(_nm) else None
+            except Exception:
+                _pl = None
+            power = compute_power(empire, up, path_length=_pl).to_dict() if up else {"economy": 0, "attack": 0, "defense": 0, "total": 0}
 
             empires_out.append({
                 "uid": empire.uid,
@@ -632,6 +638,19 @@ def create_app(services: "Services") -> FastAPI:
         ) as cur:
             updated = cur.rowcount > 0
         await services.database._conn.commit()
+        return {"ok": updated}
+
+    @app.put("/api/admin/users/{uid}/empire_name")
+    async def admin_rename_empire(uid: int, body: dict, _uid: int = Depends(require_admin)) -> dict:
+        """Rename a player's empire. Body: {empire_name}"""
+        if services.database is None:
+            return {"ok": False, "error": "no database"}
+        name = body.get("empire_name", "").strip()
+        if not name:
+            return {"ok": False, "error": "empire_name required"}
+        updated = await services.database.rename_empire(uid, name)
+        if updated and uid in services.empires:
+            services.empires[uid].name = name
         return {"ok": updated}
 
     @app.get("/api/admin/catalog")
@@ -914,7 +933,22 @@ def create_app(services: "Services") -> FastAPI:
         HEX_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
         NON_TOWER = {"path", "castle", "spawnpoint", "empty", "", None}
 
-        def _analyze(tiles: list[dict], source: str, empire_name: str, uid: int) -> dict:
+        from gameserver.engine.power_service import defense_power as _defense_power
+        from gameserver.models.empire import Empire as _Empire
+
+        def _defense_power_for_tiles(tiles: list[dict], life: float, path_length: int | None = None) -> float | None:
+            try:
+                up = services.empire_service._upgrades
+                if up is None:
+                    return None
+                e = _Empire(uid=0, name="")
+                e.hex_map = {f"{t['q']},{t['r']}": {"type": t["type"]} for t in tiles}
+                e.max_life = life
+                return round(_defense_power(e, up, path_length=path_length), 1)
+            except Exception:
+                return None
+
+        def _analyze(tiles: list[dict], source: str, empire_name: str, uid: int, life: float = 10.0) -> dict:
             # Build dict
             tile_map: dict[tuple, str] = {}
             for t in tiles:
@@ -971,7 +1005,7 @@ def create_app(services: "Services") -> FastAPI:
                 age: round(cnt / num_towers * 100, 1)
                 for age, cnt in age_counts.items()
             } if num_towers else {}
-            power = round(total_cost * _math.sqrt(path_length) / 600) if path_length else None
+            power = _defense_power_for_tiles(tiles, life, path_length=path_length)
 
             return {
                 "source":      source,
@@ -999,7 +1033,8 @@ def create_app(services: "Services") -> FastAPI:
                 for m in (data.get("maps") or []):
                     tiles = m.get("hex_map") or []
                     if tiles:
-                        entry = _analyze(tiles, "saved", m.get("name", m.get("id", "?")), 0)
+                        life_val = float(m.get("life") or 10.0)
+                        entry = _analyze(tiles, "saved", m.get("name", m.get("id", "?")), 0, life=life_val)
                         entry["map_id"] = m.get("id", "")
                         entry["empire_name"] = m.get("name", entry["empire_name"])
                         entry["life"] = m.get("life")
@@ -1019,7 +1054,8 @@ def create_app(services: "Services") -> FastAPI:
                     tt = tt.get("type", "")
                 tiles.append({"q": q, "r": r, "type": tt or ""})
             if tiles:
-                results.append(_analyze(tiles, "live", empire.name, empire.uid))
+                life_val = float(empire.max_life or 10.0)
+                results.append(_analyze(tiles, "live", empire.name, empire.uid, life=life_val))
 
         return results
 

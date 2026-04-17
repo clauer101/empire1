@@ -907,7 +907,7 @@ export class HexGrid {
     }
     
     const shotSpriteUrl = data.shot_sprite ? '/' + data.shot_sprite : null;
-    if (shotSpriteUrl) this._ensureSpriteLoaded(shotSpriteUrl);
+    if (shotSpriteUrl) this._ensureSpriteLoaded(shotSpriteUrl, false);
 
     this.battleShots.set(shot_id, {
       source_sid: data.source_sid,
@@ -933,10 +933,12 @@ export class HexGrid {
 
   /** Mark base layer (tiles + path) as dirty - needs re-render. */
   /**
-   * Load a sprite URL into _spriteCache; invalidates the base layer when done.
+   * Load a sprite URL into _spriteCache.
    * @param {string} url
+   * @param {boolean} [invalidateBase=true]  Set false for dynamic sprites (shots, critters)
+   *   that are not part of the base layer — they only need _dirty, not a full base re-render.
    */
-  _ensureSpriteLoaded(url) {
+  _ensureSpriteLoaded(url, invalidateBase = true) {
     if (this._spriteCache.has(url)) return;
     this._spriteCache.set(url, 'loading');
     fetch(url)
@@ -944,7 +946,7 @@ export class HexGrid {
       .then(blob => createImageBitmap(blob))
       .then(bmp => {
         this._spriteCache.set(url, bmp);
-        this._invalidateBase();
+        if (invalidateBase) this._invalidateBase();
         this._dirty = true;
       })
       .catch(e => {

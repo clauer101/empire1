@@ -88,7 +88,7 @@ prices:
     u: 0
     y: 1
     z: 2.5
-    v: 2.45
+    v: 2.4
   army:
     u: 211
     y: 2.4
@@ -115,7 +115,7 @@ ai_generator:
     min_slots: 4
     max_slots: 8
     min_previous_era: 0
-    max_previous_era: 1
+    max_previous_era: 0
     min_next_era: 0
     max_next_era: 1
   neolithicum:
@@ -123,25 +123,25 @@ ai_generator:
     max_waves: 5
     min_slots: 6
     max_slots: 12
-    min_previous_era: 0
-    max_previous_era: 1
-    min_next_era: 0
-    max_next_era: 1
+    min_previous_era: 1
+    max_previous_era: 2
+    min_next_era: 1
+    max_next_era: 2
   bronze:
     min_waves: 5
     max_waves: 7
     min_slots: 8
     max_slots: 16
-    min_previous_era: 0
+    min_previous_era: 1
     max_previous_era: 2
-    min_next_era: 0
+    min_next_era: 1
     max_next_era: 2
   iron:
     min_waves: 7
     max_waves: 9
     min_slots: 10
     max_slots: 20
-    min_previous_era: 0
+    min_previous_era: 1
     max_previous_era: 2
     min_next_era: 0
     max_next_era: 2
@@ -165,27 +165,27 @@ ai_generator:
     max_next_era: 3
   industrial:
     min_waves: 14
-    max_waves: 19
-    min_slots: 24
-    max_slots: 28
+    max_waves: 18
+    min_slots: 20
+    max_slots: 26
     min_previous_era: 0
     max_previous_era: 3
     min_next_era: 0
     max_next_era: 3
   modern:
-    min_waves: 16
-    max_waves: 20
-    min_slots: 28
-    max_slots: 32
+    min_waves: 15
+    max_waves: 19
+    min_slots: 22
+    max_slots: 28
     min_previous_era: 0
     max_previous_era: 3
     min_next_era: 0
     max_next_era: 3
   future:
-    min_waves: 20
+    min_waves: 18
     max_waves: 20
-    min_slots: 30
-    max_slots: 36
+    min_slots: 24
+    max_slots: 32
     min_previous_era: 5
     max_previous_era: 15
     min_next_era: 0

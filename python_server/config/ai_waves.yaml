@@ -1639,7 +1639,7 @@ armies:
         slots: 21
       - critter: MUSKETEER
         slots: 21
-      - critter: NINJA
+      - critter: DRAGOONER
         slots: 22
       - critter: NINJA
         slots: 23
@@ -2335,7 +2335,7 @@ armies:
         slots: 19
       - critter: SMALL_TANK
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 20
       - critter: SMALL_TANK
         slots: 21
@@ -2349,7 +2349,7 @@ armies:
         slots: 23
       - critter: MOTORBIKE
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 24
       - critter: MOTORBIKE
         slots: 25
@@ -2357,7 +2357,7 @@ armies:
         slots: 26
       - critter: SMALL_TANK
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 27
       - critter: MOTORBIKE
         slots: 27
@@ -2367,7 +2367,7 @@ armies:
         slots: 29
       - critter: SOLDIER
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 30
 
   - name: "Optical Spies"
@@ -2379,13 +2379,13 @@ armies:
         slots: 18
       - critter: CARGO
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
       - critter: SOLDIER
         slots: 20
       - critter: TRANSPORTER
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 21
       - critter: SMALL_TANK
         slots: 22
@@ -2399,7 +2399,7 @@ armies:
         slots: 25
       - critter: MOTORBIKE
         slots: 25
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 26
       - critter: SOLDIER
         slots: 27
@@ -2429,15 +2429,15 @@ armies:
         slots: 20
       - critter: SMALL_TANK
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 21
       - critter: SMALL_TANK
         slots: 22
       - critter: MOTORBIKE
         slots: 22
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 23
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 24
       - critter: SOLDIER
         slots: 24
@@ -2445,7 +2445,7 @@ armies:
         slots: 25
       - critter: MOTORBIKE
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 26
       - critter: MUSKETEER
         slots: 27
@@ -2475,7 +2475,7 @@ armies:
         slots: 20
       - critter: SMALL_TANK
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 21
       - critter: TRANSPORTER
         slots: 22
@@ -2497,7 +2497,7 @@ armies:
         slots: 27
       - critter: SOLDIER
         slots: 27
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 28
       - critter: SOLDIER
         slots: 29
@@ -2515,13 +2515,13 @@ armies:
         slots: 18
       - critter: MOTORBIKE
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
       - critter: SMALL_TANK
         slots: 20
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 21
       - critter: SOLDIER
         slots: 22
@@ -2565,11 +2565,11 @@ armies:
         slots: 19
       - critter: SOLDIER
         slots: 20
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 21
       - critter: MOTORBIKE
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 22
       - critter: TRANSPORTER
         slots: 22
@@ -2577,7 +2577,7 @@ armies:
         slots: 23
       - critter: MOTORBIKE
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 24
       - critter: SOLDIER
         slots: 25
@@ -2587,7 +2587,7 @@ armies:
         slots: 26
       - critter: SOLDIER
         slots: 27
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 27
       - critter: SMALL_TANK
         slots: 28
@@ -2615,7 +2615,7 @@ armies:
         slots: 21
       - critter: TRANSPORTER
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 22
       - critter: SMALL_TANK
         slots: 22
@@ -2627,9 +2627,9 @@ armies:
         slots: 24
       - critter: SMALL_TANK
         slots: 25
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 26
       - critter: TRANSPORTER
         slots: 27
@@ -2637,11 +2637,11 @@ armies:
         slots: 27
       - critter: MOTORBIKE
         slots: 28
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 29
       - critter: SMALL_TANK
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 30
 
   - name: "Electrical Blackout Strike"
@@ -2653,11 +2653,11 @@ armies:
         slots: 18
       - critter: SOLDIER
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
       - critter: SOLDIER
         slots: 20
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 21
       - critter: SOLDIER
         slots: 21
@@ -2681,13 +2681,13 @@ armies:
         slots: 27
       - critter: TRANSPORTER
         slots: 27
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 28
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 30
 
   - name: "Defense Department Overrun"
@@ -2699,17 +2699,17 @@ armies:
         slots: 18
       - critter: SMALL_TANK
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 20
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 21
       - critter: SOLDIER
         slots: 21
       - critter: MOTORBIKE
         slots: 22
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 22
       - critter: SOLDIER
         slots: 23
@@ -2717,17 +2717,17 @@ armies:
         slots: 24
       - critter: TRANSPORTER
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 25
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 27
       - critter: SMALL_TANK
         slots: 27
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 28
       - critter: SOLDIER
         slots: 29
@@ -2745,7 +2745,7 @@ armies:
         slots: 18
       - critter: MOTORBIKE
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
       - critter: SOLDIER
         slots: 20
@@ -2753,7 +2753,7 @@ armies:
         slots: 21
       - critter: SMALL_TANK
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 22
       - critter: MOTORBIKE
         slots: 22
@@ -2761,13 +2761,13 @@ armies:
         slots: 23
       - critter: MOTORBIKE
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 24
       - critter: SIEGE_TANK
         slots: 25
       - critter: SOLDIER
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 26
       - critter: MOTORBIKE
         slots: 27
@@ -2777,7 +2777,7 @@ armies:
         slots: 28
       - critter: SOLDIER
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 29
       - critter: SOLDIER
         slots: 30
@@ -2807,7 +2807,7 @@ armies:
         slots: 23
       - critter: MOTORBIKE
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 24
       - critter: SMALL_TANK
         slots: 25
@@ -2817,15 +2817,15 @@ armies:
         slots: 26
       - critter: SMALL_TANK
         slots: 27
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 27
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 28
       - critter: SOLDIER
         slots: 29
       - critter: MOTORBIKE
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 30
 
   - name: "Combustion Engine Revolution"
@@ -2841,7 +2841,7 @@ armies:
         slots: 19
       - critter: SOLDIER
         slots: 20
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 21
       - critter: SOLDIER
         slots: 21
@@ -2849,15 +2849,15 @@ armies:
         slots: 22
       - critter: MOTORBIKE
         slots: 22
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 23
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 24
       - critter: SMALL_TANK
         slots: 24
       - critter: MOTORBIKE
         slots: 25
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 26
       - critter: SOLDIER
         slots: 26
@@ -2889,7 +2889,7 @@ armies:
         slots: 20
       - critter: MOTORBIKE
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 21
       - critter: SOLDIER
         slots: 22
@@ -2897,17 +2897,17 @@ armies:
         slots: 22
       - critter: SOLDIER
         slots: 23
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 24
       - critter: MOTORBIKE
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 25
       - critter: SOLDIER
         slots: 26
       - critter: SMALL_TANK
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 27
       - critter: SOLDIER
         slots: 27
@@ -2917,7 +2917,7 @@ armies:
         slots: 29
       - critter: MOTORBIKE
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 30
 
   - name: "Hospital Siege"
@@ -2929,13 +2929,13 @@ armies:
         slots: 18
       - critter: SOLDIER
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
       - critter: SMALL_TANK
         slots: 20
       - critter: SOLDIER
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 21
       - critter: SOLDIER
         slots: 22
@@ -2953,7 +2953,7 @@ armies:
         slots: 26
       - critter: TRANSPORTER
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 27
       - critter: HELI
         slots: 27
@@ -2963,7 +2963,7 @@ armies:
         slots: 29
       - critter: MOTORBIKE
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 30
 
   - name: "Factory Seizure"
@@ -2989,23 +2989,23 @@ armies:
         slots: 22
       - critter: MOTORBIKE
         slots: 23
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 24
       - critter: TRANSPORTER
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 25
       - critter: SMALL_TANK
         slots: 26
       - critter: SMALL_TANK
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 27
       - critter: TRANSPORTER
         slots: 27
       - critter: SMALL_TANK
         slots: 28
-      - critter: SPECOPS
+      - critter: TRANSPORTER
         slots: 29
       - critter: SMALL_TANK
         slots: 29
@@ -3021,7 +3021,7 @@ armies:
         slots: 18
       - critter: MOTORBIKE
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 19
       - critter: SOLDIER
         slots: 20
@@ -3045,7 +3045,7 @@ armies:
         slots: 26
       - critter: SMALL_TANK
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 27
       - critter: MOTORBIKE
         slots: 27
@@ -3063,11 +3063,11 @@ armies:
     trigger:
       items: [BARRACKS]
     waves:
-      - critter: SIEGE_TANK
+      - critter: SOLDIER
         slots: 18
       - critter: SMALL_TANK
         slots: 19
-      - critter: SIEGE_TANK
+      - critter: MOTORBIKE
         slots: 19
       - critter: TRANSPORTER
         slots: 20
@@ -3085,23 +3085,23 @@ armies:
         slots: 24
       - critter: SMALL_TANK
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: SMALL_TANK
         slots: 25
       - critter: SOLDIER
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 26
       - critter: MOTORBIKE
         slots: 27
-      - critter: SPECOPS
+      - critter: SOLDIER
         slots: 27
       - critter: HELI
         slots: 28
       - critter: TRANSPORTER
         slots: 29
-      - critter: SPECOPS
+      - critter: MOTORBIKE
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 30
 
   # ──────────────────────────────────────────────────────────
