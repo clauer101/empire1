@@ -170,7 +170,7 @@ WATCH_TOWER:
   image: assets/sprites/buildings/watch_tower
   name: "Watch Tower"
   description: "Advanced defensive tower. Requires bronze metallurgy."
-  effort: 5000
+  effort: 5513
   costs: {gold: 1000}
   requirements: [COPPER_BRONZE]
   effects: 
@@ -181,7 +181,7 @@ HARBOR:
   image: assets/sprites/buildings/harbor
   name: "Harbor"
   description: "Coastal trade hub for maritime commerce. Requires sailing."
-  effort: 6000
+  effort: 6615
   costs: {gold: 1200}
   requirements: [SAILING]
   effects:
@@ -192,7 +192,7 @@ SWORD_MAKER:
   image: assets/sprites/buildings/sword_maker
   name: "Sword Maker"
   description: "Weapon workshop for melee combat. Requires metallurgy."
-  effort: 8000
+  effort: 8820
   costs: {gold: 1600}
   requirements: [COPPER_BRONZE]
   effects: {}
@@ -201,7 +201,7 @@ MARKET_PLACE:
   image: assets/sprites/buildings/market_place
   name: "Market Place"
   description: "Major trade hub doubling gold generation with currency."
-  effort: 12000
+  effort: 13230
   costs: {gold: 2400}
   requirements: [CURRENCY]
   effects:
@@ -211,7 +211,7 @@ BOOT_CAMP:
   image: assets/sprites/buildings/boot_camp
   name: "Boot Camp"
   description: "Military training facility. Requires weapon training."
-  effort: 14000
+  effort: 15435
   costs: {gold: 2800}
   requirements: [DRILL]
   effects:
@@ -221,7 +221,7 @@ CHAPEL:
   image: assets/sprites/buildings/chapel
   name: "Chapel"
   description: "Religious building boosting culture. Requires organized religion."
-  effort: 15000
+  effort: 16538
   costs: {gold: 3000}
   requirements: [RELIGION]
   effects:
@@ -232,7 +232,7 @@ TOWN_GUARD:
   image: assets/sprites/buildings/town_guard
   name: "Town Guard"
   description: "Local militia defending settlements. Requires military training."
-  effort: 16000
+  effort: 17640
   costs: {gold: 3200}
   requirements: [DRILL]
   effects: 
@@ -243,7 +243,7 @@ CHURCH:
   image: assets/sprites/buildings/church
   name: "Church"
   description: "Major religious institution. Requires organized faith."
-  effort: 18571
+  effort: 20475
   costs: {gold: 5507}
   requirements: [RELIGION]
   effects:
@@ -257,7 +257,7 @@ LIBRARY:
   image: assets/sprites/buildings/library
   name: "Library"
   description: "Accelerates research progress. Requires writing knowledge."
-  effort: 18000
+  effort: 21879
   costs: {gold: 3600}
   requirements: [LITRATURE]
   effects:
@@ -267,7 +267,7 @@ LORE_COLLECTION:
   image: assets/sprites/buildings/lore_collection
   name: "Lore Collection"
   description: "Archive of cultural knowledge. Requires arts and libraries."
-  effort: 20000
+  effort: 24311
   costs: {gold: 4000}
   requirements: [ARTS]
   effects:
@@ -278,7 +278,7 @@ FORGE:
   image: assets/sprites/buildings/forge
   name: "Forge"
   description: "Iron working facility. Greatly increases construction speed."
-  effort: 22000
+  effort: 26741
   costs: {gold: 4400}
   requirements: [IRON]
   effects:
@@ -288,7 +288,7 @@ TREASURE_CHAMBER:
   image: assets/sprites/buildings/treasure_chamber
   name: "Treasure Chamber"
   description: "Vault storing wealth. Boosts steady gold income."
-  effort: 25000
+  effort: 30388
   costs: {gold: 5000}
   requirements: [CURRENCY, MATHMATICS]
   effects:
@@ -298,7 +298,7 @@ CARTOGRAPHER:
   image: assets/sprites/buildings/cartographer
   name: "Cartographer"
   description: "Maps territories for exploration and navigation."
-  effort: 30000
+  effort: 36465
   costs: {gold: 6000}
   requirements: [CARTOGRAPHY]
   effects:
@@ -308,7 +308,7 @@ STABLES:
   image: assets/sprites/buildings/stables
   name: "Stables"
   description: "Housing for horse breeding and cavalry training."
-  effort: 45000
+  effort: 54699
   costs: {gold: 9000}
   requirements: [HORSEBACK_RIDING, IRON]
   effects: {}
@@ -317,7 +317,7 @@ RACE_COURSE:
   image: assets/sprites/buildings/race_course
   name: "Race Course"
   description: "Sports venue for horses. Requires equestrian mastery."
-  effort: 50000
+  effort: 60775
   costs: {gold: 10000}
   requirements: [HORSEBACK_RIDING, WORK_SHOP]
   effects: {}
@@ -326,7 +326,7 @@ WORK_SHOP:
   image: assets/sprites/buildings/work_shop
   name: "Work Shop"
   description: "General manufacturing hub. Requires mechanical engineering."
-  effort: 35000
+  effort: 42543
   costs: {gold: 17000}
   requirements: [MECHANICS]
   effects:
@@ -336,7 +336,7 @@ THEATER:
   image: assets/sprites/buildings/theater
   name: "Theater"
   description: "Cultural venue. Significantly boosts culture generation."
-  effort: 40000
+  effort: 48620
   costs: {gold: 18000}
   requirements: [ARTS]
   effects:
@@ -347,7 +347,7 @@ TREADWHEEL_CRANE:
   image: assets/sprites/buildings/treadwheel_crane
   name: "Treadwheel Crane"
   description: "Medieval lifting machine. Assists construction work."
-  effort: 50000
+  effort: 60775
   costs: {gold: 20000}
   requirements: [MECHANICS]
   effects:
@@ -357,7 +357,7 @@ TEMPLE:
   image: assets/sprites/buildings/temple
   name: "Temple"
   description: "Grand religious structure. Requires architectural mastery."
-  effort: 54863
+  effort: 66686
   costs: {gold: 21000}
   requirements: [ARCHITECTURE]
   effects:
@@ -368,7 +368,7 @@ FENCING_SCHOOL:
   image: assets/sprites/buildings/fencing_school
   name: "Fencing School"
   description: "Advanced combat training. Requires metallurgy and tactics."
-  effort: 58663
+  effort: 71306
   costs: {gold: 20758}
   requirements: [IRON, DRILL]
   effects: {}
@@ -560,8 +560,8 @@ CATHEDRAL:
   image: assets/sprites/buildings/cathedral
   name: "Cathedral"
   description: "Architectural masterpiece and religious center combined."
-  effort: 353774
-  costs: {gold: 168000}
+  effort: 336085
+  costs: {gold: 176400}
   requirements: [ARCHITECTURE, CONSTITUTION]
   effects:
     culture_offset: 0.4
@@ -570,19 +570,20 @@ ARCHIVES:
   image: assets/sprites/buildings/archives
   name: "Archives"
   description: "Document repository. Requires printing technology."
-  effort: 248213
-  costs: {gold: 162000}
+  effort: 235802
+  costs: {gold: 170100}
   requirements: [PRINTING_PRESS]
   effects:
-    research_speed_modifier: 0.5
+    research_speed_offset: 0.2
+    research_speed_modifier: 0.2
     culture_offset: 0.1
 
 SECRET_ORDER:
   image: assets/sprites/buildings/secret_order
   name: "Secret Order"
   description: "Covert intelligence operations. Requires secrecy mastery."
-  effort: 250000
-  costs: {gold: 270000}
+  effort: 237500
+  costs: {gold: 283500}
   requirements: [STEALTH_SECRECY]
   effects: {}
 
@@ -590,8 +591,8 @@ UNIVERSITY:
   image: assets/sprites/buildings/university
   name: "University"
   description: "Elite research and education institution combined."
-  effort: 252700
-  costs: {gold: 276000}
+  effort: 240065
+  costs: {gold: 289800}
   requirements: [PRINTING_PRESS, SCIENCE]
   effects:
     research_speed_modifier: 1
@@ -600,18 +601,18 @@ HIGH_COURT:
   image: assets/sprites/buildings/high_court
   name: "High Court"
   description: "Supreme judicial authority. Requires constitutional law."
-  effort: 257213
-  costs: {gold: 280000}
+  effort: 244352
+  costs: {gold: 294000}
   requirements: [CONSTITUTION]
   effects: 
-    max_life_modifier: 3
+    max_life_modifier: 5
 
 PARLIAMENT:
   image: assets/sprites/buildings/parliament
   name: "Parliament"
   description: "Democratic legislative body. Requires constitutional system."
-  effort: 285077
-  costs: {gold: 280000}
+  effort: 270823
+  costs: {gold: 294000}
   requirements: [CONSTITUTION]
   effects:
     culture_modifier: 0.15
@@ -621,8 +622,8 @@ EMPERORS_PALACE:
   image: assets/sprites/buildings/emperors_palace
   name: "Emperor's Palace"
   description: "Ultimate seat of imperial power and authority."
-  effort: 279335
-  costs: {gold: 280000}
+  effort: 265368
+  costs: {gold: 294000}
   requirements: [CONSTITUTION]
   effects:
     culture_modifier: 0.2
@@ -636,8 +637,8 @@ STOCK_MARKET:
   image: assets/sprites/buildings/stock_market
   name: "Stock Market"
   description: "Financial trading hub. Advanced economic institution."
-  effort: 314252
-  costs: {gold: 290000}
+  effort: 298539
+  costs: {gold: 602889}
   requirements: [ECONOMY, ELECTRICITY]
   effects:
     gold_offset: 0.7
@@ -647,8 +648,8 @@ HEAVY_EQUIPMENT:
   image: assets/sprites/buildings/heavy_equipment
   name: "Heavy Equipment"
   description: "Industrial machinery factory for mass production."
-  effort: 457497
-  costs: {gold: 440000}
+  effort: 434622
+  costs: {gold: 650080}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
     build_speed_offset: 0.4
@@ -657,8 +658,8 @@ RAIL_ROADS:
   image: assets/sprites/buildings/rail_roads
   name: "Rail Roads"
   description: "Steam-powered transportation network."
-  effort: 487702
-  costs: {gold: 450000}
+  effort: 463317
+  costs: {gold: 664855}
   requirements: [STEAM_ENGINE]
   effects:
     travel_offset: -3600
@@ -667,17 +668,17 @@ VEHICLE_WORKSHOP:
   image: assets/sprites/buildings/vehicle_workshop
   name: "Vehicle Workshop"
   description: "Advanced vehicle manufacturing. Requires mechanical engineering."
-  effort: 495443
-  costs: {gold: 460000}
-  requirements: [MECHANICAL_ENGINEERING]
+  effort: 470671
+  costs: {gold: 679630}
+  requirements: [COMBUSTION_ENGINE]
   effects:
 
 DEFENSE_DEPARTMENT:
   image: assets/sprites/buildings/defense_department
   name: "Defense Department"
   description: "Military command center for strategic defense."
-  effort: 528153
-  costs: {gold: 440000}
+  effort: 501745
+  costs: {gold: 650080}
   requirements: [STRATEGIC_WARFARE, CIVIL_ENGINEERING]
   effects: 
     siege_offset: 3600
@@ -687,8 +688,8 @@ ELECTRIC_FENCE:
   image: assets/sprites/buildings/electric_fence
   name: "Electric Fence"
   description: "Fortified perimeter with electric barriers."
-  effort: 616179
-  costs: {gold: 480000}
+  effort: 585370
+  costs: {gold: 709178}
   requirements: [ELECTRICITY]
   effects: 
     siege_offset: 3600
@@ -698,8 +699,8 @@ AIRFIELD:
   image: assets/sprites/buildings/airfield
   name: "Airfield"
   description: "Airport for aircraft. Requires combustion engines."
-  effort: 566030
-  costs: {gold: 500000}
+  effort: 537729
+  costs: {gold: 738729}
   requirements: [AERO_DYNAMICS]
   effects:
     travel_offset: -3600
@@ -708,8 +709,8 @@ HANGAR:
   image: assets/sprites/buildings/hangar
   name: "Hangar"
   description: "Aircraft maintenance and storage facility."
-  effort: 573579
-  costs: {gold: 520000}
+  effort: 544900
+  costs: {gold: 768276}
   requirements: [MECHANICAL_ENGINEERING]
   effects: {}
 
@@ -717,8 +718,8 @@ HOSPITAL:
   image: assets/sprites/buildings/hospital
   name: "Hospital"
   description: "Modern medical facility. Significantly boosts health."
-  effort: 609426
-  costs: {gold: 540000}
+  effort: 578955
+  costs: {gold: 797828}
   requirements: [MEDICINE]
   effects:
     life_offset: 0.001
@@ -728,8 +729,8 @@ FACTORY:
   image: assets/sprites/buildings/factory
   name: "Factory"
   description: "Industrial production center. Requires steam power."
-  effort: 553243
-  costs: {gold: 560000}
+  effort: 525581
+  costs: {gold: 827376}
   requirements: [STEAM_ENGINE]
   effects:
     build_speed_modifier: 0.4
@@ -740,8 +741,8 @@ EMERGENCY_ROOM:
   image: assets/sprites/buildings/emergency_room
   name: "Emergency Room"
   description: "Critical care facility in hospitals."
-  effort: 583979
-  costs: {gold: 580000}
+  effort: 554780
+  costs: {gold: 856925}
   requirements: [ELECTRICITY]
   effects:
     life_offset: 0.001
@@ -751,8 +752,8 @@ BARRACKS:
   image: assets/sprites/buildings/barracks
   name: "Barracks"
   description: "Military complex for large army training and deployment."
-  effort: 554780
-  costs: {gold: 600000}
+  effort: 527041
+  costs: {gold: 886473}
   requirements: [STRATEGIC_WARFARE, BALLISTICS]
   effects: {}
 
@@ -760,8 +761,8 @@ FEDERAL_RESERVE:
   image: assets/sprites/buildings/federal_reserve
   name: "Federal Reserve"
   description: "Central banking institution controlling monetary policy."
-  effort: 769078
-  costs: {gold: 650000}
+  effort: 730624
+  costs: {gold: 960346}
   requirements: [ECONOMY, ELECTRICITY]
   effects:
     gold_modifier: 0.5
@@ -771,11 +772,12 @@ RESEARCH_VAULT:
   image: assets/sprites/buildings/research_vault
   name: "Research Vault"
   description: "Secure research storage. Requires advanced technology."
-  effort: 917762
-  costs: {gold: 1200000}
+  effort: 871874
+  costs: {gold: 1772947}
   requirements: [OPTICS]
   effects:
-    research_speed_offset: 0.4
+    research_speed_offset: 0.3
+    research_speed_modifier: 0.3
 
 # ============================================================
 #   MODERNE  (Effort 2.000.000 – 5.300.000)
@@ -785,8 +787,8 @@ CRYPTOGRAPHERS_GUILD:
   image: assets/sprites/buildings/cryptographers_guild
   name: "Cryptographers Guild"
   description: "Organization for advanced cryptographic research."
-  effort: 947562
-  costs: {gold: 1100000}
+  effort: 855175
+  costs: {gold: 1706462}
   requirements: [CRYPTOLOGY]
   effects:
     siege_offset: 3600
@@ -795,8 +797,8 @@ ROCKET_SILO:
   image: assets/sprites/buildings/rocket_silo
   name: "Rocket Silo"
   description: "Launch facility for chemical rockets."
-  effort: 917762
-  costs: {gold: 1100000}
+  effort: 828280
+  costs: {gold: 1706462}
   requirements: [CHEMISTRY, ROCKET_SCIENCE]
   effects: {}
 
@@ -804,8 +806,8 @@ WMD_SITE:
   image: assets/sprites/buildings/wmd_site
   name: "WMD Site"
   description: "Weapons of mass destruction development facility."
-  effort: 909023
-  costs: {gold: 1120000}
+  effort: 820393
+  costs: {gold: 1737488}
   requirements: [CHEMISTRY, MASS_PRODUCTION]
   effects: {}
 
@@ -813,8 +815,8 @@ ARTS_GALLERY:
   image: assets/sprites/buildings/arts_gallery
   name: "Arts Gallery"
   description: "Elite art exhibition and commerce facility."
-  effort: 891674
-  costs: {gold: 1220000}
+  effort: 804736
+  costs: {gold: 1892621}
   requirements: [PAINTING, SOCIAL_SCIENCES]
   effects:
     culture_offset: 0.6
@@ -823,18 +825,18 @@ RESEARCH_LAB:
   image: assets/sprites/buildings/research_lab
   name: "Research Lab"
   description: "High-tech scientific research facility."
-  effort: 795107
-  costs: {gold: 1240000}
+  effort: 717584
+  costs: {gold: 1923646}
   requirements: [SCIENCE, COMPUTER_TECHNOLOGY]
   effects:
-    research_speed_modifier: 0.6
+    research_speed_offset: 0.4
 
 ECHELON_DEFENSE_FACILITY:
   image: assets/sprites/buildings/echelon_defense_facility
   name: "Echelon Defense Facility"
   description: "Classified military surveillance and defense complex."
-  effort: 795107
-  costs: {gold: 1240000}
+  effort: 717584
+  costs: {gold: 1923646}
   requirements: [STEALTH_SECRECY, COMPUTER_TECHNOLOGY]
   effects: 
     siege_offset: 3600
@@ -844,8 +846,8 @@ SOCIAL_SECURITY_SYSTEM:
   image: assets/sprites/buildings/social_security_system
   name: "Social Security System"
   description: "Public welfare infrastructure supporting citizens."
-  effort: 769078
-  costs: {gold: 1350000}
+  effort: 694093
+  costs: {gold: 2094294}
   requirements: [CONSTITUTION, SANITATION]
   effects: {max_life_modifier: 5}
 
@@ -853,8 +855,8 @@ EXECUTIVE_CARPOOL:
   image: assets/sprites/buildings/executive_carpool
   name: "Executive Carpool"
   description: "Luxury transportation for elite leadership."
-  effort: 792742
-  costs: {gold: 1370000}
+  effort: 715450
+  costs: {gold: 2125319}
   requirements: [COMBUSTION_ENGINE]
   effects:
     gold_offset: 0.7
@@ -863,8 +865,8 @@ NAVIGATION_SYSTEM:
   image: assets/sprites/buildings/navigation_system
   name: "Navigation System"
   description: "Satellite-based positioning infrastructure."
-  effort: 828236
-  costs: {gold: 1300000}
+  effort: 747483
+  costs: {gold: 2016728}
   requirements: [ELECTRICITY]
   effects:
     travel_offset: -3600
@@ -873,8 +875,8 @@ DERIVATIVE_MARKET:
   image: assets/sprites/buildings/derivative_market
   name: "Derivative Market"
   description: "Advanced financial derivatives trading platform."
-  effort: 887397
-  costs: {gold: 1350000}
+  effort: 800876
+  costs: {gold: 2094294}
   requirements: [ECONOMY, GLOBALIZATION_STRATEGIES]
   effects:
     gold_modifier: 2
@@ -884,8 +886,8 @@ BOMBING_AREA:
   image: assets/sprites/buildings/bombing_area
   name: "Bombing Area"
   description: "Aircraft bombing range for military training."
-  effort: 946558
-  costs: {gold: 1400000}
+  effort: 854269
+  costs: {gold: 2171860}
   requirements: [STRATEGIC_WARFARE, SATELLITE_SYSTEMS]
   effects: {}
 
@@ -893,18 +895,19 @@ NUCLEAR_POWER_PLANT:
   image: assets/sprites/buildings/nuclear_power_plant
   name: "Nuclear Power Plant"
   description: "Clean energy generation through nuclear fission."
-  effort: 946558
-  costs: {gold: 1450000}
+  effort: 854269
+  costs: {gold: 2249426}
   requirements: [NUCLEAR_REACTION]
   effects:
     gold_offset: 0.75
+    research_speed_modifier: 0.2
 
 ROBO_MANUFACTURE:
   image: assets/sprites/buildings/robo_manufacture
   name: "Robo Manufacture"
   description: "Automated robotic assembly and manufacturing."
-  effort: 946558
-  costs: {gold: 1500000}
+  effort: 854269
+  costs: {gold: 2326993}
   requirements: [MECHANICAL_ENGINEERING, COMPUTER_TECHNOLOGY]
   effects:
     build_speed_modifier: 0.25
@@ -913,8 +916,8 @@ INTELLIGENCE_AGENCY:
   image: assets/sprites/buildings/intelligence_agency
   name: "Intelligence Agency"
   description: "Covert operations and espionage headquarters."
-  effort: 1005717
-  costs: {gold: 1550000}
+  effort: 907659
+  costs: {gold: 2404559}
   requirements: [STEALTH_SECRECY, SPECIAL_FORCES]
   effects: 
     siege_offset: 3600
@@ -923,8 +926,8 @@ MECH_WARRIOR_LAB:
   image: assets/sprites/buildings/mech_warrior_lab
   name: "Mech Warrior Lab"
   description: "Giant robot creation and development facility."
-  effort: 1183197
-  costs: {gold: 1800000}
+  effort: 1067835
+  costs: {gold: 2792391}
   requirements: [FIBER_COMPOSITE]
   effects: []
 
@@ -932,8 +935,8 @@ ELITE_ACADEMY:
   image: assets/sprites/buildings/elite_academy
   name: "Elite Academy"
   description: "Ultimate officer training and leadership development."
-  effort: 1183197
-  costs: {gold: 2000000}
+  effort: 1067835
+  costs: {gold: 3102658}
   requirements: [COMMAND_CHAIN, CRYPTOLOGY]
   effects:
     research_speed_modifier: 0.25
@@ -942,8 +945,8 @@ RECRUITING_OFFICE:
   image: assets/sprites/buildings/recruiting_office
   name: "Recruiting Office"
   description: "Massive military recruitment and conscription center."
-  effort: 1254190
-  costs: {gold: 1960000}
+  effort: 1131907
+  costs: {gold: 3040604}
   requirements: [MILITARY_SERVICE]
   effects:
     culture_offset: 0.2
@@ -957,8 +960,8 @@ THE_WORLD_WONDER:
   name: "The World Wonder"
   type: wonder
   description: "Ultimate achievement combining science, culture and power."
-  effort: 2638829
-  costs: {gold: 25000000}
+  effort: 2262467
+  costs: {gold: 26250000}
   requirements: [NUCLEAR_REACTION]
   effects:
     culture_modifier: 5.0
@@ -969,8 +972,8 @@ SPACE_CENTER:
   image: assets/sprites/buildings/space_center
   name: "Space Center"
   description: "Space exploration and orbital research facility."
-  effort: 1979123
-  costs: {gold: 12000000}
+  effort: 1696851
+  costs: {gold: 12600000}
   requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
     research_speed_offset: 5
@@ -979,8 +982,8 @@ CYBER_COMMAND:
   image: assets/sprites/buildings/cyber_command
   name: "Cyber Command"
   description: "Digital warfare and cyber operations headquarters."
-  effort: 1979123
-  costs: {gold: 14000000}
+  effort: 1696851
+  costs: {gold: 14700000}
   requirements: [COMPUTER_TECHNOLOGY, BIONICS]
   effects: []
 
@@ -988,8 +991,8 @@ FUSION_REACTOR:
   image: assets/sprites/buildings/fusion_reactor
   name: "Fusion Reactor"
   description: "Ultimate clean energy source through nuclear fusion."
-  effort: 1979123
-  costs: {gold: 16000000}
+  effort: 1696851
+  costs: {gold: 16800000}
   requirements: [COLD_FUSION]
   effects:
     gold_offset: 5

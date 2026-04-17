@@ -3,7 +3,9 @@
     "allow": [
       "Bash(rtk git:*)",
       "Bash(rtk gain:*)",
-      "Bash(rtk discover:*)"
+      "Bash(rtk discover:*)",
+      "Bash(python3 -m pytest python_server/tests/test_catalog_integrity.py -x -q)",
+      "Bash(./run_tests.sh --match=test_catalog_integrity -q)"
     ],
     "additionalDirectories": [
       "/home/eem/.claude/hooks",

@@ -43,6 +43,8 @@
     // { name: '📊 Scatter',  href: 'critter-scatter.html' },
     { name: '⚔ AI Army',  href: 'send-ai-army.html' },
     { name: '🗺 Maps',     href: 'map-overview.html' },
+    { name: '🐾 Critters', href: 'critters.html' },
+    { name: '⚔ Sim Map',  href: 'sim-map.html' },
     // { name: '🌳 Tree',    href: 'tech-tree.html' },
   ];
 

@@ -12,7 +12,9 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import re
+import sys
 from pathlib import Path
 
 import yaml
@@ -1010,6 +1012,205 @@ async def list_critters():
             })
 
     return JSONResponse({"critters": result})
+
+
+_SAVED_MAPS_PATH = Path(__file__).resolve().parent.parent / "python_server" / "config" / "saved_maps.yaml"
+
+# Lazy-load game config + power service for map power computation
+_map_power_upgrades = None
+
+def _get_map_power_upgrades():
+    global _map_power_upgrades
+    if _map_power_upgrades is None:
+        from gameserver.main import load_configuration
+        from gameserver.engine.upgrade_provider import UpgradeProvider
+        cfg = load_configuration(config_dir=str(Path(__file__).resolve().parent.parent / "python_server" / "config"))
+        up = UpgradeProvider()
+        up.load(cfg.items)
+        _map_power_upgrades = (up, getattr(cfg.game, "starting_max_life", 10.0))
+    return _map_power_upgrades
+
+def _get_structure_era_map() -> dict[str, str]:
+    """Return {iid: era_label_en} for all structures, parsed from structures.yaml."""
+    import re
+    from gameserver.util.eras import ERA_LABELS_EN
+    CONFIG_DIR = Path(__file__).resolve().parent.parent / "python_server" / "config"
+    patterns = [
+        ("STEINZEIT",          re.compile(r'#\s+STEINZEIT')),
+        ("NEOLITHIKUM",        re.compile(r'#\s+NEOLITHIKUM')),
+        ("BRONZEZEIT",         re.compile(r'#\s+BRONZEZEIT')),
+        ("EISENZEIT",          re.compile(r'#\s+EISENZEIT')),
+        ("MITTELALTER",        re.compile(r'#\s+MITTELALTER')),
+        ("RENAISSANCE",        re.compile(r'#\s+RENAISSANCE')),
+        ("INDUSTRIALISIERUNG", re.compile(r'#\s+INDUSTRIALIS')),
+        ("MODERNE",            re.compile(r'#\s+MODERNE')),
+        ("ZUKUNFT",            re.compile(r'#\s+ZUKUNFT')),
+    ]
+    iid_re = re.compile(r'^([A-Z][A-Z0-9_]+):')
+    result: dict[str, str] = {}
+    current_era = "STEINZEIT"
+    for line in (CONFIG_DIR / "structures.yaml").read_text(encoding="utf-8").splitlines():
+        for key, pat in patterns:
+            if pat.search(line):
+                current_era = key
+                break
+        m = iid_re.match(line)
+        if m:
+            label = ERA_LABELS_EN.get(current_era, current_era)
+            result[m.group(1)] = label
+    return result
+
+_structure_era_map: dict[str, str] | None = None
+
+def _get_cached_structure_era_map() -> dict[str, str]:
+    global _structure_era_map
+    if _structure_era_map is None:
+        _structure_era_map = _get_structure_era_map()
+    return _structure_era_map
+
+NON_TOWER = {"castle", "spawnpoint", "path", "empty", "blocked", "void", ""}
+
+def _compute_map_age_pct(m: dict) -> dict[str, float]:
+    """Return {era_label: pct} tower era distribution for a map entry."""
+    tower_era = _get_cached_structure_era_map()
+    counts: dict[str, int] = {}
+    for t in (m.get("hex_map") or []):
+        tt = t.get("type", "")
+        if isinstance(tt, dict):
+            tt = tt.get("type", "")
+        if tt in NON_TOWER or not tt:
+            continue
+        era_label = tower_era.get(tt)
+        if era_label:
+            counts[era_label] = counts.get(era_label, 0) + 1
+    total = sum(counts.values())
+    if not total:
+        return {}
+    return {era: round(cnt / total * 100, 1) for era, cnt in counts.items()}
+
+
+def _compute_map_defense_power(m: dict) -> float:
+    from gameserver.engine.power_service import defense_power
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+    from gameserver.models.empire import Empire
+    upgrades, default_life = _get_map_power_upgrades()
+    hex_map = {f"{t['q']},{t['r']}": {"type": t.get("type", "empty")} for t in (m.get("hex_map") or [])}
+    empire = Empire(uid=0, name="")
+    empire.hex_map = hex_map
+    empire.max_life = float(m.get("life") or default_life)
+    try:
+        path = find_path_from_spawn_to_castle(hex_map)
+        path_length = len(path) - 1 if path else None
+    except Exception:
+        path_length = None
+    return defense_power(empire, upgrades, path_length=path_length)
+
+
+@app.get("/api/saved-maps")
+async def list_saved_maps():
+    """Return map names and their life values from saved_maps.yaml."""
+    if not _SAVED_MAPS_PATH.exists():
+        return JSONResponse({"maps": [], "life": {}})
+    data = yaml.safe_load(_SAVED_MAPS_PATH.read_text()) or {}
+    names   = []
+    life    = {}
+    power   = {}
+    age_pct = {}
+    for m in (data.get("maps") or []):
+        name = m.get("name", m.get("id", "?"))
+        names.append(name)
+        if m.get("life") is not None:
+            life[name] = m["life"]
+        try:
+            power[name] = round(_compute_map_defense_power(m), 1)
+        except Exception:
+            pass
+        try:
+            age_pct[name] = _compute_map_age_pct(m)
+        except Exception:
+            pass
+    return JSONResponse({"maps": names, "life": life, "power": power, "age_pct": age_pct})
+
+
+@app.put("/api/tools/map-life")
+async def set_map_life(payload: dict):
+    """Update the life value of a map in saved_maps.yaml."""
+    map_name = payload.get("map_name", "")
+    life     = payload.get("life")
+    if not map_name or life is None:
+        return JSONResponse({"ok": False, "error": "map_name and life required"}, status_code=400)
+    try:
+        life = float(life)
+    except (TypeError, ValueError):
+        return JSONResponse({"ok": False, "error": "life must be a number"}, status_code=400)
+
+    if not _SAVED_MAPS_PATH.exists():
+        return JSONResponse({"ok": False, "error": "saved_maps.yaml not found"}, status_code=404)
+
+    data = yaml.safe_load(_SAVED_MAPS_PATH.read_text()) or {}
+    found = False
+    for m in (data.get("maps") or []):
+        name = m.get("name", m.get("id", ""))
+        if name == map_name:
+            m["life"] = life
+            found = True
+            break
+    if not found:
+        return JSONResponse({"ok": False, "error": f"Map '{map_name}' not found"}, status_code=404)
+
+    _SAVED_MAPS_PATH.write_text(yaml.dump(data, allow_unicode=True, sort_keys=False))
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/tools/sim-map")
+async def sim_map(map_name: str, era: str, n: int):
+    """Run sim_map.py and stream its output file line-by-line as SSE."""
+    import asyncio
+    import tempfile
+    from fastapi.responses import StreamingResponse
+
+    script = Path(__file__).resolve().parent.parent / "sim_map.py"
+    python = Path(__file__).resolve().parent.parent / "python_server" / ".venv" / "bin" / "python3"
+    if not python.exists():
+        python = Path(sys.executable)
+
+    # Temp file that sim_map.py writes JSON lines into
+    out_fd, out_path = tempfile.mkstemp(suffix=".jsonl", prefix="sim_map_")
+    os.close(out_fd)
+
+    async def generate():
+        proc = await asyncio.create_subprocess_exec(
+            str(python), str(script), map_name, era, str(n), out_path,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            cwd=str(script.parent),
+        )
+        try:
+            with open(out_path, "r") as f:
+                while True:
+                    line = f.readline()
+                    if line:
+                        data = line.rstrip("\n")
+                        yield f"data: {data}\n\n"
+                    else:
+                        # No new data — check if process finished
+                        try:
+                            await asyncio.wait_for(asyncio.shield(proc.wait()), timeout=0.1)
+                            # Process done — flush remaining lines
+                            for line in f:
+                                data = line.rstrip("\n")
+                                yield f"data: {data}\n\n"
+                            break
+                        except asyncio.TimeoutError:
+                            await asyncio.sleep(0.05)
+        finally:
+            try:
+                os.unlink(out_path)
+            except OSError:
+                pass
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.post("/api/admin/restart-web")

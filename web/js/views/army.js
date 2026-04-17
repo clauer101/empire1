@@ -16,6 +16,25 @@ let _unsub = [];
 let _availableCritters = [];
 let _critterSprites = {};  // iid → {sprite, animation} for all critters incl. locked
 let _empiresCache = [];
+/** iid.toUpperCase() → Roman numeral string (e.g. "III") */
+let _critterEraRoman = {};
+
+const _ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX'];
+async function _loadEraMap() {
+  try {
+    const resp = await rest.getEraMap();
+    const eras  = resp.eras || [];
+    const map   = resp.critters || {};
+    _critterEraRoman = {};
+    for (const [era, iids] of Object.entries(map)) {
+      const idx = eras.indexOf(era);
+      const roman = idx >= 0 ? _ROMAN[idx] : '';
+      for (const iid of iids) _critterEraRoman[iid.toUpperCase()] = roman;
+    }
+  } catch (e) {
+    console.warn('[army] era-map load failed:', e);
+  }
+}
 
 function init(el, _api, _state) {
   container = el;
@@ -85,6 +104,7 @@ async function enter() {
   
   // Load once on entry
   _loadEmpires();
+  _loadEraMap();
   try {
     await rest.getSummary();
     updateCreateArmyButton();
@@ -116,7 +136,7 @@ async function enter() {
   }
 }
 
-function showMessage(inputElement, text, type = 'error') {
+function showMessage(inputElement, text, type = 'error', persistent = false) {
   const msgId = `msg-${Date.now()}`;
   const msgEl = document.createElement('div');
   msgEl.id = msgId;
@@ -164,14 +184,16 @@ function showMessage(inputElement, text, type = 'error') {
     inputElement.parentNode.insertBefore(msgEl, inputElement.nextSibling);
   }
   
-  setTimeout(() => {
-    msgEl.remove();
-    // Also remove the container if empty
-    const messageContainer = msgEl.closest('.wave-message-container');
-    if (messageContainer && !messageContainer.hasChildNodes()) {
-      messageContainer.remove();
-    }
-  }, 3000);
+  if (!persistent) {
+    setTimeout(() => {
+      msgEl.remove();
+      // Also remove the container if empty
+      const messageContainer = msgEl.closest('.wave-message-container');
+      if (messageContainer && !messageContainer.hasChildNodes()) {
+        messageContainer.remove();
+      }
+    }, 3000);
+  }
 }
 
 function leave() {
@@ -403,7 +425,10 @@ function _openCritterOverlay(aid, waveIdx, currentIid) {
             <div class="cpt-sprite">
               <canvas class="critter-sprite-canvas" data-iid="${c.iid}" data-sprite="${c.sprite || ''}" data-animation="${c.animation || ''}" width="64" height="64"></canvas>
             </div>
-            <div class="cpt-name">${c.name}${c.is_boss ? ' 👑' : ''}</div>
+            <div class="cpt-name" style="display:flex;align-items:baseline;gap:4px;overflow:hidden;">
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}${c.is_boss ? ' 👑' : ''}</span>
+              ${_critterEraRoman[c.iid.toUpperCase()] ? `<span class="era-roman-badge" style="font-size:9px;flex-shrink:0;">${_critterEraRoman[c.iid.toUpperCase()]}</span>` : ''}
+            </div>
             <div class="cpt-stats">
               <span class="cpt-stat cpt-hp" title="Health">❤ ${(c.health || 0).toFixed(1)}</span>
               ${c.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${c.armour}</span>` : ''}
@@ -509,7 +534,7 @@ async function onAttackOpponent(e) {
     if (resp.success) {
       showMessage(input, `⚔ Angriff auf ${targetName} gestartet! ETA: ${Math.round(resp.eta_seconds)}s`, 'success');
     } else {
-      showMessage(input, `✗ ${resp.error || 'Angriff fehlgeschlagen'}`, 'error');
+      showMessage(input, `✗ ${resp.error || 'Attack failed'}`, 'error', true);
     }
   } catch (err) {
     console.error('Failed to launch attack:', err);

@@ -52,7 +52,7 @@ DOUBLE_SLING_TOWER:
   sprite: "assets/sprites/structures/double_sling_tower/double_sling_tower.webp"
   damage: 2
   range: 2
-  reload_time: 1800
+  reload_time: 2000
   shot_speed: 1.4
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -86,9 +86,9 @@ SPIKE_TRAP:
 ARROW_TOWER:
   name: "Arrow Tower"
   sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
-  damage: 2
+  damage: 5
   range: 2
-  reload_time: 1500
+  reload_time: 1400
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/arrow.webp"
   projectile_y_offset: 0.3
@@ -102,9 +102,9 @@ ARROW_TOWER:
 BALLISTA_TOWER:
   name: "Ballista Tower"
   sprite: "assets/sprites/structures/ballista_tower/ballista_tower.webp"
-  damage: 4
+  damage: 8
   range: 1.5
-  reload_time: 3200
+  reload_time: 3000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/bolt.webp"
   projectile_y_offset: 0.3
@@ -118,7 +118,7 @@ BALLISTA_TOWER:
 FIRE_TOWER:
   name: "Fire Tower"
   sprite: "assets/sprites/structures/fire_tower/fire_tower.webp"
-  damage: 0
+  damage: 3
   range: 1.5
   reload_time: 3000
   shot_speed: 1
@@ -128,7 +128,7 @@ FIRE_TOWER:
   max_level: 1
   select: first
   costs: {gold: 5000}
-  effects: {burn_duration: 1500, burn_dps: 2}   # burns for 2 dps over 3s
+  effects: {burn_duration: 1500, burn_dps: 3}   # burns for 2 dps over 3s
   requirements: [COPPER_BRONZE]
 
 # ============================================================
@@ -138,7 +138,7 @@ FIRE_TOWER:
 CATAPULTS:
   name: "Catapult"
   sprite: "assets/sprites/structures/catapults/catapults.webp"
-  damage: 6
+  damage: 9
   range: 2
   reload_time: 3600
   shot_speed: 1
@@ -148,15 +148,15 @@ CATAPULTS:
   max_level: 1
   select: first
   costs: {gold: 18000}
-  effects: {splash_radius: 0.45}
+  effects: {splash_radius: 0.35}
   requirements: [MECHANICS, MATHMATICS]
 
 ARBELESTE_TOWER:
   name: "Arbalest Tower"
   sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
-  damage: 9
+  damage: 10
   range: 1.5
-  reload_time: 2800
+  reload_time: 2600
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/bolt.webp"
   projectile_y_offset: 0.3
@@ -242,9 +242,9 @@ CANNON_TOWER:
 RIFLE_TOWER:
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
-  damage: 16
+  damage: 14
   range: 1.5
-  reload_time: 1300
+  reload_time: 1400
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -258,9 +258,9 @@ RIFLE_TOWER:
 COLD_TOWER:
   name: "Cold Tower"
   sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
-  damage: 5
+  damage: 4
   range: 2
-  reload_time: 900
+  reload_time: 1200
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/iceball.webp"
   projectile_y_offset: 0.3
@@ -274,9 +274,9 @@ COLD_TOWER:
 ICE_TOWER:
   name: "Ice Tower"
   sprite: "assets/sprites/structures/ice_tower/ice_tower.webp"
-  damage: 10
+  damage: 7
   range: 3
-  reload_time: 2400
+  reload_time: 2500
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/iceball.webp"
   projectile_y_offset: 0.3
@@ -294,9 +294,9 @@ ICE_TOWER:
 FLAME_THROWER:
   name: "Flame Thrower"
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
-  damage: 12
+  damage: 14
   range: 1.5
-  reload_time: 2300
+  reload_time: 2400
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/fireball.webp"
   projectile_y_offset: 0.3
@@ -304,8 +304,8 @@ FLAME_THROWER:
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 3000, burn_dps: 5}   # burns for 4 dps over 4s
-  requirements: [HEAVY_EQUIPMENT]
+  effects: {burn_duration: 3000, burn_dps: 6}   # burns for 4 dps over 4s
+  requirements: [HEAVY_EQUIPMENT, MECHANICAL_ENGINEERING]
 
 SHOCK_TOWER:
   name: "Shock Tower"
@@ -321,7 +321,7 @@ SHOCK_TOWER:
   select: first
   costs: {gold: 145000}
   effects: {slow_duration: 1500, slow_ratio: 0.4}
-  requirements: [ELECTRIC_FENCE]
+  requirements: [ELECTRIC_FENCE, ELECTRICITY]
 
 GATLING_TOWER:
   name: "Gatling Tower"
@@ -342,7 +342,7 @@ GATLING_TOWER:
 PARALYZNG_TOWER:
   name: "Paralyzing Tower"
   sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
-  damage: 11
+  damage: 9
   range: 1.5
   reload_time: 2400
   shot_speed: 1
@@ -353,7 +353,7 @@ PARALYZNG_TOWER:
   select: first
   costs: {gold: 100000}
   effects: {slow_duration: 1200, slow_ratio: 0.05}   # stun: stops completely for 3s
-  requirements: [HOSPITAL]
+  requirements: [HOSPITAL, MEDICINE]
 
 # ============================================================
 #   MODERNE  (Effort 2.000.000 – 5.300.000)

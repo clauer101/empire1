@@ -19,6 +19,7 @@ let container;
 let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
+let _empiresTimer = null;
 
 const _ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 function _toRoman(n) { return _ROMAN[n] || String(n); }
@@ -56,14 +57,16 @@ function enter() {
     rest.getItems().catch(err => console.error('[dashboard] getItems failed:', err));
   }
 
-  // Load empire rankings
+  // Load empire rankings and poll for new players every 30s
   refreshEmpires();
+  _empiresTimer = setInterval(refreshEmpires, 30_000);
 }
 
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
   _empiresData = null;
+  if (_empiresTimer) { clearInterval(_empiresTimer); _empiresTimer = null; }
 }
 
 async function refresh() {
@@ -121,9 +124,9 @@ function render(data) {
 
       <div class="panel">
         <div class="panel-header">Resources <button class="prod-info-btn" id="resources-detail-btn" title="Show income details">🔍</button></div>
-        <div class="panel-row"><span class="label">💰 Gold</span><span class="value">${fmt(r.gold)} <span style="color:#888;font-size:0.85em">(+${calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold).toFixed(2)}/s)</span></span></div>
-        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)} <span style="color:#888;font-size:0.85em">(+${calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture).toFixed(2)}/s)</span></span></div>
-        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0).toFixed(3)}/s)</span></span></div>
+        <div class="panel-row"><span class="label">💰 Gold</span><span class="value">${fmt(r.gold)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))}/h)</span></span></div>
+        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))}/h)</span></span></div>
+        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0))}/h)</span></span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
         <div class="panel-header" style="margin-bottom:4px">Citizens</div>
         ${renderCitizens(data.citizens)}
@@ -577,6 +580,14 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
   return html;
 }
 
+function fmtPerH(perSecond) {
+  const h = perSecond * 3600;
+  if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
+  if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
+  if (Math.abs(h) >= 10)  return Math.round(h) + '';
+  return h.toFixed(1);
+}
+
 // effects[key] from the backend is already the full aggregated sum of all
 // building + knowledge contributions (see empire_service.recalculate_effects).
 // Do NOT iterate completedBuildings here — that would double-count.
@@ -621,8 +632,17 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
 
   // Base amount (only show if > 0)
   baseAmount = baseAmount ?? 0;
+  const toH = v => v * 3600;
+  const fmtH = v => {
+    const h = toH(v);
+    if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
+    if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
+    if (Math.abs(h) >= 10)  return Math.round(h) + '';
+    return h.toFixed(1);
+  };
+
   if (baseAmount > 0) {
-    html += `<div class="panel-row"><span class="label">+${baseAmount.toFixed(2)}</span><span class="value">(base)</span></div>`;
+    html += `<div class="panel-row"><span class="label">+${fmtH(baseAmount)}</span><span class="value">(base)</span></div>`;
   }
 
   // Building & Research effects (offsets)
@@ -634,8 +654,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
       if (item?.effects?.[effectOffsetKey] > 0) {
         const offset = item.effects[effectOffsetKey];
         totalOffset += offset;
-        const decimals = resourceType === 'life' ? 3 : 2;
-        html += `<div class="panel-row"><span class="label">+${offset.toFixed(decimals)}</span><span class="value">(${item.name || iid})</span></div>`;
+                html += `<div class="panel-row"><span class="label">+${fmtH(offset)}</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
   }
@@ -644,8 +663,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   // Era offset contribution (difference between aggregated backend value and item sum)
   const eraOffset = (effects[effectOffsetKey] || 0) - (totalOffset - baseAmount);
   if (eraOffset > 0.0005) {
-    const decimals = resourceType === 'life' ? 3 : 2;
-    html += `<div class="panel-row"><span class="label">+${eraOffset.toFixed(decimals)}</span><span class="value">(Era)</span></div>`;
+    html += `<div class="panel-row"><span class="label">+${fmtH(eraOffset)}</span><span class="value">(Era)</span></div>`;
     totalOffset += eraOffset;
   }
 
@@ -653,7 +671,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   if (resourceType === 'life') {
     const color = '#90ee90';
     html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
-    html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${totalOffset.toFixed(3)}/s</span></div>`;
+    html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${fmtH(totalOffset)}/h</span></div>`;
     return html;
   }
 
@@ -688,7 +706,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   const color = resourceType === 'gold' ? '#4fc3f7' : '#ffa726';
   
   html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
-  html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${total.toFixed(3)}/s</span></div>`;
+  html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${fmtH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${fmtH(total)}/h</span></div>`;
   
   return html;
 }
