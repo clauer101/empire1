@@ -224,6 +224,7 @@ body::before {
   background: var(--surface);
   border-radius: var(--radius);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px 28px;
   min-height: 0;
   height: 100%;
@@ -2379,6 +2380,17 @@ label {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  position: sticky;
+  top: -24px;
+  z-index: 10;
+  background: var(--surface);
+  margin-top: -24px;
+  padding-top: 32px;
+  padding-bottom: 8px;
+  margin-left: -28px;
+  margin-right: -28px;
+  padding-left: 28px;
+  padding-right: 28px;
 }
 
 .title-resources {

@@ -20,6 +20,9 @@ let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
 let _empiresTimer = null;
+let _tickTimer = null;
+let _tickData = null;
+let _tickTs = null;
 
 const _ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 function _toRoman(n) { return _ROMAN[n] || String(n); }
@@ -67,6 +70,9 @@ function leave() {
   _unsub = [];
   _empiresData = null;
   if (_empiresTimer) { clearInterval(_empiresTimer); _empiresTimer = null; }
+  if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+  _tickData = null;
+  _tickTs = null;
 }
 
 async function refresh() {
@@ -163,11 +169,12 @@ function render(data) {
           const itemName = st?.items?.knowledge?.[iid]?.name || iid;
           const researchMultiplier = calcResearchSpeed(data);
           const wallSecs = researchMultiplier > 0 ? remaining / researchMultiplier : remaining;
+          const wallTotal = researchMultiplier > 0 ? effort / researchMultiplier : effort;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
           return `
-            <div class="panel-row"><span class="label">🔬 ${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
+            <div class="panel-row"><span class="label">🔬 ${itemName}</span><span class="value" style="font-size:0.85em" data-queue-cd="research" data-remain="${wallSecs.toFixed(2)}" data-pct-start="${pct.toFixed(2)}" data-wall-total="${wallTotal.toFixed(2)}">${_fmtSecs(wallSecs)}</span></div>
             <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
-              <div style="background:#ffa726;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
+              <div data-queue-bar="research" style="background:#ffa726;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
             </div>`;
         })()}
 
@@ -180,11 +187,12 @@ function render(data) {
           const itemName = st?.items?.buildings?.[iid]?.name || iid;
           const buildMultiplier = calcBuildSpeed(data);
           const wallSecs = buildMultiplier > 0 ? remaining / buildMultiplier : remaining;
+          const wallTotal = buildMultiplier > 0 ? effort / buildMultiplier : effort;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
           return `
-            <div class="panel-row"><span class="label">🔨 ${itemName}</span><span class="value" style="font-size:0.85em">${_fmtSecs(wallSecs)}</span></div>
+            <div class="panel-row"><span class="label">🔨 ${itemName}</span><span class="value" style="font-size:0.85em" data-queue-cd="build" data-remain="${wallSecs.toFixed(2)}" data-pct-start="${pct.toFixed(2)}" data-wall-total="${wallTotal.toFixed(2)}">${_fmtSecs(wallSecs)}</span></div>
             <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
-              <div style="background:#4fc3f7;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
+              <div data-queue-bar="build" style="background:#4fc3f7;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
             </div>`;
         })()}
       </div>
@@ -232,6 +240,11 @@ function render(data) {
   // Bind empire list events (attack buttons, refresh)
   bindEmpiresEvents();
 
+  // Snapshot for client-side countdown ticking
+  _tickData = data;
+  _tickTs = Date.now();
+  if (!_tickTimer) _tickTimer = setInterval(_tick, 1000);
+
   // Bind incoming attack clicks
   el.querySelectorAll('.attack-in-clickable').forEach(entry => {
     entry.addEventListener('click', () => {
@@ -250,6 +263,35 @@ function render(data) {
       st.pendingSpectateAttack = { attack_id: attackId, defender_uid: defenderUid };
       window.location.hash = '#defense';
     });
+  });
+}
+
+function _tick() {
+  if (!_tickData || !_tickTs) return;
+  const el = container.querySelector('#dashboard-content');
+  if (!el) return;
+  const elapsedS = (Date.now() - _tickTs) / 1000;
+
+  el.querySelectorAll('[data-atk-cd]').forEach(span => {
+    const remain = Math.max(0, parseFloat(span.dataset.remain) - elapsedS);
+    span.textContent = _fmtSecs(remain);
+    const total = parseFloat(span.dataset.total);
+    if (total > 0) {
+      const pct = Math.max(0, Math.min(100, (1 - remain / total) * 100));
+      const bar = span.closest('.attack-entry')?.querySelector('[data-atk-bar]');
+      if (bar) bar.style.width = pct.toFixed(1) + '%';
+    }
+  });
+
+  el.querySelectorAll('[data-queue-cd]').forEach(span => {
+    const remain = Math.max(0, parseFloat(span.dataset.remain) - elapsedS);
+    span.textContent = _fmtSecs(remain);
+    const wallTotal = parseFloat(span.dataset.wallTotal);
+    if (wallTotal > 0) {
+      const pct = Math.min(100, parseFloat(span.dataset.pctStart) + elapsedS / wallTotal * 100);
+      const bar = el.querySelector(`[data-queue-bar="${span.dataset.queueCd}"]`);
+      if (bar) bar.style.width = pct.toFixed(1) + '%';
+    }
   });
 }
 
@@ -772,12 +814,12 @@ function _attackEntry(a, direction) {
   let countdown = '';
   let pct = 0;
   if (a.phase === 'travelling') {
-    countdown = `<span class="atk-cd">${_fmtSecs(a.eta_seconds)}</span>`;
+    countdown = `<span class="atk-cd" data-atk-cd="${a.attack_id}" data-remain="${a.eta_seconds.toFixed(2)}" data-total="${a.total_eta_seconds.toFixed(2)}">${_fmtSecs(a.eta_seconds)}</span>`;
     pct = a.total_eta_seconds > 0
       ? Math.round((1 - a.eta_seconds / a.total_eta_seconds) * 100)
       : 0;
   } else if (a.phase === 'in_siege') {
-    countdown = `<span class="atk-cd">${_fmtSecs(a.siege_remaining_seconds)}</span>`;
+    countdown = `<span class="atk-cd" data-atk-cd="${a.attack_id}" data-remain="${a.siege_remaining_seconds.toFixed(2)}" data-total="${a.total_siege_seconds.toFixed(2)}">${_fmtSecs(a.siege_remaining_seconds)}</span>`;
     pct = a.total_siege_seconds > 0
       ? Math.round((1 - a.siege_remaining_seconds / a.total_siege_seconds) * 100)
       : 0;
@@ -799,7 +841,7 @@ function _attackEntry(a, direction) {
         ${countdown}
       </div>
       <div class="atk-progress-wrap">
-        <div class="atk-progress-bar atk-progress-${a.phase.replace('_','-')}" style="width:${pct}%"></div>
+        <div class="atk-progress-bar atk-progress-${a.phase.replace('_','-')}" data-atk-bar="${a.attack_id}" style="width:${pct}%"></div>
       </div>
     </div>`;
 }

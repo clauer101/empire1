@@ -94,6 +94,48 @@ let _lastCastleEra = null;
 let _structureEraRoman = {};
 
 const _ROMAN_NUMERALS = ['I','II','III','IV','V','VI','VII','VIII','IX'];
+
+// ── Client-side resource tick ────────────────────────────────
+let _tickTimer = null;
+let _tickSummary = null;   // snapshot of summary at last server render
+let _tickTs = null;        // Date.now() at that snapshot
+
+function _calcRate(resourceType, summary) {
+  const fx = summary.effects || {};
+  const citizens = summary.citizens || {};
+  const ce = summary.citizen_effect || 0;
+  if (resourceType === 'life') {
+    return (summary.base_life ?? 0) + (fx.life_offset || 0);
+  }
+  if (resourceType === 'gold') {
+    const offset = (summary.base_gold ?? 0) + (fx.gold_offset || 0);
+    const mod    = (citizens.merchant || 0) * ce + (fx.gold_modifier || 0);
+    return offset * (1 + mod);
+  }
+  const offset = (summary.base_culture ?? 0) + (fx.culture_offset || 0);
+  const mod    = (citizens.artist || 0) * ce + (fx.culture_modifier || 0);
+  return offset * (1 + mod);
+}
+
+function _tickResources() {
+  if (!_tickSummary || !_tickTs) return;
+  const elapsedS = (Date.now() - _tickTs) / 1000;
+  const res = _tickSummary.resources || {};
+  const gold    = (res.gold    || 0) + _calcRate('gold',    _tickSummary) * elapsedS;
+  const culture = (res.culture || 0) + _calcRate('culture', _tickSummary) * elapsedS;
+  const life    = (res.life    || 0) + _calcRate('life',    _tickSummary) * elapsedS;
+  const maxLife = _tickSummary.max_life ?? life;
+  const clampedLife = Math.min(life, maxLife);
+
+  const titleEl = container?.querySelector('.battle-title');
+  if (!titleEl) return;
+  const g = titleEl.querySelector('.title-gold');
+  const c = titleEl.querySelector('.title-culture');
+  const l = titleEl.querySelector('.title-life');
+  if (g) g.textContent = '💰 ' + _fmtTitleResource(gold);
+  if (c) c.textContent = '🎭 ' + _fmtTitleResource(culture);
+  if (l) l.textContent = '❤ ' + _fmtTitleResource(clampedLife, 1);
+}
 async function _loadStructureEraMap() {
   try {
     const resp = await rest.getEraMap();
@@ -134,6 +176,13 @@ function _fmtTitleResource(value, digits = 0) {
 function _setBattleTitle(label) {
   const titleEl = container?.querySelector('.battle-title');
   if (!titleEl) return;
+
+  // Snapshot for client-side ticking
+  if (st?.summary) {
+    _tickSummary = st.summary;
+    _tickTs = Date.now();
+    if (!_tickTimer) _tickTimer = setInterval(_tickResources, 1000);
+  }
 
   const resources = st?.summary?.resources || {};
   titleEl.textContent = '';
@@ -1026,6 +1075,8 @@ async function enter() {
   _unsub.push(eventBus.on('state:summary', (data) => {
     if (!_wsConnected) _connectWsIfNeeded();
     if (_spectateDefenderUid == null && data?.current_era) _updateCastleSprite(data.current_era);
+    // Reset tick baseline so resource interpolation starts from fresh server values
+    if (data && st?.summary) { _tickSummary = st.summary; _tickTs = Date.now(); }
   }));
 
   // Load items to get structure tiles (via REST)
@@ -1112,6 +1163,9 @@ function leave() {
     grid = null;
   }
   _stopStatusLoop();
+  if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+  _tickSummary = null;
+  _tickTs = null;
 
   // Disconnect battle WebSocket
   _wsDisconnect();

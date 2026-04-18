@@ -39,6 +39,9 @@ export function createQueueView(cfg) {
   let _unsub = [];
   let hideCompleted = true;
   let _overlay = null;
+  let _tickTimer = null;
+  let _tickRemainSecs = null;
+  let _tickTs = null;
 
   function init(el, _api, _state) {
     container = el;
@@ -71,6 +74,9 @@ export function createQueueView(cfg) {
     if (_overlay) _overlay.hide();
     _unsub = [];
     hideCompleted = true;
+    if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+    _tickRemainSecs = null;
+    _tickTs = null;
   }
 
   function _fmtEffects(effects) {
@@ -170,8 +176,8 @@ export function createQueueView(cfg) {
           </div>
         </td>
         <td class="col-details" data-label="Details">
-          <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums">${fmtSecs(remainSecs)}</span></div>
-          <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px"><div style="background:${cfg.progressColor};width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div></div>
+          <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums"${status === 'in-progress' ? ` data-active-cd data-remain="${remainSecs.toFixed(2)}" data-full="${fullEffort}" data-mult="${multiplier.toFixed(6)}"` : ''}>${fmtSecs(remainSecs)}</span></div>
+          <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px"><div class="queue-progress-bar" style="background:${cfg.progressColor};width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div></div>
           ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${_fmtCosts(info.costs, summary, wasStarted)}</div>` : ''}
           ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${_fmtEffects(info.effects)}</div>` : ''}
           ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u => _overlay.linkBadge(u.iid, u.name, u.category)).join('')}</div>` : ''}
@@ -192,6 +198,18 @@ export function createQueueView(cfg) {
         <tbody>${rows}</tbody>
       </table>
     `;
+
+    // Start/stop client-side countdown for the active item
+    const cdSpan = el.querySelector('[data-active-cd]');
+    if (cdSpan) {
+      _tickRemainSecs = parseFloat(cdSpan.dataset.remain);
+      _tickTs = Date.now();
+      if (!_tickTimer) _tickTimer = setInterval(_tick, 1000);
+    } else {
+      if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+      _tickRemainSecs = null;
+      _tickTs = null;
+    }
 
     el.querySelectorAll('.item-bg[data-bg]').forEach(bgDiv => {
       const url = bgDiv.dataset.bg;
@@ -236,6 +254,27 @@ export function createQueueView(cfg) {
         }
       });
     });
+  }
+
+  function _tick() {
+    if (_tickRemainSecs == null || _tickTs == null) return;
+    const el = container.querySelector(`#${cfg.contentId}`);
+    if (!el) return;
+    const cdSpan = el.querySelector('[data-active-cd]');
+    if (!cdSpan) return;
+
+    const elapsed = (Date.now() - _tickTs) / 1000;
+    const remaining = Math.max(0, _tickRemainSecs - elapsed);
+    cdSpan.textContent = fmtSecs(remaining);
+
+    const fullEffort = parseFloat(cdSpan.dataset.full);
+    const mult = parseFloat(cdSpan.dataset.mult);
+    if (fullEffort > 0 && mult > 0) {
+      const remainEffort = remaining * mult;
+      const pct = Math.max(0, Math.min(100, (1 - remainEffort / fullEffort) * 100));
+      const bar = cdSpan.closest('td')?.querySelector('.queue-progress-bar');
+      if (bar) bar.style.width = pct.toFixed(1) + '%';
+    }
   }
 
   return { id: cfg.id, title: cfg.title, init, enter, leave };
