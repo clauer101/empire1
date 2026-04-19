@@ -1230,3 +1230,111 @@ maps:
     r: 1
     type: empty
   life: 26.0
+- id: live_17_1776603146
+  name: MooHaven (Middle ages)
+  hex_map:
+  - q: -1
+    r: -1
+    type: empty
+  - q: -1
+    r: 0
+    type: HEAVY_TOWER
+  - q: -1
+    r: 1
+    type: HEAVY_TOWER
+  - q: -1
+    r: 2
+    type: TAR_TOWER
+  - q: -1
+    r: 3
+    type: empty
+  - q: -2
+    r: 0
+    type: empty
+  - q: -2
+    r: 1
+    type: empty
+  - q: -2
+    r: 2
+    type: empty
+  - q: -2
+    r: 3
+    type: empty
+  - q: 0
+    r: -1
+    type: TAR_TOWER
+  - q: 0
+    r: -2
+    type: empty
+  - q: 0
+    r: 0
+    type: empty
+  - q: 0
+    r: 1
+    type: empty
+  - q: 0
+    r: 2
+    type: HEAVY_TOWER
+  - q: 0
+    r: 3
+    type: empty
+  - q: 1
+    r: -1
+    type: empty
+  - q: 1
+    r: -2
+    type: HEAVY_TOWER
+  - q: 1
+    r: -3
+    type: empty
+  - q: 1
+    r: 0
+    type: CATAPULTS
+  - q: 1
+    r: 1
+    type: empty
+  - q: 1
+    r: 2
+    type: HEAVY_TOWER
+  - q: 1
+    r: 3
+    type: empty
+  - q: 2
+    r: -1
+    type: empty
+  - q: 2
+    r: -2
+    type: HEAVY_TOWER
+  - q: 2
+    r: -3
+    type: empty
+  - q: 2
+    r: 0
+    type: HEAVY_TOWER
+  - q: 2
+    r: 1
+    type: empty
+  - q: 2
+    r: 2
+    type: empty
+  - q: 2
+    r: 3
+    type: SPIKE_TRAP
+  - q: 3
+    r: -1
+    type: castle
+  - q: 3
+    r: -2
+    type: TAR_TOWER
+  - q: 3
+    r: -3
+    type: empty
+  - q: 3
+    r: 2
+    type: HEAVY_TOWER
+  - q: 4
+    r: -2
+    type: HEAVY_TOWER
+  - q: 4
+    r: -3
+    type: spawnpoint

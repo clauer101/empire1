@@ -137,3 +137,8 @@ class SendMessageRequest(BaseModel):
 class BattleFeedbackRequest(BaseModel):
     army_name: str
     rating: str  # "too_easy" or "too_hard"
+
+
+class BuyItemUpgradeRequest(BaseModel):
+    iid: str   # e.g. "ARROW_TOWER" or "SOLDIER"
+    stat: str  # e.g. "damage", "range", "health", "speed"

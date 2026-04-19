@@ -59,6 +59,7 @@ class Empire:
         "artist": 0,
     })
     effects: dict[str, float] = field(default_factory=dict)
+    item_upgrades: dict[str, dict[str, int]] = field(default_factory=dict)
     artefacts: list[str] = field(default_factory=list)
     bosses: dict[str, Critter] = field(default_factory=dict)
     hex_map: dict = field(default_factory=dict)  # Composer hex tiles

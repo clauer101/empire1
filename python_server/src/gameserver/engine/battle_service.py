@@ -102,12 +102,12 @@ class BattleService:
     decoupled from the WebSocket server.
     """
 
-    def __init__(self, items: list | dict | None = None) -> None:
+    def __init__(self, items: list | dict | None = None, gc=None) -> None:
         """Initialize battle service.
-        
+
         Args:
-            items: List or dict of ItemDetails for looking up critter stats (e.g., time_between_ms).
-                   Can be a list of ItemDetails or a dict[str, ItemDetails].
+            items: List or dict of ItemDetails for looking up critter stats.
+            gc: GameConfig instance for upgrade definitions.
         """
         if items is None:
             self._items_by_iid = {}
@@ -115,6 +115,7 @@ class BattleService:
             self._items_by_iid = items
         else:
             self._items_by_iid = {item.iid: item for item in items}
+        self._gc = gc
 
     def _get_wave_critter_slot_cost(self, wave) -> int:
         """Return the slot cost for the next critter of this wave."""
@@ -388,36 +389,56 @@ class BattleService:
 
     def _step_towers(self, battle: BattleState, dt_ms: float) -> None:
         """Towers acquire targets and fire shots."""
-        defender_fx: dict = battle.defender.effects if battle.defender else {}
-        damage_mult = 1.0 + defender_fx.get("damage_modifier", 0.0)
-        range_mult  = 1.0 + defender_fx.get("range_modifier",  0.0)
-        reload_mult = 1.0 + defender_fx.get("reload_modifier", 0.0)
+        defender = battle.defender
+        su = self._gc.structure_upgrades if self._gc else None
+        item_upgrades = defender.item_upgrades if defender else {}
 
         for sid, structure in battle.structures.items():
-            # Decrement reload timer (reload_modifier speeds up reload)
+            # Per-IID upgrade levels for this tower
+            iid_upgrades = item_upgrades.get(structure.iid, {})
+            dmg_lvl    = iid_upgrades.get("damage", 0)
+            rng_lvl    = iid_upgrades.get("range", 0)
+            rld_lvl    = iid_upgrades.get("reload", 0)
+            efdur_lvl  = iid_upgrades.get("effect_duration", 0)
+            efval_lvl  = iid_upgrades.get("effect_value", 0)
+
+            damage_mult = 1.0 + (su.damage / 100.0) * dmg_lvl if su else 1.0
+            range_mult  = 1.0 + (su.range  / 100.0) * rng_lvl if su else 1.0
+            reload_mult = 1.0 + (su.reload / 100.0) * rld_lvl if su else 1.0
+
+            # Decrement reload timer (reload upgrade speeds up reload)
             if structure.reload_remaining_ms > 0:
-                structure.reload_remaining_ms -= dt_ms * (1.0 + reload_mult - 1.0)
+                structure.reload_remaining_ms -= dt_ms * reload_mult
 
             # Check if tower is ready to fire
             if structure.reload_remaining_ms <= 0:
                 effective_range = structure.range * range_mult
-                # Find target: most-advanced critter in effective range
                 target = self._find_target(battle, structure, range_override=effective_range)
 
                 if target:
-                    # Flight distance using interpolated critter position
                     cq, cr = critter_hex_pos(target.path, target.path_progress)
                     distance = hex_world_distance(
                         float(structure.position.q), float(structure.position.r), cq, cr
                     )
                     flight_time_ms = (distance / structure.shot_speed) * 1000.0 if structure.shot_speed > 0 else 0.0
 
-                    # Create shot (damage scaled by damage_modifier)
+                    # Apply effect_duration and effect_value upgrades to shot effects
+                    shot_effects = dict(structure.effects)
+                    if su and (efdur_lvl > 0 or efval_lvl > 0):
+                        efdur_mult   = 1.0 + (su.effect_duration / 100.0) * efdur_lvl
+                        efval_mult   = 1.0 + (su.effect_value / 100.0) * efval_lvl
+                        for k in ("slow_duration", "burn_duration"):
+                            if k in shot_effects:
+                                shot_effects[k] = shot_effects[k] * efdur_mult
+                        for k in ("slow_ratio", "burn_dps"):
+                            if k in shot_effects:
+                                shot_effects[k] = shot_effects[k] * efval_mult
+
                     shot = Shot(
                         damage=structure.damage * damage_mult,
                         target_cid=target.cid,
                         source_sid=sid,
-                        effects=dict(structure.effects),
+                        effects=shot_effects,
                         flight_remaining_ms=flight_time_ms,
                         origin=structure.position,
                         path_progress=0.0,
@@ -509,22 +530,19 @@ class BattleService:
         return 10000.0  # Fallback default
 
     def _make_critter_from_item(self, iid: str, path: list, path_progress: float = 0.0,
-                                attacker_effects: "dict | None" = None) -> Critter:
-        """Create a Critter from item config, placing it at path_progress.
-
-        Args:
-            attacker_effects: Empire effects dict of the attacker. When provided,
-                speed_modifier, health_modifier, and armour_modifier are applied.
-        """
+                                attacker_item_upgrades: "dict | None" = None) -> Critter:
+        """Create a Critter from item config, placing it at path_progress."""
         item = self._items_by_iid.get(iid)
         health = getattr(item, 'health', 1.0) if item else 1.0
         speed  = getattr(item, 'speed', 0.15) if item else 0.15
         armour = getattr(item, 'armour', 0.0) if item else 0.0
 
-        if attacker_effects:
-            health *= (1.0 + attacker_effects.get("health_modifier", 0.0))
-            speed  *= (1.0 + attacker_effects.get("speed_modifier",  0.0))
-            armour *= (1.0 + attacker_effects.get("armour_modifier", 0.0))
+        cu = self._gc.critter_upgrades if self._gc else None
+        if cu and attacker_item_upgrades:
+            iid_upgrades = attacker_item_upgrades.get(iid, {})
+            health *= 1.0 + (cu.health / 100.0) * iid_upgrades.get("health", 0)
+            speed  *= 1.0 + (cu.speed  / 100.0) * iid_upgrades.get("speed",  0)
+            armour *= 1.0 + (cu.armour / 100.0) * iid_upgrades.get("armour", 0)
 
         return Critter(
             cid=_new_cid(),
@@ -602,22 +620,23 @@ class BattleService:
             log.warning("[_step_armies] Battle %d has no critter path", battle.bid)
             return
         
-        attacker_effects = battle.attacker.effects if battle.attacker else None
+        attacker_item_upgrades = battle.attacker.item_upgrades if battle.attacker else None
 
         # Step all waves up to and including the next wave
         for wave in battle.army.waves:
             new_critters = self._step_wave(wave, dt_ms)
 
             for critter in new_critters:
-                # Set the critter's path from the precomputed battle path
                 critter.path = battle.critter_path
-                # Re-apply attacker modifiers (spawn sets base stats; modifiers scale them)
-                if attacker_effects:
-                    critter.health     *= (1.0 + attacker_effects.get("health_modifier", 0.0))
-                    critter.max_health  = critter.health
-                    critter.speed      *= (1.0 + attacker_effects.get("speed_modifier",  0.0))
-                    critter.armour     *= (1.0 + attacker_effects.get("armour_modifier", 0.0))
-                
+                # Apply per-IID upgrades at spawn time
+                cu = self._gc.critter_upgrades if self._gc else None
+                if cu and attacker_item_upgrades:
+                    iid_upgrades = attacker_item_upgrades.get(critter.iid, {})
+                    critter.health *= 1.0 + (cu.health / 100.0) * iid_upgrades.get("health", 0)
+                    critter.max_health = critter.health
+                    critter.speed  *= 1.0 + (cu.speed  / 100.0) * iid_upgrades.get("speed",  0)
+                    critter.armour *= 1.0 + (cu.armour / 100.0) * iid_upgrades.get("armour", 0)
+
                 battle.critters[critter.cid] = critter
                 battle.critters_spawned += 1
                 log.info("[SPAWN] Critter cid=%d (%s) spawned from wave %d (progress=%d/%d, path_length=%d)",

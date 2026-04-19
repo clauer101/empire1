@@ -40,6 +40,24 @@ class SigmoidPrice:
 
 
 @dataclass
+class StructureUpgradeDef:
+    """Per-level percentage bonus for each upgradeable tower stat."""
+    damage: float = 5.0          # % per level
+    range: float = 5.0           # % per level
+    reload: float = 5.0          # % per level
+    effect_duration: float = 5.0  # % per level
+    effect_value: float = 5.0    # % per level
+
+
+@dataclass
+class CritterUpgradeDef:
+    """Per-level percentage bonus for each upgradeable critter stat."""
+    health: float = 5.0   # % per level
+    speed: float = 5.0    # % per level
+    armour: float = 5.0   # % per level
+
+
+@dataclass
 class Prices:
     """Purchase price parameters for all buyable items."""
     citizen: PriceParams = field(default_factory=PriceParams)
@@ -143,6 +161,11 @@ class GameConfig:
     # -- Spy costs ---------------------------------------------------
     spy_costs: SpyCosts = field(default_factory=SpyCosts)
 
+    # -- Unit upgrades -----------------------------------------------
+    structure_upgrades: StructureUpgradeDef = field(default_factory=StructureUpgradeDef)
+    critter_upgrades: CritterUpgradeDef = field(default_factory=CritterUpgradeDef)
+    item_upgrade_base_costs: list = field(default_factory=lambda: [1, 15, 100, 300, 600, 1200, 2500, 5000, 10000])
+
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower
 
@@ -233,6 +256,14 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         if isinstance(ai_generator_raw, dict) else {}
     )
 
+    # Handle structure_upgrades / critter_upgrades
+    su_raw = raw.pop("structure_upgrades", None)
+    structure_upgrades = StructureUpgradeDef(**{k: float(v) for k, v in su_raw.items()}) \
+        if isinstance(su_raw, dict) else StructureUpgradeDef()
+    cu_raw = raw.pop("critter_upgrades", None)
+    critter_upgrades = CritterUpgradeDef(**{k: float(v) for k, v in cu_raw.items()}) \
+        if isinstance(cu_raw, dict) else CritterUpgradeDef()
+
     # Handle nested barbarians_aggressiveness (already a flat {era_key: float} dict)
     barbarians_raw = raw.pop("barbarians_aggressiveness", None)
     barbarians_aggressiveness: Dict[str, float] = (
@@ -247,6 +278,8 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         era_effects=era_effects_dict,
         barbarians_aggressiveness=barbarians_aggressiveness,
         ai_generator=ai_generator,
+        structure_upgrades=structure_upgrades,
+        critter_upgrades=critter_upgrades,
         **{
             k: v for k, v in raw.items()
             if k in GameConfig.__dataclass_fields__ and k not in ("era_effects", "barbarians_aggressiveness")

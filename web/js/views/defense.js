@@ -82,6 +82,32 @@ let st;
 let container;
 let _unsub = [];
 
+let _structUpgDef = null; // structure_upgrade_def from era-map
+let _critUpgDef   = null; // critter_upgrade_def from era-map
+
+function _applyStructUpgrades(s, iid) {
+  const upgrades = st.summary?.item_upgrades?.[iid] ?? {};
+  const d = _structUpgDef;
+  if (!d) return s;
+  const dmgLvl = upgrades.damage ?? 0;
+  const rngLvl = upgrades.range ?? 0;
+  const rldLvl = upgrades.reload ?? 0;
+  const edLvl  = upgrades.effect_duration ?? 0;
+  const evLvl  = upgrades.effect_value ?? 0;
+  const ef = s.effects ? { ...s.effects } : {};
+  if (edLvl && ef.burn_duration)  ef.burn_duration  *= 1 + (d.effect_duration / 100) * edLvl;
+  if (evLvl && ef.burn_dps)       ef.burn_dps       *= 1 + (d.effect_value    / 100) * evLvl;
+  if (edLvl && ef.slow_duration)  ef.slow_duration  *= 1 + (d.effect_duration / 100) * edLvl;
+  if (evLvl && ef.slow_ratio != null) ef.slow_ratio *= 1 + (d.effect_value    / 100) * evLvl;
+  return {
+    ...s,
+    damage:        s.damage  * (1 + (d.damage / 100) * dmgLvl),
+    range:         s.range   * (1 + (d.range  / 100) * rngLvl),
+    reload_time_ms: s.reload_time_ms / (1 + (d.reload / 100) * rldLvl),
+    effects: ef,
+  };
+}
+
 /** @type {HexGrid|null} */
 let grid = null;
 
@@ -885,7 +911,7 @@ function _showTileDetails(q, r, tile) {
   let towerInfo = '';
   let _goldCost;
   if (t.serverData) {
-    const s = t.serverData;
+    const s = _applyStructUpgrades(t.serverData, tile.type);
     _goldCost = s.costs?.gold;
     const _currentGold = st.summary?.resources?.gold || 0;
     const _costColor = _goldCost && _currentGold < _goldCost ? 'var(--danger)' : 'var(--text)';
@@ -919,14 +945,18 @@ function _showTileDetails(q, r, tile) {
       });
       _efxHtml = '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' + _efxParts.join('') + '</span></div>';
     }
+    const _upgLevels = st.summary?.item_upgrades?.[tile.type] ?? {};
+    const _totalUpgLvl = Object.values(_upgLevels).reduce((a, b) => a + b, 0);
+    const _upgLabel = _totalUpgLvl > 0
+      ? ` <span style="font-size:10px;color:#c9a84c;margin-left:4px">⬆ Lv ${_totalUpgLvl}</span>` : '';
     towerInfo =
       _spriteThumb +
       '<div class="props-divider"></div>' +
-      '<div class="props-section-label">Tower Stats</div>' +
+      '<div class="props-section-label">Tower Stats' + _upgLabel + '</div>' +
       (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
-      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
-      '<div class="props-row"><span class="label">Range</span><span class="value">🎯 ' + (s.range || 0) + ' hex</span></div>' +
-      '<div class="props-row"><span class="label">Reload</span><span class="value">' + ((s.reload_time_ms || 0) / 1000).toFixed(1) + ' s</span></div>' +
+      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0).toFixed(1) + '</span></div>' +
+      '<div class="props-row"><span class="label">Range</span><span class="value">🎯 ' + (s.range || 0).toFixed(2) + ' hex</span></div>' +
+      '<div class="props-row"><span class="label">Reload</span><span class="value">' + ((s.reload_time_ms || 0) / 1000).toFixed(2) + ' s</span></div>' +
       _efxHtml +
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Target Select</div>' +
@@ -1075,9 +1105,13 @@ async function enter() {
     if (data && st?.summary) { _tickSummary = st.summary; _tickTs = Date.now(); }
   }));
 
-  // Load items to get structure tiles (via REST)
+  // Load items and era-map (for upgrade defs)
   try {
-    await Promise.all([rest.getItems()]);
+    const [, eraMap] = await Promise.all([rest.getItems(), rest.getEraMap()]);
+    if (eraMap) {
+      _structUpgDef = eraMap.structure_upgrade_def ?? null;
+      _critUpgDef   = eraMap.critter_upgrade_def   ?? null;
+    }
   } catch (err) {
     console.warn('[Battle] could not load items:', err.message);
   }
@@ -1415,7 +1449,7 @@ function _openPlacementMenu(q, r) {
 
 function _createTpmItem(typeId, q, r, menu) {
   const t = getTileType(typeId);
-  const s = t.serverData;
+  const s = t.serverData ? _applyStructUpgrades(t.serverData, typeId) : t.serverData;
   const currentGold = st.summary?.resources?.gold || 0;
   const goldCost = s?.costs?.gold;
   const canAfford = !goldCost || currentGold >= goldCost;

@@ -34,22 +34,22 @@ era_effects:
     gold_offset: 0.05
   bronze:
     travel_offset: 3600.0
-    gold_offset: 0.2
+    gold_offset: 0.25
   iron:
     travel_offset: 7200.0
-    gold_offset: 0.5
+    gold_offset: 0.6
   middle_ages:
     travel_offset: 10800.0
-    gold_offset: 1.0
+    gold_offset: 1.2
   rennaissance:
     travel_offset: 12600.0
-    gold_offset: 1.5
+    gold_offset: 2.0
   industrial:
     travel_offset: 14400.0
-    gold_offset: 2.0
+    gold_offset: 2.5
   modern:
     travel_offset: 16200.0
-    gold_offset: 3.0
+    gold_offset: 4.0
   future:
     travel_offset: 18000.0
 ai_travel_seconds: 60.0
@@ -103,25 +103,36 @@ prices:
     - 200     # Neolithikum
     - 2100     # Bronzezeit
     - 15500    # Eisenzeit
-    - 78000    # Mittelalter
-    - 158000    # Renaissance
+    - 38000    # Mittelalter
+    - 98000    # Renaissance
     - 320000    # Industrialisierung
     - 590000   # Moderne
     - 870000   # Zukunft
+structure_upgrades:
+  damage: 2            # % base damage per level
+  range: 2             # % hex range per level
+  reload: 2            # % reload speed per level
+  effect_duration: 2   # % slow/burn duration per level
+  effect_value: 3      # % slow_ratio or burn_dps per level
+
+critter_upgrades:
+  health: 2     # % base health per level
+  speed: 2      #  %  per level
+  armour: 2     # % armour per level
+
+item_upgrade_base_costs:
+  - 2       # Steinzeit (Startwert, kostenlos)
+  - 15     # Neolithikum
+  - 100     # Bronzezeit
+  - 300    # Eisenzeit
+  - 600    # Mittelalter
+  - 1000    # Renaissance
+  - 2000    # Industrialisierung
+  - 4000   # Moderne
+  - 6000   # Zukunft
+
 tower_sell_refund: 0.3
-min_username_length: 2
-max_username_length: 20
-min_password_length: 4
-ws_port: 8765
-rest_port: 8080
-ws_ping_interval: 15
-ws_ping_timeout: 10
-ws_max_message_size: 1048576
-debug_port: 9000
-uid_game_server: 0
-uid_game_engine: 1
-uid_ai: 2
-uid_min_player: 1000
+
 ai_generator:
   stone:
     min_waves: 1
@@ -204,3 +215,19 @@ ai_generator:
     max_previous_era: 15
     min_next_era: 0
     max_next_era: 0
+
+
+
+min_username_length: 2
+max_username_length: 20
+min_password_length: 4
+ws_port: 8765
+rest_port: 8080
+ws_ping_interval: 15
+ws_ping_timeout: 10
+ws_max_message_size: 1048576
+debug_port: 9000
+uid_game_server: 0
+uid_game_engine: 1
+uid_ai: 2
+uid_min_player: 1000

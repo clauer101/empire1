@@ -1639,6 +1639,7 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
         "attacks_outgoing": attacks_outgoing,
         "travel_time_seconds": round(max(1.0, svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_offset", 0.0)), 0),
         "current_era": svc.empire_service.get_current_era(empire),
+        "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
     }
 
 
@@ -2251,6 +2252,60 @@ async def handle_buy_wave_era_request(
         "new_max_era": wave.max_era,
         "cost": round(era_price, 2),
         "next_era_price": round(next_price, 2) if next_price is not None else None,
+    }
+
+
+async def handle_buy_item_upgrade(
+    iid: str, stat: str, sender_uid: int,
+) -> dict[str, Any]:
+    """Buy one level of a stat upgrade for a tower or critter type."""
+    svc = _svc()
+    empire = svc.empire_service.get(sender_uid)
+    if empire is None:
+        return {"success": False, "error": f"No empire found for uid {sender_uid}"}
+
+    gc = svc.empire_service._gc
+
+    # Validate stat
+    valid_structure_stats = {"damage", "range", "reload", "effect_duration", "effect_value"}
+    valid_critter_stats   = {"health", "speed", "armour"}
+    item = svc.upgrade_provider.items.get(iid) if svc.upgrade_provider else None
+    if item is None:
+        return {"success": False, "error": f"Unknown item: {iid}"}
+
+    from gameserver.models.items import ItemType
+    if item.item_type == ItemType.STRUCTURE:
+        valid_stats = valid_structure_stats
+    elif item.item_type == ItemType.CRITTER:
+        valid_stats = valid_critter_stats
+    else:
+        return {"success": False, "error": f"Item {iid} is not upgradeable"}
+
+    if stat not in valid_stats:
+        return {"success": False, "error": f"Invalid stat '{stat}' for {iid} (valid: {sorted(valid_stats)})"}
+
+    price = svc.empire_service._item_upgrade_price(empire, iid, stat)
+    current_gold = empire.resources.get("gold", 0.0)
+    if current_gold < price:
+        return {"success": False, "error": f"Not enough gold (need {price:.1f}, have {current_gold:.1f})"}
+
+    empire.resources["gold"] -= price
+    iid_upgrades = empire.item_upgrades.setdefault(iid, {})
+    iid_upgrades[stat] = iid_upgrades.get(stat, 0) + 1
+    new_level = iid_upgrades[stat]
+    next_price = svc.empire_service._item_upgrade_price(empire, iid, stat)
+
+    log.info("Item upgrade: uid=%d iid=%s stat=%s → level %d for %.1f gold", sender_uid, iid, stat, new_level, price)
+
+    return {
+        "success": True,
+        "iid": iid,
+        "stat": stat,
+        "new_level": new_level,
+        "cost": round(price, 2),
+        "gold": round(empire.resources.get("gold", 0.0), 2),
+        "next_price": round(next_price, 2),
+        "item_upgrades": dict(empire.item_upgrades),
     }
 
 
@@ -2906,7 +2961,7 @@ def _create_battle_start_handler() -> Callable:
 
         # ── Launch battle loop ───────────────────────────────
         items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-        battle_svc = BattleService(items=items)
+        battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None)
         
         # Get broadcast interval from game config (default 250ms)
         broadcast_interval_ms = 250.0

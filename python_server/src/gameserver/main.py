@@ -72,6 +72,7 @@ class Configuration:
     ai_waves: list = field(default_factory=list)
     game: GameConfig = field(default_factory=GameConfig)
     knowledge_era_groups: dict = field(default_factory=dict)
+    item_era_index: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -176,9 +177,23 @@ def load_configuration(
     knowledge_era_groups = _parse_knowledge_era_groups(config_dir)
     log.info("  knowledge_era_groups: %d eras parsed", len(knowledge_era_groups))
 
+    _DE_ERA_KEYS = [
+        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
+        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
+    ]
+    item_era_index: dict[str, int] = {}
+    for _cat_yaml in ("structures.yaml", "critters.yaml"):
+        _groups = _parse_era_groups_from_yaml(Path(config_dir) / _cat_yaml)
+        for _era, _iids in _groups.items():
+            _idx = _DE_ERA_KEYS.index(_era) if _era in _DE_ERA_KEYS else 0
+            for _iid in _iids:
+                item_era_index[_iid] = _idx
+    log.info("  item_era_index: %d items indexed", len(item_era_index))
+
     return Configuration(items=items, hex_map=hex_map,
                          ai_waves=ai_waves, game=game_cfg,
-                         knowledge_era_groups=knowledge_era_groups)
+                         knowledge_era_groups=knowledge_era_groups,
+                         item_era_index=item_era_index)
 
 
 # ===================================================================
@@ -238,8 +253,9 @@ def create_services(config: Configuration, database: Database) -> Services:
     log.info("  upgrade_provider: %d items registered", len(config.items))
 
     empire_service = EmpireService(upgrade_provider, event_bus, gc,
-                                   knowledge_era_groups=config.knowledge_era_groups)
-    battle_service = BattleService(items=upgrade_provider.items)
+                                   knowledge_era_groups=config.knowledge_era_groups,
+                                   item_era_index=config.item_era_index)
+    battle_service = BattleService(items=upgrade_provider.items, gc=gc)
     attack_service = AttackService(event_bus, gc, empire_service,
                                    knowledge_era_groups=config.knowledge_era_groups)
     army_service = ArmyService(upgrade_provider, event_bus)

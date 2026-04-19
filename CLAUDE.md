@@ -14,6 +14,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./run_tests.sh --match=test_battle_service
 ```
 
+**Run a specific test file** (path relative to `python_server/`, only one at a time):
+```bash
+./run_tests.sh tests/test_item_upgrades.py
+```
+
 **Other test options:** `--all`, `--quick`, `--cov`, `--failfast`
 
 **Start/stop/restart servers:**

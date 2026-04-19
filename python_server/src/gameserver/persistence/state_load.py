@@ -172,6 +172,7 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
         research_queue=d.get("research_queue"),
         citizens=dict(d.get("citizens", {"merchant": 0, "scientist": 0, "artist": 0})),
         effects=dict(d.get("effects", {})),
+        item_upgrades={iid: dict(stats) for iid, stats in d.get("item_upgrades", {}).items()},
         artefacts=list(d.get("artefacts", [])),
         max_life=d.get("max_life", 10.0),
         structures=structures,

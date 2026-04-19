@@ -477,7 +477,7 @@ SOLDIER:
   bonus: {}
   spawn_on_death: null
   scale: 1.0
-  animation: assets/sprites/critters/the_general
+  animation: assets/sprites/critters/soldier
   requirements: [BARRACKS, CONSTITUTION, BALLISTICS]
 
 MOTORBIKE:

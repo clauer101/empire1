@@ -40,7 +40,8 @@ class EmpireService:
 
     def __init__(self, upgrade_provider: UpgradeProvider, event_bus: EventBus,
                  game_config: GameConfig | None = None,
-                 knowledge_era_groups: dict[str, list[str]] | None = None) -> None:
+                 knowledge_era_groups: dict[str, list[str]] | None = None,
+                 item_era_index: dict[str, int] | None = None) -> None:
         self._upgrades = upgrade_provider
         self._events = event_bus
         self._empires: dict[int, Empire] = {}  # uid → Empire
@@ -55,6 +56,7 @@ class EmpireService:
         self._base_build_speed = _gc.base_build_speed
         self._base_research_speed = _gc.base_research_speed
         self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
+        self._item_era_index: dict[str, int] = item_era_index or {}
         self._next_aid: int = 1  # global army ID counter
 
     # -- Army ID allocation ----------------------------------------------
@@ -398,6 +400,20 @@ class EmpireService:
             return float(costs[era_index])
         return float(costs[-1])
 
+
+    def _item_upgrade_price(self, empire: Empire, iid: str, stat: str) -> float:
+        """Cost to upgrade `stat` of item `iid` by one level.
+
+        Base cost comes from game.yaml item_upgrade_base_costs, indexed by the item's era.
+        Formula: base_cost × (total_existing_upgrades_on_iid + 1)^2
+        So the first upgrade costs base_cost, second 4×, third 9×, etc.
+        """
+        era_idx = self._item_era_index.get(iid, 0)
+        costs_list = self._gc.item_upgrade_base_costs if self._gc else []
+        base_cost = costs_list[era_idx] if era_idx < len(costs_list) else (costs_list[-1] if costs_list else 0.0)
+        iid_upgrades = empire.item_upgrades.get(iid, {})
+        total_levels = sum(iid_upgrades.values())
+        return base_cost * (total_levels + 1) ** 2
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:
         """Redistribute citizens among roles. Returns error message or None.
