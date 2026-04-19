@@ -101,6 +101,11 @@ class BuyCritterSlotRequest(BaseModel):
     wave_number: int
 
 
+class BuyWaveEraRequest(BaseModel):
+    aid: int
+    wave_number: int
+
+
 class ArmyCreateRequest(BaseModel):
     name: str
 

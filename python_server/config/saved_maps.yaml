@@ -986,3 +986,247 @@ maps:
     r: 1
     type: ICE_TOWER
   life: 26.0
+- id: live_3_1776587122
+  name: Bikini Bottom (Indy)
+  hex_map:
+  - q: -1
+    r: -1
+    type: spawnpoint
+  - q: -1
+    r: -2
+    type: GATLING_TOWER
+  - q: -1
+    r: 0
+    type: GATLING_TOWER
+  - q: -1
+    r: 1
+    type: empty
+  - q: -1
+    r: 2
+    type: FLAME_THROWER
+  - q: -1
+    r: 3
+    type: empty
+  - q: -1
+    r: 4
+    type: GATLING_TOWER
+  - q: -2
+    r: -1
+    type: GATLING_TOWER
+  - q: -2
+    r: 0
+    type: GATLING_TOWER
+  - q: -2
+    r: 1
+    type: empty
+  - q: -2
+    r: 2
+    type: GATLING_TOWER
+  - q: -2
+    r: 3
+    type: empty
+  - q: -2
+    r: 4
+    type: ICE_TOWER
+  - q: -3
+    r: 0
+    type: ICE_TOWER
+  - q: -3
+    r: 1
+    type: GATLING_TOWER
+  - q: -3
+    r: 2
+    type: empty
+  - q: -3
+    r: 3
+    type: empty
+  - q: -3
+    r: 4
+    type: GATLING_TOWER
+  - q: -4
+    r: 1
+    type: ICE_TOWER
+  - q: -4
+    r: 2
+    type: COLD_TOWER
+  - q: -4
+    r: 3
+    type: GATLING_TOWER
+  - q: -4
+    r: 4
+    type: GATLING_TOWER
+  - q: 0
+    r: -1
+    type: empty
+  - q: 0
+    r: -2
+    type: GATLING_TOWER
+  - q: 0
+    r: 0
+    type: COLD_TOWER
+  - q: 0
+    r: 1
+    type: empty
+  - q: 0
+    r: 2
+    type: COLD_TOWER
+  - q: 0
+    r: 3
+    type: empty
+  - q: 0
+    r: 4
+    type: FLAME_THROWER
+  - q: 1
+    r: -1
+    type: empty
+  - q: 1
+    r: -2
+    type: ICE_TOWER
+  - q: 1
+    r: 0
+    type: FLAME_THROWER
+  - q: 1
+    r: 1
+    type: empty
+  - q: 1
+    r: 2
+    type: GATLING_TOWER
+  - q: 1
+    r: 3
+    type: empty
+  - q: 1
+    r: 4
+    type: GATLING_TOWER
+  - q: 2
+    r: -1
+    type: empty
+  - q: 2
+    r: -2
+    type: GATLING_TOWER
+  - q: 2
+    r: 0
+    type: ICE_TOWER
+  - q: 2
+    r: 1
+    type: empty
+  - q: 2
+    r: 2
+    type: FLAME_THROWER
+  - q: 2
+    r: 3
+    type: empty
+  - q: 2
+    r: 4
+    type: GATLING_TOWER
+  - q: 3
+    r: -1
+    type: empty
+  - q: 3
+    r: -2
+    type: FLAME_THROWER
+  - q: 3
+    r: 0
+    type: FLAME_THROWER
+  - q: 3
+    r: 1
+    type: empty
+  - q: 3
+    r: 2
+    type: GATLING_TOWER
+  - q: 3
+    r: 3
+    type: empty
+  - q: 3
+    r: 4
+    type: ICE_TOWER
+  - q: 4
+    r: -1
+    type: empty
+  - q: 4
+    r: -2
+    type: GATLING_TOWER
+  - q: 4
+    r: 0
+    type: GATLING_TOWER
+  - q: 4
+    r: 1
+    type: empty
+  - q: 4
+    r: 2
+    type: COLD_TOWER
+  - q: 4
+    r: 3
+    type: empty
+  - q: 4
+    r: 4
+    type: GATLING_TOWER
+  - q: 5
+    r: -1
+    type: empty
+  - q: 5
+    r: -2
+    type: COLD_TOWER
+  - q: 5
+    r: 0
+    type: GATLING_TOWER
+  - q: 5
+    r: 1
+    type: empty
+  - q: 5
+    r: 2
+    type: GATLING_TOWER
+  - q: 5
+    r: 3
+    type: castle
+  - q: 5
+    r: 4
+    type: GATLING_TOWER
+  - q: 6
+    r: -1
+    type: empty
+  - q: 6
+    r: -2
+    type: GATLING_TOWER
+  - q: 6
+    r: 0
+    type: COLD_TOWER
+  - q: 6
+    r: 1
+    type: empty
+  - q: 6
+    r: 2
+    type: GATLING_TOWER
+  - q: 6
+    r: 3
+    type: GATLING_TOWER
+  - q: 7
+    r: -1
+    type: empty
+  - q: 7
+    r: -2
+    type: ICE_TOWER
+  - q: 7
+    r: 0
+    type: empty
+  - q: 7
+    r: 1
+    type: GATLING_TOWER
+  - q: 7
+    r: 2
+    type: ICE_TOWER
+  - q: 8
+    r: -1
+    type: GATLING_TOWER
+  - q: 8
+    r: -2
+    type: GATLING_TOWER
+  - q: 8
+    r: 0
+    type: ICE_TOWER
+  - q: 8
+    r: 1
+    type: ICE_TOWER
+  - q: 9
+    r: 1
+    type: empty
+  life: 26.0

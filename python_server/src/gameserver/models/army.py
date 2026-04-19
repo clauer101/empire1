@@ -26,6 +26,7 @@ class CritterWave:
     wave_id: int
     iid: str = ""
     slots: int = 0
+    max_era: int = 0
     num_critters_spawned: int = 0
     next_critter_ms: float = 0.0
 

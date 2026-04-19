@@ -57,17 +57,21 @@ ai_min_player_score: 500.0
 waves_per_level: 1.0
 slot_adder_per_ai_level: 2.0
 default_spawn_interval_ms: 2000.0
-max_lose_knowledge: 0.15
+
+
+max_lose_knowledge: 0.12
 min_lose_knowledge: 0.03
 min_lose_culture: 0.01
 max_lose_culture: 0.05
 artefact_steal_chance: 0.33
+
 spy_costs:
   defense: 500
   build_queue: 1000
   research_queue: 2000
   attacks: 5000
   artefacts: 10000
+
 prices:
   citizen:
     u: 34
@@ -94,6 +98,16 @@ prices:
     y: 2.4
     z: 2.5
     v: 5
+  wave_era_costs:
+    - 0       # Steinzeit (Startwert, kostenlos)
+    - 200     # Neolithikum
+    - 2100     # Bronzezeit
+    - 15500    # Eisenzeit
+    - 78000    # Mittelalter
+    - 158000    # Renaissance
+    - 320000    # Industrialisierung
+    - 590000   # Moderne
+    - 870000   # Zukunft
 tower_sell_refund: 0.3
 min_username_length: 2
 max_username_length: 20

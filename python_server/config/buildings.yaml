@@ -10,6 +10,7 @@
 # ============================================================
 
 BASE_CAMP:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/base_camp
   name: "Base Camp"
   description: "Starting structure. Foundation for all empire development."
@@ -21,6 +22,7 @@ BASE_CAMP:
     siege_offset: 120.0
 
 FIRE_PLACE:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/fire_place
   name: "Fire Place"
   description: "Generates gold resources. Small but reliable income."
@@ -31,6 +33,7 @@ FIRE_PLACE:
     gold_offset: 0.1
 
 STONE_CIRCLE:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/stone_circle
   name: "Stone Circle"
   description: "Generates culture resources. Requires mystical knowledge."
@@ -41,6 +44,7 @@ STONE_CIRCLE:
     culture_offset: 0.1
 
 MAIN_HOUSE:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/main_house
   name: "Main House"
   description: "Basic residential structure. Requires gold investment."
@@ -51,6 +55,7 @@ MAIN_HOUSE:
     gold_offset: 0.1
 
 EARTH_WALL:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/earth_wall
   name: "Earth Wall"
   description: "Defensive structure protecting empire from attacks."
@@ -63,6 +68,7 @@ EARTH_WALL:
     restore_life_after_loss_offset: 1
 
 EPIC_DRAWINGS:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/epic_drawings
   name: "Epic Drawings"
   description: "Boosts culture generation. Requires hunting stories."
@@ -74,6 +80,7 @@ EPIC_DRAWINGS:
     research_speed_modifier: 0.15
 
 EXCHANGE_POST:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/exchange_post
   name: "Exchange Post"
   description: "Boosts gold generation. Requires craftsmanship and trade."
@@ -85,6 +92,7 @@ EXCHANGE_POST:
     gold_offset: 0.21
 
 TOOL_SHOP:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/tool_shop
   name: "Tool Shop"
   description: "Increases construction speed. Requires craftsmanship knowledge."
@@ -95,6 +103,7 @@ TOOL_SHOP:
     build_speed_modifier: 0.5
 
 SHRINE:
+  era: "STONE_AGE"
   image: assets/sprites/buildings/shrine
   name: "Shrine"
   description: "Religious structure. Foundation for spiritual buildings."
@@ -109,6 +118,7 @@ SHRINE:
 # ============================================================
 
 GRANARY:
+  era: "NEOLITHIC"
   image: assets/sprites/buildings/granary
   name: "Granary"
   description: "Food storage facility boosting steady income. Requires agriculture."
@@ -120,6 +130,7 @@ GRANARY:
 
 
 FIELD_HEALER:
+  era: "NEOLITHIC"
   image: assets/sprites/buildings/field_healer
   name: "Field Healer"
   description: "Mobile healing unit boosting population health further."
@@ -131,6 +142,7 @@ FIELD_HEALER:
     restore_life_after_loss_offset: 2
 
 BOW_MAKER:
+  era: "NEOLITHIC"
   image: assets/sprites/buildings/bow_maker
   name: "Bow Maker"
   description: "Weapon workshop for ranged combat. Requires hunting knowledge."
@@ -141,6 +153,7 @@ BOW_MAKER:
 
 
 HERBALIST:
+  era: "NEOLITHIC"
   image: assets/sprites/buildings/medicus
   name: "Herbalist"
   description: "Medical facility increasing population health slightly."
@@ -152,6 +165,7 @@ HERBALIST:
     restore_life_after_loss_offset: 2
 
 BULLETIN_BOARD:
+  era: "NEOLITHIC"
   image: assets/sprites/buildings/bulletin_board
   name: "Bulletin Board"
   description: "Communication hub. Requires written language."
@@ -167,6 +181,7 @@ BULLETIN_BOARD:
 
 
 WATCH_TOWER:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/watch_tower
   name: "Watch Tower"
   description: "Advanced defensive tower. Requires bronze metallurgy."
@@ -178,6 +193,7 @@ WATCH_TOWER:
     wave_delay_offset: 1000
 
 HARBOR:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/harbor
   name: "Harbor"
   description: "Coastal trade hub for maritime commerce. Requires sailing."
@@ -189,6 +205,7 @@ HARBOR:
     travel_offset: -1800
 
 SWORD_MAKER:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/sword_maker
   name: "Sword Maker"
   description: "Weapon workshop for melee combat. Requires metallurgy."
@@ -198,6 +215,7 @@ SWORD_MAKER:
   effects: {}
 
 MARKET_PLACE:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/market_place
   name: "Market Place"
   description: "Major trade hub doubling gold generation with currency."
@@ -208,6 +226,7 @@ MARKET_PLACE:
     gold_modifier: 0.4
 
 BOOT_CAMP:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/boot_camp
   name: "Boot Camp"
   description: "Military training facility. Requires weapon training."
@@ -218,6 +237,7 @@ BOOT_CAMP:
     max_life_modifier: 3
 
 CHAPEL:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/chapel
   name: "Chapel"
   description: "Religious building boosting culture. Requires organized religion."
@@ -229,6 +249,7 @@ CHAPEL:
     culture_offset: 0.1
 
 TOWN_GUARD:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/town_guard
   name: "Town Guard"
   description: "Local militia defending settlements. Requires military training."
@@ -240,6 +261,7 @@ TOWN_GUARD:
 
 
 CHURCH:
+  era: "BRONZE_AGE"
   image: assets/sprites/buildings/church
   name: "Church"
   description: "Major religious institution. Requires organized faith."
@@ -254,6 +276,7 @@ CHURCH:
 # ============================================================
 
 LIBRARY:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/library
   name: "Library"
   description: "Accelerates research progress. Requires writing knowledge."
@@ -264,6 +287,7 @@ LIBRARY:
     research_speed_offset: 0.2
 
 LORE_COLLECTION:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/lore_collection
   name: "Lore Collection"
   description: "Archive of cultural knowledge. Requires arts and libraries."
@@ -275,6 +299,7 @@ LORE_COLLECTION:
     tower_sell_refund_modifier: 0.1
 
 FORGE:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/forge
   name: "Forge"
   description: "Iron working facility. Greatly increases construction speed."
@@ -285,6 +310,7 @@ FORGE:
     build_speed_offset: 0.2
 
 TREASURE_CHAMBER:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/treasure_chamber
   name: "Treasure Chamber"
   description: "Vault storing wealth. Boosts steady gold income."
@@ -295,6 +321,7 @@ TREASURE_CHAMBER:
     gold_offset: 0.5
 
 CARTOGRAPHER:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/cartographer
   name: "Cartographer"
   description: "Maps territories for exploration and navigation."
@@ -305,6 +332,7 @@ CARTOGRAPHER:
     travel_offset: -3600
 
 STABLES:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/stables
   name: "Stables"
   description: "Housing for horse breeding and cavalry training."
@@ -314,6 +342,7 @@ STABLES:
   effects: {}
 
 RACE_COURSE:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/race_course
   name: "Race Course"
   description: "Sports venue for horses. Requires equestrian mastery."
@@ -323,6 +352,7 @@ RACE_COURSE:
   effects: {}
 
 WORK_SHOP:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/work_shop
   name: "Work Shop"
   description: "General manufacturing hub. Requires mechanical engineering."
@@ -333,6 +363,7 @@ WORK_SHOP:
     build_speed_offset: 0.15
 
 THEATER:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/theater
   name: "Theater"
   description: "Cultural venue. Significantly boosts culture generation."
@@ -344,6 +375,7 @@ THEATER:
     culture_offset: 0.3
 
 TREADWHEEL_CRANE:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/treadwheel_crane
   name: "Treadwheel Crane"
   description: "Medieval lifting machine. Assists construction work."
@@ -354,6 +386,7 @@ TREADWHEEL_CRANE:
     build_speed_modifier: 0.2
 
 TEMPLE:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/temple
   name: "Temple"
   description: "Grand religious structure. Requires architectural mastery."
@@ -365,6 +398,7 @@ TEMPLE:
     culture_modifier: 0.1
 
 FENCING_SCHOOL:
+  era: "IRON_AGE"
   image: assets/sprites/buildings/fencing_school
   name: "Fencing School"
   description: "Advanced combat training. Requires metallurgy and tactics."
@@ -378,6 +412,7 @@ FENCING_SCHOOL:
 # ============================================================
 
 GUILD:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/guild
   name: "Guild"
   description: "Craftsmen association. Requires advanced economy."
@@ -388,6 +423,7 @@ GUILD:
     build_speed_modifier: 0.3
 
 SOVEREIGN_GUARD:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/sovereign_guard
   name: "Sovereign Guard"
   description: "Elite military facility. Requires advanced command structure."
@@ -398,6 +434,7 @@ SOVEREIGN_GUARD:
     siege_offset: 1800
 
 MONASTERY:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/monastery
   name: "Monastery"
   description: "Cloistered religious community center."
@@ -409,6 +446,7 @@ MONASTERY:
     research_speed_modifier: 0.35
 
 MANOR:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/manor
   name: "Manor"
   description: "Noble residence. Requires feudal hierarchy."
@@ -419,6 +457,7 @@ MANOR:
     gold_offset: 0.5
 
 BANK:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/bank
   name: "Bank"
   description: "Financial institution. Massively boosts gold generation."
@@ -430,6 +469,7 @@ BANK:
     gold_offset: 0.5
 
 ACADEMY:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/academy
   name: "Academy"
   description: "Higher learning institution. Accelerates research significantly."
@@ -440,6 +480,7 @@ ACADEMY:
     research_speed_modifier: 0.2
 
 CITY_WALLS:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/city_walls
   name: "City Walls"
   description: "Massive defensive structure. Requires architecture and iron."
@@ -451,6 +492,7 @@ CITY_WALLS:
     wave_delay_offset: 2000
 
 CASTLE:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/castle
   name: "Castle"
   description: "Imperial stronghold symbol of power and rule."
@@ -462,6 +504,7 @@ CASTLE:
     gold_offset: 0.3
 
 MUSEUM:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/museum
   name: "Museum"
   description: "Artifact showcase. Boosts culture significantly."
@@ -473,6 +516,7 @@ MUSEUM:
     culture_offset: 0.5
 
 THE_KINGS_LAIR:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/the_kings_lair
   name: "The King's Lair"
   description: "Royal residence and power center. Requires monarchy."
@@ -484,6 +528,7 @@ THE_KINGS_LAIR:
     gold_offset: 0.5
 
 LABORATORY:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/laboratory
   name: "Laboratory"
   description: "Scientific research center. Further boosts research speed."
@@ -494,6 +539,7 @@ LABORATORY:
     research_speed_modifier: 0.5
 
 TRIUMPHAL_ARC:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/triumphal_arc
   name: "Triumphal Arc"
   description: "Monument to victory and imperial power."
@@ -504,6 +550,7 @@ TRIUMPHAL_ARC:
     culture_offset: 0.2
 
 COURTHOUSE:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/courthouse
   name: "Courthouse"
   description: "Legal center administering justice and law."
@@ -515,6 +562,7 @@ COURTHOUSE:
 
 
 PARADE_GROUND:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/parade_ground
   name: "Parade Ground"
   description: "Military display grounds. Requires advanced command."
@@ -525,6 +573,7 @@ PARADE_GROUND:
     tower_sell_refund_modifier: 0.1
 
 GUNSMITH:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/gunsmith
   name: "Gunsmith"
   description: "Firearms manufacturer. Requires gunpowder technology."
@@ -534,6 +583,7 @@ GUNSMITH:
   effects: {}
 
 BOTANIC_GARDENS:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/botanic_gardens
   name: "Botanic Gardens"
   description: "Plant research and cultivation. Scientific approach to botany."
@@ -544,6 +594,7 @@ BOTANIC_GARDENS:
     max_life_modifier: 7
 
 CANNON_MANUFACTORY:
+  era: "MEDIEVAL"
   image: assets/sprites/buildings/cannon_manufactory
   name: "Cannon Manufactory"
   description: "Large-scale artillery production facility."
@@ -557,6 +608,7 @@ CANNON_MANUFACTORY:
 # ============================================================
 
 CATHEDRAL:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/cathedral
   name: "Cathedral"
   description: "Architectural masterpiece and religious center combined."
@@ -567,6 +619,7 @@ CATHEDRAL:
     culture_offset: 0.4
 
 ARCHIVES:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/archives
   name: "Archives"
   description: "Document repository. Requires printing technology."
@@ -579,6 +632,7 @@ ARCHIVES:
     culture_offset: 0.1
 
 SECRET_ORDER:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/secret_order
   name: "Secret Order"
   description: "Covert intelligence operations. Requires secrecy mastery."
@@ -588,6 +642,7 @@ SECRET_ORDER:
   effects: {}
 
 UNIVERSITY:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/university
   name: "University"
   description: "Elite research and education institution combined."
@@ -598,6 +653,7 @@ UNIVERSITY:
     research_speed_modifier: 1
 
 HIGH_COURT:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/high_court
   name: "High Court"
   description: "Supreme judicial authority. Requires constitutional law."
@@ -608,6 +664,7 @@ HIGH_COURT:
     max_life_modifier: 5
 
 PARLIAMENT:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/parliament
   name: "Parliament"
   description: "Democratic legislative body. Requires constitutional system."
@@ -619,6 +676,7 @@ PARLIAMENT:
     gold_modifier: 0.5
 
 EMPERORS_PALACE:
+  era: "RENAISSANCE"
   image: assets/sprites/buildings/emperors_palace
   name: "Emperor's Palace"
   description: "Ultimate seat of imperial power and authority."
@@ -634,10 +692,11 @@ EMPERORS_PALACE:
 # ============================================================
 
 STOCK_MARKET:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/stock_market
   name: "Stock Market"
   description: "Financial trading hub. Advanced economic institution."
-  effort: 298539
+  effort: 283612
   costs: {gold: 602889}
   requirements: [ECONOMY, ELECTRICITY]
   effects:
@@ -645,39 +704,43 @@ STOCK_MARKET:
     gold_modifier: 0.5
 
 HEAVY_EQUIPMENT:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/heavy_equipment
   name: "Heavy Equipment"
   description: "Industrial machinery factory for mass production."
-  effort: 434622
+  effort: 412891
   costs: {gold: 650080}
   requirements: [MECHANICAL_ENGINEERING]
   effects:
     build_speed_offset: 0.4
 
 RAIL_ROADS:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/rail_roads
   name: "Rail Roads"
   description: "Steam-powered transportation network."
-  effort: 463317
+  effort: 440151
   costs: {gold: 664855}
   requirements: [STEAM_ENGINE]
   effects:
     travel_offset: -3600
 
 VEHICLE_WORKSHOP:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/vehicle_workshop
   name: "Vehicle Workshop"
   description: "Advanced vehicle manufacturing. Requires mechanical engineering."
-  effort: 470671
+  effort: 447137
   costs: {gold: 679630}
   requirements: [COMBUSTION_ENGINE]
   effects:
 
 DEFENSE_DEPARTMENT:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/defense_department
   name: "Defense Department"
   description: "Military command center for strategic defense."
-  effort: 501745
+  effort: 476658
   costs: {gold: 650080}
   requirements: [STRATEGIC_WARFARE, CIVIL_ENGINEERING]
   effects: 
@@ -685,10 +748,11 @@ DEFENSE_DEPARTMENT:
     wave_delay_offset: 2000    
 
 ELECTRIC_FENCE:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/electric_fence
   name: "Electric Fence"
   description: "Fortified perimeter with electric barriers."
-  effort: 585370
+  effort: 556102
   costs: {gold: 709178}
   requirements: [ELECTRICITY]
   effects: 
@@ -696,29 +760,32 @@ ELECTRIC_FENCE:
     wave_delay_offset: 1000
 
 AIRFIELD:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/airfield
   name: "Airfield"
   description: "Airport for aircraft. Requires combustion engines."
-  effort: 537729
+  effort: 510843
   costs: {gold: 738729}
   requirements: [AERO_DYNAMICS]
   effects:
     travel_offset: -3600
 
 HANGAR:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/hangar
   name: "Hangar"
   description: "Aircraft maintenance and storage facility."
-  effort: 544900
+  effort: 517655
   costs: {gold: 768276}
   requirements: [MECHANICAL_ENGINEERING]
   effects: {}
 
 HOSPITAL:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/hospital
   name: "Hospital"
   description: "Modern medical facility. Significantly boosts health."
-  effort: 578955
+  effort: 550007
   costs: {gold: 797828}
   requirements: [MEDICINE]
   effects:
@@ -726,10 +793,11 @@ HOSPITAL:
     max_life_modifier: 10
 
 FACTORY:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/factory
   name: "Factory"
   description: "Industrial production center. Requires steam power."
-  effort: 525581
+  effort: 499302
   costs: {gold: 827376}
   requirements: [STEAM_ENGINE]
   effects:
@@ -738,10 +806,11 @@ FACTORY:
     gold_offset: 0.3
 
 EMERGENCY_ROOM:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/emergency_room
   name: "Emergency Room"
   description: "Critical care facility in hospitals."
-  effort: 554780
+  effort: 527041
   costs: {gold: 856925}
   requirements: [ELECTRICITY]
   effects:
@@ -749,19 +818,21 @@ EMERGENCY_ROOM:
     restore_life_after_loss_offset: 5
 
 BARRACKS:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/barracks
   name: "Barracks"
   description: "Military complex for large army training and deployment."
-  effort: 527041
+  effort: 500689
   costs: {gold: 886473}
   requirements: [STRATEGIC_WARFARE, BALLISTICS]
   effects: {}
 
 FEDERAL_RESERVE:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/federal_reserve
   name: "Federal Reserve"
   description: "Central banking institution controlling monetary policy."
-  effort: 730624
+  effort: 694093
   costs: {gold: 960346}
   requirements: [ECONOMY, ELECTRICITY]
   effects:
@@ -769,10 +840,11 @@ FEDERAL_RESERVE:
     gold_offset: 0.7
 
 RESEARCH_VAULT:
+  era: "INDUSTRIAL"
   image: assets/sprites/buildings/research_vault
   name: "Research Vault"
   description: "Secure research storage. Requires advanced technology."
-  effort: 871874
+  effort: 828280
   costs: {gold: 1772947}
   requirements: [OPTICS]
   effects:
@@ -784,58 +856,64 @@ RESEARCH_VAULT:
 # ============================================================
 
 CRYPTOGRAPHERS_GUILD:
+  era: "MODERN"
   image: assets/sprites/buildings/cryptographers_guild
   name: "Cryptographers Guild"
   description: "Organization for advanced cryptographic research."
-  effort: 855175
+  effort: 812416
   costs: {gold: 1706462}
   requirements: [CRYPTOLOGY]
   effects:
     siege_offset: 3600
 
 ROCKET_SILO:
+  era: "MODERN"
   image: assets/sprites/buildings/rocket_silo
   name: "Rocket Silo"
   description: "Launch facility for chemical rockets."
-  effort: 828280
+  effort: 786866
   costs: {gold: 1706462}
   requirements: [CHEMISTRY, ROCKET_SCIENCE]
   effects: {}
 
 WMD_SITE:
+  era: "MODERN"
   image: assets/sprites/buildings/wmd_site
   name: "WMD Site"
   description: "Weapons of mass destruction development facility."
-  effort: 820393
+  effort: 779373
   costs: {gold: 1737488}
   requirements: [CHEMISTRY, MASS_PRODUCTION]
   effects: {}
 
 ARTS_GALLERY:
+  era: "MODERN"
   image: assets/sprites/buildings/arts_gallery
   name: "Arts Gallery"
   description: "Elite art exhibition and commerce facility."
-  effort: 804736
+  effort: 764499
   costs: {gold: 1892621}
   requirements: [PAINTING, SOCIAL_SCIENCES]
   effects:
     culture_offset: 0.6
 
 RESEARCH_LAB:
+  era: "MODERN"
   image: assets/sprites/buildings/research_lab
   name: "Research Lab"
   description: "High-tech scientific research facility."
-  effort: 717584
+  effort: 681705
   costs: {gold: 1923646}
   requirements: [SCIENCE, COMPUTER_TECHNOLOGY]
   effects:
     research_speed_offset: 0.4
 
 ECHELON_DEFENSE_FACILITY:
+  era: "MODERN"
   image: assets/sprites/buildings/echelon_defense_facility
   name: "Echelon Defense Facility"
   description: "Classified military surveillance and defense complex."
-  effort: 717584
+  effort: 681705
   costs: {gold: 1923646}
   requirements: [STEALTH_SECRECY, COMPUTER_TECHNOLOGY]
   effects: 
@@ -843,39 +921,43 @@ ECHELON_DEFENSE_FACILITY:
     wave_delay_offset: 2000
 
 SOCIAL_SECURITY_SYSTEM:
+  era: "MODERN"
   image: assets/sprites/buildings/social_security_system
   name: "Social Security System"
   description: "Public welfare infrastructure supporting citizens."
-  effort: 694093
+  effort: 659388
   costs: {gold: 2094294}
   requirements: [CONSTITUTION, SANITATION]
   effects: {max_life_modifier: 5}
 
 EXECUTIVE_CARPOOL:
+  era: "MODERN"
   image: assets/sprites/buildings/executive_carpool
   name: "Executive Carpool"
   description: "Luxury transportation for elite leadership."
-  effort: 715450
+  effort: 679678
   costs: {gold: 2125319}
   requirements: [COMBUSTION_ENGINE]
   effects:
     gold_offset: 0.7
 
 NAVIGATION_SYSTEM:
+  era: "MODERN"
   image: assets/sprites/buildings/navigation_system
   name: "Navigation System"
   description: "Satellite-based positioning infrastructure."
-  effort: 747483
+  effort: 710109
   costs: {gold: 2016728}
   requirements: [ELECTRICITY]
   effects:
     travel_offset: -3600
 
 DERIVATIVE_MARKET:
+  era: "MODERN"
   image: assets/sprites/buildings/derivative_market
   name: "Derivative Market"
   description: "Advanced financial derivatives trading platform."
-  effort: 800876
+  effort: 760832
   costs: {gold: 2094294}
   requirements: [ECONOMY, GLOBALIZATION_STRATEGIES]
   effects:
@@ -883,19 +965,21 @@ DERIVATIVE_MARKET:
     gold_offset: 1
 
 BOMBING_AREA:
+  era: "MODERN"
   image: assets/sprites/buildings/bombing_area
   name: "Bombing Area"
   description: "Aircraft bombing range for military training."
-  effort: 854269
+  effort: 811556
   costs: {gold: 2171860}
   requirements: [STRATEGIC_WARFARE, SATELLITE_SYSTEMS]
   effects: {}
 
 NUCLEAR_POWER_PLANT:
+  era: "MODERN"
   image: assets/sprites/buildings/nuclear_power_plant
   name: "Nuclear Power Plant"
   description: "Clean energy generation through nuclear fission."
-  effort: 854269
+  effort: 811556
   costs: {gold: 2249426}
   requirements: [NUCLEAR_REACTION]
   effects:
@@ -903,49 +987,54 @@ NUCLEAR_POWER_PLANT:
     research_speed_modifier: 0.2
 
 ROBO_MANUFACTURE:
+  era: "MODERN"
   image: assets/sprites/buildings/robo_manufacture
   name: "Robo Manufacture"
   description: "Automated robotic assembly and manufacturing."
-  effort: 854269
+  effort: 811556
   costs: {gold: 2326993}
   requirements: [MECHANICAL_ENGINEERING, COMPUTER_TECHNOLOGY]
   effects:
     build_speed_modifier: 0.25
 
 INTELLIGENCE_AGENCY:
+  era: "MODERN"
   image: assets/sprites/buildings/intelligence_agency
   name: "Intelligence Agency"
   description: "Covert operations and espionage headquarters."
-  effort: 907659
+  effort: 862276
   costs: {gold: 2404559}
   requirements: [STEALTH_SECRECY, SPECIAL_FORCES]
   effects: 
     siege_offset: 3600
 
 MECH_WARRIOR_LAB:
+  era: "MODERN"
   image: assets/sprites/buildings/mech_warrior_lab
   name: "Mech Warrior Lab"
   description: "Giant robot creation and development facility."
-  effort: 1067835
+  effort: 1014443
   costs: {gold: 2792391}
   requirements: [FIBER_COMPOSITE]
   effects: []
 
 ELITE_ACADEMY:
+  era: "MODERN"
   image: assets/sprites/buildings/elite_academy
   name: "Elite Academy"
   description: "Ultimate officer training and leadership development."
-  effort: 1067835
+  effort: 1014443
   costs: {gold: 3102658}
   requirements: [COMMAND_CHAIN, CRYPTOLOGY]
   effects:
     research_speed_modifier: 0.25
 
 RECRUITING_OFFICE:
+  era: "MODERN"
   image: assets/sprites/buildings/recruiting_office
   name: "Recruiting Office"
   description: "Massive military recruitment and conscription center."
-  effort: 1131907
+  effort: 1075312
   costs: {gold: 3040604}
   requirements: [MILITARY_SERVICE]
   effects:
@@ -956,11 +1045,12 @@ RECRUITING_OFFICE:
 # ============================================================
 
 THE_WORLD_WONDER:
+  era: "FUTURE"
   image: assets/sprites/buildings/the_world_wonder
   name: "The World Wonder"
   type: wonder
   description: "Ultimate achievement combining science, culture and power."
-  effort: 2262467
+  effort: 2149344
   costs: {gold: 26250000}
   requirements: [NUCLEAR_REACTION]
   effects:
@@ -969,29 +1059,32 @@ THE_WORLD_WONDER:
     research_speed_modifier: 5
 
 SPACE_CENTER:
+  era: "FUTURE"
   image: assets/sprites/buildings/space_center
   name: "Space Center"
   description: "Space exploration and orbital research facility."
-  effort: 1696851
+  effort: 1612008
   costs: {gold: 12600000}
   requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
     research_speed_offset: 5
 
 CYBER_COMMAND:
+  era: "FUTURE"
   image: assets/sprites/buildings/cyber_command
   name: "Cyber Command"
   description: "Digital warfare and cyber operations headquarters."
-  effort: 1696851
+  effort: 1612008
   costs: {gold: 14700000}
   requirements: [COMPUTER_TECHNOLOGY, BIONICS]
   effects: []
 
 FUSION_REACTOR:
+  era: "FUTURE"
   image: assets/sprites/buildings/fusion_reactor
   name: "Fusion Reactor"
   description: "Ultimate clean energy source through nuclear fusion."
-  effort: 1696851
+  effort: 1612008
   costs: {gold: 16800000}
   requirements: [COLD_FUSION]
   effects:

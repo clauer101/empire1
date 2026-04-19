@@ -466,10 +466,10 @@ CARGO:
 SOLDIER:
   name: "Soldier"
   speed: 0.75
-  health: 126
+  health: 135
   value: 110
   damage: 1
-  armour: 6
+  armour: 5
   slots: 1
   time_between: 900
   is_boss: false
@@ -500,7 +500,7 @@ MOTORBIKE:
 SMALL_TANK:
   name: "Small Tank"
   speed: 0.3
-  health: 123
+  health: 107
   value: 154
   damage: 2
   armour: 8

@@ -392,6 +392,12 @@ class EmpireService:
         p = self._gc.prices.army
         return p.u + (i * p.y) * (i + p.z) ** p.v
 
+    def _wave_era_price(self, era_index: int) -> float:
+        costs = self._gc.prices.wave_era_costs
+        if era_index < len(costs):
+            return float(costs[era_index])
+        return float(costs[-1])
+
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:
         """Redistribute citizens among roles. Returns error message or None.

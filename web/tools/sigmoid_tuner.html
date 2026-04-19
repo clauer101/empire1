@@ -104,12 +104,25 @@
       justify-content: space-between;
       align-items: center;
       background: #0f3460;
-      padding: 6px 10px;
+      padding: 4px 10px;
       border-radius: 4px;
       font-family: 'Courier New', monospace;
       font-size: 14px;
       color: #4fc3f7;
     }
+    .control .value-display input[type="number"] {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #4fc3f7;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      width: 80px;
+      text-align: right;
+      -moz-appearance: textfield;
+    }
+    .control .value-display input[type="number"]::-webkit-inner-spin-button,
+    .control .value-display input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
     
     canvas {
       width: 100%;
@@ -248,10 +261,10 @@
       <div class="controls">
         <div class="control">
           <label>U (base offset)</label>
-          <input type="range" id="citizen-u" min="0" max="100" step="1" value="0">
+          <input type="range" id="citizen-u" min="-100" max="100" step="1" value="0">
           <div class="value-display">
             <span>U:</span>
-            <span id="citizen-u-val">0</span>
+            <input type="number" id="citizen-u-val" value="0" step="any">
           </div>
         </div>
         <div class="control">
@@ -259,7 +272,7 @@
           <input type="range" id="citizen-y" min="0" max="10" step="0.1" value="2">
           <div class="value-display">
             <span>Y:</span>
-            <span id="citizen-y-val">2</span>
+            <input type="number" id="citizen-y-val" value="2" step="any">
           </div>
         </div>
         <div class="control">
@@ -267,7 +280,7 @@
           <input type="range" id="citizen-z" min="0" max="20" step="0.5" value="2">
           <div class="value-display">
             <span>Z:</span>
-            <span id="citizen-z-val">2</span>
+            <input type="number" id="citizen-z-val" value="2" step="any">
           </div>
         </div>
         <div class="control">
@@ -275,7 +288,7 @@
           <input type="range" id="citizen-v" min="0.1" max="5" step="0.05" value="1.6">
           <div class="value-display">
             <span>V:</span>
-            <span id="citizen-v-val">1.6</span>
+            <input type="number" id="citizen-v-val" value="1.6" step="any">
           </div>
         </div>
       </div>
@@ -300,23 +313,23 @@
       <div class="controls">
         <div class="control">
           <label>U (base offset)</label>
-          <input type="range" id="tile-u" min="0" max="1000" step="1" value="0">
-          <div class="value-display"><span>U:</span><span id="tile-u-val">0</span></div>
+          <input type="range" id="tile-u" min="-1000" max="1000" step="1" value="0">
+          <div class="value-display"><span>U:</span><input type="number" id="tile-u-val" value="0" step="any"></div>
         </div>
         <div class="control">
           <label>Y (scale)</label>
           <input type="range" id="tile-y" min="0" max="10" step="0.1" value="1">
-          <div class="value-display"><span>Y:</span><span id="tile-y-val">1</span></div>
+          <div class="value-display"><span>Y:</span><input type="number" id="tile-y-val" value="1" step="any"></div>
         </div>
         <div class="control">
           <label>Z (offset)</label>
           <input type="range" id="tile-z" min="0" max="20" step="0.5" value="2">
-          <div class="value-display"><span>Z:</span><span id="tile-z-val">2</span></div>
+          <div class="value-display"><span>Z:</span><input type="number" id="tile-z-val" value="2" step="any"></div>
         </div>
         <div class="control">
           <label>V (exponent)</label>
           <input type="range" id="tile-v" min="0.1" max="5" step="0.05" value="2">
-          <div class="value-display"><span>V:</span><span id="tile-v-val">2</span></div>
+          <div class="value-display"><span>V:</span><input type="number" id="tile-v-val" value="2" step="any"></div>
         </div>
       </div>
       <canvas id="tile-canvas"></canvas>
@@ -338,23 +351,23 @@
       <div class="controls">
         <div class="control">
           <label>U (base offset)</label>
-          <input type="range" id="wave-u" min="0" max="1000" step="1" value="0">
-          <div class="value-display"><span>U:</span><span id="wave-u-val">0</span></div>
+          <input type="range" id="wave-u" min="-1000" max="1000" step="1" value="0">
+          <div class="value-display"><span>U:</span><input type="number" id="wave-u-val" value="0" step="any"></div>
         </div>
         <div class="control">
           <label>Y (scale)</label>
           <input type="range" id="wave-y" min="0" max="10" step="0.1" value="1">
-          <div class="value-display"><span>Y:</span><span id="wave-y-val">1</span></div>
+          <div class="value-display"><span>Y:</span><input type="number" id="wave-y-val" value="1" step="any"></div>
         </div>
         <div class="control">
           <label>Z (offset)</label>
           <input type="range" id="wave-z" min="0" max="20" step="0.5" value="2">
-          <div class="value-display"><span>Z:</span><span id="wave-z-val">2</span></div>
+          <div class="value-display"><span>Z:</span><input type="number" id="wave-z-val" value="2" step="any"></div>
         </div>
         <div class="control">
           <label>V (exponent)</label>
           <input type="range" id="wave-v" min="0.1" max="5" step="0.05" value="2">
-          <div class="value-display"><span>V:</span><span id="wave-v-val">2</span></div>
+          <div class="value-display"><span>V:</span><input type="number" id="wave-v-val" value="2" step="any"></div>
         </div>
       </div>
       <canvas id="wave-canvas"></canvas>
@@ -376,10 +389,10 @@
       <div class="controls">
         <div class="control">
           <label>U (base offset)</label>
-          <input type="range" id="critter-u" min="0" max="100" step="1" value="0">
+          <input type="range" id="critter-u" min="-100" max="100" step="1" value="0">
           <div class="value-display">
             <span>U:</span>
-            <span id="critter-u-val">0</span>
+            <input type="number" id="critter-u-val" value="0" step="any">
           </div>
         </div>
         <div class="control">
@@ -387,7 +400,7 @@
           <input type="range" id="critter-y" min="0" max="10" step="0.1" value="1">
           <div class="value-display">
             <span>Y:</span>
-            <span id="critter-y-val">1</span>
+            <input type="number" id="critter-y-val" value="1" step="any">
           </div>
         </div>
         <div class="control">
@@ -395,7 +408,7 @@
           <input type="range" id="critter-z" min="0" max="20" step="0.5" value="2">
           <div class="value-display">
             <span>Z:</span>
-            <span id="critter-z-val">2</span>
+            <input type="number" id="critter-z-val" value="2" step="any">
           </div>
         </div>
         <div class="control">
@@ -403,7 +416,7 @@
           <input type="range" id="critter-v" min="0.1" max="5" step="0.05" value="2">
           <div class="value-display">
             <span>V:</span>
-            <span id="critter-v-val">2</span>
+            <input type="number" id="critter-v-val" value="2" step="any">
           </div>
         </div>
       </div>
@@ -428,23 +441,23 @@
       <div class="controls">
         <div class="control">
           <label>U (base offset)</label>
-          <input type="range" id="army-u" min="0" max="1000" step="1" value="0">
-          <div class="value-display"><span>U:</span><span id="army-u-val">0</span></div>
+          <input type="range" id="army-u" min="-1000" max="1000" step="1" value="0">
+          <div class="value-display"><span>U:</span><input type="number" id="army-u-val" value="0" step="any"></div>
         </div>
         <div class="control">
           <label>Y (scale)</label>
           <input type="range" id="army-y" min="0" max="10" step="0.1" value="1">
-          <div class="value-display"><span>Y:</span><span id="army-y-val">1</span></div>
+          <div class="value-display"><span>Y:</span><input type="number" id="army-y-val" value="1" step="any"></div>
         </div>
         <div class="control">
           <label>Z (offset)</label>
           <input type="range" id="army-z" min="0" max="20" step="0.5" value="2">
-          <div class="value-display"><span>Z:</span><span id="army-z-val">2</span></div>
+          <div class="value-display"><span>Z:</span><input type="number" id="army-z-val" value="2" step="any"></div>
         </div>
         <div class="control">
           <label>V (exponent)</label>
           <input type="range" id="army-v" min="0.1" max="5" step="0.05" value="2">
-          <div class="value-display"><span>V:</span><span id="army-v-val">2</span></div>
+          <div class="value-display"><span>V:</span><input type="number" id="army-v-val" value="2" step="any"></div>
         </div>
       </div>
       <canvas id="army-canvas"></canvas>
@@ -461,6 +474,7 @@
         <button onclick="saveAll()">Save to game.yaml</button>
       </div>
     </div>
+
   </div>
 
   <script>
@@ -479,19 +493,23 @@
 
     // All power-decay tuners use u/y/z/v params
     const POWER_TUNERS = {
-      citizen: updateCitizen,
-      tile:    () => updatePowerDecay('tile'),
-      wave:    () => updatePowerDecay('wave'),
-      critter: updateCritter,
-      army:    () => updatePowerDecay('army'),
+      citizen:  updateCitizen,
+      tile:     () => updatePowerDecay('tile'),
+      wave:     () => updatePowerDecay('wave'),
+      critter:  updateCritter,
+      army:     () => updatePowerDecay('army'),
     };
     Object.entries(POWER_TUNERS).forEach(([prefix, fn]) => {
       ['u', 'y', 'z', 'v'].forEach(param => {
         const slider = document.getElementById(`${prefix}-${param}`);
-        const display = document.getElementById(`${prefix}-${param}-val`);
+        const numInput = document.getElementById(`${prefix}-${param}-val`);
         slider.addEventListener('input', (e) => {
-          display.textContent = e.target.value;
+          numInput.value = e.target.value;
           fn();
+        });
+        numInput.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          if (!isNaN(v)) { slider.value = v; fn(); }
         });
       });
       fn();
@@ -675,12 +693,12 @@
     function updateCritter() { updatePowerDecay('critter'); }
 
     function getPowerParams(prefix) {
-      return {
-        u: parseFloat(document.getElementById(`${prefix}-u`).value),
-        y: parseFloat(document.getElementById(`${prefix}-y`).value),
-        z: parseFloat(document.getElementById(`${prefix}-z`).value),
-        v: parseFloat(document.getElementById(`${prefix}-v`).value),
+      const get = (param) => {
+        const numEl = document.getElementById(`${prefix}-${param}-val`);
+        if (numEl) return parseFloat(numEl.value);
+        return parseFloat(document.getElementById(`${prefix}-${param}`).value);
       };
+      return { u: get('u'), y: get('y'), z: get('z'), v: get('v') };
     }
 
     function updatePowerDecay(prefix) {
@@ -733,11 +751,11 @@
     
     async function saveAll() {
       const prices = {
-        citizen: getCitizenParams(),
-        tile:         getPowerParams('tile'),
-        wave:         getPowerParams('wave'),
-        critter_slot: getPowerParams('critter'),
-        army:         getPowerParams('army'),
+        citizen:        getCitizenParams(),
+        tile:           getPowerParams('tile'),
+        wave:           getPowerParams('wave'),
+        critter_slot:   getPowerParams('critter'),
+        army:           getPowerParams('army'),
       };
 
       const btns = document.querySelectorAll('button');
@@ -776,8 +794,10 @@
         if (p.citizen) {
           const c = p.citizen;
           const set = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) { el.value = val; document.getElementById(id + '-val').textContent = val; }
+            const slider = document.getElementById(id);
+            const numInput = document.getElementById(id + '-val');
+            if (slider) slider.value = val;
+            if (numInput) numInput.value = val;
           };
           set('citizen-u', c.u ?? 34); set('citizen-y', c.y ?? 1);
           set('citizen-z', c.z ?? 1.5); set('citizen-v', c.v ?? 3.3);
@@ -786,8 +806,11 @@
         const setPower = (prefix, d, defaults) => {
           if (!d) return;
           ['u','y','z','v'].forEach(k => {
-            const el = document.getElementById(`${prefix}-${k}`);
-            if (el) { el.value = d[k] ?? defaults[k]; document.getElementById(`${prefix}-${k}-val`).textContent = el.value; }
+            const val = d[k] ?? defaults[k];
+            const slider = document.getElementById(`${prefix}-${k}`);
+            const numInput = document.getElementById(`${prefix}-${k}-val`);
+            if (slider) slider.value = val;
+            if (numInput) numInput.value = val;
           });
           updatePowerDecay(prefix);
         };
@@ -800,10 +823,10 @@
           });
           update(name);
         };
-        setPower('tile',    p.tile,         {u:0,y:1,z:2,v:2});
-        setPower('wave',    p.wave,         {u:0,y:1,z:2,v:2});
-        setPower('critter', p.critter_slot, {u:0,y:1,z:2,v:2});
-        setPower('army',    p.army,         {u:0,y:1,z:2,v:2});
+        setPower('tile',     p.tile,           {u:0,y:1,z:2,v:2});
+        setPower('wave',     p.wave,           {u:0,y:1,z:2,v:2});
+        setPower('critter',  p.critter_slot,   {u:0,y:1,z:2,v:2});
+        setPower('army',     p.army,           {u:0,y:1,z:2,v:2});
       } catch (e) {
         console.warn('Could not load prices from server:', e);
       }

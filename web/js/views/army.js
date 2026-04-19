@@ -5,6 +5,7 @@
 import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { escHtml, hilite } from '../lib/html.js';
+import { ERA_KEYS, ERA_YAML_TO_KEY, ERA_ROMAN, ERA_LABEL_EN } from '../lib/eras.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -19,20 +20,15 @@ let _empiresCache = [];
 /** iid.toUpperCase() → Roman numeral string (e.g. "III") */
 let _critterEraRoman = {};
 
-const _ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX'];
-async function _loadEraMap() {
-  try {
-    const resp = await rest.getEraMap();
-    const eras  = resp.eras || [];
-    const map   = resp.critters || {};
-    _critterEraRoman = {};
-    for (const [era, iids] of Object.entries(map)) {
-      const idx = eras.indexOf(era);
-      const roman = idx >= 0 ? _ROMAN[idx] : '';
-      for (const iid of iids) _critterEraRoman[iid.toUpperCase()] = roman;
-    }
-  } catch (e) {
-    console.warn('[army] era-map load failed:', e);
+function _buildCritterEraRoman() {
+  _critterEraRoman = {};
+  const critters = st.items?.critters || {};
+  for (const [iid, info] of Object.entries(critters)) {
+    const key = ERA_YAML_TO_KEY[info.era] || null;
+    if (!key) continue;
+    const idx = ERA_KEYS.indexOf(key);
+    const roman = idx >= 0 ? ['I','II','III','IV','V','VI','VII','VIII','IX'][idx] : '';
+    _critterEraRoman[iid.toUpperCase()] = roman;
   }
 }
 
@@ -104,11 +100,11 @@ async function enter() {
   
   // Load once on entry
   _loadEmpires();
-  _loadEraMap();
   try {
     await rest.getSummary();
     updateCreateArmyButton();
-    await rest.getMilitary();
+    await Promise.all([rest.getItems(), rest.getMilitary()]);
+    _buildCritterEraRoman();
   } catch (err) {
     console.error('Failed to load military data:', err);
   }
@@ -343,7 +339,11 @@ async function onAddWave(e) {
 async function onChangeCritter(aid, waveIdx, critterIid) {
   if (!critterIid) return;
   try {
-    await rest.changeWave(aid, waveIdx, critterIid);
+    const resp = await rest.changeWave(aid, waveIdx, critterIid);
+    if (resp?.success === false) {
+      console.warn('change critter rejected:', resp.error);
+      return;
+    }
     await rest.getMilitary();
   } catch (err) {
     console.error('Failed to change critter:', err);
@@ -408,28 +408,68 @@ function _initCritterCanvases(el) {
  * Open the critter picker overlay for a specific wave.
  * Shows all available critters as tiles with stats.
  */
-function _openCritterOverlay(aid, waveIdx, currentIid) {
+function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice = 0, nextSlotPrice = 0, currentSlots = 0) {
   const overlay = container.querySelector('#critter-overlay');
   const body = container.querySelector('#critter-overlay-body');
   if (!overlay || !body) return;
 
   const currentGold = st.summary?.resources?.gold || 0;
+  const MAX_ERA_INDEX = 8;
+  const eraKey = ERA_KEYS[maxEra] || ERA_KEYS[0];
+  const eraLabel = ERA_LABEL_EN[eraKey] || eraKey;
+  const eraRoman = ERA_ROMAN[eraKey] || 'I';
+  const isMaxEra = maxEra >= MAX_ERA_INDEX;
+  const canAffordEra = !isMaxEra && currentGold >= nextEraPrice;
+  const canAffordSlot = currentGold >= nextSlotPrice;
+
+  const nextEraKey = ERA_KEYS[maxEra + 1];
+  const nextEraLabel = nextEraKey ? ERA_LABEL_EN[nextEraKey] : null;
 
   body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:14px;">
+      <!-- Slots -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="font-size:18px;font-weight:700;color:var(--accent);line-height:1.1;">${currentSlots}</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Slots · critters per wave</div>
+        </div>
+        <button id="wave-slot-upgrade-btn"
+            style="flex-shrink:0;font-size:11px;padding:4px 10px;background:transparent;color:${canAffordSlot ? 'var(--accent)' : 'var(--danger)'};border:1px solid ${canAffordSlot ? 'var(--accent)' : 'var(--danger)'};border-radius:var(--radius);cursor:${canAffordSlot ? 'pointer' : 'not-allowed'};opacity:${canAffordSlot ? '1' : '0.6'};"
+            data-can-afford="${canAffordSlot}" title="${canAffordSlot ? `Add slot (${Math.round(nextSlotPrice)} gold)` : 'Not enough gold'}">
+          +1 · 💰${Math.round(nextSlotPrice)}
+        </button>
+      </div>
+      <!-- Era -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="font-size:18px;font-weight:700;color:#c9a84c;line-height:1.1;">${eraRoman} <span style="font-size:12px;font-weight:400;color:var(--text-dim);">${eraLabel}</span></div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Max era · unlocks critter types</div>
+        </div>
+        ${isMaxEra
+          ? `<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Max</span>`
+          : `<button id="wave-era-upgrade-btn"
+              style="flex-shrink:0;font-size:11px;padding:4px 10px;background:transparent;color:${canAffordEra ? '#c9a84c' : 'var(--danger)'};border:1px solid ${canAffordEra ? '#c9a84c' : 'var(--danger)'};border-radius:var(--radius);cursor:${canAffordEra ? 'pointer' : 'not-allowed'};opacity:${canAffordEra ? '1' : '0.6'};"
+              data-can-afford="${canAffordEra}" title="${canAffordEra ? `Unlock ${nextEraLabel}` : 'Not enough gold'}">
+              ${ERA_ROMAN[nextEraKey] || ''} · 💰${Math.round(nextEraPrice)}
+            </button>`
+        }
+      </div>
+    </div>
     <div class="critter-picker-grid">
       ${[..._availableCritters].reverse().map(c => {
         const isSelected = c.iid === currentIid;
+        const isMuted = (c.era_index ?? 0) > maxEra;
         return `
-          <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}"
-              data-iid="${c.iid}">
-            <div class="cpt-sprite">
+          <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}${isMuted ? ' critter-pick-tile--muted' : ''}"
+              data-iid="${c.iid}" ${isMuted ? 'title="Era not unlocked for this wave"' : ''}>
+            <div class="cpt-sprite" style="${isMuted ? 'opacity:0.35;filter:grayscale(1);' : ''}">
               <canvas class="critter-sprite-canvas" data-iid="${c.iid}" data-sprite="${c.sprite || ''}" data-animation="${c.animation || ''}" width="64" height="64"></canvas>
             </div>
-            <div class="cpt-name" style="display:flex;align-items:baseline;gap:4px;overflow:hidden;">
+            <div class="cpt-name" style="display:flex;align-items:baseline;gap:4px;overflow:hidden;${isMuted ? 'opacity:0.4;' : ''}">
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}${c.is_boss ? ' 👑' : ''}</span>
               ${_critterEraRoman[c.iid.toUpperCase()] ? `<span class="era-roman-badge" style="font-size:9px;flex-shrink:0;">${_critterEraRoman[c.iid.toUpperCase()]}</span>` : ''}
             </div>
-            <div class="cpt-stats">
+            <div class="cpt-stats" style="${isMuted ? 'opacity:0.4;' : ''}">
               <span class="cpt-stat cpt-hp" title="Health">❤ ${(c.health || 0).toFixed(1)}</span>
               ${c.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${c.armour}</span>` : ''}
               <span class="cpt-stat cpt-spd" title="Speed">⚡ ${(c.speed || 0).toFixed(2)}</span>
@@ -443,9 +483,54 @@ function _openCritterOverlay(aid, waveIdx, currentIid) {
 
   _initCritterCanvases(body);
 
-  // Bind tile clicks
+  // Slot upgrade button
+  const slotUpgradeBtn = body.querySelector('#wave-slot-upgrade-btn');
+  if (slotUpgradeBtn) {
+    slotUpgradeBtn.addEventListener('click', async () => {
+      if (slotUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
+      slotUpgradeBtn.disabled = true;
+      try {
+        const resp = await rest.buyCritterSlot(aid, waveIdx);
+        if (resp.success) {
+          overlay.classList.remove('is-open');
+          await rest.getSummary();
+          await rest.getMilitary();
+        } else {
+          slotUpgradeBtn.textContent = `✗ ${resp.error || 'Failed'}`;
+          setTimeout(() => { slotUpgradeBtn.disabled = false; }, 2000);
+        }
+      } catch {
+        slotUpgradeBtn.disabled = false;
+      }
+    });
+  }
+
+  // Era upgrade button
+  const eraUpgradeBtn = body.querySelector('#wave-era-upgrade-btn');
+  if (eraUpgradeBtn) {
+    eraUpgradeBtn.addEventListener('click', async () => {
+      if (eraUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
+      eraUpgradeBtn.disabled = true;
+      try {
+        const resp = await rest.buyWaveEra(aid, waveIdx);
+        if (resp.success) {
+          overlay.classList.remove('is-open');
+          await rest.getSummary();
+          await rest.getMilitary();
+        } else {
+          eraUpgradeBtn.textContent = `✗ ${resp.error || 'Failed'}`;
+          setTimeout(() => { eraUpgradeBtn.disabled = false; }, 2000);
+        }
+      } catch {
+        eraUpgradeBtn.disabled = false;
+      }
+    });
+  }
+
+  // Bind tile clicks (muted critters are not selectable)
   body.querySelectorAll('.critter-pick-tile').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (btn.classList.contains('critter-pick-tile--muted')) return;
       const iid = btn.dataset.iid;
       overlay.classList.remove('is-open');
       await onChangeCritter(aid, waveIdx, iid);
@@ -714,7 +799,7 @@ function renderArmies(data) {
             const hasSprite = w.iid && (spriteInfo.sprite || spriteInfo.animation);
             return `
             <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
-              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}">
+              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}">
                 <span class="wave-tile__edit-hint">✎</span>
                 ${hasSprite
                   ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
@@ -724,15 +809,8 @@ function renderArmies(data) {
                 <div class="wave-tile__count">${hasSprite ? numCritters : ''}</div>
               </button>
               <div class="wave-tile__footer">
-                <span class="wave-tile__slots">${w.slots || 0} sl</span>
-                <button class="wave-slots-btn wave-slots-increase" data-aid="${a.aid}" data-wave-idx="${i}" data-count="${w.slots || 0}"
-                  title="${canAffordSlot ? `Add slot (${Math.round(nextSlotPrice)} gold)` : `Not enough gold (${Math.round(nextSlotPrice)} needed)`}"
-                  ${canAffordSlot ? '' : 'style="opacity:0.5;cursor:not-allowed;"'}
-                  data-price="${Math.round(nextSlotPrice)}"
-                  data-can-afford="${canAffordSlot}">
-                  <span>+</span>
-                  <span style="color:${canAffordSlot ? 'var(--accent)' : 'var(--danger)'}; font-size:9px; font-weight:500; white-space:normal; text-align:center; word-break:break-all;">💰${Math.round(nextSlotPrice)}</span>
-                </button>
+                <span class="wave-tile__slots">${w.slots || 0} Slots</span>
+                <span class="wave-tile__era era-roman-badge" title="${ERA_LABEL_EN[ERA_KEYS[w.max_era ?? 0]] || ''}" style="font-size:0.75em;">${ERA_ROMAN[ERA_KEYS[w.max_era ?? 0]] || 'I'}</span>
               </div>
             </div>
           `;}).join('')}
@@ -773,13 +851,12 @@ function renderArmies(data) {
       const aid = parseInt(btn.getAttribute('data-aid'), 10);
       const waveIdx = parseInt(btn.getAttribute('data-wave-idx'), 10);
       const currentIid = btn.getAttribute('data-current-iid') || '';
-      _openCritterOverlay(aid, waveIdx, currentIid);
+      const maxEra = parseInt(btn.getAttribute('data-max-era') || '0', 10);
+      const nextEraPrice = parseFloat(btn.getAttribute('data-next-era-price') || '0');
+      const nextSlotPrice = parseFloat(btn.getAttribute('data-next-slot-price') || '0');
+      const currentSlots = parseInt(btn.getAttribute('data-slots') || '0', 10);
+      _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, nextSlotPrice, currentSlots);
     });
-  });
-
-  // Attach slots button listeners
-  el.querySelectorAll('.wave-slots-increase').forEach(btn => {
-    btn.addEventListener('click', (e) => onIncreaseSlots(e));
   });
 
   // Attach attack button listeners

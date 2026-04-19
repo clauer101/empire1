@@ -88,6 +88,7 @@
     .stat-value { font-size: 1.5rem; font-family: var(--mono); color: var(--accent); font-weight: 700; }
 
     /* ── Table ── */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; }
     th {
       text-align: left; padding: 7px 12px;
@@ -105,6 +106,12 @@
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--surface-hover); }
+
+    /* sticky first 3 columns */
+    th:nth-child(1), td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--surface-alt); min-width: 42px; max-width: 42px; width: 42px; }
+    th:nth-child(2), td:nth-child(2) { position: sticky; left: 42px; z-index: 2; background: var(--surface-alt); min-width: 80px; max-width: 80px; width: 80px; }
+    th:nth-child(3), td:nth-child(3) { position: sticky; left: 122px; z-index: 2; background: var(--surface-alt); box-shadow: 2px 0 6px rgba(0,0,0,0.4); min-width: 110px; }
+    tr:hover td:nth-child(1), tr:hover td:nth-child(2), tr:hover td:nth-child(3) { background: var(--surface-hover); }
 
     /* ── Empire expand ── */
     .empire-row { cursor: pointer; }
@@ -258,6 +265,7 @@
       <span class="badge" id="emp-count">0</span>
       <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">click row to expand</span>
     </div>
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -280,6 +288,7 @@
         <tr><td colspan="13" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
       </tbody>
     </table>
+    </div>
   </div>
 
   <!-- Attacks -->
@@ -595,7 +604,7 @@ const TOWER_ERA = {
   CATAPULTS: 'Eisenzeit',      ARBELESTE_TOWER: 'Eisenzeit',
   TAR_TOWER: 'Mittelalter',    HEAVY_TOWER: 'Mittelalter',  BOILING_OIL: 'Mittelalter',
   CANNON_TOWER: 'Renaissance', RIFLE_TOWER: 'Renaissance',  COLD_TOWER: 'Renaissance', ICE_TOWER: 'Renaissance',
-  FLAME_THROWER: 'Industrie',  SHOCK_TOWER: 'Industrie',    PARALYZNG_TOWER: 'Industrie',
+  FLAME_THROWER: 'Industrie',  SHOCK_TOWER: 'Industrie',    PARALYZNG_TOWER: 'Industrie',  GATLING_TOWER: 'Industrie',
   NAPALM_THROWER: 'Moderne',   MG_TOWER: 'Moderne',         RAPID_FIRE_MG_BUNKER: 'Moderne',
   RADAR_TOWER: 'Moderne',      ANTI_AIR_TOWER: 'Moderne',   LASER_TOWER: 'Moderne',
   SNIPER_TOWER: 'Zukunft',     ROCKET_TOWER: 'Zukunft',
@@ -624,7 +633,7 @@ const TILE_COLORS = {
   CATAPULTS:'#888888',       ARBELESTE_TOWER:'#888888',
   TAR_TOWER:'#6B8A8A',       HEAVY_TOWER:'#6B8A8A',    BOILING_OIL:'#6B8A8A',
   CANNON_TOWER:'#8B6914',    RIFLE_TOWER:'#8B6914',    COLD_TOWER:'#8B6914', ICE_TOWER:'#8B6914',
-  FLAME_THROWER:'#FF6B35',   SHOCK_TOWER:'#FF6B35',    PARALYZNG_TOWER:'#FF6B35',
+  FLAME_THROWER:'#FF6B35',   SHOCK_TOWER:'#FF6B35',    PARALYZNG_TOWER:'#FF6B35',  GATLING_TOWER:'#FF6B35',
   NAPALM_THROWER:'#4B9CD3',  MG_TOWER:'#4B9CD3',       RAPID_FIRE_MG_BUNKER:'#4B9CD3',
   RADAR_TOWER:'#4B9CD3',     ANTI_AIR_TOWER:'#4B9CD3', LASER_TOWER:'#4B9CD3',
   SNIPER_TOWER:'#9B59B6',    ROCKET_TOWER:'#9B59B6',
@@ -679,12 +688,14 @@ function buildTowerStats(tiles) {
   }
   const maxCount = Math.max(1, ...Object.values(byEra));
   const total = Object.values(byEra).reduce((a, b) => a + b, 0);
-  const rows = ERA_ORDER_STATUS
-    .filter(era => byEra[era])
-    .map(era => {
+  const eras = ERA_ORDER_STATUS.filter(era => byEra[era]);
+  let usedPct = 0;
+  const rows = eras.map((era, i) => {
       const cnt = byEra[era];
       const barPct = Math.round(cnt / maxCount * 100);
-      const pct = Math.round(cnt / total * 100);
+      const isLast = i === eras.length - 1;
+      const pct = isLast ? 100 - usedPct : Math.round(cnt / total * 100);
+      if (!isLast) usedPct += pct;
       const col = ERA_COLORS[era] || '#888888';
       return `<div class="age-row">
         <span class="age-name">${era}</span>

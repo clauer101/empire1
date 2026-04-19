@@ -94,3 +94,4 @@ class ItemDetails:
     scale: float = 1.0
     animation: str = ""  # Sprite folder path, e.g. assets/sprites/critters/slave
     image: str = ""  # Image path prefix, e.g. assets/sprites/buildings/hangar
+    era: str = ""    # Era key from YAML (e.g. "Steinzeit")

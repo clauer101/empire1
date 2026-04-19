@@ -294,7 +294,7 @@ ICE_TOWER:
 FLAME_THROWER:
   name: "Flame Thrower"
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
-  damage: 14
+  damage: 11
   range: 1.5
   reload_time: 2400
   shot_speed: 3
@@ -310,9 +310,9 @@ FLAME_THROWER:
 SHOCK_TOWER:
   name: "Shock Tower"
   sprite: "assets/sprites/structures/shock_tower/shock_tower.webp"
-  damage: 15
+  damage: 16
   range: 1.5
-  reload_time: 1800
+  reload_time: 1700
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/bolt.webp"
   projectile_y_offset: 0.2
@@ -326,7 +326,7 @@ SHOCK_TOWER:
 GATLING_TOWER:
   name: "Gatling Tower"
   sprite: "assets/sprites/structures/gatling_tower/gatling_tower.webp"
-  damage: 11
+  damage: 14
   range: 1.5
   reload_time: 800
   shot_speed: 6

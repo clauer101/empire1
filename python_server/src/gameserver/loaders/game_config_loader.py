@@ -19,12 +19,15 @@ DEFAULT_GAME_CONFIG_PATH = "config/game.yaml"
 
 
 @dataclass
-class CitizenPrice:
-    """Parameters for citizen upgrade price formula: u + (i*y) * (i+z)^v"""
+class PriceParams:
+    """Parameters for price formula: u + (i*y) * (i+z)^v"""
     u: float = 34.0
     y: float = 1.0
     z: float = 1.5
     v: float = 3.3
+
+
+CitizenPrice = PriceParams  # backwards compat alias
 
 
 @dataclass
@@ -39,11 +42,12 @@ class SigmoidPrice:
 @dataclass
 class Prices:
     """Purchase price parameters for all buyable items."""
-    citizen: CitizenPrice = field(default_factory=CitizenPrice)
-    tile: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
-    wave: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
-    critter_slot: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
-    army: CitizenPrice = field(default_factory=lambda: CitizenPrice(u=0, y=1, z=2, v=2.0))
+    citizen: PriceParams = field(default_factory=PriceParams)
+    tile: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
+    wave: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
+    critter_slot: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
+    army: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
+    wave_era_costs: list = field(default_factory=lambda: [0, 200, 500, 1200, 2500, 5000, 9000, 15000, 25000])
 
 
 @dataclass
@@ -185,11 +189,12 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
     if isinstance(prices_raw, dict):
         citizen_raw = prices_raw.get("citizen", {})
         prices = Prices(
-            citizen=CitizenPrice(**citizen_raw) if isinstance(citizen_raw, dict) else CitizenPrice(),
-            tile=CitizenPrice(**prices_raw["tile"]) if "tile" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
-            wave=CitizenPrice(**prices_raw["wave"]) if "wave" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
-            critter_slot=CitizenPrice(**prices_raw["critter_slot"]) if "critter_slot" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
-            army=CitizenPrice(**prices_raw["army"]) if "army" in prices_raw else CitizenPrice(u=0, y=1, z=2, v=2.0),
+            citizen=PriceParams(**citizen_raw) if isinstance(citizen_raw, dict) else PriceParams(),
+            tile=PriceParams(**prices_raw["tile"]) if "tile" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
+            wave=PriceParams(**prices_raw["wave"]) if "wave" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
+            critter_slot=PriceParams(**prices_raw["critter_slot"]) if "critter_slot" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
+            army=PriceParams(**prices_raw["army"]) if "army" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
+            wave_era_costs=list(prices_raw["wave_era_costs"]) if "wave_era_costs" in prices_raw else [0, 200, 500, 1200, 2500, 5000, 9000, 15000, 25000],
         )
     else:
         prices = Prices()
