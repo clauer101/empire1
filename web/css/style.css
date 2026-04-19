@@ -912,7 +912,7 @@ label {
   border: 1px solid rgba(201,168,76,0.3);
   border-radius: 16px;
   padding: 36px 40px 32px;
-  max-width: 340px;
+  max-width: 500px;
   width: 90%;
   text-align: center;
   box-shadow: 0 16px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
@@ -951,8 +951,10 @@ label {
   margin-bottom: 20px;
 }
 .era-base-img {
-  width: 220px;
-  height: 220px;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 1;
   object-fit: contain;
   image-rendering: pixelated;
   display: block;

@@ -22,7 +22,8 @@ import treeView    from './views/techtree.js';
 import battleView  from './views/defense.js';
 import socialView  from './views/social.js';
 import signupView  from './views/signup.js';
-import replayView  from './views/replay.js';
+import replayView    from './views/replay.js';
+import workshopView  from './views/workshop.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
@@ -40,7 +41,7 @@ eventBus.on('rest:unauthorized', () => {
 });
 
 // ── Register views ─────────────────────────────────────────
-[loginView, signupView, dashView, buildView, resView, armyView, treeView, battleView, socialView, replayView]
+[loginView, signupView, dashView, buildView, resView, armyView, treeView, battleView, socialView, replayView, workshopView]
   .forEach(v => router.register(v));
 
 // ── Toast notifications for push messages ──────────────────

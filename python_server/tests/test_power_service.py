@@ -132,10 +132,13 @@ class TestAttackPower:
         assert with_boss == pytest.approx(without_boss)
 
     def test_health_modifier_raises_score(self):
+        from gameserver.loaders.game_config_loader import GameConfig, CritterUpgradeDef
         c = _critter("SLAVE", health=10.0)
+        gc = MagicMock(spec=GameConfig)
+        gc.critter_upgrades = CritterUpgradeDef(health=5.0)
         e_base = _empire()
-        e_buff = _empire(effects={"health_modifier": 0.5})
-        assert attack_power(e_buff, _upgrades(c)) > attack_power(e_base, _upgrades(c))
+        e_buff = _empire(item_upgrades={"SLAVE": {"health": 4}})
+        assert attack_power(e_buff, _upgrades(c), gc=gc) > attack_power(e_base, _upgrades(c), gc=gc)
 
     def test_armour_raises_score(self):
         """Critters with armour score higher than identical critters without."""
@@ -184,11 +187,14 @@ class TestDefensePower:
         assert defense_power(e_strong, _upgrades(t_strong)) > defense_power(e_weak, _upgrades(t_weak))
 
     def test_damage_modifier_raises_score(self):
+        from gameserver.loaders.game_config_loader import GameConfig, StructureUpgradeDef
         t = _tower("T", damage=10.0, reload_ms=1000.0)
+        gc = MagicMock(spec=GameConfig)
+        gc.structure_upgrades = StructureUpgradeDef(damage=5.0)
         e_base = _empire(hex_map=self._hex_map_with_tower("T"))
         e_buff = _empire(hex_map=self._hex_map_with_tower("T"),
-                         effects={"damage_modifier": 0.5})
-        assert defense_power(e_buff, _upgrades(t)) > defense_power(e_base, _upgrades(t))
+                         item_upgrades={"T": {"damage": 4}})
+        assert defense_power(e_buff, _upgrades(t), gc=gc) > defense_power(e_base, _upgrades(t), gc=gc)
 
     def test_slow_tower_gets_bonus(self):
         t_plain = _tower("PLAIN", damage=5.0, reload_ms=1000.0)

@@ -426,51 +426,51 @@ class TestArmourDamageReduction:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestCritterArmyModifiers:
-    """Empire-level SPEED_MODIFIER, HEALTH_MODIFIER, ARMOUR_MODIFIER scale spawned critters."""
+    """item_upgrades (per-IID, per-stat) scale spawned critters via _make_critter_from_item."""
+
+    def _svc(self, health=5.0, speed=0.5, armour=0.5, extra_items=None):
+        from unittest.mock import MagicMock
+        from gameserver.loaders.game_config_loader import GameConfig, CritterUpgradeDef
+        gc = MagicMock(spec=GameConfig)
+        gc.critter_upgrades = CritterUpgradeDef(health=health, speed=speed, armour=armour)
+        gc.structure_upgrades = None
+        return BattleService(items=extra_items or [], gc=gc)
 
     def test_speed_modifier_increases_critter_speed(self):
-        """Attacker SPEED_MODIFIER scales critter speed via attacker_effects."""
-        svc = BattleService()
-        base = svc._make_critter_from_item("soldier", path=_path())
-        effects = {fx.SPEED_MODIFIER: 0.5}  # +50%
-
+        """item_upgrades speed upgrade increases critter speed."""
+        svc = self._svc(speed=0.5)
+        base    = svc._make_critter_from_item("soldier", path=_path())
         boosted = svc._make_critter_from_item("soldier", path=_path(),
-                                               attacker_effects=effects)
-        assert boosted.speed == pytest.approx(base.speed * 1.5)
+                                               attacker_item_upgrades={"soldier": {"speed": 1}})
+        assert boosted.speed > base.speed
 
     def test_health_modifier_increases_critter_health(self):
-        """Attacker HEALTH_MODIFIER scales critter health via attacker_effects."""
-        svc = BattleService()
-        base = svc._make_critter_from_item("soldier", path=_path())
-        effects = {fx.HEALTH_MODIFIER: 1.0}  # +100%
-
+        """item_upgrades health=100 upgrade doubles critter health."""
+        svc = self._svc(health=100.0)
+        base    = svc._make_critter_from_item("soldier", path=_path())
         boosted = svc._make_critter_from_item("soldier", path=_path(),
-                                               attacker_effects=effects)
+                                               attacker_item_upgrades={"soldier": {"health": 1}})
         assert boosted.health == pytest.approx(base.health * 2.0)
         assert boosted.max_health == pytest.approx(base.max_health * 2.0)
 
     def test_armour_modifier_increases_critter_armour(self):
-        """Attacker ARMOUR_MODIFIER scales critter armour via attacker_effects."""
+        """item_upgrades armour upgrade scales critter armour by %."""
         from gameserver.models.items import ItemDetails, ItemType
-
         item = ItemDetails(iid="heavy", item_type=ItemType.CRITTER,
                            armour=10.0, health=50.0, speed=1.0)
-        svc = BattleService(items=[item])
-
-        base = svc._make_critter_from_item("heavy", path=_path())
-        assert base.armour == pytest.approx(10.0)
-
-        effects = {fx.ARMOUR_MODIFIER: 0.5}  # +50% → 15.0
+        svc = self._svc(armour=100.0, extra_items=[item])  # +100% per level
+        base    = svc._make_critter_from_item("heavy", path=_path())
         boosted = svc._make_critter_from_item("heavy", path=_path(),
-                                               attacker_effects=effects)
-        assert boosted.armour == pytest.approx(15.0)
+                                               attacker_item_upgrades={"heavy": {"armour": 1}})
+        assert base.armour == pytest.approx(10.0)
+        assert boosted.armour == pytest.approx(20.0)  # 10 × 2
 
     def test_no_effects_leaves_stats_unchanged(self):
-        """Empty attacker_effects dict must not change critter stats."""
-        svc = BattleService()
-        base   = svc._make_critter_from_item("soldier", path=_path())
-        same   = svc._make_critter_from_item("soldier", path=_path(),
-                                              attacker_effects={})
+        """Empty item_upgrades dict must not change critter stats."""
+        svc = self._svc()
+        base = svc._make_critter_from_item("soldier", path=_path())
+        same = svc._make_critter_from_item("soldier", path=_path(),
+                                            attacker_item_upgrades={})
         assert same.speed  == pytest.approx(base.speed)
         assert same.health == pytest.approx(base.health)
         assert same.armour == pytest.approx(base.armour)
@@ -481,13 +481,15 @@ class TestCritterArmyModifiers:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestTowerEmpireModifiers:
-    """DAMAGE_MODIFIER, RANGE_MODIFIER, RELOAD_MODIFIER on the defender empire
-    scale tower behaviour in BattleService._step_towers."""
+    """item_upgrades (per-IID, per-stat) scale tower behaviour in BattleService._step_towers."""
 
-    def _defender_empire(self, **effects_kw) -> Empire:
-        e = _empire()
-        e.effects.update(effects_kw)
-        return e
+    def _gc_with_structure_upgrades(self, damage=5.0, range_=0.1, reload=5.0):
+        from unittest.mock import MagicMock
+        from gameserver.loaders.game_config_loader import GameConfig, StructureUpgradeDef
+        gc = MagicMock(spec=GameConfig)
+        gc.structure_upgrades = StructureUpgradeDef(damage=damage, range=range_, reload=reload)
+        gc.critter_upgrades = None
+        return gc
 
     def _basic_structure(self, damage: float = 10.0, rng: float = 5.0,
                          reload_ms: float = 2000.0) -> Structure:
@@ -499,75 +501,76 @@ class TestTowerEmpireModifiers:
         )
 
     def test_damage_modifier_increases_tower_damage(self):
-        """Defender DAMAGE_MODIFIER = 0.5 → shot deals 10 * 1.5 = 15 damage."""
-        svc = BattleService()
+        """item_upgrades damage upgrade → tower deals more damage."""
+        gc = self._gc_with_structure_upgrades(damage=50.0)  # +50% per level
+        svc = BattleService(gc=gc)
         c = _critter(health=100.0, speed=0.01)
         c.path_progress = 0.1
         struct = self._basic_structure(damage=10.0)
-        defender = self._defender_empire(**{fx.DAMAGE_MODIFIER: 0.5})
+        defender = _empire(item_upgrades={"BASIC_TOWER": {"damage": 1}})
         b = BattleState(bid=1, defender=defender, attacker=None,
                         critters={c.cid: c}, structures={struct.sid: struct})
 
         svc._step_towers(b, 50.0)
         svc._step_shots(b, 5000.0)
 
-        assert c.health == pytest.approx(85.0)  # 100 - 15
+        assert c.health == pytest.approx(85.0)  # 100 - 15 (+50% of 10)
 
     def test_range_modifier_extends_tower_range(self):
-        """Defender RANGE_MODIFIER = 1.0 doubles range so tower reaches critter
-        that would otherwise be out of range.
+        """item_upgrades range upgrade so tower reaches critter otherwise out of range.
 
         Path: 5 tiles; progress=0.1 → float_idx=0.4 → pos ≈ (0.4, 0)
         hex_world_distance((0,0), (0.4,0)) ≈ 0.4.
-        base range = 0.3 → too short.  with ×2 → 0.6 → reaches critter.
+        base range = 0.3 → too short. with +0.3 upgrade → 0.6 → reaches critter.
         """
-        svc = BattleService()
+        gc = self._gc_with_structure_upgrades(range_=0.3)  # +0.3 hex per level
+        svc = BattleService(gc=gc)
         c = _critter(speed=0.01)
-        c.path_progress = 0.1           # distance ≈ 0.4 from origin
-        struct = self._basic_structure(rng=0.3)  # base range too short
+        c.path_progress = 0.1
+        struct = self._basic_structure(rng=0.3)
 
-        # Without modifier: no shot
+        # Without upgrade: no shot
         b_no = BattleState(bid=1, defender=_empire(), attacker=None,
                            critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b_no, 50.0)
-        assert len(b_no.pending_shots) == 0, "Tower must not fire without modifier"
+        assert len(b_no.pending_shots) == 0, "Tower must not fire without upgrade"
 
-        # With RANGE_MODIFIER=1.0 → effective range = 0.6 → fires
+        # With range upgrade level 1 → effective range = 0.6 → fires
         c2 = _critter(cid=2, speed=0.01)
         c2.path_progress = 0.1
         struct2 = self._basic_structure(rng=0.3)
-        defender = self._defender_empire(**{fx.RANGE_MODIFIER: 1.0})
+        defender = _empire(item_upgrades={"BASIC_TOWER": {"range": 1}})
         b_mod = BattleState(bid=2, defender=defender, attacker=None,
                             critters={c2.cid: c2}, structures={struct2.sid: struct2})
         svc._step_towers(b_mod, 50.0)
-        assert len(b_mod.pending_shots) == 1, "Tower should fire with doubled range"
+        assert len(b_mod.pending_shots) == 1, "Tower should fire with range upgrade"
 
     def test_reload_modifier_speeds_up_cooldown(self):
-        """Defender RELOAD_MODIFIER = 1.0 → countdown decrements 2× per tick,
-        so a 500ms remaining timer fires within a 300ms tick.
+        """item_upgrades reload upgrade → tower fires faster.
 
-        Without modifier: 500 - 300 = 200 > 0 → no shot.
-        With modifier=1.0: decrement = 300 * 2 = 600 → 500 - 600 ≤ 0 → fires.
+        Without upgrade: 500ms remaining - 300ms tick = 200 > 0 → no shot.
+        With reload upgrade +100%: effective decrement = 600 → 500 - 600 ≤ 0 → fires.
         """
-        svc = BattleService()
+        gc = self._gc_with_structure_upgrades(reload=100.0)  # +100% per level
+        svc = BattleService(gc=gc)
         c = _critter(speed=0.01)
         c.path_progress = 0.1
 
-        # No modifier → no shot
+        # No upgrade → no shot
         struct1 = self._basic_structure(reload_ms=2000.0)
         struct1.reload_remaining_ms = 500.0
         b_no = BattleState(bid=1, defender=_empire(), attacker=None,
                            critters={c.cid: c}, structures={struct1.sid: struct1})
         svc._step_towers(b_no, 300.0)
-        assert len(b_no.pending_shots) == 0, "Tower must not fire without modifier"
+        assert len(b_no.pending_shots) == 0, "Tower must not fire without upgrade"
 
-        # With RELOAD_MODIFIER=1.0 → fires
+        # With reload upgrade level 1 → fires
         c2 = _critter(cid=2, speed=0.01)
         c2.path_progress = 0.1
         struct2 = self._basic_structure(reload_ms=2000.0)
         struct2.reload_remaining_ms = 500.0
-        defender = self._defender_empire(**{fx.RELOAD_MODIFIER: 1.0})
+        defender = _empire(item_upgrades={"BASIC_TOWER": {"reload": 1}})
         b_mod = BattleState(bid=2, defender=defender, attacker=None,
                             critters={c2.cid: c2}, structures={struct2.sid: struct2})
         svc._step_towers(b_mod, 300.0)
-        assert len(b_mod.pending_shots) == 1, "Tower should fire with doubled reload speed"
+        assert len(b_mod.pending_shots) == 1, "Tower should fire with reload upgrade"

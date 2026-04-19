@@ -31,6 +31,7 @@ from gameserver.network.rest_models import (
     BuyTileRequest,
     BuyWaveRequest,
     BuyWaveEraRequest,
+    BuyItemUpgradeRequest,
     CitizenDistribution,
     LoginRequest,
     LoginResponse,
@@ -73,6 +74,7 @@ def create_app(services: "Services") -> FastAPI:
         _build_session_state,
         handle_buy_critter_slot_request,
         handle_buy_wave_era_request,
+        handle_buy_item_upgrade,
         handle_buy_tile_request,
         handle_buy_wave_request,
         handle_change_army,
@@ -305,6 +307,10 @@ def create_app(services: "Services") -> FastAPI:
         resp = await handle_buy_wave_era_request(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
+    @app.post("/api/item/buy-upgrade")
+    async def buy_item_upgrade(body: BuyItemUpgradeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        return await handle_buy_item_upgrade(body.iid, body.stat, uid)
+
     # =================================================================
     # Attack
     # =================================================================
@@ -463,6 +469,7 @@ def create_app(services: "Services") -> FastAPI:
 
         from gameserver.engine.power_service import compute_power
         up = services.empire_service._upgrades if services.empire_service else None
+        _gc = services.empire_service._gc if services.empire_service else None
 
         empires_out = []
         for empire in services.empire_service.all_empires.values():
@@ -500,7 +507,7 @@ def create_app(services: "Services") -> FastAPI:
                 _pl = len(_find_path(_nm)) - 1 if _find_path(_nm) else None
             except Exception:
                 _pl = None
-            power = compute_power(empire, up, path_length=_pl).to_dict() if up else {"economy": 0, "attack": 0, "defense": 0, "total": 0}
+            power = compute_power(empire, up, path_length=_pl, gc=_gc).to_dict() if up else {"economy": 0, "attack": 0, "defense": 0, "total": 0}
 
             empires_out.append({
                 "uid": empire.uid,
@@ -753,6 +760,9 @@ def create_app(services: "Services") -> FastAPI:
     @app.get("/api/era-map")
     async def get_era_map() -> dict[str, Any]:
         """Return era order + per-era item IIDs for all categories (no auth required)."""
+        gc = services.empire_service._gc if services.empire_service else None
+        su = gc.structure_upgrades if gc else None
+        cu = gc.critter_upgrades if gc else None
         return {
             "eras": _ERA_KEYS,
             "labels_de": _ERA_LABELS_DE,
@@ -762,6 +772,14 @@ def create_app(services: "Services") -> FastAPI:
             "knowledge":  _knowledge_groups,
             "buildings":  _building_groups,
             "era_effects": _era_effects_data,
+            "structure_upgrade_def": {
+                "damage": su.damage, "range": su.range, "reload": su.reload,
+                "effect_duration": su.effect_duration, "effect_value": su.effect_value,
+            } if su else {},
+            "critter_upgrade_def": {
+                "health": cu.health, "speed": cu.speed, "armour": cu.armour,
+            } if cu else {},
+            "item_upgrade_base_costs": gc.item_upgrade_base_costs if gc else [],
         }
 
     @app.get("/api/admin/structures")

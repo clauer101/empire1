@@ -144,21 +144,12 @@ def economy_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
 # Attack power
 # ---------------------------------------------------------------------------
 
-def attack_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
-    """Score based on unlocked critter quality and standing army slots.
-
-    Effective HP (eHP) per slot is the primary driver — armoured, high-health
-    units that move quickly are the hardest to stop.
-    """
+def attack_power(empire: "Empire", upgrades: "UpgradeProvider", gc: "GameConfig | None" = None) -> float:
+    """Score based on unlocked critter quality and standing army slots."""
     from gameserver.models.items import ItemType
 
     score = 0.0
     fx = empire.effects
-
-    # ── Empire modifiers ─────────────────────────────────────────────
-    health_mod = 1.0 + fx.get("health_modifier", 0.0) * _HEALTH_MOD_BONUS
-    speed_mod  = 1.0 + fx.get("speed_modifier",  0.0) * _SPEED_MOD_BONUS
-    armour_mod = 1.0 + fx.get("armour_modifier", 0.0) * _ARMOUR_MOD_BONUS
 
     # ── Unlocked critters ────────────────────────────────────────────
     completed: set[str] = {
@@ -171,23 +162,25 @@ def attack_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
         and all(req in completed for req in item.requirements)
     ]
 
+    cu = gc.critter_upgrades if gc else None
+    item_upgrades = empire.item_upgrades
+
     if available:
-        # Best critter quality: max eHP/slot across available pool
-        # (reflects the strongest unit the empire CAN field)
         best_ehp_per_slot = 0.0
         for c in available:
-            effective_health = c.health * health_mod
-            effective_armour = c.armour * armour_mod
-            effective_speed  = c.speed  * speed_mod
-            ehp = effective_health + effective_armour * 5.0
-            speed_bonus = max(0.0, effective_speed - 0.2) * _CRITTER_SPEED_W
+            iid_up = item_upgrades.get(c.iid, {})
+            h = c.health * (1.0 + (cu.health / 100.0) * iid_up.get("health", 0)) if cu else c.health
+            a = c.armour + (cu.armour * iid_up.get("armour", 0)) if cu else c.armour
+            s = c.speed  + (cu.speed  * iid_up.get("speed",  0)) if cu else c.speed
+            ehp = h + a * 5.0
+            speed_bonus = max(0.0, s - 0.2) * _CRITTER_SPEED_W
             ehp_per_slot = (ehp * _CRITTER_EHP_W + speed_bonus) / max(1, c.slots)
             best_ehp_per_slot = max(best_ehp_per_slot, ehp_per_slot)
 
-        # Average quality across all available critters (breadth matters too)
         avg_ehp_per_slot = sum(
-            ((c.health * health_mod + c.armour * armour_mod * 5.0) * _CRITTER_EHP_W
-             + max(0.0, c.speed * speed_mod - 0.2) * _CRITTER_SPEED_W)
+            (((c.health * (1.0 + (cu.health / 100.0) * item_upgrades.get(c.iid, {}).get("health", 0)) if cu else c.health)
+              + (c.armour + (cu.armour * item_upgrades.get(c.iid, {}).get("armour", 0)) if cu else c.armour) * 5.0) * _CRITTER_EHP_W
+             + max(0.0, (c.speed + (cu.speed * item_upgrades.get(c.iid, {}).get("speed", 0)) if cu else c.speed) - 0.2) * _CRITTER_SPEED_W)
             / max(1, c.slots)
             for c in available
         ) / len(available)
@@ -213,23 +206,15 @@ def attack_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
 # Defense power
 # ---------------------------------------------------------------------------
 
-def defense_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: int | None = None) -> float:
-    """Score based on placed tower DPS, range coverage, special effects, and path length.
-
-    Effective DPS = damage / (reload_ms / 1000), factoring in empire modifiers.
-    A longer path multiplies the score because critters spend more time under fire.
-    path_length=None disables the path multiplier (neutral factor 1.0).
-    """
+def defense_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: int | None = None, gc: "GameConfig | None" = None) -> float:
+    """Score based on placed tower DPS, range coverage, special effects, and path length."""
     import math
     from gameserver.models.items import ItemType
 
     score = 0.0
-    fx = empire.effects
 
-    # ── Empire tower modifiers ───────────────────────────────────────
-    damage_mult = 1.0 + fx.get("damage_modifier", 0.0) * _DAMAGE_MOD_BONUS
-    range_mult  = 1.0 + fx.get("range_modifier",  0.0) * _RANGE_MOD_BONUS
-    reload_mult = 1.0 + fx.get("reload_modifier", 0.0) * _RELOAD_MOD_BONUS
+    su = gc.structure_upgrades if gc else None
+    item_upgrades = empire.item_upgrades
 
     # ── Placed structures on hex map ─────────────────────────────────
     NON_TOWER = {"castle", "spawnpoint", "path", "empty", "blocked", "void", ""}
@@ -241,15 +226,20 @@ def defense_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: in
         if item is None or item.item_type != ItemType.STRUCTURE:
             continue
 
-        reload_s = (item.reload_time_ms / 1000.0) / max(0.01, reload_mult)
+        iid_up = item_upgrades.get(tile_type, {})
+        dmg_mult   = 1.0 + (su.damage / 100.0) * iid_up.get("damage", 0) if su else 1.0
+        rng_add    = (su.range * iid_up.get("range", 0)) if su else 0.0
+        rld_mult   = 1.0 + (su.reload / 100.0) * iid_up.get("reload", 0) if su else 1.0
+
+        reload_s = (item.reload_time_ms / 1000.0) / max(0.01, rld_mult)
         if reload_s <= 0:
             continue
 
-        base_dps = item.damage / reload_s * damage_mult
+        base_dps = item.damage / reload_s * dmg_mult
         burn_dps  = item.effects.get("burn_dps", 0.0) * _BURN_DPS_BONUS
         eff_dps   = base_dps + burn_dps
 
-        eff_range = item.range * range_mult
+        eff_range = item.range + rng_add
 
         score += eff_dps   * _TOWER_DPS_W
         score += eff_range * _TOWER_RANGE_W
@@ -286,10 +276,10 @@ def total_power(economy: float, attack: float, defense: float) -> float:
 # Convenience: compute all four at once
 # ---------------------------------------------------------------------------
 
-def compute_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: int | None = None) -> PowerReport:
+def compute_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: int | None = None, gc: "GameConfig | None" = None) -> PowerReport:
     """Compute all four power scores for an empire."""
     eco = economy_power(empire, upgrades)
-    atk = attack_power(empire,  upgrades)
-    dfn = defense_power(empire, upgrades, path_length=path_length)
+    atk = attack_power(empire,  upgrades, gc=gc)
+    dfn = defense_power(empire, upgrades, path_length=path_length, gc=gc)
     tot = total_power(eco, atk, dfn)
     return PowerReport(economy=eco, attack=atk, defense=dfn, total=tot)

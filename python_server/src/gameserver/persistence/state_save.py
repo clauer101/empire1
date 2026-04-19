@@ -115,6 +115,7 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
         "research_queue": empire.research_queue,
         "citizens": dict(empire.citizens),
         "effects": dict(empire.effects),
+        "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
         "artefacts": list(empire.artefacts),
         "max_life": empire.max_life,
         "structures": {

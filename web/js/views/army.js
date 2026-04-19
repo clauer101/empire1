@@ -19,6 +19,22 @@ let _critterSprites = {};  // iid → {sprite, animation} for all critters incl.
 let _empiresCache = [];
 /** iid.toUpperCase() → Roman numeral string (e.g. "III") */
 let _critterEraRoman = {};
+let _critUpgDef = null; // critter_upgrade_def from era-map
+
+function _applyCritUpgrades(c) {
+  const upgrades = st.summary?.item_upgrades?.[c.iid] ?? {};
+  const d = _critUpgDef;
+  if (!d) return c;
+  const hpLvl  = upgrades.health ?? 0;
+  const spdLvl = upgrades.speed  ?? 0;
+  const armLvl = upgrades.armour ?? 0;
+  return {
+    ...c,
+    health: c.health * (1 + (d.health / 100) * hpLvl),
+    speed:  c.speed  * (1 + (d.speed  / 100) * spdLvl),
+    armour: (c.armour || 0) * (1 + (d.armour / 100) * armLvl),
+  };
+}
 
 function _buildCritterEraRoman() {
   _critterEraRoman = {};
@@ -103,7 +119,8 @@ async function enter() {
   try {
     await rest.getSummary();
     updateCreateArmyButton();
-    await Promise.all([rest.getItems(), rest.getMilitary()]);
+    const [,, eraMap] = await Promise.all([rest.getItems(), rest.getMilitary(), rest.getEraMap()]);
+    if (eraMap) _critUpgDef = eraMap.critter_upgrade_def ?? null;
     _buildCritterEraRoman();
   } catch (err) {
     console.error('Failed to load military data:', err);
@@ -459,6 +476,9 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
       ${[..._availableCritters].reverse().map(c => {
         const isSelected = c.iid === currentIid;
         const isMuted = (c.era_index ?? 0) > maxEra;
+        const u = _applyCritUpgrades(c);
+        const upgLevels = st.summary?.item_upgrades?.[c.iid] ?? {};
+        const totalUpgLvl = Object.values(upgLevels).reduce((a, b) => a + b, 0);
         return `
           <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}${isMuted ? ' critter-pick-tile--muted' : ''}"
               data-iid="${c.iid}" ${isMuted ? 'title="Era not unlocked for this wave"' : ''}>
@@ -468,11 +488,12 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
             <div class="cpt-name" style="display:flex;align-items:baseline;gap:4px;overflow:hidden;${isMuted ? 'opacity:0.4;' : ''}">
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}${c.is_boss ? ' 👑' : ''}</span>
               ${_critterEraRoman[c.iid.toUpperCase()] ? `<span class="era-roman-badge" style="font-size:9px;flex-shrink:0;">${_critterEraRoman[c.iid.toUpperCase()]}</span>` : ''}
+              ${totalUpgLvl > 0 ? `<span style="font-size:9px;color:#c9a84c;flex-shrink:0;">⬆${totalUpgLvl}</span>` : ''}
             </div>
             <div class="cpt-stats" style="${isMuted ? 'opacity:0.4;' : ''}">
-              <span class="cpt-stat cpt-hp" title="Health">❤ ${(c.health || 0).toFixed(1)}</span>
-              ${c.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${c.armour}</span>` : ''}
-              <span class="cpt-stat cpt-spd" title="Speed">⚡ ${(c.speed || 0).toFixed(2)}</span>
+              <span class="cpt-stat cpt-hp" title="Health">❤ ${(u.health || 0).toFixed(1)}</span>
+              ${u.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${u.armour.toFixed(2)}</span>` : ''}
+              <span class="cpt-stat cpt-spd" title="Speed">⚡ ${(u.speed || 0).toFixed(2)}</span>
               ${c.slots > 1 ? `<span class="cpt-stat cpt-slots" title="Slot cost">${c.slots} Slots</span>` : ''}
               ${c.time_between_ms ? `<span class="cpt-stat cpt-interval" title="Time between spawns">⏱ ${(c.time_between_ms / 1000).toFixed(1)}s</span>` : ''}
             </div>
