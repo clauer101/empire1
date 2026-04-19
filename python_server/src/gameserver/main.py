@@ -46,7 +46,7 @@ from gameserver.persistence.state_load import RestoredState, load_state
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire
-from gameserver.network.handlers import register_all_handlers
+from gameserver.network.handlers import register_all_handlers, _active_battles
 from gameserver.loaders.game_config_loader import GameConfig, load_game_config
 
 log = logging.getLogger(__name__)
@@ -353,7 +353,7 @@ async def start_network(services: Services) -> None:
         rest_app,
         host="0.0.0.0",
         port=rest_port,
-        log_level="info",
+        log_level="warning",
         access_log=False,
     )
     rest_server = uvicorn.Server(config)
@@ -394,6 +394,9 @@ async def start_game_loop(services: Services) -> None:
     # Graceful shutdown on SIGINT / SIGTERM
     def _request_shutdown() -> None:
         log.info("Shutdown signal received — stopping …")
+        if _active_battles:
+            uids = ", ".join(str(uid) for uid in _active_battles)
+            log.warning("Shutdown mid-battle! %d active battle(s) will be interrupted (defender UIDs: %s)", len(_active_battles), uids)
         services.game_loop.stop()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -452,7 +455,7 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
         state_file: Path to the state YAML file for restoration.
     """
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.WARNING,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     )

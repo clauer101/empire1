@@ -30,6 +30,7 @@ from gameserver.network.rest_models import (
     BuyCritterSlotRequest,
     BuyTileRequest,
     BuyWaveRequest,
+    BuyWaveEraRequest,
     CitizenDistribution,
     LoginRequest,
     LoginResponse,
@@ -71,6 +72,7 @@ def create_app(services: "Services") -> FastAPI:
         _build_empire_summary,
         _build_session_state,
         handle_buy_critter_slot_request,
+        handle_buy_wave_era_request,
         handle_buy_tile_request,
         handle_buy_wave_request,
         handle_change_army,
@@ -295,6 +297,12 @@ def create_app(services: "Services") -> FastAPI:
     async def buy_critter_slot(body: BuyCritterSlotRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         msg = _stub_message(aid=body.aid, wave_number=body.wave_number)
         resp = await handle_buy_critter_slot_request(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
+    @app.post("/api/army/buy-wave-era")
+    async def buy_wave_era(body: BuyWaveEraRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        msg = _stub_message(aid=body.aid, wave_number=body.wave_number)
+        resp = await handle_buy_wave_era_request(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
     # =================================================================

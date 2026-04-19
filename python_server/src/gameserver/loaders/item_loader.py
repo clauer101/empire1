@@ -65,6 +65,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             scale=float(attrs.get("scale", 1.0)),
             animation=attrs.get("animation", ""),
             image=attrs.get("image", ""),
+            era=attrs.get("era", ""),
         ))
     return items
 

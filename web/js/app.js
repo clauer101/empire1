@@ -26,7 +26,7 @@ import replayView  from './views/replay.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
-const restUrl = params.get('rest') || `http://${window.location.hostname}:8080`;
+const restUrl = params.get('rest') || `${window.location.protocol}//${window.location.hostname}:8080`;
 
 // ── Instantiate core objects ───────────────────────────────
 rest.init(restUrl);

@@ -3188,6 +3188,8 @@ label {
 .tt-cat-knowledge { background: rgba(102,187,106,0.15); color: #66bb6a; }
 .tt-link { cursor: pointer; transition: opacity 0.15s; }
 .tt-link:hover { opacity: 0.75; }
+.tt-ubadge-ready   { outline: 1px solid currentColor; opacity: 1; }
+.tt-ubadge-blocked { opacity: 0.35; filter: grayscale(0.5); }
 
 /* Detail overlay */
 .tt-overlay {

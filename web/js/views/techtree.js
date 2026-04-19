@@ -6,7 +6,7 @@ import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
 import { fmtEffort } from '../lib/format.js';
-import { ERA_ROMAN } from '../lib/eras.js';
+import { ERA_ROMAN, ERA_KEYS, ERA_YAML_TO_KEY, ERA_LABEL_EN } from '../lib/eras.js';
 
 /** @type {import('../state.js').StateStore} */
 let st;
@@ -18,7 +18,6 @@ let _overlay = null;
 
 /* ── Cached data ─────────────────────────────────────────── */
 
-let _eraMap = null;       // from /api/era-map
 let _unlocksMap = {};     // reverse dependency map
 
 
@@ -55,10 +54,6 @@ async function enter() {
   document.addEventListener('click', _clickHandler);
 
   try {
-    if (!_eraMap) {
-      _eraMap = await rest.getEraMap();
-      _overlay._eraMap = _eraMap;
-    }
     await Promise.all([rest.getSummary(), rest.getItems()]);
     render();
   } catch (err) {
@@ -100,10 +95,22 @@ function _buildUnlocksMap() {
 
 /* ── Layout: topological sort within each era ────────────── */
 
+function _buildKnowledgeGroups() {
+  const catalog = st.items?.catalog || {};
+  const groups = {};
+  for (const era of ERA_KEYS) groups[era] = [];
+  for (const [iid, info] of Object.entries(catalog)) {
+    if (info.item_type !== 'knowledge') continue;
+    const key = ERA_YAML_TO_KEY[info.era] || null;
+    if (key) groups[key].push(iid);
+  }
+  return groups;
+}
+
 function _layoutNodes() {
-  if (!_eraMap) return {};
-  const eras = _eraMap.eras;
-  const knowledgeGroups = _eraMap.knowledge; // {ERA_KEY: [iid, ...]}
+  if (!st.items) return {};
+  const eras = ERA_KEYS;
+  const knowledgeGroups = _buildKnowledgeGroups();
   const catalog = st.items?.catalog || {};
   const result = {};
 
@@ -172,14 +179,14 @@ function _fmtEffects(effects) {
 let _rendered = false;
 
 function render() {
-  if (!_eraMap || !st.items || !st.summary) return;
+  if (!st.items || !st.summary) return;
 
   _unlocksMap = _buildUnlocksMap();
   const layout = _layoutNodes();
 
   const wrap = container.querySelector('#tt-wrap');
-  const eras = _eraMap.eras;
-  const labels = _eraMap.labels_en;
+  const eras = ERA_KEYS;
+  const labels = ERA_LABEL_EN;
   const catalog = st.items.catalog || {};
   const knowledge = st.items.knowledge || {};
 
@@ -214,7 +221,7 @@ function render() {
         if (unlocks.length > 0) {
           unlocksHtml = '<div class="tt-unlocks">' +
             unlocks.map(u =>
-              `<span class="tt-ubadge tt-cat-${u.category}" title="${u.iid}">${u.name}</span>`
+              `<span class="tt-ubadge tt-cat-${u.category}" data-unlock="${u.iid}" title="${u.iid}">${u.name}</span>`
             ).join('') +
           '</div>';
         }
@@ -296,6 +303,8 @@ function _updateStatus() {
   ]);
   const researchQueue = st.summary.research_queue;
 
+  const catalog = st.items?.catalog || {};
+
   container.querySelectorAll('.tt-node').forEach(node => {
     const iid = node.dataset.iid;
     const avail = knowledge[iid];
@@ -317,6 +326,15 @@ function _updateStatus() {
     // Update lock indicator
     const lock = node.querySelector('.tt-node-locked');
     if (lock) lock.style.display = isLocked ? '' : 'none';
+
+    // Update unlock badges: ready (all reqs met if this tech is researched) vs blocked
+    const hypothetical = new Set([...completed, iid]);
+    node.querySelectorAll('.tt-ubadge[data-unlock]').forEach(badge => {
+      const uInfo = catalog[badge.dataset.unlock];
+      const allMet = (uInfo?.requirements || []).every(r => hypothetical.has(r));
+      badge.classList.toggle('tt-ubadge-ready', allMet);
+      badge.classList.toggle('tt-ubadge-blocked', !allMet);
+    });
   });
 }
 

@@ -485,6 +485,10 @@ class RestClient {
     return this._post('/api/army/buy-critter-slot', { aid, wave_number: waveNumber });
   }
 
+  async buyWaveEra(aid, waveNumber) {
+    return this._post('/api/army/buy-wave-era', { aid, wave_number: waveNumber });
+  }
+
   // ── Attack ────────────────────────────────────────────────
 
   /**

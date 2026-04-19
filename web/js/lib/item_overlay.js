@@ -11,8 +11,8 @@
  *   overlay.destroy();                   // cleanup
  */
 
-import { rest } from '../rest.js';
 import { fmtEffort } from './format.js';
+import { ERA_YAML_TO_KEY, ERA_LABEL_EN } from './eras.js';
 
 export class ItemOverlay {
   constructor(state) {
@@ -43,10 +43,8 @@ export class ItemOverlay {
     document.addEventListener('keydown', this._keyHandler);
   }
 
-  /** Fetch era map (cached). */
-  async ensureEraMap() {
-    if (!this._eraMap) this._eraMap = await rest.getEraMap();
-  }
+  /** No-op: era data now comes from item catalog. Kept for call-site compatibility. */
+  async ensureEraMap() {}
 
   /** Build reverse-requirement map from catalog. */
   _unlocksMap() {
@@ -270,13 +268,9 @@ export class ItemOverlay {
   }
 
   _getEraLabel(iid) {
-    if (!this._eraMap) return '';
-    const labels = this._eraMap.labels_en;
-    for (const cat of ['knowledge', 'buildings', 'structures', 'critters']) {
-      for (const [era, iids] of Object.entries(this._eraMap[cat] || {})) {
-        if (iids.includes(iid)) return labels[era] || era;
-      }
-    }
-    return '';
+    const catalog = this._st?.items?.catalog || {};
+    const era = catalog[iid]?.era || '';
+    if (!era) return '';
+    return ERA_LABEL_EN[ERA_YAML_TO_KEY[era]] || era;
   }
 }

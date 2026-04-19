@@ -176,6 +176,7 @@ def _serialize_critter_wave(wave: CritterWave) -> dict[str, Any]:
         "wave_id": wave.wave_id,
         "iid": wave.iid,
         "slots": wave.slots,
+        "max_era": wave.max_era,
         "num_critters_spawned": wave.num_critters_spawned,
         "next_critter_ms": wave.next_critter_ms,
     }

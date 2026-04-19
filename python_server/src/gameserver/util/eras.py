@@ -39,6 +39,12 @@ ERA_YAML_TO_FIELD: dict[str, str] = {
     "industrial": "industrial", "modern": "modern", "future": "diamond",
 }
 
+# Maps item era field value (e.g. "STONE_AGE") → ERA_ORDER index.
+ERA_ITEM_TO_INDEX: dict[str, int] = {
+    "STONE_AGE": 0, "NEOLITHIC": 1, "BRONZE_AGE": 2, "IRON_AGE": 3,
+    "MEDIEVAL": 4, "RENAISSANCE": 5, "INDUSTRIAL": 6, "MODERN": 7, "FUTURE": 8,
+}
+
 # Display labels (German).
 ERA_LABELS_DE: dict[str, str] = {
     "STEINZEIT": "Steinzeit", "NEOLITHIKUM": "Neolithikum",

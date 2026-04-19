@@ -173,6 +173,7 @@ async def handle_item_request(
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
             "image": item.image,
+            "era": item.era,
         }
 
     knowledge = {}
@@ -185,6 +186,7 @@ async def handle_item_request(
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
             "image": item.image,
+            "era": item.era,
         }
 
     # Structures (towers) — available based on research
@@ -203,6 +205,7 @@ async def handle_item_request(
             "sprite": item.sprite,
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
+            "era": item.era,
         }
 
     # Critters — available based on research
@@ -217,6 +220,7 @@ async def handle_item_request(
             "damage": item.critter_damage,
             "slots": item.slots,
             "is_boss": item.is_boss,
+            "era": item.era,
         }
 
     # Full catalog — ALL items regardless of requirements, used by client
@@ -227,6 +231,7 @@ async def handle_item_request(
             "name": item.name,
             "item_type": item.item_type.value,
             "requirements": list(item.requirements),
+            "era": item.era,
         }
         if item.item_type == ItemType.STRUCTURE:
             entry.update({
@@ -302,7 +307,9 @@ async def handle_military_request(
                 "wave_id": wave.wave_id,
                 "iid": wave.iid,
                 "slots": wave.slots,
+                "max_era": wave.max_era,
                 "next_slot_price": round(svc.empire_service._critter_slot_price(wave.slots + 1), 2),
+                "next_era_price": round(svc.empire_service._wave_era_price(wave.max_era + 1), 2),
             })
         
         army_wave_count = len(army.waves)
@@ -322,11 +329,28 @@ async def handle_military_request(
         if remaining <= 0:
             completed.add(iid)
     
+    # Build iid → era_index from knowledge_era_groups so critters can be
+    # matched to their era via their requirements.
+    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
+    _req_to_era_idx: dict[str, int] = {}
+    if svc.empire_service and svc.empire_service._knowledge_era_groups:
+        for era_key, iids in svc.empire_service._knowledge_era_groups.items():
+            idx = _ERA_ORDER.index(era_key) if era_key in _ERA_ORDER else 0
+            for iid in iids:
+                _req_to_era_idx[iid] = idx
+
+    def _critter_era_index(critter) -> int:
+        """Return the era index of a critter based on its highest-era requirement."""
+        if not critter.requirements:
+            return 0
+        return max((_req_to_era_idx.get(req, 0) for req in critter.requirements), default=0)
+
     available_critters = []
     for critter in svc.upgrade_provider.available_critters(completed):
         available_critters.append({
             "iid": critter.iid,
             "name": critter.name,
+            "era_index": _critter_era_index(critter),
             "slots": critter.slots,
             "health": critter.health,
             "armour": critter.armour,
@@ -924,6 +948,24 @@ async def handle_change_wave(
     
     # Change critter type if provided
     if critter_iid:
+        # Validate critter era against wave's max_era using requirement-based lookup
+        if svc.upgrade_provider and svc.empire_service:
+            from gameserver.util.eras import ERA_ORDER as _ERA_ORDER2
+            _req_era: dict[str, int] = {}
+            if svc.empire_service._knowledge_era_groups:
+                for era_key, iids in svc.empire_service._knowledge_era_groups.items():
+                    idx = _ERA_ORDER2.index(era_key) if era_key in _ERA_ORDER2 else 0
+                    for iid in iids:
+                        _req_era[iid] = idx
+            critter_item = svc.upgrade_provider.items.get(critter_iid)
+            if critter_item and critter_item.requirements:
+                critter_era_idx = max((_req_era.get(r, 0) for r in critter_item.requirements), default=0)
+                if critter_era_idx > wave.max_era:
+                    return {
+                        "type": "change_wave_response",
+                        "success": False,
+                        "error": f"Critter era (index {critter_era_idx}) exceeds wave max era (index {wave.max_era})",
+                    }
         wave.iid = critter_iid
         log.info("change_wave: updated wave %d critter type to %s", wave_number, critter_iid)
     
@@ -2159,6 +2201,59 @@ async def handle_buy_critter_slot_request(
     }
 
 
+async def handle_buy_wave_era_request(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Buy an era upgrade for a wave with gold. Max era index is 8 (ZUKUNFT)."""
+    MAX_ERA_INDEX = 8
+    svc = _svc()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+
+    if empire is None:
+        return {"type": "buy_wave_era_response", "success": False, "error": f"No empire found for uid {target_uid}"}
+
+    aid = getattr(message, 'aid', None)
+    wave_number = getattr(message, 'wave_number', None)
+
+    if aid is None or wave_number is None:
+        return {"type": "buy_wave_era_response", "success": False, "error": "Missing aid or wave_number"}
+
+    army = next((a for a in empire.armies if a.aid == aid), None)
+    if army is None:
+        return {"type": "buy_wave_era_response", "success": False, "error": f"Army {aid} not found"}
+
+    if wave_number < 0 or wave_number >= len(army.waves):
+        return {"type": "buy_wave_era_response", "success": False, "error": f"Wave {wave_number} not found"}
+
+    wave = army.waves[wave_number]
+
+    if wave.max_era >= MAX_ERA_INDEX:
+        return {"type": "buy_wave_era_response", "success": False, "error": "Wave already at maximum era"}
+
+    era_price = svc.empire_service._wave_era_price(wave.max_era + 1)
+    current_gold = empire.resources.get('gold', 0.0)
+    if current_gold < era_price:
+        return {"type": "buy_wave_era_response", "success": False, "error": f"Not enough gold (need {era_price:.1f}, have {current_gold:.1f})"}
+
+    empire.resources['gold'] -= era_price
+    old_era = wave.max_era
+    wave.max_era += 1
+
+    next_price = svc.empire_service._wave_era_price(wave.max_era + 1) if wave.max_era < MAX_ERA_INDEX else None
+    log.info(f"Wave era upgraded for army {aid} wave {wave_number} by uid={target_uid}: era {old_era} → {wave.max_era} for {era_price:.1f} gold")
+
+    return {
+        "type": "buy_wave_era_response",
+        "success": True,
+        "aid": aid,
+        "wave_number": wave_number,
+        "new_max_era": wave.max_era,
+        "cost": round(era_price, 2),
+        "next_era_price": round(next_price, 2) if next_price is not None else None,
+    }
+
+
 # ===================================================================
 # Battle (event-based, Java-style architecture)
 # ===================================================================
@@ -2353,7 +2448,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                         loot_def_lines += f"🎭 Culture stolen:    -{culture_stolen:.1f}\n"
                     if knowledge_loot:
                         k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
-                        k_pct  = knowledge_loot.get("pct", 0.0) * 100
+                        k_pct  = knowledge_loot.get("pct", 0.0)
                         loot_atk_lines += f"📚 Stolen knowledge: {k_name} ({k_pct:.0f}%)\n"
                         loot_def_lines += f"📚 Knowledge stolen: {k_name} ({k_pct:.0f}%)\n"
 

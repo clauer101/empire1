@@ -24,6 +24,7 @@ import { hexKey } from '../lib/hex.js';
 import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { debug } from '../debug.js';
+import { ERA_KEYS, ERA_YAML_TO_KEY } from '../lib/eras.js';
 
 // ── Tower era statistics ─────────────────────────────────────
 const _TOWER_ERA = {
@@ -136,19 +137,14 @@ function _tickResources() {
   if (c) c.textContent = '🎭 ' + _fmtTitleResource(culture);
   if (l) l.textContent = '❤ ' + _fmtTitleResource(clampedLife, 1);
 }
-async function _loadStructureEraMap() {
-  try {
-    const resp = await rest.getEraMap();
-    const eras = resp.eras || [];
-    const map  = resp.structures || {};
-    _structureEraRoman = {};
-    for (const [era, iids] of Object.entries(map)) {
-      const idx = eras.indexOf(era);
-      const roman = idx >= 0 ? _ROMAN_NUMERALS[idx] : '';
-      for (const iid of iids) _structureEraRoman[iid.toUpperCase()] = roman;
-    }
-  } catch (e) {
-    console.warn('[defense] era-map load failed:', e);
+function _buildStructureEraRoman() {
+  _structureEraRoman = {};
+  const structures = st.items?.structures || {};
+  for (const [iid, info] of Object.entries(structures)) {
+    const key = ERA_YAML_TO_KEY[info.era] || null;
+    if (!key) continue;
+    const idx = ERA_KEYS.indexOf(key);
+    if (idx >= 0) _structureEraRoman[iid.toUpperCase()] = _ROMAN_NUMERALS[idx];
   }
 }
 
@@ -1070,7 +1066,7 @@ async function enter() {
   }
 
   // Subscribe to items for structure tile types
-  _unsub.push(eventBus.on('state:items', () => { _registerStructureTileTypes(); }));
+  _unsub.push(eventBus.on('state:items', () => { _buildStructureEraRoman(); _registerStructureTileTypes(); }));
   // Reconnect WS when summary changes (e.g. attack becomes active)
   _unsub.push(eventBus.on('state:summary', (data) => {
     if (!_wsConnected) _connectWsIfNeeded();
@@ -1081,11 +1077,12 @@ async function enter() {
 
   // Load items to get structure tiles (via REST)
   try {
-    await Promise.all([rest.getItems(), _loadStructureEraMap()]);
+    await Promise.all([rest.getItems()]);
   } catch (err) {
     console.warn('[Battle] could not load items:', err.message);
   }
 
+  _buildStructureEraRoman();
   _registerStructureTileTypes();
 
   if (_spectateDefenderUid != null) {
