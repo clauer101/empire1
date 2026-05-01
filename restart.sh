@@ -97,6 +97,16 @@ start_gameserver() {
     echo "       State-Datei: $state_file"
     cd "$PYTHON_SERVER_DIR"
 
+    # Load .env from repo root if present
+    local env_file="$SCRIPT_DIR/.env"
+    if [[ -f "$env_file" ]]; then
+        set -a
+        # shellcheck source=/dev/null
+        source "$env_file"
+        set +a
+        echo "       Env: $env_file geladen"
+    fi
+
     PYTHONPATH=src nohup "$VENV" -m "$MODULE" --state_file "$state_file" >> "$LOG" 2>&1 &
     local pid=$!
     echo "$pid" > "$PIDFILE"
