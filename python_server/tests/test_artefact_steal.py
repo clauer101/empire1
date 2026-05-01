@@ -174,3 +174,50 @@ class TestAiAttacker:
 
         assert result is None
         assert battle.attacker.artefacts == ["ART"]
+
+
+# ── Exact roll boundary ───────────────────────────────────────────────────────
+
+class TestExactRoll:
+    """Validate that the random roll is compared correctly against the chance."""
+
+    CHANCE = 0.4
+
+    def _battle_with_artefact(self) -> BattleState:
+        battle = _make_battle(attacker_uid=2, defender_uid=1)
+        battle.defender.artefacts = ["GOLDEN_SHIELD"]
+        return battle
+
+    @patch("random.random")
+    def test_defender_loses_artefact_when_roll_is_below_chance(self, mock_random):
+        mock_random.return_value = self.CHANCE - 0.01  # just below threshold
+        battle = self._battle_with_artefact()
+        svc = _make_svc(victory_chance=self.CHANCE)
+
+        result = _apply_artefact_steal(battle, svc, attacker_won=True)
+
+        assert result == "GOLDEN_SHIELD"
+        assert "GOLDEN_SHIELD" not in battle.defender.artefacts
+        assert "GOLDEN_SHIELD" in battle.attacker.artefacts
+
+    @patch("random.random")
+    def test_defender_keeps_artefact_when_roll_equals_chance(self, mock_random):
+        mock_random.return_value = self.CHANCE  # equal → not strictly less than
+        battle = self._battle_with_artefact()
+        svc = _make_svc(victory_chance=self.CHANCE)
+
+        result = _apply_artefact_steal(battle, svc, attacker_won=True)
+
+        assert result is None
+        assert battle.defender.artefacts == ["GOLDEN_SHIELD"]
+
+    @patch("random.random")
+    def test_defender_keeps_artefact_when_roll_is_above_chance(self, mock_random):
+        mock_random.return_value = self.CHANCE + 0.01  # just above threshold
+        battle = self._battle_with_artefact()
+        svc = _make_svc(victory_chance=self.CHANCE)
+
+        result = _apply_artefact_steal(battle, svc, attacker_won=True)
+
+        assert result is None
+        assert battle.defender.artefacts == ["GOLDEN_SHIELD"]

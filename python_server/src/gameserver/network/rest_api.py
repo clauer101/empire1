@@ -1556,6 +1556,12 @@ def create_app(services: "Services") -> FastAPI:
         finally:
             services.server.unregister_session(adapter)
 
+    # Register web client routes + static file mount (must be last — catch-all)
+    from pathlib import Path as _Path
+    from gameserver.network.web_server import register_web_routes as _reg
+    _web_dir = _Path(__file__).resolve().parent.parent.parent.parent.parent / "web"
+    _reg(app, _web_dir)
+
     log.info("REST API created with %d routes", len(app.routes))
     return app
 

@@ -113,15 +113,15 @@ function _calcPrice(iid) {
   return Math.round(baseCost * Math.pow(totalLevels + 1, 2) * 10) / 10;
 }
 
+// Stats that decrease with level (subtract) and whose def key differs from the stat key.
+const _DECREASING_STATS = { reload: 'reload', slow_value: 'effect_value' };
+
 function _currentValue(baseVal, stat, level, defs) {
   if (!defs || level === 0) return baseVal;
-  const bonusPerLevel = defs[stat] ?? 0;
-  if (stat === 'reload' || stat === 'slow_value') {
-    // reload time decreases, slow_ratio decreases — subtract
-    return baseVal * (1 - bonusPerLevel / 100 * level);
-  }
-  // all stats are percentage multipliers
-  return baseVal * (1 + bonusPerLevel / 100 * level);
+  const defKey = _DECREASING_STATS[stat] ?? stat;
+  const bonusPerLevel = defs[defKey] ?? 0;
+  const sign = stat in _DECREASING_STATS ? -1 : 1;
+  return baseVal * (1 + sign * bonusPerLevel / 100 * level);
 }
 
 function _fmtVal(val) {

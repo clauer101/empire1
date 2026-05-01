@@ -35,7 +35,7 @@ from gameserver.util.army_generator import (
     ERA_BACKEND_TO_INTERNAL,
 )
 
-from battle_sim import build_structures, make_battle, run_battle, tile_type
+from scripts.battle_sim import build_structures, make_battle, run_battle, tile_type
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 

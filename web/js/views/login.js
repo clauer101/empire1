@@ -61,8 +61,10 @@ function init(el, _api, _state) {
 
       <!-- ── Hero ──────────────────────────────── -->
       <div class="lp-hero">
+        <img src="/assets/banner.jpg" alt="Relics &amp; Rockets — Multiplayer Tower Defense Strategy Game"
+             width="1024" height="254" fetchpriority="high">
         <div class="lp-hero__text">
-          <h1 class="lp-title">Conquer the Ages</h1>
+          <h1 class="lp-title">Relics'n'Rockets</h1>
           <p class="lp-tagline">Rise from the Stone Age to the Future.<br>Research, build, defend, and conquer.</p>
           <p class="lp-mmotag">Join hundreds of players — forge alliances, pick your rivals, and leave your mark on a living world.</p>
           <p class="lp-early-access">⚠ Early Access — expect bugs, occasional outages, and frequent updates. Your feedback shapes the game.</p>

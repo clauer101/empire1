@@ -63,7 +63,7 @@ min_lose_knowledge: 0.03
 min_lose_culture: 0.01
 max_lose_culture: 0.05
 base_artifact_steal_victory: 0.5
-base_artifact_steal_defeat: 0.99
+base_artifact_steal_defeat: 0.1
 spy_costs:
   defense: 500
   build_queue: 1000

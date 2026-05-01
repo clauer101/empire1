@@ -335,21 +335,7 @@ async def handle_military_request(
         if remaining <= 0:
             completed.add(iid)
     
-    # Build iid → era_index from knowledge_era_groups so critters can be
-    # matched to their era via their requirements.
-    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
-    _req_to_era_idx: dict[str, int] = {}
-    if svc.empire_service and svc.empire_service._knowledge_era_groups:
-        for era_key, iids in svc.empire_service._knowledge_era_groups.items():
-            idx = _ERA_ORDER.index(era_key) if era_key in _ERA_ORDER else 0
-            for iid in iids:
-                _req_to_era_idx[iid] = idx
-
-    def _critter_era_index(critter) -> int:
-        """Return the era index of a critter based on its highest-era requirement."""
-        if not critter.requirements:
-            return 0
-        return max((_req_to_era_idx.get(req, 0) for req in critter.requirements), default=0)
+    _item_era_index = svc.empire_service._item_era_index
 
     available_critters = []
     for critter in svc.upgrade_provider.available_critters(completed):
@@ -357,7 +343,7 @@ async def handle_military_request(
             "iid": critter.iid,
             "name": critter.name,
             "description": critter.description,
-            "era_index": _critter_era_index(critter),
+            "era_index": _item_era_index.get(critter.iid, 0),
             "slots": critter.slots,
             "health": critter.health,
             "armour": critter.armour,

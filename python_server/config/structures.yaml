@@ -212,7 +212,7 @@ HEAVY_TOWER:
   select: first
   costs: {gold: 55000}
   effects: {}
-  requirements: [IRON, LAWS]
+  requirements: [STEEL, LAWS]
 
 BOILING_OIL:
   era: middle_ages

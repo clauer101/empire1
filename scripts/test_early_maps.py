@@ -20,7 +20,7 @@ from gameserver.engine.battle_service import BattleService
 from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
 from gameserver.models.army import Army, CritterWave
 
-from battle_sim import (
+from scripts.battle_sim import (
     build_structures,
     make_battle,
     run_battle,

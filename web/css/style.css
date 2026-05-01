@@ -770,6 +770,15 @@ label {
   border-bottom: 1px solid var(--border);
   margin-bottom: 40px;
 }
+.lp-hero > img {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: block;
+  margin-inline: auto;
+}
 
 .lp-title {
   font-size: clamp(2.2rem, 5vw, 3.8rem);
