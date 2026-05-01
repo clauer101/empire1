@@ -141,6 +141,38 @@
     button.save-btn:hover { opacity: .85; }
     button.save-btn:disabled { opacity: .4; cursor: default; }
     button.save-btn.gold-btn { background: var(--warning); }
+    button.save-btn.req-btn  { background: var(--purple); }
+
+    /* requirements */
+    .req-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .req-label { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+    .req-pill {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1px 8px 1px 8px; font-size: 11px;
+      font-family: var(--mono); color: var(--text);
+    }
+    .req-pill-del {
+      background: none; border: none; cursor: pointer; color: var(--text-dim);
+      font-size: 13px; line-height: 1; padding: 0 0 0 2px;
+    }
+    .req-pill-del:hover { color: var(--danger); }
+    .req-add-wrap { position: relative; }
+    .req-add-input {
+      background: var(--surface-alt); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 2px 6px; font-size: 11px; font-family: var(--mono);
+      width: 160px; outline: none;
+    }
+    .req-add-input:focus { border-color: var(--purple); }
+    .req-ac-dropdown {
+      position: absolute; top: 100%; left: 0; z-index: 50;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); min-width: 200px; max-height: 180px;
+      overflow-y: auto; display: none; margin-top: 2px;
+    }
+    .req-ac-item { padding: 5px 10px; cursor: pointer; font-size: 11px; font-family: var(--mono); }
+    .req-ac-item:hover, .req-ac-item.active { background: var(--surface-hover); color: var(--accent); }
 
     .gold-input {
       background: var(--surface-alt); color: var(--warning);
@@ -150,6 +182,44 @@
     }
     .gold-input:focus { border-color: var(--warning); }
     .gold-label { color: var(--warning); font-size: 11px; }
+
+    /* effects editor — matches artefacts.html */
+    .effects-section { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .effects-label { color: var(--text-dim); font-size: 11px; }
+    .effect-row { display: flex; align-items: center; gap: 6px; }
+    .effect-key-wrap { position: relative; flex: 1; min-width: 0; }
+    .effect-key {
+      background: var(--surface-alt); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 7px; font-size: 12px; font-family: var(--mono);
+      width: 100%; outline: none;
+    }
+    .effect-key:focus { border-color: var(--purple); }
+    .effect-val {
+      background: var(--surface-alt); color: var(--warning);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 7px; font-size: 12px; font-family: var(--mono);
+      width: 90px; outline: none; text-align: right;
+    }
+    .effect-val:focus { border-color: var(--warning); }
+    .effect-del {
+      background: none; border: none; cursor: pointer; color: var(--text-dim);
+      font-size: 15px; line-height: 1; padding: 0 2px;
+    }
+    .effect-del:hover { color: var(--danger); }
+    .add-effect-btn {
+      background: none; border: 1px dashed var(--border); border-radius: var(--radius);
+      color: var(--text-dim); font-size: 11px; padding: 3px 10px; cursor: pointer; width: fit-content;
+    }
+    .add-effect-btn:hover { border-color: var(--purple); color: var(--purple); }
+    .ac-list {
+      position: absolute; top: 100%; left: 0; z-index: 50;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); min-width: 220px; max-height: 180px;
+      overflow-y: auto; display: none; margin-top: 2px;
+    }
+    .ac-item { padding: 5px 10px; cursor: pointer; font-size: 11px; font-family: var(--mono); }
+    .ac-item:hover, .ac-item.active { background: var(--surface-hover); color: var(--accent); }
 
     /* ── Mobile responsive ── */
     @media (max-width: 700px) {
@@ -176,8 +246,7 @@
 <div id="topbar">
   <h1>Effort Tuner</h1>
   <span id="save-status"></span>
-  <button class="save-btn gold-btn" id="save-gold-btn" disabled>💰 Gold speichern</button>
-  <button class="save-btn" id="save-btn" disabled>Effort speichern</button>
+  <button class="save-btn" id="save-btn" disabled>Save</button>
 </div>
 
 <div style="padding: 10px 20px 0; max-width:1100px; margin: 0 auto;">
@@ -203,6 +272,14 @@ let knowledge = [];
 let _tab = 'buildings';
 let dirty = false;
 let dirtyGold = false;
+let dirtyReqs = false;
+let dirtyEffects = false;
+const reqChanges = {}; // iid → string[]
+const origEffects = {}; // iid → {key:val} snapshot at load time
+
+function allIids() {
+  return [...buildings, ...knowledge].map(i => i.iid);
+}
 
 // ── Speed effect keys ─────────────────────────────────────────
 const BUILD_EFFECTS    = ['build_speed_modifier','build_speed_offset'];
@@ -270,18 +347,61 @@ function setTab(tab) {
 }
 
 // ── Dirty ────────────────────────────────────────────────────
-function markDirty() {
-  dirty = true;
+function _enableSave() {
   document.getElementById('save-btn').disabled = false;
   const st = document.getElementById('save-status');
   st.textContent = ''; st.className = '';
 }
+function markDirty()        { dirty        = true; _enableSave(); }
+function markDirtyGold()    { dirtyGold    = true; _enableSave(); }
+function markDirtyReqs()    { dirtyReqs    = true; _enableSave(); }
+function markDirtyEffects() { dirtyEffects = true; _enableSave(); }
 
-function markDirtyGold() {
-  dirtyGold = true;
-  document.getElementById('save-gold-btn').disabled = false;
-  const st = document.getElementById('save-status');
-  st.textContent = ''; st.className = '';
+const ALL_EFFECT_IDS = [
+  'gold_modifier','gold_offset','culture_modifier','culture_offset',
+  'life_modifier','life_offset','restore_life','max_life_modifier',
+  'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
+  'damage_modifier','range_modifier','reload_modifier',
+  'slow_target','slow_target_duration','burn_target','burn_target_duration',
+  'splash_damage','splash_radius',
+  'speed_modifier','health_modifier','armour_modifier','slot_offset',
+  'travel_offset','siege_offset','restore_life_after_loss_offset',
+  'wave_delay_offset','wave_delay_modifier',
+  'capture_gold','capture_culture','lose_knowledge','lose_artefact',
+  'culture_steal_modifier','knowledge_steal_modifier','spy_disguise_chance',
+];
+
+function attachEffectAc(input, listEl) {
+  function show() {
+    const q = input.value.toLowerCase();
+    const matches = ALL_EFFECT_IDS.filter(id => !q || id.includes(q));
+    if (!matches.length) { listEl.style.display = 'none'; return; }
+    listEl.innerHTML = matches.slice(0, 20).map((id, i) =>
+      `<div class="ac-item" data-idx="${i}">${id}</div>`).join('');
+    listEl.style.display = 'block';
+    listEl.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        input.value = el.textContent;
+        listEl.style.display = 'none';
+        input.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+  input.addEventListener('focus', show);
+  input.addEventListener('input', show);
+  input.addEventListener('blur', () => setTimeout(() => { listEl.style.display = 'none'; }, 150));
+  input.addEventListener('keydown', e => {
+    const its = listEl.querySelectorAll('.ac-item');
+    let active = listEl.querySelector('.ac-item.active');
+    let idx = active ? parseInt(active.dataset.idx) : -1;
+    if (e.key === 'ArrowDown') idx = Math.min(idx + 1, its.length - 1);
+    else if (e.key === 'ArrowUp') idx = Math.max(idx - 1, 0);
+    else if (e.key === 'Enter' && active) { input.value = active.textContent; listEl.style.display = 'none'; input.dispatchEvent(new Event('change')); e.preventDefault(); return; }
+    else if (e.key === 'Escape') { listEl.style.display = 'none'; return; }
+    else return;
+    its.forEach((el, i) => el.classList.toggle('active', i === idx));
+  });
 }
 
 // ── Render ───────────────────────────────────────────────────
@@ -299,7 +419,7 @@ function renderAll() {
     const eraItems = groups[era] || [];
 
     const section = document.createElement('div');
-    section.className = 'era-section';
+    section.className = 'era-section collapsed';
 
     const speedBefore = calcCumulativeSpeed(era, isResearch);
 
@@ -379,12 +499,25 @@ function renderAll() {
           '<input class="gold-input" type="number" min="0" step="1" value="' + goldVal + '" data-iid="' + item.iid + '" />' +
           '<button class="bulk-btn item-gold-btn" data-pct="5" style="color:var(--warning);border-color:var(--warning)">+5%</button>' +
         '</div>';
+      const itemReqs = reqChanges[item.iid] ?? (item.requirements || []).slice();
+      const reqPills = itemReqs.map((r, ri) =>
+        `<span class="req-pill">${r}<button class="req-pill-del" data-iid="${item.iid}" data-ri="${ri}" title="Remove">×</button></span>`
+      ).join('');
+
       row.innerHTML = `
         <div class="item-main">
           <div class="item-top">
             <span class="item-name">${item.name}</span>
             <span class="item-iid">${item.iid}</span>
             ${badges.join('')}
+          </div>
+          <div class="req-row">
+            <span class="req-label">Requires:</span>
+            <span class="req-pills">${reqPills}</span>
+            <div class="req-add-wrap">
+              <input class="req-add-input" placeholder="Add requirement…" data-iid="${item.iid}" autocomplete="off" />
+              <div class="req-ac-dropdown"></div>
+            </div>
           </div>
           <div class="effort-row">
             <span class="effort-label">Effort:</span>
@@ -394,6 +527,11 @@ function renderAll() {
             <span class="effort-label">${fmtTime(item.effort / speedBefore)} @ ${speedBefore.toFixed(2)}x</span>
           </div>
           ${goldRow}
+          <div class="effects-section">
+            <div class="effects-label">Effects</div>
+            <div class="effects-rows"></div>
+            <button class="add-effect-btn">+ Add effect</button>
+          </div>
         </div>
         <button class="item-detail-btn" title="Zeitschätzung">⏱</button>
       `;
@@ -431,6 +569,140 @@ function renderAll() {
           goldInput.value = next;
           markDirtyGold();
         });
+      });
+
+      function _refreshReqPills(iid, reqs) {
+        const pillsSpan = row.querySelector('.req-pills');
+        if (!pillsSpan) return;
+        pillsSpan.innerHTML = reqs.map((r, ri) =>
+          `<span class="req-pill">${r}<button class="req-pill-del" data-iid="${iid}" data-ri="${ri}" title="Remove">×</button></span>`
+        ).join('');
+        pillsSpan.querySelectorAll('.req-pill-del').forEach(b => {
+          b.addEventListener('click', () => {
+            const cur = reqChanges[b.dataset.iid] ?? (items.find(i => i.iid === b.dataset.iid)?.requirements || []).slice();
+            cur.splice(parseInt(b.dataset.ri), 1);
+            reqChanges[b.dataset.iid] = cur;
+            markDirtyReqs();
+            _refreshReqPills(b.dataset.iid, cur);
+          });
+        });
+      }
+
+      // Requirements: delete pills
+      row.querySelectorAll('.req-pill-del').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const iid = btn.dataset.iid;
+          const ri  = parseInt(btn.dataset.ri);
+          const cur = reqChanges[iid] ?? (items.find(i => i.iid === iid)?.requirements || []).slice();
+          cur.splice(ri, 1);
+          reqChanges[iid] = cur;
+          markDirtyReqs();
+          _refreshReqPills(iid, cur);
+        });
+      });
+
+      // Requirements: autocomplete add input
+      const reqInput = row.querySelector('.req-add-input');
+      const reqDrop  = row.querySelector('.req-ac-dropdown');
+      let _reqActive = -1, _reqFiltered = [];
+
+      function _reqRender(items) {
+        _reqFiltered = items; _reqActive = -1;
+        if (!items.length) { reqDrop.style.display = 'none'; return; }
+        reqDrop.innerHTML = items.slice(0, 15).map((id, i) =>
+          `<div class="req-ac-item" data-idx="${i}">${id}</div>`
+        ).join('');
+        reqDrop.style.display = 'block';
+        reqDrop.querySelectorAll('.req-ac-item').forEach(el => {
+          el.addEventListener('mousedown', ev => {
+            ev.preventDefault();
+            _reqSelect(parseInt(el.dataset.idx));
+          });
+        });
+      }
+
+      function _reqSelect(idx) {
+        const chosen = _reqFiltered[idx];
+        if (!chosen) return;
+        const iid = reqInput.dataset.iid;
+        const cur = reqChanges[iid] ?? (items.find(i => i.iid === iid)?.requirements || []).slice();
+        if (!cur.includes(chosen)) { cur.push(chosen); reqChanges[iid] = cur; markDirtyReqs(); _refreshReqPills(iid, cur); }
+        reqInput.value = '';
+        reqDrop.style.display = 'none';
+      }
+
+      reqInput.addEventListener('input', () => {
+        const q = reqInput.value.trim().toLowerCase();
+        if (!q) { reqDrop.style.display = 'none'; return; }
+        const iid = reqInput.dataset.iid;
+        const cur = reqChanges[iid] ?? (items.find(i => i.iid === iid)?.requirements || []);
+        const matches = allIids().filter(id => id !== iid && !cur.includes(id) && id.toLowerCase().includes(q));
+        _reqRender(matches);
+      });
+
+      reqInput.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') { _reqActive = Math.min(_reqActive + 1, _reqFiltered.length - 1); }
+        else if (e.key === 'ArrowUp') { _reqActive = Math.max(_reqActive - 1, 0); }
+        else if (e.key === 'Enter') { if (_reqActive >= 0) _reqSelect(_reqActive); else if (_reqFiltered.length === 1) _reqSelect(0); }
+        else if (e.key === 'Escape') { reqDrop.style.display = 'none'; }
+        else return;
+        reqDrop.querySelectorAll('.req-ac-item').forEach((el, i) => el.classList.toggle('active', i === _reqActive));
+      });
+
+      reqInput.addEventListener('blur', () => setTimeout(() => { reqDrop.style.display = 'none'; }, 150));
+
+      // Effects — same pattern as artefacts.html
+      if (!item.effects) item.effects = {};
+      if (!origEffects[item.iid]) origEffects[item.iid] = { ...item.effects };
+
+      const effectsRows = row.querySelector('.effects-rows');
+
+      function renderEffects() {
+        effectsRows.innerHTML = '';
+        Object.entries(item.effects).forEach(([key, val]) => {
+          const eRow = document.createElement('div');
+          eRow.className = 'effect-row';
+          eRow.innerHTML = `
+            <div class="effect-key-wrap">
+              <input class="effect-key" value="${key}" placeholder="effect_id" />
+              <div class="ac-list"></div>
+            </div>
+            <input class="effect-val" type="number" step="0.01" value="${val}" />
+            <button class="effect-del" title="Remove">×</button>`;
+          const keyInput = eRow.querySelector('.effect-key');
+          const valInput = eRow.querySelector('.effect-val');
+          attachEffectAc(keyInput, eRow.querySelector('.ac-list'));
+          keyInput.addEventListener('change', () => {
+            const newKey = keyInput.value.trim();
+            if (newKey && newKey !== key) {
+              item.effects[newKey] = item.effects[key];
+              delete item.effects[key];
+              key = newKey;
+              markDirtyEffects();
+            }
+          });
+          valInput.addEventListener('input', () => {
+            item.effects[key] = parseFloat(valInput.value) || 0;
+            markDirtyEffects();
+          });
+          eRow.querySelector('.effect-del').addEventListener('click', () => {
+            delete item.effects[key];
+            markDirtyEffects();
+            renderEffects();
+          });
+          effectsRows.appendChild(eRow);
+        });
+      }
+
+      renderEffects();
+
+      row.querySelector('.add-effect-btn').addEventListener('click', () => {
+        let newKey = 'effect_id'; let n = 1;
+        while (item.effects[newKey] !== undefined) newKey = `effect_id_${n++}`;
+        item.effects[newKey] = 0;
+        markDirtyEffects();
+        renderEffects();
+        effectsRows.querySelectorAll('.effect-key').forEach((inp, i, arr) => { if (i === arr.length - 1) inp.focus(); });
       });
 
       // Detail panel
@@ -489,51 +761,80 @@ function buildDetailHTML(item, era, isResearch) {
   `;
 }
 
-// ── Save Effort ──────────────────────────────────────────────
+// ── Save All ─────────────────────────────────────────────────
 document.getElementById('save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('save-btn');
   const st  = document.getElementById('save-status');
-  btn.disabled = true; st.textContent = 'Speichert…'; st.className = '';
-  try {
-    const items = _tab === 'buildings' ? buildings : knowledge;
-    const updates = {};
-    items.forEach(it => { updates[it.iid] = it.effort; });
-    const endpoint = _tab === 'buildings' ? '/api/buildings' : '/api/knowledge';
-    const r = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    const data = await r.json();
-    if (data.success) { st.textContent = 'Effort gespeichert!'; st.className = 'ok'; dirty = false; }
-    else throw new Error(data.error || 'Fehler');
-  } catch (e) {
-    st.textContent = `Fehler: ${e.message}`; st.className = 'err';
-    btn.disabled = false;
-  }
-  setTimeout(() => { st.textContent = ''; st.className = ''; }, 3000);
-});
+  btn.disabled = true; st.textContent = 'Saving…'; st.className = '';
+  const errors = [];
 
-// ── Save Gold ────────────────────────────────────────────────
-document.getElementById('save-gold-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('save-gold-btn');
-  const st  = document.getElementById('save-status');
-  btn.disabled = true; st.textContent = 'Speichert Gold…'; st.className = '';
   try {
-    const items = _tab === 'buildings' ? buildings : knowledge;
-    const updates = {};
-    items.forEach(it => { updates[it.iid] = it.costs?.gold ?? 0; });
-    const endpoint = _tab === 'buildings' ? '/api/buildings-gold' : '/api/knowledge-gold';
-    const r = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    const data = await r.json();
-    if (data.success) { st.textContent = '💰 Gold gespeichert!'; st.className = 'ok'; dirtyGold = false; }
-    else throw new Error(data.error || data.detail || `HTTP ${r.status}`);
+    if (dirty) {
+      const items = _tab === 'buildings' ? buildings : knowledge;
+      const updates = {};
+      items.forEach(it => { updates[it.iid] = it.effort; });
+      const endpoint = _tab === 'buildings' ? '/api/buildings' : '/api/knowledge';
+      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+      const data = await r.json();
+      if (data.success) dirty = false; else errors.push(data.error || 'Effort save failed');
+    }
+
+    if (dirtyGold) {
+      const items = _tab === 'buildings' ? buildings : knowledge;
+      const updates = {};
+      items.forEach(it => { updates[it.iid] = it.costs?.gold ?? 0; });
+      const endpoint = _tab === 'buildings' ? '/api/buildings-gold' : '/api/knowledge-gold';
+      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+      const data = await r.json();
+      if (data.success) dirtyGold = false; else errors.push(data.error || 'Gold save failed');
+    }
+
+    if (dirtyReqs) {
+      const entries = Object.entries(reqChanges);
+      await Promise.all(entries.map(([iid, requirements]) =>
+        fetch('/api/item-requirements', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [iid]: requirements }) }).then(r => r.json())
+      ));
+      const allItems = [...buildings, ...knowledge];
+      entries.forEach(([iid, reqs]) => { const it = allItems.find(i => i.iid === iid); if (it) it.requirements = reqs; delete reqChanges[iid]; });
+      dirtyReqs = false;
+    }
+
+    if (dirtyEffects) {
+      const patchEp  = _tab === 'buildings' ? '/api/building-effects'        : '/api/knowledge-effects';
+      const addEp    = _tab === 'buildings' ? '/api/building-effects'        : '/api/knowledge-effects';
+      const removeEp = _tab === 'buildings' ? '/api/building-effects/remove' : '/api/knowledge-effects/remove';
+      const allItems = _tab === 'buildings' ? buildings : knowledge;
+      const ops = [];
+      const patchBatch = {};
+      for (const item of allItems) {
+        const orig = origEffects[item.iid] || {};
+        const cur  = item.effects || {};
+        // removed keys
+        for (const k of Object.keys(orig))
+          if (!(k in cur))
+            ops.push(fetch(removeEp, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ iid: item.iid, effect: k }) }));
+        // added keys
+        for (const [k, v] of Object.entries(cur))
+          if (!(k in orig))
+            ops.push(fetch(addEp, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ iid: item.iid, effect: k, value: v }) }));
+        // changed values
+        const changed = {};
+        for (const [k, v] of Object.entries(cur))
+          if (k in orig && orig[k] !== v) changed[k] = v;
+        if (Object.keys(changed).length) patchBatch[item.iid] = changed;
+      }
+      if (Object.keys(patchBatch).length)
+        ops.push(fetch(patchEp, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(patchBatch) }));
+      await Promise.all(ops);
+      // update snapshots
+      for (const item of allItems) origEffects[item.iid] = { ...(item.effects || {}) };
+      dirtyEffects = false;
+    }
+
+    if (errors.length) throw new Error(errors.join('; '));
+    st.textContent = '✓ Saved'; st.className = 'ok';
   } catch (e) {
-    st.textContent = `Fehler: ${e.message}`; st.className = 'err';
+    st.textContent = `Error: ${e.message}`; st.className = 'err';
     btn.disabled = false;
   }
   setTimeout(() => { st.textContent = ''; st.className = ''; }, 3000);
@@ -550,6 +851,7 @@ document.getElementById('save-gold-btn').addEventListener('click', async () => {
     ERA_ORDER = eraMapData.eras || [];
     buildings = bRes;
     knowledge = kRes;
+    [...buildings, ...knowledge].forEach(it => { origEffects[it.iid] = { ...(it.effects || {}) }; });
     document.getElementById('loading').remove();
     renderAll();
   } catch (e) {

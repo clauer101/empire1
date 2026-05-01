@@ -33,45 +33,32 @@ STRUCTURES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "s
 
 _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
 
+# ERA_PATTERNS kept only for ai_waves.yaml which has no per-entry era fields
 _ERA_PATTERNS = [
-    ("Steinzeit",          re.compile(r'#\s+STEINZEIT')),
-    ("Neolithikum",        re.compile(r'#\s+NEOLITHIKUM')),
-    ("Bronzezeit",         re.compile(r'#\s+BRONZEZEIT')),
-    ("Eisenzeit",          re.compile(r'#\s+EISENZEIT')),
-    ("Mittelalter",        re.compile(r'#\s+MITTELALTER')),
-    ("Renaissance",        re.compile(r'#\s+RENAISSANCE')),
-    ("Industrialisierung", re.compile(r'#\s+INDUSTRIALIS')),
-    ("Moderne",            re.compile(r'#\s+MODERNE')),
-    ("Zukunft",            re.compile(r'#\s+ZUKUNFT')),
+    ("stone",        re.compile(r'#\s+STEINZEIT')),
+    ("neolithic",    re.compile(r'#\s+NEOLITHIKUM')),
+    ("bronze",       re.compile(r'#\s+BRONZEZEIT')),
+    ("iron",         re.compile(r'#\s+EISENZEIT')),
+    ("middle_ages",  re.compile(r'#\s+MITTELALTER')),
+    ("renaissance",  re.compile(r'#\s+RENAISSANCE')),
+    ("industrial",   re.compile(r'#\s+INDUSTRIALIS')),
+    ("modern",       re.compile(r'#\s+MODERNE')),
+    ("future",       re.compile(r'#\s+ZUKUNFT')),
 ]
 
 _ERA_INFO = {
-    "Steinzeit":          "Effort 20 – 1.500",
-    "Neolithikum":        "Effort 800 – 7.500",
-    "Bronzezeit":         "Effort 2.500 – 8.000",
-    "Eisenzeit":          "Effort 8.000 – 30.000",
-    "Mittelalter":        "Effort 28.000 – 130.000",
-    "Renaissance":        "Effort 100.000 – 500.000",
-    "Industrialisierung": "Effort 500.000 – 2.000.000",
-    "Moderne":            "Effort 2.000.000 – 5.300.000",
-    "Zukunft":            "Effort 40.000.000 – 100.000.000",
+    "stone":        "Effort 20 – 1.500",
+    "neolithic":    "Effort 800 – 7.500",
+    "bronze":       "Effort 2.500 – 8.000",
+    "iron":         "Effort 8.000 – 30.000",
+    "middle_ages":  "Effort 28.000 – 130.000",
+    "renaissance":  "Effort 100.000 – 500.000",
+    "industrial":   "Effort 500.000 – 2.000.000",
+    "modern":       "Effort 2.000.000 – 5.300.000",
+    "future":       "Effort 40.000.000 – 100.000.000",
 }
 
 _ERA_ORDER = list(_ERA_INFO.keys())
-
-# Maps German display names → English internal keys (used in game.yaml)
-_ERA_TO_INTERNAL = {
-    "Steinzeit":          "stone",
-    "Neolithikum":        "neolithicum",
-    "Bronzezeit":         "bronze",
-    "Eisenzeit":          "iron",
-    "Mittelalter":        "middle_ages",
-    "Renaissance":        "rennaissance",
-    "Industrialisierung": "industrial",
-    "Moderne":            "modern",
-    "Zukunft":            "future",
-}
-_INTERNAL_TO_ERA = {v: k for k, v in _ERA_TO_INTERNAL.items()}
 
 
 def _parse_ai_waves():
@@ -80,7 +67,7 @@ def _parse_ai_waves():
     data = yaml.safe_load(raw)
     waves = data.get("armies", [])
 
-    current_era = "Steinzeit"
+    current_era = "stone"
     wave_eras: list[str] = []
     for line in raw.split("\n"):
         for era_name, pattern in _ERA_PATTERNS:
@@ -92,23 +79,21 @@ def _parse_ai_waves():
 
     result = []
     for i, wave in enumerate(waves):
-        era = wave_eras[i] if i < len(wave_eras) else "Unbekannt"
+        era = wave_eras[i] if i < len(wave_eras) else "stone"
         result.append({**wave, "era": era})
     return result
 
 
 def _parse_yaml_era_groups(path: Path) -> dict[str, list[str]]:
-    """Parse a YAML file's era section comments → {era_name: [iid, ...]}."""
+    """Build {era_name: [iid, ...]} from explicit era: fields in a YAML file."""
     result: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
-    current_era = _ERA_ORDER[0]
-    for line in path.read_text(encoding="utf-8").split("\n"):
-        for era_name, pattern in _ERA_PATTERNS:
-            if pattern.search(line):
-                current_era = era_name
-                break
-        m = _ITEM_IID_RE.match(line)
-        if m:
-            result[current_era].append(m.group(1))
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        era = item.get("era", _ERA_ORDER[0])
+        if era in result:
+            result[era].append(iid)
     return result
 
 
@@ -183,16 +168,24 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
     # Group by era, preserving insertion order
     groups: dict[str, list] = {}
     for w in waves_with_era:
-        era = w.get("era", "Unbekannt")
+        era = w.get("era", "stone")
         groups.setdefault(era, []).append(w)
+
+    # Map lowercase English era keys → YAML comment markers used in ai_waves.yaml
+    _ERA_COMMENT_KEY = {
+        "stone": "STEINZEIT", "neolithic": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
+        "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "renaissance": "RENAISSANCE",
+        "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
+    }
 
     lines = [header]
     for era in _ERA_ORDER:
         if era not in groups:
             continue
         info = _ERA_INFO.get(era, "")
+        comment_key = _ERA_COMMENT_KEY.get(era, era.upper())
         lines.append(f"  # {'─' * 58}")
-        lines.append(f"  #   {era.upper()}  ({info})")
+        lines.append(f"  #   {comment_key}  ({info})")
         lines.append(f"  # {'─' * 58}")
         lines.append("")
         for w in groups[era]:
@@ -349,32 +342,21 @@ async def save_prices(request: Request):
 
 @app.get("/api/ai-generator")
 async def get_ai_generator():
-    """Return the ai_generator section from game.yaml, keyed by German display names."""
+    """Return the ai_generator section from game.yaml, keyed by lowercase English era keys."""
     try:
         raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
-        stored = raw.get("ai_generator", {})
-        # Re-key from English internal names to German display names for the client
-        result = {}
-        for key, val in stored.items():
-            display = _INTERNAL_TO_ERA.get(key, key)
-            result[display] = val
-        return JSONResponse(result)
+        return JSONResponse(raw.get("ai_generator", {}))
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
 @app.post("/api/ai-generator")
 async def save_ai_generator(request: Request):
-    """Update the ai_generator section in game.yaml using English internal keys."""
+    """Update the ai_generator section in game.yaml."""
     try:
         data = await request.json()
-        # Convert German display names → English internal keys
-        converted = {}
-        for display_name, val in data.items():
-            internal = _ERA_TO_INTERNAL.get(display_name, display_name)
-            converted[internal] = val
         raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
-        raw["ai_generator"] = converted
+        raw["ai_generator"] = data
         GAME_CONFIG_PATH.write_text(
             yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
             encoding="utf-8",
@@ -392,19 +374,17 @@ from gameserver.util.army_generator import (
     generate_army as _gen_army,
     parse_critter_era_groups as _parse_critter_era_groups,
     parse_slot_by_iid as _parse_slot_by_iid,
-    ERA_DE_TO_INTERNAL as _ERA_DE_TO_INTERNAL,
 )
 
 
 def _generate_army(era: str, seed: int) -> dict:
-    """Generate an AI army for *era* (German display name) using the shared generator."""
+    """Generate an AI army for *era* (lowercase English era key) using the shared generator."""
     raw_cfg = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
     ai_generator_cfg = raw_cfg.get("ai_generator", {})
-    era_internal = _ERA_DE_TO_INTERNAL.get(era, era)
     critter_era_groups = _parse_critter_era_groups(CRITTERS_PATH)
     slot_by_iid = _parse_slot_by_iid(CRITTERS_PATH)
     result = _gen_army(
-        era_internal=era_internal,
+        era_internal=era,
         ai_generator_cfg=ai_generator_cfg,
         critter_era_groups=critter_era_groups,
         slot_by_iid=slot_by_iid,
@@ -426,25 +406,14 @@ async def generate_ai_army(era: str, seed: int):
 
 def _parse_items_full(path: Path) -> list[dict]:
     """Parse buildings/knowledge YAML → list of items annotated with era."""
-    raw = path.read_text(encoding="utf-8")
-    data = yaml.safe_load(raw) or {}
-    iid_to_era: dict[str, str] = {}
-    current_era = "Steinzeit"
-    for line in raw.split("\n"):
-        for era_name, pattern in _ERA_PATTERNS:
-            if pattern.search(line):
-                current_era = era_name
-                break
-        m = _ITEM_IID_RE.match(line)
-        if m:
-            iid_to_era[m.group(1)] = current_era
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     result = []
     for iid, item in data.items():
         if not isinstance(item, dict):
             continue
         result.append({
             "iid": iid,
-            "era": iid_to_era.get(iid, "Steinzeit"),
+            "era": item.get("era", "stone"),
             "name": item.get("name", iid),
             "effort": item.get("effort", 0),
             "costs": item.get("costs", {}),
@@ -593,25 +562,14 @@ def _resolve_sprite(animation: str) -> str:
 
 def _parse_critters(path: Path) -> list[dict]:
     """Parse critters.yaml → list of critter stats annotated with era."""
-    raw = path.read_text(encoding="utf-8")
-    data = yaml.safe_load(raw) or {}
-    iid_to_era: dict[str, str] = {}
-    current_era = "Steinzeit"
-    for line in raw.split("\n"):
-        for era_name, pattern in _ERA_PATTERNS:
-            if pattern.search(line):
-                current_era = era_name
-                break
-        m = _ITEM_IID_RE.match(line)
-        if m:
-            iid_to_era[m.group(1)] = current_era
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     result = []
     for iid, item in data.items():
         if not isinstance(item, dict):
             continue
         animation = item.get("animation", "")
         result.append({
-            "iid": iid, "era": iid_to_era.get(iid, "Steinzeit"),
+            "iid": iid, "era": item.get("era", "stone"),
             "name": item.get("name", iid),
             "speed": item.get("speed", 0), "health": item.get("health", 1),
             "value": item.get("value", 0), "damage": item.get("damage", 1),
@@ -629,24 +587,13 @@ def _parse_critters(path: Path) -> list[dict]:
 
 def _parse_structures(path: Path) -> list[dict]:
     """Parse structures.yaml → list of tower stats annotated with era."""
-    raw = path.read_text(encoding="utf-8")
-    data = yaml.safe_load(raw) or {}
-    iid_to_era: dict[str, str] = {}
-    current_era = "Steinzeit"
-    for line in raw.split("\n"):
-        for era_name, pattern in _ERA_PATTERNS:
-            if pattern.search(line):
-                current_era = era_name
-                break
-        m = _ITEM_IID_RE.match(line)
-        if m:
-            iid_to_era[m.group(1)] = current_era
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     result = []
     for iid, item in data.items():
         if not isinstance(item, dict):
             continue
         result.append({
-            "iid": iid, "era": iid_to_era.get(iid, "Steinzeit"),
+            "iid": iid, "era": item.get("era", "stone"),
             "name": item.get("name", iid),
             "damage": item.get("damage", 0), "range": item.get("range", 1),
             "reload_time": item.get("reload_time", 2000),
@@ -739,6 +686,54 @@ def _patch_yaml_inplace(path: Path, changes: dict) -> None:
 async def patch_critter_stats(changes: dict = Body(...)):
     """Update critters.yaml in-place. Body: { IID: { field: value } }"""
     _patch_yaml_inplace(CRITTERS_PATH, changes)
+    return {"ok": True}
+
+
+def _set_era_field_in_yaml(path: Path, iid: str, era: str) -> None:
+    """Add or update the `era:` field for a critter entry in YAML.
+
+    If the field already exists in the block, replaces it.
+    Otherwise inserts it as the first indented field after the IID: line.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+
+    # Find start of IID block and end of block
+    start = None
+    next_start = None
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            if m.group(1) == iid:
+                start = i
+            elif start is not None:
+                next_start = i
+                break
+    if start is None:
+        return
+    end = next_start if next_start is not None else len(lines)
+
+    era_re = re.compile(r'^(\s+era:\s*).*$')
+    for j in range(start + 1, end):
+        m = era_re.match(lines[j].rstrip("\r\n"))
+        if m:
+            eol = "\n" if lines[j].endswith("\n") else ""
+            lines[j] = m.group(1) + era + eol
+            path.write_text("".join(lines), encoding="utf-8")
+            return
+
+    # Field not found — insert after IID: line
+    indent = "  "
+    eol = "\n" if lines[start].endswith("\n") else ""
+    lines.insert(start + 1, f"{indent}era: {era}\n")
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+@app.patch("/api/critter-era")
+async def patch_critter_era(changes: dict = Body(...)):
+    """Set era for critters. Body: { IID: 'Eisenzeit', ... }"""
+    for iid, era in changes.items():
+        _set_era_field_in_yaml(CRITTERS_PATH, str(iid), str(era))
     return {"ok": True}
 
 
@@ -884,6 +879,57 @@ async def remove_knowledge_effect(body: dict = Body(...)):
     return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
 
+def _patch_requirements_in_yaml(path: Path, iid: str, new_reqs: list[str]) -> bool:
+    """Replace the requirements list for *iid* in a YAML file."""
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+    key_positions: dict[str, int] = {}
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            key_positions[m.group(1)] = i
+    if iid not in key_positions:
+        return False
+    start = key_positions[iid]
+    sorted_pos = sorted(key_positions.values())
+    end = next((p for p in sorted_pos if p > start), len(lines))
+    req_re = re.compile(r'^(\s+requirements:\s*).*$')
+    new_val = "[" + ", ".join(new_reqs) + "]" if new_reqs else "[]"
+    for j in range(start + 1, end):
+        m = req_re.match(lines[j].rstrip("\r\n"))
+        if m:
+            lines[j] = m.group(1) + new_val + "\n"
+            path.write_text("".join(lines), encoding="utf-8")
+            return True
+    # requirements line not found — insert after the item key line
+    indent = "  "
+    lines.insert(start + 1, f"{indent}requirements: {new_val}\n")
+    path.write_text("".join(lines), encoding="utf-8")
+    return True
+
+
+@app.patch("/api/item-requirements")
+async def patch_item_requirements(body: dict = Body(...)):
+    """Set requirements list for items in buildings.yaml or knowledge.yaml.
+    Body: { IID: [req1, req2, ...] }  — type auto-detected from which YAML contains the IID.
+    """
+    results = {}
+    yaml_files = [BUILDINGS_PATH, KNOWLEDGE_PATH, CRITTERS_PATH, STRUCTURES_PATH]
+    raw_by_path = {p: yaml.safe_load(p.read_text(encoding="utf-8")) or {} for p in yaml_files}
+    for iid, reqs in body.items():
+        if not isinstance(reqs, list):
+            results[iid] = "error: reqs must be a list"
+            continue
+        reqs = [str(r).strip().upper() for r in reqs if str(r).strip()]
+        target = next((p for p, raw in raw_by_path.items() if iid in raw), None)
+        if target is None:
+            results[iid] = "not found"
+            continue
+        ok = _patch_requirements_in_yaml(target, iid, reqs)
+        results[iid] = "ok" if ok else "error"
+    return {"results": results}
+
+
 @app.patch("/api/tower-effects/{iid}")
 async def patch_tower_effects(iid: str, body: dict = Body(...)):
     """Replace the entire effects dict for a tower in structures.yaml, preserving inline comments."""
@@ -909,6 +955,51 @@ async def patch_tower_effects(iid: str, body: dict = Body(...)):
             STRUCTURES_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
             return JSONResponse({"ok": True})
     return JSONResponse({"error": "effects line not found"}, status_code=500)
+
+
+ARTEFACTS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "artefacts.yaml"
+
+
+@app.get("/api/artefacts")
+async def get_artefacts():
+    """Return all artefacts from artefacts.yaml."""
+    try:
+        raw = yaml.safe_load(ARTEFACTS_PATH.read_text(encoding="utf-8")) or {}
+        result = []
+        for iid, data in raw.items():
+            if isinstance(data, dict):
+                result.append({
+                    "iid": iid,
+                    "name": data.get("name", ""),
+                    "description": data.get("description", ""),
+                    "type": data.get("type", ""),
+                    "effects": data.get("effects") or {},
+                })
+        return JSONResponse(result)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/artefacts")
+async def save_artefacts(request: Request):
+    """Save full artefacts list to artefacts.yaml."""
+    try:
+        items = await request.json()
+        raw = {}
+        for item in items:
+            iid = item["iid"].strip().upper().replace(" ", "_")
+            raw[iid] = {
+                "name": item.get("name", ""),
+                "description": item.get("description", ""),
+                "type": item.get("type", ""),
+                "effects": item.get("effects") or {},
+            }
+        header = "# Artefact definitions (collectible passive effect items)\n# effects: passive bonuses while the artefact is owned\n# description: flavour text\n\n"
+        body = yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        ARTEFACTS_PATH.write_text(header + body, encoding="utf-8")
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
 
 
 @app.get("/api/admin/catalog")
@@ -1032,32 +1123,14 @@ def _get_map_power_upgrades():
 
 def _get_structure_era_map() -> dict[str, str]:
     """Return {iid: era_label_en} for all structures, parsed from structures.yaml."""
-    import re
     from gameserver.util.eras import ERA_LABELS_EN
     CONFIG_DIR = Path(__file__).resolve().parent.parent / "python_server" / "config"
-    patterns = [
-        ("STEINZEIT",          re.compile(r'#\s+STEINZEIT')),
-        ("NEOLITHIKUM",        re.compile(r'#\s+NEOLITHIKUM')),
-        ("BRONZEZEIT",         re.compile(r'#\s+BRONZEZEIT')),
-        ("EISENZEIT",          re.compile(r'#\s+EISENZEIT')),
-        ("MITTELALTER",        re.compile(r'#\s+MITTELALTER')),
-        ("RENAISSANCE",        re.compile(r'#\s+RENAISSANCE')),
-        ("INDUSTRIALISIERUNG", re.compile(r'#\s+INDUSTRIALIS')),
-        ("MODERNE",            re.compile(r'#\s+MODERNE')),
-        ("ZUKUNFT",            re.compile(r'#\s+ZUKUNFT')),
-    ]
-    iid_re = re.compile(r'^([A-Z][A-Z0-9_]+):')
+    data = yaml.safe_load((CONFIG_DIR / "structures.yaml").read_text(encoding="utf-8")) or {}
     result: dict[str, str] = {}
-    current_era = "STEINZEIT"
-    for line in (CONFIG_DIR / "structures.yaml").read_text(encoding="utf-8").splitlines():
-        for key, pat in patterns:
-            if pat.search(line):
-                current_era = key
-                break
-        m = iid_re.match(line)
-        if m:
-            label = ERA_LABELS_EN.get(current_era, current_era)
-            result[m.group(1)] = label
+    for iid, item in data.items():
+        if isinstance(item, dict):
+            era = item.get("era", "stone")
+            result[iid] = ERA_LABELS_EN.get(era, era)
     return result
 
 _structure_era_map: dict[str, str] | None = None

@@ -12,6 +12,7 @@
 # ============================================================
 
 BASIC_TOWER:
+  era: stone
   name: "Basic Tower"
   sprite: "assets/sprites/structures/basic_tower/basic_tower.webp"
   damage: 1
@@ -28,6 +29,7 @@ BASIC_TOWER:
   requirements: [HUNTING]
 
 SLING_TOWER:
+  era: stone
   name: "Sling Tower"
   sprite: "assets/sprites/structures/sling_tower/sling_tower.webp"
   damage: 1
@@ -48,6 +50,7 @@ SLING_TOWER:
 # ============================================================
 
 DOUBLE_SLING_TOWER:
+  era: neolithic
   name: "Double Sling Tower"
   sprite: "assets/sprites/structures/double_sling_tower/double_sling_tower.webp"
   damage: 2
@@ -64,6 +67,7 @@ DOUBLE_SLING_TOWER:
   requirements: [CRAFTSMANSHIP, EARTH_WALL]
 
 SPIKE_TRAP:
+  era: neolithic
   name: "Spike Trap"
   sprite: "assets/sprites/structures/spike_trap/spike_trap.webp"
   damage: 2
@@ -84,6 +88,7 @@ SPIKE_TRAP:
 # ============================================================
 
 ARROW_TOWER:
+  era: bronze
   name: "Arrow Tower"
   sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
   damage: 5
@@ -100,6 +105,7 @@ ARROW_TOWER:
   requirements: [BOW_MAKER]
 
 BALLISTA_TOWER:
+  era: bronze
   name: "Ballista Tower"
   sprite: "assets/sprites/structures/ballista_tower/ballista_tower.webp"
   damage: 8
@@ -116,6 +122,7 @@ BALLISTA_TOWER:
   requirements: [WATCH_TOWER]
 
 FIRE_TOWER:
+  era: bronze
   name: "Fire Tower"
   sprite: "assets/sprites/structures/fire_tower/fire_tower.webp"
   damage: 3
@@ -136,6 +143,7 @@ FIRE_TOWER:
 # ============================================================
 
 CATAPULTS:
+  era: iron
   name: "Catapult"
   sprite: "assets/sprites/structures/catapults/catapults.webp"
   damage: 9
@@ -152,6 +160,7 @@ CATAPULTS:
   requirements: [MECHANICS, MATHMATICS]
 
 ARBELESTE_TOWER:
+  era: iron
   name: "Arbalest Tower"
   sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
   damage: 10
@@ -172,6 +181,7 @@ ARBELESTE_TOWER:
 # ============================================================
 
 TAR_TOWER:
+  era: middle_ages
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
   damage: 7
@@ -184,10 +194,11 @@ TAR_TOWER:
   max_level: 1
   select: first
   costs: {gold: 40000}
-  effects: {slow_duration: 3000, slow_ratio: 0.4}   # slows to 40% speed for 4s
+  effects: {slow_duration: 3000, slow_ratio: 0.3}   # slows to 40% speed for 4s
   requirements: [HERBOLOGY, WORK_SHOP]
 
 HEAVY_TOWER:
+  era: middle_ages
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
   damage: 23
@@ -204,6 +215,7 @@ HEAVY_TOWER:
   requirements: [IRON, LAWS]
 
 BOILING_OIL:
+  era: middle_ages
   name: "Boiling Oil"
   sprite: "assets/sprites/structures/boiling_oil/boiling_oil.webp"
   damage: 4
@@ -216,10 +228,11 @@ BOILING_OIL:
   max_level: 1
   select: first
   costs: {gold: 47000}
-  effects: {burn_duration: 2000, burn_dps: 3}   # burns for 3 dps over 5s
-  requirements: [CITY_WALLS]
+  effects: {burn_duration: 2000, burn_dps: 7}   # burns for 3 dps over 5s
+  requirements: [CITY_WALLS, TACTICS]
 
 CANNON_TOWER:
+  era: middle_ages
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
   damage: 21
@@ -233,13 +246,14 @@ CANNON_TOWER:
   select: first
   costs: {gold: 78000}
   effects: {splash_radius: 0.4}
-  requirements: [CANNON_MANUFACTORY]
+  requirements: [CANNON_MANUFACTORY, GUNPOWDER]
 
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
 # ============================================================
 
 RIFLE_TOWER:
+  era: renaissance
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
   damage: 14
@@ -256,6 +270,7 @@ RIFLE_TOWER:
   requirements: [GUNSMITH, CONSTITUTION]
 
 COLD_TOWER:
+  era: renaissance
   name: "Cold Tower"
   sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
   damage: 4
@@ -268,15 +283,16 @@ COLD_TOWER:
   max_level: 1
   select: first
   costs: {gold: 83000}
-  effects: {slow_duration: 3000, slow_ratio: 0.5}   # slows to 50% speed for 3s
+  effects: {slow_duration: 4000, slow_ratio: 0.4}   # slows to 50% speed for 3s
   requirements: [CHEMISTRY, LABORATORY]
 
 ICE_TOWER:
+  era: renaissance
   name: "Ice Tower"
   sprite: "assets/sprites/structures/ice_tower/ice_tower.webp"
   damage: 7
   range: 3
-  reload_time: 2500
+  reload_time: 2000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/iceball.webp"
   projectile_y_offset: 0.3
@@ -292,9 +308,10 @@ ICE_TOWER:
 # ============================================================
 
 FLAME_THROWER:
+  era: industrial
   name: "Flame Thrower"
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
-  damage: 11
+  damage: 3
   range: 1.5
   reload_time: 2400
   shot_speed: 3
@@ -304,10 +321,11 @@ FLAME_THROWER:
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 3000, burn_dps: 6}   # burns for 4 dps over 4s
+  effects: {burn_duration: 4000, burn_dps: 6}   # burns for 4 dps over 4s
   requirements: [HEAVY_EQUIPMENT, MECHANICAL_ENGINEERING]
 
 SHOCK_TOWER:
+  era: industrial
   name: "Shock Tower"
   sprite: "assets/sprites/structures/shock_tower/shock_tower.webp"
   damage: 16
@@ -324,6 +342,7 @@ SHOCK_TOWER:
   requirements: [ELECTRIC_FENCE, ELECTRICITY]
 
 GATLING_TOWER:
+  era: industrial
   name: "Gatling Tower"
   sprite: "assets/sprites/structures/gatling_tower/gatling_tower.webp"
   damage: 14
@@ -340,12 +359,13 @@ GATLING_TOWER:
   requirements: [FACTORY, STEAM_ENGINE]
 
 PARALYZNG_TOWER:
+  era: industrial
   name: "Paralyzing Tower"
   sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
   damage: 9
   range: 1.5
-  reload_time: 2400
-  shot_speed: 1
+  reload_time: 2000
+  shot_speed: 5
   shot_sprite: "assets/sprites/hud/bolt.webp"
   projectile_y_offset: 0.2
   upgrade_costs: {}
@@ -360,11 +380,12 @@ PARALYZNG_TOWER:
 # ============================================================
 
 NAPALM_THROWER:
+  era: modern
   name: "Napalm Thrower"
   sprite: "assets/sprites/structures/napalm_tower/napalm_tower.webp"
   damage: 11
   range: 1.5
-  reload_time: 2000
+  reload_time: 3000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/fireball.webp"
   projectile_y_offset: 0.3
@@ -372,16 +393,17 @@ NAPALM_THROWER:
   max_level: 1
   select: first
   costs: {gold: 140000}
-  effects: {burn_dps: 8, burn_duration: 2000}
+  effects: {burn_dps: 19, burn_duration: 2000}
   requirements: [WMD_SITE, CHEMICAL_WARFARE]
 
 MG_TOWER:
+  era: modern
   name: "MG Bunker"
   sprite: "assets/sprites/structures/mg_bunker/mg_bunker.webp"
-  damage: 14
-  range: 2
-  reload_time: 700
-  shot_speed: 3
+  damage: 21
+  range: 1.5
+  reload_time: 1000
+  shot_speed: 10
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.1
   upgrade_costs: {}
@@ -392,12 +414,13 @@ MG_TOWER:
   requirements: [DEFENSE_DEPARTMENT]
 
 RAPID_FIRE_MG_BUNKER:
+  era: modern
   name: "Rapid Fire MG Bunker"
   sprite: "assets/sprites/structures/rapid_mg_tower/rapid_mg_tower.webp"
-  damage: 11
-  range: 2
-  reload_time: 500
-  shot_speed: 3
+  damage: 16
+  range: 1.5
+  reload_time: 600
+  shot_speed: 10
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
   upgrade_costs: {}
@@ -405,14 +428,15 @@ RAPID_FIRE_MG_BUNKER:
   select: first
   costs: {gold: 450000}
   effects: {}
-  requirements: [MASS_PRODUCTION, DEFENSE_DEPARTMENT]
+  requirements: [MASS_PRODUCTION]
 
 RADAR_TOWER:
+  era: modern
   name: "Radar Tower"
   sprite: "assets/sprites/structures/radar_tower/radar_tower.webp"
-  damage: 12
-  range: 8
-  reload_time: 700
+  damage: 25
+  range: 4
+  reload_time: 1900
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -420,16 +444,17 @@ RADAR_TOWER:
   max_level: 1
   select: first
   costs: {gold: 250000}
-  effects: {}
+  effects: {SPLASH_RADIUS: 0.6}
   requirements: [SATELLITE_SYSTEMS]
 
 ANTI_AIR_TOWER:
+  era: modern
   name: "Anti-Air Tower"
   sprite: "assets/sprites/structures/anti_air_tower/anti_air_tower.webp"
-  damage: 17
-  range: 5
-  reload_time: 1400
-  shot_speed: 1
+  damage: 50
+  range: 2.5
+  reload_time: 2800
+  shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
   upgrade_costs: {}
@@ -440,10 +465,11 @@ ANTI_AIR_TOWER:
   requirements: [ECHELON_DEFENSE_FACILITY]
 
 LASER_TOWER:
+  era: modern
   name: "Laser Tower"
   sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
   damage: 25
-  range: 6
+  range: 2.5
   reload_time: 1500
   shot_speed: 10
   shot_sprite: "assets/sprites/hud/bolt.webp"
@@ -460,6 +486,7 @@ LASER_TOWER:
 # ============================================================
 
 SNIPER_TOWER:
+  era: future
   name: "Sniper Tower"
   sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
   damage: 60
@@ -476,6 +503,7 @@ SNIPER_TOWER:
   requirements: [SPECIAL_FORCES, ELITE_ACADEMY, CYBER_COMMAND]
 
 ROCKET_TOWER:
+  era: future
   name: "Rocket Tower"
   sprite: "assets/sprites/structures/rocket_tower/rocket_tower.webp"
   damage: 60

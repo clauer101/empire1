@@ -33,6 +33,13 @@ CREATE TABLE IF NOT EXISTS messages (
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     read INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid INTEGER NOT NULL,
+    endpoint TEXT NOT NULL UNIQUE,
+    subscription_json TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
@@ -356,3 +363,32 @@ class Database:
         """Get top rankings."""
         # TODO: implement
         return []
+
+    # -- Push subscription operations ------------------------------------
+
+    async def save_push_subscription(self, uid: int, subscription: dict) -> None:
+        assert self._conn is not None
+        import json
+        endpoint = subscription.get("endpoint", "")
+        await self._conn.execute(
+            "INSERT INTO push_subscriptions (uid, endpoint, subscription_json) VALUES (?, ?, ?)"
+            " ON CONFLICT(endpoint) DO UPDATE SET uid=excluded.uid, subscription_json=excluded.subscription_json",
+            (uid, endpoint, json.dumps(subscription)),
+        )
+        await self._conn.commit()
+
+    async def delete_push_subscription(self, uid: int, endpoint: str) -> None:
+        assert self._conn is not None
+        await self._conn.execute(
+            "DELETE FROM push_subscriptions WHERE uid=? AND endpoint=?", (uid, endpoint)
+        )
+        await self._conn.commit()
+
+    async def get_push_subscriptions(self, uid: int) -> list[dict]:
+        assert self._conn is not None
+        import json
+        async with self._conn.execute(
+            "SELECT subscription_json FROM push_subscriptions WHERE uid=?", (uid,)
+        ) as cur:
+            rows = await cur.fetchall()
+        return [json.loads(r[0]) for r in rows]

@@ -232,7 +232,7 @@
 <div id="content"></div>
 
 <script>
-const GS = `${location.protocol}//${location.hostname}:8080`;
+const GS = window.location.origin;
 
 function authHeaders() {
   const t = localStorage.getItem('e3_jwt_token');

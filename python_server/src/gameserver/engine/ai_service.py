@@ -360,9 +360,8 @@ class AIService:
         """
         if not self._game_config:
             return 30.0
-        era_key = empire_service.get_current_era(empire)
-        era_fx: dict = getattr(self._game_config, "era_effects", {}).get(era_key, {})
-        travel = era_fx.get("travel_offset")
+        era_key = empire_service.get_current_era(empire)  # lowercase English e.g. "middle_ages"
+        travel = getattr(self._game_config, f"{era_key}_travel_offset", None)
         if travel is not None:
             return float(travel)
         return float(getattr(self._game_config, "base_travel_offset", 300.0))
@@ -534,9 +533,7 @@ class AIService:
             travel_s = explicit_travel
         else:
             # Use era-specific travel_time from ai_generator config (same as _build_army)
-            from gameserver.util.army_generator import ERA_BACKEND_TO_INTERNAL
-            era_key = empire_service.get_current_era(empire) if empire_service else None
-            era_internal = ERA_BACKEND_TO_INTERNAL.get(era_key, "stone") if era_key else "stone"
+            era_internal = empire_service.get_current_era(empire) if empire_service else "stone"
             era_cfg = getattr(self._game_config, "ai_generator", {}).get(era_internal, {})
             travel_s = float(era_cfg.get("travel_time", 0) or 0)
             if not travel_s:
@@ -555,13 +552,10 @@ class AIService:
         from gameserver.models.army import Army, CritterWave
         from gameserver.util.army_generator import (
             generate_army, parse_critter_era_groups, parse_slot_by_iid,
-            ERA_BACKEND_TO_INTERNAL,
         )
         import os
 
-        # Resolve era
-        era_key = empire_service.get_current_era(empire) if empire_service else None
-        era_internal = ERA_BACKEND_TO_INTERNAL.get(era_key, "stone") if era_key else "stone"
+        era_internal = empire_service.get_current_era(empire) if empire_service else "stone"
 
         # Load critter data from config
         config_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config")
@@ -601,7 +595,7 @@ class AIService:
         # Travel time from ai_generator config for this era
         era_cfg = ai_generator_cfg.get(era_internal, {})
         travel_s = float(era_cfg.get("travel_time", 0) or 0)
-        log.info("[AI_ATTACK] travel debug: era_key=%s era_internal=%s era_cfg=%s travel_s=%s", era_key, era_internal, era_cfg, travel_s)
+        log.info("[AI_ATTACK] travel debug: era_internal=%s era_cfg=%s travel_s=%s", era_internal, era_cfg, travel_s)
         if not travel_s:
             if empire_service is not None:
                 travel_s = self._era_travel_seconds(empire, empire_service)
@@ -644,17 +638,12 @@ class AIService:
         if not aggr:
             return
 
-        from gameserver.util.eras import ERA_YAML_TO_KEY
-        # Invert the mapping: uppercase era key → lowercase YAML key
-        _era_key_to_yaml: dict[str, str] = {v: k for k, v in ERA_YAML_TO_KEY.items()}
-
         for uid, empire in list(empire_service.all_empires.items()):
             if uid == AI_UID:
                 continue
 
-            era_key = empire_service.get_current_era(empire)   # e.g. "MITTELALTER"
-            yaml_key = _era_key_to_yaml.get(era_key)           # e.g. "middle_ages"
-            p = aggr.get(yaml_key, 0.0) if yaml_key else 0.0
+            era_key = empire_service.get_current_era(empire)   # lowercase English e.g. "middle_ages"
+            p = aggr.get(era_key, 0.0)
 
             if p <= 0.0:
                 continue

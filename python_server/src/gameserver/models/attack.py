@@ -48,4 +48,6 @@ class Attack:
     siege_remaining_seconds: float = 0.0
     total_siege_seconds: float = 30.0  # initial siege duration for progress calculation
     override_siege_seconds: float | None = None  # if set, skips dynamic calculation
+    is_spy: bool = False  # spy attacks end immediately at IN_SIEGE instead of battling
+    army_name_override: str = ""  # used by spy attacks whose army_aid is a virtual ID
 

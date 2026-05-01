@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artefacts</title>
+  <style>
+    :root {
+      --bg: #0d0d14; --surface: #14141f; --surface-alt: #1a1a28;
+      --surface-hover: #22222f; --border: #2a2a3a;
+      --accent: #4fc3f7; --success: #66bb6a; --danger: #ef5350;
+      --warning: #ffa726; --purple: #ab47bc;
+      --text: #e0e0e6; --text-dim: #9999a8; --radius: 6px;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #save-status { font-size: 12px; min-width: 120px; }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+
+    button.save-btn {
+      background: var(--accent); color: #000; border: none;
+      border-radius: var(--radius); padding: 7px 18px;
+      font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity .15s;
+    }
+    button.save-btn:hover { opacity: .85; }
+    button.save-btn:disabled { opacity: .4; cursor: default; }
+
+    button.add-btn {
+      background: var(--surface-alt); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: var(--radius);
+      padding: 6px 14px; font-size: 13px; cursor: pointer;
+    }
+    button.add-btn:hover { background: var(--surface-hover); }
+
+    #content { max-width: 900px; margin: 0 auto; padding: 16px 16px 80px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* artefact card */
+    .art-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .art-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+    }
+    .art-iid {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      background: var(--bg); border-radius: 3px; padding: 2px 6px;
+    }
+    .art-name-display { font-weight: 600; font-size: 14px; flex: 1; }
+    .art-del-btn {
+      background: none; border: none; cursor: pointer; color: var(--text-dim);
+      font-size: 16px; line-height: 1; padding: 0 2px;
+    }
+    .art-del-btn:hover { color: var(--danger); }
+
+    .art-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .field-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .field-label { color: var(--text-dim); font-size: 11px; min-width: 80px; }
+    .field-input {
+      background: var(--surface-alt); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 4px 8px; font-size: 13px; outline: none; flex: 1; min-width: 0;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input.mono { font-family: var(--mono); }
+    select.field-input { cursor: pointer; }
+
+    /* effects */
+    .effects-section { display: flex; flex-direction: column; gap: 6px; }
+    .effects-label { color: var(--text-dim); font-size: 11px; margin-bottom: 2px; }
+    .effect-row { display: flex; align-items: center; gap: 6px; }
+    .effect-key-wrap { position: relative; flex: 1; min-width: 0; }
+    .effect-key {
+      background: var(--surface-alt); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 7px; font-size: 12px; font-family: var(--mono);
+      width: 100%; outline: none;
+    }
+    .effect-key:focus { border-color: var(--purple); }
+    .effect-val {
+      background: var(--surface-alt); color: var(--warning);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 7px; font-size: 12px; font-family: var(--mono);
+      width: 90px; outline: none; text-align: right;
+    }
+    .effect-val:focus { border-color: var(--warning); }
+    .effect-del {
+      background: none; border: none; cursor: pointer; color: var(--text-dim);
+      font-size: 15px; line-height: 1; padding: 0 2px;
+    }
+    .effect-del:hover { color: var(--danger); }
+    .add-effect-btn {
+      background: none; border: 1px dashed var(--border); border-radius: var(--radius);
+      color: var(--text-dim); font-size: 11px; padding: 3px 10px; cursor: pointer;
+      width: fit-content;
+    }
+    .add-effect-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+    /* autocomplete */
+    .ac-list {
+      position: absolute; top: 100%; left: 0; z-index: 50;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); min-width: 220px; max-height: 180px;
+      overflow-y: auto; display: none; margin-top: 2px;
+    }
+    .ac-item { padding: 5px 10px; cursor: pointer; font-size: 11px; font-family: var(--mono); }
+    .ac-item:hover, .ac-item.active { background: var(--surface-hover); color: var(--accent); }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>✨ Artefacts</h1>
+  <span id="save-status"></span>
+  <button class="add-btn" id="add-btn">+ New Artefact</button>
+  <button class="save-btn" id="save-btn">Save</button>
+</div>
+
+<div id="content">
+  <div id="loading" style="color:var(--text-dim);text-align:center;padding:60px">Loading…</div>
+</div>
+
+<script>
+const ALL_EFFECT_IDS = [
+  'gold_modifier','gold_offset','culture_modifier','culture_offset',
+  'life_modifier','life_offset','restore_life','max_life_modifier',
+  'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
+  'damage_modifier','range_modifier','reload_modifier',
+  'slow_target','slow_target_duration','burn_target','burn_target_duration',
+  'splash_damage','splash_radius',
+  'speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level',
+  'travel_offset','siege_offset','restore_life_after_loss_offset',
+  'wave_delay_offset','wave_delay_modifier',
+  'capture_gold','capture_culture','lose_knowledge','lose_artefact','destroy_wonder_percent',
+  'culture_steal_modifier','artefact_steal_chance_modifier','knowledge_steal_modifier',
+  'spy_disguise_chance',
+];
+
+const ARTEFACT_TYPES = ['normal', 'legendary'];
+
+// artefacts data array: { iid, name, description, type, effects: {key: value} }
+let artefacts = [];
+let _uid = 0;
+
+function markDirty() {
+  document.getElementById('save-btn').disabled = false;
+  const st = document.getElementById('save-status');
+  st.textContent = ''; st.className = '';
+}
+
+// ── Autocomplete ──────────────────────────────────────────────
+function attachEffectAc(input, listEl) {
+  function show() {
+    const q = input.value.toLowerCase();
+    const matches = ALL_EFFECT_IDS.filter(id => !q || id.includes(q));
+    if (!matches.length) { listEl.style.display = 'none'; return; }
+    listEl.innerHTML = matches.slice(0, 20).map((id, i) =>
+      `<div class="ac-item" data-idx="${i}">${id}</div>`
+    ).join('');
+    listEl.style.display = 'block';
+    listEl.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        input.value = el.textContent;
+        listEl.style.display = 'none';
+        input.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+  input.addEventListener('focus', show);
+  input.addEventListener('input', show);
+  input.addEventListener('blur', () => setTimeout(() => { listEl.style.display = 'none'; }, 150));
+  input.addEventListener('keydown', e => {
+    const items = listEl.querySelectorAll('.ac-item');
+    let active = listEl.querySelector('.ac-item.active');
+    let idx = active ? parseInt(active.dataset.idx) : -1;
+    if (e.key === 'ArrowDown') { idx = Math.min(idx + 1, items.length - 1); }
+    else if (e.key === 'ArrowUp') { idx = Math.max(idx - 1, 0); }
+    else if (e.key === 'Enter' && active) { input.value = active.textContent; listEl.style.display = 'none'; input.dispatchEvent(new Event('change')); e.preventDefault(); return; }
+    else if (e.key === 'Escape') { listEl.style.display = 'none'; return; }
+    else return;
+    items.forEach((el, i) => el.classList.toggle('active', i === idx));
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderAll() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  artefacts.forEach((art, ai) => {
+    const card = document.createElement('div');
+    card.className = 'art-card';
+    card.innerHTML = `
+      <div class="art-header">
+        <span class="art-iid">${art.iid || '—'}</span>
+        <span class="art-name-display">${art.name || 'New Artefact'}</span>
+        <button class="art-del-btn" title="Delete">✕</button>
+      </div>
+      <div class="art-body">
+        <div class="field-row">
+          <span class="field-label">IID</span>
+          <input class="field-input mono" data-field="iid" value="${art.iid || ''}" placeholder="ARTEFACT_KEY" />
+        </div>
+        <div class="field-row">
+          <span class="field-label">Name</span>
+          <input class="field-input" data-field="name" value="${art.name || ''}" placeholder="Display name" />
+        </div>
+        <div class="field-row">
+          <span class="field-label">Description</span>
+          <input class="field-input" data-field="description" value="${art.description || ''}" placeholder="Flavour text" />
+        </div>
+        <div class="field-row">
+          <span class="field-label">Type</span>
+          <select class="field-input" data-field="type">
+            ${ARTEFACT_TYPES.map(t => `<option value="${t}" ${(art.type || 'normal') === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="effects-section">
+          <div class="effects-label">Effects</div>
+          <div class="effects-rows"></div>
+          <button class="add-effect-btn">+ Add effect</button>
+        </div>
+      </div>
+    `;
+
+    // Field inputs
+    card.querySelectorAll('[data-field]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        art[inp.dataset.field] = inp.value;
+        if (inp.dataset.field === 'iid') card.querySelector('.art-iid').textContent = inp.value || '—';
+        if (inp.dataset.field === 'name') card.querySelector('.art-name-display').textContent = inp.value || 'New Artefact';
+        markDirty();
+      });
+    });
+
+    // Delete card
+    card.querySelector('.art-del-btn').addEventListener('click', () => {
+      artefacts.splice(ai, 1);
+      markDirty();
+      renderAll();
+    });
+
+    // Effects
+    const effectsRows = card.querySelector('.effects-rows');
+
+    function renderEffects() {
+      effectsRows.innerHTML = '';
+      Object.entries(art.effects || {}).forEach(([key, val]) => {
+        const row = document.createElement('div');
+        row.className = 'effect-row';
+        row.innerHTML = `
+          <div class="effect-key-wrap">
+            <input class="effect-key" value="${key}" placeholder="effect_id" />
+            <div class="ac-list"></div>
+          </div>
+          <input class="effect-val" type="number" step="0.01" value="${val}" />
+          <button class="effect-del" title="Remove">×</button>
+        `;
+        const keyInput = row.querySelector('.effect-key');
+        const valInput = row.querySelector('.effect-val');
+        const acList   = row.querySelector('.ac-list');
+
+        attachEffectAc(keyInput, acList);
+
+        keyInput.addEventListener('change', () => {
+          const oldKey = key;
+          const newKey = keyInput.value.trim();
+          if (newKey && newKey !== oldKey) {
+            const cur = art.effects[oldKey];
+            delete art.effects[oldKey];
+            art.effects[newKey] = cur;
+            key = newKey;
+            markDirty();
+          }
+        });
+        valInput.addEventListener('input', () => {
+          art.effects[key] = parseFloat(valInput.value) || 0;
+          markDirty();
+        });
+        row.querySelector('.effect-del').addEventListener('click', () => {
+          delete art.effects[key];
+          markDirty();
+          renderEffects();
+        });
+        effectsRows.appendChild(row);
+      });
+    }
+
+    renderEffects();
+
+    card.querySelector('.add-effect-btn').addEventListener('click', () => {
+      if (!art.effects) art.effects = {};
+      // Find unused key slot
+      let newKey = 'effect_id';
+      let n = 1;
+      while (art.effects[newKey] !== undefined) newKey = `effect_id_${n++}`;
+      art.effects[newKey] = 0;
+      markDirty();
+      renderEffects();
+      // Focus last key input
+      const inputs = effectsRows.querySelectorAll('.effect-key');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+
+    content.appendChild(card);
+  });
+}
+
+// ── Add new artefact ─────────────────────────────────────────
+document.getElementById('add-btn').addEventListener('click', () => {
+  artefacts.push({ iid: '', name: '', description: '', type: 'normal', effects: {} });
+  markDirty();
+  renderAll();
+  // Scroll to bottom and focus IID input
+  const cards = document.querySelectorAll('.art-card');
+  if (cards.length) {
+    const last = cards[cards.length - 1];
+    last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    last.querySelector('[data-field="iid"]')?.focus();
+  }
+});
+
+// ── Save ─────────────────────────────────────────────────────
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-btn');
+  const st  = document.getElementById('save-status');
+  btn.disabled = true; st.textContent = 'Saving…'; st.className = '';
+  try {
+    const r = await fetch('/api/artefacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(artefacts),
+    });
+    const data = await r.json();
+    if (data.success) { st.textContent = '✓ Saved'; st.className = 'ok'; }
+    else throw new Error(data.error || 'Failed');
+  } catch (e) {
+    st.textContent = `Error: ${e.message}`; st.className = 'err';
+    btn.disabled = false;
+  }
+  setTimeout(() => { st.textContent = ''; st.className = ''; }, 3000);
+});
+
+// ── Load ─────────────────────────────────────────────────────
+(async () => {
+  try {
+    const data = await fetch('/api/artefacts').then(r => r.json());
+    artefacts = data;
+    document.getElementById('loading').remove();
+    renderAll();
+    document.getElementById('save-btn').disabled = true;
+  } catch (e) {
+    document.getElementById('loading').textContent = `Error: ${e.message}`;
+  }
+})();
+</script>
+</body>
+</html>

@@ -27,67 +27,31 @@ BARBARIAN_NAMES: list[str] = [
 
 # ── Era definitions ───────────────────────────────────────────────────────────
 
-# German display names in era order
-ERA_ORDER_DE: list[str] = [
-    "Steinzeit", "Neolithikum", "Bronzezeit", "Eisenzeit",
-    "Mittelalter", "Renaissance", "Industrialisierung", "Moderne", "Zukunft",
-]
-
-# Internal YAML keys (as used in game.yaml ai_generator and ERA_YAML_TO_KEY)
+# Era order — lowercase English, canonical format (matches ERA_ORDER in eras.py)
 ERA_ORDER_INTERNAL: list[str] = [
-    "stone", "neolithicum", "bronze", "iron",
-    "middle_ages", "rennaissance", "industrial", "modern", "future",
+    "stone", "neolithic", "bronze", "iron",
+    "middle_ages", "renaissance", "industrial", "modern", "future",
 ]
 
-# Internal key → German display name
-ERA_INTERNAL_TO_DE: dict[str, str] = dict(zip(ERA_ORDER_INTERNAL, ERA_ORDER_DE))
-# German → internal
-ERA_DE_TO_INTERNAL: dict[str, str] = dict(zip(ERA_ORDER_DE, ERA_ORDER_INTERNAL))
-
-# Backend era keys (RENAISSANCE, MITTELALTER, …) → internal YAML key
-ERA_BACKEND_TO_INTERNAL: dict[str, str] = {
-    "STEINZEIT":          "stone",
-    "NEOLITHIKUM":        "neolithicum",
-    "BRONZEZEIT":         "bronze",
-    "EISENZEIT":          "iron",
-    "MITTELALTER":        "middle_ages",
-    "RENAISSANCE":        "rennaissance",
-    "INDUSTRIALISIERUNG": "industrial",
-    "MODERNE":            "modern",
-    "ZUKUNFT":            "future",
-}
+# Alias kept for backward compatibility; identical to ERA_ORDER_INTERNAL
+ERA_BACKEND_TO_INTERNAL: dict[str, str] = {k: k for k in ERA_ORDER_INTERNAL}
 
 # ── Critter YAML parsing ──────────────────────────────────────────────────────
 
-_ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
-_ERA_PATTERNS: list[tuple[str, re.Pattern]] = [
-    ("stone",       re.compile(r'#\s+STEINZEIT')),
-    ("neolithicum", re.compile(r'#\s+NEOLITHIKUM')),
-    ("bronze",      re.compile(r'#\s+BRONZEZEIT')),
-    ("iron",        re.compile(r'#\s+EISENZEIT')),
-    ("middle_ages", re.compile(r'#\s+MITTELALTER')),
-    ("rennaissance",re.compile(r'#\s+RENAISSANCE')),
-    ("industrial",  re.compile(r'#\s+INDUSTRIALIS')),
-    ("modern",      re.compile(r'#\s+MODERNE')),
-    ("future",      re.compile(r'#\s+ZUKUNFT')),
-]
-
-
 def parse_critter_era_groups(critters_yaml: Path) -> dict[str, list[str]]:
-    """Return {internal_era_key: [iid, ...]} from critters.yaml section comments."""
+    """Return {era_key: [iid, ...]} from critters.yaml era: fields."""
+    import yaml as _yaml
     result: dict[str, list[str]] = {k: [] for k in ERA_ORDER_INTERNAL}
-    current = ERA_ORDER_INTERNAL[0]
     try:
-        for line in critters_yaml.read_text(encoding="utf-8").splitlines():
-            for key, pat in _ERA_PATTERNS:
-                if pat.search(line):
-                    current = key
-                    break
-            m = _ITEM_IID_RE.match(line)
-            if m:
-                result[current].append(m.group(1))
+        data = _yaml.safe_load(critters_yaml.read_text(encoding="utf-8")) or {}
     except OSError:
-        pass
+        return result
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        era = item.get("era", ERA_ORDER_INTERNAL[0])
+        if era in result:
+            result[era].append(iid)
     return result
 
 
@@ -111,7 +75,7 @@ def generate_army(
     """Generate a random army for the given internal era key.
 
     Args:
-        era_internal: Internal era key, e.g. "rennaissance".
+        era_internal: Internal era key, e.g. "renaissance".
         ai_generator_cfg: The ai_generator section from game.yaml (dict of era → params).
         critter_era_groups: {internal_era_key: [iid, ...]} from critters.yaml.
         slot_by_iid: {iid: slot_cost} lookup.

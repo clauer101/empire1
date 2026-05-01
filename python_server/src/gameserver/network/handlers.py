@@ -268,6 +268,12 @@ async def handle_item_request(
                 "description": item.description,
                 "image": item.image,
             })
+        elif item.item_type == ItemType.ARTEFACT:
+            entry.update({
+                "effects": dict(item.effects),
+                "description": item.description,
+                "type": item.subtype or 'normal',
+            })
         catalog[item.iid] = entry
 
     return {
@@ -350,6 +356,7 @@ async def handle_military_request(
         available_critters.append({
             "iid": critter.iid,
             "name": critter.name,
+            "description": critter.description,
             "era_index": _critter_era_index(critter),
             "slots": critter.slots,
             "health": critter.health,
@@ -376,13 +383,16 @@ async def handle_military_request(
             _uid_to_username[_urow["uid"]] = _urow["username"]
 
     def _attack_dto(a):
-        _att_emp = svc.empire_service.get(a.attacker_uid)
-        _army_name = ""
-        if _att_emp:
-            for _arm in _att_emp.armies:
-                if _arm.aid == a.army_aid:
-                    _army_name = _arm.name
-                    break
+        if a.army_name_override:
+            _army_name = a.army_name_override
+        else:
+            _att_emp = svc.empire_service.get(a.attacker_uid)
+            _army_name = ""
+            if _att_emp:
+                for _arm in _att_emp.armies:
+                    if _arm.aid == a.army_aid:
+                        _army_name = _arm.name
+                        break
         return {
             "attack_id": a.attack_id,
             "attacker_uid": a.attacker_uid,
@@ -395,6 +405,7 @@ async def handle_military_request(
             "total_eta_seconds": round(a.total_eta_seconds, 1),
             "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
             "total_siege_seconds": round(a.total_siege_seconds, 1),
+            "is_spy": a.is_spy,
         }
 
     incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(target_uid)]
@@ -770,6 +781,147 @@ async def handle_new_attack(
         "total_eta_seconds": round(result.total_eta_seconds, 1),
         "total_siege_seconds": round(result.total_siege_seconds, 1),
         "_debug": f"Attack {result.attack_id} created: {target_uid}→{defender_uid} (army {army_aid}, phase={result.phase.value})",
+    }
+
+
+def _build_spy_report(defender, svc) -> tuple[str, dict]:
+    """Build a workshop intelligence report for the attacker.
+
+    Returns (text_report, structured_data) covering only structures and critters
+    of the defender's current era.
+    """
+    from gameserver.util.eras import ERA_ORDER, ERA_LABELS_EN
+    from gameserver.models.items import ItemType
+
+    era_key = svc.empire_service.get_current_era(defender)
+    era_idx = ERA_ORDER.index(era_key) if era_key in ERA_ORDER else 0
+    era_label = ERA_LABELS_EN.get(era_key, era_key)
+
+    items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    item_era_index = svc.empire_service._item_era_index
+    upgrades = defender.item_upgrades
+
+    structures = []
+    critters = []
+    for iid, item in items.items():
+        if item_era_index.get(iid, -1) != era_idx:
+            continue
+        if item.item_type == ItemType.STRUCTURE:
+            lvls = upgrades.get(iid, {})
+            structures.append((item.name, lvls))
+        elif item.item_type == ItemType.CRITTER:
+            lvls = upgrades.get(iid, {})
+            critters.append((item.name, lvls))
+
+    def _fmt_upgrades(lvls: dict) -> str:
+        if not lvls:
+            return "(no upgrades)"
+        abbrev = {"damage": "dmg", "range": "rng", "reload": "rld",
+                  "effect_duration": "eff_dur", "effect_value": "eff_val",
+                  "health": "hp", "speed": "spd", "armour": "arm"}
+        parts = [f"{abbrev.get(k, k)}+{v}" for k, v in lvls.items() if v > 0]
+        return " ".join(parts) if parts else "(no upgrades)"
+
+    lines = [
+        f"🔬 Workshop Intelligence — {era_label}",
+        "─" * 32,
+        "─── Towers ───",
+    ]
+    for name, lvls in sorted(structures):
+        lines.append(f"  🗼 {name:<20} {_fmt_upgrades(lvls)}")
+    if not structures:
+        lines.append("  (none)")
+    lines.append("─── Units ───")
+    for name, lvls in sorted(critters):
+        lines.append(f"  ⚔ {name:<20} {_fmt_upgrades(lvls)}")
+    if not critters:
+        lines.append("  (none)")
+    lines.append("─" * 32)
+
+    text = "\n".join(lines)
+    data = {
+        "era": era_label,
+        "era_idx": era_idx,
+        "structures": [{"name": n, "upgrades": l} for n, l in sorted(structures)],
+        "critters": [{"name": n, "upgrades": l} for n, l in sorted(critters)],
+    }
+    return text, data
+
+
+async def handle_spy_attack(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Handle a spy attack request.
+
+    Sends the attacker's first army as a fake attack. The defender sees it
+    arrive but it resolves immediately (no battle). The attacker gets a
+    workshop intelligence report.
+    """
+    svc = _svc()
+    attacker_uid = sender_uid if sender_uid > 0 else message.sender
+
+    defender_uid_raw = getattr(message, "target_uid", 0) or 0
+    opponent_name = getattr(message, "opponent_name", "") or ""
+
+    if defender_uid_raw:
+        defender_uid = defender_uid_raw
+    elif opponent_name.strip():
+        defender = svc.empire_service.find_by_name(opponent_name.strip())
+        if defender is None:
+            return {"type": "spy_attack_response", "success": False,
+                    "error": f"Empire '{opponent_name.strip()}' not found"}
+        defender_uid = defender.uid
+    else:
+        return {"type": "spy_attack_response", "success": False,
+                "error": "No target specified"}
+
+    if attacker_uid == defender_uid:
+        return {"type": "spy_attack_response", "success": False,
+                "error": "Cannot spy on yourself"}
+
+    att_empire = svc.empire_service.get(attacker_uid)
+    if att_empire is None:
+        return {"type": "spy_attack_response", "success": False, "error": "No empire found"}
+
+    if not att_empire.armies:
+        return {"type": "spy_attack_response", "success": False,
+                "error": "You need at least one army to send a spy"}
+
+    max_spy = svc.game_config.max_spy_armies if svc.game_config else 1
+    active_spy_count = sum(
+        1 for a in svc.attack_service.get_outgoing(attacker_uid) if a.is_spy
+    )
+    if active_spy_count >= max_spy:
+        return {"type": "spy_attack_response", "success": False,
+                "error": f"Spy already dispatched (max {max_spy} active)"}
+
+    # Use first army (lowest aid)
+    first_army = min(att_empire.armies, key=lambda a: a.aid)
+    if not first_army.waves:
+        return {"type": "spy_attack_response", "success": False,
+                "error": "First army has no waves"}
+
+    result = svc.attack_service.start_attack(
+        attacker_uid=attacker_uid,
+        defender_uid=defender_uid,
+        army_aid=first_army.aid,
+        empire_service=svc.empire_service,
+        is_spy=True,
+        spy_army_name=first_army.name,
+    )
+
+    if isinstance(result, str):
+        return {"type": "spy_attack_response", "success": False, "error": result}
+
+    log.info("[spy_attack] uid=%d → defender=%d army=%d attack_id=%d ETA=%.1fs",
+             attacker_uid, defender_uid, first_army.aid, result.attack_id, result.eta_seconds)
+    return {
+        "type": "spy_attack_response",
+        "success": True,
+        "attack_id": result.attack_id,
+        "defender_uid": defender_uid,
+        "army_aid": first_army.aid,
+        "eta_seconds": round(result.eta_seconds, 1),
     }
 
 
@@ -1563,13 +1715,16 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
 
     # Ongoing attacks
     def _attack_dto(a):
-        _att_emp = svc.empire_service.get(a.attacker_uid)
-        _army_name = ""
-        if _att_emp:
-            for _arm in _att_emp.armies:
-                if _arm.aid == a.army_aid:
-                    _army_name = _arm.name
-                    break
+        if a.army_name_override:
+            _army_name = a.army_name_override
+        else:
+            _att_emp = svc.empire_service.get(a.attacker_uid)
+            _army_name = ""
+            if _att_emp:
+                for _arm in _att_emp.armies:
+                    if _arm.aid == a.army_aid:
+                        _army_name = _arm.name
+                        break
         return {
             "attack_id": a.attack_id,
             "attacker_uid": a.attacker_uid,
@@ -1582,6 +1737,7 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
             "total_eta_seconds": round(a.total_eta_seconds, 1),
             "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
             "total_siege_seconds": round(a.total_siege_seconds, 1),
+            "is_spy": a.is_spy,
         }
 
     attacks_incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(uid)]
@@ -2437,11 +2593,15 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         log.info("[battle] bid=%d complete: attacker_wins=%s", bid, not battle.defender_won)
 
         loot: dict = {}
-        if battle.defender_won is False:
+        attacker_won = battle.defender_won is False
+        if attacker_won:
             loot = _compute_and_apply_loot(battle, svc)
+        stolen_artefact = _apply_artefact_steal(battle, svc, attacker_won)
+        if stolen_artefact:
+            loot["artefact"] = stolen_artefact
+        if attacker_won or stolen_artefact:
             await battle_svc.send_summary(battle, send_fn, loot)
         elif not _summary_sent:
-            # Normal defender-win path (no loot to send)
             await battle_svc.send_summary(battle, send_fn, loot={})
 
         from gameserver.models.attack import AttackPhase
@@ -2473,7 +2633,9 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         if battle.recorder is not None:
             saved_path = battle.recorder.save()
             replay_key = battle.recorder.replay_key
-            if saved_path and svc.database:
+            if not saved_path:
+                log.warning("[battle] bid=%d replay not saved — sending inbox messages anyway", bid)
+            if svc.database:
                 def_name  = battle.defender.name if battle.defender else "?"
                 atk_name  = battle.attacker.name if battle.attacker else "?"
                 army_name = battle.army.name if battle.army else "?"
@@ -2492,12 +2654,13 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                         if parts:
                             gains_lines = f"💰 Captured: {parts}\n"
 
-                # Loot lines (culture + knowledge stolen)
+                # Loot lines (culture + knowledge + artefact stolen — always from defender)
                 loot_atk_lines = ""
                 loot_def_lines = ""
                 if loot:
                     culture_stolen = loot.get("culture", 0.0)
                     knowledge_loot = loot.get("knowledge")
+                    artefact_stolen = loot.get("artefact")
                     if culture_stolen > 0:
                         loot_atk_lines += f"🎭 Stolen culture:    +{culture_stolen:.1f}\n"
                         loot_def_lines += f"🎭 Culture stolen:    -{culture_stolen:.1f}\n"
@@ -2506,9 +2669,14 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                         k_pct  = knowledge_loot.get("pct", 0.0)
                         loot_atk_lines += f"📚 Stolen knowledge: {k_name} ({k_pct:.0f}%)\n"
                         loot_def_lines += f"📚 Knowledge stolen: {k_name} ({k_pct:.0f}%)\n"
+                    if artefact_stolen:
+                        art_item = svc.upgrade_provider.items.get(artefact_stolen) if svc.upgrade_provider else None
+                        art_name = art_item.name if art_item else artefact_stolen
+                        loot_atk_lines += f"✨ Stolen artefact:  {art_name}\n"
+                        loot_def_lines += f"✨ Artefact stolen:  {art_name}\n"
 
                 # ── Defender message ──────────────────────────────────────
-                def_result = "🛡 You Won!" if defender_won else "💀 You Lost!"
+                def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
                 def_body = (
                     f"{def_result}\n"
                     f"────────────────────\n"
@@ -2527,7 +2695,7 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
                 )
 
                 # ── Attacker message ──────────────────────────────────────
-                atk_result = "⚔ You Won!" if not defender_won else "💀 You Lost!"
+                atk_result = "⚔ You Won!" if not defender_won else "⚔ You Lost!"
                 atk_body = (
                     f"{atk_result}\n"
                     f"────────────────────\n"
@@ -2556,6 +2724,45 @@ async def _run_battle_task(bid: int, battle: "BattleState", battle_svc: "BattleS
         _active_battles.pop(battle.defender.uid, None)
 
 
+def _apply_artefact_steal(battle: "BattleState", svc, attacker_won: bool) -> str | None:
+    """Roll per-artefact steal after a battle. AI attackers never steal artefacts.
+
+    Returns the stolen artefact iid or None.
+    """
+    import random as _random
+    from gameserver.engine.ai_service import AI_UID as _AI_UID
+
+    if not battle.attacker or not battle.defender:
+        return None
+    if battle.attacker.uid == _AI_UID:
+        return None
+    thief  = battle.attacker
+    victim = battle.defender
+
+    cfg = svc.game_config
+    if attacker_won:
+        chance = getattr(cfg, 'base_artifact_steal_victory', 0.5) if cfg else 0.5
+    else:
+        chance = getattr(cfg, 'base_artifact_steal_defeat', 0.05) if cfg else 0.05
+
+    stolen = None
+    for artefact in list(victim.artefacts):
+        roll = _random.random()
+        if roll < chance:
+            victim.artefacts.remove(artefact)
+            thief.artefacts.append(artefact)
+            stolen = artefact
+            log.info("[LOOT] Artefact stolen: %s  thief uid=%d  victim uid=%d  roll=%.3f < chance=%.2f (attacker_won=%s)",
+                     artefact, thief.uid, victim.uid, roll, chance, attacker_won)
+            svc.empire_service.recalculate_effects(victim)
+            svc.empire_service.recalculate_effects(thief)
+            break  # one artefact per battle
+        else:
+            log.info("[LOOT] Artefact steal failed: %s  thief uid=%d  victim uid=%d  roll=%.3f >= chance=%.2f (attacker_won=%s)",
+                     artefact, thief.uid, victim.uid, roll, chance, attacker_won)
+    return stolen
+
+
 def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
     """Compute and apply loot on defender loss.
     
@@ -2577,13 +2784,27 @@ def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
     items = svc.upgrade_provider.items if svc.upgrade_provider else {}
     
     loot: dict = {"knowledge": None, "culture": 0.0, "artefact": None, "life_restored": 0.0}
-    
+
     # ── 1. Knowledge theft ───────────────────────────────────────────────
-    # Find knowledge defender has (in any state) that attacker doesn't have yet
-    stealable_iids = [
-        iid for iid in defender.knowledge
-        if iid not in attacker.knowledge
-    ]
+    from gameserver.engine.ai_service import AI_UID as _AI_UID
+    _attacker_is_ai = attacker.uid == _AI_UID
+    if _attacker_is_ai:
+        # AI wins: pick the active research with the most progress: max(effort - remaining).
+        active = [
+            (iid, rem) for iid, rem in defender.knowledge.items()
+            if rem > 0 and items.get(iid)
+        ]
+        if active:
+            chosen_iid = max(active, key=lambda x: (items[x[0]].effort - x[1]))[0]
+            stealable_iids = [chosen_iid]
+        else:
+            stealable_iids = []
+    else:
+        # Human attacker: random tech the attacker hasn't started yet.
+        stealable_iids = [
+            iid for iid in defender.knowledge
+            if iid not in attacker.knowledge
+        ]
     if stealable_iids:
         chosen_iid = _random.choice(stealable_iids)
         item = items.get(chosen_iid)
@@ -2591,16 +2812,16 @@ def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
         min_pct = getattr(cfg, 'min_lose_knowledge', 0.03) if cfg else 0.03
         max_pct = getattr(cfg, 'max_lose_knowledge', 0.15) if cfg else 0.15
         pct = _random.uniform(min_pct, max_pct)
-        gain = effort * pct
-        # Credit attacker: reduce remaining research effort for the stolen item.
-        # The attacker may not have the item in their knowledge dict yet (that's
-        # why it was stealable); initialise it to full effort then subtract gain.
-        attacker_remaining = attacker.knowledge.get(chosen_iid, effort)
-        attacker.knowledge[chosen_iid] = max(0.0, attacker_remaining - gain)
-        # Penalise defender: stolen effort is added back on top of what remains.
-        # If already completed (remaining=0), this re-opens it.
         current_remaining = defender.knowledge.get(chosen_iid, 0.0)
-        defender.knowledge[chosen_iid] = current_remaining + gain
+        already_researched = max(0.0, effort - current_remaining)
+        gain = already_researched * pct
+        # Credit human attacker: reduce remaining effort for the stolen item.
+        # AI attackers don't accumulate knowledge (would block future steals).
+        if not _attacker_is_ai:
+            attacker_remaining = attacker.knowledge.get(chosen_iid, effort)
+            attacker.knowledge[chosen_iid] = max(0.0, attacker_remaining - gain)
+        # Penalise defender: stolen effort is added back, capped at full effort.
+        defender.knowledge[chosen_iid] = min(effort, current_remaining + gain)
         loot["knowledge"] = {
             "iid": chosen_iid,
             "name": item.name if item else chosen_iid,
@@ -2609,11 +2830,29 @@ def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
         }
         log.info(
             "[LOOT] Knowledge stolen from uid=%d: %s (%.1f%% of effort %.0f = %.1f) "
-            "— attacker uid=%d remaining %.1f, defender remaining now %.1f",
+            "— attacker uid=%d (ai=%s) defender remaining now %.1f",
             defender.uid, chosen_iid, pct * 100, effort, gain,
-            attacker.uid, attacker.knowledge[chosen_iid], defender.knowledge[chosen_iid],
+            attacker.uid, _attacker_is_ai, defender.knowledge[chosen_iid],
         )
-    
+        # Pause research_queue if its requirements are no longer met.
+        if defender.research_queue is not None:
+            upgrades = svc.upgrade_provider
+            if upgrades is not None:
+                completed: set[str] = set()
+                for k, v in defender.buildings.items():
+                    if v <= 0:
+                        completed.add(k)
+                for k, v in defender.knowledge.items():
+                    if v <= 0:
+                        completed.add(k)
+                completed.update(defender.artefacts)
+                if not upgrades.check_requirements(defender.research_queue, completed):
+                    log.info(
+                        "[LOOT] Pausing research %s for uid=%d: requirements no longer met after knowledge steal",
+                        defender.research_queue, defender.uid,
+                    )
+                    defender.research_queue = None
+
     # ── 2. Culture theft ────────────────────────────────────────────────
     min_c = getattr(cfg, 'min_lose_culture', 0.01) if cfg else 0.01
     max_c = getattr(cfg, 'max_lose_culture', 0.05) if cfg else 0.05
@@ -2630,14 +2869,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc) -> dict:
         log.info("[LOOT] Culture stolen from uid=%d: %.1f (%.1f%%)",
                  defender.uid, culture_stolen, pct_culture * 100)
     
-    # ── 3. Artefact steal ───────────────────────────────────────────────
-    artefact_chance = getattr(cfg, 'artefact_steal_chance', 0.33) if cfg else 0.33
-    if defender.artefacts and _random.random() < artefact_chance:
-        stolen_artefact = _random.choice(defender.artefacts)
-        defender.artefacts.remove(stolen_artefact)
-        attacker.artefacts.append(stolen_artefact)
-        loot["artefact"] = stolen_artefact
-        log.info("[LOOT] Artefact stolen from uid=%d: %s", defender.uid, stolen_artefact)
+    # artefact steal is handled separately in _apply_artefact_steal (called for both outcomes)
 
     # ── 4. Restore life after loss ──────────────────────────────────────
     from gameserver.util.effects import RESTORE_LIFE_AFTER_LOSS_OFFSET
@@ -2701,6 +2933,15 @@ def _create_attack_phase_handler() -> Callable:
             log.debug("[push] Sent attack_phase_changed: id=%d phase=%s to uids=%d,%d",
                       event.attack_id, event.new_phase, attacker_uid, defender_uid)
 
+        if event.new_phase == "in_siege" and svc.database:
+            from gameserver.util.push_service import notify_siege_started, notify_under_siege
+            attacker_empire = svc.empire_service.get_empire(attacker_uid)
+            defender_empire = svc.empire_service.get_empire(defender_uid)
+            attacker_name = attacker_empire.name if attacker_empire else "Someone"
+            defender_name = defender_empire.name if defender_empire else "your target"
+            asyncio.ensure_future(notify_siege_started(svc.database, attacker_uid, defender_name))
+            asyncio.ensure_future(notify_under_siege(svc.database, defender_uid, attacker_name))
+
         # Immediately push battle_status (with wave_info) to all registered observers
         # so they don't have to wait up to 1 s for the next periodic tick.
         attack = None
@@ -2722,6 +2963,59 @@ def _create_attack_phase_handler() -> Callable:
         asyncio.create_task(_async_phase_changed(event))
     
     return _on_attack_phase_changed
+
+
+def _create_spy_arrived_handler() -> Callable:
+    """Create a handler for SpyArrived events.
+
+    Sends the attacker a workshop intelligence report and notifies the
+    defender that the "attack" has ended.
+    """
+    async def _async_spy_arrived(event: "SpyArrived") -> None:
+        svc = _svc()
+        attacker_uid = event.attacker_uid
+        defender_uid = event.defender_uid
+
+        defender = svc.empire_service.get(defender_uid)
+        attacker_empire = svc.empire_service.get(attacker_uid)
+        if defender is None or attacker_empire is None:
+            log.warning("[spy] Empire not found: attacker=%d defender=%d", attacker_uid, defender_uid)
+            return
+
+        # Build intel report
+        report_text, report_data = _build_spy_report(defender, svc)
+
+        # Notify defender that the attack ended (remove it from their UI)
+        finished_msg = {
+            "type": "attack_phase_changed",
+            "attack_id": event.attack_id,
+            "attacker_uid": attacker_uid,
+            "defender_uid": defender_uid,
+            "army_aid": event.army_aid,
+            "new_phase": "finished",
+        }
+        if svc.server:
+            await svc.server.send_to(defender_uid, finished_msg)
+            # Send spy_report push to attacker
+            await svc.server.send_to(attacker_uid, {
+                "type": "spy_report",
+                "attack_id": event.attack_id,
+                "defender_uid": defender_uid,
+                "defender_name": defender.name,
+                **report_data,
+            })
+
+        # Send inbox message to attacker
+        inbox_body = f"🕵 Spy report on {defender.name}\n" + report_text
+        await svc.database.send_message(from_uid=0, to_uid=attacker_uid, body=inbox_body)
+        log.info("[spy] Report sent: attacker=%d defender=%d era=%s",
+                 attacker_uid, defender_uid, report_data.get("era", "?"))
+
+    def _on_spy_arrived(event: "SpyArrived") -> None:
+        import asyncio
+        asyncio.create_task(_async_spy_arrived(event))
+
+    return _on_spy_arrived
 
 
 def _create_battle_observer_broadcast_handler() -> Callable:
@@ -2939,6 +3233,12 @@ def _create_battle_start_handler() -> Callable:
         if svc.server:
             await svc.server.send_to(attacker_uid, setup_msg)
             await svc.server.send_to(defender_uid, setup_msg)
+
+        # Push notification to defender
+        if svc.database:
+            from gameserver.util.push_service import notify_under_siege
+            atk_display = attacker_empire.name if attacker_empire else "Someone"
+            asyncio.ensure_future(notify_under_siege(svc.database, defender_uid, atk_display))
         
         # Record setup for replay
         battle.recorder.record(0, setup_msg)
@@ -3205,12 +3505,13 @@ def register_all_handlers(services: Services) -> None:
     router.register("battle_next_wave_request", handle_battle_next_wave)
 
     # -- Battle event handlers (internal) --------------------------------
-    from gameserver.util.events import BattleStartRequested, AttackPhaseChanged, BattleObserverBroadcast, ItemCompleted
+    from gameserver.util.events import BattleStartRequested, AttackPhaseChanged, BattleObserverBroadcast, ItemCompleted, SpyArrived
     if services.event_bus:
         services.event_bus.on(BattleStartRequested, _create_battle_start_handler())
         services.event_bus.on(AttackPhaseChanged, _create_attack_phase_handler())
         services.event_bus.on(BattleObserverBroadcast, _create_battle_observer_broadcast_handler())
         services.event_bus.on(ItemCompleted, _create_item_completed_handler())
+        services.event_bus.on(SpyArrived, _create_spy_arrived_handler())
 
     # -- Social / Messaging ----------------------------------------------
     router.register("notification_request", handle_notification_request)

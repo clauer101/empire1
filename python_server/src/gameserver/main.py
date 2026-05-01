@@ -72,6 +72,7 @@ class Configuration:
     ai_waves: list = field(default_factory=list)
     game: GameConfig = field(default_factory=GameConfig)
     knowledge_era_groups: dict = field(default_factory=dict)
+    building_era_groups: dict = field(default_factory=dict)
     item_era_index: dict = field(default_factory=dict)
 
 
@@ -105,33 +106,22 @@ class Services:
 # ===================================================================
 
 
-def _parse_era_groups_from_yaml(yaml_path: Path) -> dict[str, list[str]]:
-    """Parse a YAML file's section comments to build era → [iid] mapping."""
-    import re
-    era_order = [
-        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
-        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
-    ]
-    patterns = [(k, re.compile(rf'#\s+{k[:11]}')) for k in era_order]
-    item_re = re.compile(r'^([A-Z][A-Z0-9_]+):')
-    result: dict[str, list[str]] = {k: [] for k in era_order}
-    current = era_order[0]
+def _load_era_groups_from_yaml(yaml_path: Path) -> dict[str, list[str]]:
+    """Build era → [iid] mapping from explicit era: fields in a YAML file."""
+    import yaml as _yaml
+    result: dict[str, list[str]] = {}
     try:
-        for line in yaml_path.read_text(encoding="utf-8").splitlines():
-            for key, pat in patterns:
-                if pat.search(line):
-                    current = key
-                    break
-            m = item_re.match(line)
-            if m:
-                result[current].append(m.group(1))
+        data = _yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
     except OSError:
-        log.warning("Could not parse %s for era groups", yaml_path)
+        log.warning("Could not read %s for era groups", yaml_path)
+        return result
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        era = item.get("era", "")
+        if era:
+            result.setdefault(era, []).append(iid)
     return result
-
-
-def _parse_knowledge_era_groups(config_dir: str) -> dict[str, list[str]]:
-    return _parse_era_groups_from_yaml(Path(config_dir) / "knowledge.yaml")
 
 
 def load_configuration(
@@ -174,18 +164,17 @@ def load_configuration(
     game_cfg = load_game_config(os.path.join(config_dir, "game.yaml"))
     log.info("  game_config:  loaded")
 
-    knowledge_era_groups = _parse_knowledge_era_groups(config_dir)
-    log.info("  knowledge_era_groups: %d eras parsed", len(knowledge_era_groups))
+    knowledge_era_groups = _load_era_groups_from_yaml(Path(config_dir) / "knowledge.yaml")
+    log.info("  knowledge_era_groups: %d eras", len(knowledge_era_groups))
 
-    _DE_ERA_KEYS = [
-        "STEINZEIT", "NEOLITHIKUM", "BRONZEZEIT", "EISENZEIT",
-        "MITTELALTER", "RENAISSANCE", "INDUSTRIALISIERUNG", "MODERNE", "ZUKUNFT",
-    ]
+    building_era_groups = _load_era_groups_from_yaml(Path(config_dir) / "buildings.yaml")
+    log.info("  building_era_groups: %d eras", len(building_era_groups))
+
+    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER_LIST
     item_era_index: dict[str, int] = {}
     for _cat_yaml in ("structures.yaml", "critters.yaml"):
-        _groups = _parse_era_groups_from_yaml(Path(config_dir) / _cat_yaml)
-        for _era, _iids in _groups.items():
-            _idx = _DE_ERA_KEYS.index(_era) if _era in _DE_ERA_KEYS else 0
+        for _era, _iids in _load_era_groups_from_yaml(Path(config_dir) / _cat_yaml).items():
+            _idx = _ERA_ORDER_LIST.index(_era) if _era in _ERA_ORDER_LIST else 0
             for _iid in _iids:
                 item_era_index[_iid] = _idx
     log.info("  item_era_index: %d items indexed", len(item_era_index))
@@ -193,6 +182,7 @@ def load_configuration(
     return Configuration(items=items, hex_map=hex_map,
                          ai_waves=ai_waves, game=game_cfg,
                          knowledge_era_groups=knowledge_era_groups,
+                         building_era_groups=building_era_groups,
                          item_era_index=item_era_index)
 
 
@@ -254,6 +244,7 @@ def create_services(config: Configuration, database: Database) -> Services:
 
     empire_service = EmpireService(upgrade_provider, event_bus, gc,
                                    knowledge_era_groups=config.knowledge_era_groups,
+                                   building_era_groups=config.building_era_groups,
                                    item_era_index=config.item_era_index)
     battle_service = BattleService(items=upgrade_provider.items, gc=gc)
     attack_service = AttackService(event_bus, gc, empire_service,
@@ -387,6 +378,51 @@ async def start_network(services: Services) -> None:
 
     services._cleanup_task = asyncio.create_task(_message_cleanup_loop())
 
+    async def _backup_loop() -> None:
+        """Rolling state backups: 24 hourly slots, 7 daily slots."""
+        import shutil
+        from datetime import datetime, timezone
+
+        hourly_dir = Path("states/hourly")
+        daily_dir  = Path("states/daily")
+        hourly_dir.mkdir(parents=True, exist_ok=True)
+        daily_dir.mkdir(parents=True, exist_ok=True)
+
+        last_daily_day: int | None = None
+        hour_slot: int = 0
+
+        while True:
+            await asyncio.sleep(3600)
+            if services.empire_service is None:
+                continue
+            try:
+                # Write current state.yaml first, then copy into backup slot
+                await save_state(
+                    empires=services.empire_service.all_empires,
+                    attacks=services.attack_service.get_all_attacks() if services.attack_service else [],
+                    battles=[],
+                )
+                now = datetime.now(timezone.utc)
+
+                # Hourly rolling backup (slots 00–23)
+                hourly_path = hourly_dir / f"state_{hour_slot:02d}.yaml"
+                shutil.copy2("state.yaml", hourly_path)
+                log.info("Hourly backup written: %s", hourly_path)
+                hour_slot = (hour_slot + 1) % 24
+
+                # Daily rolling backup (slots mon–sun, keyed by weekday 0–6)
+                today = now.weekday()
+                if today != last_daily_day:
+                    daily_path = daily_dir / f"state_day{today}.yaml"
+                    shutil.copy2("state.yaml", daily_path)
+                    log.info("Daily backup written: %s", daily_path)
+                    last_daily_day = today
+
+            except Exception:
+                log.exception("Backup loop error — continuing")
+
+    services._backup_task = asyncio.create_task(_backup_loop())
+
 
 
 # ===================================================================
@@ -475,6 +511,8 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     )
+    logging.getLogger("gameserver.network.handlers").setLevel(logging.INFO)
+    logging.getLogger("gameserver.engine.battle_service").setLevel(logging.INFO)
     log.info("=== Game Server starting ===")
 
     # 1. Load configuration

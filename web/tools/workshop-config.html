@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workshop Config</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #save-btn { padding: 6px 18px; background: var(--accent); color: #000; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600; }
+    #save-btn:disabled { opacity: 0.4; cursor: default; }
+    #save-status { font-size: 12px; min-width: 120px; }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+
+    main { max-width: 700px; margin: 0 auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 28px; }
+
+    section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    section h2 { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 14px; letter-spacing: 0.5px; }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-row { display: flex; flex-direction: column; gap: 4px; }
+    .field-row label { font-size: 11px; color: var(--text-dim); }
+    .field-row input {
+      background: var(--surface-alt, #1a1a28); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 5px 8px;
+      font-size: 13px; width: 100%;
+    }
+    .field-row input:focus { outline: none; border-color: var(--accent); }
+
+    .costs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .era-label { font-size: 11px; color: var(--text-dim); margin-bottom: 3px; }
+
+    .hint { font-size: 11px; color: var(--text-dim); margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>🔧 Workshop Config</h1>
+  <span id="save-status"></span>
+  <button id="save-btn" disabled>Save</button>
+</div>
+
+<main>
+  <section>
+    <h2>Tower Upgrade Bonuses (% per level)</h2>
+    <div class="field-grid" id="structure-fields"></div>
+    <p class="hint">Each upgrade level adds this % bonus to the stat.</p>
+  </section>
+
+  <section>
+    <h2>Unit Upgrade Bonuses (% per level)</h2>
+    <div class="field-grid" id="critter-fields"></div>
+    <p class="hint">Each upgrade level adds this % bonus to the stat.</p>
+  </section>
+
+  <section>
+    <h2>Upgrade Base Costs (gold, per era)</h2>
+    <div class="costs-grid" id="costs-fields"></div>
+    <p class="hint">Base cost × (total upgrades on item + 1)²</p>
+  </section>
+</main>
+
+<script>
+const ERA_LABELS = ['Stone Age','Neolithic','Bronze Age','Iron Age','Middle Ages','Renaissance','Industrial','Modern','Future'];
+const STRUCT_LABELS = { damage: 'Damage', range: 'Range', reload: 'Reload', effect_duration: 'Effect Duration', effect_value: 'Effect Value' };
+const CRIT_LABELS   = { health: 'Health', speed: 'Speed', armour: 'Armour' };
+
+const BASE = window.location.origin;
+
+let _orig = null;
+let _dirty = false;
+
+function token() {
+  return localStorage.getItem('e3_jwt_token') || sessionStorage.getItem('e3_jwt_token') || '';
+}
+
+async function api(method, path, body) {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+function buildFields(container, data, labels) {
+  container.innerHTML = '';
+  for (const [key, val] of Object.entries(data)) {
+    const label = labels[key] || key;
+    const row = document.createElement('div');
+    row.className = 'field-row';
+    row.innerHTML = `<label>${label}</label><input type="number" step="0.5" min="0" data-key="${key}" value="${val}" />`;
+    row.querySelector('input').addEventListener('input', markDirty);
+    container.appendChild(row);
+  }
+}
+
+function buildCosts(container, costs) {
+  container.innerHTML = '';
+  costs.forEach((val, i) => {
+    const div = document.createElement('div');
+    div.className = 'field-row';
+    div.innerHTML = `<div class="era-label">${ERA_LABELS[i] || 'Era ' + i}</div><input type="number" step="1" min="0" data-era="${i}" value="${val}" />`;
+    div.querySelector('input').addEventListener('input', markDirty);
+    container.appendChild(div);
+  });
+}
+
+function markDirty() {
+  _dirty = true;
+  document.getElementById('save-btn').disabled = false;
+  document.getElementById('save-status').textContent = '';
+  document.getElementById('save-status').className = '';
+}
+
+function readFields(container) {
+  const result = {};
+  container.querySelectorAll('input[data-key]').forEach(inp => {
+    result[inp.dataset.key] = parseFloat(inp.value) || 0;
+  });
+  return result;
+}
+
+function readCosts() {
+  return Array.from(document.querySelectorAll('#costs-fields input[data-era]'))
+    .map(inp => parseFloat(inp.value) || 0);
+}
+
+async function load() {
+  const data = await api('GET', '/api/admin/workshop-config');
+  _orig = JSON.parse(JSON.stringify(data));
+  buildFields(document.getElementById('structure-fields'), data.structure_upgrades, STRUCT_LABELS);
+  buildFields(document.getElementById('critter-fields'),   data.critter_upgrades,   CRIT_LABELS);
+  buildCosts(document.getElementById('costs-fields'), data.item_upgrade_base_costs);
+}
+
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-btn');
+  const status = document.getElementById('save-status');
+  btn.disabled = true;
+  status.textContent = 'Saving…';
+  status.className = '';
+  try {
+    await api('PATCH', '/api/admin/workshop-config', {
+      structure_upgrades:    readFields(document.getElementById('structure-fields')),
+      critter_upgrades:      readFields(document.getElementById('critter-fields')),
+      item_upgrade_base_costs: readCosts(),
+    });
+    _dirty = false;
+    status.textContent = '✓ Saved';
+    status.className = 'ok';
+  } catch (err) {
+    status.textContent = '✗ ' + err.message.slice(0, 40);
+    status.className = 'err';
+    btn.disabled = false;
+  }
+});
+
+async function login(user, pass) {
+  const res = await fetch(BASE + '/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: user, password: pass }),
+  });
+  if (!res.ok) throw new Error('Login failed');
+  const d = await res.json();
+  const tok = d.token || d.access_token;
+  if (!tok) throw new Error('No token in response');
+  localStorage.setItem('e3_jwt_token', tok);
+  return tok;
+}
+
+function showLoginForm(errMsg) {
+  document.querySelector('main').innerHTML = `
+    <section style="max-width:320px;margin:0 auto;">
+      <h2 style="margin-bottom:14px;">Login required</h2>
+      ${errMsg ? `<div style="color:var(--danger);margin-bottom:10px;font-size:12px;">${errMsg}</div>` : ''}
+      <div class="field-row" style="margin-bottom:10px;">
+        <label>Username</label>
+        <input id="l-user" type="text" autocomplete="username" />
+      </div>
+      <div class="field-row" style="margin-bottom:14px;">
+        <label>Password</label>
+        <input id="l-pass" type="password" autocomplete="current-password" />
+      </div>
+      <button id="l-btn" style="width:100%;padding:7px;background:var(--accent);color:#000;border:none;border-radius:var(--radius);cursor:pointer;font-weight:600;">Login</button>
+    </section>`;
+  const go = async () => {
+    const u = document.getElementById('l-user').value.trim();
+    const p = document.getElementById('l-pass').value;
+    try {
+      await login(u, p);
+      await load();
+    } catch (e) {
+      showLoginForm('Login failed: ' + e.message);
+    }
+  };
+  document.getElementById('l-btn').addEventListener('click', go);
+  document.getElementById('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+}
+
+load().catch(err => {
+  if (err.message.startsWith('401')) {
+    showLoginForm('');
+  } else {
+    document.querySelector('main').innerHTML = `<div style="color:var(--danger);padding:20px">Failed to load: ${err.message}</div>`;
+  }
+});
+</script>
+</body>
+</html>

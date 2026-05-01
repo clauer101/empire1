@@ -85,6 +85,15 @@ class AttackPhaseChanged:
 
 
 @dataclass(frozen=True)
+class SpyArrived:
+    """A spy attack arrived at the defender — no battle, send intel report instead."""
+    attack_id: int
+    attacker_uid: int
+    defender_uid: int
+    army_aid: int
+
+
+@dataclass(frozen=True)
 class BattleObserverBroadcast:
     """Request to broadcast battle status to all observers."""
     attack_id: int

@@ -37,7 +37,7 @@ LOG="$PYTHON_SERVER_DIR/gameserver.log"
 WEB_DIR="$SCRIPT_DIR/web"
 WEB_PIDFILE="$PYTHON_SERVER_DIR/.webserver.pid"
 WEB_LOG="$PYTHON_SERVER_DIR/webserver.log"
-WEB_PORT="8000"
+WEB_PORT="8001"
 
 # Timeouts (Sekunden)
 GRACEFUL_TIMEOUT=10

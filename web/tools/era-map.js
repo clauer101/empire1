@@ -8,7 +8,7 @@
  * Usage:
  *   <script src="era-map.js"></script>
  *   const em = await fetchEraMap();
- *   console.log(em.eras);          // ["Steinzeit", ...]
+ *   console.log(em.eras);          // ["stone", ...]
  *   console.log(em.critters);      // {Steinzeit: ["SLAVE", ...], ...}
  */
 

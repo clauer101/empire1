@@ -15,7 +15,9 @@
 # ============================================================
 
 SLAVE:
+  era: stone
   name: "Slave"
+  description: "Weak and expendable, sent in swarms to overwhelm defenses. Costs almost nothing to field."
   speed: 0.2
   health: 1
   value: 2
@@ -32,7 +34,9 @@ SLAVE:
   requirements: []
 
 CLUBMAN:
+  era: stone
   name: "Clubman"
+  description: "A basic melee brawler that takes up extra wave capacity. Stronger than a Slave but equally slow."
   speed: 0.2
   health: 2
   value: 4
@@ -49,7 +53,9 @@ CLUBMAN:
   requirements: [HUNTING]
 
 SCOUT:
+  era: stone
   name: "Scout"
+  description: "Fast and fragile, dashes through defenses before towers can react. Best used in large swarms."
   speed: 0.6
   health: 1
   value: 4
@@ -70,10 +76,12 @@ SCOUT:
 # ============================================================
 
 WARRIOR:
+  era: neolithic
   name: "Warrior"
+  description: "Reliable all-rounder with basic armor and decent health. A solid first-era attacker."
   speed: 0.2
   health: 3
-  value: 6
+  value: 8
   damage: 1
   armour: 0.5
   slots: 1
@@ -87,10 +95,12 @@ WARRIOR:
   requirements: [CRAFTSMANSHIP, GRANARY]
 
 CART:
+  era: neolithic
   name: "Cart"
+  description: "A carrier that fills three slots but releases five Clubmen on death. Hard to stop once rolling."
   speed: 0.2
   health: 2
-  value: 7
+  value: 9
   damage: 2
   armour: 1
   slots: 3
@@ -108,10 +118,12 @@ CART:
 # ============================================================
 
 BOWMAN:
+  era: bronze
   name: "Bowman"
+  description: "Fast enough to outpace slow towers, with decent health for its era. A versatile Bronze Age attacker."
   speed: 0.45
   health: 5
-  value: 12
+  value: 22
   damage: 2
   armour: 0.5
   slots: 1
@@ -125,10 +137,12 @@ BOWMAN:
   requirements: [CRAFTSMANSHIP, BOW_MAKER]
 
 SWORDMAN:
+  era: bronze
   name: "Swordman"
+  description: "Well-armored melee fighter with steady movement. A dependable all-purpose attacker."
   speed: 0.3
   health: 6
-  value: 15
+  value: 25
   damage: 2
   armour: 1.5
   slots: 1
@@ -142,10 +156,12 @@ SWORDMAN:
   requirements: [COPPER_BRONZE, SWORD_MAKER]
 
 CHARIOT:
+  era: bronze
   name: "Chariot"
+  description: "The fastest Bronze Age unit, charging through defenses before they can react. Light armor but hard to intercept."
   speed: 0.65
   health: 6
-  value: 17
+  value: 27
   damage: 1
   armour: 0.5
   slots: 1
@@ -163,10 +179,12 @@ CHARIOT:
 # ============================================================
 
 PIKENEER:
+  era: iron
   name: "Pikeneer"
+  description: "Disciplined spearman who moves quickly in tight formation. Low damage but relentless in numbers."
   speed: 0.6
   health: 11
-  value: 25
+  value: 45
   damage: 1
   armour: 1.5
   slots: 1
@@ -180,10 +198,12 @@ PIKENEER:
   requirements: [COPPER_BRONZE, DRILL]
 
 HORSEMAN_SLOW:
+  era: iron
   name: "Heavy Horseman"
+  description: "Heavily armored cavalry that shrugs off most damage. Slow but nearly unstoppable."
   speed: 0.3
   health: 21
-  value: 27
+  value: 47
   damage: 2
   armour: 2.5
   slots: 1
@@ -197,10 +217,12 @@ HORSEMAN_SLOW:
   requirements: [HORSEBACK_RIDING, STABLES]
 
 HORSEMAN_FAST:
+  era: iron
   name: "Light Horseman"
+  description: "Swift cavalry that outpaces most tower fire. Fragile but nearly impossible to intercept."
   speed: 0.75
   health: 7
-  value: 25
+  value: 45
   damage: 1
   armour: 0.5
   slots: 1
@@ -214,10 +236,12 @@ HORSEMAN_FAST:
   requirements: [HORSEBACK_RIDING, RACE_COURSE]
 
 LEGIONARY:
+  era: iron
   name: "Legionary"
+  description: "Rome's elite infantry with excellent armor and methodical advance. Relentless and hard to stop."
   speed: 0.35
   health: 12
-  value: 26
+  value: 46
   damage: 1
   armour: 2.5
   slots: 1
@@ -231,7 +255,9 @@ LEGIONARY:
   requirements: [FORGE, LORE_COLLECTION]
 
 LARGE_CART:
+  era: iron
   name: "Large Cart"
+  description: "A massive carrier that deploys four Pikeneers on destruction. Three slots but delivers a dangerous payload."
   speed: 0.35
   health: 7
   value: 130
@@ -248,12 +274,14 @@ LARGE_CART:
   requirements: [BOOT_CAMP, IRON]
 
 THE_SWORDMASTER:
+  era: iron
   name: "The Swordmaster"
+  description: "An ancient legend who fills an entire wave alone. Enormous health and damage that no single tower can handle."
   speed: 0.4
-  health: 121
-  value: 100
+  health: 321
+  value: 300
   damage: 7
-  armour: 3
+  armour: 5
   slots: 999
   time_between: 2000
   is_boss: true
@@ -269,10 +297,12 @@ THE_SWORDMASTER:
 # ============================================================
 
 CRUSADER:
+  era: middle_ages
   name: "Crusader"
+  description: "A well-rounded holy warrior with solid armor and decent speed. The backbone of medieval assaults."
   speed: 0.5
   health: 40
-  value: 44
+  value: 74
   damage: 2
   armour: 2.5
   slots: 1
@@ -286,10 +316,12 @@ CRUSADER:
   requirements: [HOLY_WAR]
 
 KNIGHT:
+  era: middle_ages
   name: "Knight"
+  description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
   speed: 0.4
   health: 42
-  value: 44
+  value: 94
   damage: 1
   armour: 6
   slots: 2
@@ -303,10 +335,12 @@ KNIGHT:
   requirements: [FEUDALISM, COMMAND_CHAIN]
 
 SAMURAI:
+  era: middle_ages
   name: "Samurai"
+  description: "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker."
   speed: 0.85
   health: 16
-  value: 46
+  value: 86
   damage: 1
   armour: 2.5
   slots: 1
@@ -320,12 +354,14 @@ SAMURAI:
   requirements: [TACTICS, FENCING_SCHOOL]
 
 SIEGE_RAM:
+  era: middle_ages
   name: "Siege Ram"
-  speed: 0.2
-  health: 21
-  value: 230
+  description: "A slow carrier that carries Crusaders and deals massive damage. Three slots of nearly unstoppable force."
+  speed: 0.4
+  health: 29
+  value: 330
   damage: 3
-  armour: 3.5
+  armour: 5
   slots: 3
   time_between: 2300
   is_boss: false
@@ -337,10 +373,12 @@ SIEGE_RAM:
   requirements: [MECHANICS, THE_KINGS_LAIR]
 
 CONDOTTERI:
+  era: middle_ages
   name: "Condotteri"
+  description: "A battle-hardened mercenary with above-average health and good speed. Reliable all-rounder of the medieval era."
   speed: 0.6
   health: 57
-  value: 78
+  value: 108
   damage: 2
   armour: 2.5
   slots: 1
@@ -354,10 +392,12 @@ CONDOTTERI:
   requirements: [STEEL, FANATISM]
 
 HANDGUNNER:
+  era: middle_ages
   name: "Handgunner"
+  description: "Early gunpowder unit combining strong armor with high speed. Blends firepower with surprising mobility."
   speed: 0.7
   health: 53
-  value: 71
+  value: 101
   damage: 1
   armour: 4.5
   slots: 1
@@ -375,12 +415,14 @@ HANDGUNNER:
 # ============================================================
 
 THE_KING:
+  era: renaissance
   name: "The King"
+  description: "A legendary ruler who fills an entire wave with impossible health and crushing damage. Bring your best defenses."
   speed: 0.4
-  health: 580
+  health: 780
   value: 1000
   damage: 10
-  armour: 5
+  armour: 8
   slots: 999
   time_between: 2000
   is_boss: true
@@ -392,10 +434,12 @@ THE_KING:
   requirements: [PARLIAMENT]
 
 NINJA:
+  era: renaissance
   name: "Ninja"
-  speed: 0.95
+  description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
+  speed: 1.05
   health: 52
-  value: 68
+  value: 168
   damage: 1
   armour: 3
   slots: 1
@@ -409,10 +453,12 @@ NINJA:
   requirements: [STEALTH_SECRECY, SECRET_ORDER]
 
 MUSKETEER:
+  era: renaissance
   name: "Musketeer"
+  description: "Well-armored gunner that advances steadily under fire. Good balance of health, speed, and durability."
   speed: 0.6
   health: 87
-  value: 71
+  value: 171
   damage: 1
   armour: 6
   slots: 1
@@ -426,10 +472,12 @@ MUSKETEER:
   requirements: [CONSTITUTION, GUNSMITH]
 
 DRAGOONER:
+  era: renaissance
   name: "Dragoon"
+  description: "Mounted gunner combining speed with solid armor. A well-rounded attacker that hits hard and moves fast."
   speed: 0.75
   health: 112
-  value: 82
+  value: 182
   damage: 2
   armour: 4
   slots: 1.2
@@ -443,7 +491,9 @@ DRAGOONER:
   requirements: [STRATEGIC_WARFARE,  GUNSMITH]
 
 CARGO:
+  era: renaissance
   name: "Cargo"
+  description: "A heavy transport that deploys three Musketeers on death. Takes four slots but delivers a fearsome payload."
   speed: 0.8
   health: 53
   value: 334
@@ -464,12 +514,14 @@ CARGO:
 # ============================================================
 
 SOLDIER:
+  era: industrial
   name: "Soldier"
+  description: "Industrial-era infantry with solid health and armor. The dependable backbone of modern assaults."
   speed: 0.75
-  health: 135
-  value: 110
+  health: 145
+  value: 250
   damage: 1
-  armour: 5
+  armour: 4
   slots: 1
   time_between: 900
   is_boss: false
@@ -481,10 +533,12 @@ SOLDIER:
   requirements: [BARRACKS, CONSTITUTION, BALLISTICS]
 
 MOTORBIKE:
+  era: industrial
   name: "Motorbike"
-  speed: 1
+  description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
+  speed: 1.2
   health: 91
-  value: 134
+  value: 264
   damage: 3
   armour: 4.5
   slots: 1
@@ -498,12 +552,14 @@ MOTORBIKE:
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 SMALL_TANK:
+  era: industrial
   name: "Small Tank"
-  speed: 0.3
-  health: 107
+  description: "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage."
+  speed: 0.4
+  health: 301
   value: 154
   damage: 2
-  armour: 8
+  armour: 9
   slots: 2
   time_between: 1000
   is_boss: false
@@ -515,12 +571,14 @@ SMALL_TANK:
   requirements: [COMBUSTION_ENGINE, FACTORY]
 
 TRANSPORTER:
+  era: industrial
   name: "Transporter"
+  description: "A hulking carrier that deploys eight Soldiers on death. Takes ten slots but delivers a full squad."
   speed: 0.4
-  health: 97
-  value: 347
+  health: 126
+  value: 547
   damage: 5
-  armour: 7.5
+  armour: 4.5
   slots: 10
   time_between: 1900
   is_boss: false
@@ -536,12 +594,14 @@ TRANSPORTER:
 # ============================================================
 
 SIEGE_TANK:
+  era: modern
   name: "Siege Tank"
-  speed: 0.2
-  health: 169
-  value: 457
+  description: "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy."
+  speed: 0.3
+  health: 222
+  value: 857
   damage: 2
-  armour: 14
+  armour: 15
   slots: 2
   time_between: 1100
   is_boss: false
@@ -553,14 +613,16 @@ SIEGE_TANK:
   requirements: [KNO_ARMOUR, COMPUTER_TECHNOLOGY]
 
 SPECOPS:
+  era: modern
   name: "Special Ops"
+  description: "Elite special forces with advanced armor and tactical precision. Balanced speed and durability."
   speed: 0.6
-  health: 100
-  value: 341
+  health: 210
+  value: 941
   damage: 2
-  armour: 11
+  armour: 8
   slots: 1
-  time_between: 1200
+  time_between: 900
   is_boss: false
   capture: {}
   bonus: {}
@@ -570,13 +632,15 @@ SPECOPS:
   requirements: [SPECIAL_FORCES, ELITE_ACADEMY]
 
 HELI:
+  era: modern
   name: "Helicopter"
-  speed: 1.2
-  health: 75
-  value: 312
-  damage: 1
-  armour: 5
-  slots: 1
+  description: "The fastest modern unit, deploying Soldiers on crash. Weak armor but nearly impossible to intercept."
+  speed: 1.5
+  health: 120
+  value: 812
+  damage: 3
+  armour: 4
+  slots: 2
   time_between: 900
   is_boss: false
   capture: {}
@@ -587,12 +651,14 @@ HELI:
   requirements: [AVIATION, HANGAR]
 
 THE_GENERAL:
+  era: modern
   name: "The General"
+  description: "Supreme commander with devastating power and near-impenetrable armor. A wave-filling behemoth of modern warfare."
   speed: 0.4
   health: 1270
-  value: 5000
+  value: 9000
   damage: 18
-  armour: 15
+  armour: 13
   slots: 999
   time_between: 2000
   is_boss: true
@@ -608,10 +674,12 @@ THE_GENERAL:
 # ============================================================
 
 MECH_WARRIOR:
+  era: future
   name: "Mech Warrior"
+  description: "A two-slot combat mech with heavy armor that releases Special Ops on destruction. The pinnacle of future warfare."
   speed: 0.5
   health: 250
-  value: 550
+  value: 2000
   damage: 1
   armour: 9
   slots: 2

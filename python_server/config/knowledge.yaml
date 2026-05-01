@@ -10,7 +10,7 @@
 # ============================================================
 
 HUNTING:
-  era: "STONE_AGE"
+  era: stone
   image: assets/sprites/knowledge/hunting
   name: "Hunting"
   description: "Basic survival skill for acquiring food resources."
@@ -20,7 +20,7 @@ HUNTING:
   effects: {}
 
 MYSTIC:
-  era: "STONE_AGE"
+  era: stone
   image: assets/sprites/knowledge/mystic
   name: "Mystic"
   description: "Understanding of spiritual and mystical phenomena."
@@ -31,7 +31,7 @@ MYSTIC:
     research_speed_modifier: 0.3
 
 DOMESTICATION:
-  era: "STONE_AGE"
+  era: stone
   image: assets/sprites/knowledge/domestication
   name: "Domestication"
   description: "Taming wild animals for agricultural and transport purposes."
@@ -42,7 +42,7 @@ DOMESTICATION:
     culture_offset: 0.1
 
 CRAFTSMANSHIP:
-  era: "STONE_AGE"
+  era: stone
   image: assets/sprites/knowledge/craftsmanship
   name: "Craftsmanship"
   description: "Essential skills for building and manufacturing items."
@@ -57,7 +57,7 @@ CRAFTSMANSHIP:
 # ============================================================
 
 POTTERY:
-  era: "NEOLITHIC"
+  era: neolithic
   image: assets/sprites/knowledge/pottery
   name: "Pottery"
   description: "Ceramic crafting for storage and early trade vessels."
@@ -67,7 +67,7 @@ POTTERY:
   effects:
 
 HERBOLOGY:
-  era: "NEOLITHIC"
+  era: neolithic
   image: assets/sprites/knowledge/herbology
   name: "Herbology"
   description: "Study of plants for medicine and healing purposes."
@@ -77,7 +77,7 @@ HERBOLOGY:
   effects: {}
 
 AGRICULTURE:
-  era: "NEOLITHIC"
+  era: neolithic
   image: assets/sprites/knowledge/agriculture
   name: "Agriculture"
   description: "Systematic crop cultivation and farming techniques."
@@ -87,7 +87,7 @@ AGRICULTURE:
   effects: {}
 
 ALPHABET_WRITING:
-  era: "NEOLITHIC"
+  era: neolithic
   image: assets/sprites/knowledge/alphabet_writing
   name: "Alphabet & Writing"
   description: "Development of written language and symbolism."
@@ -102,7 +102,7 @@ ALPHABET_WRITING:
 # ============================================================
 
 COPPER_BRONZE:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/copper_bronze
   name: "Copper & Bronze"
   description: "Metallurgy techniques for bronze age advancement."
@@ -112,7 +112,7 @@ COPPER_BRONZE:
   effects: {}
 
 RELIGION:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/religion
   name: "Religion"
   description: "Organized faith and spiritual institutional systems."
@@ -122,7 +122,7 @@ RELIGION:
   effects: {}
 
 MUSIC:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/music
   name: "Music"
   description: "Musical composition and performance arts."
@@ -134,7 +134,7 @@ MUSIC:
     culture_modifier: 0.2
 
 SAILING:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/sailing
   name: "Sailing"
   description: "Seafaring and coastal navigation techniques."
@@ -144,7 +144,7 @@ SAILING:
   effects: {}
 
 HORSEBACK_RIDING:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/horseback_riding
   name: "Horseback Riding"
   description: "Mastery of mounted combat and horse training."
@@ -154,7 +154,7 @@ HORSEBACK_RIDING:
   effects: {}
 
 CURRENCY:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/currency
   name: "Currency"
   description: "Development of standardized monetary exchange systems."
@@ -164,7 +164,7 @@ CURRENCY:
   effects: {}
 
 DRILL:
-  era: "BRONZE_AGE"
+  era: bronze
   image: assets/sprites/knowledge/drill
   name: "Drill"
   description: "Systematic military training and discipline."
@@ -178,7 +178,7 @@ DRILL:
 # ============================================================
 
 ARTS:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/arts
   name: "Arts"
   description: "Development of music, painting, and creative expression."
@@ -188,7 +188,7 @@ ARTS:
   effects: {}
 
 MECHANICS:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/mechanics
   name: "Mechanics"
   description: "Understanding of mechanical systems and machines."
@@ -198,7 +198,7 @@ MECHANICS:
   effects: {}
 
 MATHMATICS:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/mathmatics
   name: "Mathematics"
   description: "Mathematical sciences and numerical computation."
@@ -208,7 +208,7 @@ MATHMATICS:
   effects: {}
 
 CARTOGRAPHY:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/cartography
   name: "Cartography"
   description: "Art of mapmaking and geographic knowledge."
@@ -218,7 +218,7 @@ CARTOGRAPHY:
   effects: {}
 
 LAWS:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/laws
   name: "Laws"
   description: "Development of legal systems and justice frameworks."
@@ -228,7 +228,7 @@ LAWS:
   effects: {}
 
 IRON:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/iron
   name: "Iron"
   description: "Iron age metallurgy and production techniques."
@@ -238,7 +238,7 @@ IRON:
   effects: {}
 
 ARCHITECTURE:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/architecture
   name: "Architecture"
   description: "Advanced building design and structural engineering."
@@ -249,7 +249,7 @@ ARCHITECTURE:
     build_speed_modifier: 0.3
 
 PAINTING:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/painting
   name: "Painting"
   description: "Visual arts and painting techniques for expression."
@@ -259,7 +259,7 @@ PAINTING:
   effects: {}
 
 LITRATURE:
-  era: "IRON_AGE"
+  era: iron
   image: assets/sprites/knowledge/litrature
   name: "Literature"
   description: "Written storytelling and literary arts."
@@ -273,7 +273,7 @@ LITRATURE:
 # ============================================================
 
 SCIENCE:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/science
   name: "Science"
   description: "Systematic scientific method and research principles."
@@ -283,7 +283,7 @@ SCIENCE:
   effects: []
 
 COMMAND_CHAIN:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/command_chain
   name: "Command Chain"
   description: "Military hierarchy and organizational command structure."
@@ -293,7 +293,7 @@ COMMAND_CHAIN:
   effects: {}
 
 TACTICS:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/tactics
   name: "Tactics"
   description: "Military battle strategies and combat techniques."
@@ -303,7 +303,7 @@ TACTICS:
   effects: {}
 
 FANATISM:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/fanatism
   name: "Fanatism"
   description: "Zealous commitment to ideological or religious causes."
@@ -313,7 +313,7 @@ FANATISM:
   effects: {}
 
 HOLY_WAR:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/holy_war
   name: "Holy War"
   description: "Religious warfare doctrine and jihadist concepts."
@@ -323,7 +323,7 @@ HOLY_WAR:
   effects: {}
 
 ECONOMY:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/economy
   name: "Economy"
   description: "Economic trade systems and market management."
@@ -333,7 +333,7 @@ ECONOMY:
   effects: {}
 
 FEUDALISM:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/feudalism
   name: "Feudalism"
   description: "Feudal land ownership and hierarchical social systems."
@@ -343,7 +343,7 @@ FEUDALISM:
   effects: {}
 
 MONARCHY:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/monarchy
   name: "Monarchy"
   description: "Absolute rule by a single monarch or dynasty."
@@ -353,7 +353,7 @@ MONARCHY:
   effects: {}
 
 GUNPOWDER:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/gunpowder
   name: "Gunpowder"
   description: "Explosive powder technology for weapons."
@@ -363,7 +363,7 @@ GUNPOWDER:
   effects: {}
 
 STEEL:
-  era: "MEDIEVAL"
+  era: middle_ages
   image: assets/sprites/knowledge/steel
   name: "Steel"
   description: "Advanced iron alloy production for superior tools."
@@ -377,7 +377,7 @@ STEEL:
 # ============================================================
 
 PRINTING_PRESS:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/printing_press
   name: "Printing Press"
   description: "Mass production of printed materials and information."
@@ -387,7 +387,7 @@ PRINTING_PRESS:
   effects: {}
 
 STEALTH_SECRECY:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/stealth_secrecy
   name: "Stealth & Secrecy"
   description: "Clandestine operations and intelligence gathering."
@@ -397,7 +397,7 @@ STEALTH_SECRECY:
   effects: {}
 
 CONSTITUTION:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/constitution
   name: "Constitution"
   description: "Governmental framework and citizen rights principles."
@@ -407,7 +407,7 @@ CONSTITUTION:
   effects: {}
 
 STRATEGIC_WARFARE:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/strategic_warfare
   name: "Strategic Warfare"
   description: "Large-scale military strategy and campaign planning."
@@ -417,7 +417,7 @@ STRATEGIC_WARFARE:
   effects: {}
 
 PHYSICS:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/physics
   name: "Physics"
   description: "Laws of motion, forces, and natural philosophy."
@@ -427,7 +427,7 @@ PHYSICS:
   effects: {}
 
 CHEMISTRY:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/chemistry
   name: "Chemistry"
   description: "Study of matter, elements, and chemical reactions."
@@ -437,7 +437,7 @@ CHEMISTRY:
   effects: {}
 
 MECHANICAL_ENGINEERING:
-  era: "RENAISSANCE"
+  era: renaissance
   image: assets/sprites/knowledge/mechanical_engineering
   name: "Mechanical Engineering"
   description: "Advanced engineering of mechanical systems."
@@ -452,7 +452,7 @@ MECHANICAL_ENGINEERING:
 # ============================================================
 
 OPTICS:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/optics
   name: "Optics"
   description: "Lens crafting, telescopes, and periscopes technology."
@@ -462,7 +462,7 @@ OPTICS:
   effects: {}
 
 BALLISTICS:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/ballistics
   name: "Ballistics"
   description: "Science of projectile trajectories and artillery."
@@ -472,7 +472,7 @@ BALLISTICS:
   effects: {}
 
 STEAM_ENGINE:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/steam_engine
   name: "Steam Engine"
   description: "Industrial steam power technology and machines."
@@ -482,7 +482,7 @@ STEAM_ENGINE:
   effects: {}
 
 SANITATION:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/sanitation
   name: "Sanitation"
   description: "Public hygiene and sanitary infrastructure systems."
@@ -492,7 +492,7 @@ SANITATION:
   effects: {}
 
 ELECTRICITY:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/electricity
   name: "Electricity"
   description: "Electrical power generation and transmission."
@@ -502,7 +502,7 @@ ELECTRICITY:
   effects: {}
 
 COMBUSTION_ENGINE:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/combustion_engine
   name: "Combustion Engine"
   description: "Internal combustion engine technology development."
@@ -512,7 +512,7 @@ COMBUSTION_ENGINE:
   effects: {}
 
 SOCIAL_SCIENCES:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/social_sciences
   name: "Social Sciences"
   description: "Human behavior and societal development studies."
@@ -522,7 +522,7 @@ SOCIAL_SCIENCES:
   effects: {}
 
 MEDICINE:
-  era: "INDUSTRIAL"
+  era: industrial
   image: assets/sprites/knowledge/medicine
   name: "Medicine"
   description: "Advanced medical science and treatment techniques."
@@ -537,7 +537,7 @@ MEDICINE:
 # ============================================================
 
 KNO_ARMOUR:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/kno_armour
   name: "KNO Armour"
   description: "Advanced body protection and defensive equipment."
@@ -547,7 +547,7 @@ KNO_ARMOUR:
   effects: {}
 
 CRYPTOLOGY:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/cryptology
   name: "Cryptology"
   description: "Code making and code breaking science."
@@ -557,7 +557,7 @@ CRYPTOLOGY:
   effects: {}
 
 MILITARY_SERVICE:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/military_service
   name: "Military Service"
   description: "Organized military conscription and service systems."
@@ -567,7 +567,7 @@ MILITARY_SERVICE:
   effects: {}
 
 AVIATION:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/aviation
   name: "Aviation"
   description: "Fixed-wing aircraft design and flight technology."
@@ -577,7 +577,7 @@ AVIATION:
   effects: {}
 
 ELECTRONICS:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/electronics
   name: "Electronics"
   description: "Electronic components and circuits development."
@@ -587,7 +587,7 @@ ELECTRONICS:
   effects: {}
 
 MASS_PRODUCTION:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/mass_production
   name: "Mass Production"
   description: "Industrial assembly line and standardization."
@@ -598,7 +598,7 @@ MASS_PRODUCTION:
     build_speed_modifier: 0.2
 
 NUCLEAR_REACTION:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/nuclear_reaction
   name: "Nuclear Reaction"
   description: "Nuclear fission and atomic energy principles."
@@ -608,7 +608,7 @@ NUCLEAR_REACTION:
   effects: {}
 
 CHEMICAL_WARFARE:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/chemical_warfare
   name: "Chemical Warfare"
   description: "Chemical weapons development and deployment."
@@ -618,7 +618,7 @@ CHEMICAL_WARFARE:
   effects: {}
 
 ROCKET_SCIENCE:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/rocket_science
   name: "Rocket Science"
   description: "Propulsion and rocket engineering technology."
@@ -628,7 +628,7 @@ ROCKET_SCIENCE:
   effects: {}
 
 AERO_DYNAMICS:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/aero_dynamics
   name: "Aero Dynamics"
   description: "Physics of flight and aeronautical engineering."
@@ -638,7 +638,7 @@ AERO_DYNAMICS:
   effects: {}
 
 GLOBALIZATION_STRATEGIES:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/globalization_strategies
   name: "Globalization Strategies"
   description: "International trade and global economic integration."
@@ -649,7 +649,7 @@ GLOBALIZATION_STRATEGIES:
     gold_offset: 0.4
 
 CIVIL_ENGINEERING:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/civil_engineering
   name: "Civil Engineering"
   description: "Infrastructure design and large-scale construction."
@@ -659,7 +659,7 @@ CIVIL_ENGINEERING:
   effects: {}
 
 SATELLITE_SYSTEMS:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/satellite_systems
   name: "Satellite Systems"
   description: "Orbiting spacecraft for communication and observation."
@@ -669,7 +669,7 @@ SATELLITE_SYSTEMS:
   effects: {}
 
 COMPUTER_TECHNOLOGY:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/computer_technology
   name: "Computer Technology"
   description: "Electronic computing machines and algorithms."
@@ -679,7 +679,7 @@ COMPUTER_TECHNOLOGY:
   effects: {}
 
 SPECIAL_FORCES:
-  era: "MODERN"
+  era: modern
   image: assets/sprites/knowledge/special_forces
   name: "Special Forces"
   description: "Elite military units with advanced training."
@@ -693,7 +693,7 @@ SPECIAL_FORCES:
 # ============================================================
 
 BIONICS:
-  era: "FUTURE"
+  era: future
   image: assets/sprites/knowledge/bionics
   name: "Bionics"
   description: "Integration of biological and mechanical systems."
@@ -703,7 +703,7 @@ BIONICS:
   effects: {}
 
 FIBER_COMPOSITE:
-  era: "FUTURE"
+  era: future
   image: assets/sprites/knowledge/fiber_composite
   name: "Fiber Composite"
   description: "Advanced composite material engineering technology."
@@ -713,7 +713,7 @@ FIBER_COMPOSITE:
   effects: {}
 
 COLD_FUSION:
-  era: "FUTURE"
+  era: future
   image: assets/sprites/knowledge/cold_fusion
   name: "Cold Fusion"
   description: "Low-temperature nuclear fusion research and development."

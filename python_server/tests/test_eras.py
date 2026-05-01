@@ -11,10 +11,10 @@ class TestEraOrder:
         assert len(ERA_ORDER) == 9
 
     def test_starts_with_steinzeit(self):
-        assert ERA_ORDER[0] == "STEINZEIT"
+        assert ERA_ORDER[0] == "stone"
 
     def test_ends_with_zukunft(self):
-        assert ERA_ORDER[-1] == "ZUKUNFT"
+        assert ERA_ORDER[-1] == "future"
 
     def test_no_duplicates(self):
         assert len(ERA_ORDER) == len(set(ERA_ORDER))

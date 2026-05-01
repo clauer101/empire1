@@ -46,7 +46,7 @@ function _gold() {
 
 function _fmtRes(val, digits = 0) {
   const v = val ?? 0;
-  return v >= 1000 ? (Math.floor(v / 100) / 10) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
+  return v >= 1000 ? Math.floor(v / 1000) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
 function _fillTitleResources() {
@@ -55,7 +55,7 @@ function _fillTitleResources() {
   if (!r) return;
   _container.querySelectorAll('.title-gold').forEach(el => { el.textContent = '💰 ' + _fmtRes(r.gold); });
   _container.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(r.culture); });
-  _container.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 1); });
+  _container.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0); });
 }
 
 function _catalog() {

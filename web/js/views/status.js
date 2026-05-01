@@ -9,6 +9,7 @@ import { eventBus } from '../events.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
+import { ItemOverlay } from '../lib/item_overlay.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -19,10 +20,18 @@ let container;
 let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
+/** @type {ItemOverlay|null} */
+let _itemOverlay = null;
 let _empiresTimer = null;
 let _tickTimer = null;
 let _tickData = null;
 let _tickTs = null;
+let _rafId = null;
+
+// Live resource counter — runs independently of server polls
+const _liveRes = { gold: 0, culture: 0 };
+const _liveRate = { gold: 0, culture: 0 }; // per hour
+let _liveTimer = null;
 
 const _ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 function _toRoman(n) { return _ROMAN[n] || String(n); }
@@ -32,13 +41,15 @@ function init(el, _api, _state) {
   api = _api;
   st = _state;
 
-
   container.innerHTML = `
     <h2 class="battle-title">🏰 Empire Status<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
     <div id="dashboard-content">
       <div class="empty-state"><div class="empty-icon">◈</div><p>Loading empire data…</p></div>
     </div>
   `;
+
+  _itemOverlay = new ItemOverlay(_state);
+  _itemOverlay.mount(container);
 }
 
 function enter() {
@@ -71,6 +82,9 @@ function leave() {
   _empiresData = null;
   if (_empiresTimer) { clearInterval(_empiresTimer); _empiresTimer = null; }
   if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (render._stopRaf) { render._stopRaf(); render._stopRaf = null; }
+  if (_liveTimer) { clearInterval(_liveTimer); _liveTimer = null; }
   _tickData = null;
   _tickTs = null;
 }
@@ -130,8 +144,8 @@ function render(data) {
 
       <div class="panel">
         <div class="panel-header">Resources <button class="prod-info-btn" id="resources-detail-btn" title="Show income details">🔍</button></div>
-        <div class="panel-row"><span class="label">💰 Gold</span><span class="value">${fmt(r.gold)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))}/h)</span></span></div>
-        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value">${fmt(r.culture)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))}/h)</span></span></div>
+        <div class="panel-row"><span class="label">💰 Gold</span><span class="value"><span data-live-res="gold">${fmt(r.gold)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))}/h)</span></span></div>
+        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value"><span data-live-res="culture">${fmt(r.culture)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))}/h)</span></span></div>
         <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0))}/h)</span></span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
         <div class="panel-header" style="margin-bottom:4px">Citizens</div>
@@ -145,6 +159,17 @@ function render(data) {
       </div>
 
       <div class="panel">
+        ${(() => {
+          const arts = data.artefacts || [];
+          if (!arts.length) return '';
+          const catalog = st?.items?.catalog || {};
+          const badges = arts.map(iid => {
+            const name = catalog[iid]?.name || iid;
+            const type = catalog[iid]?.type || 'normal';
+            return `<span class="art-badge art-badge-${type} art-badge-clickable" data-iid="${iid}">⚜ ${name}</span>`;
+          }).join('');
+          return `<div class="panel-header">Artefacts</div><div class="art-badge-list">${badges}</div><div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>`;
+        })()}
         <div class="panel-header">Incoming</div>
         <div id="attacks-incoming-list">${(() => {
           const inc = data.attacks_incoming || [];
@@ -232,6 +257,11 @@ function render(data) {
   const detailBtn = el.querySelector('#resources-detail-btn');
   if (detailBtn) detailBtn.addEventListener('click', () => _showProductionOverlay(data));
 
+  // Bind artefact badge clicks
+  el.querySelectorAll('.art-badge-clickable').forEach(badge => {
+    badge.addEventListener('click', () => _showArtefactOverlay(badge.dataset.iid));
+  });
+
   // Replace old citizen-btn handler with slider init
   _initCitizenSlider(el, data);
 
@@ -244,6 +274,14 @@ function render(data) {
   _tickData = data;
   _tickTs = Date.now();
   if (!_tickTimer) _tickTimer = setInterval(_tick, 1000);
+
+  // Update live counter base/rate from fresh server data and (re)start counter
+  const r2 = data.resources || {};
+  _liveRes.gold    = r2.gold    ?? 0;
+  _liveRes.culture = r2.culture ?? 0;
+  _liveRate.gold    = calcIncome('gold',    data.effects, data.citizens, data.citizen_effect, data.base_gold);
+  _liveRate.culture = calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture);
+  _startLiveCounter();
 
   // Bind incoming attack clicks
   el.querySelectorAll('.attack-in-clickable').forEach(entry => {
@@ -293,6 +331,21 @@ function _tick() {
       if (bar) bar.style.width = pct.toFixed(1) + '%';
     }
   });
+
+}
+
+function _startLiveCounter() {
+  if (_liveTimer) return; // already running
+  _liveTimer = setInterval(() => {
+    _liveRes.gold    += _liveRate.gold    / 10;
+    _liveRes.culture += _liveRate.culture / 10;
+    const el = container.querySelector('#dashboard-content');
+    if (!el) return;
+    const goldSpan = el.querySelector('[data-live-res="gold"]');
+    const cultSpan = el.querySelector('[data-live-res="culture"]');
+    if (goldSpan) goldSpan.textContent = fmt(_liveRes.gold);
+    if (cultSpan) cultSpan.textContent = fmt(_liveRes.culture);
+  }, 100);
 }
 
 function _showProductionOverlay(data) {
@@ -310,9 +363,10 @@ function _showProductionOverlay(data) {
     return `<div class="prod-overlay-section"><div class="prod-overlay-title">${title}</div>${html}</div>`;
   }
 
-  const goldHtml = renderResourceIncome('gold', effects, citizens, citizenEffect, data.base_gold, completedBuildings, items, completedResearch);
-  const cultureHtml = renderResourceIncome('culture', effects, citizens, citizenEffect, data.base_culture, completedBuildings, items, completedResearch);
-  const lifeHtml = renderResourceIncome('life', effects, citizens, citizenEffect, 0, completedBuildings, items, completedResearch);
+  const artefacts = data.artefacts || [];
+  const goldHtml = renderResourceIncome('gold', effects, citizens, citizenEffect, data.base_gold, completedBuildings, items, completedResearch, artefacts);
+  const cultureHtml = renderResourceIncome('culture', effects, citizens, citizenEffect, data.base_culture, completedBuildings, items, completedResearch, artefacts);
+  const lifeHtml = renderResourceIncome('life', effects, citizens, citizenEffect, 0, completedBuildings, items, completedResearch, artefacts);
   const buildHtml = renderBuildSpeed(effects, completedBuildings, completedResearch, items, data.base_build_speed);
   const researchHtml = renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, data.base_research_speed);
 
@@ -338,6 +392,10 @@ function _showProductionOverlay(data) {
   });
 
   document.body.appendChild(overlay);
+}
+
+function _showArtefactOverlay(iid) {
+  if (_itemOverlay) _itemOverlay.show(iid, 'artefact');
 }
 
 function renderCitizens(citizens) {
@@ -649,7 +707,7 @@ function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) 
   return offset * (1 + modifier);
 }
 
-function renderResourceIncome(resourceType, effects, citizens, citizenEffect, baseAmount, completedBuildings, items, completedResearch) {
+function renderResourceIncome(resourceType, effects, citizens, citizenEffect, baseAmount, completedBuildings, items, completedResearch, ownedArtefacts) {
   completedResearch = completedResearch || [];
   let html = '';
   
@@ -699,8 +757,29 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
                 html += `<div class="panel-row"><span class="label">+${fmtH(offset)}</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
+    // Artefact offsets
+    for (const iid of (ownedArtefacts || [])) {
+      const art = catalog.catalog?.[iid];
+      if (art?.effects?.[effectOffsetKey]) {
+        const offset = art.effects[effectOffsetKey];
+        totalOffset += offset;
+        html += `<div class="panel-row"><span class="label">${offset > 0 ? '+' : ''}${fmtH(offset)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+      }
+    }
   }
   addOffsetSources(items);
+
+  // Helper to add artefact modifiers (called after the buildings/research modifier loop)
+  function addArtefactModifiers() {
+    for (const iid of (ownedArtefacts || [])) {
+      const art = items?.catalog?.[iid];
+      if (art?.effects?.[effectModifierKey] > 0) {
+        const modifier = art.effects[effectModifierKey];
+        totalModifier += modifier;
+        html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+      }
+    }
+  }
 
   // Era offset contribution (difference between aggregated backend value and item sum)
   const eraOffset = (effects[effectOffsetKey] || 0) - (totalOffset - baseAmount);
@@ -734,6 +813,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
       html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
+  addArtefactModifiers();
 
   // Era modifier contribution
   const eraModifier = effectModifierKey ? (effects[effectModifierKey] || 0) - (totalModifier - citizenBonus) : 0;
@@ -798,9 +878,10 @@ function _attackEntry(a, direction) {
     : _resolveEmpireUsername(otherUid));
   const empLabel  = isAI ? 'AI' : (username ? `${empireName} (${username})` : empireName);
   const armyName  = a.army_name || '';
+  const displayedArmyName = armyName && a.is_spy && direction === 'out' ? `"${armyName}"` : armyName;
   // Show army name as primary label; empire/username as secondary hint
-  const empName   = armyName
-    ? `${armyName}<span class="atk-empire-hint"> · ${empLabel}</span>`
+  const empName   = displayedArmyName
+    ? `${displayedArmyName}<span class="atk-empire-hint"> · ${empLabel}</span>`
     : empLabel;
 
   const showWatch = direction === 'out' && (a.phase === 'in_siege' || a.phase === 'in_battle');
@@ -892,25 +973,30 @@ function renderEmpiresSection(empires) {
     return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">—</span></div></div>`;
   }
 
+  const dot = (online) => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${online ? 'var(--success,#66bb6a)' : '#3a3a4a'};${online ? 'box-shadow:0 0 4px var(--success,#66bb6a)' : ''}"></span>`;
+
   const rows = empires.map((e, i) => `
-    <div class="panel-row" style="display:grid;grid-template-columns:24px 1fr 90px 56px 46px;gap:6px;align-items:center;">
-      <span style="color:#888;font-size:0.85em;">${i + 1}</span>
-      <span class="label" style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent, #4fc3f7)' : 'inherit'};">${e.name} <span class="era-roman" style="font-size:0.8em;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.85em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</span>
-      <span class="value" style="color:#ffa726;">${fmtNumber(e.culture)} ✦</span>
-      ${e.is_self
-        ? '<span></span><span></span>'
-        : `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);display:inline-flex;align-items:center;justify-content:center;">⚔</button>
-           <button class="msg-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:2px 6px;display:inline-flex;align-items:center;justify-content:center;">✉</button>`
-      }
+    <div class="panel-row" style="display:flex;flex-direction:row;align-items:stretch;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);">
+      <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;">
+        <span style="color:#888;font-size:0.8em;min-width:16px;">${i + 1}</span>
+        ${dot(e.online)}
+        <div style="min-width:0;">
+          <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</div>
+          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artefact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;color:#c9a84c;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artefacts?">${'⚜'.repeat(e.artefact_count)}</span>` : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:row;align-items:center;gap:4px;">
+        ${e.is_self ? '' : `
+          <button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>
+          <button class="msg-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;">✉</button>
+        `}
+      </div>
     </div>
   `).join('');
 
   return `
     <div class="panel">
       <div class="panel-header">Known Empires</div>
-      <div style="display:grid;grid-template-columns:24px 1fr 90px 56px 46px;gap:6px;padding:4px 8px;font-size:0.78em;color:#888;border-bottom:1px solid var(--border-color);">
-        <span>#</span><span>Name</span><span>Culture</span><span></span><span></span>
-      </div>
       ${rows}
     </div>
   `;
@@ -927,6 +1013,31 @@ function bindEmpiresEvents() {
   sec.querySelectorAll('.msg-btn').forEach(btn => {
     btn.onclick = () => onMessageClick(btn);
   });
+
+  sec.querySelectorAll('.art-info-trigger').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); _showArtefactInfoOverlay(); };
+  });
+}
+
+function _showArtefactInfoOverlay() {
+  document.querySelector('.art-info-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'art-info-overlay tt-overlay visible';
+  overlay.innerHTML = `
+    <div class="tt-panel">
+      <button class="tt-close">&times;</button>
+      <div class="tt-dp-name" style="color:#c9a84c">⚜ Artefacts</div>
+      <div class="tt-dp-desc" style="margin-top:10px;font-style:normal;line-height:1.7;font-size:0.92em">
+        <p style="margin-bottom:10px">Artefacts are powerful ancient objects that grant their owner extraordinary advantages — boosting gold income, culture, research speed, and more.</p>
+        <p style="margin-bottom:10px">They are rare and highly coveted. When you defeat an enemy empire in battle, there is a chance to seize one of their artefacts for yourself.</p>
+        <p>Even in defeat, a small chance remains: a skilled attacker may still manage to claim an artefact from the defender — so no raid is ever truly wasted.</p>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
 }
 
 function onMessageClick(btn) {

@@ -18,60 +18,59 @@ starting_max_life: 10.0
 restore_life_after_loss_offset: 1.0
 barbarians_aggressiveness:
   stone: 0.0
-  neolithicum: 0.0012
+  neolithic: 0.0012
   bronze: 0.0014
   iron: 0.0016
   middle_ages: 0.0017
-  rennaissance: 0.0018
+  renaissance: 0.0018
   industrial: 0.0019
   modern: 0.002
   future: 0.0022
 era_effects:
   stone:
     travel_offset: 300.0
-  neolithicum:
-    travel_offset: 900.0
-    gold_offset: 0.05
+  neolithic:
+    travel_offset: 900
+    gold_offset: 0.1
   bronze:
-    travel_offset: 3600.0
-    gold_offset: 0.25
+    travel_offset: 3600
+    gold_offset: 0.3
   iron:
-    travel_offset: 7200.0
-    gold_offset: 0.6
+    travel_offset: 7200
+    gold_offset: 0.7
   middle_ages:
-    travel_offset: 10800.0
-    gold_offset: 1.2
-  rennaissance:
-    travel_offset: 12600.0
-    gold_offset: 2.0
+    travel_offset: 10800
+    gold_offset: 1.4
+  renaissance:
+    travel_offset: 12600
+    gold_offset: 2
   industrial:
-    travel_offset: 14400.0
-    gold_offset: 2.5
+    travel_offset: 14400
+    gold_offset: 2.3
   modern:
-    travel_offset: 16200.0
-    gold_offset: 4.0
+    travel_offset: 16200
+    gold_offset: 2.6
   future:
-    travel_offset: 18000.0
+    travel_offset: 18000
+    gold_offset: 5
 ai_travel_seconds: 60.0
 ai_min_player_score: 500.0
 waves_per_level: 1.0
 slot_adder_per_ai_level: 2.0
 default_spawn_interval_ms: 2000.0
-
-
 max_lose_knowledge: 0.12
 min_lose_knowledge: 0.03
 min_lose_culture: 0.01
 max_lose_culture: 0.05
 artefact_steal_chance: 0.33
-
+base_artifact_steal_victory: 0.5
+base_artifact_steal_defeat: 0.05
 spy_costs:
   defense: 500
   build_queue: 1000
   research_queue: 2000
   attacks: 5000
   artefacts: 10000
-
 prices:
   citizen:
     u: 34
@@ -95,44 +94,41 @@ prices:
     v: 2.4
   army:
     u: 211
-    y: 2.4
-    z: 2.5
-    v: 5
+    y: 0.5
+    z: 2
+    v: 6.8
   wave_era_costs:
-    - 0       # Steinzeit (Startwert, kostenlos)
-    - 200     # Neolithikum
-    - 2100     # Bronzezeit
-    - 15500    # Eisenzeit
-    - 38000    # Mittelalter
-    - 98000    # Renaissance
-    - 320000    # Industrialisierung
-    - 590000   # Moderne
-    - 870000   # Zukunft
+  - 0
+  - 200
+  - 2100
+  - 15500
+  - 78000
+  - 158000
+  - 320000
+  - 590000
+  - 870000
 structure_upgrades:
-  damage: 2            # % base damage per level
-  range: 2             # % hex range per level
-  reload: 2            # % reload speed per level
-  effect_duration: 2   # % slow/burn duration per level
-  effect_value: 3      # % slow_ratio or burn_dps per level
-
+  damage: 2.5
+  range: 2.0
+  reload: 2.5
+  effect_duration: 2.0
+  effect_value: 3.0
 critter_upgrades:
-  health: 2     # % base health per level
-  speed: 2      #  %  per level
-  armour: 2     # % armour per level
-
+  health: 2.5
+  speed: 3.0
+  armour: 2.5
 item_upgrade_base_costs:
-  - 2       # Steinzeit (Startwert, kostenlos)
-  - 15     # Neolithikum
-  - 100     # Bronzezeit
-  - 300    # Eisenzeit
-  - 600    # Mittelalter
-  - 1000    # Renaissance
-  - 2000    # Industrialisierung
-  - 4000   # Moderne
-  - 6000   # Zukunft
-
+- 2.0
+- 15.0
+- 100.0
+- 300.0
+- 600.0
+- 1000.0
+- 2000.0
+- 4000.0
+- 6000.0
 tower_sell_refund: 0.3
-
+max_spy_armies: 1
 ai_generator:
   stone:
     min_waves: 1
@@ -143,81 +139,78 @@ ai_generator:
     max_previous_era: 0
     min_next_era: 0
     max_next_era: 1
-  neolithicum:
-    min_waves: 4
+  neolithic:
+    min_waves: 1
+    max_waves: 2
+    min_slots: 5
+    max_slots: 10
+    min_previous_era: 0
+    max_previous_era: 1
+    min_next_era: 0
+    max_next_era: 0
+  bronze:
+    min_waves: 3
     max_waves: 5
-    min_slots: 6
-    max_slots: 12
+    min_slots: 7
+    max_slots: 13
     min_previous_era: 1
     max_previous_era: 2
-    min_next_era: 1
-    max_next_era: 2
-  bronze:
-    min_waves: 5
+    min_next_era: 0
+    max_next_era: 1
+  iron:
+    min_waves: 4
     max_waves: 7
     min_slots: 8
-    max_slots: 16
+    max_slots: 15
     min_previous_era: 1
-    max_previous_era: 2
-    min_next_era: 1
-    max_next_era: 2
-  iron:
-    min_waves: 7
+    max_previous_era: 3
+    min_next_era: 0
+    max_next_era: 1
+  middle_ages:
+    min_waves: 6
     max_waves: 9
-    min_slots: 10
-    max_slots: 20
-    min_previous_era: 1
-    max_previous_era: 2
+    min_slots: 11
+    max_slots: 18
+    min_previous_era: 2
+    max_previous_era: 3
     min_next_era: 0
     max_next_era: 2
-  middle_ages:
-    min_waves: 10
-    max_waves: 13
+  renaissance:
+    min_waves: 8
+    max_waves: 11
     min_slots: 14
     max_slots: 22
-    min_previous_era: 0
-    max_previous_era: 3
+    min_previous_era: 2
+    max_previous_era: 4
     min_next_era: 0
-    max_next_era: 3
-  rennaissance:
+    max_next_era: 2
+  industrial:
+    min_waves: 10
+    max_waves: 13
+    min_slots: 16
+    max_slots: 26
+    min_previous_era: 2
+    max_previous_era: 4
+    min_next_era: 0
+    max_next_era: 2
+  modern:
+    min_waves: 11
+    max_waves: 14
+    min_slots: 18
+    max_slots: 30
+    min_previous_era: 2
+    max_previous_era: 5
+    min_next_era: 0
+    max_next_era: 2
+  future:
     min_waves: 12
     max_waves: 16
-    min_slots: 18
-    max_slots: 24
-    min_previous_era: 0
-    max_previous_era: 3
-    min_next_era: 0
-    max_next_era: 3
-  industrial:
-    min_waves: 14
-    max_waves: 18
     min_slots: 20
-    max_slots: 26
-    min_previous_era: 0
-    max_previous_era: 3
-    min_next_era: 0
-    max_next_era: 3
-  modern:
-    min_waves: 15
-    max_waves: 19
-    min_slots: 22
-    max_slots: 28
-    min_previous_era: 0
-    max_previous_era: 3
-    min_next_era: 0
-    max_next_era: 3
-  future:
-    min_waves: 18
-    max_waves: 20
-    min_slots: 24
     max_slots: 32
     min_previous_era: 5
     max_previous_era: 15
     min_next_era: 0
     max_next_era: 0
-
-
-
 min_username_length: 2
 max_username_length: 20
 min_password_length: 4

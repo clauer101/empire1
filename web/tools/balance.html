@@ -83,11 +83,24 @@
     .tag-slow    { background: rgba(79,195,247,0.2); color: var(--accent); }
     .tag-stun    { background: rgba(171,71,188,0.2); color: var(--purple); }
 
-    .reqs-line { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+    .reqs-line { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; align-items: center; }
     .req-tag {
       font-size: 9px; font-family: var(--mono); padding: 1px 4px; border-radius: 3px;
       background: rgba(224,224,230,0.07); color: var(--text-dim); letter-spacing: 0.3px;
+      display: inline-flex; align-items: center; gap: 3px; cursor: default;
     }
+    .req-tag.changed { background: rgba(255,167,38,0.15); color: var(--warning); }
+    .req-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 10px; padding: 0; line-height: 1; opacity: 0.7; }
+    .req-del:hover { opacity: 1; }
+    .req-add-wrap { position: relative; display: inline-flex; }
+    .req-add-btn { font-size: 9px; padding: 1px 5px; border-radius: 3px; border: 1px dashed var(--border); color: var(--text-dim); background: none; cursor: pointer; }
+    .req-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .req-add-input { font-size: 9px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--accent); background: var(--bg); color: var(--text); width: 110px; display: none; }
+    .req-add-input.open { display: inline-block; }
+    .req-ac-list { position: absolute; top: 100%; left: 0; z-index: 300; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); max-height: 140px; overflow-y: auto; min-width: 160px; display: none; }
+    .req-ac-list.open { display: block; }
+    .req-ac-item { padding: 3px 8px; cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--accent); }
+    .req-ac-item:hover, .req-ac-item.sel { background: var(--surface-hover); }
     .effort-line { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
     .effort-val { font-family: var(--mono); color: var(--warning); }
 
@@ -137,7 +150,9 @@
       flex-shrink: 0; line-height: 1;
     }
     .stat-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .stat-val { font-family: var(--mono); font-weight: 600; min-width: 34px; text-align: center; display: inline-block; }
+    .stat-val { font-family: var(--mono); font-weight: 600; min-width: 34px; width: 52px; text-align: center; display: inline-block; background: transparent; border: none; border-bottom: 1px solid #444; color: inherit; font-size: inherit; padding: 0 2px; cursor: text; -moz-appearance: textfield; }
+    .stat-val::-webkit-outer-spin-button, .stat-val::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .stat-val:focus { outline: none; border-bottom-color: var(--accent, #7af); background: #1a1a2a; }
     .stat-val.changed { color: var(--warning); }
 
     #save-btn {
@@ -178,7 +193,7 @@
       .card-body { gap: 6px; }
       .card-sprite { width: 36px; height: 36px; }
       .stats-row { gap: 4px 8px; font-size: 11px; }
-      .stat-val { min-width: 28px; font-size: 11px; }
+      .stat-val { min-width: 28px; width: 44px; font-size: 11px; }
       .stat-btn { width: 12px; height: 12px; font-size: 9px; }
       .era-header { padding: 8px 10px; }
       .era-body { padding: 8px; }
@@ -227,9 +242,15 @@
 (async function() {
   const eraMap = await fetch('/api/era-map').then(r => r.json()).catch(() => ({}));
   const ERA_ORDER = eraMap.eras || [
-    "Steinzeit","Neolithikum","Bronzezeit","Eisenzeit",
-    "Mittelalter","Renaissance","Industrialisierung","Moderne","Zukunft"
+    "stone","neolithic","bronze","iron",
+    "middle_ages","renaissance","industrial","modern","future"
   ];
+  const ERA_EN = {
+    "stone": "Stone Age", "neolithic": "Neolithic", "bronze": "Bronze Age",
+    "iron": "Iron Age", "middle_ages": "Middle Ages", "renaissance": "Renaissance",
+    "industrial": "Industrial Age", "modern": "Modern Age", "future": "Future",
+  };
+  function eraLabel(e) { return ERA_EN[e] || e; }
 
   const statusEl = document.getElementById('load-status');
   const contentEl = document.getElementById('content');
@@ -238,7 +259,10 @@
   // ── Edit tracking ──
   const critterChanges = {};  // { IID: { field: value } }
   const towerChanges   = {};
+  const reqChanges     = {};  // { IID: [req, ...] }
+  const eraChanges     = {};  // { IID: "era_name" }
   const liveVals       = {};  // key = "critter-IID-field" → current value
+  const liveReqs       = {};  // key = IID → current requirements array
 
   const CRITTER_FIELDS = {
     health:       { label: 'HP',       step: 1,    min: 1    },
@@ -247,6 +271,7 @@
     damage:       { label: 'Dmg',      step: 1,    min: 0    },
     value:        { label: 'Value',    step: 1,    min: 0    },
     time_between: { label: 'Interval', step: 100,  min: 100  },
+    slots:        { label: 'Slots',    step: 1,    min: 1    },
   };
   const TOWER_FIELDS = {
     damage:      { label: 'Dmg',        step: 1,    min: 0   },
@@ -269,13 +294,13 @@
     return `<span class="stat">
       <span class="stat-label">${cfg.label}</span>
       <button class="stat-btn" data-iid="${iid}" data-type="${type}" data-field="${field}" data-dir="-1">−</button>
-      <span class="stat-val" data-key="${key}">${display}</span>
+      <input class="stat-val" type="number" step="${cfg.step}" min="${cfg.min}" data-key="${key}" data-iid="${iid}" data-type="${type}" data-field="${field}" value="${display}">
       <button class="stat-btn" data-iid="${iid}" data-type="${type}" data-field="${field}" data-dir="1">+</button>
     </span>`;
   }
 
   function updateSaveBtn() {
-    const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length;
+    const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length + Object.keys(reqChanges).length + Object.keys(eraChanges).length;
     saveBtn.disabled = n === 0;
     saveBtn.textContent = n > 0 ? `Speichern (${n})` : 'Speichern';
   }
@@ -288,11 +313,19 @@
         reqs.push(fetch('/api/critter-stats',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(critterChanges) }));
       if (Object.keys(towerChanges).length)
         reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(towerChanges) }));
+      if (Object.keys(reqChanges).length)
+        reqs.push(fetch('/api/item-requirements', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(reqChanges) }));
+      if (Object.keys(eraChanges).length)
+        reqs.push(fetch('/api/critter-era', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(eraChanges) }));
       const results = await Promise.all(reqs);
       for (const r of results) if (!r.ok) throw new Error(await r.text());
       for (const k of Object.keys(critterChanges)) delete critterChanges[k];
       for (const k of Object.keys(towerChanges))   delete towerChanges[k];
+      for (const k of Object.keys(reqChanges))     delete reqChanges[k];
+      for (const k of Object.keys(eraChanges))     delete eraChanges[k];
       document.querySelectorAll('.stat-val.changed').forEach(el => el.classList.remove('changed'));
+      document.querySelectorAll('.req-tag.changed').forEach(el => el.classList.remove('changed'));
+      document.querySelectorAll('.era-select').forEach(el => { el.style.color = ''; el.style.borderColor = ''; });
       saveBtn.textContent = 'Gespeichert ✓';
       setTimeout(() => { saveBtn.textContent = 'Speichern'; saveBtn.disabled = true; }, 2000);
     } catch(e) {
@@ -420,7 +453,7 @@
     const m = {};
     for (const e of ERA_ORDER) m[e] = [];
     for (const item of arr) {
-      const era = ERA_ORDER.includes(item.era) ? item.era : 'Steinzeit';
+      const era = ERA_ORDER.includes(item.era) ? item.era : 'stone';
       m[era].push(item);
     }
     return m;
@@ -472,11 +505,131 @@
   }
 
   // ── Render ──
-  function reqsHtml(reqs) {
-    if (!reqs || !reqs.length) return '';
-    return `<div class="reqs-line">${reqs.map(r =>
-      `<span class="req-tag">${r}</span>`
-    ).join('')}</div>`;
+  function reqsHtml(iid, reqs) {
+    liveReqs[iid] = (reqs || []).slice();
+    const tags = (reqs || []).map(r =>
+      `<span class="req-tag" data-req="${r}">${r}<button class="req-del" data-iid="${iid}" data-req="${r}" title="Remove">×</button></span>`
+    ).join('');
+    return `<div class="reqs-line" data-reqs-iid="${iid}">
+      ${tags}
+      <span class="req-add-wrap">
+        <button class="req-add-btn" data-iid="${iid}">+ req</button>
+        <input class="req-add-input" data-iid="${iid}" placeholder="IID…" autocomplete="off" spellcheck="false">
+        <div class="req-ac-list" data-iid="${iid}"></div>
+      </span>
+    </div>`;
+  }
+
+  // called once after all cards are rendered
+  function initReqEditors() {
+    // build full IID list for autocomplete
+    const allIids = [...buildings, ...knowledge, ...critters, ...structures].map(x => x.iid).sort();
+
+    function markReqDirty(iid) {
+      reqChanges[iid] = liveReqs[iid].slice();
+      const line = contentEl.querySelector(`.reqs-line[data-reqs-iid="${iid}"]`);
+      if (line) line.querySelectorAll('.req-tag').forEach(t => t.classList.add('changed'));
+      updateSaveBtn();
+    }
+
+    // ── Delete buttons ──
+    contentEl.addEventListener('click', e => {
+      const btn = e.target.closest('.req-del');
+      if (!btn) return;
+      const { iid, req } = btn.dataset;
+      liveReqs[iid] = (liveReqs[iid] || []).filter(r => r !== req);
+      const tag = btn.closest('.req-tag');
+      if (tag) tag.remove();
+      markReqDirty(iid);
+    });
+
+    // ── + req button → show input ──
+    contentEl.addEventListener('click', e => {
+      const btn = e.target.closest('.req-add-btn');
+      if (!btn) return;
+      const iid = btn.dataset.iid;
+      const wrap = btn.closest('.req-add-wrap');
+      const inp = wrap.querySelector('.req-add-input');
+      btn.style.display = 'none';
+      inp.classList.add('open');
+      inp.value = '';
+      showAc(inp, allIids);
+      inp.focus();
+    });
+
+    function showAc(inp, allIids) {
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      if (!ac) return;
+      const q = inp.value.toUpperCase();
+      const matches = allIids.filter(x => x.includes(q) && !(liveReqs[iid] || []).includes(x));
+      ac.innerHTML = matches.slice(0, 20).map(x => `<div class="req-ac-item" data-id="${x}">${x}</div>`).join('');
+      ac.classList.toggle('open', matches.length > 0);
+      ac.querySelectorAll('.req-ac-item').forEach(item => {
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          commitReq(inp, item.dataset.id);
+        });
+      });
+    }
+
+    function commitReq(inp, value) {
+      const val = (value || inp.value).trim().toUpperCase();
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      if (ac) ac.classList.remove('open');
+      if (!val) { cancelReqInput(inp); return; }
+      if (!(liveReqs[iid] || []).includes(val)) {
+        liveReqs[iid] = [...(liveReqs[iid] || []), val];
+        const line = contentEl.querySelector(`.reqs-line[data-reqs-iid="${iid}"]`);
+        const wrap = inp.closest('.req-add-wrap');
+        const tag = document.createElement('span');
+        tag.className = 'req-tag changed';
+        tag.dataset.req = val;
+        tag.innerHTML = `${val}<button class="req-del" data-iid="${iid}" data-req="${val}" title="Remove">×</button>`;
+        line.insertBefore(tag, wrap);
+        markReqDirty(iid);
+      }
+      cancelReqInput(inp);
+    }
+
+    function cancelReqInput(inp) {
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      if (ac) ac.classList.remove('open');
+      inp.classList.remove('open');
+      inp.value = '';
+      const btn = inp.closest('.req-add-wrap').querySelector('.req-add-btn');
+      if (btn) btn.style.display = '';
+    }
+
+    contentEl.addEventListener('input', e => {
+      if (!e.target.classList.contains('req-add-input')) return;
+      showAc(e.target, allIids);
+    });
+
+    contentEl.addEventListener('keydown', e => {
+      if (!e.target.classList.contains('req-add-input')) return;
+      const inp = e.target;
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      const items = ac ? ac.querySelectorAll('.req-ac-item') : [];
+      const sel = ac ? ac.querySelector('.req-ac-item.sel') : null;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = sel ? sel.nextElementSibling : items[0];
+        sel?.classList.remove('sel'); next?.classList.add('sel'); next?.scrollIntoView({block:'nearest'});
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = sel ? sel.previousElementSibling : items[items.length - 1];
+        sel?.classList.remove('sel'); prev?.classList.add('sel'); prev?.scrollIntoView({block:'nearest'});
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        commitReq(inp, sel?.dataset.id || '');
+      } else if (e.key === 'Escape' || e.key === 'Tab') {
+        cancelReqInput(inp);
+      }
+    });
   }
 
   function critterSprite(c) {
@@ -506,13 +659,23 @@
     }).join('')}</div>`;
   }
 
+  function eraSelectHtml(c) {
+    const opts = ERA_ORDER.map(e =>
+      `<option value="${e}"${e === c.era ? ' selected' : ''}>${eraLabel(e)}</option>`
+    ).join('');
+    return `<select class="era-select" data-iid="${c.iid}"
+      style="font-size:10px;background:var(--surface-alt);border:1px solid var(--border);color:var(--text-dim);border-radius:3px;padding:1px 4px;cursor:pointer;margin-left:6px;">
+      ${opts}
+    </select>`;
+  }
+
   function renderCritterCard(c, counterHtml) {
     const effort = cumulativeEffort(c.requirements || []);
     const sc = classifySpeed(c.speed);
     const ac = classifyArmour(c.armour);
     const sprite = critterSprite(c);
     return `<div class="unit-card">
-      <div class="unit-name">${c.name}<span class="unit-iid">${c.iid}</span></div>
+      <div class="unit-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${c.name}<span class="unit-iid">${c.iid}</span>${eraSelectHtml(c)}</div>
       <div class="card-body">
         ${sprite ? `<canvas class="card-sprite critter-sprite-canvas" data-src="${sprite}" width="48" height="48"></canvas>` : ''}
         <div class="card-info">
@@ -523,13 +686,13 @@
             ${editStat(c.iid,'critter','damage',c.damage)}
             ${editStat(c.iid,'critter','value',c.value)}
             ${editStat(c.iid,'critter','time_between',c.time_between)}
+            ${editStat(c.iid,'critter','slots',c.slots ?? 1)}
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag tag-speed-${sc}">${sc}</span>
             <span class="tag tag-armour-${ac}">${ac} armour</span>
-            ${(c.slots > 1) ? `<span class="tag" style="background:rgba(171,71,188,0.2);color:var(--purple)">${c.slots} Slots</span>` : ''}
           </div>
-          ${reqsHtml(c.requirements)}
+          ${reqsHtml(c.iid, c.requirements)}
           ${roleScoresHtml(c)}
           <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
           ${counterHtml}
@@ -563,7 +726,7 @@
             ${t.shot_sprite ? `<img src="/${t.shot_sprite.replace(/^\//, '')}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'">` : ''}
           </div>
           <div class="fx-editor" data-iid="${t.iid}" data-fx='${fxData}'></div>
-          ${reqsHtml(t.requirements)}
+          ${reqsHtml(t.iid, t.requirements)}
           <div class="dps-bar-bg"><div class="dps-bar" style="width:${barW}%"></div></div>
           <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
           ${counterHtml}
@@ -702,7 +865,7 @@
     section.innerHTML = `
       <div class="era-header collapsed" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
         <span class="arrow">&#9660;</span>
-        <span class="era-name">${era}</span>
+        <span class="era-name">${eraLabel(era)}</span>
         <span class="era-info">${ec.length} Critters &middot; ${et.length} Towers (${accumulatedTowers.length} total)</span>
       </div>
       <div class="era-body hidden">
@@ -743,6 +906,19 @@
   }
 
   initFxEditors();
+  initReqEditors();
+
+  // ── Era dropdown delegation ──
+  contentEl.addEventListener('change', e => {
+    const sel = e.target.closest('.era-select');
+    if (!sel) return;
+    const iid = sel.dataset.iid;
+    const newEra = sel.value;
+    eraChanges[iid] = newEra;
+    sel.style.color = 'var(--warning)';
+    sel.style.borderColor = 'var(--warning)';
+    updateSaveBtn();
+  });
 
   // ── +/− button event delegation ──
   contentEl.addEventListener('click', e => {
@@ -756,7 +932,27 @@
     const newVal = Math.max(cfg.min, parseFloat((oldVal + parseInt(dir) * cfg.step).toFixed(4)));
     liveVals[key] = newVal;
     const el = contentEl.querySelector(`.stat-val[data-key="${key}"]`);
-    if (el) { el.textContent = fmtVal(newVal, cfg.step); el.classList.add('changed'); }
+    if (el) { el.value = fmtVal(newVal, cfg.step); el.classList.add('changed'); }
+    const changes = type === 'critter' ? critterChanges : towerChanges;
+    if (!changes[iid]) changes[iid] = {};
+    changes[iid][field] = newVal;
+    if (type === 'critter') updateRoleBars(iid);
+    updateSaveBtn();
+  });
+
+  // ── Direct text input for stat values ──
+  contentEl.addEventListener('change', e => {
+    const inp = e.target.closest('.stat-val');
+    if (!inp) return;
+    const { iid, type, field } = inp.dataset;
+    const cfg = type === 'critter' ? CRITTER_FIELDS[field] : TOWER_FIELDS[field];
+    if (!cfg) return;
+    const key = `${type}-${iid}-${field}`;
+    const newVal = Math.max(cfg.min, parseFloat(parseFloat(inp.value).toFixed(4)));
+    if (isNaN(newVal)) { inp.value = fmtVal(liveVals[key] ?? 0, cfg.step); return; }
+    liveVals[key] = newVal;
+    inp.value = fmtVal(newVal, cfg.step);
+    inp.classList.add('changed');
     const changes = type === 'critter' ? critterChanges : towerChanges;
     if (!changes[iid]) changes[iid] = {};
     changes[iid][field] = newVal;

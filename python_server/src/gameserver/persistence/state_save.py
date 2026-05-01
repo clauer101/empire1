@@ -247,6 +247,8 @@ def _serialize_attack(attack: Attack) -> dict[str, Any]:
         "total_eta_seconds": attack.total_eta_seconds,
         "siege_remaining_seconds": attack.siege_remaining_seconds,
         "total_siege_seconds": attack.total_siege_seconds,
+        "is_spy": attack.is_spy,
+        "army_name_override": attack.army_name_override,
     }
 
 

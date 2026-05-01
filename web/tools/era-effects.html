@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Era Effects Editor</title>
+  <style>
+    :root {
+      --bg:            #0d0d14;
+      --surface:       #14141f;
+      --surface-alt:   #1a1a28;
+      --surface-hover: #22222f;
+      --border:        #2a2a3a;
+      --accent:        #4fc3f7;
+      --gold:          #c9a84c;
+      --success:       #66bb6a;
+      --danger:        #ef5350;
+      --warning:       #ffa726;
+      --text:          #e0e0e6;
+      --text-dim:      #9999a8;
+      --radius:        6px;
+      --mono:          'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--gold); letter-spacing: 1px; flex: 1; }
+    #status { font-size: 12px; color: var(--text-dim); }
+    #save-all-btn {
+      background: var(--gold); color: #000; border: none; border-radius: var(--radius);
+      padding: 6px 16px; font-weight: 700; cursor: pointer; font-size: 12px;
+    }
+    #save-all-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #content { max-width: 900px; margin: 0 auto; padding: 20px 16px 80px; display: flex; flex-direction: column; gap: 12px; }
+
+    .era-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .era-card.dirty { border-color: var(--warning); }
+
+    .era-head {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+    }
+    .era-roman { font-size: 18px; font-weight: 700; color: var(--gold); min-width: 28px; }
+    .era-name  { font-weight: 700; flex: 1; }
+    .era-key   { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+
+    .era-body  { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    .effect-row {
+      display: grid; grid-template-columns: 1fr 160px 32px; align-items: center; gap: 8px;
+    }
+    .effect-key-wrap { position: relative; }
+    .effect-key-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--mono); font-size: 12px; padding: 5px 8px;
+    }
+    .effect-key-input:focus { outline: none; border-color: var(--accent); }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      max-height: 180px; overflow-y: auto; display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .ac-item {
+      padding: 5px 10px; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--accent);
+    }
+    .ac-item:hover, .ac-item.selected { background: var(--surface-hover); }
+
+    .effect-val-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--mono); font-size: 12px; padding: 5px 8px;
+      text-align: right; -moz-appearance: textfield;
+    }
+    .effect-val-input::-webkit-outer-spin-button,
+    .effect-val-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .effect-val-input:focus { outline: none; border-color: var(--accent); }
+    .effect-val-input.changed { border-color: var(--warning); color: var(--warning); }
+
+    .del-btn {
+      background: transparent; border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--danger); cursor: pointer; font-size: 14px; line-height: 1;
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    }
+    .del-btn:hover { background: rgba(239,83,80,0.12); border-color: var(--danger); }
+
+    .add-row-btn {
+      align-self: flex-start; background: transparent; border: 1px dashed var(--border);
+      border-radius: var(--radius); color: var(--text-dim); cursor: pointer;
+      padding: 5px 12px; font-size: 12px; margin-top: 2px;
+    }
+    .add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .save-era-btn {
+      align-self: flex-end; background: transparent; border: 1px solid var(--gold);
+      border-radius: var(--radius); color: var(--gold); cursor: pointer;
+      padding: 5px 14px; font-size: 12px; font-weight: 600;
+    }
+    .save-era-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .save-era-btn:not(:disabled):hover { background: rgba(201,168,76,0.12); }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 18px; font-size: 13px; display: none;
+    }
+    .toast.show { display: block; }
+    .toast.ok   { border-color: var(--success); color: var(--success); }
+    .toast.err  { border-color: var(--danger);  color: var(--danger);  }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>⏱ Era Effects</h1>
+  <span id="status">Loading…</span>
+  <button id="save-all-btn" disabled>Save All</button>
+</div>
+
+<div id="content"></div>
+<div id="toast" class="toast"></div>
+
+<!-- Autocomplete data: all known effect IDs -->
+<datalist id="effect-ids"></datalist>
+
+<script>
+const GAMESERVER = window.location.origin;
+const token = localStorage.getItem('e3_jwt_token') || '';
+
+const ERA_KEYS = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future'];
+const ERA_ROMAN  = { stone:'I', neolithic:'II', bronze:'III', iron:'IV', middle_ages:'V', renaissance:'VI', industrial:'VII', modern:'VIII', future:'IX' };
+const ERA_LABEL  = { stone:'Stone Age', neolithic:'Neolithic', bronze:'Bronze Age', iron:'Iron Age', middle_ages:'Middle Ages', renaissance:'Renaissance', industrial:'Industrial Age', modern:'Modern Age', future:'Future' };
+const ERA_YAML_TO_KEY = Object.fromEntries(ERA_KEYS.map(k => [k, k]));
+const ERA_KEY_TO_YAML = ERA_YAML_TO_KEY;
+
+const ALL_EFFECT_IDS = [
+  'gold_modifier','gold_offset','culture_modifier','culture_offset',
+  'life_modifier','life_offset','restore_life','max_life_modifier',
+  'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
+  'damage_modifier','range_modifier','reload_modifier',
+  'slow_target','slow_target_duration','burn_target','burn_target_duration',
+  'splash_damage','splash_radius',
+  'speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level',
+  'travel_offset','siege_offset','restore_life_after_loss_offset',
+  'wave_delay_offset','wave_delay_modifier',
+  'capture_gold','capture_culture','lose_knowledge','lose_artefact','destroy_wonder_percent',
+  'culture_steal_modifier','artefact_steal_chance_modifier','knowledge_steal_modifier',
+  'spy_disguise_chance',
+];
+
+// era_key (lowercase yaml) → { effect_id: value }
+let eraData = {};
+const dirtyEras = new Set();
+
+function toast(msg, ok = true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${ok ? 'ok' : 'err'}`;
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+async function api(method, path, body) {
+  const r = await fetch(GAMESERVER + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── Autocomplete logic ────────────────────────────────────────────
+function attachAutocomplete(input, listEl) {
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase();
+    const matches = q ? ALL_EFFECT_IDS.filter(id => id.includes(q)) : ALL_EFFECT_IDS;
+    renderAcList(listEl, matches, input);
+  });
+  input.addEventListener('focus', () => {
+    const q = input.value.toLowerCase();
+    const matches = q ? ALL_EFFECT_IDS.filter(id => id.includes(q)) : ALL_EFFECT_IDS;
+    renderAcList(listEl, matches, input);
+  });
+  input.addEventListener('keydown', e => {
+    const items = listEl.querySelectorAll('.ac-item');
+    const sel = listEl.querySelector('.ac-item.selected');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = sel ? sel.nextElementSibling : items[0];
+      if (next) { sel?.classList.remove('selected'); next.classList.add('selected'); next.scrollIntoView({block:'nearest'}); }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = sel ? sel.previousElementSibling : items[items.length - 1];
+      if (prev) { sel?.classList.remove('selected'); prev.classList.add('selected'); prev.scrollIntoView({block:'nearest'}); }
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      const s = listEl.querySelector('.ac-item.selected');
+      if (s) { e.preventDefault(); input.value = s.dataset.id; listEl.classList.remove('open'); }
+    } else if (e.key === 'Escape') {
+      listEl.classList.remove('open');
+    }
+  });
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target) && !listEl.contains(e.target)) listEl.classList.remove('open');
+  });
+}
+
+function renderAcList(listEl, matches, input) {
+  listEl.innerHTML = matches.slice(0, 30).map(id =>
+    `<div class="ac-item" data-id="${id}">${id}</div>`
+  ).join('');
+  listEl.classList.toggle('open', matches.length > 0);
+  listEl.querySelectorAll('.ac-item').forEach(item => {
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      input.value = item.dataset.id;
+      listEl.classList.remove('open');
+      input.dispatchEvent(new Event('change'));
+    });
+  });
+}
+
+// ── Render one era card ───────────────────────────────────────────
+function renderCard(eraYamlKey) {
+  const effects = eraData[eraYamlKey] || {};
+
+  const card = document.createElement('div');
+  card.className = 'era-card';
+  card.dataset.era = eraYamlKey;
+
+  card.innerHTML = `
+    <div class="era-head">
+      <span class="era-roman">${ERA_ROMAN[eraYamlKey] || ''}</span>
+      <span class="era-name">${ERA_LABEL[eraYamlKey] || eraYamlKey}</span>
+      <span class="era-key">${eraYamlKey}</span>
+    </div>
+    <div class="era-body">
+      <div class="rows-container"></div>
+      <button class="add-row-btn">+ Add effect</button>
+      <button class="save-era-btn" disabled>Save</button>
+    </div>
+  `;
+
+  const rowsContainer = card.querySelector('.rows-container');
+  const addBtn = card.querySelector('.add-row-btn');
+  const saveBtn = card.querySelector('.save-era-btn');
+
+  function markDirty() {
+    dirtyEras.add(eraYamlKey);
+    card.classList.add('dirty');
+    saveBtn.disabled = false;
+    document.getElementById('save-all-btn').disabled = false;
+  }
+
+  function readRows() {
+    const result = {};
+    rowsContainer.querySelectorAll('.effect-row').forEach(row => {
+      const k = row.querySelector('.effect-key-input').value.trim();
+      const v = parseFloat(row.querySelector('.effect-val-input').value);
+      if (k && !isNaN(v)) result[k] = v;
+    });
+    return result;
+  }
+
+  function addRow(key = '', value = 0) {
+    const row = document.createElement('div');
+    row.className = 'effect-row';
+
+    const keyWrap = document.createElement('div');
+    keyWrap.className = 'effect-key-wrap';
+
+    const keyInput = document.createElement('input');
+    keyInput.className = 'effect-key-input';
+    keyInput.placeholder = 'effect_id';
+    keyInput.value = key;
+
+    const acList = document.createElement('div');
+    acList.className = 'autocomplete-list';
+
+    keyWrap.append(keyInput, acList);
+    attachAutocomplete(keyInput, acList);
+    keyInput.addEventListener('change', markDirty);
+    keyInput.addEventListener('input', markDirty);
+
+    const valInput = document.createElement('input');
+    valInput.className = 'effect-val-input';
+    valInput.type = 'number';
+    valInput.step = 'any';
+    valInput.value = value;
+    valInput.addEventListener('change', () => { valInput.classList.add('changed'); markDirty(); });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.title = 'Remove';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', () => { row.remove(); markDirty(); });
+
+    row.append(keyWrap, valInput, delBtn);
+    rowsContainer.appendChild(row);
+  }
+
+  // Populate existing effects
+  for (const [k, v] of Object.entries(effects)) addRow(k, v);
+
+  addBtn.addEventListener('click', () => { addRow(); markDirty(); });
+
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    try {
+      const effects = readRows();
+      await api('PATCH', `/api/admin/era-effects/${eraYamlKey}`, { effects });
+      eraData[eraYamlKey] = effects;
+      dirtyEras.delete(eraYamlKey);
+      card.classList.remove('dirty');
+      card.querySelectorAll('.effect-val-input').forEach(i => i.classList.remove('changed'));
+      if (dirtyEras.size === 0) document.getElementById('save-all-btn').disabled = true;
+      toast(`✓ ${eraYamlKey} saved`);
+    } catch (e) {
+      toast(`Error: ${e.message}`, false);
+      saveBtn.disabled = false;
+    }
+  });
+
+  return card;
+}
+
+// ── Save All ──────────────────────────────────────────────────────
+document.getElementById('save-all-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-all-btn');
+  btn.disabled = true;
+  let errors = 0;
+  for (const eraYamlKey of [...dirtyEras]) {
+    const card = document.querySelector(`.era-card[data-era="${eraYamlKey}"]`);
+    const saveBtn = card?.querySelector('.save-era-btn');
+    if (saveBtn) saveBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+  }
+  if (!errors) toast('✓ All eras saved');
+});
+
+// ── Init ─────────────────────────────────────────────────────────
+(async () => {
+  const statusEl = document.getElementById('status');
+  const content = document.getElementById('content');
+  try {
+    const data = await api('GET', '/api/admin/era-effects');
+    eraData = data.era_effects || {};
+    statusEl.textContent = `${Object.keys(eraData).length} eras loaded`;
+
+    // Render in ERA_KEYS order (all 9 eras, even empty ones)
+    const ERA_YAML_ORDER = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future'];
+    for (const eraYamlKey of ERA_YAML_ORDER) {
+      if (!(eraYamlKey in eraData)) eraData[eraYamlKey] = {};
+      content.appendChild(renderCard(eraYamlKey));
+    }
+  } catch (e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>

@@ -3,71 +3,78 @@
 # description: flavour text
 
 ANCIENT_RELIQUE:
-  name: "Ancient Relique"
-  effects: {}
-  description: ""
-
+  name: Ancient Relique
+  description: Huhu
+  type: ''
+  effects:
+    gold_offset: 10.1
 ASSASSINS_DAGGER:
-  name: "Assassin's Dagger"
+  name: Assassin's Dagger
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 AWE_INSPIRING_GRAIL:
-  name: "Awe-Inspiring Grail"
-  effects: {}
-  description: ""
-
+  name: Awe-Inspiring Grail
+  description: ''
+  type: ''
+  effects:
+    gold_modifier: 0.2
+    gold_offset: 1
+    culture_modifier: 0.33
+    culture_offset: 0.5
+    max_life_modifier: 10
 BATTLE_DRUMS:
-  name: "Battle Drums"
+  name: Battle Drums
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 BOOK_OF_HEROES:
-  name: "Book of Heroes"
+  name: Book of Heroes
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 FINE_TROWEL:
-  name: "Fine Trowel"
+  name: Fine Trowel
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 GOLDEN_ARC:
-  name: "Golden Arc"
+  name: Golden Arc
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 HOLY_ARTEFACT:
-  name: "Holy Artefact"
+  name: Holy Artefact
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 LOST_ALMANAC:
-  name: "Lost Almanac"
+  name: Lost Almanac
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 MERCIFUL_ARMOUR:
-  name: "Merciful Armour"
+  name: Merciful Armour
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 POTION_OF_HEALING:
-  name: "Potion of Healing"
+  name: Potion of Healing
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 SCROLLS_OF_WISDOM:
-  name: "Scrolls of Wisdom"
+  name: Scrolls of Wisdom
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 SIEGE_TRUMPET:
-  name: "Siege Trumpet"
+  name: Siege Trumpet
+  description: ''
+  type: ''
   effects: {}
-  description: ""
-
 TREASURE_CHEST:
-  name: "Treasure Chest"
+  name: Treasure Chest
+  description: ''
+  type: ''
   effects: {}
-  description: ""

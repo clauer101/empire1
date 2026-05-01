@@ -7,6 +7,7 @@
 
 import { rest } from './rest.js';
 import { state } from './state.js';
+import { prefetchAllSprites } from './lib/sprite_prefetcher.js';
 import { eventBus } from './events.js';
 import { Router } from './router.js';
 import { debug } from './debug.js';
@@ -24,10 +25,11 @@ import socialView  from './views/social.js';
 import signupView  from './views/signup.js';
 import replayView    from './views/replay.js';
 import workshopView  from './views/workshop.js';
+import logoutView    from './views/logout.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
-const restUrl = params.get('rest') || `${window.location.protocol}//${window.location.hostname}:8080`;
+const restUrl = params.get('rest') || window.location.origin;
 
 // ── Instantiate core objects ───────────────────────────────
 rest.init(restUrl);
@@ -41,7 +43,7 @@ eventBus.on('rest:unauthorized', () => {
 });
 
 // ── Register views ─────────────────────────────────────────
-[loginView, signupView, dashView, buildView, resView, armyView, treeView, battleView, socialView, replayView, workshopView]
+[loginView, signupView, dashView, buildView, resView, armyView, treeView, battleView, socialView, replayView, workshopView, logoutView]
   .forEach(v => router.register(v));
 
 // ── Toast notifications for push messages ──────────────────
@@ -66,18 +68,37 @@ function showToast(text, type = 'message') {
 // ── Register debug toast callback ──────────────────────────
 debug.setToastCallback((text, type) => showToast(text, type));
 
-// ── Gold display in page title ──────────────────────────────
+// ── Resource live ticker ─────────────────────────────────────
 let _lastResources = null;
+let _liveGold    = 0;
+let _liveCulture = 0;
+let _rateGold    = 0;  // per hour
+let _rateCulture = 0;  // per hour
+let _liveTs      = 0;
+let _liveTicker  = null;
 
 function _fmtRes(val, digits = 0) {
   const v = val ?? 0;
-  return v >= 1000 ? (Math.floor(v / 100) / 10) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
+  return v >= 1000 ? Math.floor(v / 1000) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
-function _updateTitleResources(r) {
-  appEl.querySelectorAll('.title-gold').forEach(el => { el.textContent = '💰 ' + _fmtRes(r.gold); });
-  appEl.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(r.culture); });
-  appEl.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 1); });
+function _tickTitleResources() {
+  const elapsed = (Date.now() - _liveTs) / 3600000; // hours
+  const gold    = _liveGold    + _rateGold    * elapsed;
+  const culture = _liveCulture + _rateCulture * elapsed;
+  appEl.querySelectorAll('.title-gold').forEach(el => { el.textContent = '💰 ' + _fmtRes(gold); });
+  appEl.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(culture); });
+}
+
+function _updateTitleResources(r, rates) {
+  _liveGold    = r.gold    ?? 0;
+  _liveCulture = r.culture ?? 0;
+  _rateGold    = rates?.gold    ?? 0;
+  _rateCulture = rates?.culture ?? 0;
+  _liveTs      = Date.now();
+  appEl.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0); });
+  if (!_liveTicker) _liveTicker = setInterval(_tickTitleResources, 100);
+  _tickTitleResources();
 }
 
 // ── Incoming attack alarm on dashboard nav link ──────────────
@@ -166,7 +187,12 @@ if (navBrand) navBrand.addEventListener('click', _showEraOverlay);
 eventBus.on('state:summary', (data) => {
   if (data?.resources) {
     _lastResources = data.resources;
-    _updateTitleResources(data.resources);
+    const ef = data.effects || {};
+    const ci = data.citizens || {};
+    const ce = data.citizen_effect || 0;
+    const goldRate    = (data.base_gold    ?? 0 + (ef.gold_offset    || 0)) * (1 + (ci.merchant || 0) * ce + (ef.gold_modifier    || 0));
+    const cultureRate = (data.base_culture ?? 0 + (ef.culture_offset || 0)) * (1 + (ci.artist   || 0) * ce + (ef.culture_modifier || 0));
+    _updateTitleResources(data.resources, { gold: goldRate, culture: cultureRate });
   }
   if (navBrand && data?.current_era) {
     _currentEra = data.current_era;
@@ -176,7 +202,7 @@ eventBus.on('state:summary', (data) => {
   const hasIncoming = incoming.length > 0;
   const hasActive = incoming.some(a => a.phase === 'in_siege' || a.phase === 'in_battle');
 
-  if (navDashboard) navDashboard.classList.toggle('alarm', hasIncoming && !hasActive);
+  if (navDashboard) navDashboard.classList.remove('alarm');
   if (navDefense)   navDefense.classList.toggle('alarm', hasActive);
 
   // Unread messages badge
@@ -230,15 +256,15 @@ const navAuthLabel = document.getElementById('nav-auth-label');
 navAuth.addEventListener('click', (e) => {
   if (state.auth.authenticated) {
     e.preventDefault();
-    rest.logout();
-    window.location.hash = '#login';
+    window.location.hash = '#logout';
   }
 });
 
 eventBus.on('state:auth', (auth) => {
   if (auth.authenticated) {
-    navAuthLabel.textContent = 'Logout';
+    navAuthLabel.textContent = 'Settings';
     navAuth.href = '#';
+    prefetchAllSprites().catch(() => {});
   } else {
     navAuthLabel.textContent = 'Login';
     navAuth.href = '#login';
@@ -267,6 +293,11 @@ debugToggle.addEventListener('click', () => {
 });
 // document.body.appendChild(debugToggle);
 
+// Register Service Worker for sprite caching + push notifications
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 (async () => {
   // 1. Try REST auto-login (validates stored JWT or credentials)
   try {
@@ -277,4 +308,9 @@ debugToggle.addEventListener('click', () => {
 
   // 2. Activate router (no WS needed — defense view manages its own)
   router.start();
+
+  // 3. Prefetch all sprites in the background after login
+  if (state.auth?.authenticated) {
+    prefetchAllSprites().catch(() => {});
+  }
 })();

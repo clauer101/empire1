@@ -505,6 +505,10 @@ class RestClient {
     return this._post('/api/attack', { target_uid: targetUid, army_aid: armyAid });
   }
 
+  async spyAttack(targetUid) {
+    return this._post('/api/spy-attack', { target_uid: targetUid });
+  }
+
   // ── WebSocket URL helper ──────────────────────────────────
 
   /**

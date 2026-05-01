@@ -114,14 +114,14 @@ class GameConfig:
     # base_travel_offset is the fallback when no era-specific value is set.
     base_travel_offset: float = 300.0
     stone_travel_offset: float = 300.0
-    neolithicum_travel_offset: float = 300.0
+    neolithic_travel_offset: float = 300.0
     bronze_travel_offset: float = 300.0
     iron_travel_offset: float = 300.0
     middle_ages_travel_offset: float = 300.0
-    rennaissance_travel_offset: float = 300.0
+    renaissance_travel_offset: float = 300.0
     industrial_travel_offset: float = 300.0
     modern_travel_offset: float = 300.0
-    diamond_travel_offset: float = 300.0
+    future_travel_offset: float = 300.0
     base_siege_offset: float = 900.0
 
     # Generic per-era effects dict: { "STEINZEIT": {"gold_offset": 5.0, ...}, ... }
@@ -143,7 +143,7 @@ class GameConfig:
     barbarians_aggressiveness: Dict[str, float] = field(default_factory=dict)
 
     # -- AI army generator per era -----------------------------------
-    # Keys are lowercase YAML era names (e.g. "rennaissance").
+    # Keys are lowercase YAML era names (e.g. "renaissance").
     # Each entry: {min_waves, max_waves, min_slots, max_slots,
     #              min_previous_era, max_previous_era, min_next_era, max_next_era}
     ai_generator: Dict[str, Dict[str, int]] = field(default_factory=dict)
@@ -154,6 +154,8 @@ class GameConfig:
     min_lose_culture: float = 0.01
     max_lose_culture: float = 0.05
     artefact_steal_chance: float = 0.33
+    base_artifact_steal_victory: float = 0.5
+    base_artifact_steal_defeat: float = 0.05
 
     # -- Prices ------------------------------------------------------
     prices: Prices = field(default_factory=Prices)
@@ -168,6 +170,7 @@ class GameConfig:
 
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower
+    max_spy_armies: int = 1
 
     # -- Auth validation ---------------------------------------------
     min_username_length: int = 2
@@ -245,8 +248,7 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
             if era_key:
                 generic = {k: v for k, v in vals.items()
                            if k not in ("travel_offset", "siege_offset")}
-                if generic:
-                    era_effects_dict[era_key] = generic
+                era_effects_dict[era_key] = generic
 
     # Handle ai_generator: {era_yaml_key: {min_waves, max_waves, ...}}
     ai_generator_raw = raw.pop("ai_generator", None)

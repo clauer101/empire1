@@ -376,7 +376,7 @@
 <div id="toast"></div>
 
 <script>
-const GS = `${location.protocol}//${location.hostname}:8080`;
+const GS = window.location.origin;
 
 let selectedEmpire = null;
 let selectedArmy   = null;
@@ -416,21 +416,26 @@ function armyStrength(waves) {
 // Primary: use the most advanced critter era in the army's waves.
 // Fallback: travel_time bucketing (for armies with unknown critters).
 const ERA_BREAKS = [
-  [120,  'Stone Age'],
-  [300,  'Neolithic'],
-  [630,  'Bronze Age'],
-  [900,  'Iron Age'],
-  [1500, 'Middle Ages'],
-  [2400, 'Renaissance'],
-  [3600, 'Industrial'],
-  [5400, 'Modern'],
-  [Infinity, 'Future'],
+  [120,  'stone'],
+  [300,  'neolithic'],
+  [630,  'bronze'],
+  [900,  'iron'],
+  [1500, 'middle_ages'],
+  [2400, 'renaissance'],
+  [3600, 'industrial'],
+  [5400, 'modern'],
+  [Infinity, 'future'],
 ];
+const ERA_LABEL = {
+  stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
+  middle_ages: 'Middle Ages', renaissance: 'Renaissance', industrial: 'Industrial',
+  modern: 'Modern', future: 'Future',
+};
 
 function travelToEra(t) {
-  if (!t) return 'Unbekannt';
+  if (!t) return 'stone';
   for (const [max, era] of ERA_BREAKS) if (t <= max) return era;
-  return 'Zukunft';
+  return 'future';
 }
 
 function armyEra(army) {
@@ -628,7 +633,7 @@ function buildArmyBtn(army) {
       const slots = byEra[era];
       const pct = Math.round(slots / totalSlots * 100);
       return `<div class="age-row">
-        <span class="age-name">${era}</span>
+        <span class="age-name">${ERA_LABEL[era] || era}</span>
         <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%"></div></div>
         <span class="age-pct">${pct}%</span>
         <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${slots} sl</span>
@@ -664,8 +669,7 @@ function showEraTab(era) {
   list.innerHTML = '';
 
   // ── Random army button ──
-  const deEra = eraEnToDE[era];
-  if (deEra) {
+  if (ERA_ORDER.includes(era)) {
     const randBtn = document.createElement('button');
     randBtn.className = 'random-army-btn';
     randBtn.textContent = '🎲 Random Army generieren';
@@ -675,7 +679,7 @@ function showEraTab(era) {
       let generatedName = null;
       try {
         const seed = Math.floor(Math.random() * 100000);
-        const r = await fetch(`/api/ai-generator/generate?era=${encodeURIComponent(deEra)}&seed=${seed}`);
+        const r = await fetch(`/api/ai-generator/generate?era=${encodeURIComponent(era)}&seed=${seed}`);
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
 
@@ -732,7 +736,7 @@ function renderArmies(armies) {
     const tab = document.createElement('button');
     tab.className = 'era-tab';
     tab.dataset.era = era;
-    tab.textContent = `${era} (${armiesByEra[era].length})`;
+    tab.textContent = `${ERA_LABEL[era] || era} (${armiesByEra[era].length})`;
     tab.addEventListener('click', () => showEraTab(era));
     tabBar.appendChild(tab);
   });
@@ -742,10 +746,8 @@ function renderArmies(armies) {
 }
 
 // ── Army analysis panel ───────────────────────────────────────────
-// ERA_ORDER populated from /api/era-map at load time
+// ERA_ORDER populated from /api/era-map at load time (lowercase English era keys)
 let ERA_ORDER = [];
-// Maps English era label → German display name for the generate API
-let eraEnToDE = {};
 
 function renderArmyAnalysis(army) {
   const panel = document.getElementById('army-analysis');
@@ -792,7 +794,7 @@ function renderArmyAnalysis(army) {
       const slots = byEra[era];
       const pct = Math.round(slots / totalSlots * 100);
       return `<div class="age-row">
-        <span class="age-name">${era}</span>
+        <span class="age-name">${ERA_LABEL[era] || era}</span>
         <div class="age-bar-outer"><div class="age-bar-inner" style="width:${pct}%"></div></div>
         <span class="age-pct">${pct}%</span>
         <span style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${slots} sl</span>
@@ -908,14 +910,7 @@ async function loadAll() {
 
     if (eraMapR.ok) {
       const em = await eraMapR.json();
-      ERA_ORDER = (em.eras || []).map(k => em.labels_en?.[k] || k);
-      // Build English label → German display name mapping for the generate API
-      // em.eras = ["STEINZEIT", ...], labels_en = {"STEINZEIT": "Stone Age"}, labels_de = {"STEINZEIT": "Steinzeit"}
-      (em.eras || []).forEach(key => {
-        const en = em.labels_en?.[key];
-        const de = em.labels_de?.[key];
-        if (en && de) eraEnToDE[en] = de;
-      });
+      ERA_ORDER = em.eras || [];
     }
 
     if (armiesR.ok) {

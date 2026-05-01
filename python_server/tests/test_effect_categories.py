@@ -521,9 +521,9 @@ class TestTowerEmpireModifiers:
 
         Path: 5 tiles; progress=0.1 → float_idx=0.4 → pos ≈ (0.4, 0)
         hex_world_distance((0,0), (0.4,0)) ≈ 0.4.
-        base range = 0.3 → too short. with +0.3 upgrade → 0.6 → reaches critter.
+        base range = 0.3 → too short. with +100% upgrade → 0.6 → reaches critter.
         """
-        gc = self._gc_with_structure_upgrades(range_=0.3)  # +0.3 hex per level
+        gc = self._gc_with_structure_upgrades(range_=100.0)  # +100% per level → doubles range
         svc = BattleService(gc=gc)
         c = _critter(speed=0.01)
         c.path_progress = 0.1

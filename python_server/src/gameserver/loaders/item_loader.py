@@ -66,6 +66,7 @@ def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
             animation=attrs.get("animation", ""),
             image=attrs.get("image", ""),
             era=attrs.get("era", ""),
+            subtype=attrs.get("type", ""),
         ))
     return items
 

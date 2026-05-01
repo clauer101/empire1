@@ -26,6 +26,7 @@ from gameserver.network.rest_models import (
     ArmyCreateRequest,
     ArmyRenameRequest,
     AttackRequest,
+    SpyAttackRequest,
     BuildRequest,
     BuyCritterSlotRequest,
     BuyTileRequest,
@@ -39,6 +40,7 @@ from gameserver.network.rest_models import (
     SavedMapRenameBody,
     SendMessageRequest,
     BattleFeedbackRequest,
+    PushSubscribeRequest,
     SignupRequest,
     SignupResponse,
     WaveChangeRequest,
@@ -87,6 +89,7 @@ def create_app(services: "Services") -> FastAPI:
         handle_military_request,
         handle_new_army,
         handle_new_attack,
+        handle_spy_attack,
         handle_new_item,
         handle_new_wave,
         handle_summary_request,
@@ -185,14 +188,29 @@ def create_app(services: "Services") -> FastAPI:
         resp = await handle_military_request(msg, uid)
         return resp or {"error": "No data"}
 
+    def _is_recently_active(last_seen_str: str, threshold_s: int) -> bool:
+        if not last_seen_str:
+            return False
+        import time, datetime
+        try:
+            dt = datetime.datetime.fromisoformat(last_seen_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            return (time.time() - dt.timestamp()) < threshold_s
+        except Exception:
+            return False
+
     @app.get("/api/empires")
     async def list_empires(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Return all known empires sorted by culture points descending."""
         # Build uid → username map from DB
         uid_to_user: dict[int, str] = {}
+        uid_to_last_seen: dict[int, str] = {}
         if services.database is not None:
             for row in await services.database.list_users():
                 uid_to_user[row["uid"]] = row["username"]
+                uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
+        connected_uids: list[int] = services.server.connected_uids if services.server else []
         empires = []
         for empire in services.empire_service.all_empires.values():
             # Skip AI / NPC empires: no registered user account in the DB
@@ -207,6 +225,8 @@ def create_app(services: "Services") -> FastAPI:
                 "culture": round(empire.resources.get("culture", 0.0), 1),
                 "is_self": empire.uid == uid,
                 "era": era_idx,
+                "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
+                "artefact_count": len(empire.artefacts),
             })
         empires.sort(key=lambda e: e["culture"], reverse=True)
         return {"empires": empires}
@@ -321,6 +341,12 @@ def create_app(services: "Services") -> FastAPI:
         resp = await handle_new_attack(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
+    @app.post("/api/spy-attack")
+    async def spy_attack(body: SpyAttackRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        msg = _stub_message(target_uid=body.target_uid, opponent_name=body.opponent_name)
+        resp = await handle_spy_attack(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
     @app.post("/api/attack/{attack_id}/skip-siege")
     async def skip_siege(attack_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Immediately end the siege phase — only callable by the defender."""
@@ -400,12 +426,32 @@ def create_app(services: "Services") -> FastAPI:
 
     @app.post("/api/battle-feedback")
     async def battle_feedback(body: BattleFeedbackRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
-        """Send AI battle difficulty feedback as a message from AI (UID 0) to admin (UID 4)."""
-        AI_UID = 0
-        ADMIN_UID = 4
+        """Log AI battle difficulty feedback to a file."""
+        import datetime, pathlib
         text = f"[{body.rating}] Army: {body.army_name} (reported by UID {uid})"
-        msg = await services.database.send_message(from_uid=AI_UID, to_uid=ADMIN_UID, body=text)
-        return {"success": True, "message": msg}
+        ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        log_path = pathlib.Path(__file__).parent.parent.parent.parent / "battle_feedback.log"
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(f"{ts} {text}\n")
+        return {"success": True}
+
+    @app.post("/api/push/subscribe")
+    async def push_subscribe(body: PushSubscribeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Save a Web Push subscription for the current user."""
+        await services.database.save_push_subscription(uid, body.subscription)
+        return {"success": True}
+
+    @app.delete("/api/push/subscribe")
+    async def push_unsubscribe(body: PushSubscribeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Remove a Web Push subscription."""
+        endpoint = body.subscription.get("endpoint", "")
+        await services.database.delete_push_subscription(uid, endpoint)
+        return {"success": True}
+
+    @app.get("/api/push/vapid-public-key")
+    async def push_vapid_key() -> dict[str, Any]:
+        """Return the VAPID public key for client-side subscription setup."""
+        return {"key": "BLnzsQBECw6mNgNpX04wtQiOCVDtPmysmcsWk2Iym9eeDmZ5lcx9fEZ0lEJfPc5Pmp5t-pFHJQbJWNptfeA8TZw"}
 
     # =================================================================
     # Replay endpoints
@@ -459,9 +505,11 @@ def create_app(services: "Services") -> FastAPI:
     async def admin_status(_uid: int = Depends(require_admin)) -> dict[str, Any]:
         """Unauthenticated overview for dev tools."""
         uid_to_user: dict[int, str] = {}
+        uid_to_last_seen: dict[int, str] = {}
         if services.database is not None:
             for row in await services.database.list_users():
                 uid_to_user[row["uid"]] = row["username"]
+                uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
 
         connected_uids: list[int] = (
             services.server.connected_uids if services.server else []
@@ -513,11 +561,11 @@ def create_app(services: "Services") -> FastAPI:
                 "uid": empire.uid,
                 "name": empire.name,
                 "username": uid_to_user.get(empire.uid, ""),
-                "online": empire.uid in connected_uids,
+                "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "resources": {k: round(v, 1) for k, v in empire.resources.items()},
                 "max_life": round(empire.max_life, 1),
                 "citizens": empire.citizens,
-                "artefacts": empire.artefacts,
+                "artefact_count": len(empire.artefacts),
                 "build_queue": empire.build_queue,
                 "research_queue": empire.research_queue,
                 "buildings_done": buildings_done,
@@ -526,6 +574,7 @@ def create_app(services: "Services") -> FastAPI:
                 "knowledge_wip": knowledge_wip,
                 "armies": armies_out,
                 "hex_tiles": hex_tiles,
+                "path_length": _pl,
                 "power": power,
             })
         empires_out.sort(key=lambda e: e["resources"].get("culture", 0), reverse=True)
@@ -692,31 +741,18 @@ def create_app(services: "Services") -> FastAPI:
     from pathlib import Path as _Path
 
     from gameserver.util.eras import ERA_ORDER as _ERA_KEYS, ERA_LABELS_DE as _ERA_LABELS_DE, ERA_LABELS_EN as _ERA_LABELS_EN
-    _ERA_PATTERNS_KEYS = [
-        ("STEINZEIT",          _re.compile(r'#\s+STEINZEIT')),
-        ("NEOLITHIKUM",        _re.compile(r'#\s+NEOLITHIKUM')),
-        ("BRONZEZEIT",         _re.compile(r'#\s+BRONZEZEIT')),
-        ("EISENZEIT",          _re.compile(r'#\s+EISENZEIT')),
-        ("MITTELALTER",        _re.compile(r'#\s+MITTELALTER')),
-        ("RENAISSANCE",        _re.compile(r'#\s+RENAISSANCE')),
-        ("INDUSTRIALISIERUNG", _re.compile(r'#\s+INDUSTRIALIS')),
-        ("MODERNE",            _re.compile(r'#\s+MODERNE')),
-        ("ZUKUNFT",            _re.compile(r'#\s+ZUKUNFT')),
-    ]
     _CONFIG_DIR = _Path(__file__).resolve().parents[3] / "config"
-    _ITEM_IID_RE = _re.compile(r'^([A-Z][A-Z0-9_]+):')
 
     def _parse_yaml_era_groups_gs(path: "_Path") -> "dict[str, list[str]]":
+        import yaml as _yaml
         result: dict[str, list[str]] = {k: [] for k in _ERA_KEYS}
-        current = _ERA_KEYS[0]
-        for line in path.read_text(encoding="utf-8").split("\n"):
-            for key, pat in _ERA_PATTERNS_KEYS:
-                if pat.search(line):
-                    current = key
-                    break
-            m = _ITEM_IID_RE.match(line)
-            if m:
-                result[current].append(m.group(1))
+        data = _yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for iid, item in data.items():
+            if not isinstance(item, dict):
+                continue
+            key = item.get("era", _ERA_KEYS[0])
+            if key in result:
+                result[key].append(iid)
         return result
 
     _critter_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "critters.yaml")
@@ -736,11 +772,8 @@ def create_app(services: "Services") -> FastAPI:
         (era, iids) for era, iids in _structure_groups.items() if iids
     ]
 
-    # Map game.yaml era_effects keys (lowercase English) → uppercase German era keys
-    from gameserver.util.eras import ERA_YAML_TO_KEY as _ERA_EFFECT_KEY_MAP
-
     def _load_era_effects() -> dict[str, dict[str, float]]:
-        """Read era_effects from game.yaml, keyed by uppercase era key."""
+        """Read era_effects from game.yaml, keyed by lowercase English era key."""
         import yaml as _yaml
         p = _CONFIG_DIR / "game.yaml"
         if not p.exists():
@@ -748,12 +781,7 @@ def create_app(services: "Services") -> FastAPI:
         with p.open() as f:
             raw = _yaml.safe_load(f) or {}
         effects_raw = raw.get("era_effects", {})
-        result: dict[str, dict[str, float]] = {}
-        for eng_key, vals in effects_raw.items():
-            era_key = _ERA_EFFECT_KEY_MAP.get(eng_key)
-            if era_key and isinstance(vals, dict):
-                result[era_key] = vals
-        return result
+        return {k: v for k, v in effects_raw.items() if isinstance(v, dict) and k in _ERA_KEYS}
 
     _era_effects_data = _load_era_effects()
 
@@ -780,6 +808,8 @@ def create_app(services: "Services") -> FastAPI:
                 "health": cu.health, "speed": cu.speed, "armour": cu.armour,
             } if cu else {},
             "item_upgrade_base_costs": gc.item_upgrade_base_costs if gc else [],
+            "wave_era_costs": gc.prices.wave_era_costs if gc else [],
+            "critter_slot_params": {"u": gc.prices.critter_slot.u, "y": gc.prices.critter_slot.y, "z": gc.prices.critter_slot.z, "v": gc.prices.critter_slot.v} if gc else {},
         }
 
     @app.get("/api/admin/structures")
@@ -1351,6 +1381,92 @@ def create_app(services: "Services") -> FastAPI:
         if not ok:
             raise HTTPException(status_code=404, detail=f"IID '{iid}' not found in structures.yaml")
         return {"success": True, "iid": iid, "effects": new_effects}
+
+    # Era keys are already lowercase English — no remapping needed
+    _ERA_KEY_TO_EFFECT_KEY = {k: k for k in _ERA_KEYS}
+
+    @app.get("/api/admin/era-effects")
+    async def get_era_effects_admin(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return era_effects from game.yaml keyed by lowercase English era key."""
+        import yaml as _yaml
+        p = _CONFIG_DIR / "game.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        return {"era_effects": raw.get("era_effects", {})}
+
+    @app.patch("/api/admin/era-effects/{era_key}")
+    async def patch_era_effects(
+        era_key: str, body: dict[str, Any], _uid: int = Depends(require_admin)
+    ) -> dict[str, Any]:
+        """Set era_effects for one era in game.yaml. era_key is lowercase English (e.g. 'stone')."""
+        import yaml as _yaml
+        effects: dict[str, Any] = body.get("effects", {})
+        for k, v in effects.items():
+            if not isinstance(k, str):
+                raise HTTPException(status_code=400, detail="Effect keys must be strings")
+            if not isinstance(v, (int, float)):
+                raise HTTPException(status_code=400, detail=f"Value for '{k}' must be a number")
+
+        p = _CONFIG_DIR / "game.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+
+        if "era_effects" not in raw:
+            raw["era_effects"] = {}
+        if effects:
+            raw["era_effects"][era_key] = effects
+        else:
+            raw["era_effects"].pop(era_key, None)
+
+        with p.open("w") as f:
+            _yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+        # Reload in-memory era_effects
+        nonlocal _era_effects_data
+        _era_effects_data = _load_era_effects()
+        # Reload game config in empire_service
+        if services.empire_service:
+            from gameserver.loaders.game_config_loader import load_game_config
+            new_gc = load_game_config(str(_CONFIG_DIR / "game.yaml"))
+            services.empire_service._gc = new_gc
+        return {"success": True, "era_key": era_key, "effects": effects}
+
+    @app.get("/api/admin/workshop-config")
+    async def get_workshop_config(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return workshop upgrade config from game.yaml."""
+        import yaml as _yaml
+        p = _CONFIG_DIR / "game.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        return {
+            "structure_upgrades": raw.get("structure_upgrades", {}),
+            "critter_upgrades": raw.get("critter_upgrades", {}),
+            "item_upgrade_base_costs": raw.get("item_upgrade_base_costs", []),
+        }
+
+    @app.patch("/api/admin/workshop-config")
+    async def patch_workshop_config(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Save workshop upgrade config to game.yaml and reload."""
+        import yaml as _yaml
+        p = _CONFIG_DIR / "game.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        if "structure_upgrades" in body:
+            raw["structure_upgrades"] = {k: float(v) for k, v in body["structure_upgrades"].items()}
+        if "critter_upgrades" in body:
+            raw["critter_upgrades"] = {k: float(v) for k, v in body["critter_upgrades"].items()}
+        if "item_upgrade_base_costs" in body:
+            raw["item_upgrade_base_costs"] = [float(v) for v in body["item_upgrade_base_costs"]]
+        with p.open("w") as f:
+            _yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        # Reload game config
+        if services.empire_service:
+            from gameserver.loaders.game_config_loader import load_game_config
+            new_gc = load_game_config(str(_CONFIG_DIR / "game.yaml"))
+            services.empire_service._gc = new_gc
+        if services.attack_service and services.empire_service and services.empire_service._gc:
+            services.attack_service._game_config = services.empire_service._gc
+        return {"success": True}
 
     # =================================================================
     # WebSocket proxy — /ws on the same port as REST

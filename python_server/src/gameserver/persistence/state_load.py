@@ -294,6 +294,8 @@ def _deserialize_attack(d: dict[str, Any]) -> Attack:
         total_eta_seconds=d.get("total_eta_seconds", 60.0),  # default to 60s if not in save
         siege_remaining_seconds=d.get("siege_remaining_seconds", 0.0),
         total_siege_seconds=d.get("total_siege_seconds", 30.0),  # default to 30s if not in save
+        is_spy=d.get("is_spy", False),
+        army_name_override=d.get("army_name_override", ""),
     )
 
 

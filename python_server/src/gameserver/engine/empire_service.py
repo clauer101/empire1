@@ -41,6 +41,7 @@ class EmpireService:
     def __init__(self, upgrade_provider: UpgradeProvider, event_bus: EventBus,
                  game_config: GameConfig | None = None,
                  knowledge_era_groups: dict[str, list[str]] | None = None,
+                 building_era_groups: dict[str, list[str]] | None = None,
                  item_era_index: dict[str, int] | None = None) -> None:
         self._upgrades = upgrade_provider
         self._events = event_bus
@@ -56,6 +57,7 @@ class EmpireService:
         self._base_build_speed = _gc.base_build_speed
         self._base_research_speed = _gc.base_research_speed
         self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
+        self._building_era_groups: dict[str, list[str]] = building_era_groups or {}
         self._item_era_index: dict[str, int] = item_era_index or {}
         self._next_aid: int = 1  # global army ID counter
 
@@ -117,16 +119,18 @@ class EmpireService:
         era.  The empire's era is the highest era in which at least one
         knowledge item has been completed (remaining effort == 0).
 
-        Returns the era key string (e.g. ``"EISENZEIT"``).  Falls back to
-        ``"STEINZEIT"`` when no knowledge has been completed yet.
+        Returns the era key string (e.g. ``"iron"``).  Falls back to
+        ``"stone"`` when no knowledge has been completed yet.
         """
-        if not self._knowledge_era_groups:
+        if not self._knowledge_era_groups and not self._building_era_groups:
             return self._ERA_ORDER[0]
-        done = {iid for iid, remaining in empire.knowledge.items() if remaining == 0.0}
+        done_knowledge = {iid for iid, remaining in empire.knowledge.items() if remaining == 0.0}
+        done_buildings = {iid for iid, remaining in empire.buildings.items() if remaining == 0.0}
         current = self._ERA_ORDER[0]
         for era_key in self._ERA_ORDER:
-            items = self._knowledge_era_groups.get(era_key, [])
-            if any(iid in done for iid in items):
+            k_items = self._knowledge_era_groups.get(era_key, [])
+            b_items = self._building_era_groups.get(era_key, [])
+            if any(iid in done_knowledge for iid in k_items) or any(iid in done_buildings for iid in b_items):
                 current = era_key
         return current
 
@@ -251,6 +255,10 @@ class EmpireService:
                 effects = self._upgrades.get_effects(iid)
                 for key, value in effects.items():
                     empire.effects[key] = empire.effects.get(key, 0.0) + value
+        for iid in empire.artefacts:
+            effects = self._upgrades.get_effects(iid)
+            for key, value in effects.items():
+                empire.effects[key] = empire.effects.get(key, 0.0) + value
         # Apply era-specific effects from game config
         era_effects_all = getattr(self._gc, "era_effects", {})
         era_key = self.get_current_era(empire)

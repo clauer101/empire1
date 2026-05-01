@@ -20,6 +20,21 @@ let _empiresCache = [];
 /** iid.toUpperCase() → Roman numeral string (e.g. "III") */
 let _critterEraRoman = {};
 let _critUpgDef = null; // critter_upgrade_def from era-map
+let _waveEraCosts = []; // wave_era_costs from era-map
+let _critterSlotParams = null; // {u, y, z, v}
+let _etaTicker = null; // interval for live ETA countdown
+
+function _waveEraPrice(eraIndex) {
+  if (!_waveEraCosts.length) return 0;
+  if (eraIndex < _waveEraCosts.length) return _waveEraCosts[eraIndex];
+  return _waveEraCosts[_waveEraCosts.length - 1];
+}
+
+function _slotPrice(slots) {
+  const p = _critterSlotParams;
+  if (!p) return 0;
+  return p.u + (slots * p.y) * Math.pow(slots + p.z, p.v);
+}
 
 function _applyCritUpgrades(c) {
   const upgrades = st.summary?.item_upgrades?.[c.iid] ?? {};
@@ -58,20 +73,48 @@ function init(el, _api, _state) {
 
     <div id="attack-target-banner" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(229,57,53,0.15);border:1px solid var(--danger,#e53935);border-radius:var(--radius);color:var(--danger,#e53935);font-weight:bold;"></div>
     
-    <!-- ── Create Army Header ──────────────────────────── -->
-    <div class="panel" style="margin-bottom:24px">
-      <div class="panel-header">New Army</div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0">
-          <label for="army-name">Name</label>
-          <input type="text" id="army-name" placeholder="Army name">
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;">
-          <button id="create-army-btn" style="align-self:flex-end">Create</button>
-          <div id="army-price-display" style="font-size:10px;margin-top:4px;color:var(--text-muted);"></div>
-        </div>
+    <!-- ── Create Army Button ──────────────────────────── -->
+    <div style="margin-bottom:16px;">
+      <button id="create-army-btn" style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2;">
+        <span>+ New Army</span>
+        <span id="army-price-display" style="font-size:10px;opacity:0.7;"></span>
+      </button>
+    </div>
+
+    <!-- ── New Army Name Overlay ─────────────────────────── -->
+    <div id="new-army-overlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+      <div style="background:var(--panel-bg,#1e1e2e);border:1px solid var(--border-color);border-radius:var(--radius,8px);padding:14px 16px;min-width:240px;max-width:90vw;display:flex;flex-direction:column;gap:8px;position:relative;">
+        <button id="new-army-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1;">✕</button>
+        <div style="font-weight:bold;padding-right:20px;">New Army</div>
+        <input type="text" id="new-army-name" placeholder="Name" style="width:100%;box-sizing:border-box;" />
+        <div id="new-army-msg" style="font-size:0.82em;min-height:14px;"></div>
+        <button id="new-army-confirm" style="width:100%;">Buy</button>
       </div>
-      <div id="army-create-msg"></div>
+    </div>
+
+    <!-- ── Spy Attack ─────────────────────────────────── -->
+    <div id="spy-attack-panel" style="margin-bottom:18px;padding:10px 12px;background:rgba(100,60,180,0.12);border:1px solid rgba(150,100,220,0.35);border-radius:var(--radius,8px);">
+      <div id="spy-panel-title" style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-dim);">🕵 Spy Attack <span style="font-size:11px;font-weight:400;">(disguises as first army, half travel time)</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="empire-ac-wrap" style="position:relative;flex:1;min-width:140px;">
+          <input type="text" id="spy-target-input" class="target-uid-input" placeholder="Target empire" autocomplete="off" style="width:100%;box-sizing:border-box;padding-right:24px;" />
+          <button id="spy-target-clear" title="Clear" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;">✕</button>
+          <div class="empire-ac-dropdown"></div>
+        </div>
+        <button id="spy-attack-btn" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;white-space:nowrap;">
+          <span>🕵 Send Spy</span>
+          <span id="spy-eta-label" style="font-size:10px;opacity:0.7;"></span>
+        </button>
+      </div>
+      <div id="spy-status-msg" style="font-size:12px;margin-top:6px;min-height:14px;"></div>
+    </div>
+
+    <!-- ── Spy Report Overlay ─────────────────────────── -->
+    <div id="spy-report-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.65);align-items:center;justify-content:center;">
+      <div style="background:var(--panel-bg,#1e1e2e);border:1px solid rgba(150,100,220,0.5);border-radius:var(--radius,8px);padding:20px;min-width:280px;max-width:min(520px,92vw);max-height:80vh;overflow-y:auto;position:relative;">
+        <button id="spy-report-close" style="position:absolute;top:8px;right:12px;background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;">✕</button>
+        <div id="spy-report-body"></div>
+      </div>
     </div>
 
     <!-- ── Armies Overview ────────────────────────────── -->
@@ -92,7 +135,35 @@ function init(el, _api, _state) {
     </div>
   `;
 
-  container.querySelector('#create-army-btn').addEventListener('click', onCreateArmy);
+  const newArmyOverlay = container.querySelector('#new-army-overlay');
+  container.querySelector('#create-army-btn').addEventListener('click', () => {
+    container.querySelector('#new-army-name').value = '';
+    container.querySelector('#new-army-msg').textContent = '';
+    newArmyOverlay.style.display = 'flex';
+    container.querySelector('#new-army-name').focus();
+  });
+  container.querySelector('#new-army-close').addEventListener('click', () => {
+    newArmyOverlay.style.display = 'none';
+  });
+  container.querySelector('#new-army-confirm').addEventListener('click', onCreateArmy);
+  container.querySelector('#new-army-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') onCreateArmy();
+    if (e.key === 'Escape') newArmyOverlay.style.display = 'none';
+  });
+  newArmyOverlay.addEventListener('click', e => {
+    if (e.target === newArmyOverlay) newArmyOverlay.style.display = 'none';
+  });
+
+  // Bind spy attack panel
+  const spyInput = container.querySelector('#spy-target-input');
+  container.querySelector('#spy-target-clear').addEventListener('click', () => { spyInput.value = ''; });
+  _bindAutocomplete(spyInput);
+  container.querySelector('#spy-attack-btn').addEventListener('click', onSpyAttack);
+
+  // Bind spy report overlay close
+  const spyOverlay = container.querySelector('#spy-report-overlay');
+  container.querySelector('#spy-report-close').addEventListener('click', () => { spyOverlay.style.display = 'none'; });
+  spyOverlay.addEventListener('click', e => { if (e.target === spyOverlay) spyOverlay.style.display = 'none'; });
 
   // Bind critter overlay close
   const critterOverlay = container.querySelector('#critter-overlay');
@@ -112,7 +183,10 @@ function init(el, _api, _state) {
 async function enter() {
   // Listen to military data updates (but only for this view)
   _unsub.push(eventBus.on('state:military', renderArmies));
+  _unsub.push(eventBus.on('state:military', () => _startEtaTicker()));
+  _unsub.push(eventBus.on('state:military', _updateSpyButton));
   _unsub.push(eventBus.on('state:summary', updateCreateArmyButton));
+  _unsub.push(eventBus.on('server:spy_report', _onSpyReport));
   
   // Load once on entry
   _loadEmpires();
@@ -120,8 +194,13 @@ async function enter() {
     await rest.getSummary();
     updateCreateArmyButton();
     const [,, eraMap] = await Promise.all([rest.getItems(), rest.getMilitary(), rest.getEraMap()]);
-    if (eraMap) _critUpgDef = eraMap.critter_upgrade_def ?? null;
+    if (eraMap) {
+      _critUpgDef = eraMap.critter_upgrade_def ?? null;
+      _waveEraCosts = eraMap.wave_era_costs ?? [];
+      _critterSlotParams = eraMap.critter_slot_params ?? null;
+    }
     _buildCritterEraRoman();
+    _updateSpyEta();
   } catch (err) {
     console.error('Failed to load military data:', err);
   }
@@ -135,14 +214,9 @@ async function enter() {
     inputs.forEach(inp => { inp.value = name || uid; });
     if (inputs.length > 0) {
       inputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      inputs[0].focus();
     }
-    // Show a banner so the user knows what the pre-filled target is
     const banner = container.querySelector('#attack-target-banner');
-    if (banner) {
-      banner.textContent = `⚔ Ziel: ${name} (ID ${uid})`;
-      banner.style.display = '';
-    }
+    if (banner) banner.style.display = 'none';
   } else {
     const banner = container.querySelector('#attack-target-banner');
     if (banner) banner.style.display = 'none';
@@ -209,67 +283,73 @@ function showMessage(inputElement, text, type = 'error', persistent = false) {
   }
 }
 
+function _startEtaTicker() {
+  if (_etaTicker) return;
+  _etaTicker = setInterval(() => {
+    container.querySelectorAll('.eta-live[data-eta-ts]').forEach(el => {
+      const ts = Number(el.dataset.etaTs);
+      const remaining = (ts - Date.now()) / 1000;
+      const prefix = el.dataset.etaPrefix || 'ETA';
+      el.textContent = remaining > 0 ? `${prefix}: ${fmtTravelTime(remaining)}` : 'Arriving…';
+    });
+  }, 1000);
+}
+
 function leave() {
   _unsub.forEach(fn => fn());
   _unsub = [];
+  if (_etaTicker) { clearInterval(_etaTicker); _etaTicker = null; }
 }
 
 function updateCreateArmyButton() {
   const armyPrice = st.summary?.army_price || 0;
   const currentGold = st.summary?.resources?.gold || 0;
   const canAfford = currentGold >= armyPrice;
-  
   const btn = container.querySelector('#create-army-btn');
   const priceDisplay = container.querySelector('#army-price-display');
-  
-  if (btn && priceDisplay) {
-    priceDisplay.textContent = `💰 ${Math.round(armyPrice)} Gold`;
-    priceDisplay.style.color = canAfford ? 'var(--text-muted)' : 'var(--danger)';
-    
-    if (!canAfford) {
-      btn.style.opacity = '0.5';
-      btn.style.cursor = 'not-allowed';
-      btn.title = `Not enough gold (${Math.round(armyPrice)} needed)`;
-    } else {
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
-      btn.title = `Create army (${Math.round(armyPrice)} gold)`;
-    }
-  }
+  if (!btn) return;
+  priceDisplay.textContent = `💰 ${Math.round(armyPrice)} Gold`;
+  priceDisplay.style.color = canAfford ? '' : 'var(--danger)';
+  btn.style.opacity = canAfford ? '1' : '0.5';
+  btn.title = canAfford ? `Armee kaufen (${Math.round(armyPrice)} Gold)` : `Nicht genug Gold (${Math.round(armyPrice)} benötigt)`;
 }
 
 async function onCreateArmy() {
   const armyPrice = st.summary?.army_price || 0;
   const currentGold = st.summary?.resources?.gold || 0;
-  
-  if (currentGold < armyPrice) {
-    const msgEl = container.querySelector('#army-create-msg');
-    showMessage(msgEl, `Not enough gold (need ${Math.round(armyPrice)}, have ${Math.round(currentGold)})`, 'error');
-    return;
-  }
-  
-  const nameInput = container.querySelector('#army-name');
+  const nameInput = container.querySelector('#new-army-name');
+  const msgEl = container.querySelector('#new-army-msg');
   const name = nameInput.value.trim();
-  const msgEl = container.querySelector('#army-create-msg');
-  
+
   if (!name) {
-    showMessage(msgEl, 'Please enter army name', 'error');
+    msgEl.textContent = 'Please enter a name';
+    msgEl.style.color = 'var(--danger)';
     return;
   }
-  
+  if (currentGold < armyPrice) {
+    msgEl.textContent = `Not enough gold (${Math.round(armyPrice)} needed)`;
+    msgEl.style.color = 'var(--danger)';
+    return;
+  }
+
+  const confirmBtn = container.querySelector('#new-army-confirm');
+  confirmBtn.disabled = true;
   try {
     const resp = await rest.createArmy(name);
     if (resp.success) {
-      nameInput.value = '';
-      showMessage(msgEl, `✓ Army "${name}" created! Cost: ${Math.round(resp.cost)} gold`, 'success');
+      container.querySelector('#new-army-overlay').style.display = 'none';
       await rest.getSummary();
       await rest.getMilitary();
     } else {
-      showMessage(msgEl, `✗ ${resp.error || 'Failed to create army'}`, 'error');
+      msgEl.textContent = `✗ ${resp.error || 'Failed'}`;
+      msgEl.style.color = 'var(--danger)';
     }
   } catch (err) {
     console.error('Failed to create army:', err);
-    showMessage(msgEl, '✗ Network error', 'error');
+    msgEl.textContent = '✗ Network error';
+    msgEl.style.color = 'var(--danger)';
+  } finally {
+    confirmBtn.disabled = false;
   }
 }
 
@@ -509,20 +589,16 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
   if (slotUpgradeBtn) {
     slotUpgradeBtn.addEventListener('click', async () => {
       if (slotUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
-      slotUpgradeBtn.disabled = true;
-      try {
-        const resp = await rest.buyCritterSlot(aid, waveIdx);
-        if (resp.success) {
-          overlay.classList.remove('is-open');
-          await rest.getSummary();
-          await rest.getMilitary();
+      const newSlots = currentSlots + 1;
+      const newNextSlotPrice = _slotPrice(newSlots + 1);
+      _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, newNextSlotPrice, newSlots);
+      rest.buyCritterSlot(aid, waveIdx).then(resp => {
+        if (!resp.success) {
+          _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, nextSlotPrice, currentSlots);
         } else {
-          slotUpgradeBtn.textContent = `✗ ${resp.error || 'Failed'}`;
-          setTimeout(() => { slotUpgradeBtn.disabled = false; }, 2000);
+          Promise.all([rest.getSummary(), rest.getMilitary()]);
         }
-      } catch {
-        slotUpgradeBtn.disabled = false;
-      }
+      });
     });
   }
 
@@ -531,20 +607,16 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
   if (eraUpgradeBtn) {
     eraUpgradeBtn.addEventListener('click', async () => {
       if (eraUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
-      eraUpgradeBtn.disabled = true;
-      try {
-        const resp = await rest.buyWaveEra(aid, waveIdx);
-        if (resp.success) {
-          overlay.classList.remove('is-open');
-          await rest.getSummary();
-          await rest.getMilitary();
+      const newMaxEra = maxEra + 1;
+      const newNextEraPrice = _waveEraPrice(newMaxEra + 1);
+      _openCritterOverlay(aid, waveIdx, currentIid, newMaxEra, newNextEraPrice, nextSlotPrice, currentSlots);
+      rest.buyWaveEra(aid, waveIdx).then(resp => {
+        if (!resp.success) {
+          _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, nextSlotPrice, currentSlots);
         } else {
-          eraUpgradeBtn.textContent = `✗ ${resp.error || 'Failed'}`;
-          setTimeout(() => { eraUpgradeBtn.disabled = false; }, 2000);
+          Promise.all([rest.getSummary(), rest.getMilitary()]);
         }
-      } catch {
-        eraUpgradeBtn.disabled = false;
-      }
+      });
     });
   }
 
@@ -612,6 +684,156 @@ async function onDecreaseSlots(e) {
   }
 }
 
+function _setAttackBtnState(btn, state, label2 = '') {
+  btn.disabled = state !== 'ready';
+  btn.style.opacity = state === 'ready' ? '' : '0.5';
+  btn.style.cursor = state === 'ready' ? '' : 'default';
+  if (state === 'ready') {
+    btn.innerHTML = `<span>⚔ Attack</span>`;
+  } else {
+    const color = state === 'error' ? 'var(--danger)' : 'inherit';
+    btn.innerHTML = `<span style="color:${color}">${state === 'error' ? '✗' : '⚔'} ${label2 || ''}</span>`;
+  }
+}
+
+function _updateSpyButton() {
+  const btn = container.querySelector('#spy-attack-btn');
+  const statusEl = container.querySelector('#spy-status-msg');
+  const titleEl = container.querySelector('#spy-panel-title');
+  if (!btn) return;
+
+  const armies = st.military?.armies || [];
+  const firstArmy = armies.length ? armies.reduce((a, b) => a.aid < b.aid ? a : b) : null;
+  if (titleEl && firstArmy) {
+    titleEl.innerHTML = `🕵 Spy Attack <span style="font-size:11px;font-weight:400;">(disguises as "${escHtml(firstArmy.name)}", half travel time)</span>`;
+  }
+
+  const activeSpies = (st.military?.attacks_outgoing || []).filter(a => a.is_spy);
+  if (activeSpies.length > 0) {
+    const eta = fmtTravelTime(activeSpies[0].eta_seconds);
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'default';
+    btn.innerHTML = `<span>🕵 Dispatched</span><span style="font-size:10px;opacity:0.7;">ETA: ${eta}</span>`;
+    if (statusEl) statusEl.textContent = '';
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.innerHTML = `<span>🕵 Send Spy</span><span id="spy-eta-label" style="font-size:10px;opacity:0.7;"></span>`;
+    _updateSpyEta();
+  }
+}
+
+function _updateSpyEta() {
+  const travelTime = st.summary?.travel_time_seconds;
+  const etaEl = container.querySelector('#spy-eta-label');
+  if (etaEl && travelTime) {
+    const spyTime = Math.round(travelTime / 2);
+    etaEl.textContent = `✈ ${fmtTravelTime(spyTime)}`;
+  }
+}
+
+async function onSpyAttack() {
+  const spyInput = container.querySelector('#spy-target-input');
+  const spyBtn = container.querySelector('#spy-attack-btn');
+  const statusEl = container.querySelector('#spy-status-msg');
+  const etaLabel = container.querySelector('#spy-eta-label');
+  const query = spyInput.value.trim();
+
+  statusEl.textContent = '';
+  if (!query) {
+    statusEl.style.color = 'var(--danger, #e53935)';
+    statusEl.textContent = 'Please enter a target empire.';
+    return;
+  }
+
+  spyBtn.disabled = true;
+  statusEl.style.color = 'var(--text-dim)';
+  statusEl.textContent = 'Resolving target…';
+
+  let targetUid;
+  try {
+    ({ uid: targetUid } = await rest.resolveEmpire(query));
+  } catch (err) {
+    spyBtn.disabled = false;
+    statusEl.style.color = 'var(--danger, #e53935)';
+    statusEl.textContent = err.message.slice(0, 60);
+    return;
+  }
+
+  statusEl.textContent = 'Dispatching spy…';
+  try {
+    const resp = await rest.spyAttack(targetUid);
+    if (resp.success) {
+      const eta = fmtTravelTime(Math.round(resp.eta_seconds));
+      etaLabel.textContent = eta ? `ETA: ${eta}` : '';
+      spyBtn.innerHTML = `<span>🕵 Dispatched</span><span style="font-size:10px;opacity:0.7;">ETA: ${eta}</span>`;
+      statusEl.style.color = 'var(--success, #388e3c)';
+      statusEl.textContent = `Spy on the way — report arrives in ${eta}.`;
+      setTimeout(() => {
+        spyBtn.innerHTML = `<span>🕵 Send Spy</span><span id="spy-eta-label" style="font-size:10px;opacity:0.7;"></span>`;
+        spyBtn.disabled = false;
+        statusEl.textContent = '';
+      }, 5000);
+    } else {
+      spyBtn.disabled = false;
+      statusEl.style.color = 'var(--danger, #e53935)';
+      statusEl.textContent = (resp.error || 'Error').slice(0, 60);
+    }
+  } catch (err) {
+    spyBtn.disabled = false;
+    statusEl.style.color = 'var(--danger, #e53935)';
+    statusEl.textContent = 'Network error.';
+  }
+}
+
+function _onSpyReport(msg) {
+  const overlay = container.querySelector('#spy-report-overlay');
+  const body = container.querySelector('#spy-report-body');
+  if (!overlay || !body) return;
+
+  const era = msg.era || '?';
+  const defName = msg.defender_name || `Player ${msg.defender_uid}`;
+
+  const structHtml = (msg.structures || []).map(s => {
+    const upg = Object.entries(s.upgrades || {})
+      .filter(([, v]) => v > 0)
+      .map(([k, v]) => {
+        const abbr = {damage:'dmg',range:'rng',reload:'rld',effect_duration:'eff_dur',effect_value:'eff_val'};
+        return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k]||k}+${v}</span>`;
+      }).join(' ');
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <span>🗼 ${escHtml(s.name)}</span>
+      <span>${upg || '<span style="opacity:0.4;font-size:11px;">no upgrades</span>'}</span>
+    </div>`;
+  }).join('');
+
+  const critterHtml = (msg.critters || []).map(c => {
+    const upg = Object.entries(c.upgrades || {})
+      .filter(([, v]) => v > 0)
+      .map(([k, v]) => {
+        const abbr = {health:'hp',speed:'spd',armour:'arm'};
+        return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k]||k}+${v}</span>`;
+      }).join(' ');
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <span>⚔ ${escHtml(c.name)}</span>
+      <span>${upg || '<span style="opacity:0.4;font-size:11px;">no upgrades</span>'}</span>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <h3 style="margin:0 0 4px;font-size:15px;">🔬 Workshop Report</h3>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">${escHtml(defName)} &mdash; ${escHtml(era)}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text-dim);">Towers</div>
+    <div style="margin-bottom:12px;">${structHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text-dim);">Units</div>
+    <div>${critterHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
+  `;
+
+  overlay.style.display = 'flex';
+}
+
 async function onAttackOpponent(e) {
   const btn = e.currentTarget;
   const aid = parseInt(btn.getAttribute('data-aid'), 10);
@@ -621,32 +843,39 @@ async function onAttackOpponent(e) {
   const query = input.value.trim();
 
   if (!query) {
-    showMessage(input, 'Bitte Ziel-Empire eingeben (Name oder ID)', 'error');
+    _setAttackBtnState(btn, 'error', 'Ziel eingeben');
+    setTimeout(() => _setAttackBtnState(btn, 'ready'), 2000);
     return;
   }
 
-  btn.disabled = true;
+  _setAttackBtnState(btn, 'loading', 'Wird gesucht…');
   let targetUid, targetName;
   try {
     ({ uid: targetUid, name: targetName } = await rest.resolveEmpire(query));
   } catch (err) {
-    showMessage(input, err.message, 'error');
-    btn.disabled = false;
+    _setAttackBtnState(btn, 'error', err.message.slice(0, 20));
+    setTimeout(() => _setAttackBtnState(btn, 'ready'), 2500);
     return;
   }
 
+  _setAttackBtnState(btn, 'loading', 'Startet…');
   try {
     const resp = await rest.attackOpponent(targetUid, aid);
     if (resp.success) {
-      showMessage(input, `⚔ Angriff auf ${targetName} gestartet! ETA: ${Math.round(resp.eta_seconds)}s`, 'success');
+      const eta = fmtTravelTime(Math.round(resp.eta_seconds));
+      btn.innerHTML = `<span>⚔ Attacking</span><span style="font-size:10px;opacity:0.7;">ETA: ${eta}</span>`;
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'default';
+      await rest.getMilitary();
     } else {
-      showMessage(input, `✗ ${resp.error || 'Attack failed'}`, 'error', true);
+      _setAttackBtnState(btn, 'error', (resp.error || 'Fehler').slice(0, 22));
+      setTimeout(() => _setAttackBtnState(btn, 'ready'), 3000);
     }
   } catch (err) {
     console.error('Failed to launch attack:', err);
-    showMessage(input, 'Netzwerkfehler', 'error');
-  } finally {
-    btn.disabled = false;
+    _setAttackBtnState(btn, 'error', 'Netzwerkfehler');
+    setTimeout(() => _setAttackBtnState(btn, 'ready'), 2500);
   }
 }
 
@@ -668,8 +897,8 @@ function fmtTravelTime(seconds) {
  * @returns {number}
  */
 function critterCountInWave(waveSlots, critterSlots = 1) {
-  if (!critterSlots || critterSlots < 1) return waveSlots;
-  return Math.floor(waveSlots / critterSlots);
+  if (!critterSlots || critterSlots < 1) return Math.max(1, waveSlots);
+  return Math.max(1, Math.floor(waveSlots / critterSlots));
 }
 
 // ── Empire Autocomplete ──────────────────────────────────────────
@@ -687,8 +916,8 @@ const _escHtml = escHtml;
 const _hilite = (str, q) => hilite(str, q);
 
 function _bindAutocomplete(input) {
-  const dropdown = input.nextElementSibling;
-  if (!dropdown || !dropdown.classList.contains('empire-ac-dropdown')) return;
+  const dropdown = input.closest('.empire-ac-wrap')?.querySelector('.empire-ac-dropdown');
+  if (!dropdown) return;
 
   let _activeIdx = -1;
   let _filtered = [];
@@ -790,7 +1019,37 @@ function renderArmies(data) {
   const travelLabel = travelTime ? fmtTravelTime(travelTime) : '';
 
   el.classList.add('armies-container');
-  el.innerHTML = armies.map((a, idx) => `
+  el.innerHTML = armies.map((a, idx) => {
+    const realAtk = (st.military?.attacks_outgoing || []).find(atk => !atk.is_spy && atk.army_aid === a.aid);
+    const spyAtk  = (st.military?.attacks_outgoing || []).find(atk =>  atk.is_spy && atk.army_name === a.name);
+    const btnDisabled = !!realAtk;
+    let btnContent;
+    const _atkPhaseLabel = (atk) => {
+      if (atk.phase === 'in_siege') return '🏰 In Siege';
+      if (atk.phase === 'in_battle') return '⚔ In Battle';
+      return '⚔ Attacking';
+    };
+    const _atkEtaSpan = (atk) => {
+      if (atk.phase === 'in_siege') {
+        const endTs = Date.now() + atk.siege_remaining_seconds * 1000;
+        return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:10px;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
+      }
+      if (atk.phase === 'traveling') {
+        const endTs = Date.now() + atk.eta_seconds * 1000;
+        return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:10px;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
+      }
+      return '';
+    };
+    if (spyAtk && realAtk) {
+      btnContent = `<span>${_atkPhaseLabel(realAtk)} · 🕵 "${a.name}"</span>${_atkEtaSpan(realAtk)}`;
+    } else if (spyAtk) {
+      btnContent = `<span>🕵 "${a.name}"</span>${_atkEtaSpan(spyAtk)}`;
+    } else if (realAtk) {
+      btnContent = `<span>${_atkPhaseLabel(realAtk)}</span>${_atkEtaSpan(realAtk)}`;
+    } else {
+      btnContent = `<span>⚔ Attack</span>${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}`;
+    }
+    return `
     <div class="army-group" data-aid="${a.aid}">
       <div class="army-name-header">
         <div class="army-name">${a.name} <span class="army-id"></span></div>(ID: ${a.aid})
@@ -799,13 +1058,15 @@ function renderArmies(data) {
         </button>
       </div>
       <div class="army-attack-row">
-        <div class="empire-ac-wrap">
-          <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" autocomplete="off" />
+        <div class="empire-ac-wrap" style="position:relative;">
+          <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" autocomplete="off" style="padding-right:24px;" />
+          <button class="target-uid-clear" data-aid="${a.aid}" title="Löschen" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;">✕</button>
           <div class="empire-ac-dropdown"></div>
         </div>
-        <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;">
-          <span>⚔ Attack</span>
-          ${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}
+        <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack"
+          style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;${btnDisabled ? 'opacity:0.5;cursor:default;' : ''}"
+          ${btnDisabled ? 'disabled' : ''}>
+          ${btnContent}
         </button>
       </div>
       <div class="waves-container">
@@ -853,7 +1114,8 @@ function renderArmies(data) {
       </div>
       ${idx < armies.length - 1 ? '<div class="army-separator"></div>' : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   // Attach edit button listeners
   el.querySelectorAll('.army-edit-btn').forEach(btn => {
@@ -897,8 +1159,19 @@ function renderArmies(data) {
   // Bind autocomplete on all target-empire inputs
   el.querySelectorAll('.target-uid-input').forEach(_bindAutocomplete);
 
+  // Bind clear buttons
+  el.querySelectorAll('.target-uid-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const aid = btn.getAttribute('data-aid');
+      const inp = el.querySelector(`#target-uid-${aid}`);
+      if (inp) inp.value = '';
+    });
+  });
+
   // Restore scroll position after re-render
   requestAnimationFrame(() => window.scrollTo(0, scrollY));
+
+  _updateSpyButton();
 }
 
 export default {

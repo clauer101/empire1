@@ -26,6 +26,18 @@ import { rest } from '../rest.js';
 import { debug } from '../debug.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY } from '../lib/eras.js';
 
+// ── Wake Lock ─────────────────────────────────────────────────
+let _wakeLock = null;
+async function _acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+  } catch (_) {}
+}
+function _releaseWakeLock() {
+  if (_wakeLock) { _wakeLock.release(); _wakeLock = null; }
+}
+
 // ── Tower era statistics ─────────────────────────────────────
 const _TOWER_ERA = {
   BASIC_TOWER: 'Stone Age',    SLING_TOWER: 'Stone Age',
@@ -161,7 +173,7 @@ function _tickResources() {
   const l = titleEl.querySelector('.title-life');
   if (g) g.textContent = '💰 ' + _fmtTitleResource(gold);
   if (c) c.textContent = '🎭 ' + _fmtTitleResource(culture);
-  if (l) l.textContent = '❤ ' + _fmtTitleResource(clampedLife, 1);
+  if (l) l.textContent = '❤ ' + _fmtTitleResource(clampedLife);
 }
 function _buildStructureEraRoman() {
   _structureEraRoman = {};
@@ -191,7 +203,7 @@ let _wsConnectTimeout = null;
 
 function _fmtTitleResource(value, digits = 0) {
   const normalized = value ?? 0;
-  if (normalized >= 1000) return (Math.floor(normalized / 100) / 10) + 'k';
+  if (normalized >= 1000) return Math.floor(normalized / 1000) + 'k';
   return Math.floor(normalized * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
@@ -234,7 +246,7 @@ function _setBattleTitle(label) {
   const lifeIcon = document.createElement('span');
   lifeIcon.style.color = '#e05c5c';
   lifeIcon.textContent = '❤';
-  lifeEl.append(lifeIcon, document.createTextNode(' ' + _fmtTitleResource(resources.life, 1)));
+  lifeEl.append(lifeIcon, document.createTextNode(' ' + _fmtTitleResource(resources.life)));
 
   resourceWrap.append(goldEl, cultureEl, lifeEl);
   titleEl.append(resourceWrap);
@@ -518,15 +530,15 @@ const STRUCTURE_COLORS = [
 
 // ── Era-dependent castle sprite ─────────────────────────────
 const _ERA_CASTLE_SPRITES = {
-  STEINZEIT:          '/assets/sprites/bases/base_stone.webp',
-  NEOLITHIKUM:        '/assets/sprites/bases/base_neolithicum.webp',
-  BRONZEZEIT:         '/assets/sprites/bases/base_bronze.webp',
-  EISENZEIT:          '/assets/sprites/bases/base_iron.webp',
-  MITTELALTER:        '/assets/sprites/bases/base_middle_ages.webp',
-  RENAISSANCE:        '/assets/sprites/bases/base_renaissance.webp',
-  INDUSTRIALISIERUNG: '/assets/sprites/bases/base_industrial.webp',
-  MODERNE:            '/assets/sprites/bases/base_modern.webp',
-  ZUKUNFT:            '/assets/sprites/bases/base_future.webp',
+  stone:          '/assets/sprites/bases/base_stone.webp',
+  neolithic:        '/assets/sprites/bases/base_neolithicum.webp',
+  bronze:         '/assets/sprites/bases/base_bronze.webp',
+  iron:          '/assets/sprites/bases/base_iron.webp',
+  middle_ages:        '/assets/sprites/bases/base_middle_ages.webp',
+  renaissance:        '/assets/sprites/bases/base_renaissance.webp',
+  industrial: '/assets/sprites/bases/base_industrial.webp',
+  modern:            '/assets/sprites/bases/base_modern.webp',
+  future:            '/assets/sprites/bases/base_future.webp',
 };
 
 function _updateCastleSprite(eraKey) {
@@ -608,7 +620,7 @@ function _showDefenseEffectsOverlay() {
       <button class="prod-overlay-close" title="Close">✕</button>
       <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
       ${eraStatsHTML}
-      ${section('⏳', 'Siege Delay',          '#ffa726', `+${siegeTotal.toFixed(0)}s`,            siegeRows)}
+      ${section('⏳', 'Siege Delay',          '#ffa726', `+${siegeTotal >= 3600 ? (siegeTotal/3600).toFixed(1)+'h' : siegeTotal >= 60 ? Math.floor(siegeTotal/60)+'m '+Math.round(siegeTotal%60)+'s' : siegeTotal.toFixed(0)+'s'}`, siegeRows)}
       ${section('🌊', 'Wave Delay',           '#4fc3f7', `+${(waveTotal/1000).toFixed(1)}s`,      waveRows)}
       ${section('❤',  'Restore Life on Loss', '#e05c5c', `+${restoreTotal.toFixed(1)}`,           restoreRows)}
     </div>`;
@@ -759,8 +771,9 @@ function init(el, _api, _state) {
   // Bind Fight now! button (visible during in_siege when an incoming attack is tracked)
   container.querySelector('#fight-now-btn').addEventListener('click', async () => {
     const btn = container.querySelector('#fight-now-btn');
-    if (!_pendingAttackId) return;
     btn.disabled = true;
+    btn.style.opacity = '0.5';
+    if (!_pendingAttackId) return;
     btn.textContent = 'Sending...';
     try {
       const resp = await rest.skipSiege(_pendingAttackId);
@@ -769,12 +782,14 @@ function init(el, _api, _state) {
         setTimeout(() => {
           btn.textContent = '⚔ Fight now!';
           btn.disabled = false;
+          btn.style.opacity = '';
         }, 3000);
       } else {
         btn.textContent = `✗ ${resp.error || 'Error'}`;
         setTimeout(() => {
           btn.textContent = '⚔ Fight now!';
           btn.disabled = false;
+          btn.style.opacity = '';
         }, 2500);
       }
     } catch (err) {
@@ -930,17 +945,17 @@ function _showTileDetails(q, r, tile) {
       const _efxParts = [];
       const ef = s.effects;
       if (ef.burn_duration || ef.burn_dps) {
-        _efxParts.push('<span>🔥 ' + ((ef.burn_duration || 0) / 1000).toFixed(1) + 's @ ' + (ef.burn_dps || 0) + ' dps</span>');
+        _efxParts.push('<span>🔥 ' + ((ef.burn_duration || 0) / 1000).toFixed(2) + 's @ ' + parseFloat((ef.burn_dps || 0).toFixed(2)) + ' dps</span>');
       }
       if (ef.slow_duration || ef.slow_ratio != null) {
-        _efxParts.push('<span>❄ ' + ((ef.slow_duration || 0) / 1000).toFixed(1) + 's @ ' + Math.round((ef.slow_ratio || 0) * 100) + '% speed</span>');
+        _efxParts.push('<span>❄ ' + ((ef.slow_duration || 0) / 1000).toFixed(2) + 's @ ' + Math.round((ef.slow_ratio || 0) * 100) + '% speed</span>');
       }
       if (ef.splash_radius) {
         _efxParts.push('<span>💥 ' + ef.splash_radius + ' hex</span>');
       }
       Object.entries(ef).forEach(([k, v]) => {
         if (!['burn_duration','burn_dps','slow_duration','slow_ratio','splash_radius'].includes(k)) {
-          _efxParts.push('<span>' + k + ': ' + v + '</span>');
+          _efxParts.push('<span>' + k + ': ' + (typeof v === 'number' ? parseFloat(v.toFixed(2)) : v) + '</span>');
         }
       });
       _efxHtml = '<div class="props-row effects-row"><span class="label">Effects</span><span class="value effects-list">' + _efxParts.join('') + '</span></div>';
@@ -954,7 +969,7 @@ function _showTileDetails(q, r, tile) {
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Tower Stats' + _upgLabel + '</div>' +
       (_goldCost ? '<div class="props-row"><span class="label">Cost</span><span class="value" style="color:' + _costColor + '">💰 ' + Math.round(_goldCost).toLocaleString() + ' Gold</span></div>' : '') +
-      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0).toFixed(1) + '</span></div>' +
+      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0).toFixed(2) + '</span></div>' +
       '<div class="props-row"><span class="label">Range</span><span class="value">🎯 ' + (s.range || 0).toFixed(2) + ' hex</span></div>' +
       '<div class="props-row"><span class="label">Reload</span><span class="value">' + ((s.reload_time_ms || 0) / 1000).toFixed(2) + ' s</span></div>' +
       _efxHtml +
@@ -1044,7 +1059,7 @@ async function enter() {
   requestAnimationFrame(_fitCanvas);
 
   // Apply era-dependent castle sprite for own defense
-  _updateCastleSprite(st.summary?.current_era || 'STEINZEIT');
+  _updateCastleSprite(st.summary?.current_era || 'stone');
 
   // Reset battle state so stale data from a previous session is never shown
   _battleState = {
@@ -1178,6 +1193,7 @@ async function enter() {
 }
 
 function leave() {
+  _releaseWakeLock();
   const wrap = container.querySelector('#canvas-wrap');
   if (wrap) wrap.style.height = '';
   _unsub.forEach(fn => fn());
@@ -1718,6 +1734,7 @@ function _onBattleStatus(msg) {
 function _onBattleSetup(msg) {
   console.log('[Battle] Battle setup:', msg);
   _addDebugLog(`🎮 Battle Setup: ${msg.defender_name} vs ${msg.attacker_name}`);
+  _acquireWakeLock();
 
   // Reset state
   _battleState = {
@@ -1940,6 +1957,7 @@ function _onBattleSummary(msg) {
   _battleState.is_finished = true;
   _battleState.defender_won = msg.defender_won || false;
   _battleState.active = false;
+  _releaseWakeLock();
   _battleState.phase = 'finished';
 
   // Keep critters visible briefly, then clean up

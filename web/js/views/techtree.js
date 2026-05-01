@@ -167,8 +167,14 @@ const _fmtEffort = fmtEffort;
 function _fmtEffects(effects) {
   if (!effects || Object.keys(effects).length === 0) return '';
   return Object.entries(effects).map(([k, v]) => {
-    const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     const sign = v > 0 ? '+' : '';
+    if (k === 'gold_offset') {
+      return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+    }
+    if (k === 'culture_offset') {
+      return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+    }
+    const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
     return `${name}: ${sign}${v}`;
   }).join(', ');

@@ -120,7 +120,23 @@ class AttackService:
 
     def restore_attacks(self, attacks: list[Attack]) -> None:
         """Restore persisted attacks and advance the ID counter past all existing IDs."""
-        self._attacks.extend(attacks)
+        for a in attacks:
+            # Spy attacks that survived past IN_SIEGE (e.g. saved mid-transition)
+            # should be finished immediately — they never battle.
+            if a.is_spy and a.phase == AttackPhase.IN_SIEGE:
+                log.info(
+                    "[restore] Spy attack %d was in IN_SIEGE on load — finishing immediately",
+                    a.attack_id,
+                )
+                from gameserver.util.events import SpyArrived
+                self._events.emit(SpyArrived(
+                    attack_id=a.attack_id,
+                    attacker_uid=a.attacker_uid,
+                    defender_uid=a.defender_uid,
+                    army_aid=a.army_aid,
+                ))
+                a.phase = AttackPhase.FINISHED
+        self._attacks.extend(a for a in attacks if a.phase != AttackPhase.FINISHED)
         if attacks:
             self._next_attack_id = max(a.attack_id for a in attacks) + 1
             log.info(
@@ -136,6 +152,8 @@ class AttackService:
         defender_uid: int,
         army_aid: int,
         empire_service: EmpireService,
+        is_spy: bool = False,
+        spy_army_name: str = "",
     ) -> Attack | str:
         """Initiate a new attack. Returns Attack or error string.
 
@@ -166,18 +184,24 @@ class AttackService:
         if not army.waves:
             return "Army has no waves"
 
-        # Check army not already on a trip
-        for existing in self._attacks:
-            if (existing.attacker_uid == attacker_uid
-                    and existing.army_aid == army_aid
-                    and existing.phase != AttackPhase.FINISHED):
-                return "Army is already attacking"
+        # Check army not already on a trip (spy attacks bypass this — they are invisible)
+        if not is_spy:
+            for existing in self._attacks:
+                if (existing.attacker_uid == attacker_uid
+                        and existing.army_aid == army_aid
+                        and existing.phase != AttackPhase.FINISHED
+                        and not existing.is_spy):
+                    return "Army is already attacking"
 
         # Calculate travel time: era_base + attacker.TRAVEL_TIME_OFFSET
         # Negative offset = faster travel; positive = slower.
         from gameserver.util import effects as fx
         travel_offset = att_empire.get_effect(fx.TRAVEL_TIME_OFFSET, 0.0)
         eta = max(1.0, self._era_travel_offset(att_empire) + travel_offset)
+        if is_spy:
+            eta = max(1.0, eta / 2.0)
+            # Unique virtual army_aid that never collides with real armies
+            army_aid = 10_000_000 + self._next_attack_id
 
         attack = Attack(
             attack_id=self._next_attack_id,
@@ -187,6 +211,8 @@ class AttackService:
             phase=AttackPhase.TRAVELLING,
             eta_seconds=eta,
             total_eta_seconds=eta,
+            is_spy=is_spy,
+            army_name_override=spy_army_name,
         )
         self._next_attack_id += 1
 
@@ -251,37 +277,55 @@ class AttackService:
         if attack.phase == AttackPhase.TRAVELLING:
             attack.eta_seconds = max(attack.eta_seconds - dt, 0.0)
             if attack.eta_seconds <= 0.0:
-                # Army has arrived — enter siege phase
                 log.info(
-                    "[STATE] Attack %d: TRAVELLING → IN_SIEGE (attacker=%d, defender=%d, army=%d)",
+                    "[STATE] Attack %d: TRAVELLING → IN_SIEGE (attacker=%d, defender=%d, army=%d, spy=%s)",
                     attack.attack_id, attack.attacker_uid,
-                    attack.defender_uid, attack.army_aid,
+                    attack.defender_uid, attack.army_aid, attack.is_spy,
                 )
                 attack.phase = AttackPhase.IN_SIEGE
 
-                # Use explicit siege_seconds as base if set, otherwise use config base;
-                # always apply defender's SIEGE_TIME_OFFSET on top.
-                if attack.override_siege_seconds is not None:
-                    siege_duration = self._calculate_siege_duration(
-                        attack.attacker_uid, attack.defender_uid,
-                        base_override=float(attack.override_siege_seconds),
-                    )
+                if attack.is_spy:
+                    # Spy attacks skip siege entirely — emit SpyArrived and finish immediately
+                    from gameserver.util.events import AttackPhaseChanged, SpyArrived
+                    # Briefly notify defender it arrived (looks real)
+                    self._events.emit(AttackPhaseChanged(
+                        attack_id=attack.attack_id,
+                        attacker_uid=attack.attacker_uid,
+                        defender_uid=attack.defender_uid,
+                        army_aid=attack.army_aid,
+                        new_phase="in_siege",
+                    ))
+                    self._events.emit(SpyArrived(
+                        attack_id=attack.attack_id,
+                        attacker_uid=attack.attacker_uid,
+                        defender_uid=attack.defender_uid,
+                        army_aid=attack.army_aid,
+                    ))
+                    attack.phase = AttackPhase.FINISHED
                 else:
-                    siege_duration = self._calculate_siege_duration(
-                        attack.attacker_uid, attack.defender_uid
-                    )
-                attack.siege_remaining_seconds = siege_duration
-                attack.total_siege_seconds = siege_duration
-                    
-                # Emit event for push notification to clients
-                from gameserver.util.events import AttackPhaseChanged
-                self._events.emit(AttackPhaseChanged(
-                    attack_id=attack.attack_id,
-                    attacker_uid=attack.attacker_uid,
-                    defender_uid=attack.defender_uid,
-                    army_aid=attack.army_aid,
-                    new_phase="in_siege",
-                ))
+                    # Use explicit siege_seconds as base if set, otherwise use config base;
+                    # always apply defender's SIEGE_TIME_OFFSET on top.
+                    if attack.override_siege_seconds is not None:
+                        siege_duration = self._calculate_siege_duration(
+                            attack.attacker_uid, attack.defender_uid,
+                            base_override=float(attack.override_siege_seconds),
+                        )
+                    else:
+                        siege_duration = self._calculate_siege_duration(
+                            attack.attacker_uid, attack.defender_uid
+                        )
+                    attack.siege_remaining_seconds = siege_duration
+                    attack.total_siege_seconds = siege_duration
+
+                    # Emit event for push notification to clients
+                    from gameserver.util.events import AttackPhaseChanged
+                    self._events.emit(AttackPhaseChanged(
+                        attack_id=attack.attack_id,
+                        attacker_uid=attack.attacker_uid,
+                        defender_uid=attack.defender_uid,
+                        army_aid=attack.army_aid,
+                        new_phase="in_siege",
+                    ))
                 
         elif attack.phase == AttackPhase.IN_SIEGE:
             attack.siege_remaining_seconds = max(attack.siege_remaining_seconds - dt, 0.0)

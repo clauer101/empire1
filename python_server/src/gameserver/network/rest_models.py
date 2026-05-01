@@ -129,6 +129,11 @@ class AttackRequest(BaseModel):
     army_aid: int = 0
 
 
+class SpyAttackRequest(BaseModel):
+    target_uid: int = 0
+    opponent_name: str = ""
+
+
 class SendMessageRequest(BaseModel):
     to_uid: Optional[int] = None  # None or 0 = global chat
     body: str
@@ -137,6 +142,10 @@ class SendMessageRequest(BaseModel):
 class BattleFeedbackRequest(BaseModel):
     army_name: str
     rating: str  # "too_easy" or "too_hard"
+
+
+class PushSubscribeRequest(BaseModel):
+    subscription: dict  # Web Push subscription object from browser
 
 
 class BuyItemUpgradeRequest(BaseModel):

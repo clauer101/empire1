@@ -33,6 +33,7 @@ import { formatEffect } from '../i18n.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from './item_overlay.js';
 import { fmtSecs } from './format.js';
+import { ERA_YAML_TO_KEY, ERA_ROMAN } from './eras.js';
 
 export function createQueueView(cfg) {
   let api, st, container;
@@ -164,7 +165,7 @@ export function createQueueView(cfg) {
           <div class="item-header" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;overflow:hidden;height:100%;padding:8px 12px;box-sizing:border-box;">
             ${imgUrl ? `<div class="item-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;filter:blur(0.2px);transform:scale(1.02);" data-bg="${imgUrl}"></div><div class="item-bg-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;"></div>` : ''}
             <div style="flex:1;position:relative;">
-              <div><strong style="font-size:1.1em;">${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong></div>
+              <div><strong style="font-size:1.1em;">${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong>${info.era ? `<span style="font-size:0.75em;color:#c9a84c;margin-left:6px;font-weight:400;">${ERA_ROMAN[ERA_YAML_TO_KEY[info.era]] || ''}</span>` : ''}</div>
               <div class="${cfg.msgClass}"></div>
               <div class="item-description" style="font-size:0.9em; color:#aaa; margin-top:4px;">${info.description || '—'}</div>
             </div>

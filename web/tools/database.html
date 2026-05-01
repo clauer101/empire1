@@ -202,7 +202,7 @@
 
   <script src="nav.js"></script>
   <script>
-    const API = `http://${window.location.hostname}:8080`;
+    const API = window.location.origin;
 
     function authHeaders() {
       const token = localStorage.getItem('e3_jwt_token');

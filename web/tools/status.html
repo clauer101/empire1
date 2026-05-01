@@ -280,12 +280,14 @@
           <th>Buildings</th>
           <th>Knowledge</th>
           <th>Armies</th>
+          <th>Towers</th>
+          <th>Path</th>
           <th>⚡ Total</th>
           <th>Queue</th>
         </tr>
       </thead>
       <tbody id="empires-body">
-        <tr><td colspan="13" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
+        <tr><td colspan="15" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
       </tbody>
     </table>
     </div>
@@ -319,7 +321,7 @@
 </div>
 
 <script>
-const GS_BASE = `${location.protocol}//${location.hostname}:8080`;
+const GS_BASE = window.location.origin;
 
 function fmtPow(v) {
   if (v === undefined || v === null) return '—';
@@ -348,9 +350,17 @@ function buildDetailHTML(e) {
   const towerStats = buildTowerStats(e.hex_tiles);
   const mapSVG     = buildHexMapSVG(e.hex_tiles);
   // Resources
-  let resRows = Object.entries(e.resources).map(([k, v]) =>
-    `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`
-  ).join('');
+  const RES_FMT = {
+    gold:    { icon: '', label: 'Gold',    fmt: fmtPow },
+    culture: { icon: '', label: 'Culture', fmt: fmtPow },
+    life:    { icon: '', label: 'Life',    fmt: v => v.toFixed(1) },
+  };
+  let resRows = Object.entries(e.resources).map(([k, v]) => {
+    const r = RES_FMT[k];
+    const label = r ? `${r.icon} ${r.label}` : k;
+    const val   = r ? r.fmt(v) : (typeof v === 'number' ? fmtPow(v) : v);
+    return `<div class="detail-row"><span class="detail-key">${label}</span><span class="detail-val">${val}</span></div>`;
+  }).join('');
 
   // Citizens
   let citRows = Object.entries(e.citizens).filter(([,v]) => v > 0).map(([k, v]) =>
@@ -387,9 +397,10 @@ function buildDetailHTML(e) {
       }).join('');
 
   // Artefacts
-  let artHTML = e.artefacts.length === 0
+  const artCount = e.artefact_count ?? (e.artefacts?.length ?? 0);
+  let artHTML = artCount === 0
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
-    : e.artefacts.map(a => `<span class="chip art">${a}</span>`).join('');
+    : (e.artefacts ? e.artefacts.map(a => `<span class="chip art">${a}</span>`).join('') : `<span class="chip art">⚜ ×${artCount}</span>`);
 
   const pw = e.power || {};
   const powerHTML = `
@@ -479,8 +490,8 @@ function renderEmpires(empires) {
       <td>${e.username || '—'}</td>
       <td style="color:var(--accent)">${e.name}</td>
       <td style="color:var(--text-dim);font-size:11px">${calcEra(e.knowledge_done)}</td>
-      <td>${culture.toLocaleString()}</td>
-      <td>${gold.toLocaleString()}</td>
+      <td>${fmtPow(culture)}</td>
+      <td>${fmtPow(gold)}</td>
       <td>
         <span class="bar-outer"><span class="bar-inner" style="width:${lifePct}%;background:${lifeColor}"></span></span>
         <span style="color:var(--text-dim);margin-left:5px">${life}/${maxLife}</span>
@@ -489,6 +500,8 @@ function renderEmpires(empires) {
       <td>${e.buildings_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.buildings_done.length + Object.keys(e.buildings_wip).length}</span></td>
       <td>${e.knowledge_done.length} <span style="color:var(--text-dim);font-size:10px">/ ${e.knowledge_done.length + Object.keys(e.knowledge_wip).length}</span></td>
       <td>${e.armies.length}</td>
+      <td>${(e.hex_tiles || []).filter(t => !NON_TOWER.has(t.type)).length}</td>
+      <td>${e.path_length ?? '—'}</td>
       <td style="font-family:var(--mono);font-size:11px">
         <span title="Economy"  style="color:#66bb6a">⬆${fmtPow(e.power?.economy)}</span>
         <span title="Attack"   style="color:#ef5350;margin-left:4px">⚔${fmtPow(e.power?.attack)}</span>
@@ -502,7 +515,7 @@ function renderEmpires(empires) {
     detailRow.className = `empire-detail${isOpen ? ' open' : ''}`;
     detailRow.dataset.uid = e.uid;
     const detailTd = document.createElement('td');
-    detailTd.colSpan = 13;
+    detailTd.colSpan = 15;
     detailTd.innerHTML = buildDetailHTML(e);
     detailRow.appendChild(detailTd);
 

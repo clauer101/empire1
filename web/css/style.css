@@ -261,6 +261,30 @@ body::before {
   padding: 14px 16px;
 }
 
+.art-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.art-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #2a2410;
+  border: 1px solid #c9a84c;
+  color: #c9a84c;
+}
+.art-badge-clickable { cursor: pointer; }
+.art-badge-clickable:hover { opacity: 0.8; }
+.art-badge-legendary {
+  background: #2a1a2a;
+  border-color: #ab47bc;
+  color: #ab47bc;
+}
+
 .panel-header {
   font-size: 10px;
   font-weight: 700;
@@ -2402,6 +2426,9 @@ label {
   font-weight: 500;
   color: var(--text-muted, #8b949e);
   white-space: nowrap;
+  background: var(--surface2, rgba(255,255,255,0.06));
+  border-radius: 999px;
+  padding: 4px 14px;
 }
 
 .battle-actions {

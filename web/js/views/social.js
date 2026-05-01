@@ -1,10 +1,5 @@
 /**
- * Social view — global chat, private messages, battle reports.
- *
- * Tabs:
- *   Chat          — public global chat; @name sends privately
- *   Private       — private messages (sent & received, excl. battle reports)
- *   Battle Reports — system messages from battle engine (read-only)
+ * Social view — battle reports.
  */
 
 import { rest } from '../rest.js';
@@ -15,12 +10,8 @@ let st;
 /** @type {HTMLElement} */
 let container;
 
-/** current tab: 'chat' | 'battle' */
-let _tab = 'chat';
 /** cached API response */
 let _data = null;
-/** empire list for @-autocomplete */
-let _empiresCache = [];
 /** poll interval handle */
 let _pollInterval = null;
 /** expanded battle report message IDs */
@@ -35,14 +26,21 @@ function init(el, _api, _state) {
 }
 
 function _renderShell() {
-  container.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  container.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow-x:hidden;';
   container.innerHTML = `
-    <h2 class="battle-title">💬 Chat<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
+    <h2 class="battle-title">⚔ Battle Reports<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
 
-    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-shrink:0;">
-      <button id="tab-chat"   class="tab-btn active-tab">Chat</button>
-      <button id="tab-battle" class="tab-btn">Battle Reports</button>
-    </div>
+    <a href="https://discord.gg/U4SEZB5BT" target="_blank" rel="noopener" style="
+      display:flex;align-items:center;gap:8px;
+      background:#5865F2;color:#fff;
+      border-radius:6px;padding:8px 14px;
+      font-size:13px;font-weight:600;text-decoration:none;
+      margin-bottom:10px;flex-shrink:0;
+      box-sizing:border-box;width:100%;overflow:hidden;
+    ">
+      <svg width="20" height="20" viewBox="0 0 71 55" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.4a.2.2 0 0 0-.2.1 40.8 40.8 0 0 0-1.8 3.7 54 54 0 0 0-16.2 0A37.7 37.7 0 0 0 25.5.5a.2.2 0 0 0-.2-.1 58.4 58.4 0 0 0-14.6 4.5.2.2 0 0 0-.1.1C1.6 18.1-.9 30.9.3 43.5c0 .1.1.1.1.2a58.8 58.8 0 0 0 17.7 8.9.2.2 0 0 0 .2-.1 42 42 0 0 0 3.6-5.9.2.2 0 0 0-.1-.3 38.7 38.7 0 0 1-5.5-2.6.2.2 0 0 1 0-.4l1.1-.8a.2.2 0 0 1 .2 0c11.6 5.3 24.1 5.3 35.5 0a.2.2 0 0 1 .2 0l1.1.8a.2.2 0 0 1 0 .4 36.1 36.1 0 0 1-5.5 2.6.2.2 0 0 0-.1.3 47.1 47.1 0 0 0 3.6 5.9.2.2 0 0 0 .2.1 58.6 58.6 0 0 0 17.8-8.9.2.2 0 0 0 .1-.2c1.5-15-2.5-27.7-10.6-39.1a.2.2 0 0 0-.1-.1zM23.7 35.8c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.6 0 6.5 3.3 6.4 7.2 0 4-2.8 7.2-6.4 7.2zm23.7 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.6 0 6.5 3.3 6.4 7.2 0 4-2.8 7.2-6.4 7.2z"/></svg>
+      Join our Discord
+    </a>
 
     <div id="message-list" style="
       flex:1;
@@ -53,59 +51,14 @@ function _renderShell() {
       min-height:0;
       padding:8px 4px;
     ">
-      <div class="empty-state"><div class="empty-icon">💬</div><p>Loading…</p></div>
-    </div>
-
-    <!-- Input (hidden on battle tab) -->
-    <div id="chat-input-area" style="
-      position:sticky;
-      bottom:0;
-      background:var(--surface,#1a1f2e);
-      padding:10px 0 4px;
-      margin-top:4px;
-    ">
-      <div style="display:flex;gap:6px;align-items:flex-end;">
-        <div style="flex:1;position:relative;">
-          <input id="chat-input" type="text" maxlength="500"
-            placeholder="Message… (@Name for private)"
-            style="width:100%;padding:8px 12px;font-size:13px;">
-          <div id="ac-dropdown" class="empire-ac-dropdown" style="bottom:100%;top:auto;margin-bottom:2px;"></div>
-        </div>
-        <button id="send-btn" class="btn-primary" style="white-space:nowrap;">Send</button>
-      </div>
-      <div id="send-feedback" style="margin-top:4px;font-size:0.82em;min-height:1em;"></div>
+      <div class="empty-state"><div class="empty-icon">⚔</div><p>Loading…</p></div>
     </div>
   `;
-
-  container.querySelector('#tab-chat').addEventListener('click',   () => _setTab('chat'));
-  container.querySelector('#tab-battle').addEventListener('click',  () => _setTab('battle'));
-
-  const input = container.querySelector('#chat-input');
-  const sendBtn = container.querySelector('#send-btn');
-  sendBtn.addEventListener('click', _onSend);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) _onSend(); });
-
-  _bindAtMentionAutocomplete(input, container.querySelector('#ac-dropdown'));
 }
 
 // ── Lifecycle ────────────────────────────────────────────────────────
 
 async function enter() {
-  _loadEmpires();
-
-  // Pre-fill recipient if navigated from dashboard
-  if (st.pendingMessageTarget) {
-    const { name } = st.pendingMessageTarget;
-    st.pendingMessageTarget = null;
-    const input = container.querySelector('#chat-input');
-    if (input) {
-      input.value = `@${name} `;
-      input.focus();
-      input.setSelectionRange(input.value.length, input.value.length);
-    }
-    _setTab('chat');
-  }
-
   await _refresh();
   _pollInterval = setInterval(_refresh, 8000);
 }
@@ -114,38 +67,16 @@ function leave() {
   if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
 }
 
-// ── Tab switching ────────────────────────────────────────────────────
-
-function _setTab(tab) {
-  _tab = tab;
-  ['chat', 'battle'].forEach(t => {
-    container.querySelector(`#tab-${t}`).classList.toggle('active-tab', t === tab);
-  });
-  // Hide input on battle tab
-  const inputArea = container.querySelector('#chat-input-area');
-  if (inputArea) inputArea.style.display = tab === 'battle' ? 'none' : '';
-  _render(_data);
-}
-
 // ── Data ─────────────────────────────────────────────────────────────
 
 async function _refresh() {
   try {
     _data = await rest.getMessages();
     _render(_data);
-    _updateTabBadges(_data);
   } catch (err) {
     const el = container.querySelector('#message-list');
     if (el) el.innerHTML = `<div class="error-msg" style="padding:12px">Error: ${_esc(err.message)}</div>`;
   }
-}
-
-function _updateTabBadges(data) {
-  if (!data) return;
-  const chatBtn   = container.querySelector('#tab-chat');
-  const battleBtn = container.querySelector('#tab-battle');
-  if (chatBtn)   chatBtn.textContent   = `Chat${data.unread_private > 0 ? ` (${data.unread_private})` : ''}`;
-  if (battleBtn) battleBtn.textContent = `Battle Reports${data.unread_battle > 0 ? ` (${data.unread_battle})` : ''}`;
 }
 
 // ── Render ────────────────────────────────────────────────────────────
@@ -155,84 +86,23 @@ function _render(data) {
   if (!el) return;
 
   if (!data) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><p>No messages</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports</p></div>';
     return;
   }
 
   const myUid = st.auth?.uid;
-  const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
-
-  if (_tab === 'chat') {
-    _renderChat(el, data.global || [], data.private || [], myUid);
-    // Mark unread private as read
-    (data.private || []).filter(m => !m.read && m.to_uid === myUid).forEach(m => {
-      rest.markMessageRead(m.id).catch(() => {});
-      m.read = true;
-    });
-    if (data.unread_private !== undefined) data.unread_private = 0;
-    _updateTabBadges(data);
-    if (wasAtBottom) requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
-  } else {
-    _renderBattleReports(el, data.battle_reports || [], myUid);
-    // Mark battle reports read
-    (data.battle_reports || []).filter(m => !m.read).forEach(m => {
-      rest.markMessageRead(m.id).catch(() => {});
-      m.read = true;
-    });
-    if (data.unread_battle !== undefined) data.unread_battle = 0;
-    _updateTabBadges(data);
-  }
+  _renderBattleReports(el, data.battle_reports || [], myUid);
+  // Mark battle reports read
+  (data.battle_reports || []).filter(m => !m.read).forEach(m => {
+    rest.markMessageRead(m.id).catch(() => {});
+    m.read = true;
+  });
+  if (data.unread_battle !== undefined) data.unread_battle = 0;
 }
-
-function _renderChat(el, globalMsgs, privateMsgs, myUid) {
-  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
-  const combined = [
-    ...globalMsgs.map(m => ({ ...m, _private: false })),
-    ...privateMsgs.map(m => ({ ...m, _private: true })),
-  ]
-    .filter(m => new Date(m.sent_at).getTime() >= cutoff)
-    .sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
-
-  if (!combined.length) {
-    el.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="empty-icon">💬</div><p>No messages in the last 3 days.</p></div>';
-    return;
-  }
-  el.innerHTML = combined.map(m => {
-    const isMe = m.from_uid === myUid;
-    const privateLabel = m._private
-      ? '<span style="color:var(--text-dim);font-size:10px;margin-left:4px;">(private)</span>'
-      : '';
-    const privatePeer = m._private
-      ? (isMe
-          ? `<span style="color:var(--text-dim);font-size:10px;"> → ${_esc(m.to_name)}${m.to_username ? ' (' + _esc(m.to_username) + ')' : ''}</span>`
-          : '')
-      : '';
-    return `
-      <div style="display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'};gap:1px;">
-        <span style="font-size:10px;color:var(--text-dim);padding:0 6px;display:flex;align-items:center;gap:2px;">
-          ${_esc(m.from_name)}${m.from_username ? ' (' + _esc(m.from_username) + ')' : ''}${privatePeer}${privateLabel} · ${_fmtTime(m.sent_at)}
-        </span>
-        <div style="
-          max-width:80%;
-          background:${m._private ? (isMe ? 'rgba(79,195,247,0.12)' : 'rgba(255,167,38,0.12)') : (isMe ? 'var(--accent-dim,#1a3a4a)' : 'var(--surface-alt)')};
-          border:1px solid ${m._private ? (isMe ? '#4fc3f7' : '#ffa726') : (isMe ? 'var(--accent)' : 'var(--border)')};
-          border-radius:${isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px'};
-          padding:7px 12px;
-          font-size:13px;
-          word-break:break-word;
-          white-space:pre-wrap;
-        ">${_linkify(_esc(m.body))}</div>
-      </div>`;
-  }).join('');
-}
-
-
 
 function _parseBattleReportSummary(body) {
-  // Body lines: result, separator, opponent line, ...rest
   const lines = body.split('\n');
   const result = lines[0] || '';
-  // Find opponent line (starts with ⚔ Attacker or 🛡 Defender or ⚔ or 🛡 after separator)
   const opponentLine = lines.find((l, i) => i > 0 && /^[⚔🛡]/.test(l.trimStart()) && !l.includes('──'));
   const opponent = opponentLine ? opponentLine.replace(/^[⚔🛡]\s*\w+:\s*/u, '').trim() : '';
   return { result, opponent };
@@ -260,8 +130,8 @@ function _renderBattleReports(el, messages, myUid) {
                  padding:10px 14px;background:none;border:none;cursor:pointer;text-align:left;">
           <span style="display:flex;align-items:center;gap:6px;min-width:0;">
             ${unreadDot}
-            <span style="font-weight:600;color:${resultColor};white-space:nowrap;">${_esc(result)}</span>
-            ${opponent ? '<span style="color:var(--text-dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">vs ' + _esc(opponent) + '</span>' : ''}
+            <span style="font-weight:600;color:${resultColor};word-break:break-word;">${_esc(result)}</span>
+            ${opponent ? '<span style="color:var(--text-dim);font-size:12px;word-break:break-word;">vs ' + _esc(opponent) + '</span>' : ''}
           </span>
           <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <span style="font-size:11px;color:var(--text-dim);">${_fmtTime(m.sent_at)}</span>
@@ -301,154 +171,11 @@ function _renderBattleReports(el, messages, myUid) {
   });
 }
 
-// ── Send ─────────────────────────────────────────────────────────────
-
-async function _onSend() {
-  const input    = container.querySelector('#chat-input');
-  const sendBtn  = container.querySelector('#send-btn');
-  const feedback = container.querySelector('#send-feedback');
-  const text = input.value.trim();
-
-  feedback.textContent = '';
-  feedback.style.color = '';
-
-  if (!text) return;
-
-  // Detect @mention at start → private message
-  const mentionMatch = text.match(/^@(\S+)\s+([\s\S]+)$/);
-  let toUid = null;
-  let body  = text;
-
-  if (mentionMatch) {
-    const targetName = mentionMatch[1];
-    body = mentionMatch[2].trim();
-    if (!body) {
-      feedback.style.color = 'var(--danger,#ef5350)';
-      feedback.textContent = '✗ Message body cannot be empty.';
-      return;
-    }
-    sendBtn.disabled = true;
-    try {
-      ({ uid: toUid } = await rest.resolveEmpire(targetName));
-    } catch (err) {
-      feedback.style.color = 'var(--danger,#ef5350)';
-      feedback.textContent = `✗ ${err.message}`;
-      sendBtn.disabled = false;
-      return;
-    }
-  }
-
-  sendBtn.disabled = true;
-  try {
-    const resp = await rest.sendMessage(toUid, body);
-    if (resp.success) {
-      input.value = '';
-      await _refresh();
-      if (toUid) {
-        _setTab('chat');
-      } else {
-        // scroll to bottom after send
-        const el = container.querySelector('#message-list');
-        if (el) requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
-      }
-    } else {
-      feedback.style.color = 'var(--danger,#ef5350)';
-      feedback.textContent = `✗ ${resp.error || 'Failed to send'}`;
-    }
-  } catch (err) {
-    feedback.style.color = 'var(--danger,#ef5350)';
-    feedback.textContent = `✗ ${err.message}`;
-  } finally {
-    sendBtn.disabled = false;
-  }
-}
-
-// ── @mention Autocomplete ─────────────────────────────────────────────
-
-async function _loadEmpires() {
-  try {
-    const resp = await rest.getEmpires();
-    _empiresCache = resp.empires || [];
-  } catch (_) {}
-}
-
-function _bindAtMentionAutocomplete(input, dropdown) {
-  let _filtered = [];
-  let _activeIdx = -1;
-
-  function _render(items, q) {
-    _filtered = items;
-    _activeIdx = -1;
-    if (!items.length) { dropdown.style.display = 'none'; return; }
-    const shown = items.slice(0, 10);
-    dropdown.innerHTML = shown.map((e, i) =>
-      `<div class="empire-ac-item" data-idx="${i}">
-        <span class="eac-label">${_hilite(e.name, q)}
-          <span class="eac-meta">${e.username ? '(@' + _hilite(e.username, q) + ')' : ''}</span>
-        </span>
-      </div>`
-    ).join('');
-    dropdown.style.display = 'block';
-    dropdown.querySelectorAll('.empire-ac-item').forEach(el => {
-      el.addEventListener('mousedown', ev => { ev.preventDefault(); _select(parseInt(el.dataset.idx, 10)); });
-    });
-    dropdown.querySelectorAll('.empire-ac-item').forEach((el, i) => {
-      el.classList.toggle('empire-ac-item--active', i === _activeIdx);
-    });
-  }
-
-  function _select(idx) {
-    const empire = _filtered[idx];
-    if (!empire) return;
-    // Replace the @partial with @name + space
-    const val = input.value;
-    const atPos = val.lastIndexOf('@');
-    input.value = val.slice(0, atPos) + `@${empire.name} `;
-    dropdown.style.display = 'none';
-    input.focus();
-  }
-
-  function _highlight() {
-    dropdown.querySelectorAll('.empire-ac-item').forEach((el, i) => {
-      el.classList.toggle('empire-ac-item--active', i === _activeIdx);
-    });
-  }
-
-  function _search() {
-    const val = input.value;
-    // Find last @ that hasn't been followed by a space yet
-    const atPos = val.lastIndexOf('@');
-    if (atPos === -1) { dropdown.style.display = 'none'; return; }
-    const afterAt = val.slice(atPos + 1);
-    if (afterAt.includes(' ')) { dropdown.style.display = 'none'; return; }
-    if (!afterAt) { dropdown.style.display = 'none'; return; }
-    const q = afterAt.toLowerCase();
-    const matches = _empiresCache.filter(e =>
-      e.name.toLowerCase().includes(q) || (e.username || '').toLowerCase().includes(q)
-    );
-    _render(matches, q);
-  }
-
-  input.addEventListener('input', _search);
-  input.addEventListener('keydown', e => {
-    if (dropdown.style.display === 'none') return;
-    const count = Math.min(_filtered.length, 10);
-    if (e.key === 'ArrowDown')  { e.preventDefault(); _activeIdx = Math.min(_activeIdx + 1, count - 1); _highlight(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); _activeIdx = Math.max(_activeIdx - 1, 0); _highlight(); }
-    else if (e.key === 'Enter' && _activeIdx >= 0) { e.preventDefault(); _select(_activeIdx); }
-    else if (e.key === 'Escape') { dropdown.style.display = 'none'; }
-  });
-  input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────
 
 const _esc = escHtml;
-const _escAttr = escAttr;
-const _hilite = (str, q) => hilite(str, q);
 
 function _linkify(html) {
-  // Match both new datetime keys (20260101_120000_42) and legacy numeric bids
   return html.replace(/#replay\/([\w]+)/g, (_, key) => {
     const parts = key.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_(\d+)$/);
     const label = parts

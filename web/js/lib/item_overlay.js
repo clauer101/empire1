@@ -167,6 +167,25 @@ export class ItemOverlay {
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
       `;
 
+    } else if (category === 'artefact') {
+      const a = catInfo;
+      const name = a?.name || iid;
+      const desc = a?.description || '';
+      const type = a?.type || 'normal';
+      const effectRows = this._fmtEffectRows(a?.effects);
+      const reqs = this._reqLinks(a?.requirements);
+      const eraLabel = this._getEraLabel(iid);
+      const typeColor = type === 'legendary' ? '#ab47bc' : '#c9a84c';
+
+      html += `
+        <div class="tt-dp-name" style="color:${typeColor}">⚜ ${name}</div>
+        <div class="tt-dp-iid">${iid}</div>
+        ${eraLabel ? `<div class="tt-dp-props"><span class="tt-dp-label">Era:</span><span>${eraLabel}</span></div>` : ''}
+        ${desc ? `<div class="tt-dp-desc">${desc}</div>` : ''}
+        ${effectRows ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Effects</div><div class="tt-dp-props">${effectRows}</div></div>` : ''}
+        ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
+      `;
+
     } else if (category === 'critter') {
       const c = critters[iid] || catInfo;
       const name = c?.name || catInfo.name || iid;
@@ -225,11 +244,50 @@ export class ItemOverlay {
 
   _fmtEffort(n) { return fmtEffort(n); }
 
+  _fmtEffectRows(effects) {
+    if (!effects || Object.keys(effects).length === 0) return '';
+    const LABELS = {
+      gold_offset:               ['💰', 'Gold income',        v => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`],
+      culture_offset:            ['🎭', 'Culture income',     v => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`],
+      life_offset:               ['❤️', 'Life regen',         v => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(2)}/h`],
+      gold_modifier:             ['💰', 'Gold bonus',         v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      culture_modifier:          ['🎭', 'Culture bonus',      v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      life_modifier:             ['❤️', 'Life bonus',         v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      max_life_modifier:         ['❤️', 'Max life',           v => `${v > 0 ? '+' : ''}${v}`],
+      build_speed_modifier:      ['🏗', 'Build speed',        v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      build_speed_offset:        ['🏗', 'Build speed',        v => `${v > 0 ? '+' : ''}${v}`],
+      research_speed_modifier:   ['🔬', 'Research speed',     v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      research_speed_offset:     ['🔬', 'Research speed',     v => `${v > 0 ? '+' : ''}${v}`],
+      damage_modifier:           ['⚔️', 'Tower damage',       v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      range_modifier:            ['🎯', 'Tower range',        v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      reload_modifier:           ['⏱', 'Reload speed',       v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      wave_delay_offset:         ['⏳', 'Wave delay',         v => `${v > 0 ? '+' : ''}${v}s`],
+      wave_delay_modifier:       ['⏳', 'Wave delay',         v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      spy_disguise_chance:       ['🕵️', 'Spy disguise',       v => `${(v * 100).toFixed(0)}%`],
+      artefact_steal_chance_modifier: ['⚜', 'Artefact steal', v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      culture_steal_modifier:    ['🎭', 'Culture steal',      v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      knowledge_steal_modifier:  ['📚', 'Knowledge steal',    v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+    };
+    return Object.entries(effects).map(([k, v]) => {
+      const def = LABELS[k];
+      if (def) {
+        const [icon, label, fmt] = def;
+        return `<span class="tt-dp-label">${icon} ${label}:</span><span>${fmt(v)}</span>`;
+      }
+      const sign = v > 0 ? '+' : '';
+      const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const val = Math.abs(v) < 1 ? `${sign}${(v * 100).toFixed(0)}%` : `${sign}${v}`;
+      return `<span class="tt-dp-label">${label}:</span><span>${val}</span>`;
+    }).join('');
+  }
+
   _fmtEffects(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
     return Object.entries(effects).map(([k, v]) => {
-      const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       const sign = v > 0 ? '+' : '';
+      if (k === 'gold_offset') return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+      if (k === 'culture_offset') return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+      const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
       return `${name}: ${sign}${v}`;
     }).join(', ');

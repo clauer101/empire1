@@ -4,7 +4,7 @@
  */
 (function () {
   // ── Auth Guard ──────────────────────────────────────────────────────────────
-  const GAMESERVER = `http://${window.location.hostname}:8080`;
+  const GAMESERVER = window.location.origin;
 
   function decodeJwtPayload(token) {
     try {
@@ -40,10 +40,12 @@
     { name: '🎛️ Sigmoid', href: 'sigmoid_tuner.html' },
     // { name: '⚡ Effects',  href: 'effects.html' },
     { name: '⚖ Balance',  href: 'balance.html' },
+    { name: '⏱ Era FX',   href: 'era-effects.html' },
     // { name: '📊 Scatter',  href: 'critter-scatter.html' },
     { name: '⚔ AI Army',  href: 'send-ai-army.html' },
     { name: '🗺 Maps',     href: 'map-overview.html' },
     { name: '🐾 Critters', href: 'critters.html' },
+    { name: '✨ Artefacts', href: 'artifacts.html' },
     { name: '⚔ Sim Map',  href: 'sim-map.html' },
     // { name: '🌳 Tree',    href: 'tech-tree.html' },
   ];

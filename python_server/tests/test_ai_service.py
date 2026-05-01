@@ -260,6 +260,7 @@ class TestAttackPlayer:
         empire_service = MagicMock()
         empire_service.next_army_id.return_value = 42
         empire_service.get.return_value = None  # AI empire not yet registered
+        empire_service.get_current_era.return_value = "stone"
 
         attack = MagicMock()
         attack.attack_id = 1

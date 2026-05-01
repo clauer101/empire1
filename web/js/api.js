@@ -323,6 +323,9 @@ class ApiClient {
         console.log('[PUSH] Attack phase changed: id=%d phase=%s', msg.attack_id, msg.new_phase);
         eventBus.emit('server:attack_phase_changed', msg);
         break;
+      case 'spy_report':
+        eventBus.emit('server:spy_report', msg);
+        break;
       case 'attack_response':
         console.warn('[ApiClient] ⚠️  attack_response received as PUSH (request_id missing!):', msg);
         console.warn('[ApiClient] This means the request_id was not preserved. Check server.py or message handler.');
