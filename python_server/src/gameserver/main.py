@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import logging.handlers
 import signal
 import sys
 import os
@@ -506,11 +507,19 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
         config_dir: Base configuration directory path.
         state_file: Path to the state YAML file for restoration.
     """
-    logging.basicConfig(
-        level=logging.WARNING,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
+    _fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%H:%M:%S")
+    root = logging.getLogger()
+    root.setLevel(logging.WARNING)
+    # Rotating file handler — midnight rotation, keep 14 days
+    _file_handler = logging.handlers.TimedRotatingFileHandler(
+        "gameserver.log", when="midnight", backupCount=14, utc=True, encoding="utf-8"
     )
+    _file_handler.setFormatter(_fmt)
+    root.addHandler(_file_handler)
+    # Stdout handler — Docker/systemd captures this
+    _stream_handler = logging.StreamHandler()
+    _stream_handler.setFormatter(_fmt)
+    root.addHandler(_stream_handler)
     logging.getLogger("gameserver.network.handlers").setLevel(logging.INFO)
     logging.getLogger("gameserver.engine.battle_service").setLevel(logging.INFO)
     logging.getLogger("websockets.server").setLevel(logging.CRITICAL)

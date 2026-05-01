@@ -127,6 +127,31 @@ def create_app(services: "Services") -> FastAPI:
         return response
 
     # =================================================================
+    # Health (unauthenticated — safe to expose to load balancers)
+    # =================================================================
+
+    @app.get("/health", include_in_schema=False)
+    async def health_liveness() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/health/ready", include_in_schema=False)
+    async def health_readiness() -> dict[str, str]:
+        import time
+        # DB reachable?
+        try:
+            await services.database.get_user("__health_check__")
+        except Exception as exc:
+            from fastapi import Response
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"status": "not_ready", "reason": f"db: {exc}"}, status_code=503)
+        # Game loop ticked recently?
+        last_tick = getattr(services, "_last_tick_time", None)
+        if last_tick is not None and (time.time() - last_tick) > 10:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"status": "not_ready", "reason": "game loop stalled"}, status_code=503)
+        return {"status": "ok"}
+
+    # =================================================================
     # Auth (unprotected)
     # =================================================================
 

@@ -12,6 +12,7 @@ Usage:
 import argparse
 import json
 import logging
+import logging.handlers
 import os
 import re
 import sys
@@ -211,12 +212,18 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
             lines.append("")
     return "\n".join(lines)
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    datefmt='%H:%M:%S'
+# Setup logging — rotating file + stdout
+_web_fmt = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
+_web_root = logging.getLogger()
+_web_root.setLevel(logging.INFO)
+_web_file = logging.handlers.TimedRotatingFileHandler(
+    "webserver.log", when="midnight", backupCount=14, utc=True, encoding="utf-8"
 )
+_web_file.setFormatter(_web_fmt)
+_web_root.addHandler(_web_file)
+_web_stream = logging.StreamHandler()
+_web_stream.setFormatter(_web_fmt)
+_web_root.addHandler(_web_stream)
 log = logging.getLogger(__name__)
 
 # Determine the web directory (where this script is located)
