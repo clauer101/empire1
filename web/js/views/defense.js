@@ -2004,7 +2004,14 @@ function _updateStatusPanel() {
   const critterCount = grid ? grid.battleCritters.size : 0;
 
   const elapsedEl = container.querySelector('#battle-elapsed');
-  if (elapsedEl) elapsedEl.textContent = _formatTime(_battleState.time_since_start_s * 1000);
+  if (elapsedEl) {
+    if (_battleState.phase === 'travelling' && _battleState.eta_seconds != null) {
+      _battleState.eta_seconds = Math.max(0, _battleState.eta_seconds - 0.1);
+      elapsedEl.textContent = _formatTime(-_battleState.eta_seconds * 1000);
+    } else if (_battleState.phase !== 'travelling') {
+      elapsedEl.textContent = _formatTime(_battleState.time_since_start_s * 1000);
+    }
+  }
 }
 
 function _updateStatusFromBattleMsg() {
@@ -2048,6 +2055,8 @@ function _updateStatusFromBattleMsg() {
       const attackSummary = (st.summary?.attacks_incoming || []).find(a => a.attack_id === _pendingAttackId)
         || (st.summary?.attacks_outgoing || []).find(a => a.attack_id === _pendingAttackId);
       const etaSec = attackSummary?.eta_seconds ?? null;
+      // Keep eta_seconds fresh in battleState so _updateStatusPanel can tick it down
+      if (etaSec !== null) _battleState.eta_seconds = etaSec;
       if (wi && etaSec !== null) {
         const critterCount = Math.max(1, Math.floor(wi.slots / (wi.critter_slot_cost || 1)));
         nextWaveEl.textContent =
@@ -2074,13 +2083,7 @@ function _updateStatusFromBattleMsg() {
     }
   }
 
-  // Update time — hide elapsed timer during travel (battle not yet started)
-  const elapsedEl = container.querySelector('#battle-elapsed');
-  if (elapsedEl) {
-    elapsedEl.textContent = _battleState.phase === 'travelling'
-      ? '--:--'
-      : _formatTime(_battleState.time_since_start_s * 1000);
-  }
+  // Time display is handled by _updateStatusPanel (runs every 100ms)
 }
 
 function _formatTime(ms) {

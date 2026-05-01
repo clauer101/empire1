@@ -513,6 +513,7 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
     )
     logging.getLogger("gameserver.network.handlers").setLevel(logging.INFO)
     logging.getLogger("gameserver.engine.battle_service").setLevel(logging.INFO)
+    logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
     log.info("=== Game Server starting ===")
 
     # 1. Load configuration

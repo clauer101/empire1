@@ -2935,8 +2935,8 @@ def _create_attack_phase_handler() -> Callable:
 
         if event.new_phase == "in_siege" and svc.database:
             from gameserver.util.push_service import notify_siege_started, notify_under_siege
-            attacker_empire = svc.empire_service.get_empire(attacker_uid)
-            defender_empire = svc.empire_service.get_empire(defender_uid)
+            attacker_empire = svc.empire_service.get(attacker_uid)
+            defender_empire = svc.empire_service.get(defender_uid)
             attacker_name = attacker_empire.name if attacker_empire else "Someone"
             defender_name = defender_empire.name if defender_empire else "your target"
             asyncio.ensure_future(notify_siege_started(svc.database, attacker_uid, defender_name))

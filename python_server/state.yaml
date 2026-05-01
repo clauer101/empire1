@@ -1,14 +1,14 @@
 meta:
   version: 1
-  saved_at: '2026-05-01T05:05:43'
-  saved_at_unix: 1777611943.1150317
+  saved_at: '2026-05-01T06:55:25'
+  saved_at_unix: 1777618525.0855408
 empires:
 - uid: 4
   name: Mar-a-Lago
   resources:
-    culture: 6462744.927837846
-    gold: 207509.9343460989
-    life: 19.159932604890052
+    culture: 6513346.851750115
+    gold: 409150.21680207073
+    life: 28.0
   buildings:
     ACADEMY: 0.0
     ARCHIVES: 0.0
@@ -125,7 +125,7 @@ empires:
     PRINTING_PRESS: 0.0
     RELIGION: 0.0
     SAILING: 0.0
-    SANITATION: 291989.9558098824
+    SANITATION: 228144.07156503334
     SCIENCE: 0.0
     STEALTH_SECRECY: 0.0
     STEAM_ENGINE: 0.0
@@ -574,8 +574,8 @@ empires:
 - uid: 3
   name: Bikini Bottom
   resources:
-    culture: 10886380.098082004
-    gold: 14921837.760016408
+    culture: 10936982.021994317
+    gold: 15376673.12720915
     life: 43.0
   buildings:
     ACADEMY: 0.0
@@ -651,7 +651,7 @@ empires:
     WORK_SHOP: 0.0
     SOCIAL_SECURITY_SYSTEM: 0.0
     WMD_SITE: 0.0
-    NAVIGATION_SYSTEM: 273833.44743059354
+    NAVIGATION_SYSTEM: 232043.29454399418
   build_queue: NAVIGATION_SYSTEM
   knowledge:
     AGRICULTURE: 0.0
@@ -1221,7 +1221,7 @@ empires:
 - uid: 0
   name: AI
   resources:
-    culture: 43646323.74351879
+    culture: 44221679.44351879
     gold: 0.0
     life: 10.0
   buildings: {}
@@ -1290,234 +1290,6 @@ empires:
   max_life: 10.0
   structures: {}
   armies:
-  - aid: 11687
-    uid: 0
-    name: Petty Bandits
-    waves:
-    - wave_id: 1
-      iid: SIEGE_TANK
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: THE_GENERAL
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: THE_GENERAL
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: HELI
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: SPECOPS
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: SOLDIER
-      slots: 27
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: MOTORBIKE
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: SPECOPS
-      slots: 28
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: HELI
-      slots: 28
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: HELI
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
-    - wave_id: 11
-      iid: SPECOPS
-      slots: 25
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 150000
-    - wave_id: 12
-      iid: SPECOPS
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 165000
-    - wave_id: 13
-      iid: SIEGE_TANK
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 180000
-  - aid: 11703
-    uid: 0
-    name: Howling Savages
-    waves:
-    - wave_id: 1
-      iid: MOTORBIKE
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: SIEGE_TANK
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: MECH_WARRIOR
-      slots: 28
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: SIEGE_TANK
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HELI
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: SPECOPS
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: HELI
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: HELI
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: SMALL_TANK
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: SIEGE_TANK
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
-    - wave_id: 11
-      iid: TRANSPORTER
-      slots: 30
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 150000
-    - wave_id: 12
-      iid: HELI
-      slots: 28
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 165000
-    - wave_id: 13
-      iid: THE_GENERAL
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 180000
-  - aid: 11707
-    uid: 0
-    name: Shrieking Horde
-    waves:
-    - wave_id: 1
-      iid: MOTORBIKE
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: SMALL_TANK
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: TRANSPORTER
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: THE_KING
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: NINJA
-      slots: 23
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: TRANSPORTER
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: SOLDIER
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: SMALL_TANK
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: MOTORBIKE
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: NINJA
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
   - aid: 11715
     uid: 0
     name: Rude Barbarians
@@ -1786,130 +1558,6 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 150000
-  - aid: 11720
-    uid: 0
-    name: Hangar Raid
-    waves:
-    - wave_id: 1
-      iid: MOTORBIKE
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: TRANSPORTER
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SOLDIER
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: SMALL_TANK
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: MOTORBIKE
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: SOLDIER
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: SOLDIER
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: MOTORBIKE
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: SOLDIER
-      slots: 23
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: MOTORBIKE
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
-    - wave_id: 11
-      iid: MOTORBIKE
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 150000
-    - wave_id: 12
-      iid: SMALL_TANK
-      slots: 25
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 165000
-    - wave_id: 13
-      iid: SOLDIER
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 180000
-    - wave_id: 14
-      iid: SMALL_TANK
-      slots: 26
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 195000
-    - wave_id: 15
-      iid: MOTORBIKE
-      slots: 27
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 210000
-    - wave_id: 16
-      iid: SOLDIER
-      slots: 27
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 225000
-    - wave_id: 17
-      iid: TRANSPORTER
-      slots: 28
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 240000
-    - wave_id: 18
-      iid: SOLDIER
-      slots: 29
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 255000
-    - wave_id: 19
-      iid: MOTORBIKE
-      slots: 29
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 270000
-    - wave_id: 20
-      iid: TRANSPORTER
-      slots: 30
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 285000
   - aid: 11722
     uid: 0
     name: Relentless Mob
@@ -1998,88 +1646,6 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 195000
-  - aid: 11723
-    uid: 0
-    name: Imperial Palace Siege
-    waves:
-    - wave_id: 1
-      iid: MUSKETEER
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: DRAGOONER
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: NINJA
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: MUSKETEER
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: CARGO
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: MUSKETEER
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: NINJA
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: NINJA
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: NINJA
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: NINJA
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
-    - wave_id: 11
-      iid: NINJA
-      slots: 23
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 150000
-    - wave_id: 12
-      iid: DRAGOONER
-      slots: 23
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 165000
-    - wave_id: 13
-      iid: DRAGOONER
-      slots: 24
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 180000
   - aid: 11724
     uid: 0
     name: Noisy Barbarians
@@ -2302,34 +1868,6 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 195000
-  - aid: 11728
-    uid: 0
-    name: Unlucky Raiders
-    waves:
-    - wave_id: 1
-      iid: PIKENEER
-      slots: 10
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: WARRIOR
-      slots: 13
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: WARRIOR
-      slots: 12
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: CHARIOT
-      slots: 7
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
   - aid: 11729
     uid: 0
     name: Grumpy Marauders
@@ -2464,250 +2002,6 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 180000
-  - aid: 11731
-    uid: 0
-    name: Theater in Flames
-    waves:
-    - wave_id: 1
-      iid: CRUSADER
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: KNIGHT
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SIEGE_RAM
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: SAMURAI
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: SIEGE_RAM
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: CRUSADER
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: SAMURAI
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: SIEGE_RAM
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: CRUSADER
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: CRUSADER
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
-    - wave_id: 11
-      iid: SIEGE_RAM
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 150000
-  - aid: 11732
-    uid: 0
-    name: Forge Sabotage
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 14
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: HORSEMAN_SLOW
-      slots: 15
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: PIKENEER
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: HORSEMAN_FAST
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HORSEMAN_FAST
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: HORSEMAN_SLOW
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: LEGIONARY
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: LARGE_CART
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 11733
-    uid: 0
-    name: Theater in Flames
-    waves:
-    - wave_id: 1
-      iid: CRUSADER
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: KNIGHT
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SIEGE_RAM
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: SAMURAI
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: SIEGE_RAM
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: CRUSADER
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: SAMURAI
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: SIEGE_RAM
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: CRUSADER
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: CRUSADER
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
-    - wave_id: 11
-      iid: SIEGE_RAM
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 150000
-  - aid: 11734
-    uid: 0
-    name: Laws Broken
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 14
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: PIKENEER
-      slots: 15
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: HORSEMAN_FAST
-      slots: 16
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: LARGE_CART
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: LEGIONARY
-      slots: 17
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: LEGIONARY
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: LEGIONARY
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: PIKENEER
-      slots: 22
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
   - aid: 11735
     uid: 0
     name: Hungry Invaders
@@ -2844,32 +2138,32 @@ empires:
       iid: SWORDMAN
       slots: 14
       max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
+      num_critters_spawned: 8
+      next_critter_ms: 83
     - wave_id: 2
       iid: CHARIOT
       slots: 15
       max_era: 0
       num_critters_spawned: 0
-      next_critter_ms: 15000
+      next_critter_ms: 3398
     - wave_id: 3
       iid: SWORDMAN
       slots: 16
       max_era: 0
       num_critters_spawned: 0
-      next_critter_ms: 30000
+      next_critter_ms: 20398
     - wave_id: 4
       iid: CHARIOT
       slots: 17
       max_era: 0
       num_critters_spawned: 0
-      next_critter_ms: 45000
+      next_critter_ms: 37398
     - wave_id: 5
       iid: BOWMAN
       slots: 18
       max_era: 0
       num_critters_spawned: 0
-      next_critter_ms: 60000
+      next_critter_ms: 54398
   - aid: 11738
     uid: 0
     name: Literary Armies
@@ -2922,15 +2216,411 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 105000
+  - aid: 11741
+    uid: 0
+    name: Noisy Barbarians
+    waves:
+    - wave_id: 1
+      iid: LEGIONARY
+      slots: 11
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SIEGE_RAM
+      slots: 12
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: HORSEMAN_SLOW
+      slots: 13
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: HORSEMAN_FAST
+      slots: 12
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: HORSEMAN_FAST
+      slots: 13
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: CHARIOT
+      slots: 9
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+  - aid: 11742
+    uid: 0
+    name: Heavy Equipment Sabotage
+    waves:
+    - wave_id: 1
+      iid: SOLDIER
+      slots: 18
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: DRAGOONER
+      slots: 19
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: SMALL_TANK
+      slots: 19
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: MOTORBIKE
+      slots: 20
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: SMALL_TANK
+      slots: 21
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: TRANSPORTER
+      slots: 21
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: SIEGE_TANK
+      slots: 22
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: MOTORBIKE
+      slots: 22
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: TRANSPORTER
+      slots: 23
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: MOTORBIKE
+      slots: 24
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: TRANSPORTER
+      slots: 24
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+    - wave_id: 12
+      iid: MOTORBIKE
+      slots: 25
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 165000
+    - wave_id: 13
+      iid: SOLDIER
+      slots: 26
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 180000
+    - wave_id: 14
+      iid: SMALL_TANK
+      slots: 26
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 195000
+    - wave_id: 15
+      iid: SOLDIER
+      slots: 27
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 210000
+    - wave_id: 16
+      iid: MOTORBIKE
+      slots: 27
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 225000
+    - wave_id: 17
+      iid: SMALL_TANK
+      slots: 28
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 240000
+    - wave_id: 18
+      iid: SOLDIER
+      slots: 29
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 255000
+    - wave_id: 19
+      iid: SOLDIER
+      slots: 29
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 270000
+    - wave_id: 20
+      iid: SOLDIER
+      slots: 30
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 285000
+  - aid: 11744
+    uid: 0
+    name: Shadow Operatives
+    waves:
+    - wave_id: 1
+      iid: NINJA
+      slots: 16
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SAMURAI
+      slots: 17
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: MUSKETEER
+      slots: 17
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: NINJA
+      slots: 18
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: MUSKETEER
+      slots: 19
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: NINJA
+      slots: 19
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: DRAGOONER
+      slots: 20
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: NINJA
+      slots: 21
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: NINJA
+      slots: 21
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: MUSKETEER
+      slots: 22
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: NINJA
+      slots: 23
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+    - wave_id: 12
+      iid: MUSKETEER
+      slots: 23
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 165000
+    - wave_id: 13
+      iid: NINJA
+      slots: 24
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 180000
+  - aid: 11745
+    uid: 0
+    name: Shrieking Horde
+    waves:
+    - wave_id: 1
+      iid: HORSEMAN_SLOW
+      slots: 10
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: BOWMAN
+      slots: 12
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: BOWMAN
+      slots: 13
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: WARRIOR
+      slots: 7
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+  - aid: 11746
+    uid: 0
+    name: Crude Invaders
+    waves:
+    - wave_id: 1
+      iid: TRANSPORTER
+      slots: 10
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: NINJA
+      slots: 22
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: KNIGHT
+      slots: 20
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: MUSKETEER
+      slots: 18
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: THE_KING
+      slots: 999
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: CONDOTTERI
+      slots: 21
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: DRAGOONER
+      slots: 16
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: NINJA
+      slots: 16
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: NINJA
+      slots: 17
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: MUSKETEER
+      slots: 22
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: NINJA
+      slots: 14
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+  - aid: 11747
+    uid: 0
+    name: Forge Sabotage
+    waves:
+    - wave_id: 1
+      iid: LEGIONARY
+      slots: 14
+      max_era: 0
+      num_critters_spawned: 7
+      next_critter_ms: 784
+    - wave_id: 2
+      iid: HORSEMAN_SLOW
+      slots: 15
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 6549
+    - wave_id: 3
+      iid: PIKENEER
+      slots: 16
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 23549
+    - wave_id: 4
+      iid: HORSEMAN_FAST
+      slots: 17
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 40549
+    - wave_id: 5
+      iid: HORSEMAN_FAST
+      slots: 17
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 57549
+    - wave_id: 6
+      iid: HORSEMAN_SLOW
+      slots: 18
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 74549
+    - wave_id: 7
+      iid: LEGIONARY
+      slots: 19
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 91549
+    - wave_id: 8
+      iid: LARGE_CART
+      slots: 20
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 108549
   spies: []
   bosses: {}
   hex_map: []
 - uid: 6
   name: KundK Monarchie
   resources:
-    culture: 9087700.441740017
-    gold: 820617.5321286937
-    life: 28.0
+    culture: 8752668.316038666
+    gold: 601427.0774106429
+    life: 10.217747729238011
   buildings:
     ACADEMY: 0.0
     ARCHIVES: 0.0
@@ -2996,7 +2686,8 @@ empires:
     RAIL_ROADS: 0.0
     VEHICLE_WORKSHOP: 0.0
     HANGAR: 0.0
-  build_queue: null
+    STOCK_MARKET: 257713.98000404227
+  build_queue: STOCK_MARKET
   knowledge:
     AGRICULTURE: 0.0
     ALPHABET_WRITING: 0.0
@@ -3045,7 +2736,7 @@ empires:
     TACTICS: 0.0
     OPTICS: 511450.25316289393
     ELECTRICITY: 0.0
-    KNO_ARMOUR: 487121.17939266236
+    KNO_ARMOUR: 481529.5027402648
   research_queue: KNO_ARMOUR
   citizens:
     merchant: 12
@@ -3560,8 +3251,8 @@ empires:
 - uid: 7
   name: Limperium
   resources:
-    culture: 15520287.106598828
-    gold: 171631.8693697844
+    culture: 15587036.272118162
+    gold: 509726.9489042531
     life: 48.0
   buildings:
     ACADEMY: 0.0
@@ -3635,7 +3326,7 @@ empires:
     WORK_SHOP: 0.0
     RAIL_ROADS: 0.0
     EMERGENCY_ROOM: 0.0
-    ARTS_GALLERY: 753120.895092882
+    ARTS_GALLERY: 714026.8811021957
   build_queue: ARTS_GALLERY
   knowledge:
     AGRICULTURE: 0.0
@@ -3666,7 +3357,7 @@ empires:
     KNO_ARMOUR: 645008.5981561422
     LAWS: 0.0
     LITRATURE: 0.0
-    MASS_PRODUCTION: 526153.5066859393
+    MASS_PRODUCTION: 486697.8155262849
     MATHMATICS: 0.0
     MECHANICAL_ENGINEERING: 0.0
     MECHANICS: 0.0
@@ -4291,8 +3982,8 @@ empires:
 - uid: 9
   name: Manosphere
   resources:
-    culture: 1598176.9151735643
-    gold: 8266770.233177436
+    culture: 1610957.2711350336
+    gold: 8295545.268740176
     life: 13.0
   buildings:
     BASE_CAMP: 0.0
@@ -4595,8 +4286,8 @@ empires:
 - uid: 12
   name: Schafshügel
   resources:
-    culture: 4832113.669088011
-    gold: 9111077.451495
+    culture: 4870435.009126838
+    gold: 9201841.257679177
     life: 23.0
   buildings:
     ACADEMY: 0.0
@@ -5084,8 +4775,8 @@ empires:
 - uid: 13
   name: Absurdistan
   resources:
-    culture: 6211582.033674184
-    gold: 610889.3930453275
+    culture: 6262260.951903253
+    gold: 257251.794128704
     life: 23.0
   buildings:
     ACADEMY: 0.0
@@ -5143,7 +4834,7 @@ empires:
     TRIUMPHAL_ARC: 0.0
     EMPERORS_PALACE: 0.0
     PARLIAMENT: 0.0
-    UNIVERSITY: 61596.15755690654
+    UNIVERSITY: 37758.34414794893
   build_queue: UNIVERSITY
   knowledge:
     AGRICULTURE: 0.0
@@ -5184,12 +4875,12 @@ empires:
     STEEL: 0.0
     TACTICS: 0.0
     PRINTING_PRESS: 0.0
-    CHEMISTRY: 85903.93873641548
+    CHEMISTRY: 66389.41327573087
   research_queue: CHEMISTRY
   citizens:
     merchant: 17
-    scientist: 18
-    artist: 1
+    scientist: 12
+    artist: 7
   effects:
     research_speed_modifier: 1.5
     gold_modifier: 2.3
@@ -5298,6 +4989,9 @@ empires:
   bosses: {}
   hex_map:
   - q: -1
+    r: -1
+    type: spawnpoint
+  - q: -1
     r: 0
     type:
       type: CANNON_TOWER
@@ -5327,7 +5021,7 @@ empires:
       select: random
   - q: -2
     r: 0
-    type: spawnpoint
+    type: empty
   - q: -2
     r: 1
     type: empty
@@ -5357,10 +5051,10 @@ empires:
     type: RIFLE_TOWER
   - q: 0
     r: -1
-    type: castle
+    type: RIFLE_TOWER
   - q: 0
     r: 0
-    type: empty
+    type: castle
   - q: 0
     r: 1
     type: empty
@@ -5513,8 +5207,8 @@ empires:
 - uid: 15
   name: Fruit Republic
   resources:
-    culture: 4631428.885216596
-    gold: 1519555.7777147936
+    culture: 4667744.5609548325
+    gold: 1358533.1145785057
     life: 23.0
   buildings:
     ACADEMY: 0.0
@@ -5569,7 +5263,7 @@ empires:
     WORK_SHOP: 0.0
     TRIUMPHAL_ARC: 0.0
     COURTHOUSE: 0.0
-    UNIVERSITY: 148445.043654326
+    UNIVERSITY: 126514.25531808635
   build_queue: UNIVERSITY
   knowledge:
     AGRICULTURE: 0.0
@@ -5578,7 +5272,7 @@ empires:
     ARTS: 0.0
     CARTOGRAPHY: 0.0
     COMMAND_CHAIN: 0.0
-    CONSTITUTION: 2617.0590012215544
+    CONSTITUTION: 0.0
     COPPER_BRONZE: 0.0
     CRAFTSMANSHIP: 0.0
     CURRENCY: 0.0
@@ -5609,8 +5303,8 @@ empires:
     STEEL: 0.0
     TACTICS: 0.0
     PRINTING_PRESS: 0.0
-    STEALTH_SECRECY: 12146.18717071863
-  research_queue: CONSTITUTION
+    STEALTH_SECRECY: 0.0
+  research_queue: null
   citizens:
     merchant: 0
     scientist: 34
@@ -5663,19 +5357,19 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
-      iid: CONDOTTERI
+      iid: MUSKETEER
       slots: 18
       max_era: 5
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: CONDOTTERI
+      iid: MUSKETEER
       slots: 25
       max_era: 5
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
-      iid: CONDOTTERI
+      iid: MUSKETEER
       slots: 25
       max_era: 5
       num_critters_spawned: 0
@@ -5722,7 +5416,7 @@ empires:
     type: empty
   - q: -1
     r: 3
-    type: BALLISTA_TOWER
+    type: RIFLE_TOWER
   - q: -1
     r: 4
     type: empty
@@ -5829,17 +5523,13 @@ empires:
     type: empty
   - q: 2
     r: 1
-    type:
-      type: HEAVY_TOWER
-      select: random
+    type: RIFLE_TOWER
   - q: 2
     r: 2
     type: empty
   - q: 2
     r: 3
-    type:
-      type: HEAVY_TOWER
-      select: random
+    type: RIFLE_TOWER
   - q: 2
     r: 4
     type: empty
@@ -5872,9 +5562,7 @@ empires:
       select: random
   - q: 4
     r: -1
-    type:
-      type: HEAVY_TOWER
-      select: random
+    type: RIFLE_TOWER
   - q: 4
     r: -2
     type: empty
@@ -5936,9 +5624,9 @@ empires:
 - uid: 16
   name: Imperium Aperol 🍹
   resources:
-    culture: 3529798.34454018
-    gold: 752181.4198346587
-    life: 21.17154310242601
+    culture: 3566114.0202783654
+    gold: 272206.5173358655
+    life: 23.0
   buildings:
     ACADEMY: 0.0
     BANK: 0.0
@@ -5992,7 +5680,8 @@ empires:
     CANNON_MANUFACTORY: 0.0
     TRIUMPHAL_ARC: 0.0
     PARADE_GROUND: 0.0
-    PARLIAMENT: 171029.8379108714
+    PARLIAMENT: 149129.09728062345
+    EMPERORS_PALACE: 265337.95229400846
   build_queue: PARLIAMENT
   knowledge:
     AGRICULTURE: 0.0
@@ -6032,7 +5721,7 @@ empires:
     STEEL: 0.0
     TACTICS: 0.0
     STEALTH_SECRECY: 0.0
-    STRATEGIC_WARFARE: 156802.24237160946
+    STRATEGIC_WARFARE: 140362.37105508707
   research_queue: STRATEGIC_WARFARE
   citizens:
     merchant: 32
@@ -6290,6 +5979,9 @@ empires:
     r: 0
     type: empty
   - q: 9
+    r: -1
+    type: empty
+  - q: 9
     r: -2
     type: empty
   - q: 9
@@ -6304,8 +5996,8 @@ empires:
 - uid: 17
   name: MooHaven
   resources:
-    culture: 4852502.505347164
-    gold: 457529.5376371708
+    culture: 4903104.429259433
+    gold: 598222.1963922883
     life: 16.0
   buildings:
     ACADEMY: 0.0
@@ -6354,11 +6046,11 @@ empires:
     UNIVERSITY: 0.0
     WATCH_TOWER: 0.0
     WORK_SHOP: 0.0
-    HEAVY_EQUIPMENT: 14177.64456676303
+    HEAVY_EQUIPMENT: 0.0
     CATHEDRAL: 0.0
     PARADE_GROUND: 0.0
     BOTANIC_GARDENS: 122163.49786673806
-  build_queue: HEAVY_EQUIPMENT
+  build_queue: null
   knowledge:
     AGRICULTURE: 0.0
     ALPHABET_WRITING: 0.0
@@ -6399,7 +6091,7 @@ empires:
     HOLY_WAR: 0.0
     STEALTH_SECRECY: 0.0
     STRATEGIC_WARFARE: 0.0
-    STEAM_ENGINE: 53460.260936674764
+    STEAM_ENGINE: 24263.04947853077
     BALLISTICS: 459037.7875839416
     CARTOGRAPHY: 16522.471844281936
   research_queue: STEAM_ENGINE
@@ -6412,14 +6104,14 @@ empires:
     research_speed_offset: 0.5
     culture_offset: 2.8500000000000005
     gold_modifier: 2.3000000000000003
-    gold_offset: 4.831
+    gold_offset: 5.131
     life_offset: 0.002
     siege_offset: 10920.0
     max_life_modifier: 6.0
     culture_modifier: 1.6999999999999997
     wave_delay_offset: 4000.0
     restore_life_after_loss_offset: 5.0
-    build_speed_offset: 0.44999999999999996
+    build_speed_offset: 0.85
     build_speed_modifier: 1.5
     travel_offset: -1800.0
     tower_sell_refund_modifier: 0.2
@@ -6691,9 +6383,9 @@ empires:
 - uid: 18
   name: X
   resources:
-    culture: 5362002.834001968
-    gold: 1571425.949237784
-    life: 23.0
+    culture: 5255725.9086619895
+    gold: 1690741.1618302716
+    life: 18.326859249292028
   buildings:
     BANK: 0.0
     BASE_CAMP: 0.0
@@ -6775,7 +6467,7 @@ empires:
     STEEL: 0.0
     TACTICS: 0.0
     GUNPOWDER: 0.0
-    FEUDALISM: 112354.70795805877
+    FEUDALISM: 112354.93038721613
     HOLY_WAR: 0.0
   research_queue: null
   citizens:
@@ -6970,9 +6662,9 @@ empires:
 - uid: 19
   name: Tom's Realm
   resources:
-    culture: 262940.9172594552
-    gold: 393720.49590674735
-    life: 10.0
+    culture: 267675.6001986177
+    gold: 398860.3117060271
+    life: 3.816298957470999
   buildings:
     BASE_CAMP: 0.0
     CHURCH: 0.0
@@ -7071,8 +6763,8 @@ empires:
 - uid: 20
   name: Bavaria
   resources:
-    culture: 484786.6099819447
-    gold: 599434.4571271806
+    culture: 489560.74861226045
+    gold: 606101.2852624245
     life: 13.0
   buildings:
     BASE_CAMP: 0.0
@@ -7249,8 +6941,8 @@ empires:
 - uid: 21
   name: Die Panzke Dynastie
   resources:
-    gold: 3876.5505004134216
-    culture: 153283.79683823336
+    gold: 21606.51036521194
+    culture: 164960.83765795856
     life: 13.0
   buildings:
     INIT: 0.0
@@ -7276,7 +6968,7 @@ empires:
     BOW_MAKER: 0.0
     TOWN_GUARD: 0.0
     THEATER: 0.0
-    BOOT_CAMP: 13682.950985902216
+    BOOT_CAMP: 2832.6359169973207
   build_queue: BOOT_CAMP
   knowledge:
     HUNTING: 0.0
@@ -7298,13 +6990,13 @@ empires:
     MATHMATICS: 0.0
     LAWS: 0.0
     MECHANICS: 0.0
-    CARTOGRAPHY: 14011.75206049935
+    CARTOGRAPHY: 7249.733610920198
     LITRATURE: 0.0
-  research_queue: null
+  research_queue: CARTOGRAPHY
   citizens:
-    merchant: 0
+    merchant: 15
     scientist: 0
-    artist: 14
+    artist: 0
   effects:
     life_offset: 0.002
     siege_offset: 7320.0
@@ -7332,6 +7024,8 @@ empires:
       reload: 1
     SPIKE_TRAP:
       reload: 2
+    CATAPULTS:
+      reload: 1
   artefacts: []
   max_life: 13.0
   structures: {}
@@ -7427,9 +7121,9 @@ empires:
 - uid: 22
   name: Hackhausen
   resources:
-    gold: 56073.28431122582
-    culture: 147514.97219346758
-    life: 16.0
+    gold: 71035.12083557365
+    culture: 155580.82621645604
+    life: 11.417381533501992
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -7474,7 +7168,7 @@ empires:
     MATHMATICS: 0.0
     ARTS: 0.0
     MECHANICS: 0.0
-    CARTOGRAPHY: 4715.551127773053
+    CARTOGRAPHY: 6052.686642552514
     ARCHITECTURE: 0.0
   research_queue: null
   citizens:
@@ -7636,8 +7330,8 @@ empires:
 - uid: 23
   name: Dravithar Coalition
   resources:
-    gold: 32614.363048495397
-    culture: 170923.60622582005
+    gold: 37548.038572505706
+    culture: 184683.77851775035
     life: 13.0
   buildings:
     INIT: 0.0
@@ -7664,8 +7358,9 @@ empires:
     LORE_COLLECTION: 0.0
     HERBALIST: 0.0
     THEATER: 0.0
-    FORGE: 11174.423023396848
-  build_queue: FORGE
+    FORGE: 0.0
+    TEMPLE: 64548.617220281856
+  build_queue: TEMPLE
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -7688,7 +7383,7 @@ empires:
     IRON: 0.0
     LAWS: 0.0
     ARCHITECTURE: 0.0
-    LITRATURE: 22884.6128237062
+    LITRATURE: 15256.512532839753
   research_queue: LITRATURE
   citizens:
     merchant: 15
@@ -7708,7 +7403,7 @@ empires:
     culture_modifier: 0.55
     tower_sell_refund_modifier: 0.1
     max_life_modifier: 3.0
-    build_speed_offset: 0.1
+    build_speed_offset: 0.30000000000000004
     research_speed_offset: 0.1
   item_upgrades:
     DOUBLE_SLING_TOWER:
@@ -7858,8 +7553,8 @@ empires:
 - uid: 24
   name: Bearfoot
   resources:
-    gold: 12297.147992139224
-    culture: 131038.51989744388
+    gold: 24603.589352998
+    culture: 139028.297357274
     life: 13.0
   buildings:
     INIT: 0.0
@@ -8050,9 +7745,9 @@ empires:
 - uid: 25
   name: Tower of Power
   resources:
-    gold: 16675.406692462377
-    culture: 148905.4749679412
-    life: 16.0
+    gold: 10366.739801688951
+    culture: 159431.4937363969
+    life: 3.0185710566219863
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -8078,7 +7773,7 @@ empires:
     WORK_SHOP: 0.0
     TREADWHEEL_CRANE: 0.0
     FORGE: 0.0
-    THEATER: 44617.28667761268
+    THEATER: 25547.0359504467
   build_queue: THEATER
   knowledge:
     HUNTING: 0.0
@@ -8102,12 +7797,12 @@ empires:
     ARCHITECTURE: 0.0
     IRON: 0.0
     LAWS: 0.0
-    PAINTING: 27864.041985695494
+    PAINTING: 20235.821556696967
   research_queue: PAINTING
   citizens:
     merchant: 0
     scientist: 0
-    artist: 14
+    artist: 15
   effects:
     life_offset: 0.002
     siege_offset: 5520.0
@@ -8140,6 +7835,8 @@ empires:
       reload: 2
     CATAPULTS:
       reload: 1
+    ARBELESTE_TOWER:
+      reload: 2
   artefacts: []
   max_life: 16.0
   structures: {}
@@ -8223,6 +7920,9 @@ empires:
   - q: 0
     r: 3
     type: empty
+  - q: 0
+    r: 4
+    type: ARBELESTE_TOWER
   - q: 1
     r: -1
     type: BALLISTA_TOWER
@@ -8262,9 +7962,9 @@ empires:
 - uid: 26
   name: Zornbolds
   resources:
-    gold: 43587.29443485946
-    culture: 51325.883883609924
-    life: 13.0
+    gold: 9681.38745545529
+    culture: 56446.09270078504
+    life: 11.34730817079402
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -8282,8 +7982,9 @@ empires:
     EXCHANGE_POST: 0.0
     GRANARY: 0.0
     CHAPEL: 0.0
-    WATCH_TOWER: 4785.050906681287
-  build_queue: WATCH_TOWER
+    WATCH_TOWER: 0.0
+    TREASURE_CHAMBER: 25456.063721816878
+  build_queue: TREASURE_CHAMBER
   knowledge:
     HUNTING: 0.0
     DOMESTICATION: 0.0
@@ -8299,17 +8000,18 @@ empires:
     RELIGION: 0.0
     MUSIC: 0.0
     MATHMATICS: 0.0
-    SAILING: 3833.1660609758896
-  research_queue: SAILING
+    SAILING: 0.0
+    CARTOGRAPHY: 14061.07762607338
+  research_queue: CARTOGRAPHY
   citizens:
     merchant: 4
     scientist: 3
     artist: 4
   effects:
     life_offset: 0.002
-    siege_offset: 3720.0
+    siege_offset: 5520.0
     gold_offset: 1.2309999999999999
-    wave_delay_offset: 1000.0
+    wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
     culture_offset: 0.6499999999999999
     research_speed_modifier: 0.44999999999999996
@@ -8362,6 +8064,9 @@ empires:
   - q: -1
     r: 2
     type: FIRE_TOWER
+  - q: -1
+    r: 3
+    type: empty
   - q: 0
     r: -1
     type: castle
@@ -8389,6 +8094,9 @@ empires:
   - q: 1
     r: 2
     type: empty
+  - q: 1
+    r: 3
+    type: BALLISTA_TOWER
   - q: 2
     r: -1
     type: empty
@@ -8405,12 +8113,18 @@ empires:
     r: 2
     type: DOUBLE_SLING_TOWER
   - q: 3
+    r: -1
+    type: empty
+  - q: 3
     r: 0
     type: SPIKE_TRAP
+  - q: 3
+    r: 1
+    type: empty
 - uid: 27
   name: Tamriel
   resources:
-    gold: 17414.327797995637
+    gold: 18729.517503317402
     culture: 0.0
     life: 10.0
   buildings:
@@ -8452,8 +8166,8 @@ empires:
 - uid: 28
   name: MyHomeIsMyCastle
   resources:
-    gold: 27864.175476597527
-    culture: 10485.710943591232
+    gold: 917.8200375877293
+    culture: 12064.677265790353
     life: 13.0
   buildings:
     INIT: 0.0
@@ -8469,7 +8183,8 @@ empires:
     BOW_MAKER: 0.0
     HERBALIST: 0.0
     FIELD_HEALER: 0.0
-  build_queue: null
+    BOOT_CAMP: 11367.346870831778
+  build_queue: BOOT_CAMP
   knowledge:
     HUNTING: 0.0
     DOMESTICATION: 0.0
@@ -8480,13 +8195,13 @@ empires:
     ALPHABET_WRITING: 0.0
     AGRICULTURE: 0.0
     COPPER_BRONZE: 0.0
-    CURRENCY: 4751.991279437825
+    CURRENCY: 2353.3185875285035
     DRILL: 0.0
-  research_queue: null
+  research_queue: CURRENCY
   citizens:
-    merchant: 5
+    merchant: 4
     scientist: 0
-    artist: 0
+    artist: 3
   effects:
     life_offset: 0.002
     siege_offset: 3720.0
@@ -8504,10 +8219,37 @@ empires:
     DOUBLE_SLING_TOWER:
       damage: 3
       reload: 4
+    FIRE_TOWER:
+      effect_value: 2
+      reload: 1
+    SPIKE_TRAP:
+      range: 3
   artefacts: []
   max_life: 13.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 11743
+    uid: 28
+    name: HackIT
+    waves:
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 5
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
+    - wave_id: 2
+      iid: BOWMAN
+      slots: 2
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
+    - wave_id: 3
+      iid: BOWMAN
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0.0
   spies: []
   bosses: {}
   hex_map:
@@ -8516,10 +8258,13 @@ empires:
     type: DOUBLE_SLING_TOWER
   - q: -1
     r: 1
-    type: SLING_TOWER
+    type: DOUBLE_SLING_TOWER
   - q: 0
     r: -1
     type: empty
+  - q: 0
+    r: -2
+    type: ARROW_TOWER
   - q: 0
     r: 0
     type: empty
@@ -8528,7 +8273,7 @@ empires:
     type: spawnpoint
   - q: 1
     r: -1
-    type: DOUBLE_SLING_TOWER
+    type: FIRE_TOWER
   - q: 1
     r: -2
     type: empty
@@ -8544,45 +8289,18 @@ empires:
     r: -2
     type: empty
   - q: 2
+    r: -3
+    type: ARROW_TOWER
+  - q: 2
     r: 0
     type: castle
+  - q: 3
+    r: -1
+    type: DOUBLE_SLING_TOWER
   - q: 3
     r: -2
     type: DOUBLE_SLING_TOWER
 attacks:
-- attack_id: 1839
-  attacker_uid: 0
-  defender_uid: 3
-  army_aid: 11687
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 16200.0
-  siege_remaining_seconds: 1805.3202777779952
-  total_siege_seconds: 17220.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1858
-  attacker_uid: 0
-  defender_uid: 6
-  army_aid: 11703
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 16200.0
-  siege_remaining_seconds: 4999.990762660993
-  total_siege_seconds: 13620.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1863
-  attacker_uid: 0
-  defender_uid: 7
-  army_aid: 11707
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 14400.0
-  siege_remaining_seconds: 8120.429810485992
-  total_siege_seconds: 17220.0
-  is_spy: false
-  army_name_override: ''
 - attack_id: 1872
   attacker_uid: 0
   defender_uid: 17
@@ -8590,7 +8308,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 12600.0
-  siege_remaining_seconds: 10160.419123450003
+  siege_remaining_seconds: 3584.470596840998
   total_siege_seconds: 11820.0
   is_spy: false
   army_name_override: ''
@@ -8601,7 +8319,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 12600.0
-  siege_remaining_seconds: 12560.153303176994
+  siege_remaining_seconds: 5984.204776567989
   total_siege_seconds: 13620.0
   is_spy: false
   army_name_override: ''
@@ -8609,55 +8327,33 @@ attacks:
   attacker_uid: 0
   defender_uid: 12
   army_aid: 11718
-  phase: travelling
-  eta_seconds: 1579.8486001290003
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 14400.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  siege_remaining_seconds: 5024.013377217998
+  total_siege_seconds: 10020.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1876
   attacker_uid: 0
   defender_uid: 18
   army_aid: 11719
-  phase: travelling
-  eta_seconds: 199.3705723460007
-  total_eta_seconds: 12600.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1877
-  attacker_uid: 0
-  defender_uid: 6
-  army_aid: 11720
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 540.0
-  siege_remaining_seconds: 2045.4297407659906
-  total_siege_seconds: 13620.0
+  total_eta_seconds: 12600.0
+  siege_remaining_seconds: 1844.3038536749955
+  total_siege_seconds: 8220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1879
   attacker_uid: 0
   defender_uid: 4
   army_aid: 11722
-  phase: travelling
-  eta_seconds: 6020.10586616199
-  total_eta_seconds: 16200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1880
-  attacker_uid: 0
-  defender_uid: 18
-  army_aid: 11723
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 420.0
-  siege_remaining_seconds: 312.04167097399477
-  total_siege_seconds: 8220.0
+  total_eta_seconds: 16200.0
+  siege_remaining_seconds: 16664.374781381004
+  total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1881
@@ -8665,7 +8361,7 @@ attacks:
   defender_uid: 3
   army_aid: 11724
   phase: travelling
-  eta_seconds: 8119.824717752999
+  eta_seconds: 1543.8761911439942
   total_eta_seconds: 16200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -8678,7 +8374,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 12971.580765909996
+  siege_remaining_seconds: 6395.6322393009905
   total_siege_seconds: 13620.0
   is_spy: false
   army_name_override: ''
@@ -8689,7 +8385,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 16582.591684939995
+  siege_remaining_seconds: 10006.64315833099
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8700,7 +8396,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 16584.596624571
+  siege_remaining_seconds: 10008.648097961996
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8711,7 +8407,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 16585.598002629995
+  siege_remaining_seconds: 10009.64947602099
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8719,11 +8415,11 @@ attacks:
   attacker_uid: 0
   defender_uid: 18
   army_aid: 11726
-  phase: travelling
-  eta_seconds: 5239.492790709002
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 12600.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  siege_remaining_seconds: 6884.072766439
+  total_siege_seconds: 8220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1888
@@ -8731,32 +8427,21 @@ attacks:
   defender_uid: 4
   army_aid: 11727
   phase: travelling
-  eta_seconds: 9380.19571521999
+  eta_seconds: 2804.247188610985
   total_eta_seconds: 16200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1889
-  attacker_uid: 0
-  defender_uid: 28
-  army_aid: 11728
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 3600.0
-  siege_remaining_seconds: 1400.5737853519968
-  total_siege_seconds: 4620.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1890
   attacker_uid: 0
   defender_uid: 18
   army_aid: 11729
-  phase: travelling
-  eta_seconds: 6259.878125196992
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 12600.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  siege_remaining_seconds: 7904.647898284005
+  total_siege_seconds: 8220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1891
@@ -8764,98 +8449,43 @@ attacks:
   defender_uid: 6
   army_aid: 11730
   phase: travelling
-  eta_seconds: 11419.724340235
+  eta_seconds: 4843.7758136259945
   total_eta_seconds: 16200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1892
-  attacker_uid: 23
-  defender_uid: 19
-  army_aid: 11539
-  phase: travelling
-  eta_seconds: 1137.3939680259937
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1893
-  attacker_uid: 0
-  defender_uid: 21
-  army_aid: 11731
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 240.0
-  siege_remaining_seconds: 4505.008926155002
-  total_siege_seconds: 8220.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1894
-  attacker_uid: 0
-  defender_uid: 25
-  army_aid: 11732
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 4020.5405293130025
-  total_siege_seconds: 6420.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1895
-  attacker_uid: 0
-  defender_uid: 22
-  army_aid: 11733
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 240.0
-  siege_remaining_seconds: 3846.334842811004
-  total_siege_seconds: 6420.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1896
   attacker_uid: 15
   defender_uid: 7
   army_aid: 10334
-  phase: travelling
-  eta_seconds: 5201.011013280004
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  siege_remaining_seconds: 15846.031966765993
+  total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1897
   attacker_uid: 15
   defender_uid: 7
   army_aid: 11161
-  phase: travelling
-  eta_seconds: 5203.012839538002
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  siege_remaining_seconds: 15848.034559616004
+  total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1898
   attacker_uid: 15
   defender_uid: 7
   army_aid: 11203
-  phase: travelling
-  eta_seconds: 5204.013589216993
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1899
-  attacker_uid: 0
-  defender_uid: 25
-  army_aid: 11734
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 5826.643363199997
-  total_siege_seconds: 6420.0
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 15849.036220431997
+  total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1900
@@ -8863,7 +8493,7 @@ attacks:
   defender_uid: 4
   army_aid: 11735
   phase: travelling
-  eta_seconds: 15019.972455355994
+  eta_seconds: 8444.023928746989
   total_eta_seconds: 16200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -8873,33 +8503,132 @@ attacks:
   attacker_uid: 0
   defender_uid: 22
   army_aid: 11736
-  phase: travelling
-  eta_seconds: 373.71631768699444
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 900.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  siege_remaining_seconds: 218.52999251098663
+  total_siege_seconds: 6420.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1902
   attacker_uid: 0
   defender_uid: 24
   army_aid: 11737
-  phase: travelling
-  eta_seconds: 139.72505371599982
+  phase: in_battle
+  eta_seconds: 0.0
   total_eta_seconds: 660.0
   siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
+  total_siege_seconds: 6420.0
   is_spy: false
   army_name_override: ''
 - attack_id: 1903
   attacker_uid: 0
   defender_uid: 21
   army_aid: 11738
-  phase: travelling
-  eta_seconds: 734.798824448997
+  phase: in_siege
+  eta_seconds: 0.0
   total_eta_seconds: 900.0
+  siege_remaining_seconds: 2379.0348158069974
+  total_siege_seconds: 8220.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1904
+  attacker_uid: 13
+  defender_uid: 7
+  army_aid: 11117
+  phase: travelling
+  eta_seconds: 666.103789566987
+  total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1905
+  attacker_uid: 13
+  defender_uid: 9
+  army_aid: 10345
+  phase: travelling
+  eta_seconds: 709.156301303985
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1908
+  attacker_uid: 0
+  defender_uid: 22
+  army_aid: 11741
+  phase: travelling
+  eta_seconds: 4435.192721354004
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1909
+  attacker_uid: 0
+  defender_uid: 17
+  army_aid: 11742
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 450.0
+  siege_remaining_seconds: 9605.026864280997
+  total_siege_seconds: 11820.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1911
+  attacker_uid: 0
+  defender_uid: 15
+  army_aid: 11744
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 330.0
+  siege_remaining_seconds: 11841.528733853993
+  total_siege_seconds: 13620.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1912
+  attacker_uid: 28
+  defender_uid: 22
+  army_aid: 11743
+  phase: travelling
+  eta_seconds: 1606.2836843620025
+  total_eta_seconds: 3600.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1913
+  attacker_uid: 0
+  defender_uid: 19
+  army_aid: 11745
+  phase: travelling
+  eta_seconds: 2094.837693529
+  total_eta_seconds: 3600.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1914
+  attacker_uid: 0
+  defender_uid: 18
+  army_aid: 11746
+  phase: travelling
+  eta_seconds: 11455.292441501006
+  total_eta_seconds: 12600.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1915
+  attacker_uid: 0
+  defender_uid: 23
+  army_aid: 11747
+  phase: in_battle
+  eta_seconds: 0.0
+  total_eta_seconds: 900.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 6420.0
   is_spy: false
   army_name_override: ''
 battles: []
