@@ -10,5 +10,7 @@ egg
 python_server/replays
 python_server/states
 certs/
-vapid_private.pem
-vapid_public.pem
+*.pem
+*.crt
+*.csr
+*.key
