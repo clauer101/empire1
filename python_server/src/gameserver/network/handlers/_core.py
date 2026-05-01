@@ -23,15 +23,32 @@ from __future__ import annotations
 import logging
 import time
 import asyncio
-from collections import deque
 from typing import Any, Callable, Iterable, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from gameserver.engine.battle_service import BattleService
     from gameserver.main import Services
+    from gameserver.models.battle import BattleState
+    from gameserver.util.events import (
+        AttackPhaseChanged,
+        BattleObserverBroadcast,
+        BattleStartRequested,
+        ItemCompleted,
+        SpyArrived,
+    )
 
 from gameserver.models.messages import GameMessage, MapSaveRequest
 from gameserver.models.attack import AttackPhase, Attack
 from gameserver.util import effects as fx
+from gameserver.network.handlers.social import (  # noqa: F401 — social domain re-export
+    handle_notification_request,
+    handle_user_message,
+    handle_timeline_request,
+    handle_userinfo_request,
+    handle_hall_of_fame,
+    handle_preferences_request,
+    handle_change_preferences,
+)
 
 log = logging.getLogger(__name__)
 
@@ -828,8 +845,8 @@ def _build_spy_report(defender, svc) -> tuple[str, dict]:
     data = {
         "era": era_label,
         "era_idx": era_idx,
-        "structures": [{"name": n, "upgrades": l} for n, l in sorted(structures)],
-        "critters": [{"name": n, "upgrades": l} for n, l in sorted(critters)],
+        "structures": [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)],
+        "critters": [{"name": n, "upgrades": lvl} for n, lvl in sorted(critters)],
     }
     return text, data
 
@@ -1298,8 +1315,7 @@ async def _send_battle_setup_to_observer(attack: Attack, observer_uid: int) -> N
         structures_dict = dict(defender_empire.structures)
     
     # Also load structures from hex_map tiles (for backwards compatibility)
-    from gameserver.models.structure import Structure, structure_from_item
-    from gameserver.models.hex import HexCoord
+    from gameserver.models.structure import structure_from_item
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
     for tile_key, tile_val in tiles.items():
@@ -1498,18 +1514,8 @@ async def handle_battle_next_wave(
 
 # ===================================================================
 # Social / Messaging, User Info, Hall of Fame, Preferences
-# — moved to handlers/social.py (Strangler Fig, T3.1)
+# — moved to handlers/social.py (Strangler Fig, T3.1); re-exported at top
 # ===================================================================
-
-from gameserver.network.handlers.social import (  # noqa: F401
-    handle_notification_request,
-    handle_user_message,
-    handle_timeline_request,
-    handle_userinfo_request,
-    handle_hall_of_fame,
-    handle_preferences_request,
-    handle_change_preferences,
-)
 
 
 # ===================================================================
@@ -2333,8 +2339,6 @@ async def handle_buy_item_upgrade(
     if empire is None:
         return {"success": False, "error": f"No empire found for uid {sender_uid}"}
 
-    gc = svc.empire_service._gc
-
     # Validate stat
     valid_structure_stats = {"damage", "range", "reload", "effect_duration", "effect_value"}
     valid_critter_stats   = {"health", "speed", "armour"}
@@ -2395,15 +2399,10 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict
 
     Returns list of newly added SIDs.
     """
-    from gameserver.models.structure import Structure, structure_from_item
+    from gameserver.models.structure import structure_from_item
     from gameserver.models.hex import HexCoord
 
     NON_STRUCTURE = {"empty", "path", "spawnpoint", "castle", "blocked", "void"}
-
-    # Build lookup: (q, r) → existing Structure
-    pos_to_struct: dict[tuple[int, int], Structure] = {
-        (s.position.q, s.position.r): s for s in battle.structures.values()
-    }
 
     # Build lookup: (q, r) → tile_value for all structure tiles in new map
     new_pos_types: dict[tuple[int, int], tuple[str, str]] = {}
@@ -3000,7 +2999,7 @@ def _create_battle_start_handler() -> Callable:
     """
     async def _async_create_battle(event: "BattleStartRequested") -> None:
         """Async wrapper for the actual battle creation logic."""
-        from gameserver.engine.battle_service import BattleService, find_hex_path
+        from gameserver.engine.battle_service import BattleService
         from gameserver.models.battle import BattleState
         
         global _next_bid
@@ -3063,7 +3062,7 @@ def _create_battle_start_handler() -> Callable:
             structures_dict = dict(defender_empire.structures)
         
         # Also load structures from hex_map tiles (for backwards compatibility)
-        from gameserver.models.structure import Structure, structure_from_item
+        from gameserver.models.structure import structure_from_item
         from gameserver.models.hex import HexCoord
         structure_sid = 1
         items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
@@ -3204,7 +3203,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     Args:
         event: BattleStartRequested event with attack_id, attacker_uid, defender_uid, army_aid
     """
-    from gameserver.engine.battle_service import BattleService, find_hex_path
+    from gameserver.engine.battle_service import BattleService
     from gameserver.models.battle import BattleState
     
     global _next_bid
@@ -3267,7 +3266,7 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
         structures_dict = dict(defender_empire.structures)
     
     # Also load structures from hex_map tiles (for backwards compatibility)
-    from gameserver.models.structure import Structure, structure_from_item
+    from gameserver.models.structure import structure_from_item
     from gameserver.models.hex import HexCoord
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}

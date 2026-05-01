@@ -51,10 +51,9 @@ Every outcome is logged as::
 from __future__ import annotations
 
 import logging
-import math
 import random
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -486,7 +485,6 @@ class AIService:
             return None
 
         from gameserver.models.army import Army, CritterWave
-        from gameserver.util import effects as fx
 
         completed_all: set[str] = {
             iid for iid, r in {**empire.buildings, **empire.knowledge}.items() if r == 0.0

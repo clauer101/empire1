@@ -20,8 +20,6 @@ from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.attack_service import AttackService
 from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.models.empire import Empire
-from gameserver.models.hex import HexCoord
-from gameserver.models.structure import Structure
 from gameserver.util.events import EventBus
 
 

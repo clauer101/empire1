@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import math
 import random
 import time
 from collections import deque
@@ -918,7 +917,6 @@ class BattleService:
             attacker_empires: Dict of attacker UID -> Empire object.
             defender_empire: The defending Empire object.
         """
-        from gameserver.models.empire import Empire
         
         # Transfer losses from defender
         for resource_key, amount in battle.defender_losses.items():

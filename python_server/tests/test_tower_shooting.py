@@ -1,6 +1,5 @@
 """Test tower shooting mechanics."""
 
-import pytest
 from gameserver.engine.battle_service import BattleService
 from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter

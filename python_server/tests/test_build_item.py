@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from gameserver.models.empire import Empire
 from gameserver.models.items import ItemDetails, ItemType

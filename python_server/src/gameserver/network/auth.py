@@ -71,7 +71,7 @@ class AuthService:
             await self._db.update_password_hash(user["uid"], new_hash)
             log.info("Upgraded password hash to argon2 for: %s", username)
         log.info("Login success: %s (uid=%d)", username, user["uid"])
-        return user["uid"]
+        return int(user["uid"])
 
     async def signup(
         self,

@@ -10,7 +10,6 @@ Fix locations:
   - state_load.py: auto-reset spent waves on server startup (_deserialize_critter_wave)
 """
 
-import pytest
 from gameserver.engine.battle_service import BattleService
 from gameserver.models.battle import BattleState
 from gameserver.models.empire import Empire

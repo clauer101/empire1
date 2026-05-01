@@ -1,8 +1,6 @@
 """Tests for battle crash recovery and observer set mutation safety."""
 
-import asyncio
 import pytest
-from unittest.mock import AsyncMock
 
 from gameserver.engine.battle_service import BattleService
 from gameserver.models.battle import BattleState

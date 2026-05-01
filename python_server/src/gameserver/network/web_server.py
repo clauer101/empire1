@@ -17,7 +17,6 @@ import yaml
 from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
-from starlette.datastructures import MutableHeaders
 
 log = logging.getLogger(__name__)
 

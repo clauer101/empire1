@@ -1,6 +1,6 @@
 """Unit tests for knowledge theft logic in _compute_and_apply_loot."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import pytest
 
 from gameserver.models.empire import Empire
@@ -133,10 +133,6 @@ class TestAiDefeatNoKnowledgeSteal:
         """_compute_and_apply_loot is only called on attacker win (battle.defender_won=False).
         On AI defeat (defender wins) the function is never invoked — verified here by
         confirming the call guard in _run_battle_task and that knowledge is untouched."""
-        items = {"TECH": _make_item("TECH", effort=100.0)}
-        svc = _make_svc(items)
-
-        import gameserver.network.handlers as h
         battle = _make_battle(attacker_uid=AI_UID, defender_uid=1)
         battle.defender.knowledge = {"TECH": 30.0}
         original = dict(battle.defender.knowledge)

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -17,7 +15,7 @@ from gameserver.models.empire import Empire
 from gameserver.models.hex import HexCoord
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
-from gameserver.persistence.state_load import RestoredState, load_state
+from gameserver.persistence.state_load import load_state
 from gameserver.persistence.state_save import save_state
 
 

@@ -29,7 +29,7 @@ class TestEventBus:
     def test_off_removes_handler(self):
         bus = EventBus()
         received = []
-        handler = lambda e: received.append(1)
+        def handler(e): received.append(1)  # noqa: E704
         bus.on(CritterDied, handler)
         bus.off(CritterDied, handler)
         bus.emit(CritterDied(critter_id=1))

@@ -7,9 +7,8 @@ complete battle scenarios without timing dependencies.
 import pytest
 from gameserver.engine.battle_service import BattleService
 from gameserver.models.battle import BattleState
-from gameserver.models.critter import Critter, DamageType
+from gameserver.models.critter import Critter
 from gameserver.models.structure import Structure
-from gameserver.models.shot import Shot
 from gameserver.models.hex import HexCoord
 from gameserver.models.empire import Empire
 from gameserver.models.army import Army, CritterWave

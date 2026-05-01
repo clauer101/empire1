@@ -15,7 +15,7 @@ from typing import Any, Optional
 import yaml
 
 from gameserver.models.army import Army, CritterWave, SpyArmy
-from gameserver.models.attack import Attack, AttackPhase
+from gameserver.models.attack import Attack
 from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
 from gameserver.models.empire import Empire

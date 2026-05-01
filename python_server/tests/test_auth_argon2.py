@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 
 from gameserver.network.auth import AuthService, _hash_password, _verify_password
 

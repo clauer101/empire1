@@ -141,7 +141,6 @@ def create_app(services: "Services") -> FastAPI:
         try:
             await services.database.get_user("__health_check__")
         except Exception as exc:
-            from fastapi import Response
             from fastapi.responses import JSONResponse
             return JSONResponse({"status": "not_ready", "reason": f"db: {exc}"}, status_code=503)
         # Game loop ticked recently?
@@ -216,7 +215,8 @@ def create_app(services: "Services") -> FastAPI:
     def _is_recently_active(last_seen_str: str, threshold_s: int) -> bool:
         if not last_seen_str:
             return False
-        import time, datetime
+        import time
+        import datetime
         try:
             dt = datetime.datetime.fromisoformat(last_seen_str)
             if dt.tzinfo is None:
@@ -452,7 +452,8 @@ def create_app(services: "Services") -> FastAPI:
     @app.post("/api/battle-feedback")
     async def battle_feedback(body: BattleFeedbackRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Log AI battle difficulty feedback to a file."""
-        import datetime, pathlib
+        import datetime
+        import pathlib
         text = f"[{body.rating}] Army: {body.army_name} (reported by UID {uid})"
         ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         log_path = pathlib.Path(__file__).parent.parent.parent.parent / "battle_feedback.log"
@@ -762,7 +763,6 @@ def create_app(services: "Services") -> FastAPI:
         return {"buildings": buildings, "knowledge": knowledge}
 
     # ── Era mapping derived from YAML section comments ──────────────────
-    import re as _re
     from pathlib import Path as _Path
 
     from gameserver.util.eras import ERA_ORDER as _ERA_KEYS, ERA_LABELS_DE as _ERA_LABELS_DE, ERA_LABELS_EN as _ERA_LABELS_EN
@@ -861,7 +861,7 @@ def create_app(services: "Services") -> FastAPI:
                     }
         return {"structures": result}
 
-    def _update_effects_in_yaml(yaml_path: "Path", iid: str, new_effects: dict[str, Any]) -> bool:
+    def _update_effects_in_yaml(yaml_path: Any, iid: str, new_effects: dict[str, Any]) -> bool:
         """Replace the `effects:` line for *iid* in a YAML file, preserving inline comments."""
         from pathlib import Path as _Path
         text = _Path(yaml_path).read_text()
@@ -1007,7 +1007,6 @@ def create_app(services: "Services") -> FastAPI:
     async def admin_map_overview(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
         """Hex-map + power stats for all fixture empires and live empires."""
         import yaml as _yaml
-        import math as _math
         from pathlib import Path as _Path
         from collections import Counter as _Cnt, deque as _dq2
 

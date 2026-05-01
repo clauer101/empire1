@@ -6,10 +6,7 @@ New subscriptions must silently evict the UID from all previous ones.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
 
-import pytest
 
 from gameserver.network.handlers import _evict_observer_from_all
 from gameserver.models.battle import BattleState

@@ -22,8 +22,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gameserver.engine.upgrade_provider import UpgradeProvider
+    from gameserver.loaders.game_config_loader import GameConfig
     from gameserver.models.empire import Empire
-    from gameserver.models.items import ItemDetails, ItemType
 
 
 # ---------------------------------------------------------------------------

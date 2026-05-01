@@ -24,7 +24,7 @@ import sys
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from gameserver.engine.ai_service import AIService
 from gameserver.engine.army_service import ArmyService
@@ -37,13 +37,12 @@ from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.loaders.ai_loader import load_ai_waves
 from gameserver.loaders.item_loader import load_items
 from gameserver.loaders.map_loader import load_map
-from gameserver.models.items import ItemDetails
 from gameserver.models.map import HexMap
 from gameserver.network.auth import AuthService
 from gameserver.network.router import Router
 from gameserver.network.server import Server
 from gameserver.persistence.database import Database
-from gameserver.persistence.state_load import RestoredState, load_state
+from gameserver.persistence.state_load import load_state
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire

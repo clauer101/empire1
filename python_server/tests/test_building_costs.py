@@ -62,11 +62,8 @@ class TestBuildingCostDeduction:
 
     def test_cost_not_deducted_on_resume(self, service, empire_with_gold):
         """Costs should NOT be deducted when resuming a paused building."""
-        initial_gold = empire_with_gold.resources["gold"]
-        
         # Start building FIRE_PLACE (costs 20 gold)
         service.build_item(empire_with_gold, "FIRE_PLACE")
-        gold_after_first = empire_with_gold.resources["gold"]
         
         # Simulate pausing by adding gold
         empire_with_gold.resources["gold"] += 100  # Add extra gold

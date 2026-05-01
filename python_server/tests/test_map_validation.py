@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import deque
 from typing import Optional
 
-import pytest
 
 
 def _has_path_from_spawn_to_castle(tiles: dict[str, str]) -> bool:
@@ -177,8 +176,6 @@ class TestPathfinding:
     def test_hexagon_connectivity(self) -> None:
         """Test 6-connected hexagon neighbors."""
         tiles = {
-            "0,0": "spawnpoint",
-            "0,1": "path",       # SE
             "0,0": "spawnpoint",
             "0,1": "castle",
         }

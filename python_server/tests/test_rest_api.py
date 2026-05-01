@@ -6,7 +6,6 @@ REST endpoints end-to-end without starting a real server.
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock
 

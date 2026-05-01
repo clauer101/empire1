@@ -328,9 +328,6 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
           Once BattleService supports resumption, add a
           ``resume_battle(state: BattleState)`` method.
     """
-    attacker_dict = d.get("attacker")
-    attacker = _deserialize_army(attacker_dict) if attacker_dict else None
-
     critters: dict[int, Critter] = {}
     for cid_str, c_dict in d.get("critters", {}).items():
         critters[int(cid_str)] = _deserialize_critter(c_dict)

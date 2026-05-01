@@ -1,14 +1,10 @@
 """Test that IN_BATTLE attacks loaded from persisted state trigger correctly."""
 
 import pytest
-from unittest.mock import MagicMock, patch
-import asyncio
 
 from gameserver.engine.attack_service import AttackService
 from gameserver.models.attack import Attack, AttackPhase
-from gameserver.models.army import Army, CritterWave
-from gameserver.models.empire import Empire
-from gameserver.util.events import EventBus, BattleStartRequested
+from gameserver.util.events import EventBus
 
 
 @pytest.mark.asyncio

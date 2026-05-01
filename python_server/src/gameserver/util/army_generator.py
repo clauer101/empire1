@@ -6,7 +6,6 @@ and critters.yaml era groupings.
 
 from __future__ import annotations
 
-import re
 import random
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -111,7 +110,8 @@ def generate_army(
     rng = _mulberry32(seed)
 
     def rand_int(lo: int, hi: int) -> int:
-        lo = max(0, lo); hi = max(lo, hi)
+        lo = max(0, lo)
+        hi = max(lo, hi)
         return lo + int(rng() * (hi - lo + 1))
 
     def make_wave(pool: list[str]) -> dict:
@@ -127,9 +127,12 @@ def generate_army(
     num_main  = num_waves - num_prev - num_next
 
     waves: list[dict] = []
-    for _ in range(num_main): waves.append(make_wave(main_pool))
-    for _ in range(num_prev):  waves.append(make_wave(prev_pool or main_pool))
-    for _ in range(num_next):  waves.append(make_wave(next_pool or main_pool))
+    for _ in range(num_main):
+        waves.append(make_wave(main_pool))
+    for _ in range(num_prev):
+        waves.append(make_wave(prev_pool or main_pool))
+    for _ in range(num_next):
+        waves.append(make_wave(next_pool or main_pool))
 
     # Fisher-Yates shuffle
     for i in range(len(waves) - 1, 0, -1):

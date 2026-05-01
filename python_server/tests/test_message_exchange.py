@@ -7,16 +7,14 @@ Server._handle_message() flow with mock WebSocket connections.
 
 from __future__ import annotations
 
-import asyncio
 import json
-from dataclasses import dataclass, field
 from typing import Any, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from gameserver.models.empire import Empire
-from gameserver.models.army import Army, SpyArmy
+from gameserver.models.army import Army
 from gameserver.models.hex import HexCoord
 from gameserver.models.structure import Structure
 from gameserver.engine.empire_service import EmpireService
@@ -742,8 +740,6 @@ class TestServerSessions:
         """Guest UIDs start at -1 and decrement."""
         assert self.server._next_guest_uid == -1
         # Simulate two guests connecting
-        ws1 = FakeWebSocket()
-        ws2 = FakeWebSocket()
         uid1 = self.server._next_guest_uid
         self.server._next_guest_uid -= 1
         uid2 = self.server._next_guest_uid
@@ -790,7 +786,7 @@ class TestServerSessions:
         assert self.server.get_uid(ws_desktop) == 2
 
         # iOS disconnects — unregister must NOT kill desktop's session
-        removed = self.server.unregister_session(ws_ios)
+        self.server.unregister_session(ws_ios)
         # The UID returned should still be 2 (from the ws_to_uid map)
         # but _connections[2] must still point to ws_desktop
         assert 2 in self.server.connected_uids

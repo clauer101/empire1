@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from gameserver.loaders.item_loader import load_items, _CATEGORIES
+from gameserver.loaders.item_loader import load_items
 from gameserver.models.items import ItemDetails, ItemType
 
 # Path to the real config directory

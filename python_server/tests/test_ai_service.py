@@ -1,11 +1,10 @@
 """Tests for engine/ai_service.py — AI attack heuristics and adaptation."""
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
-from gameserver.engine.ai_service import AIService, AIParams, AI_UID, _params_summary
+from gameserver.engine.ai_service import AIService, AIParams, _params_summary
 from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.loaders.game_config_loader import GameConfig
 from gameserver.models.empire import Empire

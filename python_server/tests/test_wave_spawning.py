@@ -1,6 +1,5 @@
 """Tests for wave spawning."""
 
-import pytest
 from gameserver.models.army import Army, CritterWave
 from gameserver.engine.battle_service import BattleService
 

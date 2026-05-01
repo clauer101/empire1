@@ -8,7 +8,6 @@ from gameserver.models.empire import Empire
 from gameserver.models.messages import MapSaveRequest
 from gameserver.network.handlers import handle_map_save_request
 from gameserver.main import Services
-from gameserver.network.handlers import _services as handlers_services
 
 
 @pytest.fixture

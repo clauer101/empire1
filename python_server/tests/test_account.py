@@ -127,7 +127,7 @@ async def test_signup_duplicate_username(auth):
 
 @pytest.mark.asyncio
 async def test_signup_default_empire_name(auth, db):
-    uid = await auth.signup("player5", "pass1234", "p5@test.de")
+    await auth.signup("player5", "pass1234", "p5@test.de")
     user = await db.get_user("player5")
     assert user["empire_name"] == "player5's Empire"
 

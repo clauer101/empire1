@@ -1,7 +1,7 @@
 """Tests for critter movement and damage."""
 
 import pytest
-from gameserver.models.critter import Critter, DamageType
+from gameserver.models.critter import Critter
 from gameserver.models.hex import HexCoord
 
 

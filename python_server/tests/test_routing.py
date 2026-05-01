@@ -1,6 +1,5 @@
 """Tests for message routing."""
 
-import pytest
 from gameserver.models.messages import (
     AuthRequest, NewStructureRequest, parse_message, MESSAGE_TYPES,
 )

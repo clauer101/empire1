@@ -20,13 +20,9 @@ class TestShot:
 class TestShotFlightTime:
     def test_flight_time_from_distance(self):
         """Flight time = hex_dist / shot_speed * 1000 ms."""
-        hex_dist = 3
-        shot_speed = 6.0  # hex/s
-        expected_ms = 3 / 6.0 * 1000  # = 500ms
+        expected_ms = 3 / 6.0 * 1000  # hex_dist=3, shot_speed=6 hex/s → 500ms
         assert expected_ms == pytest.approx(500.0)
 
     def test_flight_time_adjacent(self):
-        hex_dist = 1
-        shot_speed = 10.0
-        expected_ms = 1 / 10.0 * 1000
+        expected_ms = 1 / 10.0 * 1000  # hex_dist=1, shot_speed=10 hex/s → 100ms
         assert expected_ms == pytest.approx(100.0)
