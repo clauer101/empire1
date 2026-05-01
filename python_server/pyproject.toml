@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.100",
     "uvicorn>=0.20",
     "pyjwt>=2.0",
+    "argon2-cffi>=23.0",
 ]
 
 [project.optional-dependencies]

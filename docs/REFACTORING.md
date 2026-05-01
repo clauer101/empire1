@@ -72,10 +72,10 @@ Every task verification draws from this canonical command set. Memorize them:
 
 ```bash
 # Lint
-ruff check python_server/
+rtk ruff check python_server/
 
 # Type check
-mypy python_server/src
+rtk mypy python_server/src
 
 # Run all tests (full suite, ~1-2 min)
 ./run_tests.sh
@@ -95,7 +95,7 @@ mypy python_server/src
 ./restart.sh gameserver stop
 
 # Probe REST
-curl -fsS http://localhost:8000/api/admin/status
+rtk curl -fsS http://localhost:8000/api/admin/status
 
 # Probe WebSocket (requires wscat: npm i -g wscat)
 wscat -c ws://localhost:8765
@@ -253,11 +253,11 @@ later phases assume CI is green.
   5. Set `JWT_SECRET` in your local `.env` and source it before restarting.
 - **Verification**:
   ```bash
-  grep -n "change-in-prod" python_server/src/gameserver/network/jwt_auth.py   # → no match
-  unset JWT_SECRET && python -c "from gameserver.network import jwt_auth"     # → KeyError
+  rtk grep -n "change-in-prod" python_server/src/gameserver/network/jwt_auth.py   # → no match
+  unset JWT_SECRET && python -c "from gameserver.network import jwt_auth"          # → KeyError
   export JWT_SECRET=$(python -c "import secrets; print(secrets.token_hex(32))")
   ./run_tests.sh tests/  # all green
-  ./restart.sh gameserver && curl -fsS http://localhost:8000/  # 200
+  ./restart.sh gameserver && rtk curl -fsS http://localhost:8000/  # 200
   ```
 - **Done When**:
   - No fallback string in source.
@@ -293,8 +293,8 @@ later phases assume CI is green.
      `VAPID_PUBLIC_KEY_PATH` to `.env.example`.
 - **Verification**:
   ```bash
-  git ls-files | grep -E '\.(pem|crt|csr)$'   # → no matches
-  git log --all --full-history -- '*.pem' '*.crt'   # if path (a): no matches
+  rtk git ls-files | rtk grep -E '\.(pem|crt|csr)$'       # → no matches
+  rtk git log --all --full-history -- '*.pem' '*.crt'      # if path (a): no matches
   ```
 - **Done When**:
   - No cert/key files tracked.
@@ -335,9 +335,9 @@ later phases assume CI is green.
   5. Add `SITE_URL=http://localhost:8000` and `SITE_NAME="Relics & Rockets"` to `.env.example`.
 - **Verification**:
   ```bash
-  grep -rn "relicsnrockets.io" web/   # → no matches in source HTML/JSON; OK in /assets binary refs
+  rtk grep -rn "relicsnrockets.io" web/   # → no matches in source HTML/JSON; OK in /assets binary refs
   SITE_URL=http://staging.example.com ./restart.sh webserver
-  curl -s http://localhost:8000/ | grep "staging.example.com"   # → matches
+  rtk curl -s http://localhost:8000/ | rtk grep "staging.example.com"   # → matches
   ./run_tests.sh
   ```
 - **Done When**:
@@ -372,8 +372,8 @@ later phases assume CI is green.
      argon2; double-verification is a no-op.
 - **Verification**:
   ```bash
-  ruff check python_server/
-  mypy python_server/src
+  rtk ruff check python_server/
+  rtk mypy python_server/src
   ./run_tests.sh --match=auth
   ./run_tests.sh tests/test_account.py
   ```
@@ -403,7 +403,7 @@ later phases assume CI is green.
 - **Verification**:
   ```bash
   # Push a branch with the workflow:
-  git push -u origin refactor/T1.5-ci
+  rtk git push -u origin refactor/T1.5-ci
   gh pr create
   gh pr checks   # → all green
   ```
@@ -439,8 +439,8 @@ later phases assume CI is green.
   ```bash
   docker compose build
   docker compose up -d
-  curl -fsS http://localhost:8000/   # 200
-  docker compose exec gameserver whoami   # → app (non-root)
+  rtk curl -fsS http://localhost:8000/   # 200
+  docker compose exec gameserver whoami  # → app (non-root)
   docker compose down
   ```
 - **Done When**:
@@ -466,7 +466,7 @@ later phases assume CI is green.
 - **Verification**:
   ```bash
   pre-commit run --all-files
-  echo "AKIAIOSFODNN7EXAMPLE" >> /tmp/leak.py && git add /tmp/leak.py
+  echo "AKIAIOSFODNN7EXAMPLE" >> /tmp/leak.py && rtk git add /tmp/leak.py
   pre-commit run   # → detect-secrets blocks
   ```
 - **Done When**:
@@ -498,7 +498,7 @@ later phases assume CI is green.
 - **Verification**:
   ```bash
   cd python_server && uv sync --frozen
-  uv pip list --frozen | head
+  uv pip list --frozen | rtk head
   ./run_tests.sh
   ```
 - **Done When**:
@@ -545,7 +545,7 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
 - **Verification**:
   ```bash
   ./restart.sh gameserver
-  ls -la gameserver.log*   # only one file initially
+  rtk ls -la gameserver.log*   # only one file initially
   # After midnight (or trigger via test): gameserver.log.<date> appears
   ```
 - **Done When**:
@@ -579,8 +579,8 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
 - **Verification**:
   ```bash
   LOG_FORMAT=json ./restart.sh gameserver
-  curl -fsS -H "X-Request-ID: test-123" http://localhost:8000/api/admin/status
-  grep "test-123" gameserver.log   # → JSON line with request_id field
+  rtk curl -fsS -H "X-Request-ID: test-123" http://localhost:8000/api/admin/status
+  rtk grep "test-123" gameserver.log   # → JSON line with request_id field
   ```
 - **Done When**:
   - JSON logs in prod, console logs in dev.
@@ -604,8 +604,8 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
   3. Both endpoints are unauthenticated; document that they leak only liveness.
 - **Verification**:
   ```bash
-  curl -fsS http://localhost:8000/health        # 200 {"status":"ok"}
-  curl -fsS http://localhost:8000/health/ready  # 200 with checks
+  rtk curl -fsS http://localhost:8000/health        # 200 {"status":"ok"}
+  rtk curl -fsS http://localhost:8000/health/ready  # 200 with checks
   # Stop the game loop and confirm /health/ready returns 503.
   ```
 - **Done When**: Both endpoints respond as specified, unauthenticated.
@@ -630,7 +630,7 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
   3. Add a tiny middleware that records request duration and status by route.
 - **Verification**:
   ```bash
-  curl -fsS http://localhost:8000/metrics | head -30
+  rtk curl -fsS http://localhost:8000/metrics | head -30
   # Hit some endpoints, then re-query — counters increase.
   ```
 - **Done When**:
@@ -662,8 +662,8 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
 - **Verification**:
   ```bash
   cd python_server && alembic upgrade head    # no-op on existing db
-  rm -f /tmp/test.db && DATABASE_URL=sqlite:////tmp/test.db alembic upgrade head
-  sqlite3 /tmp/test.db ".schema" | diff - <(sqlite3 gameserver.db ".schema")  # → empty diff
+  rtk rm -f /tmp/test.db && DATABASE_URL=sqlite:////tmp/test.db alembic upgrade head
+  rtk sqlite3 /tmp/test.db ".schema" | diff - <(rtk sqlite3 gameserver.db ".schema")  # → empty diff
   ```
 - **Done When**:
   - Baseline migration creates the current schema in a fresh DB.
@@ -688,9 +688,9 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
   3. Document cron entry: `0 * * * * /app/scripts/backup.sh`.
 - **Verification**:
   ```bash
-  ./scripts/backup.sh && ls /backups/
+  ./scripts/backup.sh && rtk ls /backups/
   # Restore test:
-  sqlite3 /tmp/restored.db ".restore /backups/gameserver-<latest>.db"
+  rtk sqlite3 /tmp/restored.db ".restore /backups/gameserver-<latest>.db"
   ```
 - **Done When**:
   - Hourly backup script is executable.
@@ -717,8 +717,8 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
   3. Add tests that exercise each branch where reasonable.
 - **Verification**:
   ```bash
-  ruff check python_server/   # ruff has BLE rules — enable if not already
-  grep -rn "except Exception:" python_server/src/   # → only the audited ones, with comments
+  rtk ruff check python_server/   # ruff has BLE rules — enable if not already
+  rtk grep -rn "except Exception:" python_server/src/   # → only the audited ones, with comments
   ./run_tests.sh
   ```
 - **Done When**:
@@ -777,7 +777,7 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
   3. Return `429 Too Many Requests` with Retry-After.
 - **Verification**:
   ```bash
-  for i in {1..10}; do curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/auth/login -X POST -d '{"username":"x","password":"x"}'; done
+  for i in {1..10}; do rtk curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/auth/login -X POST -d '{"username":"x","password":"x"}'; done
   # → first 5 = 401, next 5 = 429
   ```
 - **Done When**:
@@ -809,7 +809,7 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
      (login, build, defend, attack).
 - **Verification**:
   ```bash
-  curl -sI http://localhost:8000/ | grep -E "Content-Security|X-Content|Referrer|Strict-Transport"
+  rtk curl -sI http://localhost:8000/ | rtk grep -E "Content-Security|X-Content|Referrer|Strict-Transport"
   ```
 - **Done When**:
   - Headers present on every HTML response.
@@ -881,8 +881,8 @@ mechanical).
   imports all and calls them.
 - **Verification**:
   ```bash
-  wc -l python_server/src/gameserver/network/handlers.py   # < 200 lines
-  wc -l python_server/src/gameserver/network/handlers/*.py # each < 1000
+  rtk wc -l python_server/src/gameserver/network/handlers.py   # < 200 lines
+  rtk wc -l python_server/src/gameserver/network/handlers/*.py # each < 1000
   ./run_tests.sh   # full suite green
   ./restart.sh gameserver
   # Smoke test the frontend: login, build, attack — all work.
@@ -911,9 +911,9 @@ mechanical).
   that mounts each router with `app.include_router(...)`.
 - **Verification**:
   ```bash
-  wc -l python_server/src/gameserver/network/rest_api.py   # < 300
-  curl -fsS http://localhost:8000/health
-  curl -fsS http://localhost:8000/openapi.json | jq '.paths | keys | length'
+  rtk wc -l python_server/src/gameserver/network/rest_api.py   # < 300
+  rtk curl -fsS http://localhost:8000/health
+  rtk curl -fsS http://localhost:8000/openapi.json | jq '.paths | keys | length'
   # Path count unchanged from before split.
   ```
 - **Done When**:
@@ -940,7 +940,7 @@ mechanical).
   (`export function ...`); the thin entrypoint imports them.
 - **Verification**:
   ```bash
-  wc -l web/js/views/defense.js   # < 200
+  rtk wc -l web/js/views/defense.js   # < 200
   ./restart.sh webserver
   # Manual: open the defense view, place a tower, fight a wave — no regressions.
   ```
@@ -973,7 +973,7 @@ mechanical).
   3. Run a visual diff on every page (Playwright snapshots if T4.3 done).
 - **Verification**:
   ```bash
-  wc -l web/css/_*.css web/css/views/_*.css
+  rtk wc -l web/css/_*.css web/css/views/_*.css
   # Manual: every view looks identical to before the split.
   ```
 - **Done When**:
@@ -1022,9 +1022,9 @@ makes bundling cleaner).
 - **Verification**:
   ```bash
   cd web && npm install && npm run build
-  ls dist/   # bundled output
+  rtk ls dist/   # bundled output
   BUILD_MODE=production ./restart.sh webserver
-  curl -fsS http://localhost:8000/   # 200, references hashed asset names
+  rtk curl -fsS http://localhost:8000/   # 200, references hashed asset names
   ```
 - **Done When**:
   - `npm run build` produces a hashed `dist/` bundle.
@@ -1054,7 +1054,7 @@ makes bundling cleaner).
 - **Verification**:
   ```bash
   npm run assets:optimize
-  ls -la web/assets/*.webp   # exists
+  rtk ls -la web/assets/*.webp   # exists
   npm run build
   # Lighthouse score on dist/index.html: image weight reduced
   ```
@@ -1199,21 +1199,21 @@ makes bundling cleaner).
 ```bash
 # 1. Snapshot
 ./restart.sh gameserver stop
-cp state.yaml state.yaml.bak
+rtk cp state.yaml state.yaml.bak
 
 # 2. Modify on a copy
-cp state.yaml state.new.yaml
+rtk cp state.yaml state.new.yaml
 # ... transform state.new.yaml ...
 
 # 3. Verify
-yq eval '.empires | length' state.yaml
-yq eval '.empires | length' state.new.yaml   # diff sanity-checked
+rtk yq eval '.empires | length' state.yaml
+rtk yq eval '.empires | length' state.new.yaml   # diff sanity-checked
 
 # 4. Atomic swap
-mv state.new.yaml state.yaml
+rtk mv state.new.yaml state.yaml
 ./restart.sh gameserver
 # 5. Watch logs
-tail -f gameserver.log
+rtk tail -f gameserver.log
 ```
 
 ### 11.2 Adding an Env Var (one source of truth)
@@ -1245,10 +1245,10 @@ Checklist before `pip install` / `npm install`:
 Every task is one commit. Rollback is:
 
 ```bash
-git log --oneline | head     # find the SHA
-git revert <sha>             # creates an inverse commit
-./run_tests.sh               # confirm baseline
-git push
+rtk git log --oneline | rtk head     # find the SHA
+rtk git revert <sha>                 # creates an inverse commit
+./run_tests.sh                       # confirm baseline
+rtk git push
 ```
 
 If the revert itself fails (rare — split tasks shouldn't), open an issue and
@@ -1281,10 +1281,10 @@ Critical files referenced by tasks above:
 
 ```bash
 # Lint
-ruff check python_server/
+rtk ruff check python_server/
 
 # Type check
-mypy python_server/src
+rtk mypy python_server/src
 
 # Tests (full suite)
 ./run_tests.sh

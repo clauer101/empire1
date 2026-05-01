@@ -119,6 +119,15 @@ class Database:
         log.info("Created user %s (uid=%d)", username, uid)
         return uid
 
+    async def update_password_hash(self, uid: int, password_hash: str) -> None:
+        """Update the stored password hash for a user (used for lazy argon2 upgrade)."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE users SET password_hash = ? WHERE uid = ?",
+            (password_hash, uid),
+        )
+        await self._conn.commit()
+
     async def delete_user(self, username: str) -> bool:
         """Delete a user by username. Returns True if deleted."""
         assert self._conn is not None

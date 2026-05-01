@@ -29,8 +29,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 log = logging.getLogger(__name__)
 
-# Secret key — read from env or use a default (fine for dev/local game server)
-JWT_SECRET: str = os.environ.get("JWT_SECRET", "e3-game-server-secret-key-change-in-prod")
+# Required env var — raises KeyError on startup if missing (set in .env or environment)
+JWT_SECRET: str = os.environ["JWT_SECRET"]
 JWT_ALGORITHM: str = "HS256"
 JWT_EXPIRY_SECONDS: int = 12*2_592_000  # 30 days
 

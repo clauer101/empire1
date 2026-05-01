@@ -5,10 +5,12 @@ Validates credentials against the database and manages active sessions.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 from typing import TYPE_CHECKING
+
+import argon2
+from argon2.exceptions import VerifyMismatchError
 
 if TYPE_CHECKING:
     from gameserver.loaders.game_config_loader import GameConfig
@@ -17,11 +19,27 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+_hasher = argon2.PasswordHasher()
 
 
 def _hash_password(password: str) -> str:
-    """Simple SHA-256 hash (sufficient for a game server)."""
-    return hashlib.sha256(password.encode()).hexdigest()
+    return _hasher.hash(password)
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    """Verify password against stored hash.
+
+    Handles both argon2 hashes and legacy SHA-256 hex hashes.
+    Returns True if the password matches.
+    """
+    if stored.startswith("$argon2"):
+        try:
+            return _hasher.verify(stored, password)
+        except VerifyMismatchError:
+            return False
+    # Legacy SHA-256 (unsalted hex digest)
+    import hashlib
+    return hashlib.sha256(password.encode()).hexdigest() == stored
 
 
 class AuthService:
@@ -43,9 +61,15 @@ class AuthService:
         if user is None:
             log.info("Login failed — unknown user: %s", username)
             return None
-        if user["password_hash"] != _hash_password(password):
+        stored = user["password_hash"]
+        if not _verify_password(password, stored):
             log.info("Login failed — wrong password for: %s", username)
             return None
+        # Lazy upgrade: re-hash legacy SHA-256 passwords to argon2 on successful login
+        if not stored.startswith("$argon2"):
+            new_hash = _hash_password(password)
+            await self._db.update_password_hash(user["uid"], new_hash)
+            log.info("Upgraded password hash to argon2 for: %s", username)
         log.info("Login success: %s (uid=%d)", username, user["uid"])
         return user["uid"]
 
@@ -57,7 +81,6 @@ class AuthService:
         empire_name: str = "",
     ) -> int | str:
         """Create a new account. Returns UID on success, or error string."""
-        # Validate fields
         if not username or len(username) < self._min_user:
             return f"Username must be at least {self._min_user} characters"
         if len(username) > self._max_user:
@@ -69,12 +92,10 @@ class AuthService:
         if not empire_name:
             empire_name = f"{username}'s Empire"
 
-        # Check for existing user
         existing = await self._db.get_user(username)
         if existing is not None:
             return "Username already taken"
 
-        # Create user
         pw_hash = _hash_password(password)
         uid = await self._db.create_user(username, pw_hash, email, empire_name)
         log.info("Signup success: %s (uid=%d, empire=%s)", username, uid, empire_name)
