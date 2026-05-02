@@ -10,40 +10,64 @@ All UI text, labels, messages, button text, and placeholders in the codebase mus
 
 Always prefix bash commands with `rtk` for token savings (e.g. `rtk git status`, `rtk cat file`).
 
-## Commands
+## Validating Code Changes
 
-**Run all tests:**
+Run these after every backend change, in order:
+
+**1. Lint (ruff):**
+```bash
+.venv/bin/ruff check python_server/src/
+```
+
+**2. Tests:**
 ```bash
 rtk run_tests.sh
 ```
 
-**Run a single test or pattern:**
+**3. Single test or pattern:**
 ```bash
 rtk run_tests.sh --match=test_battle_service
-```
-
-**Run a specific test file** (path relative to `python_server/`, only one at a time):
-```bash
 rtk run_tests.sh tests/test_item_upgrades.py
 ```
 
-**Other test options:** `--all`, `--quick`, `--cov`, `--failfast`
+Other test options: `--all`, `--quick`, `--cov`, `--failfast`
 
-**Start/stop/restart servers:**
+**4. Pre-commit (runs ruff + mypy + detect-secrets):**
 ```bash
-./restart.sh gameserver   # Python WebSocket game server
-./restart.sh webserver    # FastAPI static file server (port 8000)
-./restart.sh gameserver stop
+.venv/bin/pre-commit run --all-files
 ```
 
-Logs: `gameserver.log`, `webserver.log`. PIDs: `.gameserver.pid`, `.webserver.pid`.
+Pre-commit runs automatically on `git commit`. Never use `--no-verify` to bypass it.
+
+## Deployment
+
+```bash
+./deploy.sh prod       # build + deploy prod
+./deploy.sh dev        # build + deploy dev
+./deploy.sh both       # build + deploy both
+./deploy.sh prod stop  # save state + stop prod
+./deploy.sh dev stop   # save state + stop dev
+```
+
+Live logs:
+```bash
+./attach.sh            # prod gameserver logs
+./attach.sh dev        # dev gameserver logs
+```
+
+State and DB are persisted in:
+- Prod: `data/prod/state.yaml`, `data/prod/gameserver.db`
+- Dev:  `data/dev/state.yaml`,  `data/dev/gameserver.db`
 
 ## Architecture
 
-This is a multiplayer tower-defense / empire-building game. Two servers run independently:
+This is a multiplayer tower-defense / empire-building game. Two servers run per environment (prod/dev):
 
-- **Game server** (`python_server/`) — Python asyncio WebSocket server. Entry: `gameserver.main:main`
+- **Game server** (`python_server/`) — Python asyncio WebSocket server + REST API (FastAPI). Entry: `gameserver.main:main`
 - **Web server** (`web/fastapi_server.py`) — FastAPI serving the SPA static files on port 8000
+
+nginx routes: API/WS → gameserver, static → webserver.  
+Prod: HTTPS on 443. Dev: HTTP on 80 only (`http://dev.relicsnrockets.io`).
 
 ### Backend (`python_server/src/gameserver/`)
 
@@ -54,13 +78,15 @@ This is a multiplayer tower-defense / empire-building game. Two servers run inde
 - `ai_service.py` — AI wave generation
 - `hex_pathfinding.py`, `upgrade_provider.py` — Map and upgrade mechanics
 
-**persistence/** — SQLite (async) via `database.py`; state serialized to/from YAML (`state_load.py`, `state_save.py`); replays stored compressed.
+**persistence/** — SQLite (async) via `database.py`; state serialized to/from YAML (`state_load.py`, `state_save.py`); replays stored compressed. Schema migrations via Alembic (`migrations/`).
 
-**network/** — WebSocket routing (`router.py`, `handlers.py`) and REST models (`rest_api.py`).
+**network/** — WebSocket routing (`router.py`, `handlers.py`) and REST API (`rest_api.py`).
 
 **loaders/** — Parse YAML configs into typed models (`game_config_loader.py`, `item_loader.py`).
 
 **models/** — Dataclasses/pydantic models for all game entities (`items.py`, etc.).
+
+**util/logging.py** — structlog setup; `LOG_FORMAT=json|console` env var controls renderer.
 
 ### Configuration (`python_server/config/`)
 
@@ -71,8 +97,6 @@ All game balance lives in YAML:
 - `artefacts.yaml`, `knowledge.yaml` — Tech tree content
 - `maps/default.yaml` — Default map
 
-Live game state: `state.yaml` (auto-saved). Restart state: `state_restart.yaml`.
-
 ### Frontend (`web/`)
 
 Single-page app, no build step. `js/app.js` + `js/router.js` form the SPA shell. Views are in `js/views/`. API calls go through `js/api.js` (WebSocket) and `js/rest.js` (HTTP).
@@ -80,7 +104,7 @@ Single-page app, no build step. `js/app.js` + `js/router.js` form the SPA shell.
 Key views: `defense.js` (tower placement + battle), `army.js` (critter wave composer), `techtree.js` (knowledge tree), `workshop.js` (item upgrades).  
 Shared UI lib: `js/lib/item_overlay.js` (item detail overlay), `js/lib/eras.js` (era constants).
 
-Developer tools are at `web/tools/` (balance tuner, effect tester, replay viewer, `status.html` live server status).
+Developer tools at `web/tools/` — `status.html` (live server status), `database.html` (user admin), balance tuner, replay viewer.
 
 ### Key Design Patterns
 

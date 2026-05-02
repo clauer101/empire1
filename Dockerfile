@@ -13,11 +13,15 @@ RUN uv sync --frozen --no-dev
 # Copy source
 COPY python_server/src ./src
 COPY python_server/config ./config
+COPY python_server/migrations ./migrations
+COPY python_server/alembic.ini ./alembic.ini
 COPY web ./web
+COPY docker-entrypoint.sh ./entrypoint.sh
 
 # Non-root user
 RUN useradd -r -u 1001 -s /sbin/nologin appuser \
     && mkdir -p /app/data /app/logs /home/appuser/.cache/uv \
+    && chmod +x /app/entrypoint.sh \
     && chown -R appuser:appuser /app /home/appuser
 USER appuser
 
@@ -28,7 +32,7 @@ ENV PYTHONPATH=/app/src \
 # ── gameserver stage ──────────────────────────────────────────────────────────
 FROM base AS gameserver
 EXPOSE 8080 8765
-CMD ["/app/.venv/bin/python", "-m", "gameserver.main", "--state_file", "/app/data/state.yaml", "--db_file", "/app/data/gameserver.db"]
+CMD ["/app/entrypoint.sh", "/app/data/gameserver.db", "/app/data/state.yaml"]
 
 # ── webserver stage ───────────────────────────────────────────────────────────
 FROM base AS webserver

@@ -163,6 +163,32 @@ def create_app(services: "Services") -> FastAPI:
         return {"status": "ok"}
 
     # =================================================================
+    # Metrics (unauthenticated — restrict at nginx level if needed)
+    # =================================================================
+
+    @app.get("/metrics", include_in_schema=False)
+    async def prometheus_metrics() -> Any:
+        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+        from fastapi.responses import Response
+        from gameserver.network.metrics import (
+            ws_connections, empires_total, attacks_active,
+            tick_duration_ms, server_info,
+        )
+
+        server_info.info({"version": "1.0"})
+        if services.server:
+            ws_connections.set(services.server.connection_count)
+        if services.empire_service:
+            count = sum(1 for e in services.empire_service.all_empires.values() if e.uid > 0)
+            empires_total.set(count)
+        if services.attack_service:
+            attacks_active.set(len(services.attack_service.get_all_attacks()))
+        if services.game_loop:
+            tick_duration_ms.set(services.game_loop.avg_tick_duration_ms)
+
+        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+    # =================================================================
     # Auth (unprotected)
     # =================================================================
 

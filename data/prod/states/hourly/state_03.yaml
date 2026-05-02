@@ -1,13 +1,13 @@
 meta:
   version: 1
-  saved_at: '2026-05-02T16:06:50'
-  saved_at_unix: 1777738010.806549
+  saved_at: '2026-05-02T15:55:08'
+  saved_at_unix: 1777737308.912731
 empires:
 - uid: 4
   name: Mar-a-Lago
   resources:
-    culture: 6190589.333198832
-    gold: 113026.21485011464
+    culture: 6185219.127447595
+    gold: 91626.8347316002
     life: 28.0
   buildings:
     RACE_COURSE: 0.0
@@ -16,7 +16,7 @@ empires:
     SHRINE: 0.0
     RESEARCH_VAULT: 0.0
     EXCHANGE_POST: 0.0
-    ECHELON_DEFENSE_FACILITY: 408431.8892623766
+    ECHELON_DEFENSE_FACILITY: 412866.9324786371
     GUILD: 0.0
     SOVEREIGN_GUARD: 0.0
     PARADE_GROUND: 0.0
@@ -137,7 +137,7 @@ empires:
     AVIATION: 0.0
     ECONOMY: 0.0
     ELECTRICITY: 0.0
-    GLOBALIZATION_STRATEGIES: 1169382.2667023793
+    GLOBALIZATION_STRATEGIES: 1176158.0077860416
   research_queue: GLOBALIZATION_STRATEGIES
   citizens:
     merchant: 0
@@ -577,8 +577,8 @@ empires:
 - uid: 3
   name: Bikini Bottom
   resources:
-    culture: 11712175.393383268
-    gold: 17605734.411339227
+    culture: 11706805.187632052
+    gold: 17577915.217185166
     life: 43.0
   buildings:
     RACE_COURSE: 0.0
@@ -626,7 +626,7 @@ empires:
     BOOT_CAMP: 0.0
     CHAPEL: 0.0
     SOCIAL_SECURITY_SYSTEM: 0.0
-    ELITE_ACADEMY: 531738.2892623756
+    ELITE_ACADEMY: 536173.3324786356
     UNIVERSITY: 0.0
     FORGE: 0.0
     ELECTRIC_FENCE: 0.0
@@ -668,7 +668,7 @@ empires:
     CONSTITUTION: 0.0
     SCIENCE: 0.0
     MONARCHY: 0.0
-    ELECTRONICS: 372969.08279238694
+    ELECTRONICS: 377156.3777251269
     COPPER_BRONZE: 0.0
     RELIGION: 0.0
     HUNTING: 0.0
@@ -2513,78 +2513,14 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 150000
-  - aid: 11957
-    uid: 0
-    name: Frenzied Pillagers
-    waves:
-    - wave_id: 1
-      iid: THE_KING
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: HANDGUNNER
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: THE_KING
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: NINJA
-      slots: 20
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: SIEGE_RAM
-      slots: 18
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: THE_KING
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: THE_KING
-      slots: 999
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: NINJA
-      slots: 21
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-    - wave_id: 9
-      iid: MUSKETEER
-      slots: 19
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 120000
-    - wave_id: 10
-      iid: NINJA
-      slots: 15
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 135000
   spies: []
   bosses: {}
   hex_map: []
 - uid: 6
   name: KundK Monarchie
   resources:
-    culture: 8570710.552976938
-    gold: 1422752.3433754598
+    culture: 8564504.981886625
+    gold: 1404081.921068159
     life: 28.0
   buildings:
     RACE_COURSE: 0.0
@@ -2651,7 +2587,7 @@ empires:
     ACADEMY: 0.0
     STONE_CIRCLE: 0.0
     TREADWHEEL_CRANE: 0.0
-    FEDERAL_RESERVE: 307500.3892623766
+    FEDERAL_RESERVE: 311935.4324786371
     COURTHOUSE: 0.0
   build_queue: FEDERAL_RESERVE
   knowledge:
@@ -2703,7 +2639,7 @@ empires:
     MECHANICAL_ENGINEERING: 0.0
     ECONOMY: 0.0
     ELECTRICITY: 0.0
-    AVIATION: 814192.8319509596
+    AVIATION: 817643.1629755371
   research_queue: AVIATION
   citizens:
     merchant: 12
@@ -3218,8 +3154,8 @@ empires:
 - uid: 7
   name: Limperium
   resources:
-    culture: 16553640.392309586
-    gold: 427630.05135843676
+    culture: 16546556.536107114
+    gold: 395495.1588725157
     life: 48.0
   buildings:
     RACE_COURSE: 0.0
@@ -3265,7 +3201,7 @@ empires:
     TOWN_GUARD: 0.0
     BOOT_CAMP: 0.0
     CHAPEL: 0.0
-    SOCIAL_SECURITY_SYSTEM: 618462.283864144
+    SOCIAL_SECURITY_SYSTEM: 622611.19526
     UNIVERSITY: 0.0
     FORGE: 0.0
     ELECTRIC_FENCE: 0.0
@@ -3335,7 +3271,7 @@ empires:
     CHEMISTRY: 0.0
     STEEL: 0.0
     CURRENCY: 0.0
-    CIVIL_ENGINEERING: 1070846.3608374295
+    CIVIL_ENGINEERING: 1075033.6557701724
     DOMESTICATION: 0.0
     HORSEBACK_RIDING: 0.0
     IRON: 0.0
@@ -3956,8 +3892,8 @@ empires:
 - uid: 9
   name: Manosphere
   resources:
-    culture: 1617453.6165988976
-    gold: 8751674.832680622
+    culture: 1616097.2819819306
+    gold: 8748621.038486164
     life: 13.0
   buildings:
     RACE_COURSE: 0.0
@@ -4260,8 +4196,8 @@ empires:
 - uid: 12
   name: Schafshügel
   resources:
-    culture: 5319036.765880271
-    gold: 10626528.360645125
+    culture: 5314969.855676843
+    gold: 10616895.914360683
     life: 23.0
   buildings:
     RACE_COURSE: 0.0
@@ -4749,8 +4685,8 @@ empires:
 - uid: 13
   name: Absurdistan
   resources:
-    culture: 7192332.518096714
-    gold: 348961.76361466077
+    culture: 7186783.305487102
+    gold: 334498.156013313
     life: 23.0
   buildings:
     RACE_COURSE: 0.0
@@ -4779,7 +4715,7 @@ empires:
     ARCHIVES: 0.0
     LIBRARY: 0.0
     THE_KINGS_LAIR: 0.0
-    HIGH_COURT: 81365.66940605437
+    HIGH_COURT: 85800.71262231458
     TEMPLE: 0.0
     CATHEDRAL: 0.0
     TREASURE_CHAMBER: 0.0
@@ -4853,7 +4789,7 @@ empires:
     MATHMATICS: 0.0
     MECHANICAL_ENGINEERING: 0.0
     ECONOMY: 0.0
-    STRATEGIC_WARFARE: 246186.29153099313
+    STRATEGIC_WARFARE: 252550.9798287582
   research_queue: STRATEGIC_WARFARE
   citizens:
     merchant: 33
@@ -5207,8 +5143,8 @@ empires:
 - uid: 15
   name: Fruit Republic
   resources:
-    culture: 5444330.732712507
-    gold: 837693.2537949288
+    culture: 5440312.6742833
+    gold: 826398.8282787236
     life: 23.0
   buildings:
     RACE_COURSE: 0.0
@@ -5242,7 +5178,7 @@ empires:
     TOOL_SHOP: 0.0
     HARBOR: 0.0
     WATCH_TOWER: 0.0
-    PARLIAMENT: 261537.07542825548
+    PARLIAMENT: 263864.51352836995
     MARKET_PLACE: 0.0
     HERBALIST: 0.0
     TOWN_GUARD: 0.0
@@ -5307,7 +5243,7 @@ empires:
     TACTICS: 0.0
     MATHMATICS: 0.0
     ECONOMY: 0.0
-    CHEMISTRY: 359263.0402487222
+    CHEMISTRY: 362361.6384989502
   research_queue: CHEMISTRY
   citizens:
     merchant: 35
@@ -5652,8 +5588,8 @@ empires:
 - uid: 16
   name: Imperium Aperol 🍹
   resources:
-    culture: 3925952.42765362
-    gold: 300214.7636302636
+    culture: 3921852.3680319795
+    gold: 287538.0352896881
     life: 23.0
   buildings:
     RACE_COURSE: 0.0
@@ -5675,7 +5611,7 @@ empires:
     GRANARY: 0.0
     THEATER: 0.0
     BOW_MAKER: 0.0
-    EMPERORS_PALACE: 40439.78199047594
+    EMPERORS_PALACE: 42767.22009059052
     TRIUMPHAL_ARC: 0.0
     FENCING_SCHOOL: 0.0
     EPIC_DRAWINGS: 0.0
@@ -5747,7 +5683,7 @@ empires:
     LITRATURE: 0.0
     POTTERY: 0.0
     HERBOLOGY: 0.0
-    PHYSICS: 254795.17304018617
+    PHYSICS: 256539.8792621612
     TACTICS: 0.0
     MATHMATICS: 0.0
     ECONOMY: 0.0
@@ -6036,9 +5972,9 @@ empires:
 - uid: 17
   name: MooHaven
   resources:
-    culture: 5275626.560648299
-    gold: 1022478.3893467092
-    life: 16.0
+    culture: 5270256.354897061
+    gold: 1006901.7568792885
+    life: 15.23826538413598
   buildings:
     EARTH_WALL: 0.0
     SHRINE: 0.0
@@ -6083,7 +6019,7 @@ empires:
     INIT: 0.0
     CASTLE: 0.0
     BULLETIN_BOARD: 0.0
-    FACTORY: 20455.876156285416
+    FACTORY: 23683.582666939154
     LABORATORY: 0.0
     MONASTERY: 0.0
     MUSEUM: 0.0
@@ -6136,7 +6072,7 @@ empires:
     MATHMATICS: 0.0
     MECHANICAL_ENGINEERING: 0.0
     ECONOMY: 0.0
-    ELECTRICITY: 71075.44131545197
+    ELECTRICITY: 74174.03956567941
   research_queue: ELECTRICITY
   citizens:
     merchant: 35
@@ -6424,9 +6360,9 @@ empires:
 - uid: 18
   name: X
   resources:
-    culture: 4859089.463913533
-    gold: 3094620.530401989
-    life: 9.895822998741854
+    culture: 4852238.002579832
+    gold: 3086157.4490369274
+    life: 8.500058021161891
   buildings:
     EARTH_WALL: 0.0
     CARTOGRAPHER: 0.0
@@ -6703,9 +6639,9 @@ empires:
 - uid: 19
   name: Tom's Realm
   resources:
-    culture: 166766.0833110297
-    gold: 477910.15745712747
-    life: 2.4215178070769787
+    culture: 172759.7479191009
+    gold: 477338.111233382
+    life: 2.110145548257975
   buildings:
     INIT: 0.0
     EARTH_WALL: 0.0
@@ -6804,8 +6740,8 @@ empires:
 - uid: 20
   name: Bavaria
   resources:
-    culture: 562697.9010006145
-    gold: 708872.3897174589
+    culture: 562191.2383137534
+    gold: 708164.8624926725
     life: 13.0
   buildings:
     INIT: 0.0
@@ -6982,8 +6918,8 @@ empires:
 - uid: 21
   name: Die Panzke Dynastie
   resources:
-    gold: 23149.326522714648
-    culture: 379128.96477190795
+    gold: 20974.864264142805
+    culture: 376760.0026637102
     life: 16.0
   buildings:
     EARTH_WALL: 0.0
@@ -7015,7 +6951,7 @@ empires:
     MAIN_HOUSE: 0.0
     STONE_CIRCLE: 0.0
     TEMPLE: 0.0
-    LIBRARY: 13627.186517737868
+    LIBRARY: 15651.04573522887
   build_queue: LIBRARY
   knowledge:
     MYSTIC: 0.0
@@ -7035,7 +6971,7 @@ empires:
     CURRENCY: 0.0
     DOMESTICATION: 0.0
     HORSEBACK_RIDING: 0.0
-    ECONOMY: 59513.40170941873
+    ECONOMY: 60322.94539641509
     LAWS: 0.0
     LITRATURE: 0.0
     POTTERY: 0.0
@@ -7197,8 +7133,8 @@ empires:
 - uid: 22
   name: Hackhausen
   resources:
-    gold: 73929.49547438689
-    culture: 360645.2679922373
+    gold: 71755.03321581484
+    culture: 358276.30588403955
     life: 16.0
   buildings:
     EARTH_WALL: 0.0
@@ -7230,7 +7166,7 @@ empires:
     MAIN_HOUSE: 0.0
     STONE_CIRCLE: 0.0
     TEMPLE: 0.0
-    FENCING_SCHOOL: 66628.22322347462
+    FENCING_SCHOOL: 68652.08244096556
   build_queue: FENCING_SCHOOL
   knowledge:
     MYSTIC: 0.0
@@ -7249,7 +7185,7 @@ empires:
     CURRENCY: 0.0
     DOMESTICATION: 0.0
     HORSEBACK_RIDING: 0.0
-    ECONOMY: 18134.77444934302
+    ECONOMY: 18944.31813633941
     LAWS: 0.0
     IRON: 0.0
     POTTERY: 0.0
@@ -7456,9 +7392,9 @@ empires:
 - uid: 23
   name: Dravithar Coalition
   resources:
-    gold: 18423.377168783856
-    culture: 405418.6779438512
-    life: 10.556974865353935
+    gold: 15369.582974336616
+    culture: 403017.2642999248
+    life: 9.161209887773971
   buildings:
     EARTH_WALL: 0.0
     SHRINE: 0.0
@@ -7492,7 +7428,7 @@ empires:
     MAIN_HOUSE: 0.0
     STONE_CIRCLE: 0.0
     TOWN_GUARD: 0.0
-    BANK: 82622.13463984421
+    BANK: 84645.99385733515
   build_queue: BANK
   knowledge:
     MYSTIC: 0.0
@@ -7519,7 +7455,7 @@ empires:
     HERBOLOGY: 0.0
     MATHMATICS: 0.0
     MUSIC: 0.0
-    STEEL: 143296.686870163
+    STEEL: 144308.61647890878
   research_queue: STEEL
   citizens:
     merchant: 0
@@ -7711,8 +7647,8 @@ empires:
 - uid: 24
   name: Bearfoot
   resources:
-    gold: 11714.540353343658
-    culture: 263146.63863388234
+    gold: 9540.078094771763
+    culture: 261642.00398805155
     life: 16.0
   buildings:
     EARTH_WALL: 0.0
@@ -7740,7 +7676,7 @@ empires:
     BULLETIN_BOARD: 0.0
     MAIN_HOUSE: 0.0
     STONE_CIRCLE: 0.0
-    LORE_COLLECTION: 18686.916864819486
+    LORE_COLLECTION: 20068.724192623642
   build_queue: LORE_COLLECTION
   knowledge:
     MYSTIC: 0.0
@@ -7763,7 +7699,7 @@ empires:
     MATHMATICS: 0.0
     MUSIC: 0.0
     LAWS: 0.0
-    CARTOGRAPHY: 14450.181700662977
+    CARTOGRAPHY: 15259.72538765936
   research_queue: CARTOGRAPHY
   citizens:
     merchant: 0
@@ -7949,9 +7885,9 @@ empires:
 - uid: 25
   name: Tower of Power
   resources:
-    gold: 10189.76415385544
-    culture: 487990.2866881467
-    life: 15.501183776043971
+    gold: 17326.722180069148
+    culture: 479709.3122230661
+    life: 14.105418798464008
   buildings:
     EARTH_WALL: 0.0
     CARTOGRAPHER: 0.0
@@ -7984,8 +7920,7 @@ empires:
     MAIN_HOUSE: 0.0
     STONE_CIRCLE: 0.0
     FENCING_SCHOOL: 0.0
-    RACE_COURSE: 60197.18587501161
-  build_queue: RACE_COURSE
+  build_queue: null
   knowledge:
     MYSTIC: 0.0
     PAINTING: 0.0
@@ -8004,7 +7939,7 @@ empires:
     CURRENCY: 0.0
     DOMESTICATION: 0.0
     HORSEBACK_RIDING: 0.0
-    ECONOMY: 34821.48011452501
+    ECONOMY: 35833.40972327048
     IRON: 0.0
     LAWS: 0.0
     POTTERY: 0.0
@@ -8220,9 +8155,9 @@ empires:
 - uid: 26
   name: Zornbolds
   resources:
-    gold: 54454.2035326596
-    culture: 164986.7362697698
-    life: 9.604493984047938
+    gold: 55614.87893393484
+    culture: 163590.18276311504
+    life: 8.208729006467975
   buildings:
     EARTH_WALL: 0.0
     SHRINE: 0.0
@@ -8245,7 +8180,7 @@ empires:
     STONE_CIRCLE: 0.0
     MAIN_HOUSE: 0.0
     HARBOR: 0.0
-    LORE_COLLECTION: 20356.03775713636
+    LORE_COLLECTION: 21737.845084940516
   build_queue: LORE_COLLECTION
   knowledge:
     MYSTIC: 0.0
@@ -8269,12 +8204,12 @@ empires:
     MATHMATICS: 0.0
     MUSIC: 0.0
     ARCHITECTURE: 0.0
-    LAWS: 18188.956892858
+    LAWS: 19048.9177768199
   research_queue: LAWS
   citizens:
-    merchant: 6
-    scientist: 2
-    artist: 7
+    merchant: 5
+    scientist: 5
+    artist: 5
   effects:
     siege_offset: 5520.0
     wave_delay_offset: 2000.0
@@ -8307,51 +8242,21 @@ empires:
     name: Dexter
     waves:
     - wave_id: 1
-      iid: WARRIOR
+      iid: CLUBMAN
       slots: 2
       max_era: 1
       num_critters_spawned: 0
       next_critter_ms: 0.0
     - wave_id: 1
-      iid: WARRIOR
+      iid: BOWMAN
       slots: 1
-      max_era: 1
+      max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0.0
     - wave_id: 2
-      iid: WARRIOR
-      slots: 1
-      max_era: 1
-      num_critters_spawned: 0
-      next_critter_ms: 0.0
-    - wave_id: 4
-      iid: WARRIOR
-      slots: 1
-      max_era: 1
-      num_critters_spawned: 0
-      next_critter_ms: 0.0
-    - wave_id: 5
-      iid: WARRIOR
-      slots: 1
-      max_era: 1
-      num_critters_spawned: 0
-      next_critter_ms: 0.0
-    - wave_id: 6
-      iid: WARRIOR
-      slots: 1
-      max_era: 1
-      num_critters_spawned: 0
-      next_critter_ms: 0.0
-    - wave_id: 7
       iid: CART
       slots: 1
-      max_era: 1
-      num_critters_spawned: 0
-      next_critter_ms: 0.0
-    - wave_id: 8
-      iid: CART
-      slots: 1
-      max_era: 1
+      max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0.0
   spies: []
@@ -8447,8 +8352,8 @@ empires:
 - uid: 28
   name: MyHomeIsMyCastle
   resources:
-    gold: 21958.108041586358
-    culture: 115252.06218251522
+    gold: 20076.693618882302
+    culture: 114451.24202662875
     life: 16.0
   buildings:
     EARTH_WALL: 0.0
@@ -8475,7 +8380,7 @@ empires:
     MAIN_HOUSE: 0.0
     STONE_CIRCLE: 0.0
     LORE_COLLECTION: 0.0
-    TREASURE_CHAMBER: 14867.272923625012
+    TREASURE_CHAMBER: 16175.802590106257
   build_queue: TREASURE_CHAMBER
   knowledge:
     MYSTIC: 0.0
@@ -8497,7 +8402,7 @@ empires:
     HERBOLOGY: 0.0
     MATHMATICS: 0.0
     MUSIC: 0.0
-    LAWS: 2406.874449342815
+    LAWS: 3216.418136339207
   research_queue: LAWS
   citizens:
     merchant: 13
@@ -8643,8 +8548,8 @@ empires:
 - uid: 29
   name: Trelaine
   resources:
-    gold: 13788.045554297929
-    culture: 44079.107849473156
+    gold: 11323.654994583161
+    culture: 43404.953365302
     life: 13.0
   buildings:
     INIT: 0.0
@@ -8667,7 +8572,7 @@ empires:
     FIRE_PLACE: 0.0
     FIELD_HEALER: 0.0
     CHAPEL: 0.0
-    LORE_COLLECTION: 22848.89321317911
+    LORE_COLLECTION: 24000.39931968262
   build_queue: LORE_COLLECTION
   knowledge:
     HERBOLOGY: 0.0
@@ -8689,7 +8594,7 @@ empires:
     MUSIC: 0.0
     POTTERY: 0.0
     CARTOGRAPHY: 0.0
-    LAWS: 14527.42220558351
+    LAWS: 15353.71507231087
   research_queue: LAWS
   citizens:
     merchant: 8
@@ -8829,9 +8734,9 @@ empires:
 - uid: 30
   name: Schlumpfhausen
   resources:
-    gold: 14645.443079659277
-    culture: 8013.020396819222
-    life: 9.297751054609956
+    gold: 14085.531958903062
+    culture: 7626.742439273962
+    life: 8.599868565819968
   buildings:
     BASE_CAMP: 0.0
     INIT: 0.0
@@ -8894,7 +8799,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 16200.0
-  siege_remaining_seconds: 1152.9607375040068
+  siege_remaining_seconds: 1850.8432262940041
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8905,7 +8810,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 14400.0
-  siege_remaining_seconds: 1152.3514947760268
+  siege_remaining_seconds: 1850.233983566024
   total_siege_seconds: 11820.0
   is_spy: false
   army_name_override: ''
@@ -8916,7 +8821,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 16200.0
-  siege_remaining_seconds: 13092.914352786
+  siege_remaining_seconds: 13790.796841575997
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8927,7 +8832,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 14400.0
-  siege_remaining_seconds: 13331.19303972501
+  siege_remaining_seconds: 14029.075528515008
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8938,7 +8843,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 7148.045050801011
+  siege_remaining_seconds: 7845.927539591008
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8949,7 +8854,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 7149.046775888011
+  siege_remaining_seconds: 7846.929264678009
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8960,7 +8865,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 7200.0
-  siege_remaining_seconds: 10487.107469559007
+  siege_remaining_seconds: 11184.989958349004
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8971,7 +8876,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 1800.0
-  siege_remaining_seconds: 5140.671015221014
+  siege_remaining_seconds: 5838.553504011012
   total_siege_seconds: 17220.0
   is_spy: false
   army_name_override: ''
@@ -8979,11 +8884,11 @@ attacks:
   attacker_uid: 0
   defender_uid: 16
   army_aid: 11931
-  phase: in_siege
-  eta_seconds: 0.0
+  phase: travelling
+  eta_seconds: 300.6236210860079
   total_eta_seconds: 12600.0
-  siege_remaining_seconds: 13223.517375163006
-  total_siege_seconds: 13620.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
 - attack_id: 2160
@@ -8991,7 +8896,7 @@ attacks:
   defender_uid: 13
   army_aid: 11935
   phase: travelling
-  eta_seconds: 742.9194008290069
+  eta_seconds: 1440.8018896190042
   total_eta_seconds: 12600.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9004,7 +8909,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 720.0
-  siege_remaining_seconds: 4651.459749452013
+  siege_remaining_seconds: 5349.34223824201
   total_siege_seconds: 13620.0
   is_spy: false
   army_name_override: ''
@@ -9013,7 +8918,7 @@ attacks:
   defender_uid: 9
   army_aid: 11940
   phase: travelling
-  eta_seconds: 1402.8723534910241
+  eta_seconds: 2100.7548422810214
   total_eta_seconds: 10800.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9026,7 +8931,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 270.0
-  siege_remaining_seconds: 474.90492666402133
+  siege_remaining_seconds: 1172.7874154540186
   total_siege_seconds: 8220.0
   is_spy: false
   army_name_override: ''
@@ -9037,7 +8942,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 5400.0
-  siege_remaining_seconds: 2849.7860365580127
+  siege_remaining_seconds: 3547.66852534801
   total_siege_seconds: 4620.0
   is_spy: false
   army_name_override: ''
@@ -9048,8 +8953,19 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 5400.0
-  siege_remaining_seconds: 15459.799538672029
+  siege_remaining_seconds: 16157.682027462026
   total_siege_seconds: 17220.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 2172
+  attacker_uid: 25
+  defender_uid: 19
+  army_aid: 11612
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 1800.0
+  siege_remaining_seconds: 269.44945757000824
+  total_siege_seconds: 4620.0
   is_spy: false
   army_name_override: ''
 - attack_id: 2174
@@ -9057,7 +8973,7 @@ attacks:
   defender_uid: 29
   army_aid: 11946
   phase: travelling
-  eta_seconds: 1642.642092589027
+  eta_seconds: 2340.5245813790243
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9068,7 +8984,7 @@ attacks:
   defender_uid: 7
   army_aid: 10420
   phase: travelling
-  eta_seconds: 7069.737893735
+  eta_seconds: 7767.620382524998
   total_eta_seconds: 12600.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9079,7 +8995,7 @@ attacks:
   defender_uid: 13
   army_aid: 11743
   phase: travelling
-  eta_seconds: 746.1510068230273
+  eta_seconds: 1444.0334956130246
   total_eta_seconds: 5400.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9090,7 +9006,7 @@ attacks:
   defender_uid: 15
   army_aid: 11948
   phase: travelling
-  eta_seconds: 8362.743812976027
+  eta_seconds: 9060.626301766024
   total_eta_seconds: 12600.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9101,7 +9017,7 @@ attacks:
   defender_uid: 7
   army_aid: 10108
   phase: travelling
-  eta_seconds: 3305.1860791500076
+  eta_seconds: 4003.068567940005
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9112,7 +9028,7 @@ attacks:
   defender_uid: 7
   army_aid: 10248
   phase: travelling
-  eta_seconds: 3306.186990082002
+  eta_seconds: 4004.0694788719993
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9123,7 +9039,7 @@ attacks:
   defender_uid: 7
   army_aid: 11010
   phase: travelling
-  eta_seconds: 3307.188462925027
+  eta_seconds: 4005.0709517150244
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9134,7 +9050,7 @@ attacks:
   defender_uid: 7
   army_aid: 10080
   phase: travelling
-  eta_seconds: 3309.191108951025
+  eta_seconds: 4007.0735977410222
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9145,7 +9061,7 @@ attacks:
   defender_uid: 25
   army_aid: 11949
   phase: travelling
-  eta_seconds: 3382.281201195001
+  eta_seconds: 4080.163689984998
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9156,7 +9072,7 @@ attacks:
   defender_uid: 13
   army_aid: 11950
   phase: travelling
-  eta_seconds: 9022.610864463
+  eta_seconds: 9720.493353252998
   total_eta_seconds: 12600.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9167,7 +9083,7 @@ attacks:
   defender_uid: 7
   army_aid: 11117
   phase: travelling
-  eta_seconds: 4049.1786390660272
+  eta_seconds: 4747.0611278560245
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9178,7 +9094,7 @@ attacks:
   defender_uid: 9
   army_aid: 10345
   phase: travelling
-  eta_seconds: 4078.212064063002
+  eta_seconds: 4776.094552852999
   total_eta_seconds: 7200.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9191,7 +9107,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 270.0
-  siege_remaining_seconds: 5634.863485804002
+  siege_remaining_seconds: 6332.745974594
   total_siege_seconds: 8220.0
   is_spy: false
   army_name_override: ''
@@ -9202,7 +9118,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 900.0
-  siege_remaining_seconds: 6277.6031311370025
+  siege_remaining_seconds: 6975.485619927
   total_siege_seconds: 8220.0
   is_spy: false
   army_name_override: ''
@@ -9211,7 +9127,7 @@ attacks:
   defender_uid: 13
   army_aid: 1
   phase: travelling
-  eta_seconds: 2923.9810853290255
+  eta_seconds: 3621.863574119023
   total_eta_seconds: 5400.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9222,7 +9138,7 @@ attacks:
   defender_uid: 13
   army_aid: 10110
   phase: travelling
-  eta_seconds: 2925.9828817330126
+  eta_seconds: 3623.86537052301
   total_eta_seconds: 5400.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9233,7 +9149,7 @@ attacks:
   defender_uid: 13
   army_aid: 10111
   phase: travelling
-  eta_seconds: 2927.9848827680107
+  eta_seconds: 3625.867371558008
   total_eta_seconds: 5400.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9244,7 +9160,7 @@ attacks:
   defender_uid: 13
   army_aid: 10169
   phase: travelling
-  eta_seconds: 2929.9887462240004
+  eta_seconds: 3627.8712350139976
   total_eta_seconds: 5400.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9255,7 +9171,7 @@ attacks:
   defender_uid: 13
   army_aid: 10372
   phase: travelling
-  eta_seconds: 2931.990944666002
+  eta_seconds: 3629.8734334559995
   total_eta_seconds: 5400.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
@@ -9268,7 +9184,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 900.0
-  siege_remaining_seconds: 5271.555952289025
+  siege_remaining_seconds: 5969.438441079023
   total_siege_seconds: 6420.0
   is_spy: false
   army_name_override: ''
@@ -9279,7 +9195,7 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 270.0
-  siege_remaining_seconds: 4989.195910763025
+  siege_remaining_seconds: 5687.078399553022
   total_siege_seconds: 6420.0
   is_spy: false
   army_name_override: ''
@@ -9290,41 +9206,8 @@ attacks:
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 300.0
-  siege_remaining_seconds: 7360.908895919012
+  siege_remaining_seconds: 8058.791384709009
   total_siege_seconds: 8220.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 2198
-  attacker_uid: 26
-  defender_uid: 9
-  army_aid: 11514
-  phase: travelling
-  eta_seconds: 4881.324121148005
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 2199
-  attacker_uid: 0
-  defender_uid: 13
-  army_aid: 11957
-  phase: travelling
-  eta_seconds: 12082.326128877
-  total_eta_seconds: 12600.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 2200
-  attacker_uid: 25
-  defender_uid: 19
-  army_aid: 11612
-  phase: travelling
-  eta_seconds: 1436.5579441120208
-  total_eta_seconds: 1800.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
 battles: []
