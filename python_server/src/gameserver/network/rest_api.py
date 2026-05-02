@@ -132,6 +132,25 @@ def create_app(services: "Services") -> FastAPI:
         response.headers["X-Request-ID"] = request_id
         return response
 
+    # -- security headers ------------------------------------------------
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "connect-src 'self' wss: ws:; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: blob:; "
+            "font-src 'self' data:; "
+            "frame-ancestors 'none'"
+        )
+        return response
+
     # -- last_seen tracker (throttled to once per 60s per user) ----------
     _last_seen_cache: dict[int, float] = {}
 
