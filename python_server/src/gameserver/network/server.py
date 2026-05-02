@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import uuid
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -21,6 +22,28 @@ if TYPE_CHECKING:
     from gameserver.network.router import Router
 
 log = structlog.get_logger(__name__)
+
+_WS_RATE = 20.0   # tokens refilled per second
+_WS_BURST = 30    # max burst (initial token count)
+
+
+class _TokenBucket:
+    """Per-connection token bucket for WebSocket message rate limiting."""
+
+    __slots__ = ("_tokens", "_last")
+
+    def __init__(self) -> None:
+        self._tokens: float = _WS_BURST
+        self._last: float = time.monotonic()
+
+    def consume(self) -> bool:
+        now = time.monotonic()
+        self._tokens = min(_WS_BURST, self._tokens + (now - self._last) * _WS_RATE)
+        self._last = now
+        if self._tokens >= 1.0:
+            self._tokens -= 1.0
+            return True
+        return False
 
 
 class Server:
@@ -185,6 +208,7 @@ class Server:
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(connection_id=connection_id)
         log.info("ws_connect", remote=str(getattr(ws, "remote_address", "?")))
+        bucket = _TokenBucket()
 
         # Check for JWT token in query string
         initial_uid: int | None = None
@@ -228,7 +252,7 @@ class Server:
 
         try:
             async for raw_msg in ws:
-                await self._handle_message(ws, raw_msg)
+                await self._handle_message(ws, raw_msg, bucket)
         except websockets.ConnectionClosed as e:
             real_uid = self.get_uid(ws) or guest_uid
             log.info(
@@ -252,9 +276,14 @@ class Server:
             removed_uid = self.unregister_session(ws)
             log.info("Session removed: uid=%s", removed_uid)
 
-    async def _handle_message(self, ws: ServerConnection, raw_msg: Any) -> None:
+    async def _handle_message(self, ws: ServerConnection, raw_msg: Any, bucket: Optional[_TokenBucket] = None) -> None:
         """Parse and route a single incoming message."""
         uid = self.get_uid(ws) or 0
+
+        if bucket is not None and not bucket.consume():
+            await ws.send(json.dumps({"type": "error", "message": "Rate limit exceeded"}))
+            log.warning("WS rate limit exceeded: uid=%d", uid)
+            return
 
         # Parse JSON
         if isinstance(raw_msg, bytes):

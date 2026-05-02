@@ -562,7 +562,8 @@ class AIService:
         try:
             critter_era_groups = parse_critter_era_groups(critters_yaml)
             slot_by_iid = parse_slot_by_iid(critters_yaml)
-        except Exception:
+        except (OSError, KeyError, ValueError, TypeError):
+            log.exception("Failed to parse critters.yaml for AI wave generation")
             return None
 
         ai_generator_cfg = getattr(self._game_config, "ai_generator", {})

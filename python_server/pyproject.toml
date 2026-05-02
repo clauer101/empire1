@@ -17,6 +17,7 @@ dependencies = [
     "structlog>=24.0",
     "prometheus-client>=0.19",
     "alembic>=1.16.5",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]

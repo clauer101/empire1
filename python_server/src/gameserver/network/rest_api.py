@@ -19,9 +19,14 @@ import uuid
 from typing import Any, TYPE_CHECKING
 
 import structlog
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from gameserver.network.jwt_auth import create_token, get_current_uid, verify_token
 from gameserver.network.rest_models import (
@@ -98,6 +103,15 @@ def create_app(services: "Services") -> FastAPI:
     )
 
     app = FastAPI(title="E3 Game Server", version="1.0.0")
+
+    limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+    app.state.limiter = limiter
+
+    @app.exception_handler(RateLimitExceeded)
+    async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+        return JSONResponse({"detail": "Rate limit exceeded. Please slow down."}, status_code=429)
+
+    app.add_middleware(SlowAPIMiddleware)
 
     # CORS — allow browser access from any origin (game is single-player-ish)
     app.add_middleware(
@@ -193,7 +207,8 @@ def create_app(services: "Services") -> FastAPI:
     # =================================================================
 
     @app.post("/api/auth/login", response_model=LoginResponse)
-    async def login(body: LoginRequest) -> dict[str, Any]:
+    @limiter.limit("5/minute")
+    async def login(request: Request, body: LoginRequest) -> dict[str, Any]:
         uid = await services.auth_service.login(body.username, body.password)
         if uid is not None:
             token = create_token(uid)
@@ -216,7 +231,8 @@ def create_app(services: "Services") -> FastAPI:
         }
 
     @app.post("/api/auth/signup", response_model=SignupResponse)
-    async def signup(body: SignupRequest) -> dict[str, Any]:
+    @limiter.limit("5/minute")
+    async def signup(request: Request, body: SignupRequest) -> dict[str, Any]:
         result = await services.auth_service.signup(
             body.username, body.password, body.email, body.empire_name,
         )

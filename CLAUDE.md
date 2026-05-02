@@ -39,6 +39,14 @@ Other test options: `--all`, `--quick`, `--cov`, `--failfast`
 
 Pre-commit runs automatically on `git commit`. Never use `--no-verify` to bypass it.
 
+## Adding Python Packages
+
+1. Add to `python_server/pyproject.toml` under `dependencies`
+2. Run `uv lock` in the repo root to update `python_server/uv.lock`
+3. Run `bash deploy.sh prod` (or `dev`) — Docker runs `uv sync --frozen` during build, so the lockfile must be committed before deploying
+
+Never install with `pip install` alone — it won't update the lockfile and the package will be missing in Docker.
+
 ## Deployment
 
 ```bash

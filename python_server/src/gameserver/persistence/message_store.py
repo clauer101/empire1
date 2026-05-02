@@ -35,7 +35,7 @@ def _encode(text: str) -> str:
 def _decode(b64: str) -> str:
     try:
         return base64.b64decode(b64.encode("ascii")).decode("utf-8")
-    except Exception:
+    except (ValueError, UnicodeDecodeError):
         return ""
 
 

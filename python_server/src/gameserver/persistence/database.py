@@ -62,7 +62,7 @@ class Database:
         # Migrate: add last_seen column if missing
         try:
             await self._conn.execute("SELECT last_seen FROM users LIMIT 1")
-        except Exception:
+        except aiosqlite.OperationalError:
             await self._conn.execute("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP")
         await self._conn.commit()
         log.info("Database connected: %s", self._db_path)
@@ -338,7 +338,7 @@ class Database:
             try:
                 body_b64 = m.get("body_b64", "")
                 body = base64.b64decode(body_b64.encode("ascii")).decode("utf-8")
-            except Exception:
+            except (ValueError, UnicodeDecodeError):
                 body = ""
             read = 1 if m.get("read", False) else 0
             sent_at = m.get("sent_at", None)

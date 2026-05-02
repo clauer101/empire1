@@ -28,6 +28,12 @@ save_state_before_stop() {
         return
     fi
 
+    # Skip if nothing is listening yet (first deploy)
+    if ! curl -s --connect-timeout 1 "http://localhost:${port}/api/health" >/dev/null 2>&1; then
+        echo "  No server on :${port} — skipping state save"
+        return
+    fi
+
     local token
     token=$(cat "$token_file")
     echo "  Saving state before stop ($env)..."

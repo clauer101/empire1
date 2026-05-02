@@ -1,20 +1,20 @@
 """Era dependency integrity tests for structures and critters.
 
-Parses the section-comment headers in the YAML files to determine which era
-each item belongs to, then verifies two invariants:
+Reads the `era:` field directly from each item in the YAML files to determine
+which era each item belongs to, then verifies two invariants:
 
 1. Every structure and critter has at least one requirement from its own era
-   (either a building or a knowledge item that also lives in the same era
-   section of its YAML, OR another structure/critter in the same era).
+   (either a building or a knowledge item that also lives in the same era,
+   OR another structure/critter in the same era).
 
 2. No requirement of a structure or critter is a knowledge or building item
    from a *later* era than the item itself.
 """
 
-import re
 from pathlib import Path
 
 import pytest
+import yaml
 
 from gameserver.loaders.item_loader import load_items
 from gameserver.models.items import ItemType
@@ -22,29 +22,15 @@ from gameserver.util.eras import ERA_ORDER
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
-# ── Era section header regex ──────────────────────────────────────────────────
-# Matches lines like:  #   STEINZEIT  (Effort …)
-_ERA_HEADER_RE = re.compile(
-    r"#\s+(" + "|".join(ERA_ORDER) + r")\b"
-)
-
 
 def _parse_era_map(yaml_path: Path) -> dict[str, str]:
-    """Return {IID: era_key} by scanning section-comment headers in a YAML file."""
-    era_map: dict[str, str] = {}
-    current_era: str | None = None
-    with yaml_path.open() as f:
-        for line in f:
-            m = _ERA_HEADER_RE.search(line)
-            if m:
-                current_era = m.group(1)
-                continue
-            # Top-level YAML key: no leading whitespace, ends with ':'
-            if line and line[0].isalpha() and ":" in line:
-                iid = line.split(":")[0].strip()
-                if current_era:
-                    era_map[iid] = current_era
-    return era_map
+    """Return {IID: era_key} by reading the `era:` field of each top-level item."""
+    data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
+    return {
+        iid: item["era"]
+        for iid, item in data.items()
+        if isinstance(item, dict) and "era" in item
+    }
 
 
 # ── Build lookup tables ───────────────────────────────────────────────────────
