@@ -1,0 +1,122 @@
+meta:
+  version: 1
+  saved_at: '2026-05-02T15:14:22'
+  saved_at_unix: 1777734862.5254393
+empires:
+- uid: 100
+  name: TestImperium
+  resources:
+    gold: 50.0
+    culture: 10.0
+    life: 10.0
+  buildings:
+    farm: 30.0
+    library: 60.0
+  build_queue: null
+  knowledge:
+    archery: 45.0
+  research_queue: null
+  citizens:
+    merchant: 2
+    scientist: 1
+    artist: 1
+  effects: {}
+  item_upgrades: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map: []
+- uid: 0
+  name: AI
+  resources:
+    gold: 0.0
+    culture: 0.0
+    life: 10.0
+  buildings: {}
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  item_upgrades: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map: []
+- uid: 3
+  name: dev-a-lago
+  resources:
+    gold: 300.0
+    culture: 0.0
+    life: 10.0
+  buildings:
+    INIT: 0.0
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  item_upgrades: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: spawnpoint
+  - q: 1
+    r: 0
+    type: empty
+- uid: 1
+  name: dev-a-lago
+  resources:
+    gold: 300.0
+    culture: 0.0
+    life: 10.0
+  buildings:
+    INIT: 0.0
+  build_queue: null
+  knowledge: {}
+  research_queue: null
+  citizens:
+    merchant: 0
+    scientist: 0
+    artist: 0
+  effects: {}
+  item_upgrades: {}
+  artefacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: 0
+    r: 0
+    type: castle
+  - q: 0
+    r: 1
+    type: spawnpoint
+  - q: 1
+    r: 0
+    type: empty
+attacks: []
+battles: []

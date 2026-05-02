@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import logging.handlers
+import structlog
 import signal
 import sys
 import os
@@ -49,7 +50,7 @@ from gameserver.models.empire import Empire
 from gameserver.network.handlers import register_all_handlers, _active_battles
 from gameserver.loaders.game_config_loader import GameConfig, load_game_config
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Default paths — relative to the working directory
@@ -222,7 +223,7 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "st
 # ===================================================================
 
 
-def create_services(config: Configuration, database: Database) -> Services:
+def create_services(config: Configuration, database: Database, state_file: str = "state.yaml") -> Services:
     """Instantiate all engine/network services with proper dependency injection.
 
     Wiring order matters: services that are injected into others are created first.
@@ -254,7 +255,7 @@ def create_services(config: Configuration, database: Database) -> Services:
                            game_config=gc, hardcoded_waves=config.ai_waves)
     statistics = StatisticsService()
 
-    game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc, ai_service=ai_service)
+    game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc, ai_service=ai_service, state_file=state_file)
 
     auth_service = AuthService(database, gc)
     router = Router()
@@ -332,7 +333,7 @@ def wire_events(services: Services) -> None:
 # ===================================================================
 
 
-async def start_network(services: Services) -> None:
+async def start_network(services: Services, state_file: str = "state.yaml") -> None:
     """Start the WebSocket server and REST API so clients can connect.
 
     Message handlers are registered on the router before the server
@@ -378,13 +379,14 @@ async def start_network(services: Services) -> None:
 
     services._cleanup_task = asyncio.create_task(_message_cleanup_loop())
 
-    async def _backup_loop() -> None:
+    async def _backup_loop(_state_file: str = state_file) -> None:
         """Rolling state backups: 24 hourly slots, 7 daily slots."""
         import shutil
         from datetime import datetime, timezone
 
-        hourly_dir = Path("states/hourly")
-        daily_dir  = Path("states/daily")
+        data_dir = Path(_state_file).parent
+        hourly_dir = data_dir / "states" / "hourly"
+        daily_dir  = data_dir / "states" / "daily"
         hourly_dir.mkdir(parents=True, exist_ok=True)
         daily_dir.mkdir(parents=True, exist_ok=True)
 
@@ -401,12 +403,13 @@ async def start_network(services: Services) -> None:
                     empires=services.empire_service.all_empires,
                     attacks=services.attack_service.get_all_attacks() if services.attack_service else [],
                     battles=[],
+                    path=_state_file,
                 )
                 now = datetime.now(timezone.utc)
 
                 # Hourly rolling backup (slots 00–23)
                 hourly_path = hourly_dir / f"state_{hour_slot:02d}.yaml"
-                shutil.copy2("state.yaml", hourly_path)
+                shutil.copy2(_state_file, hourly_path)
                 log.info("Hourly backup written: %s", hourly_path)
                 hour_slot = (hour_slot + 1) % 24
 
@@ -414,7 +417,7 @@ async def start_network(services: Services) -> None:
                 today = now.weekday()
                 if today != last_daily_day:
                     daily_path = daily_dir / f"state_day{today}.yaml"
-                    shutil.copy2("state.yaml", daily_path)
+                    shutil.copy2(_state_file, daily_path)
                     log.info("Daily backup written: %s", daily_path)
                     last_daily_day = today
 
@@ -430,7 +433,7 @@ async def start_network(services: Services) -> None:
 # ===================================================================
 
 
-async def start_game_loop(services: Services) -> None:
+async def start_game_loop(services: Services, state_file: str = "state.yaml") -> None:
     """Start the main 1-second game loop.
 
     This is the last startup step — it runs until a shutdown signal is
@@ -467,6 +470,7 @@ async def start_game_loop(services: Services) -> None:
                 empires=services.empire_service.all_empires,
                 attacks=services.attack_service.get_all_attacks(),
                 battles=[],
+                path=state_file,
             )
             log.info("Game state saved")
         except Exception:
@@ -499,39 +503,27 @@ async def start_game_loop(services: Services) -> None:
 # ===================================================================
 
 
-async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> None:
+async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_file: str = DEFAULT_DB_PATH) -> None:
     """Initialize and run all server components.
     
     Args:
         config_dir: Base configuration directory path.
         state_file: Path to the state YAML file for restoration.
     """
-    _fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%H:%M:%S")
-    root = logging.getLogger()
-    root.setLevel(logging.WARNING)
-    # Rotating file handler — midnight rotation, keep 14 days
-    _file_handler = logging.handlers.TimedRotatingFileHandler(
-        "gameserver.log", when="midnight", backupCount=14, utc=True, encoding="utf-8"
-    )
-    _file_handler.setFormatter(_fmt)
-    root.addHandler(_file_handler)
-    # Stdout handler — Docker/systemd captures this
-    _stream_handler = logging.StreamHandler()
-    _stream_handler.setFormatter(_fmt)
-    root.addHandler(_stream_handler)
+    from gameserver.util.logging import configure_logging
+    configure_logging(log_file="gameserver.log", level=logging.INFO)
     logging.getLogger("gameserver.network.handlers").setLevel(logging.INFO)
     logging.getLogger("gameserver.engine.battle_service").setLevel(logging.INFO)
-    logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
     log.info("=== Game Server starting ===")
 
     # 1. Load configuration
     config = load_configuration(config_dir=config_dir)
 
     # 2. Initialize persistence
-    database, saved_state = await init_persistence(state_file=state_file)
+    database, saved_state = await init_persistence(db_path=db_file, state_file=state_file)
 
     # 3. Create services
-    services = create_services(config, database)
+    services = create_services(config, database, state_file=state_file)
 
     # Migrate messages from old YAML file to DB (one-time, no-op if already done)
     await database.migrate_messages_from_yaml(DEFAULT_MESSAGES_PATH)
@@ -565,10 +557,10 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml") -> 
         log.info("AI empire pre-registered (uid=%d)", AI_UID)
 
     # 6. Start network
-    await start_network(services)
+    await start_network(services, state_file=state_file)
 
     # 7. Start game loop (blocks until shutdown)
-    await start_game_loop(services)
+    await start_game_loop(services, state_file=state_file)
 
 
 def _add_test_empire(services: Services) -> None:
@@ -594,20 +586,23 @@ def main() -> None:
     Supports command-line arguments:
         --state_file <path>  Use custom state file for restoration (default: state.yaml)
     """
-    config_dir = "config"  # Default config directory
-    state_file = "state.yaml"  # Default state file
-    
-    # Parse command-line arguments
-    if "--state_file" in sys.argv:
-        try:
-            idx = sys.argv.index("--state_file")
+    config_dir = "config"
+    state_file = "state.yaml"
+    db_file = DEFAULT_DB_PATH
+
+    def _get_arg(flag: str) -> str | None:
+        if flag in sys.argv:
+            idx = sys.argv.index(flag)
             if idx + 1 < len(sys.argv):
-                state_file = sys.argv[idx + 1]
-        except (ValueError, IndexError):
-            print("Error: --state_file requires an argument", file=sys.stderr)
+                return sys.argv[idx + 1]
+            print(f"Error: {flag} requires an argument", file=sys.stderr)
             sys.exit(1)
-    
-    asyncio.run(_start(config_dir=config_dir, state_file=state_file))
+        return None
+
+    state_file = _get_arg("--state_file") or state_file
+    db_file = _get_arg("--db_file") or db_file
+
+    asyncio.run(_start(config_dir=config_dir, state_file=state_file, db_file=db_file))
 
 
 if __name__ == "__main__":

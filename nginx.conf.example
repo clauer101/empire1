@@ -1,0 +1,87 @@
+# nginx site config for relicsnrockets.io + dev.relicsnrockets.io
+# Apply: sudo cp nginx.conf.example /etc/nginx/sites-available/empire1 && sudo nginx -t && sudo systemctl reload nginx
+#
+# Port mapping (Docker containers bind to 127.0.0.1):
+#   Prod:  :8080 gameserver, :8000 webserver
+#   Dev:   :8180 gameserver, :8100 webserver
+
+# ── Prod: HTTP → HTTPS redirect ──────────────────────────────────────────────
+server {
+    listen 80;
+    server_name relicsnrockets.io www.relicsnrockets.io;
+    return 301 https://relicsnrockets.io$request_uri;
+}
+
+# ── Dev: HTTP only (no SSL) ───────────────────────────────────────────────────
+server {
+    listen 80;
+    server_name dev.relicsnrockets.io;
+
+    location /ws {
+        proxy_pass http://127.0.0.1:8180;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 86400;
+    }
+
+    location ~ ^/api/(auth|empire|empires|army|attack|spy-attack|item|map|messages|push|admin|era-map|replays|battle-feedback)(/|$) {
+        proxy_pass http://127.0.0.1:8180;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# ── Prod ──────────────────────────────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    server_name relicsnrockets.io www.relicsnrockets.io;
+
+    ssl_certificate     /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    location /ws {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 86400;
+    }
+
+    location ~ ^/api/(auth|empire|empires|army|attack|spy-attack|item|map|messages|push|admin|era-map|replays|battle-feedback)(/|$) {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+

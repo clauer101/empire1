@@ -21,9 +21,13 @@ from pathlib import Path
 import yaml
 from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response, JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.datastructures import MutableHeaders
 import uvicorn
+
+# Site config — env-driven, defaults to localhost for dev
+_SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
+_SITE_NAME = os.environ.get("SITE_NAME", "Relics & Rockets")
 
 AI_WAVES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "ai_waves.yaml"
 GAME_CONFIG_PATH = Path(__file__).parent.parent / "python_server" / "config" / "game.yaml"
@@ -1306,6 +1310,14 @@ async def restart_web():
 
     asyncio.create_task(_do_restart())
     return JSONResponse({"ok": True, "message": "Web server restarting …"})
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def serve_index():
+    """Serve index.html with env-driven site_url substituted in SEO meta tags."""
+    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    html = html.replace("https://relicsnrockets.io", _SITE_URL)
+    return HTMLResponse(html)
 
 
 app.mount(

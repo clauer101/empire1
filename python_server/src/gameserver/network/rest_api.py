@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
+import uuid
 from typing import Any, TYPE_CHECKING
+
+import structlog
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,7 +52,7 @@ from gameserver.models.messages import GameMessage
 if TYPE_CHECKING:
     from gameserver.main import Services
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 def _stub_message(**fields: Any) -> GameMessage:
@@ -105,6 +107,16 @@ def create_app(services: "Services") -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # -- request-ID middleware --------------------------------------------
+    @app.middleware("http")
+    async def request_id_middleware(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
     # -- last_seen tracker (throttled to once per 60s per user) ----------
     _last_seen_cache: dict[int, float] = {}
@@ -646,6 +658,19 @@ def create_app(services: "Services") -> FastAPI:
             "empires": empires_out,
             "attacks": attacks_out,
         }
+
+    @app.post("/api/admin/save-state")
+    async def admin_save_state(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Persist current in-memory state to the state file immediately."""
+        if services.empire_service is None:
+            return {"ok": False, "error": "empire_service not initialized"}
+        from gameserver.persistence.state_save import save_state
+        await save_state(
+            empires=services.empire_service.all_empires,
+            attacks=services.attack_service.get_all_attacks(),
+            battles=[],
+        )
+        return {"ok": True, "message": "State saved"}
 
     @app.post("/api/admin/restart")
     async def admin_restart(_uid: int = Depends(require_admin)) -> dict[str, Any]:
@@ -1583,7 +1608,15 @@ def create_app(services: "Services") -> FastAPI:
     # Register web client routes + static file mount (must be last — catch-all)
     from pathlib import Path as _Path
     from gameserver.network.web_server import register_web_routes as _reg
-    _web_dir = _Path(__file__).resolve().parent.parent.parent.parent.parent / "web"
+    # Resolve web/ relative to this file: src/gameserver/network/ → up 3 → src/ → up 1 → python_server/ → up 1 → repo root → web/
+    # Also support Docker layout where WEB_DIR env var can override.
+    import os as _os
+    _web_dir = _Path(_os.environ.get("WEB_DIR", "")) if _os.environ.get("WEB_DIR") else (
+        _Path(__file__).resolve().parent.parent.parent.parent.parent / "web"
+    )
+    if not _web_dir.is_dir():
+        # Fallback: try sibling of the repo root's python_server/
+        _web_dir = _Path(__file__).resolve().parent.parent.parent.parent / "web"
     _reg(app, _web_dir)
 
     log.info("REST API created with %d routes", len(app.routes))

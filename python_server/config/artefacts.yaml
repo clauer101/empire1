@@ -52,7 +52,13 @@ LOST_ALMANAC:
   name: Lost Almanac
   description: ''
   type: ''
-  effects: {}
+  effects:
+    research_speed_offset: 0.8
+    research_speed_modifier: 0.8
+    build_speed_modifier: 0.6
+    build_speed_offset: 0.6
+    restore_life: 10
+    life_modifier: 1
 MERCIFUL_ARMOUR:
   name: Merciful Armour
   description: ''

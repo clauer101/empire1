@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
+import uuid
 from typing import Any, Optional, TYPE_CHECKING
+
+import structlog
 
 import websockets
 from websockets.asyncio.server import ServerConnection, Server as WSServer
@@ -18,7 +20,7 @@ from websockets.asyncio.server import ServerConnection, Server as WSServer
 if TYPE_CHECKING:
     from gameserver.network.router import Router
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 class Server:
@@ -179,6 +181,11 @@ class Server:
         the token.  Otherwise a temporary negative guest UID is assigned
         (legacy behaviour).
         """
+        connection_id = str(uuid.uuid4())
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(connection_id=connection_id)
+        log.info("ws_connect", remote=str(getattr(ws, "remote_address", "?")))
+
         # Check for JWT token in query string
         initial_uid: int | None = None
         try:

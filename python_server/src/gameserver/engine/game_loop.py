@@ -48,12 +48,14 @@ class GameLoop:
         statistics: StatisticsService,
         game_config: GameConfig | None = None,
         ai_service: AIService | None = None,
+        state_file: str = "state.yaml",
     ) -> None:
         self._events = event_bus
         self._empires = empire_service
         self._attacks = attack_service
         self._stats = statistics
         self._ai = ai_service
+        self._state_file = state_file
         self._running = False
         self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
         self._save_every_n_ticks = max(1, int(self.STATE_SAVE_INTERVAL_S / self._step_interval))
@@ -114,6 +116,7 @@ class GameLoop:
                 empires=self._empires.all_empires,
                 attacks=self._attacks.get_all_attacks(),
                 battles=[],
+                path=self._state_file,
             )
         except Exception:
             _log.getLogger(__name__).exception("Periodic state save failed")

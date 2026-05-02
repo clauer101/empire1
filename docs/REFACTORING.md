@@ -225,7 +225,47 @@ When you create a new file, copy the style from these existing patterns:
 
 ---
 
-## 6. Phase 1 — Foundation: Secrets, Env, CI
+## 6. Progress Status
+
+Last updated: 2026-05-01
+
+| Task | Title | Status | Notes |
+|------|-------|--------|-------|
+| **T1.1** | Fail-fast JWT_SECRET | ✅ Done | `os.environ["JWT_SECRET"]` — no fallback; tests use `setdefault` in conftest |
+| **T1.2** | Purge certs from git history | ✅ Done | `git filter-repo` rewrote history; `*.pem`, `*.crt`, `*.csr`, `*.key` added to `.gitignore` |
+| **T1.3** | Externalize domain/site config | ✅ Done | `SITE_URL` / `SITE_NAME` in `.env`; `fastapi_server.py` substitutes at runtime in `GET /` |
+| **T1.4** | Replace SHA-256 passwords with argon2 | ✅ Done | Lazy upgrade on login; legacy SHA-256 still verifies; 7 new tests |
+| **T1.5** | GitHub Actions CI | ✅ Done | ruff + mypy (report-only) + pytest; uv-based install |
+| **T1.6** | Dockerfile + docker-compose | ✅ Done | Multi-stage image (gameserver + webserver targets); nginx config in `nginx.conf.example` — apply manually with sudo |
+| **T1.7** | `.pre-commit-config.yaml` | ✅ Done | ruff (auto-fix), mypy, detect-secrets hooks |
+| **T1.8** | uv lockfile | ✅ Done | `python_server/uv.lock` committed; CI uses `uv sync --frozen` |
+| **T2.1** | Rotating log handlers | ✅ Done | `TimedRotatingFileHandler` in `main.py` and `fastapi_server.py`; midnight rotation, 14-day retention |
+| **T2.2** | Structured logging (JSON) + request-ID | ✅ Done | `structlog` with JSON/console renderer; request-ID middleware in `rest_api.py`; connection-ID in `server.py`; `util/logging.py` configures both |
+| **T2.3** | `/health` + `/health/ready` endpoints | ✅ Done | Added to `rest_api.py` (game server) and `fastapi_server.py` (web server) |
+| **T2.4** | Prometheus `/metrics` endpoint | ⬜ Todo | — |
+| **T2.5** | Alembic baseline migration | ⬜ Todo | — |
+| **T2.6** | DB + state.yaml backup automation | ⬜ Todo | — |
+| **T2.7** | Tighten bare-except blocks | ⬜ Todo | — |
+| **T2.8** | Pydantic models for WebSocket messages | ⬜ Todo | — |
+| **T2.9** | Rate limiting (slowapi REST + WS) | ⬜ Todo | — |
+| **T2.10** | CSP & security headers middleware | ⬜ Todo | — |
+| **T3.1** | Split `handlers.py` → `handlers/` package | 🔄 Partial | `handlers/` package created; `social.py` extracted (7 handlers); `_ProxyModule` wires mutable globals |
+| **T3.2** | Split `rest_api.py` → `routers/` subpackage | ⬜ Todo | — |
+| **T3.3** | Split `web/js/views/defense.js` | ⬜ Todo | — |
+| **T3.4** | Split `web/css/style.css` into partials | ⬜ Todo | — |
+| **T4.1** | Add Vite (vanilla mode) | ⬜ Todo | — |
+| **T4.2** | Asset pipeline (WebP, image compression) | ⬜ Todo | — |
+| **T4.3** | Playwright smoke tests | ⬜ Todo | — |
+| **T4.4** | ESLint + Prettier | ⬜ Todo | — |
+| **T5.1** | mypy strict as CI gate (zero errors) | ⬜ Todo | — |
+| **T5.2** | Pin upper bounds + lockfile checks | ⬜ Todo | — |
+| **T5.3** | Coverage gate ≥ 80% backend | ⬜ Todo | — |
+
+**Phase summary**: Phase 1 — 7/7 done ✅ · Phase 2 — 3/10 done · Phase 3 — 0.5/4 done · Phase 4–5 — 0/8 done
+
+---
+
+## 7. Phase 1 — Foundation: Secrets, Env, CI
 
 **Goal**: Stop the bleeding. Remove secrets from code, externalize config, gate
 every future change with CI. Phase 1 must complete before Phase 2 begins; the
@@ -522,7 +562,7 @@ later phases assume CI is green.
 
 ---
 
-## 7. Phase 2 — Hardening: Errors, Logging, Migrations, Limits
+## 8. Phase 2 — Hardening: Errors, Logging, Migrations, Limits
 
 **Goal**: The system survives in production. Logs don't fill disks, errors
 don't disappear, schema changes are reversible, abusive clients are rate-limited.
@@ -834,7 +874,7 @@ Phase 2 requires Phase 1 (CI must be green to gate every change here).
 
 ---
 
-## 8. Phase 3 — Decomposition: Split God-Modules
+## 9. Phase 3 — Decomposition: Split God-Modules
 
 **Goal**: No single file over 1000 LOC. Each module has one responsibility.
 Phase 3 requires Phase 2 (typed WS messages and CI gates make the splits
@@ -994,7 +1034,7 @@ mechanical).
 
 ---
 
-## 9. Phase 4 — Frontend Build & Quality
+## 10. Phase 4 — Frontend Build & Quality
 
 **Goal**: The frontend has a build step, optimized assets, smoke tests, and
 linting. Phase 4 requires T1.3 (templated domain) and T3.3 (split defense.js
@@ -1131,7 +1171,7 @@ makes bundling cleaner).
 
 ---
 
-## 10. Phase 5 — Polish
+## 11. Phase 5 — Polish
 
 **Goal**: Tighten the gates that Phase 1–4 set as warnings.
 
@@ -1190,7 +1230,7 @@ makes bundling cleaner).
 
 ---
 
-## 11. Cross-Cutting Playbooks
+## 12. Cross-Cutting Playbooks
 
 ### 11.1 Working with `state.yaml` During a Migration
 
@@ -1256,7 +1296,7 @@ ask the user before continuing.
 
 ---
 
-## 12. Glossary & References
+## 13. Glossary & References
 
 ### 12.1 File-Path Index
 

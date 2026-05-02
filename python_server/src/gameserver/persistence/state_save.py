@@ -57,19 +57,23 @@ async def save_state(
 
     out = Path(path)
     tmp = out.with_suffix(".yaml.tmp")
+    content = yaml.dump(state, default_flow_style=False, allow_unicode=True, sort_keys=False)
     try:
-        tmp.write_text(
-            yaml.dump(state, default_flow_style=False, allow_unicode=True, sort_keys=False),
-            encoding="utf-8",
-        )
+        tmp.write_text(content, encoding="utf-8")
         tmp.replace(out)
-        log.debug("Game state saved to %s (%d empires, %d attacks, %d battles)",
-                  path, len(empires), len(attacks or []), len(battles or []))
+    except OSError:
+        # bind-mounted single files don't support atomic rename — write in place
+        out.write_text(content, encoding="utf-8")
     except Exception:
         log.exception("Failed to save game state to %s", path)
         if tmp.exists():
             tmp.unlink(missing_ok=True)
         raise
+    else:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+    log.debug("Game state saved to %s (%d empires, %d attacks, %d battles)",
+              path, len(empires), len(attacks or []), len(battles or []))
 
 
 # ===================================================================

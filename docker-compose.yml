@@ -1,0 +1,45 @@
+name: empire1-prod
+
+services:
+  gameserver:
+    build:
+      context: .
+      target: gameserver
+    image: empire1-gameserver
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      WEB_DIR: /app/web
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - ./data/prod:/app/data
+      - gameserver_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  webserver:
+    build:
+      context: .
+      target: webserver
+    image: empire1-webserver
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  gameserver_logs:
