@@ -380,7 +380,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
     services._cleanup_task = asyncio.create_task(_message_cleanup_loop())
 
     async def _backup_loop(_state_file: str = state_file) -> None:
-        """Rolling state backups: 24 hourly slots, 7 daily slots."""
+        """Rolling backups: 24 hourly slots + 7 daily slots for state.yaml and gameserver.db."""
         import shutil
         from datetime import datetime, timezone
 
@@ -390,6 +390,8 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
         hourly_dir.mkdir(parents=True, exist_ok=True)
         daily_dir.mkdir(parents=True, exist_ok=True)
 
+        db_path = str(services.database._db_path) if services.database else None
+
         last_daily_day: int | None = None
         hour_slot: int = 0
 
@@ -398,7 +400,6 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
             if services.empire_service is None:
                 continue
             try:
-                # Write current state.yaml first, then copy into backup slot
                 await save_state(
                     empires=services.empire_service.all_empires,
                     attacks=services.attack_service.get_all_attacks() if services.attack_service else [],
@@ -408,17 +409,25 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                 now = datetime.now(timezone.utc)
 
                 # Hourly rolling backup (slots 00–23)
-                hourly_path = hourly_dir / f"state_{hour_slot:02d}.yaml"
-                shutil.copy2(_state_file, hourly_path)
-                log.info("Hourly backup written: %s", hourly_path)
+                slot = f"{hour_slot:02d}"
+                shutil.copy2(_state_file, hourly_dir / f"state_{slot}.yaml")
+                if db_path and Path(db_path).exists():
+                    services.database._conn and await services.database._conn.execute(  # type: ignore[union-attr]
+                        f"VACUUM INTO '{hourly_dir / f'gameserver_{slot}.db'}'"
+                    )
+                log.info("Hourly backup written: slot %s", slot)
                 hour_slot = (hour_slot + 1) % 24
 
-                # Daily rolling backup (slots mon–sun, keyed by weekday 0–6)
+                # Daily rolling backup (slots 0–6, one per weekday)
                 today = now.weekday()
                 if today != last_daily_day:
-                    daily_path = daily_dir / f"state_day{today}.yaml"
-                    shutil.copy2(_state_file, daily_path)
-                    log.info("Daily backup written: %s", daily_path)
+                    day = f"day{today}"
+                    shutil.copy2(_state_file, daily_dir / f"state_{day}.yaml")
+                    if db_path and Path(db_path).exists():
+                        services.database._conn and await services.database._conn.execute(  # type: ignore[union-attr]
+                            f"VACUUM INTO '{daily_dir / f'gameserver_{day}.db'}'"
+                        )
+                    log.info("Daily backup written: slot %s", day)
                     last_daily_day = today
 
             except Exception:

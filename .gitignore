@@ -16,3 +16,6 @@ certs/
 *.csr
 *.key
 .admin-token-*
+data/
+python_server/state*.yaml
+python_server/gameserver*.db
