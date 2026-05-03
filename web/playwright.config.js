@@ -4,16 +4,21 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright config for smoke tests.
  *
- * Target: the web server at BASE_URL (default: http://localhost:8000).
- * The web server must be running before tests execute — no webServer auto-start,
- * because prod/dev use Docker and the servers are managed externally.
+ * Target: DEV environment by default (localhost:8100 web, localhost:8180 gameserver).
+ * NEVER run against prod — globalSetup enforces this by rejecting port 8080.
  *
- * Run: npx playwright test
- * With custom target: BASE_URL=http://dev.relicsnrockets.io npx playwright test
+ * Run:  npx playwright test
+ *       BASE_URL=http://localhost:8100 API_URL=http://localhost:8180 npx playwright test
+ *
+ * Cleanup: set ADMIN_PASS env var so globalTeardown can delete the smoke test user.
+ *   ADMIN_PASS=... npx playwright test
  */
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.js',
+
+  globalSetup:    './e2e/globalSetup.js',
+  globalTeardown: './e2e/globalTeardown.js',
 
   // Stop on first failure to keep feedback tight
   fullyParallel: false,
@@ -27,10 +32,9 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:8000',
+    // Default to dev environment — never prod
+    baseURL: process.env.BASE_URL || 'http://localhost:8100',
 
-    // API_URL points directly at the gameserver for REST helper calls
-    // (bypasses nginx; used in test fixtures only)
     extraHTTPHeaders: {
       'Accept': 'application/json',
     },

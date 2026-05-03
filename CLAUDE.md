@@ -39,6 +39,23 @@ Other test options: `--all`, `--quick`, `--cov`, `--failfast`
 
 Pre-commit runs automatically on `git commit`. Never use `--no-verify` to bypass it.
 
+## Playwright E2E Tests
+
+**Prod is read-only.** Never run Playwright tests against the prod environment (`localhost:8000` / `localhost:8080`). Tests create user accounts and mutate state.
+
+Use the dev environment and clean up after:
+```bash
+cd web && BASE_URL=http://localhost:8100 API_URL=http://localhost:8180 npx playwright test
+```
+
+After the test run, delete the smoke test user from dev:
+```bash
+curl -s -X DELETE http://localhost:8180/api/admin/user/smoke_test_user \
+  -H "Authorization: Bearer $(cat data/dev/admin_token 2>/dev/null)"
+```
+
+Or use the cleanup script: `web/e2e/cleanup.sh`
+
 ## Frontend Build (Vite)
 
 The SPA uses [Vite](https://vitejs.dev/) for bundling. Node ≥20 required (use NVM).

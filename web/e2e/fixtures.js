@@ -19,8 +19,8 @@ export const TEST_USER   = 'smoke_test_user';
 export const TEST_PASS   = 'Smoke_T3st_P@ss!';
 export const TEST_EMPIRE = 'SmokeEmpire';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8000';
-const API_URL  = process.env.API_URL  || 'http://localhost:8080';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:8100';
+const API_URL  = process.env.API_URL  || 'http://localhost:8180';
 
 // Cache the login token for the test session to avoid hitting the 5/minute rate limit
 let _cachedToken = null;
