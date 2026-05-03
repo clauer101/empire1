@@ -39,6 +39,31 @@ Other test options: `--all`, `--quick`, `--cov`, `--failfast`
 
 Pre-commit runs automatically on `git commit`. Never use `--no-verify` to bypass it.
 
+## Frontend Build (Vite)
+
+The SPA uses [Vite](https://vitejs.dev/) for bundling. Node ≥20 required (use NVM).
+
+```bash
+# One-time setup
+export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"   # load NVM
+cd web && npm install
+
+# Development — serves raw files from web/, no build step needed
+npm run dev          # Vite dev server on :5173 (proxies /api + /ws to :8080)
+
+# Production bundle — output to web/dist/
+npm run build        # hashed assets in web/dist/
+```
+
+Set `BUILD_MODE=production` to make the web server (`web/fastapi_server.py`) serve
+`web/dist/` instead of raw source. Default is `dev` (raw files, no build needed).
+
+After changing JS/CSS files: re-run `npm run build` before deploying.
+
+When adding new image assets (JPG/PNG sprites): run `npm run assets:optimize` to
+generate WebP siblings. The build step runs this automatically. Skip PWA icons
+(`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) — those must stay PNG.
+
 ## Adding Python Packages
 
 1. Add to `python_server/pyproject.toml` under `dependencies`

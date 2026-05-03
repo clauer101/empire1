@@ -29,12 +29,22 @@ import uvicorn
 _SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
 _SITE_NAME = os.environ.get("SITE_NAME", "Relics & Rockets")
 
-AI_WAVES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "ai_waves.yaml"
-GAME_CONFIG_PATH = Path(__file__).parent.parent / "python_server" / "config" / "game.yaml"
-BUILDINGS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "buildings.yaml"
-KNOWLEDGE_PATH = Path(__file__).parent.parent / "python_server" / "config" / "knowledge.yaml"
-CRITTERS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "critters.yaml"
-STRUCTURES_PATH = Path(__file__).parent.parent / "python_server" / "config" / "structures.yaml"
+def _config_dir() -> Path:
+    # Local dev: repo/web/ → repo/python_server/config/
+    local = Path(__file__).parent.parent / "python_server" / "config"
+    if local.is_dir():
+        return local
+    # Docker: /app/web/ → /app/config/
+    return Path(__file__).parent.parent / "config"
+
+_CONFIG_DIR = _config_dir()
+
+AI_WAVES_PATH    = _CONFIG_DIR / "ai_waves.yaml"
+GAME_CONFIG_PATH = _CONFIG_DIR / "game.yaml"
+BUILDINGS_PATH   = _CONFIG_DIR / "buildings.yaml"
+KNOWLEDGE_PATH   = _CONFIG_DIR / "knowledge.yaml"
+CRITTERS_PATH    = _CONFIG_DIR / "critters.yaml"
+STRUCTURES_PATH  = _CONFIG_DIR / "structures.yaml"
 
 _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
 
@@ -232,6 +242,11 @@ log = logging.getLogger(__name__)
 
 # Determine the web directory (where this script is located)
 WEB_DIR = Path(__file__).parent.resolve()
+
+# In BUILD_MODE=production, serve the Vite-bundled dist/ instead of raw sources.
+# Dev mode (default) serves raw files so hot-reload works without a build step.
+_BUILD_MODE = os.environ.get("BUILD_MODE", "dev")
+_SERVE_DIR = WEB_DIR / "dist" if _BUILD_MODE == "production" else WEB_DIR
 
 # Global flag for cache control (set by main() before app starts)
 NO_CACHE = False
@@ -968,7 +983,7 @@ async def patch_tower_effects(iid: str, body: dict = Body(...)):
     return JSONResponse({"error": "effects line not found"}, status_code=500)
 
 
-ARTEFACTS_PATH = Path(__file__).parent.parent / "python_server" / "config" / "artefacts.yaml"
+ARTEFACTS_PATH = _CONFIG_DIR / "artefacts.yaml"
 
 
 @app.get("/api/artefacts")
@@ -1315,14 +1330,14 @@ async def restart_web():
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def serve_index():
     """Serve index.html with env-driven site_url substituted in SEO meta tags."""
-    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    html = (_SERVE_DIR / "index.html").read_text(encoding="utf-8")
     html = html.replace("https://relicsnrockets.io", _SITE_URL)
     return HTMLResponse(html)
 
 
 app.mount(
     "/",
-    NoCacheStaticFiles(directory=str(WEB_DIR), html=True),
+    NoCacheStaticFiles(directory=str(_SERVE_DIR), html=True),
     name="static"
 )
 

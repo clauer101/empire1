@@ -431,6 +431,8 @@ const ERA_LABEL = {
   middle_ages: 'Middle Ages', renaissance: 'Renaissance', industrial: 'Industrial',
   modern: 'Modern', future: 'Future',
 };
+// Reverse: English label → internal era key (for matching critterStats.era)
+const ERA_LABEL_TO_KEY = Object.fromEntries(Object.entries(ERA_LABEL).map(([k, v]) => [v, k]));
 
 function travelToEra(t) {
   if (!t) return 'stone';
@@ -440,14 +442,16 @@ function travelToEra(t) {
 
 function armyEra(army) {
   if (army.main_age) return army.main_age;
-  // Determine era from the most advanced critter across all waves
+  // Determine era from the most advanced critter across all waves.
+  // critterStats.era is an English label ("Iron Age"); ERA_ORDER uses internal keys ("iron").
   let bestIdx = -1;
   let bestEra = null;
   for (const w of army.waves) {
     const c = critterStats[w.critter.toUpperCase()];
     if (!c?.era) continue;
-    const idx = ERA_ORDER.indexOf(c.era);
-    if (idx > bestIdx) { bestIdx = idx; bestEra = c.era; }
+    const key = ERA_LABEL_TO_KEY[c.era] || c.era;
+    const idx = ERA_ORDER.indexOf(key);
+    if (idx > bestIdx) { bestIdx = idx; bestEra = key; }
   }
   return bestEra || travelToEra(army.travel_time);
 }

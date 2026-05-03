@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Restart Server</title>
+  <title>Server Control</title>
   <style>
     :root {
       --bg:          #0d0d14;
@@ -30,7 +30,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 28px;
+      gap: 20px;
       padding: 60px 16px 40px;
     }
 
@@ -45,16 +45,25 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 28px 32px;
+      padding: 24px 28px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 18px;
       width: 100%;
-      max-width: 460px;
+      max-width: 500px;
     }
 
-    .icon { font-size: 3rem; }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      align-self: flex-start;
+    }
+
+    .icon { font-size: 2.5rem; }
 
     p {
       color: var(--text-dim);
@@ -63,11 +72,37 @@
       line-height: 1.6;
     }
 
+    /* Env selector */
+    .env-row {
+      display: flex;
+      gap: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+    }
+    .env-tab {
+      cursor: pointer;
+      padding: 6px 20px;
+      border-radius: calc(var(--radius) - 2px);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      border: none;
+      background: transparent;
+      transition: background .15s, color .15s;
+    }
+    .env-tab.active {
+      background: var(--accent);
+      color: #0d0d14;
+    }
+
     button {
       cursor: pointer;
       border: none;
       border-radius: var(--radius);
-      padding: 10px 28px;
+      padding: 10px 24px;
       font-size: 13px;
       font-family: inherit;
       font-weight: 600;
@@ -80,7 +115,14 @@
     .btn-danger  { background: var(--danger);  color: #fff; }
     .btn-success { background: var(--success); color: #0d0d14; }
     .btn-warning { background: var(--warning); color: #0d0d14; }
+    .btn-accent  { background: var(--accent);  color: #0d0d14; }
     .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    .divider {
+      width: 100%;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
 
     /* Status line */
     #status {
@@ -91,7 +133,7 @@
       border: 1px solid var(--border);
       background: var(--surface-alt);
       width: 100%;
-      max-width: 460px;
+      max-width: 500px;
       min-height: 36px;
       display: flex;
       align-items: center;
@@ -113,12 +155,12 @@
     /* Log */
     #log {
       width: 100%;
-      max-width: 460px;
+      max-width: 500px;
       font-family: var(--mono);
       font-size: 11px;
       color: var(--text-dim);
       line-height: 1.7;
-      max-height: 160px;
+      max-height: 200px;
       overflow-y: auto;
     }
     #log .line { display: flex; gap: 8px; }
@@ -126,37 +168,68 @@
     #log .ok   { color: var(--success); }
     #log .err  { color: var(--danger); }
     #log .info { color: var(--text-dim); }
+    #log .warn { color: var(--warning); }
   </style>
 </head>
 <body>
-  <h1>Server Restart</h1>
+  <h1>Server Control</h1>
 
+  <!-- Environment selector -->
+  <div class="env-row">
+    <button class="env-tab active" id="tab-prod" onclick="selectEnv('prod')">PROD</button>
+    <button class="env-tab"        id="tab-dev"  onclick="selectEnv('dev')">DEV</button>
+  </div>
+
+  <!-- Deploy card -->
   <div class="card">
-    <div class="icon">🔁</div>
+    <div class="card-title">🚀 Deploy</div>
     <p>
-      Speichert den Game-State und startet den Gameserver-Prozess neu.<br>
-      Alle verbundenen Clients verlieren kurzzeitig die Verbindung.
+      Builds the Docker image and redeploys the selected environment.<br>
+      Saves game state before stopping the old container.
+    </p>
+    <button class="btn-accent" id="btn-deploy" onclick="doDeploy()">
+      Deploy
+    </button>
+  </div>
+
+  <!-- Restart card -->
+  <div class="card">
+    <div class="card-title">🔁 Process Restart</div>
+    <p>
+      Saves game state and restarts the gameserver process in-place.<br>
+      Faster than a full deploy — no image rebuild.
     </p>
     <div class="btn-row">
       <button class="btn-danger" id="btn-restart" onclick="doRestart()">
-        Gameserver neu starten
+        Restart Gameserver
       </button>
       <button class="btn-warning" id="btn-restart-both" onclick="doRestartBoth()">
-        Beide neu starten
+        Restart Both
       </button>
     </div>
   </div>
 
   <div id="status">
     <span class="dot"></span>
-    <span id="status-text">Bereit</span>
+    <span id="status-text">Ready</span>
   </div>
 
   <div id="log"></div>
 
   <script src="nav.js"></script>
   <script>
+    let currentEnv = 'prod';
+
+    // The API is always the current server (prod or dev based on which page you're on).
+    // For deploy we always talk to the current origin's admin API.
     const API = window.location.origin;
+
+    function selectEnv(env) {
+      currentEnv = env;
+      document.getElementById('tab-prod').classList.toggle('active', env === 'prod');
+      document.getElementById('tab-dev').classList.toggle('active',  env === 'dev');
+      log(`Environment set to: ${env}`, 'info');
+    }
 
     function authHeaders() {
       const token = localStorage.getItem('e3_jwt_token');
@@ -164,7 +237,7 @@
     }
 
     function ts() {
-      return new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     function log(msg, cls = 'info') {
@@ -182,27 +255,29 @@
     }
 
     function disableAll() {
-      document.getElementById('btn-restart').disabled = true;
-      document.getElementById('btn-restart-both').disabled = true;
+      ['btn-deploy', 'btn-restart', 'btn-restart-both'].forEach(id => {
+        document.getElementById(id).disabled = true;
+      });
     }
     function enableAll() {
-      document.getElementById('btn-restart').disabled = false;
-      document.getElementById('btn-restart-both').disabled = false;
+      ['btn-deploy', 'btn-restart', 'btn-restart-both'].forEach(id => {
+        document.getElementById(id).disabled = false;
+      });
     }
 
-    async function pollUntilBack(maxMs = 30000) {
+    async function pollUntilBack(maxMs = 90000) {
       const start = Date.now();
       while (Date.now() - start < maxMs) {
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 2000));
         try {
           const r = await fetch(API + '/api/admin/status', {
             headers: authHeaders(),
-            signal: AbortSignal.timeout(2000),
+            signal: AbortSignal.timeout(3000),
           });
           if (r.ok) {
             const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-            log(`Server wieder erreichbar nach ${elapsed}s`, 'ok');
-            setStatus('Server läuft wieder', 'ok');
+            log(`Server back after ${elapsed}s`, 'ok');
+            setStatus('Server is running', 'ok');
             enableAll();
             return;
           }
@@ -210,50 +285,46 @@
           // still down — keep polling
         }
       }
-      log('Timeout: Server nicht erreichbar nach 30s', 'err');
-      setStatus('Server nicht erreichbar — manuell prüfen', 'err');
+      log('Timeout: server not reachable after 90s', 'err');
+      setStatus('Server not reachable — check manually', 'err');
       enableAll();
     }
 
-    async function doRestartBoth() {
+    async function doDeploy() {
       disableAll();
-      setStatus('Beide Server werden neu gestartet …', 'warn');
-      log('Sende Restart-Request an Gameserver …');
+      setStatus(`Deploying ${currentEnv} …`, 'warn');
+      log(`Starting deploy: ${currentEnv} …`, 'warn');
 
-      // 1) Gameserver restart
       try {
-        const r = await fetch(API + '/api/admin/restart', {
+        const r = await fetch(API + '/api/admin/deploy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ env: currentEnv }),
         });
         const data = await r.json();
         if (data.ok) {
-          log(`Gameserver: ${data.message}`, 'ok');
+          log(`${data.message}`, 'ok');
+          setStatus(`Deploy running — waiting for ${currentEnv} to come back …`, 'warn');
+          // Deploy takes longer (build step) — wait before polling
+          await new Promise(r => setTimeout(r, 8000));
+          log('Polling for server …');
+          await pollUntilBack(120000);
         } else {
-          log(`Gameserver-Fehler: ${data.detail || JSON.stringify(data)}`, 'err');
+          log(`Deploy error: ${data.detail || JSON.stringify(data)}`, 'err');
+          setStatus('Deploy failed', 'err');
+          enableAll();
         }
-      } catch {
-        log('Gameserver-Verbindung getrennt (startet neu) …', 'ok');
+      } catch (e) {
+        log(`Request failed: ${e.message}`, 'err');
+        setStatus('Deploy request failed', 'err');
+        enableAll();
       }
-
-      // 2) Web server restart (brief delay so response can be sent)
-      log('Sende Restart-Request an Webserver …');
-      try {
-        await fetch('/api/admin/restart-web', { method: 'POST' });
-      } catch {
-        // expected — web server drops connection
-      }
-      log('Webserver-Verbindung getrennt (startet neu) …', 'ok');
-
-      setStatus('Warte auf Neustart beider Server …', 'warn');
-      await new Promise(r => setTimeout(r, 3000));
-      await pollUntilBack();
     }
 
     async function doRestart() {
       disableAll();
-      setStatus('Restart-Befehl wird gesendet …', 'warn');
-      log('Sende Restart-Request …');
+      setStatus('Sending restart command …', 'warn');
+      log('Sending restart request …');
 
       try {
         const r = await fetch(API + '/api/admin/restart', {
@@ -263,23 +334,54 @@
         const data = await r.json();
         if (data.ok) {
           log(`Server: ${data.message}`, 'ok');
-          setStatus('Warte auf Neustart …', 'warn');
-          // Wait briefly, then poll for recovery
+          setStatus('Waiting for restart …', 'warn');
           await new Promise(r => setTimeout(r, 2000));
-          log('Warte bis Server wieder erreichbar …');
+          log('Polling for server …');
           await pollUntilBack();
         } else {
-          log(`Fehler: ${data.detail || JSON.stringify(data)}`, 'err');
-          setStatus('Restart fehlgeschlagen', 'err');
+          log(`Error: ${data.detail || JSON.stringify(data)}`, 'err');
+          setStatus('Restart failed', 'err');
           enableAll();
         }
-      } catch (e) {
-        // Connection dropped = server is restarting — poll for recovery
-        log('Verbindung getrennt (Server startet neu) …', 'ok');
-        setStatus('Warte auf Neustart …', 'warn');
+      } catch {
+        log('Connection dropped (server is restarting) …', 'ok');
+        setStatus('Waiting for restart …', 'warn');
         await new Promise(r => setTimeout(r, 2000));
         await pollUntilBack();
       }
+    }
+
+    async function doRestartBoth() {
+      disableAll();
+      setStatus('Restarting both servers …', 'warn');
+      log('Sending restart request to gameserver …');
+
+      try {
+        const r = await fetch(API + '/api/admin/restart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        });
+        const data = await r.json();
+        if (data.ok) {
+          log(`Gameserver: ${data.message}`, 'ok');
+        } else {
+          log(`Gameserver error: ${data.detail || JSON.stringify(data)}`, 'err');
+        }
+      } catch {
+        log('Gameserver connection dropped (restarting) …', 'ok');
+      }
+
+      log('Sending restart request to web server …');
+      try {
+        await fetch('/api/admin/restart-web', { method: 'POST' });
+      } catch {
+        // expected — web server drops connection
+      }
+      log('Web server connection dropped (restarting) …', 'ok');
+
+      setStatus('Waiting for both servers …', 'warn');
+      await new Promise(r => setTimeout(r, 3000));
+      await pollUntilBack();
     }
   </script>
 </body>

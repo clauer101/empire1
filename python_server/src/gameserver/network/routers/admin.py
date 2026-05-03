@@ -246,6 +246,38 @@ def make_router(services: "Services") -> APIRouter:
         asyncio.create_task(_do_restart())
         return {"ok": True, "message": "State saved — restarting …"}
 
+    @router.post("/api/admin/deploy")
+    async def admin_deploy(
+        body: dict[str, Any],
+        _uid: int = Depends(require_admin),
+    ) -> dict[str, Any]:
+        import pathlib
+
+        env = body.get("env", "prod")
+        if env not in ("prod", "dev"):
+            raise HTTPException(status_code=400, detail="env must be 'prod' or 'dev'")
+
+        deploy_script = pathlib.Path(__file__).parents[6] / "deploy.sh"
+        if not deploy_script.exists():
+            raise HTTPException(status_code=500, detail="deploy.sh not found")
+
+        async def _run_deploy() -> None:
+            await asyncio.sleep(0.3)
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    str(deploy_script), env,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                )
+                stdout, _ = await proc.communicate()
+                log.info("deploy finished", env=env, rc=proc.returncode,
+                         output=stdout.decode(errors="replace")[-2000:])
+            except Exception:
+                log.exception("deploy failed", env=env)
+
+        asyncio.create_task(_run_deploy())
+        return {"ok": True, "message": f"Deploy of '{env}' started …"}
+
     @router.get("/api/admin/users")
     async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict]:
         if services.database is None:

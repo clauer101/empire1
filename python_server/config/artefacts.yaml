@@ -57,8 +57,8 @@ LOST_ALMANAC:
     research_speed_modifier: 0.8
     build_speed_modifier: 0.6
     build_speed_offset: 0.6
-    restore_life: 10
-    life_modifier: 1
+    restore_life_after_loss_offset: 10
+    life_offset: 0.003
 MERCIFUL_ARMOUR:
   name: Merciful Armour
   description: ''

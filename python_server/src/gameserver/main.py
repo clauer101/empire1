@@ -527,6 +527,10 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
     logging.getLogger("gameserver.engine.battle_service").setLevel(logging.INFO)
     log.info("=== Game Server starting ===")
 
+    # Point replay storage at the persisted data directory so replays survive redeploys
+    import gameserver.persistence.replay as _replay_mod
+    _replay_mod.DEFAULT_REPLAY_DIR = str(Path(state_file).parent / "replays")
+
     # 1. Load configuration
     config = load_configuration(config_dir=config_dir)
 

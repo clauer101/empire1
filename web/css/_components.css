@@ -1,0 +1,429 @@
+/* ── Panels (reusable card) ──────────────────────────────── */
+.panel {
+  background: rgba(26, 26, 40, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.art-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.art-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #2a2410;
+  border: 1px solid #c9a84c;
+  color: #c9a84c;
+}
+.art-badge-clickable { cursor: pointer; }
+.art-badge-clickable:hover { opacity: 0.8; }
+.art-badge-legendary {
+  background: #2a1a2a;
+  border-color: #ab47bc;
+  color: #ab47bc;
+}
+
+.panel-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.panel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.panel-row .label {
+  color: var(--text-dim);
+}
+
+.panel-row .value {
+  color: var(--text-bright);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Connection indicator ────────────────────────────────── */
+.conn-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.conn-dot.online  { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.conn-dot.offline { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+
+/* ── Headings ────────────────────────────────────────────── */
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 20px;
+  letter-spacing: .3px;
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 16px 0 8px;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr {
+  transition: background .12s;
+}
+
+tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* items table (buildings/research) */
+.items-table .col-name { width: 55%; }
+.items-table .col-details { width: 45%; }
+
+.items-table .detail-row {
+  margin: 3px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.items-table .detail-row:first-child {
+  margin-top: 0;
+}
+
+.items-table .detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.items-table .detail-label {
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 6px;
+}
+
+ul.effects-list {
+  margin: 2px 0 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+ul.effects-list li {
+  margin: 0;
+  padding: 0;
+}
+
+/* responsive mobile layout for items table */
+@media (max-width: 900px) {
+  .items-table thead {
+    display: none;
+  }
+  
+  .items-table {
+    display: block;
+    width: 100%;
+  }
+  
+  .items-table tbody {
+    display: block;
+    width: 100%;
+  }
+  
+  .items-table tr {
+    display: block;
+    width: 100%;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  
+  .items-table td {
+    display: block;
+    width: 100% !important;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .items-table td:last-child {
+    border-bottom: none;
+  }
+  
+  .items-table .col-name {
+    padding-bottom: 8px;
+  }
+  
+  .items-table .col-details {
+    padding-top: 8px;
+  }
+  
+  /* Keep name and button side-by-side on mobile */
+  .items-table .item-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+  }
+}
+
+/* status badges in tables */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+.badge--completed   { background: rgba(102,187,106,.15); color: var(--success); }
+.badge--in-progress { background: rgba(79,195,247,.15);  color: var(--accent);  }
+.badge--available   { background: rgba(255,255,255,.06); color: var(--text-dim); }
+.badge--locked      { background: rgba(239,83,80,.1);    color: var(--danger);   }
+
+/* Unlock category badges */
+.badge--unlock-building  { background: rgba(255,193,7,.15);   color: #ffc107; }
+.badge--unlock-knowledge { background: rgba(156,39,176,.2);   color: #ce93d8; }
+.badge--unlock-structure { background: rgba(0,188,212,.15);   color: #4dd0e1; }
+.badge--unlock-critter   { background: rgba(239,83,80,.15);   color: #ef9a9a; }
+/* dim completed unlock badges */
+.badge--unlock-building.badge--completed,
+.badge--unlock-knowledge.badge--completed,
+.badge--unlock-structure.badge--completed,
+.badge--unlock-critter.badge--completed  { opacity: 0.45; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+button, .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+  letter-spacing: .3px;
+}
+
+button:hover, .btn:hover {
+  background: var(--accent-dim);
+  color: var(--text-bright);
+}
+
+button:active {
+  opacity: .8;
+}
+
+button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+button.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+button.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+button.btn-ghost:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+button.btn-danger {
+  background: var(--danger);
+}
+button.btn-danger:hover {
+  background: #c62828;
+  color: var(--text-bright);
+}
+
+/* ── Select-Mode Buttons (tower targeting strategy) ─────── */
+button.select-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+button.select-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+button.select-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Toggle Switch ───────────────────────────────────────── */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  transition: .2s;
+  border-radius: 22px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-dim);
+  transition: .2s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(18px);
+  background-color: var(--text-bright);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Inputs ──────────────────────────────────────────────── */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+select,
+textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  transition: border-color .15s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-dim);
+  opacity: .6;
+}
+
+label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* ── Form groups ─────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted, #888);
+  line-height: 1.4;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.form-row > * {
+  flex: 1;
+}
+

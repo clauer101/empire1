@@ -356,13 +356,22 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 // ── Load ─────────────────────────────────────────────────────
 (async () => {
   try {
-    const data = await fetch('/api/artefacts').then(r => r.json());
+    const resp = await fetch('/api/artefacts');
+    const data = await resp.json();
+    if (!resp.ok || !Array.isArray(data)) {
+      throw new Error(data.error || `Server returned ${resp.status}`);
+    }
     artefacts = data;
     document.getElementById('loading').remove();
     renderAll();
     document.getElementById('save-btn').disabled = true;
   } catch (e) {
-    document.getElementById('loading').textContent = `Error: ${e.message}`;
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl) {
+      loadingEl.textContent = `Error: ${e.message}`;
+    } else {
+      console.error('artifacts load/render error:', e);
+    }
   }
 })();
 </script>

@@ -367,8 +367,9 @@ function _showProductionOverlay(data) {
   const goldHtml = renderResourceIncome('gold', effects, citizens, citizenEffect, data.base_gold, completedBuildings, items, completedResearch, artefacts);
   const cultureHtml = renderResourceIncome('culture', effects, citizens, citizenEffect, data.base_culture, completedBuildings, items, completedResearch, artefacts);
   const lifeHtml = renderResourceIncome('life', effects, citizens, citizenEffect, 0, completedBuildings, items, completedResearch, artefacts);
-  const buildHtml = renderBuildSpeed(effects, completedBuildings, completedResearch, items, data.base_build_speed);
-  const researchHtml = renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, data.base_research_speed);
+  const buildHtml = renderBuildSpeed(effects, completedBuildings, completedResearch, items, data.base_build_speed, artefacts);
+  const researchHtml = renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, data.base_research_speed, artefacts);
+  const restoreHtml = renderRestoreLife(effects, completedBuildings, completedResearch, items, artefacts);
 
   const overlay = document.createElement('div');
   overlay.className = 'prod-overlay';
@@ -381,6 +382,7 @@ function _showProductionOverlay(data) {
       ${section('<span style="color:#90ee90">● Life Regen</span>', lifeHtml)}
       ${section('<span style="color:#4fc3f7">● Construction Speed</span>', buildHtml)}
       ${section('<span style="color:#ffa726">● Research Speed</span>', researchHtml)}
+      ${restoreHtml ? section('<span style="color:#ef9a9a">● Restore Life After Battle</span>', restoreHtml) : ''}
     </div>
   `;
 
@@ -557,12 +559,10 @@ function renderProduction(label, items) {  if (!items || typeof items !== 'objec
   return `<div class="panel-row"><span class="label">${iid}</span><span class="value">${fmt(remaining)} left</span></div>`;
 }
 
-function renderBuildSpeed(effects, completedBuildings, completedResearch, items, baseBuildSpeed) {
+function renderBuildSpeed(effects, completedBuildings, completedResearch, items, baseBuildSpeed, ownedArtefacts) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
   const buildOffset   = effects?.build_speed_offset   || 0;
   const buildModifier = effects?.build_speed_modifier || 0;
-  const totalOffset   = baseBuildSpeed + buildOffset;
-  const multiplier    = 1 + buildModifier;
   const effective     = calcBuildSpeed({ base_build_speed: baseBuildSpeed, effects });
 
   let html = '';
@@ -584,6 +584,13 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
         itemBuildOffset += item.effects.build_speed_offset;
         html += `<div class="panel-row"><span class="label">+${item.effects.build_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
       }
+    }
+  }
+  for (const iid of (ownedArtefacts || [])) {
+    const art = items?.catalog?.[iid];
+    if (art?.effects?.build_speed_offset > 0) {
+      itemBuildOffset += art.effects.build_speed_offset;
+      html += `<div class="panel-row"><span class="label">+${art.effects.build_speed_offset.toFixed(2)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
     }
   }
   const eraBuildOffset = buildOffset - itemBuildOffset;
@@ -609,15 +616,24 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
       }
     }
   }
+  for (const iid of (ownedArtefacts || [])) {
+    const art = items?.catalog?.[iid];
+    if (art?.effects?.build_speed_modifier > 0) {
+      itemBuildModifier += art.effects.build_speed_modifier;
+      html += `<div class="panel-row"><span class="label">+${(art.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+    }
+  }
   const eraBuildModifier = buildModifier - itemBuildModifier;
   if (eraBuildModifier > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(eraBuildModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
+  const totalOffset = baseBuildSpeed + buildOffset;
+  const multiplier  = 1 + buildModifier;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
 }
 
-function renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, baseResearchSpeed) {
+function renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, baseResearchSpeed, ownedArtefacts) {
   baseResearchSpeed   = baseResearchSpeed ?? 1.0;
   const researchOffset   = effects?.research_speed_offset   || 0;
   const researchModifier = effects?.research_speed_modifier || 0;
@@ -648,6 +664,13 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
       }
     }
   }
+  for (const iid of (ownedArtefacts || [])) {
+    const art = items?.catalog?.[iid];
+    if (art?.effects?.research_speed_offset > 0) {
+      itemResearchOffset += art.effects.research_speed_offset;
+      html += `<div class="panel-row"><span class="label">+${art.effects.research_speed_offset.toFixed(2)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+    }
+  }
   const eraResearchOffset = researchOffset - itemResearchOffset;
   if (eraResearchOffset > 0.0005)
     html += `<div class="panel-row"><span class="label">+${eraResearchOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
@@ -672,11 +695,57 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
       }
     }
   }
+  for (const iid of (ownedArtefacts || [])) {
+    const art = items?.catalog?.[iid];
+    if (art?.effects?.research_speed_modifier > 0) {
+      itemResearchModifier += art.effects.research_speed_modifier;
+      html += `<div class="panel-row"><span class="label">+${(art.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+    }
+  }
   const eraResearchModifier = researchModifier - itemResearchModifier;
   if (eraResearchModifier > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(eraResearchModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
+  return html;
+}
+
+function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtefacts) {
+  const key = 'restore_life_after_loss_offset';
+  let html = '';
+  let total = 0;
+
+  for (const iid of (completedBuildings || [])) {
+    const item = items?.buildings?.[iid];
+    if (item?.effects?.[key] > 0) {
+      total += item.effects[key];
+      html += `<div class="panel-row"><span class="label">+${item.effects[key].toFixed(1)}%</span><span class="value">(${item.name || iid})</span></div>`;
+    }
+  }
+  for (const iid of (completedResearch || [])) {
+    const item = items?.knowledge?.[iid];
+    if (item?.effects?.[key] > 0) {
+      total += item.effects[key];
+      html += `<div class="panel-row"><span class="label">+${item.effects[key].toFixed(1)}%</span><span class="value">(${item.name || iid})</span></div>`;
+    }
+  }
+  for (const iid of (ownedArtefacts || [])) {
+    const art = items?.catalog?.[iid];
+    if (art?.effects?.[key] > 0) {
+      total += art.effects[key];
+      html += `<div class="panel-row"><span class="label">+${art.effects[key].toFixed(1)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+    }
+  }
+  if (!total) return '';
+
+  // Also include era contribution from aggregated effects
+  const eraContrib = (effects?.[key] || 0) - total;
+  if (eraContrib > 0.05)
+    html += `<div class="panel-row"><span class="label">+${eraContrib.toFixed(1)}%</span><span class="value">(Era)</span></div>`;
+  total = effects?.[key] || total;
+
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html += `<div class="panel-row" style="color:#ef9a9a;font-weight:bold"><span class="label">= ${total.toFixed(1)}% life restored after loss</span></div>`;
   return html;
 }
 

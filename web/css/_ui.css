@@ -1,0 +1,806 @@
+/* ── Era Overlay ─────────────────────────────────────────── */
+#era-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+#era-overlay.visible {
+  display: flex;
+}
+.era-panel {
+  position: relative;
+  background: rgba(18, 18, 30, 0.92);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 16px;
+  padding: 36px 40px 32px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.era-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+.era-close:hover { color: rgba(255,255,255,0.8); }
+.era-numeral {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 56px;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(180deg,#e8d5a3 0%,#faf0d7 18%,#c9a84c 40%,#a07c2a 50%,#c9a84c 60%,#faf0d7 82%,#e8d5a3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.7));
+  margin-bottom: 4px;
+}
+.era-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(201,168,76,0.8);
+  margin-bottom: 20px;
+}
+.era-base-img {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto 24px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+}
+.era-effects {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.era-effect-row {
+  font-size: 12px;
+  padding: 4px 0;
+  color: rgba(255,255,255,0.7);
+  text-align: left;
+}
+
+/* ── Toast Notifications ─────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--surface-alt);
+  color: var(--text);
+  border-left: 3px solid var(--accent);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  max-width: 340px;
+  animation: toast-in .25s ease-out, toast-out .3s ease-in 4.5s forwards;
+  pointer-events: auto;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ── Progress bar ────────────────────────────────────────── */
+.progress {
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .4s ease;
+}
+
+/* ── Cards (army, message, etc.) ─────────────────────────── */
+.card {
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 8px;
+  transition: background .12s;
+}
+.card:hover {
+  background: var(--surface-hover);
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 6px;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ── Armies Container (Army Groups with Wave Tiles) ──────── */
+.armies-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.armies-container .empty-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* ── Army Group ──────────────────────────────────────────── */
+.army-group {
+  margin-bottom: 24px;
+}
+
+.army-name-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.army-attack-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 0;
+}
+
+.empire-ac-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.target-uid-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: all .15s;
+}
+
+.target-uid-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.empire-ac-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,.45);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.empire-ac-item {
+  padding: 7px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+  overflow: hidden;
+}
+
+.empire-ac-item:last-child { border-bottom: none; }
+
+.empire-ac-item:hover,
+.empire-ac-item--active {
+  background: var(--surface-hover, rgba(79,195,247,.12));
+}
+
+.eac-label {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eac-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.eac-hl {
+  background: rgba(255, 213, 0, 0.35);
+  color: #ffe564;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-style: normal;
+}
+
+.army-opponent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 0;
+}
+
+.army-opponent-row label {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+  min-width: 50px;
+}
+
+.opponent-name-input {
+  flex: 1;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: all .15s;
+}
+
+.opponent-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.army-attack-btn {
+  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  border: 1px solid #c62828;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+}
+
+.army-attack-btn:hover {
+  background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
+  transform: translateY(-1px);
+}
+
+.army-attack-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+}
+
+.army-name {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-dim);
+  padding-left: 0;
+}
+
+.army-id {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.army-edit-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.army-edit-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.army-name-input {
+  flex: 1;
+  background: var(--surface-alt);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 200px;
+}
+
+.army-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.army-confirm-btn,
+.army-cancel-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.army-confirm-btn:hover {
+  background: var(--accent-glow);
+}
+
+.army-cancel-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(239, 83, 80, 0.12);
+}
+
+/* ── Waves Container (wrapping grid) ──────────────────────── */
+.waves-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 4px;
+  min-height: 80px;
+  align-items: flex-start;
+}
+
+/* ── Wave Tile (small cards for individual waves) ────────── */
+.wave-tile {
+  flex: 0 0 100px;
+  height: 120px;
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all .15s;
+  cursor: pointer;
+}
+
+.wave-tile:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(79, 195, 247, .15);
+}
+
+/* Critter button fills the tile body — sprite + count overlay */
+.wave-tile .wave-critter-btn {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  width: 100%;
+  min-height: 0;
+}
+
+.wave-tile__edit-hint {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity .2s;
+}
+.wave-critter-btn:hover .wave-tile__edit-hint {
+  opacity: 1;
+}
+
+.wave-tile__sprite {
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.wave-tile__no-critter {
+  font-size: 28px;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+/* count badge overlay — bottom-right of the sprite button */
+.wave-tile__count {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8), 0 0 6px rgba(0,0,0,.6);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* bottom row: slots label + "+" buy button */
+.wave-tile__footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 5px 4px;
+  border-top: 1px solid var(--border);
+  gap: 4px;
+}
+
+.wave-tile__slots {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wave-slots-btn.wave-slots-increase {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 4px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.wave-tile-header {
+  flex: 0;
+  min-height: 24px;
+  margin-bottom: 4px;
+}
+
+
+.wave-critter-select {
+  display: none; /* replaced by overlay picker */
+}
+
+.wave-tile-body {
+  display: none; /* replaced by new layout */
+}
+
+.wave-tile-count {
+  display: none; /* replaced by .wave-tile__count */
+}
+
+.wave-tile-count-block {
+  display: none;
+}
+
+.wave-tile-slots-label {
+  display: none;
+}
+
+.wave-slots-btn {
+  background: rgba(79, 195, 247, .2);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.wave-slots-increase__icon {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wave-slots-increase__price {
+  font-size: 8px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.wave-slots-btn:hover {
+  background: rgba(79, 195, 247, .4);
+  border-color: var(--accent);
+}
+
+.wave-slots-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(79, 195, 247, .1);
+}
+
+.wave-slots-btn:disabled:hover {
+  background: rgba(79, 195, 247, .1);
+  border-color: var(--accent-dim);
+}
+
+.wave-tile-footer {
+  flex: 0;
+  text-align: center;
+}
+
+.wave-time {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ── Wave Tile Add (plus button) ────────────────────────── */
+.wave-tile-add {
+  background: rgba(79, 195, 247, .08);
+  border-color: var(--accent-dim);
+}
+
+.wave-tile-add:hover {
+  background: rgba(79, 195, 247, .15);
+  border-color: var(--accent);
+}
+
+.wave-tile-plus {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* ── Wave Critter Picker Button (old standalone — superseded) ── */
+.wave-critter-btn__sprite {
+  display: none;
+}
+
+.wave-critter-btn__name {
+  display: none;
+}
+
+.wave-critter-btn__placeholder {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 28px;
+  font-weight: 300;
+}
+
+/* ── Critter Picker Overlay Grid ────────────────────────── */
+.critter-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.critter-pick-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--font);
+  transition: background .12s, border-color .12s, box-shadow .12s;
+  text-align: left;
+  width: 100%;
+  overflow: hidden;
+}
+
+.critter-pick-tile:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(79, 195, 247, .2);
+}
+
+.critter-pick-tile--selected {
+  border-color: var(--warning);
+  background: rgba(255, 167, 38, .12);
+  box-shadow: 0 0 8px rgba(255, 167, 38, .25);
+}
+
+.cpt-sprite {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.cpt-sprite canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.cpt-name {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 6px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.cpt-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+  padding: 2px 6px 5px;
+  width: 100%;
+}
+
+.cpt-stat {
+  font-size: 11px;
+  font-family: var(--mono, monospace);
+}
+
+.cpt-hp    { color: #ef9a9a; }
+.cpt-spd   { color: var(--success, #66bb6a); }
+.cpt-arm   { color: #ce93d8; }
+.cpt-slots { color: var(--accent); font-weight: 700; }
+
+/* ── Army Separator ────────────────────────────────────────– */
+.army-separator {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border) 25%,
+    var(--border) 75%,
+    transparent
+  );
+  margin: 16px 0 8px 0;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-dim);
+}
+
+.empty-state .empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: .4;
+}
+
+.empty-state p {
+  font-size: 13px;
+}
+
+/* ── Error messages ──────────────────────────────────────── */
+.error-msg {
+  background: rgba(239,83,80,.1);
+  color: var(--danger);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+}
+
+/* ── Scrollbar (webkit) ──────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* ── Debug Toggle ────────────────────────────────────────── */
+.debug-toggle {
+  position: fixed;
+  bottom: 76px;
+  left: 16px;
+  width: 48px;
+  height: 48px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all .2s ease;
+  opacity: .6;
+  z-index: 999;
+}
+
+.debug-toggle:hover {
+  opacity: 1;
+  background: var(--surface-hover);
+  border-color: var(--accent-dim);
+}
+
+.debug-toggle.active {
+  opacity: 1;
+  background: rgba(79, 195, 247, .15);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(79, 195, 247, .2);
+}
+
+.toast-debug {
+  background: rgba(79, 195, 247, .15);
+  border: 1px solid rgba(79, 195, 247, .3);
+  color: var(--accent);
+}
+

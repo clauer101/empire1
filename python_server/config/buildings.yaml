@@ -928,7 +928,7 @@ SOCIAL_SECURITY_SYSTEM:
   effort: 659388
   costs: {gold: 2094294}
   requirements: [CONSTITUTION, SANITATION]
-  effects: {max_life_modifier: 5}
+  effects: {max_life_modifier: 10}
 
 EXECUTIVE_CARPOOL:
   era: modern
@@ -961,8 +961,8 @@ DERIVATIVE_MARKET:
   costs: {gold: 2094294}
   requirements: [ECONOMY, GLOBALIZATION_STRATEGIES]
   effects:
-    gold_modifier: 2
-    gold_offset: 1
+    gold_modifier: 0.5
+    gold_offset: 0.5
 
 BOMBING_AREA:
   era: modern
@@ -995,8 +995,8 @@ ROBO_MANUFACTURE:
   costs: {gold: 2326993}
   requirements: [MECHANICAL_ENGINEERING, COMPUTER_TECHNOLOGY]
   effects:
-    build_speed_modifier: 0.2
-    build_speed_offset: 0.2
+    build_speed_modifier: 0.4
+    build_speed_offset: 0.4
 
 INTELLIGENCE_AGENCY:
   era: modern
@@ -1056,8 +1056,8 @@ THE_WORLD_WONDER:
   requirements: [NUCLEAR_REACTION, GLOBALIZATION_STRATEGIES, SPECIAL_FORCES]
   effects:
     culture_modifier: 5.0
-    gold_modifier: 10
-    research_speed_modifier: 5
+    gold_modifier: 1.0
+    research_speed_modifier: 2.0
 
 SPACE_CENTER:
   era: future
