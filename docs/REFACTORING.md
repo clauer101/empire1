@@ -251,17 +251,17 @@ Last updated: 2026-05-03
 | **T2.10** | CSP & security headers middleware | ✅ Done | Security headers middleware in `rest_api.py`; CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy |
 | **T3.1** | Split `handlers.py` → `handlers/` package | ✅ Done | `handlers/` package with `_core`, `social`, `battle` (391 LOC), `battle_task` (840 LOC); each module < 1000 LOC |
 | **T3.2** | Split `rest_api.py` → `routers/` subpackage | ✅ Done | 7 routers (auth, empire, army, attack, messages, replays, admin); `rest_api.py` ~390 LOC |
-| **T3.3** | Split `web/js/views/defense.js` | ⬜ Todo | — |
-| **T3.4** | Split `web/css/style.css` into partials | ⬜ Todo | — |
-| **T4.1** | Add Vite (vanilla mode) | ⬜ Todo | — |
-| **T4.2** | Asset pipeline (WebP, image compression) | ⬜ Todo | — |
-| **T4.3** | Playwright smoke tests | ⬜ Todo | — |
+| **T3.3** | Split `web/js/views/defense.js` | ✅ Done | `defense/era_data.js` (78), `ws.js` (211), `placement.js` (342), `battle_ui.js` (490); `defense.js` 980 LOC |
+| **T3.4** | Split `web/css/style.css` into partials | ✅ Done | 8 partials via `@import`: `_base`, `_layout`, `_components`, `_ui`, `_responsive`, `_dashboard`, `views/_landing`, `views/_defense` |
+| **T4.1** | Add Vite (vanilla mode) | ✅ Done | `web/package.json` + `vite.config.js`; multi-page (index + dsgvo); `BUILD_MODE=production` serves `dist/` |
+| **T4.2** | Asset pipeline (WebP, image compression) | ✅ Done | `scripts/optimize-assets.mjs` (sharp); 342 kB saved; `<picture>` in login; pre-wired to `npm run build` |
+| **T4.3** | Playwright smoke tests | ✅ Done | 7 tests (signup, login, build, tower, army, attack, logout); Firefox; `loginViaApi` bypasses rate limit; `web/e2e/smoke.spec.js` |
 | **T4.4** | ESLint + Prettier | ⬜ Todo | — |
 | **T5.1** | mypy strict as CI gate (zero errors) | ⬜ Todo | — |
 | **T5.2** | Pin upper bounds + lockfile checks | ⬜ Todo | — |
 | **T5.3** | Coverage gate ≥ 80% backend | ⬜ Todo | — |
 
-**Phase summary**: Phase 1 — 8/8 done ✅ · Phase 2 — 10/10 done ✅ · Phase 3 — 1.5/4 done · Phase 4–5 — 0/8 done
+**Phase summary**: Phase 1 — 8/8 done ✅ · Phase 2 — 10/10 done ✅ · Phase 3 — 4/4 done ✅ · Phase 4 — 2/4 done · Phase 5 — 0/3 done
 
 ---
 
@@ -1166,7 +1166,7 @@ makes bundling cleaner).
 
 - [ ] `npm run build` produces a hashed bundle in `web/dist/`.
 - [ ] WebP variants exist for all critical images.
-- [ ] Playwright smoke tests cover signup, login, build, attack.
+- [x] Playwright smoke tests cover signup, login, build, attack.
 - [ ] CI runs frontend lint + e2e on every PR.
 
 ---

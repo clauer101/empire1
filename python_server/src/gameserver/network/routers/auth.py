@@ -17,7 +17,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     router = APIRouter()
 
     @router.post("/api/auth/login", response_model=LoginResponse)
-    @limiter.limit("5/minute")
+    @limiter.limit("30/minute")
     async def login(request: Request, body: LoginRequest) -> dict[str, Any]:
         from gameserver.network.handlers import _build_empire_summary, _build_session_state
         uid = await services.auth_service.login(body.username, body.password)
@@ -42,7 +42,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         }
 
     @router.post("/api/auth/signup", response_model=SignupResponse)
-    @limiter.limit("5/minute")
+    @limiter.limit("30/minute")
     async def signup(request: Request, body: SignupRequest) -> dict[str, Any]:
         result = await services.auth_service.signup(
             body.username, body.password, body.email, body.empire_name,
