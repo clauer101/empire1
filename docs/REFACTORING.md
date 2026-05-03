@@ -227,7 +227,7 @@ When you create a new file, copy the style from these existing patterns:
 
 ## 6. Progress Status
 
-Last updated: 2026-05-01
+Last updated: 2026-05-03
 
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
@@ -242,15 +242,15 @@ Last updated: 2026-05-01
 | **T2.1** | Rotating log handlers | ✅ Done | `TimedRotatingFileHandler` in `main.py` and `fastapi_server.py`; midnight rotation, 14-day retention |
 | **T2.2** | Structured logging (JSON) + request-ID | ✅ Done | `structlog` with JSON/console renderer; request-ID middleware in `rest_api.py`; connection-ID in `server.py`; `util/logging.py` configures both |
 | **T2.3** | `/health` + `/health/ready` endpoints | ✅ Done | Added to `rest_api.py` (game server) and `fastapi_server.py` (web server) |
-| **T2.4** | Prometheus `/metrics` endpoint | ⬜ Todo | — |
-| **T2.5** | Alembic baseline migration | ⬜ Todo | — |
-| **T2.6** | DB + state.yaml backup automation | ⬜ Todo | — |
-| **T2.7** | Tighten bare-except blocks | ⬜ Todo | — |
-| **T2.8** | Pydantic models for WebSocket messages | ⬜ Todo | — |
-| **T2.9** | Rate limiting (slowapi REST + WS) | ⬜ Todo | — |
-| **T2.10** | CSP & security headers middleware | ⬜ Todo | — |
-| **T3.1** | Split `handlers.py` → `handlers/` package | 🔄 Partial | `handlers/` package created; `social.py` extracted (7 handlers); `_ProxyModule` wires mutable globals |
-| **T3.2** | Split `rest_api.py` → `routers/` subpackage | ⬜ Todo | — |
+| **T2.4** | Prometheus `/metrics` endpoint | ✅ Done | `network/metrics.py` defines gauges; `/metrics` endpoint in `routers/admin.py` |
+| **T2.5** | Alembic baseline migration | ✅ Done | `migrations/versions/977b61c84d43_baseline.py`; `alembic.ini` configured |
+| **T2.6** | DB + state.yaml backup automation | ✅ Done | `_backup_loop()` in `main.py`; 24 hourly + 7 daily slots in `data/{env}/states/`; runs as asyncio task |
+| **T2.7** | Tighten bare-except blocks | ✅ Done | All bare `except Exception:` blocks have why-comments; 2 silent swallows in replay.py now log warnings |
+| **T2.8** | Pydantic models for WebSocket messages | ✅ Done | `models/messages.py` has typed models for all WS types + `MESSAGE_TYPES` registry + `parse_message()` used by router |
+| **T2.9** | Rate limiting (slowapi REST + WS) | ✅ Done | `slowapi` with `120/minute` default; `5/minute` on login + signup |
+| **T2.10** | CSP & security headers middleware | ✅ Done | Security headers middleware in `rest_api.py`; CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy |
+| **T3.1** | Split `handlers.py` → `handlers/` package | ✅ Done | `handlers/` package with `_core`, `social`, `battle` (391 LOC), `battle_task` (840 LOC); each module < 1000 LOC |
+| **T3.2** | Split `rest_api.py` → `routers/` subpackage | ✅ Done | 7 routers (auth, empire, army, attack, messages, replays, admin); `rest_api.py` ~390 LOC |
 | **T3.3** | Split `web/js/views/defense.js` | ⬜ Todo | — |
 | **T3.4** | Split `web/css/style.css` into partials | ⬜ Todo | — |
 | **T4.1** | Add Vite (vanilla mode) | ⬜ Todo | — |
@@ -261,7 +261,7 @@ Last updated: 2026-05-01
 | **T5.2** | Pin upper bounds + lockfile checks | ⬜ Todo | — |
 | **T5.3** | Coverage gate ≥ 80% backend | ⬜ Todo | — |
 
-**Phase summary**: Phase 1 — 7/7 done ✅ · Phase 2 — 3/10 done · Phase 3 — 0.5/4 done · Phase 4–5 — 0/8 done
+**Phase summary**: Phase 1 — 8/8 done ✅ · Phase 2 — 10/10 done ✅ · Phase 3 — 1.5/4 done · Phase 4–5 — 0/8 done
 
 ---
 

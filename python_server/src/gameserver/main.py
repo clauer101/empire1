@@ -431,6 +431,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                     last_daily_day = today
 
             except Exception:
+                # Backup errors must never crash the game server — log and retry next hour
                 log.exception("Backup loop error — continuing")
 
     services._backup_task = asyncio.create_task(_backup_loop())
@@ -483,6 +484,7 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
             )
             log.info("Game state saved")
         except Exception:
+            # Save failure must not block shutdown — servers still need to stop cleanly
             log.exception("State save failed — continuing shutdown")
 
     if services.server is not None:

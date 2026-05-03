@@ -119,6 +119,7 @@ class GameLoop:
                 path=self._state_file,
             )
         except Exception:
+            # State save must never crash the game loop — log and continue ticking
             _log.getLogger(__name__).exception("Periodic state save failed")
 
     def _step(self, dt: float) -> None:

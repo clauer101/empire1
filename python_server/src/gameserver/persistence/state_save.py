@@ -65,6 +65,7 @@ async def save_state(
         # bind-mounted single files don't support atomic rename — write in place
         out.write_text(content, encoding="utf-8")
     except Exception:
+        # Unexpected error (e.g. yaml serialization failure) — log, clean up tmp, re-raise
         log.exception("Failed to save game state to %s", path)
         if tmp.exists():
             tmp.unlink(missing_ok=True)

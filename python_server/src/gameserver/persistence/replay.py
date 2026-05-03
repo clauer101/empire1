@@ -160,6 +160,8 @@ def list_replays(replay_dir: str = DEFAULT_REPLAY_DIR) -> list[dict[str, Any]]:
                 "event_count": len(raw.get("events", [])),
             })
         except Exception:
+            # Skip corrupt/unreadable replay files — one bad file shouldn't block the listing
+            log.warning("list_replays: skipping unreadable file %s", path, exc_info=True)
             continue
     return result
 
@@ -179,6 +181,8 @@ def cleanup_old_replays(replay_dir: str = DEFAULT_REPLAY_DIR,
                     f.unlink()
                     deleted += 1
             except Exception:
+                # Race condition: file may be deleted between glob and unlink — skip it
+                log.debug("cleanup_old_replays: could not remove %s", f, exc_info=True)
                 continue
     if deleted:
         log.info("Replay cleanup: deleted %d files older than %d days", deleted, max_age_days)

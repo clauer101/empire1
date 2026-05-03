@@ -248,6 +248,7 @@ class Server:
             else:
                 log.info("Client connected: uid=%d remote=%s (no request headers)", guest_uid, remote)
         except Exception:
+            # Older websockets versions may not expose request.headers — fall back gracefully
             log.info("Client connected: uid=%d remote=%s", guest_uid, remote)
 
         try:

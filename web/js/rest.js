@@ -195,8 +195,12 @@ class RestClient {
           return true;
         }
       } catch (err) {
-        console.warn('[RestClient] stored token invalid:', err.message);
-        this.clearToken();
+        console.warn('[RestClient] stored token validation failed:', err.message);
+        // Only clear the token on explicit 401 (invalid/expired token).
+        // Network errors or server-restart transients should not log the user out.
+        if (err.message.includes('Unauthorized')) {
+          this.clearToken();
+        }
       }
     }
 

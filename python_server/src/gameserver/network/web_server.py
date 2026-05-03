@@ -594,6 +594,7 @@ def _compute_map_defense_power(m: dict) -> float:
         path = find_path_from_spawn_to_castle(hex_map)
         path_length = len(path) - 1 if path else None
     except Exception:
+        # Pathfinding may fail on incomplete/malformed maps — treat as unknown length
         path_length = None
     return defense_power(empire, upgrades, path_length=path_length)
 
@@ -972,10 +973,12 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             try:
                 power[name] = round(_compute_map_defense_power(m), 1)
             except Exception:
+                # Defense power is derived/optional — skip if map data is incomplete
                 pass
             try:
                 age_pct[name] = _compute_map_age_pct(m)
             except Exception:
+                # Age distribution is derived/optional — skip if map data is incomplete
                 pass
         return JSONResponse({"maps": names, "life": life, "power": power, "age_pct": age_pct})
 

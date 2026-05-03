@@ -69,6 +69,7 @@ class MessageStore:
             self._next_id = data.get("next_id", 1)
             log.info("MessageStore: loaded %d messages from %s", len(self._messages), self._path)
         except Exception:
+            # yaml.safe_load raises YAMLError, OSError on read — both mean start fresh
             log.exception("MessageStore: failed to load %s — starting empty", self._path)
             self._messages = []
             self._next_id = 1
@@ -87,6 +88,7 @@ class MessageStore:
             )
             tmp.replace(self._path)
         except Exception:
+            # OSError on write or rename — log and clean up the tmp file
             log.exception("MessageStore: failed to save to %s", self._path)
             if tmp.exists():
                 tmp.unlink(missing_ok=True)

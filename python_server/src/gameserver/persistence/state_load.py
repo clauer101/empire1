@@ -74,6 +74,7 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     try:
         raw = yaml.safe_load(state_file.read_text(encoding="utf-8"))
     except Exception:
+        # yaml.safe_load raises YAMLError, but also OSError on read failure — catch both
         log.exception("Failed to parse state file %s", path)
         return None
 
@@ -92,6 +93,7 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
             empire = _deserialize_empire(empire_dict)
             result.empires[empire.uid] = empire
         except Exception:
+            # One corrupt empire must not prevent loading the rest
             log.exception("Failed to restore empire: %s", empire_dict.get("uid", "?"))
 
     # ---- Attacks ----
@@ -99,6 +101,7 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
         try:
             result.attacks.append(_deserialize_attack(attack_dict))
         except Exception:
+            # One corrupt attack must not prevent loading the rest
             log.exception("Failed to restore attack: %s", attack_dict.get("attack_id", "?"))
 
     # ---- Battles ----
@@ -112,6 +115,7 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
             result.battles.append(battle)
             battle_dicts.append((battle, battle_dict))
         except Exception:
+            # One corrupt battle must not prevent loading the rest
             log.exception("Failed to restore battle: %s", battle_dict.get("bid", "?"))
 
     # ---- Link defender empires to battles ----
