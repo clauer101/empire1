@@ -43,7 +43,7 @@ SLING_TOWER:
   select: first
   costs: {gold: 150}
   effects: {}
-  requirements: [MAIN_HOUSE]
+  requirements: [MAIN_HOUSE, HUNTING]
 
 # ============================================================
 #   NEOLITHIKUM  (Effort 200 – 1.500)
@@ -119,7 +119,7 @@ BALLISTA_TOWER:
   select: first
   costs: {gold: 7800}
   effects: {}
-  requirements: [WATCH_TOWER]
+  requirements: [WATCH_TOWER, DRILL]
 
 FIRE_TOWER:
   era: bronze
@@ -174,7 +174,7 @@ ARBELESTE_TOWER:
   select: first
   costs: {gold: 21500}
   effects: {}
-  requirements: [FORGE]
+  requirements: [FORGE, IRON]
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -195,7 +195,7 @@ TAR_TOWER:
   select: first
   costs: {gold: 40000}
   effects: {slow_duration: 3000, slow_ratio: 0.3}   # slows to 40% speed for 4s
-  requirements: [HERBOLOGY, WORK_SHOP, GUNPOWDER]
+  requirements: [TACTICS, FEUDALISM]
 
 HEAVY_TOWER:
   era: middle_ages
@@ -462,7 +462,7 @@ ANTI_AIR_TOWER:
   select: first
   costs: {gold: 350000}
   effects: {}
-  requirements: [ECHELON_DEFENSE_FACILITY]
+  requirements: [ECHELON_DEFENSE_FACILITY, AVIATION]
 
 LASER_TOWER:
   era: modern
@@ -479,7 +479,7 @@ LASER_TOWER:
   select: first
   costs: {gold: 400000}
   effects: {}
-  requirements: [RESEARCH_LAB]
+  requirements: [RESEARCH_LAB, ELECTRONICS]
 
 # ============================================================
 #   ZUKUNFT  (Effort 50.000.000 – 100.000.000)

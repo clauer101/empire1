@@ -252,7 +252,7 @@ LEGIONARY:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/legionary
-  requirements: [FORGE, LORE_COLLECTION]
+  requirements: [FORGE, LORE_COLLECTION, MECHANICS]
 
 LARGE_CART:
   era: iron
@@ -431,7 +431,7 @@ THE_KING:
   spawn_on_death: null
   scale: 1.2
   animation: assets/sprites/critters/the_king
-  requirements: [PARLIAMENT]
+  requirements: [PARLIAMENT, CONSTITUTION]
 
 NINJA:
   era: renaissance
@@ -667,7 +667,7 @@ THE_GENERAL:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/the_general
-  requirements: [ELITE_ACADEMY]
+  requirements: [ELITE_ACADEMY, MILITARY_SERVICE]
 
 # ============================================================
 #   ZUKUNFT  (Effort 50.000.000 – 100.000.000)

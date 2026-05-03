@@ -116,3 +116,26 @@ class TestNoLaterEraRequirement:
             f"{iid} (era={own_era}) requires knowledge/building from a later era: "
             + ", ".join(f"{r}({_ALL_ERAS.get(r)})" for r in later_reqs)
         )
+
+
+# =============================================================================
+# Test 3: at least one knowledge requirement
+# =============================================================================
+
+_KNOWLEDGE_IDS: set[str] = set(_KNOWLEDGE_ERAS.keys())
+
+
+class TestAtLeastOneKnowledgeRequirement:
+    """Every structure and critter must require at least one knowledge item."""
+
+    @pytest.mark.parametrize("iid", _SC_IDS)
+    def test_has_knowledge_requirement(self, iid: str) -> None:
+        item = CATALOG[iid]
+        reqs = item.requirements
+        if not reqs:
+            pytest.skip(f"{iid} has no requirements (starter item)")
+        knowledge_reqs = [r for r in reqs if r in _KNOWLEDGE_IDS]
+        assert knowledge_reqs, (
+            f"{iid} has no knowledge requirement. "
+            f"Requirements: {reqs}"
+        )
