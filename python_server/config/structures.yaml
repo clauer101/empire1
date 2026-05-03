@@ -64,7 +64,7 @@ DOUBLE_SLING_TOWER:
   select: first
   costs: {gold: 300}
   effects: {}
-  requirements: [CRAFTSMANSHIP, EARTH_WALL]
+  requirements: [CRAFTSMANSHIP, EARTH_WALL, POTTERY]
 
 SPIKE_TRAP:
   era: neolithic
@@ -81,7 +81,7 @@ SPIKE_TRAP:
   select: first
   costs: {gold: 850}
   effects: {slow_duration: 2000, slow_ratio: 0.7}   # slows to 30% speed for 1s
-  requirements: [EARTH_WALL]
+  requirements: [EARTH_WALL, AGRICULTURE]
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)
@@ -102,7 +102,7 @@ ARROW_TOWER:
   select: first
   costs: {gold: 4600}
   effects: {}
-  requirements: [BOW_MAKER]
+  requirements: [BOW_MAKER, COPPER_BRONZE]
 
 BALLISTA_TOWER:
   era: bronze
@@ -195,7 +195,7 @@ TAR_TOWER:
   select: first
   costs: {gold: 40000}
   effects: {slow_duration: 3000, slow_ratio: 0.3}   # slows to 40% speed for 4s
-  requirements: [HERBOLOGY, WORK_SHOP]
+  requirements: [HERBOLOGY, WORK_SHOP, GUNPOWDER]
 
 HEAVY_TOWER:
   era: middle_ages
@@ -411,7 +411,7 @@ MG_TOWER:
   select: first
   costs: {gold: 300000}
   effects: {}
-  requirements: [DEFENSE_DEPARTMENT]
+  requirements: [DEFENSE_DEPARTMENT, MILITARY_SERVICE]
 
 RAPID_FIRE_MG_BUNKER:
   era: modern

@@ -111,7 +111,7 @@ CART:
   spawn_on_death: {CLUBMAN: 5}
   scale: 1.3
   animation: assets/sprites/critters/cart
-  requirements: [DOMESTICATION, TOOL_SHOP]
+  requirements: [DOMESTICATION, TOOL_SHOP, POTTERY]
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)
@@ -134,7 +134,7 @@ BOWMAN:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/bowman
-  requirements: [CRAFTSMANSHIP, BOW_MAKER]
+  requirements: [CRAFTSMANSHIP, BOW_MAKER, COPPER_BRONZE]
 
 SWORDMAN:
   era: bronze
@@ -195,7 +195,7 @@ PIKENEER:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/pikeneer
-  requirements: [COPPER_BRONZE, DRILL]
+  requirements: [COPPER_BRONZE, DRILL, IRON]
 
 HORSEMAN_SLOW:
   era: iron
@@ -290,7 +290,7 @@ THE_SWORDMASTER:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/the_swordmaster
-  requirements: [CASTLE]
+  requirements: [IRON, FENCING_SCHOOL]
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -690,4 +690,4 @@ MECH_WARRIOR:
   spawn_on_death: {SPECOPS: 2}
   scale: 2.0
   animation: assets/sprites/critters/mech_warrior
-  requirements: [MECH_WARRIOR_LAB]
+  requirements: [MECH_WARRIOR_LAB, BIONICS]
