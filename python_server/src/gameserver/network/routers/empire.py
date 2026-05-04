@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 def make_router(services: "Services") -> APIRouter:
     router = APIRouter()
+    assert services.empire_service is not None
+    empire_service = services.empire_service  # non-optional for closure narrowing
 
     @router.get("/api/empire/summary")
     async def get_summary(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
@@ -66,11 +68,11 @@ def make_router(services: "Services") -> APIRouter:
                 uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
         connected_uids: list[int] = services.server.connected_uids if services.server else []
         empires = []
-        for empire in services.empire_service.all_empires.values():
+        for empire in empire_service.all_empires.values():
             if empire.uid != uid and empire.uid not in uid_to_user:
                 continue
-            era_key = services.empire_service.get_current_era(empire)
-            era_idx = services.empire_service._ERA_ORDER.index(era_key) + 1 if era_key in services.empire_service._ERA_ORDER else 1
+            era_key = empire_service.get_current_era(empire)
+            era_idx = empire_service._ERA_ORDER.index(era_key) + 1 if era_key in empire_service._ERA_ORDER else 1
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -81,7 +83,8 @@ def make_router(services: "Services") -> APIRouter:
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "artefact_count": len(empire.artefacts),
             })
-        empires.sort(key=lambda e: e["culture"], reverse=True)
+        empires.sort(key=lambda e: float(e.get("culture") or 0),  # type: ignore[arg-type]
+                     reverse=True)
         return {"empires": empires}
 
     @router.post("/api/empire/build")

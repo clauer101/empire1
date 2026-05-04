@@ -257,11 +257,11 @@ Last updated: 2026-05-03
 | **T4.2** | Asset pipeline (WebP, image compression) | ✅ Done | `scripts/optimize-assets.mjs` (sharp); 342 kB saved; `<picture>` in login; pre-wired to `npm run build` |
 | **T4.3** | Playwright smoke tests | ✅ Done | 7 tests (signup, login, build, tower, army, attack, logout); Firefox; `loginViaApi` bypasses rate limit; `web/e2e/smoke.spec.js` |
 | **T4.4** | ESLint + Prettier | ✅ Done | `eslint.config.js` + `.prettierrc`; `npm run lint` (0 errors) + `npm run format`; one-time format pass |
-| **T5.1** | mypy strict as CI gate (zero errors) | ⬜ Todo | — |
+| **T5.1** | mypy strict as CI gate (zero errors) | ✅ Done | 157→0 errors; `types-PyYAML` added; `continue-on-error` removed from CI |
 | **T5.2** | Pin upper bounds + lockfile checks | ⬜ Todo | — |
 | **T5.3** | Coverage gate ≥ 80% backend | ⬜ Todo | — |
 
-**Phase summary**: Phase 1 — 8/8 done ✅ · Phase 2 — 10/10 done ✅ · Phase 3 — 4/4 done ✅ · Phase 4 — 3/4 done · Phase 5 — 0/3 done
+**Phase summary**: Phase 1 — 8/8 done ✅ · Phase 2 — 10/10 done ✅ · Phase 3 — 4/4 done ✅ · Phase 4 — 3/4 done · Phase 5 — 1/3 done
 
 ---
 

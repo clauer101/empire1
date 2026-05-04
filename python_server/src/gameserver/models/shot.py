@@ -32,3 +32,4 @@ class Shot:
     flight_remaining_ms: float = 0.0  # Time until shot arrives (ms)
     origin: HexCoord | None = None  # For visual purposes, set by battle_service on shot creation
     path_progress: float = 0.0  # For visual purposes between 0 and 1, updated by battle_service during flight
+    _total_flight_ms: float = 0.0  # Set on first tick to track total flight duration for path_progress

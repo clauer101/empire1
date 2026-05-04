@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 def make_router(services: "Services") -> APIRouter:
     router = APIRouter()
+    assert services.attack_service is not None
+    attack_service = services.attack_service  # non-optional for closure narrowing
 
     @router.post("/api/attack")
     async def attack(body: AttackRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
@@ -33,7 +35,7 @@ def make_router(services: "Services") -> APIRouter:
     @router.post("/api/attack/{attack_id}/skip-siege")
     async def skip_siege(attack_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Immediately end the siege phase — only callable by the defender."""
-        result = services.attack_service.skip_siege(attack_id, uid)
+        result = attack_service.skip_siege(attack_id, uid)
         if isinstance(result, str):
             return {"success": False, "error": result}
         return {"success": True, "attack_id": result.attack_id, "phase": result.phase.value}

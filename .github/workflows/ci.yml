@@ -32,7 +32,6 @@ jobs:
 
       - name: Type check (mypy)
         run: uv run mypy src
-        continue-on-error: true  # report-only until T5.1 tightens this gate
 
       - name: Run tests
         env:

@@ -15,16 +15,20 @@ if TYPE_CHECKING:
 
 def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     router = APIRouter()
+    assert services.auth_service is not None
+    assert services.empire_service is not None
+    auth_service = services.auth_service
+    empire_service = services.empire_service
 
     @router.post("/api/auth/login", response_model=LoginResponse)
     @limiter.limit("30/minute")
     async def login(request: Request, body: LoginRequest) -> dict[str, Any]:
         from gameserver.network.handlers import _build_empire_summary, _build_session_state
-        uid = await services.auth_service.login(body.username, body.password)
+        uid = await auth_service.login(body.username, body.password)
         if uid is not None:
             token = create_token(uid)
             session_state = _build_session_state(uid)
-            empire = services.empire_service.get(uid)
+            empire = empire_service.get(uid)
             summary = _build_empire_summary(empire, uid) if empire else None
             return {
                 "success": True,
@@ -44,7 +48,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     @router.post("/api/auth/signup", response_model=SignupResponse)
     @limiter.limit("30/minute")
     async def signup(request: Request, body: SignupRequest) -> dict[str, Any]:
-        result = await services.auth_service.signup(
+        result = await auth_service.signup(
             body.username, body.password, body.email, body.empire_name,
         )
         if isinstance(result, int):

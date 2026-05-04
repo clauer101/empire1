@@ -22,11 +22,12 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from gameserver.main import Services
     from gameserver.models.battle import BattleState
+    from gameserver.network.router import Handler as _RouterHandler
 
 from gameserver.models.messages import GameMessage
 from gameserver.network.handlers.social import (  # noqa: F401 — social domain re-export
@@ -174,6 +175,7 @@ def register_all_handlers(services: Services) -> None:
     _services = services
 
     router = services.router
+    assert router is not None
 
     # -- Connection / Keepalive ------------------------------------------
     router.register("ping", handle_ping)
@@ -185,7 +187,7 @@ def register_all_handlers(services: Services) -> None:
 
     # -- Map (Composer) --------------------------------------------------
     router.register("map_load_request", handle_map_load_request)
-    router.register("map_save_request", handle_map_save_request)
+    router.register("map_save_request", cast("_RouterHandler", handle_map_save_request))
 
     # -- Building / Research (fire-and-forget) ---------------------------
     router.register("new_item", handle_new_item)

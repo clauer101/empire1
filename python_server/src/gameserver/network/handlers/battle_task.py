@@ -270,7 +270,8 @@ async def _run_battle_task(
         import traceback
         log.error("[battle] bid=%d post-battle cleanup crashed: %s", bid, traceback.format_exc())
     finally:
-        _get_active_battles().pop(battle.defender.uid, None)
+        if battle.defender:
+            _get_active_battles().pop(battle.defender.uid, None)
 
 
 def _apply_artefact_steal(battle: "BattleState", svc: Any, attacker_won: bool) -> "str | None":
@@ -663,6 +664,7 @@ def _create_battle_start_handler() -> Callable:
         )
         _get_active_battles()[defender_uid] = battle
 
+        assert battle.recorder is not None
         log.info("[battle:start_requested] SUCCESS: battle %d created (attacker=%d, defender=%d)",
                  bid, attacker_uid, defender_uid)
 
@@ -693,7 +695,7 @@ def _create_battle_start_handler() -> Callable:
             atk_display = attacker_empire.name if attacker_empire else "Someone"
             asyncio.ensure_future(notify_under_siege(svc.database, defender_uid, atk_display))
 
-        battle.recorder.record(0, setup_msg)
+        battle.recorder.record(0, setup_msg)  # recorder asserted non-None above
 
         _initial_delay_ms = svc.game_config.initial_wave_delay_ms
         _wave_delay_offset_ms = (

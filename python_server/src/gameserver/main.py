@@ -47,7 +47,8 @@ from gameserver.persistence.state_load import load_state
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire
-from gameserver.network.handlers import register_all_handlers, _active_battles
+from gameserver.network.handlers import register_all_handlers
+from gameserver.network.handlers._core import _active_battles
 from gameserver.loaders.game_config_loader import GameConfig, load_game_config
 
 log = structlog.get_logger(__name__)
@@ -100,6 +101,11 @@ class Services:
     router: Optional[Router] = None
     server: Optional[Server] = None
     database: Optional[Database] = None
+    # Set during start_network — present after startup
+    _rest_server: Optional[object] = None
+    _rest_task: Optional[asyncio.Task[None]] = None
+    _cleanup_task: Optional[asyncio.Task[None]] = None
+    _backup_task: Optional[asyncio.Task[None]] = None
 
 
 # ===================================================================
@@ -302,27 +308,34 @@ def wire_events(services: Services) -> None:
         services: All instantiated services.
     """
     log.info("Wiring event handlers …")
+    assert services.event_bus is not None
+    assert services.empire_service is not None
+    assert services.battle_service is not None
+    assert services.statistics is not None
     bus = services.event_bus
+    _empire_svc = services.empire_service
+    _battle_svc = services.battle_service
+    _statistics = services.statistics
 
     # Battle outcomes → empire
-    bus.on(BattleFinished, lambda evt: services.empire_service.on_battle_finished(evt)
-           if hasattr(services.empire_service, "on_battle_finished") else None)
+    bus.on(BattleFinished, lambda evt: _empire_svc.on_battle_finished(evt)
+           if hasattr(_empire_svc, "on_battle_finished") else None)
 
     # Attack arrival → battle
-    bus.on(AttackArrived, lambda evt: services.battle_service.on_attack_arrived(evt)
-           if hasattr(services.battle_service, "on_attack_arrived") else None)
+    bus.on(AttackArrived, lambda evt: _battle_svc.on_attack_arrived(evt)
+           if hasattr(_battle_svc, "on_attack_arrived") else None)
 
     # Item completed → statistics
-    bus.on(ItemCompleted, lambda evt: services.statistics.on_item_completed(evt)
-           if hasattr(services.statistics, "on_item_completed") else None)
+    bus.on(ItemCompleted, lambda evt: _statistics.on_item_completed(evt)
+           if hasattr(_statistics, "on_item_completed") else None)
 
     # Item completed → AI scripted wave triggers
     if services.ai_service is not None:
         _ai = services.ai_service
-        _emp = services.empire_service
+        assert services.attack_service is not None
         _atk = services.attack_service
         bus.on(ItemCompleted, lambda evt: _ai.on_item_completed(
-            evt.empire_uid, evt.iid, _emp, _atk
+            evt.empire_uid, evt.iid, _empire_svc, _atk
         ))
 
     log.info("  event handlers registered")
@@ -344,6 +357,8 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
         services: All instantiated services.
     """
     log.info("Starting network servers …")
+    assert services.server is not None
+    assert services.game_config is not None
 
     # Register all message handlers on the router
     register_all_handlers(services)
@@ -356,7 +371,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
     import uvicorn
 
     rest_app = create_app(services)
-    rest_port = services.game_config.rest_port if services.game_config else 8080
+    rest_port = services.game_config.rest_port
     config = uvicorn.Config(
         rest_app,
         host="0.0.0.0",
@@ -454,6 +469,8 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
         services: All instantiated services.
     """
     log.info("Starting game loop …")
+    assert services.game_loop is not None
+    _game_loop = services.game_loop
     loop = asyncio.get_running_loop()
 
     # Graceful shutdown on SIGINT / SIGTERM
@@ -462,19 +479,19 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
         if _active_battles:
             uids = ", ".join(str(uid) for uid in _active_battles)
             log.warning("Shutdown mid-battle! %d active battle(s) will be interrupted (defender UIDs: %s)", len(_active_battles), uids)
-        services.game_loop.stop()
+        _game_loop.stop()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, _request_shutdown)
 
     log.info("  game loop running (1 s tick)")
-    await services.game_loop.run()
+    await _game_loop.run()
 
     # --- Cleanup after loop exits ---
     log.info("Shutting down …")
 
     # Persist complete game state to YAML
-    if services.empire_service is not None:
+    if services.empire_service is not None and services.attack_service is not None:
         try:
             await save_state(
                 empires=services.empire_service.all_empires,
@@ -547,6 +564,8 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
     wire_events(services)
 
     # 5. Restore empires from saved state, or register a test empire
+    assert services.empire_service is not None
+    assert services.attack_service is not None
     if saved_state is not None and saved_state.empires:
         for empire in saved_state.empires.values():
             services.empire_service.register(empire)
@@ -583,6 +602,7 @@ def _add_test_empire(services: Services) -> None:
 
     Remove this once real player login is implemented.
     """
+    assert services.empire_service is not None
     test_empire = Empire(
         uid=100,
         name="TestImperium",

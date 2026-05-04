@@ -26,4 +26,4 @@ class Settings(BaseSettings):
 
 
 # Module-level singleton — import this everywhere
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]  # jwt_secret loaded from env at runtime

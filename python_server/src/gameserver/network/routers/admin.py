@@ -50,9 +50,10 @@ def make_router(services: "Services") -> APIRouter:
         return {"status": "ok"}
 
     @router.get("/health/ready", include_in_schema=False)
-    async def health_readiness() -> dict[str, str]:
+    async def health_readiness() -> Any:
         import time
         try:
+            assert services.database is not None
             await services.database.get_user("__health_check__")
         except Exception as exc:
             from fastapi.responses import JSONResponse
@@ -105,10 +106,12 @@ def make_router(services: "Services") -> APIRouter:
         )
 
         from gameserver.engine.power_service import compute_power
-        up = services.empire_service._upgrades if services.empire_service else None
-        _gc = services.empire_service._gc if services.empire_service else None
+        assert services.empire_service is not None
+        assert services.attack_service is not None
+        up = services.empire_service._upgrades
+        _gc = services.empire_service._gc
 
-        empires_out = []
+        empires_out: list[dict[str, Any]] = []
         for empire in services.empire_service.all_empires.values():
             if empire.uid == 0:
                 continue
@@ -141,7 +144,8 @@ def make_router(services: "Services") -> APIRouter:
             from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle as _find_path
             try:
                 _nm = {f"{t['q']},{t['r']}": (t["type"] if t["type"] else "empty") for t in hex_tiles}
-                _pl = len(_find_path(_nm)) - 1 if _find_path(_nm) else None
+                _path_result = _find_path(_nm)
+                _pl = len(_path_result) - 1 if _path_result else None
             except Exception:
                 # Pathfinding may fail on incomplete/malformed maps — treat as unknown length
                 _pl = None
@@ -179,14 +183,14 @@ def make_router(services: "Services") -> APIRouter:
             attacker_name = uid_to_user.get(atk.attacker_uid, f"uid:{atk.attacker_uid}")
             if atk.attacker_uid == 0:
                 attacker_name = "AI"
-            army = all_armies.get((atk.attacker_uid, atk.army_aid))
+            atk_army = all_armies.get((atk.attacker_uid, atk.army_aid))
             waves_out = []
             army_name = ""
-            if army:
-                army_name = army.name or ""
+            if atk_army:
+                army_name = atk_army.name or ""
                 waves_out = [
                     {"iid": w.iid, "slots": w.slots}
-                    for w in army.waves
+                    for w in atk_army.waves
                 ]
             attacks_out.append({
                 "id": atk.attack_id,
@@ -214,6 +218,7 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_save_state(_uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.empire_service is None:
             return {"ok": False, "error": "empire_service not initialized"}
+        assert services.attack_service is not None
         from gameserver.persistence.state_save import save_state
         await save_state(
             empires=services.empire_service.all_empires,
@@ -232,6 +237,7 @@ def make_router(services: "Services") -> APIRouter:
             if services.empire_service is not None:
                 try:
                     from gameserver.persistence.state_save import save_state
+                    assert services.attack_service is not None
                     await save_state(
                         empires=services.empire_service.all_empires,
                         attacks=services.attack_service.get_all_attacks(),
@@ -270,7 +276,7 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_create_user(body: dict, _uid: int = Depends(require_admin)) -> dict:
         if services.database is None:
             return {"ok": False, "error": "no database"}
-        import bcrypt
+        import bcrypt  # type: ignore[import-not-found]
         pw = body.get("password", "")
         if not pw or not body.get("username"):
             return {"ok": False, "error": "username and password required"}
@@ -290,7 +296,7 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_reset_password(username: str, body: dict, _uid: int = Depends(require_admin)) -> dict:
         if services.database is None:
             return {"ok": False, "error": "no database"}
-        import bcrypt
+        import bcrypt  # type: ignore[import-not-found]
         pw = body.get("password", "")
         if not pw:
             return {"ok": False, "error": "password required"}
@@ -311,8 +317,8 @@ def make_router(services: "Services") -> APIRouter:
         if not name:
             return {"ok": False, "error": "empire_name required"}
         updated = await services.database.rename_empire(uid, name)
-        if updated and uid in services.empires:
-            services.empires[uid].name = name
+        if updated and services.empire_service is not None and uid in services.empire_service.all_empires:
+            services.empire_service.all_empires[uid].name = name
         return {"ok": updated}
 
     @router.get("/api/admin/catalog")
@@ -360,6 +366,7 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_analyze_empire(uid: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         from collections import deque as _deque, Counter as _Counter
 
+        assert services.empire_service is not None
         empire = services.empire_service.get(uid)
         if empire is None:
             raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
@@ -418,7 +425,7 @@ def make_router(services: "Services") -> APIRouter:
 
         up = services.empire_service._upgrades
         tower_names: list[str] = []
-        total_cost = 0
+        total_cost: float = 0.0
         age_counts: dict[str, int] = {}
 
         for tile_type in raw_map.values():
@@ -429,7 +436,7 @@ def make_router(services: "Services") -> APIRouter:
             item = up.items.get(tile_type) if up else None
             if item is None:
                 continue
-            cost = item.costs.get("gold", 0)
+            cost = float(item.costs.get("gold", 0))
             total_cost += cost
             tower_names.append(tile_type)
             age = TOWER_AGE.get(tile_type, "Unknown")
@@ -457,6 +464,7 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_map_overview(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
         import yaml as _yaml
         from collections import Counter as _Cnt, deque as _dq2
+        assert services.empire_service is not None
 
         HEX_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
         NON_TOWER = {"path", "castle", "spawnpoint", "empty", "", None}
@@ -466,7 +474,7 @@ def make_router(services: "Services") -> APIRouter:
 
         def _defense_power_for_tiles(tiles: list[dict], life: float, path_length: int | None = None) -> float | None:
             try:
-                up = services.empire_service._upgrades
+                up = services.empire_service._upgrades  # type: ignore[union-attr]
                 if up is None:
                     return None
                 e = _Empire(uid=0, name="")
@@ -510,9 +518,9 @@ def make_router(services: "Services") -> APIRouter:
                 for iid in iids
             }
 
-            up = services.empire_service._upgrades
+            up = services.empire_service._upgrades  # type: ignore[union-attr]
             tower_names: list[str] = []
-            total_cost = 0
+            total_cost: float = 0.0
             age_counts: dict[str, int] = {}
             for tt in tile_map.values():
                 if tt in NON_TOWER:
@@ -520,7 +528,7 @@ def make_router(services: "Services") -> APIRouter:
                 item = up.items.get(tt) if up else None
                 if item is None:
                     continue
-                cost = item.costs.get("gold", 0)
+                cost = float(item.costs.get("gold", 0))
                 total_cost += cost
                 tower_names.append(tt)
                 age = TOWER_AGE.get(tt, "Unknown")
@@ -585,6 +593,7 @@ def make_router(services: "Services") -> APIRouter:
     @router.post("/api/admin/saved-maps/from-live/{uid}")
     async def admin_save_live_map(uid: int, _uid: int = Depends(require_admin)) -> dict:
         import time as _time
+        assert services.empire_service is not None
         empire = services.empire_service.get(uid)
         if empire is None:
             raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
@@ -632,7 +641,7 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_activate_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict:
         import time as _time
         TARGET_UID = 4
-
+        assert services.empire_service is not None
         empire = services.empire_service.get(TARGET_UID)
         if empire is None:
             raise HTTPException(status_code=404, detail=f"Empire uid={TARGET_UID} not found")
@@ -697,19 +706,19 @@ def make_router(services: "Services") -> APIRouter:
             for era_key, iids in _STRUCTURE_ERAS:
                 era_label = _ERA_LABELS_EN.get(era_key, era_key)
                 for iid in iids:
-                    item = up.items.get(iid)
-                    if item is None:
+                    tower_item = up.items.get(iid)
+                    if tower_item is None:
                         continue
-                    efx = item.effects or {}
+                    efx = tower_item.effects or {}
                     towers[iid] = {
-                        "damage": item.damage,
-                        "range": item.range,
-                        "reload": item.reload_time_ms,
+                        "damage": tower_item.damage,
+                        "range": tower_item.range,
+                        "reload": tower_item.reload_time_ms,
                         "burn_dps": efx.get("burn_dps", 0),
                         "burn_dur": efx.get("burn_duration", 0),
                         "slow_dur": efx.get("slow_duration", 0),
                         "era": era_label,
-                        "sprite": item.sprite or "",
+                        "sprite": tower_item.sprite or "",
                     }
         return {"armies": armies, "critters": critters, "towers": towers}
 
@@ -718,6 +727,8 @@ def make_router(services: "Services") -> APIRouter:
         body: dict[str, Any], _uid: int = Depends(require_admin)
     ) -> dict[str, Any]:
         from gameserver.models.army import Army, CritterWave
+        assert services.empire_service is not None
+        assert services.attack_service is not None
 
         defender_uid: int = body.get("defender_uid", 0)
         if not defender_uid:
@@ -742,6 +753,7 @@ def make_router(services: "Services") -> APIRouter:
         if not waves_raw:
             raise HTTPException(status_code=400, detail="No waves defined")
 
+        assert services.ai_service is not None
         initial_delay_ms = services.ai_service._game_config.initial_wave_delay_ms
 
         aid = services.empire_service.next_army_id()
@@ -758,10 +770,11 @@ def make_router(services: "Services") -> APIRouter:
 
         army = Army(aid=aid, uid=0, name=army_name, waves=waves)
 
+        defender_empire = services.empire_service.get(defender_uid)
         if services.ai_service:
             services.ai_service._send_army(
                 defender_uid=defender_uid,
-                empire=services.empire_service.get(defender_uid),
+                empire=defender_empire,  # type: ignore[arg-type]
                 empire_service=services.empire_service,
                 attack_service=services.attack_service,
                 army=army,

@@ -557,7 +557,7 @@ def _get_structure_era_map() -> dict[str, str]:
         _structure_era_map = {}
         for iid, item in data.items():
             if isinstance(item, dict):
-                era = item.get("era", "stone")
+                era = item.get("era") or "stone"
                 _structure_era_map[iid] = ERA_LABELS_EN.get(era, era)
     return _structure_era_map
 
@@ -591,7 +591,8 @@ def _compute_map_defense_power(m: dict) -> float:
     empire.max_life = float(m.get("life") or default_life)
     try:
         from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
-        path = find_path_from_spawn_to_castle(hex_map)
+        str_map = {k: (v.get("type") or "empty") for k, v in hex_map.items()}
+        path = find_path_from_spawn_to_castle(str_map)
         path_length = len(path) - 1 if path else None
     except Exception:
         # Pathfinding may fail on incomplete/malformed maps — treat as unknown length

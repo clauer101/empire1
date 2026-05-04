@@ -669,11 +669,11 @@ async def handle_map_save_request(
     # so the displayed path never changes while critters are moving.
     # Outside of battle, recompute from the saved tiles.
     if battle is not None and battle.critter_path:
-        path_data = [[c.q, c.r] for c in battle.critter_path]
+        path_data: list[list[int]] = [[c.q, c.r] for c in battle.critter_path]
     else:
         from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
         computed_path = find_path_from_spawn_to_castle({k: _tile_type(v) for k, v in tiles.items()})
-        path_data = [[c.q, c.r] for c in computed_path] if computed_path else None
+        path_data = [[c.q, c.r] for c in computed_path] if computed_path else []
 
     return {
         "type": "map_save_response",

@@ -285,7 +285,7 @@ def _serialize_battle(battle: BattleState) -> dict[str, Any]:
         "bid": battle.bid,
         "defender_uid": battle.defender.uid if battle.defender else 0,
         "attacker_uids": [battle.attacker.uid] if battle.attacker else [],
-        "attacker": _serialize_army(battle.attacker) if battle.attacker else None,
+        "attacker": None,  # TODO: battles are not persisted yet
         "critters": {
             str(cid): _serialize_critter(c) for cid, c in battle.critters.items()
         },

@@ -33,7 +33,7 @@ class ArmyService:
     def create_army(self, empire: Empire, direction: str, name: str) -> Army | str:
         """Create a new army. Returns Army or error string."""
         # TODO: implement
-        pass  # type: ignore[return-value]
+        raise NotImplementedError
 
     def calculate_cost(self, army: Army) -> float:
         """Calculate the gold cost to deploy an army."""

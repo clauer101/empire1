@@ -114,7 +114,7 @@ class Database:
             "INSERT INTO users (username, password_hash, email, empire_name) VALUES (?, ?, ?, ?)",
             (username, password_hash, email, empire_name),
         ) as cursor:
-            uid = cursor.lastrowid
+            uid = cursor.lastrowid or 0
         await self._conn.commit()
         log.info("Created user %s (uid=%d)", username, uid)
         return uid

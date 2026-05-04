@@ -27,12 +27,14 @@ def make_router(services: "Services") -> APIRouter:
         to_uid = body.to_uid or 0
         if to_uid != 0 and to_uid == uid:
             return {"success": False, "error": "Cannot send message to yourself"}
+        assert services.database is not None
         msg = await services.database.send_message(from_uid=uid, to_uid=to_uid, body=body.body.strip())
         return {"success": True, "message": msg}
 
     @router.get("/api/messages")
     async def get_messages(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Return global chat, private messages and battle reports for the current player."""
+        assert services.empire_service is not None
         uid_to_name: dict[int, str] = {
             e.uid: e.name
             for e in services.empire_service.all_empires.values()
@@ -63,6 +65,7 @@ def make_router(services: "Services") -> APIRouter:
                 "to_username": _username(m["to_uid"]),
             }
 
+        assert services.database is not None
         global_msgs    = await services.database.get_global()
         private_msgs   = await services.database.get_private_for(uid)
         battle_reports = await services.database.get_battle_reports_for(uid)
@@ -80,6 +83,7 @@ def make_router(services: "Services") -> APIRouter:
     @router.post("/api/messages/{msg_id}/read")
     async def mark_read(msg_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Mark a message as read."""
+        assert services.database is not None
         ok = await services.database.mark_read(uid, msg_id)
         return {"success": ok}
 
@@ -98,12 +102,14 @@ def make_router(services: "Services") -> APIRouter:
     @router.post("/api/push/subscribe")
     async def push_subscribe(body: PushSubscribeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Save a Web Push subscription for the current user."""
+        assert services.database is not None
         await services.database.save_push_subscription(uid, body.subscription)
         return {"success": True}
 
     @router.delete("/api/push/subscribe")
     async def push_unsubscribe(body: PushSubscribeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Remove a Web Push subscription."""
+        assert services.database is not None
         endpoint = body.subscription.get("endpoint", "")
         await services.database.delete_push_subscription(uid, endpoint)
         return {"success": True}

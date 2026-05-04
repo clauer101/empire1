@@ -108,10 +108,10 @@ def find_path_from_spawn_to_castle(tiles: dict[str, str]) -> Optional[list[HexCo
             for nq, nr in hex_neighbors(q, r):
                 if (nq, nr) not in visited:
                     key = coords_to_key(nq, nr)
-                    tile_type = tiles.get(key)
-                    
+                    neighbor_tile: str = tiles.get(key) or ""
+
                     # Only traverse through passable tiles
-                    if tile_type in ('spawnpoint', 'path', 'empty', 'castle'):
+                    if neighbor_tile in ('spawnpoint', 'path', 'empty', 'castle'):
                         visited.add((nq, nr))
                         parent[(nq, nr)] = (q, r)
                         queue.append((nq, nr))

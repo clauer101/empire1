@@ -287,6 +287,7 @@ def create_app(services: "Services") -> FastAPI:
                 await ws.close(code=4001, reason="Invalid token")
                 return
 
+        assert services.server is not None
         if uid is None:
             uid = services.server._next_guest_uid
             services.server._next_guest_uid -= 1
@@ -294,7 +295,7 @@ def create_app(services: "Services") -> FastAPI:
         await ws.accept()
 
         adapter = _FastAPIWSAdapter(ws)
-        services.server.register_session(uid, adapter)
+        services.server.register_session(uid, adapter)  # type: ignore[arg-type]
 
         await ws.send_json({
             "type": "welcome",
@@ -337,8 +338,8 @@ def create_app(services: "Services") -> FastAPI:
 
                     if msg_type == "auth_request" and response.get("success") and response.get("uid"):
                         real_uid = response["uid"]
-                        services.server.unregister_session(adapter)
-                        services.server.register_session(real_uid, adapter)
+                        services.server.unregister_session(adapter)  # type: ignore[arg-type]
+                        services.server.register_session(real_uid, adapter)  # type: ignore[arg-type]
                         uid = real_uid
 
         except WebSocketDisconnect:
@@ -346,7 +347,7 @@ def create_app(services: "Services") -> FastAPI:
         except Exception as e:
             log.error("REST-WS error: uid=%d error=%s", uid, e)
         finally:
-            services.server.unregister_session(adapter)
+            services.server.unregister_session(adapter)  # type: ignore[arg-type]
 
     # Register web client routes + static file mount (must be last — catch-all)
     import os as _os
