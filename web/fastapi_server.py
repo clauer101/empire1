@@ -1327,6 +1327,39 @@ async def restart_web():
     return JSONResponse({"ok": True, "message": "Web server restarting …"})
 
 
+@app.post("/api/admin/deploy")
+async def admin_deploy(body: dict = Body(...)):
+    """Trigger deploy.sh on the host for the given env (prod|dev)."""
+    import asyncio
+    import subprocess
+
+    env = body.get("env", "prod")
+    if env not in ("prod", "dev"):
+        return JSONResponse({"ok": False, "detail": "env must be 'prod' or 'dev'"}, status_code=400)
+
+    deploy_script = Path(__file__).parent.parent / "deploy.sh"
+    if not deploy_script.exists():
+        return JSONResponse({"ok": False, "detail": "deploy.sh not found"}, status_code=500)
+
+    async def _run() -> None:
+        await asyncio.sleep(0.3)
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                str(deploy_script), env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(deploy_script.parent),
+            )
+            stdout, _ = await proc.communicate()
+            logging.info("deploy finished env=%s rc=%s output=%s",
+                         env, proc.returncode, stdout.decode(errors="replace")[-2000:])
+        except Exception:
+            logging.exception("deploy failed env=%s", env)
+
+    asyncio.create_task(_run())
+    return JSONResponse({"ok": True, "message": f"Deploy of '{env}' started …"})
+
+
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def serve_index():
     """Serve index.html with env-driven site_url substituted in SEO meta tags."""

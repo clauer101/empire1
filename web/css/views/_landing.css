@@ -29,7 +29,7 @@
 }
 
 .login-card .error-msg {
-  background: rgba(239,83,80,.12);
+  background: rgba(239, 83, 80, 0.12);
   color: var(--danger);
   font-size: 12px;
   padding: 8px 12px;
@@ -84,7 +84,7 @@
   width: 100%;
   text-align: center;
   padding: 60px 20px 40px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(255,180,50,.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 180, 50, 0.08) 0%, transparent 70%);
   border-bottom: 1px solid var(--border);
   margin-bottom: 40px;
 }
@@ -128,8 +128,8 @@
   display: inline-block;
   font-size: 12px;
   color: var(--text-dim);
-  background: rgba(255,180,50,.07);
-  border: 1px solid rgba(255,180,50,.25);
+  background: rgba(255, 180, 50, 0.07);
+  border: 1px solid rgba(255, 180, 50, 0.25);
   border-radius: var(--radius);
   padding: 6px 14px;
   margin: 0 0 32px;
@@ -150,12 +150,14 @@
   flex-shrink: 0;
   border-radius: 6px;
   overflow: hidden;
-  background-color: rgba(255,255,255,.04);
-  transition: transform .15s ease, background-color .15s ease;
+  background-color: rgba(255, 255, 255, 0.04);
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
 }
 .lp-sprite:hover {
   transform: scale(1.15);
-  background-color: rgba(255,255,255,.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .lp-sprite--critter {
@@ -188,7 +190,9 @@
   border-radius: var(--radius);
   padding: 24px 20px;
   text-align: center;
-  transition: border-color .2s, transform .2s;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
 }
 .lp-feature:hover {
   border-color: var(--accent);
@@ -235,10 +239,15 @@
 
 /* Responsive */
 @media (max-width: 800px) {
-  .lp-features { grid-template-columns: repeat(2, 1fr); }
+  .lp-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (max-width: 480px) {
-  .lp-features { grid-template-columns: 1fr; }
-  .lp-hero { padding: 40px 16px 28px; }
+  .lp-features {
+    grid-template-columns: 1fr;
+  }
+  .lp-hero {
+    padding: 40px 16px 28px;
+  }
 }
-

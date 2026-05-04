@@ -20,8 +20,8 @@ let grid = null;
 // ── Playback state ──────────────────────────────────────────
 let _events = [];
 let _eventIdx = 0;
-let _startTime = 0;       // performance.now() when playback started
-let _pausedAt = 0;         // elapsed ms when paused
+let _startTime = 0; // performance.now() when playback started
+let _pausedAt = 0; // elapsed ms when paused
 let _speed = 1;
 let _playing = false;
 let _finished = false;
@@ -218,7 +218,10 @@ function leave() {
 
 function _initCanvas() {
   // Destroy previous grid to stop its render loop (prevents zombie rAF on same canvas)
-  if (grid) { grid.destroy(); grid = null; }
+  if (grid) {
+    grid.destroy();
+    grid = null;
+  }
 
   const wrap = container.querySelector('#replay-canvas-wrap');
   const canvas = container.querySelector('#replay-canvas');
@@ -228,7 +231,7 @@ function _initCanvas() {
     cols: 6,
     rows: 6,
     hexSize: 28,
-    onTileClick: () => {},   // no interaction in replay
+    onTileClick: () => {}, // no interaction in replay
     onTileHover: null,
     onTileDrop: () => {},
   });
@@ -326,13 +329,16 @@ function _togglePlay() {
     // Pause
     _pausedAt = _elapsedMs();
     _playing = false;
-    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    if (_rafId) {
+      cancelAnimationFrame(_rafId);
+      _rafId = null;
+    }
     container.querySelector('#replay-play').textContent = '▶ Play';
     _setStatus('⏸ Paused');
   } else {
     // Play / Resume
     _playing = true;
-    _startTime = performance.now() - (_pausedAt / _speed);
+    _startTime = performance.now() - _pausedAt / _speed;
     container.querySelector('#replay-play').textContent = '⏸ Pause';
     _setStatus('⚔ Playing…');
     _tick();
@@ -341,7 +347,10 @@ function _togglePlay() {
 
 function _stopPlayback() {
   _playing = false;
-  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (_rafId) {
+    cancelAnimationFrame(_rafId);
+    _rafId = null;
+  }
 }
 
 function _elapsedMs() {
@@ -416,7 +425,7 @@ function _onSetup(msg) {
 
     if (msg.structures) {
       for (const s of msg.structures) {
-        const _meta = (s.select && s.select !== 'first') ? { select: s.select } : {};
+        const _meta = s.select && s.select !== 'first' ? { select: s.select } : {};
         grid.setTile(s.q, s.r, s.iid, _meta);
         const tile = grid.tiles.get(hexKey(s.q, s.r));
         if (tile) {
@@ -512,7 +521,9 @@ function _onSummary(msg) {
   content.innerHTML = '';
 
   // Keep critters visible briefly, then clean up
-  setTimeout(() => { if (grid) grid.clearBattle(); }, 1500);
+  setTimeout(() => {
+    if (grid) grid.clearBattle();
+  }, 1500);
 
   container.querySelector('#replay-summary').style.display = 'flex';
 }
@@ -551,7 +562,7 @@ function _spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
   const div = document.createElement('div');
   div.className = 'fly-wrap';
   div.style.left = cx + 'px';
-  div.style.top  = cy + 'px';
+  div.style.top = cy + 'px';
   const img = document.createElement('img');
   img.src = imgSrc;
   img.className = 'fly-icon';
@@ -560,7 +571,7 @@ function _spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
     const span = document.createElement('span');
     span.className = 'fly-label';
     if (labelColor) span.style.color = labelColor;
-    span.textContent = (typeof label === 'string' && label.startsWith('-')) ? label : '+' + label;
+    span.textContent = typeof label === 'string' && label.startsWith('-') ? label : '+' + label;
     div.appendChild(span);
   }
   wrap.appendChild(div);
@@ -595,8 +606,8 @@ function _fmtTime(ms) {
 
 async function _fetchWithProgress(url, scope) {
   const wrap = scope.querySelector('#replay-progress-wrap');
-  const bar  = scope.querySelector('#replay-progress-bar');
-  const lbl  = scope.querySelector('#replay-progress-label');
+  const bar = scope.querySelector('#replay-progress-bar');
+  const lbl = scope.querySelector('#replay-progress-label');
 
   if (wrap) wrap.style.display = '';
 
@@ -633,7 +644,7 @@ async function _fetchWithProgress(url, scope) {
     compressedChunks.push(value);
     received += value.length;
     if (total && bar) {
-      const pct = Math.min(100, Math.round(received / total * 100));
+      const pct = Math.min(100, Math.round((received / total) * 100));
       bar.style.width = pct + '%';
       if (lbl) lbl.textContent = `${_fmtBytes(received)} / ${_fmtBytes(total)}`;
     } else if (lbl) {
@@ -651,7 +662,10 @@ async function _fetchWithProgress(url, scope) {
   // Reassemble compressed bytes
   const compressed = new Uint8Array(received);
   let offset = 0;
-  for (const chunk of compressedChunks) { compressed.set(chunk, offset); offset += chunk.length; }
+  for (const chunk of compressedChunks) {
+    compressed.set(chunk, offset);
+    offset += chunk.length;
+  }
 
   // Decompress if needed, then parse JSON
   let jsonBytes;
@@ -675,7 +689,10 @@ async function _fetchWithProgress(url, scope) {
     for (const c of outChunks) total2 += c.length;
     jsonBytes = new Uint8Array(total2);
     let off2 = 0;
-    for (const c of outChunks) { jsonBytes.set(c, off2); off2 += c.length; }
+    for (const c of outChunks) {
+      jsonBytes.set(c, off2);
+      off2 += c.length;
+    }
   } else {
     jsonBytes = compressed;
   }

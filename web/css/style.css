@@ -2,11 +2,11 @@
 /* Until a build step is added, plain @import creates one HTTP   */
 /* request per partial (acceptable for a few files; T4.1: Vite). */
 
-@import url("_base.css");
-@import url("_layout.css");
-@import url("_components.css");
-@import url("views/_landing.css");
-@import url("_ui.css");
-@import url("_responsive.css");
-@import url("views/_defense.css");
-@import url("_dashboard.css");
+@import url('_base.css');
+@import url('_layout.css');
+@import url('_components.css');
+@import url('views/_landing.css');
+@import url('_ui.css');
+@import url('_responsive.css');
+@import url('views/_defense.css');
+@import url('_dashboard.css');

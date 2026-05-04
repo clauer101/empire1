@@ -33,7 +33,7 @@ class DebugMode {
     let text = type;
     if (data && typeof data === 'object') {
       const keys = Object.keys(data).slice(0, 3); // Limit keys shown
-      const pairs = keys.map(k => {
+      const pairs = keys.map((k) => {
         const v = data[k];
         if (typeof v === 'string' && v.length > 20) {
           return `${k}: "${v.substring(0, 20)}..."`;

@@ -6,17 +6,44 @@
  */
 
 import {
-  hexToPixel, pixelToHex, hexCorners, hexKey, parseKey, hexNeighbors, hexAStar,
+  hexToPixel,
+  pixelToHex,
+  hexCorners,
+  hexKey,
+  parseKey,
+  hexNeighbors,
+  hexAStar,
 } from './hex.js';
 import { CritterSprite } from './critter_sprite.js';
 
 /** Tile type definitions with visual styling. */
 export const TILE_TYPES = {
-  void:        { id: 'void',        label: 'Void',          color: '#161620', stroke: '#1a1a24', icon: null },
-  empty:       { id: 'empty',       label: 'Empty',          color: '#1e1e2e', stroke: '#2a2a3a', icon: null },
-  path:        { id: 'path',        label: 'Path',          color: '#5c4a32', stroke: '#7a6545', icon: null, spriteUrl: '/assets/sprites/bases/path.webp' },
-  spawnpoint:  { id: 'spawnpoint',  label: 'Spawnpoint',    color: '#5a2a2a', stroke: '#8a3a3a', icon: null, spriteUrl: '/assets/sprites/bases/spawnpoint.webp' },
-  castle:      { id: 'castle',      label: 'Castle (Target)',   color: '#4a4a1a', stroke: '#7a7a30', icon: null, spriteUrl: '/assets/sprites/bases/base.webp' },
+  void: { id: 'void', label: 'Void', color: '#161620', stroke: '#1a1a24', icon: null },
+  empty: { id: 'empty', label: 'Empty', color: '#1e1e2e', stroke: '#2a2a3a', icon: null },
+  path: {
+    id: 'path',
+    label: 'Path',
+    color: '#5c4a32',
+    stroke: '#7a6545',
+    icon: null,
+    spriteUrl: '/assets/sprites/bases/path.webp',
+  },
+  spawnpoint: {
+    id: 'spawnpoint',
+    label: 'Spawnpoint',
+    color: '#5a2a2a',
+    stroke: '#8a3a3a',
+    icon: null,
+    spriteUrl: '/assets/sprites/bases/spawnpoint.webp',
+  },
+  castle: {
+    id: 'castle',
+    label: 'Castle (Target)',
+    color: '#4a4a1a',
+    stroke: '#7a7a30',
+    icon: null,
+    spriteUrl: '/assets/sprites/bases/base.webp',
+  },
 };
 
 /**
@@ -36,7 +63,7 @@ export function getTileType(id) {
  * @typedef {Object} HexGridOptions
  * @property {HTMLCanvasElement} canvas
  * @property {number} [cols=8]       Grid columns
- * @property {number} [rows=8]       Grid rows  
+ * @property {number} [rows=8]       Grid rows
  * @property {number} [hexSize=28]   Hex outer radius in px
  * @property {(q:number, r:number, tile:object) => void} [onTileClick]
  * @property {(q:number, r:number) => void} [onTileHover]
@@ -82,7 +109,7 @@ export class HexGrid {
     // Defender castle health bar
     this._defenderLife = null;
     this._defenderMaxLife = null;
-    this._castlePos = null;  // {q, r} of castle tile
+    this._castlePos = null; // {q, r} of castle tile
 
     // Pan state
     this._isPanning = false;
@@ -95,7 +122,7 @@ export class HexGrid {
     // Touch state (for pinch-to-zoom)
     this._touches = [];
     this._lastPinchDistance = 0;
-    
+
     // Tap detection (for mobile tile clicks)
     this._tapStartX = 0;
     this._tapStartY = 0;
@@ -106,7 +133,7 @@ export class HexGrid {
     this._lastTileClickTime = 0;
 
     // Zoom limits
-    this._minZoom = 0.3;  // Will be updated based on map size
+    this._minZoom = 0.3; // Will be updated based on map size
     this._maxZoom = 3.0;
 
     // Map background image
@@ -122,14 +149,14 @@ export class HexGrid {
     this._mapMaxX = 0;
     this._mapMinY = 0;
     this._mapMaxY = 0;
-    
+
     // Track user interaction to prevent auto-centering
     this._hasUserInteracted = false;
 
     // Animation
     this._rafId = null;
     this._dirty = true;
-    
+
     // Base layer caching (tiles + structures + path)
     this._baseCanvas = null;
     this._baseCached = false;
@@ -142,7 +169,7 @@ export class HexGrid {
     this._critterSprites = new Map();
     // Manifest promise — fetched once
     this._manifestPromise = null;
-    
+
     // Resize debouncing
     this._resizeTimeout = null;
     this._lastWidth = 0;
@@ -151,7 +178,7 @@ export class HexGrid {
     this._initGrid();
     this.addVoidNeighbors();
     this._bindEvents();
-    this._resize();       // Set canvas size before first render
+    this._resize(); // Set canvas size before first render
     this._centerGrid();
     this._startLoop();
   }
@@ -204,7 +231,10 @@ export class HexGrid {
 
   _centerGrid() {
     // Compute bounding box of all tiles
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const key of this.tiles.keys()) {
       const { q, r } = parseKey(key);
       const { x, y } = hexToPixel(q, r, this.hexSize);
@@ -215,32 +245,35 @@ export class HexGrid {
     }
     const gridW = maxX - minX + this.hexSize * 2;
     const gridH = maxY - minY + this.hexSize * 2;
-    const cw = this._logicalWidth  || this.canvas.width;
+    const cw = this._logicalWidth || this.canvas.width;
     const ch = this._logicalHeight || this.canvas.height;
-    
+
     // Store map bounds for pan clamping
     this._mapMinX = minX;
     this._mapMaxX = maxX;
     this._mapMinY = minY;
     this._mapMaxY = maxY;
-    
+
     // Calculate minimum zoom to fit entire map
     this._updateMinZoom(gridW, gridH, cw, ch);
-    
+
     // Set zoom to fit map nicely on screen (use calculated min zoom)
     this.zoom = Math.max(this._minZoom, Math.min(1.5, this._minZoom * 1.1));
-    
+
     // Recalculate center with the new zoom
     // screen_x = offsetX + world_x * zoom  → center: offsetX = cw/2 - worldCenter * zoom
-    this.offsetX = cw / 2 - (minX + maxX) / 2 * this.zoom;
-    this.offsetY = ch / 2 - (minY + maxY) / 2 * this.zoom;
-    
+    this.offsetX = cw / 2 - ((minX + maxX) / 2) * this.zoom;
+    this.offsetY = ch / 2 - ((minY + maxY) / 2) * this.zoom;
+
     this._dirty = true;
   }
 
   _updateMapBounds() {
     // Update map bounds and min zoom without changing offset
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const key of this.tiles.keys()) {
       const { q, r } = parseKey(key);
       const { x, y } = hexToPixel(q, r, this.hexSize);
@@ -251,14 +284,14 @@ export class HexGrid {
     }
     const gridW = maxX - minX + this.hexSize * 2;
     const gridH = maxY - minY + this.hexSize * 2;
-    const cw = this._logicalWidth  || this.canvas.width;
+    const cw = this._logicalWidth || this.canvas.width;
     const ch = this._logicalHeight || this.canvas.height;
-    
+
     this._mapMinX = minX;
     this._mapMaxX = maxX;
     this._mapMinY = minY;
     this._mapMaxY = maxY;
-    
+
     this._updateMinZoom(gridW, gridH, cw, ch);
     this._dirty = true;
   }
@@ -292,12 +325,12 @@ export class HexGrid {
     //     offsetX + (_mapMinX - hexSize) * zoom <= cw + overshootX
     //     → maxOffsetX = cw + overshootX - (_mapMinX - hexSize) * zoom
     const minOffsetX = -overshootX - (this._mapMaxX + this.hexSize) * this.zoom;
-    const maxOffsetX =  cw + overshootX - (this._mapMinX - this.hexSize) * this.zoom;
+    const maxOffsetX = cw + overshootX - (this._mapMinX - this.hexSize) * this.zoom;
     this.offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, this.offsetX));
 
     // Clamp offsetY (same logic for Y axis)
     const minOffsetY = -overshootY - (this._mapMaxY + this.hexSize) * this.zoom;
-    const maxOffsetY =  ch + overshootY - (this._mapMinY - this.hexSize) * this.zoom;
+    const maxOffsetY = ch + overshootY - (this._mapMinY - this.hexSize) * this.zoom;
     this.offsetY = Math.max(minOffsetY, Math.min(maxOffsetY, this.offsetY));
   }
 
@@ -306,17 +339,17 @@ export class HexGrid {
   _bindEvents() {
     // Store bound handlers so destroy() can remove them
     this._handlers = {
-      mousemove:  (e) => this._onMouseMove(e),
-      mousedown:  (e) => this._onMouseDown(e),
-      mouseup:    (e) => this._onMouseUp(e),
-      mouseleave: ()  => this._onMouseLeave(),
-      wheel:      (e) => this._onWheel(e),
-      click:      (e) => this._onClick(e),
+      mousemove: (e) => this._onMouseMove(e),
+      mousedown: (e) => this._onMouseDown(e),
+      mouseup: (e) => this._onMouseUp(e),
+      mouseleave: () => this._onMouseLeave(),
+      wheel: (e) => this._onWheel(e),
+      click: (e) => this._onClick(e),
       touchstart: (e) => this._onTouchStart(e),
-      touchmove:  (e) => this._onTouchMove(e),
-      touchend:   (e) => this._onTouchEnd(e),
-      touchcancel:(e) => this._onTouchEnd(e),
-      dragover:   (e) => {
+      touchmove: (e) => this._onTouchMove(e),
+      touchend: (e) => this._onTouchEnd(e),
+      touchcancel: (e) => this._onTouchEnd(e),
+      dragover: (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
         const hex = this._eventToHex(e);
@@ -325,7 +358,7 @@ export class HexGrid {
           this._dirty = true;
         }
       },
-      drop:       (e) => {
+      drop: (e) => {
         e.preventDefault();
         const tileTypeId = e.dataTransfer.getData('text/tile-type');
         if (!tileTypeId) return;
@@ -340,22 +373,22 @@ export class HexGrid {
     };
 
     // Mouse events
-    this.canvas.addEventListener('mousemove',  this._handlers.mousemove);
-    this.canvas.addEventListener('mousedown',  this._handlers.mousedown);
-    this.canvas.addEventListener('mouseup',    this._handlers.mouseup);
+    this.canvas.addEventListener('mousemove', this._handlers.mousemove);
+    this.canvas.addEventListener('mousedown', this._handlers.mousedown);
+    this.canvas.addEventListener('mouseup', this._handlers.mouseup);
     this.canvas.addEventListener('mouseleave', this._handlers.mouseleave);
-    this.canvas.addEventListener('wheel',      this._handlers.wheel, { passive: false });
-    this.canvas.addEventListener('click',      this._handlers.click);
+    this.canvas.addEventListener('wheel', this._handlers.wheel, { passive: false });
+    this.canvas.addEventListener('click', this._handlers.click);
 
     // Touch events for mobile
-    this.canvas.addEventListener('touchstart',  this._handlers.touchstart,  { passive: false });
-    this.canvas.addEventListener('touchmove',   this._handlers.touchmove,   { passive: false });
-    this.canvas.addEventListener('touchend',    this._handlers.touchend,    { passive: false });
+    this.canvas.addEventListener('touchstart', this._handlers.touchstart, { passive: false });
+    this.canvas.addEventListener('touchmove', this._handlers.touchmove, { passive: false });
+    this.canvas.addEventListener('touchend', this._handlers.touchend, { passive: false });
     this.canvas.addEventListener('touchcancel', this._handlers.touchcancel, { passive: false });
 
     // Drag-and-drop
     this.canvas.addEventListener('dragover', this._handlers.dragover);
-    this.canvas.addEventListener('drop',     this._handlers.drop);
+    this.canvas.addEventListener('drop', this._handlers.drop);
 
     // Resize
     this._resizeObserver = new ResizeObserver(() => {
@@ -369,17 +402,17 @@ export class HexGrid {
   _resize() {
     const parent = this.canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
-    const w = parent.clientWidth  || 300;
+    const w = parent.clientWidth || 300;
     const h = parent.clientHeight || 300;
-    
+
     // Only resize if dimensions actually changed (threshold: 2px to avoid sub-pixel changes)
     if (Math.abs(w - this._lastWidth) < 2 && Math.abs(h - this._lastHeight) < 2) {
       return;
     }
-    
+
     this._lastWidth = w;
     this._lastHeight = h;
-    
+
     this.canvas.width = w * dpr;
     this.canvas.height = h * dpr;
     this.canvas.style.width = w + 'px';
@@ -387,7 +420,7 @@ export class HexGrid {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this._logicalWidth = w;
     this._logicalHeight = h;
-    
+
     // Only auto-center on first load, not after user has interacted
     if (!this._hasUserInteracted) {
       this._centerGrid();
@@ -418,13 +451,13 @@ export class HexGrid {
       this._hasUserInteracted = true;
       const dx = e.clientX - this._panStartX;
       const dy = e.clientY - this._panStartY;
-      
+
       // Check if we've actually moved (not just a static click)
       const panThreshold = 3; // pixels
       if (Math.abs(dx) > panThreshold || Math.abs(dy) > panThreshold) {
         this._hasPanned = true;
       }
-      
+
       this.offsetX = this._panOffsetX + dx;
       this.offsetY = this._panOffsetY + dy;
       this._clampPanOffset();
@@ -524,7 +557,7 @@ export class HexGrid {
       this._panStartY = this._touches[0].clientY;
       this._panOffsetX = this.offsetX;
       this._panOffsetY = this.offsetY;
-      
+
       // Track for tap detection
       this._tapStartX = this._touches[0].clientX;
       this._tapStartY = this._touches[0].clientY;
@@ -546,14 +579,14 @@ export class HexGrid {
       // Single touch pan
       const dx = this._touches[0].clientX - this._panStartX;
       const dy = this._touches[0].clientY - this._panStartY;
-      
+
       // Check if touch has moved beyond tap threshold
       const tapThreshold = 10; // pixels
       if (Math.abs(dx) > tapThreshold || Math.abs(dy) > tapThreshold) {
         this._hasMoved = true;
         this._hasUserInteracted = true;
       }
-      
+
       this.offsetX = this._panOffsetX + dx;
       this.offsetY = this._panOffsetY + dy;
       this._clampPanOffset();
@@ -565,8 +598,8 @@ export class HexGrid {
       if (this._lastPinchDistance > 0) {
         const rect = this.canvas.getBoundingClientRect();
         // Zoom center = midpoint between two fingers
-        const mx = ((this._touches[0].clientX + this._touches[1].clientX) / 2) - rect.left;
-        const my = ((this._touches[0].clientY + this._touches[1].clientY) / 2) - rect.top;
+        const mx = (this._touches[0].clientX + this._touches[1].clientX) / 2 - rect.left;
+        const my = (this._touches[0].clientY + this._touches[1].clientY) / 2 - rect.top;
 
         const oldZoom = this.zoom;
         const factor = currentDistance / this._lastPinchDistance;
@@ -585,16 +618,17 @@ export class HexGrid {
   _onTouchEnd(e) {
     e.preventDefault();
     const endTouches = Array.from(e.touches);
-    
+
     // Detect tap: single touch, no movement, short duration
     if (this._touches.length === 1 && endTouches.length === 0 && !this._hasMoved) {
       const tapDuration = Date.now() - this._tapStartTime;
-      if (tapDuration < 300) { // 300ms max for tap
+      if (tapDuration < 300) {
+        // 300ms max for tap
         // Simulate click event for tile selection
         const rect = this.canvas.getBoundingClientRect();
         const fakeEvent = {
           clientX: this._tapStartX,
-          clientY: this._tapStartY
+          clientY: this._tapStartY,
         };
         const hex = this._eventToHex(fakeEvent);
         if (hex) {
@@ -604,11 +638,13 @@ export class HexGrid {
           this._fireTileClick(hex.q, hex.r, this.tiles.get(key));
           // Block any subsequent synthetic click from the browser
           this._hasPanned = true;
-          setTimeout(() => { this._hasPanned = false; }, 500);
+          setTimeout(() => {
+            this._hasPanned = false;
+          }, 500);
         }
       }
     }
-    
+
     this._touches = endTouches;
 
     if (this._touches.length === 0) {
@@ -666,7 +702,7 @@ export class HexGrid {
   toJSON() {
     const tiles = {};
     for (const [key, data] of this.tiles) {
-      if (data.type === 'void') continue;  // void tiles are client-side only
+      if (data.type === 'void') continue; // void tiles are client-side only
       if (data.select && data.select !== 'first') {
         tiles[key] = { type: data.type || 'empty', select: data.select };
       } else {
@@ -727,7 +763,7 @@ export class HexGrid {
         // throws DOMException on Chrome/Windows — without this catch the loop dies
         // permanently and the canvas stays black forever).
         console.warn('[HexGrid] render error (non-fatal):', err);
-        this._dirty = true;  // force re-attempt next frame
+        this._dirty = true; // force re-attempt next frame
       }
       this._rafId = requestAnimationFrame(loop);
     };
@@ -740,13 +776,16 @@ export class HexGrid {
   _loadManifest() {
     if (this._manifestPromise) return this._manifestPromise;
     this._manifestPromise = fetch('/api/critters')
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         const map = new Map();
-        for (const entry of (data.critters || [])) map.set(entry.name, entry);
+        for (const entry of data.critters || []) map.set(entry.name, entry);
         return map;
       })
-      .catch(e => { console.warn('[HexGrid] critter manifest load failed:', e); return new Map(); });
+      .catch((e) => {
+        console.warn('[HexGrid] critter manifest load failed:', e);
+        return new Map();
+      });
     return this._manifestPromise;
   }
 
@@ -758,13 +797,22 @@ export class HexGrid {
     const key = iid.toLowerCase();
     if (this._critterSprites.has(key)) return;
     this._critterSprites.set(key, 'loading');
-    this._loadManifest().then(manifest => {
+    this._loadManifest().then((manifest) => {
       const entry = manifest.get(key);
-      if (!entry) { this._critterSprites.delete(key); return; }
+      if (!entry) {
+        this._critterSprites.delete(key);
+        return;
+      }
       const sprite = CritterSprite.fromManifest(entry);
-      sprite.load()
-        .then(() => { this._critterSprites.set(key, sprite); })
-        .catch(e => { console.warn('[HexGrid] critter sprite load failed:', key, e); this._critterSprites.delete(key); });
+      sprite
+        .load()
+        .then(() => {
+          this._critterSprites.set(key, sprite);
+        })
+        .catch((e) => {
+          console.warn('[HexGrid] critter sprite load failed:', key, e);
+          this._critterSprites.delete(key);
+        });
     });
   }
 
@@ -788,16 +836,16 @@ export class HexGrid {
   /** Get interpolated pixel position of a critter along battlePath. */
   _getCritterPixelPos(path_progress, sz) {
     if (!this.battlePath || this.battlePath.length < 2) return { x: 0, y: 0 };
-    
+
     // path_progress is [0.0, 1.0] normalized over entire path
     const maxIdx = this.battlePath.length - 1;
     const floatIdx = path_progress * maxIdx;
     const idx = Math.min(Math.floor(floatIdx), maxIdx - 1);
     const frac = floatIdx - idx;
-    
+
     const a = this.battlePath[idx];
     const b = this.battlePath[Math.min(idx + 1, maxIdx)];
-    
+
     // Interpolate in hex space, then convert to pixel
     const q = a.q + (b.q - a.q) * frac;
     const r = a.r + (b.r - a.r) * frac;
@@ -871,7 +919,7 @@ export class HexGrid {
     const { x, y } = hexToPixel(this._castlePos.q, this._castlePos.r, sz);
 
     const barWidth = sz * 0.95;
-    const barHeight = sz * 0.10;
+    const barHeight = sz * 0.1;
     const barX = x - barWidth / 2;
     const barY = y - sz * 0.75;
     const lifePercent = Math.max(0, Math.min(1, this._defenderLife / this._defenderMaxLife));
@@ -892,20 +940,24 @@ export class HexGrid {
     ctx.font = `bold ${Math.max(8, sz * 0.2)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(`${Math.floor(this._defenderLife)} / ${Math.round(this._defenderMaxLife)}`, x, barY - 1);
+    ctx.fillText(
+      `${Math.floor(this._defenderLife)} / ${Math.round(this._defenderMaxLife)}`,
+      x,
+      barY - 1
+    );
   }
 
   /** Update or add a shot with server data. */
   updateBattleShot(data) {
     // data: { source_sid, target_cid, shot_type, path_progress, origin_q, origin_r }
     const shot_id = `${data.source_sid}_${data.target_cid}`;
-    
+
     // Remove shot if path_progress >= 1.0 (arrived)
     if (data.path_progress >= 1.0) {
       this.battleShots.delete(shot_id);
       return;
     }
-    
+
     const shotSpriteUrl = data.shot_sprite ? '/' + data.shot_sprite : null;
     if (shotSpriteUrl) this._ensureSpriteLoaded(shotSpriteUrl, false);
 
@@ -942,14 +994,14 @@ export class HexGrid {
     if (this._spriteCache.has(url)) return;
     this._spriteCache.set(url, 'loading');
     fetch(url)
-      .then(r => r.blob())
-      .then(blob => createImageBitmap(blob))
-      .then(bmp => {
+      .then((r) => r.blob())
+      .then((blob) => createImageBitmap(blob))
+      .then((bmp) => {
         this._spriteCache.set(url, bmp);
         if (invalidateBase) this._invalidateBase();
         this._dirty = true;
       })
-      .catch(e => {
+      .catch((e) => {
         console.warn('[HexGrid] sprite load failed:', url, e.message);
         this._spriteCache.delete(url);
       });
@@ -976,7 +1028,7 @@ export class HexGrid {
       this._dirty = true;
       return;
     }
-    const blob = await fetch(url).then(r => {
+    const blob = await fetch(url).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status} loading map: ${url}`);
       return r.blob();
     });
@@ -996,7 +1048,10 @@ export class HexGrid {
     }
 
     // Calculate world bounds
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const key of this.tiles.keys()) {
       const { q, r } = parseKey(key);
       const { x, y } = hexToPixel(q, r, this.hexSize);
@@ -1178,7 +1233,7 @@ export class HexGrid {
     if (this.battlePath && this.battlePath.length > 1) {
       const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
       const pathW = sz * 0.38; // narrower than hex width
-      const points = this.battlePath.map(p => hexToPixel(p.q, p.r, sz));
+      const points = this.battlePath.map((p) => hexToPixel(p.q, p.r, sz));
 
       if (pathBmp && pathBmp !== 'loading') {
         // Soft edge: blurred shadow pass blends path into the green map
@@ -1260,14 +1315,23 @@ export class HexGrid {
       const tileType = getTileType(data.type);
       if (!tileType.spriteUrl || data.type === 'void' || data.type === 'path') continue;
       const bitmap = this._spriteCache.get(tileType.spriteUrl);
-      if (!bitmap) { this._ensureSpriteLoaded(tileType.spriteUrl); continue; }
+      if (!bitmap) {
+        this._ensureSpriteLoaded(tileType.spriteUrl);
+        continue;
+      }
       if (bitmap === 'loading') continue;
       const { q, r } = parseKey(key);
       const { x, y } = hexToPixel(q, r, sz);
       const spriteSize = sz * 1.7;
-      const yOffset = (data.type === 'castle' || data.type === 'spawnpoint')
-        ? spriteSize * 0.10 : spriteSize * 0.15;
-      ctx.drawImage(bitmap, x - spriteSize / 2, y - spriteSize / 2 - yOffset, spriteSize, spriteSize);
+      const yOffset =
+        data.type === 'castle' || data.type === 'spawnpoint' ? spriteSize * 0.1 : spriteSize * 0.15;
+      ctx.drawImage(
+        bitmap,
+        x - spriteSize / 2,
+        y - spriteSize / 2 - yOffset,
+        spriteSize,
+        spriteSize
+      );
     }
 
     ctx.restore();
@@ -1527,18 +1591,18 @@ export class HexGrid {
 
     // Remove all event listeners to prevent stale handlers on re-enter
     if (this._handlers) {
-      this.canvas.removeEventListener('mousemove',  this._handlers.mousemove);
-      this.canvas.removeEventListener('mousedown',  this._handlers.mousedown);
-      this.canvas.removeEventListener('mouseup',    this._handlers.mouseup);
+      this.canvas.removeEventListener('mousemove', this._handlers.mousemove);
+      this.canvas.removeEventListener('mousedown', this._handlers.mousedown);
+      this.canvas.removeEventListener('mouseup', this._handlers.mouseup);
       this.canvas.removeEventListener('mouseleave', this._handlers.mouseleave);
-      this.canvas.removeEventListener('wheel',      this._handlers.wheel);
-      this.canvas.removeEventListener('click',      this._handlers.click);
-      this.canvas.removeEventListener('touchstart',  this._handlers.touchstart);
-      this.canvas.removeEventListener('touchmove',   this._handlers.touchmove);
-      this.canvas.removeEventListener('touchend',    this._handlers.touchend);
+      this.canvas.removeEventListener('wheel', this._handlers.wheel);
+      this.canvas.removeEventListener('click', this._handlers.click);
+      this.canvas.removeEventListener('touchstart', this._handlers.touchstart);
+      this.canvas.removeEventListener('touchmove', this._handlers.touchmove);
+      this.canvas.removeEventListener('touchend', this._handlers.touchend);
       this.canvas.removeEventListener('touchcancel', this._handlers.touchcancel);
-      this.canvas.removeEventListener('dragover',    this._handlers.dragover);
-      this.canvas.removeEventListener('drop',        this._handlers.drop);
+      this.canvas.removeEventListener('dragover', this._handlers.dragover);
+      this.canvas.removeEventListener('drop', this._handlers.drop);
       this._handlers = null;
     }
 

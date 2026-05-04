@@ -14,8 +14,8 @@
  * @returns {number}  Build speed in effort-units per second (> 0)
  */
 export function calcBuildSpeed(summary) {
-  const base     = summary.base_build_speed ?? 1;
-  const offset   = summary.effects?.build_speed_offset   || 0;
+  const base = summary.base_build_speed ?? 1;
+  const offset = summary.effects?.build_speed_offset || 0;
   const modifier = summary.effects?.build_speed_modifier || 0;
   return (base + offset) * (1 + modifier);
 }
@@ -25,9 +25,9 @@ export function calcBuildSpeed(summary) {
  * @returns {number}  Research speed in effort-units per second (> 0)
  */
 export function calcResearchSpeed(summary) {
-  const base           = summary.base_research_speed ?? 1;
-  const offset         = summary.effects?.research_speed_offset   || 0;
-  const modifier       = summary.effects?.research_speed_modifier || 0;
+  const base = summary.base_research_speed ?? 1;
+  const offset = summary.effects?.research_speed_offset || 0;
+  const modifier = summary.effects?.research_speed_modifier || 0;
   const scientistBonus = (summary.citizens?.scientist || 0) * (summary.citizen_effect || 0);
   return (base + offset) * (1 + modifier + scientistBonus);
 }

@@ -32,7 +32,7 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-DEFAULT_REPLAY_DIR = "replays"
+DEFAULT_REPLAY_DIR = "data/replays"
 REPLAY_MAX_AGE_DAYS = 7
 
 

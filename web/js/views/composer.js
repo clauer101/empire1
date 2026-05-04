@@ -120,9 +120,12 @@ async function enter() {
 }
 
 function leave() {
-  _unsub.forEach(fn => fn());
+  _unsub.forEach((fn) => fn());
   _unsub = [];
-  if (grid) { grid.destroy(); grid = null; }
+  if (grid) {
+    grid.destroy();
+    grid = null;
+  }
 }
 
 // ── Palette ─────────────────────────────────────────────────
@@ -161,7 +164,7 @@ function _buildPalette() {
 
   // Static categories
   const staticCategories = {
-    'Basic': ['castle', 'spawnpoint', 'path', 'empty'],
+    Basic: ['castle', 'spawnpoint', 'path', 'empty'],
   };
 
   // Render static categories
@@ -194,9 +197,15 @@ function _createCategoryEl(catName, typeIds) {
     item.className = 'palette-item';
     item.draggable = true;
     item.dataset.tileType = typeId;
-    item.innerHTML = 
-      '<span class="palette-swatch" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
-      '<span class="palette-label">' + t.label + '</span>';
+    item.innerHTML =
+      '<span class="palette-swatch" style="background:' +
+      t.color +
+      ';border-color:' +
+      t.stroke +
+      '"></span>' +
+      '<span class="palette-label">' +
+      t.label +
+      '</span>';
 
     item.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/tile-type', typeId);
@@ -238,11 +247,11 @@ function _clearDirty() {
 function _setActiveBrush(typeId) {
   if (_activeBrush === typeId) {
     _activeBrush = null;
-    container.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
+    container.querySelectorAll('.palette-item').forEach((el) => el.classList.remove('active'));
     return;
   }
   _activeBrush = typeId;
-  container.querySelectorAll('.palette-item').forEach(el => {
+  container.querySelectorAll('.palette-item').forEach((el) => {
     el.classList.toggle('active', el.dataset.tileType === typeId);
   });
 }
@@ -289,7 +298,7 @@ function _initializeMap() {
   const initialTiles = {
     '0,0': 'empty',
     '0,1': 'empty',
-    '1,0': 'empty'
+    '1,0': 'empty',
   };
 
   for (const [key, type] of Object.entries(initialTiles)) {
@@ -345,13 +354,13 @@ async function _reloadMap() {
 function _bindMobileOverlay() {
   const closeBtn = container.querySelector('#tile-overlay-close');
   const overlay = container.querySelector('#tile-overlay');
-  
+
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       overlay.style.display = 'none';
     });
   }
-  
+
   // Close on backdrop click
   if (overlay) {
     overlay.addEventListener('click', (e) => {
@@ -377,20 +386,38 @@ function _showProperties(q, r, tile) {
   let extraInfo = '';
   if (t.serverData) {
     const s = t.serverData;
-    extraInfo = 
+    extraInfo =
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Turm-Stats</div>' +
-      '<div class="props-row"><span class="label">Damage</span><span class="value">' + (s.damage || 0) + '</span></div>' +
-      '<div class="props-row"><span class="label">Range</span><span class="value">' + (s.range || 0) + ' hex</span></div>' +
-      '<div class="props-row"><span class="label">Reload</span><span class="value">' + (s.reload_time_ms || 0) + ' ms</span></div>' +
-      '<div class="props-row"><span class="label">Shot Speed</span><span class="value">' + (s.shot_speed || 0) + ' hex/s</span></div>' +
-      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' + (s.shot_type || 'normal') + '</span></div>';
+      '<div class="props-row"><span class="label">Damage</span><span class="value">' +
+      (s.damage || 0) +
+      '</span></div>' +
+      '<div class="props-row"><span class="label">Range</span><span class="value">' +
+      (s.range || 0) +
+      ' hex</span></div>' +
+      '<div class="props-row"><span class="label">Reload</span><span class="value">' +
+      (s.reload_time_ms || 0) +
+      ' ms</span></div>' +
+      '<div class="props-row"><span class="label">Shot Speed</span><span class="value">' +
+      (s.shot_speed || 0) +
+      ' hex/s</span></div>' +
+      '<div class="props-row"><span class="label">Shot Type</span><span class="value">' +
+      (s.shot_type || 'normal') +
+      '</span></div>';
     if (s.effects && Object.keys(s.effects).length > 0) {
-      const effectsStr = Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ');
-      extraInfo += '<div class="props-row"><span class="label">Effects</span><span class="value">' + effectsStr + '</span></div>';
+      const effectsStr = Object.entries(s.effects)
+        .map(([k, v]) => k + ': ' + v)
+        .join(', ');
+      extraInfo +=
+        '<div class="props-row"><span class="label">Effects</span><span class="value">' +
+        effectsStr +
+        '</span></div>';
     }
     if (s.requirements && s.requirements.length > 0) {
-      extraInfo += '<div class="props-row"><span class="label">Requires</span><span class="value mono">' + s.requirements.join(', ') + '</span></div>';
+      extraInfo +=
+        '<div class="props-row"><span class="label">Requires</span><span class="value mono">' +
+        s.requirements.join(', ') +
+        '</span></div>';
     }
   }
 
@@ -400,44 +427,59 @@ function _showProperties(q, r, tile) {
     const tilePrice = st.summary?.tile_price || 0;
     const currentGold = st.summary?.resources?.gold || 0;
     const canAfford = currentGold >= tilePrice;
-    
-    buyButton = 
+
+    buyButton =
       '<div class="props-divider"></div>' +
       '<div class="props-row">' +
-        '<span class="label">Cost</span>' +
-        '<span class="value" style="color:' + (canAfford ? 'var(--text)' : 'var(--danger)') + '">' +
-          '💰 ' + Math.round(tilePrice) + ' Gold' +
-        '</span>' +
+      '<span class="label">Cost</span>' +
+      '<span class="value" style="color:' +
+      (canAfford ? 'var(--text)' : 'var(--danger)') +
+      '">' +
+      '💰 ' +
+      Math.round(tilePrice) +
+      ' Gold' +
+      '</span>' +
       '</div>' +
-      '<button id="buy-tile-btn" class="btn" style="width:100%;margin-top:8px;"' + 
-        (canAfford ? '' : ' disabled title="Not enough gold"') + '>Buy Tile</button>' +
+      '<button id="buy-tile-btn" class="btn" style="width:100%;margin-top:8px;"' +
+      (canAfford ? '' : ' disabled title="Not enough gold"') +
+      '>Buy Tile</button>' +
       '<div id="buy-tile-msg" style="margin-top:6px;font-size:12px;text-align:center;"></div>';
   }
 
-  const propsHTML = 
+  const propsHTML =
     '<div class="props-tile">' +
-      '<div class="props-row">' +
-        '<span class="label">Position</span>' +
-        '<span class="value mono">' + q + ', ' + r + '</span>' +
-      '</div>' +
-      '<div class="props-row">' +
-        '<span class="label">Type</span>' +
-        '<span class="value">' +
-          '<span class="palette-swatch--sm" style="background:' + t.color + ';border-color:' + t.stroke + '"></span>' +
-          t.label +
-        '</span>' +
-      '</div>' +
-      '<div class="props-row">' +
-        '<span class="label">Key</span>' +
-        '<span class="value mono">' + hexKey(q, r) + '</span>' +
-      '</div>' +
-      extraInfo +
-      buyButton +
+    '<div class="props-row">' +
+    '<span class="label">Position</span>' +
+    '<span class="value mono">' +
+    q +
+    ', ' +
+    r +
+    '</span>' +
+    '</div>' +
+    '<div class="props-row">' +
+    '<span class="label">Type</span>' +
+    '<span class="value">' +
+    '<span class="palette-swatch--sm" style="background:' +
+    t.color +
+    ';border-color:' +
+    t.stroke +
+    '"></span>' +
+    t.label +
+    '</span>' +
+    '</div>' +
+    '<div class="props-row">' +
+    '<span class="label">Key</span>' +
+    '<span class="value mono">' +
+    hexKey(q, r) +
+    '</span>' +
+    '</div>' +
+    extraInfo +
+    buyButton +
     '</div>';
-  
+
   // Update desktop sidebar
   content.innerHTML = propsHTML;
-  
+
   // Update mobile overlay
   if (overlayBody) {
     overlayBody.innerHTML = propsHTML;
@@ -451,7 +493,7 @@ function _showProperties(q, r, tile) {
   const buyHandler = async (btnElement, msgElement) => {
     btnElement.disabled = true;
     msgElement.textContent = '';
-    
+
     try {
       const resp = await rest.buyTile(q, r);
       if (resp.success) {
@@ -476,7 +518,9 @@ function _showProperties(q, r, tile) {
       msgElement.style.color = 'var(--danger)';
     } finally {
       btnElement.disabled = false;
-      setTimeout(() => { msgElement.textContent = ''; }, 3000);
+      setTimeout(() => {
+        msgElement.textContent = '';
+      }, 3000);
     }
   };
 
@@ -499,7 +543,10 @@ function _showProperties(q, r, tile) {
 
 function _updateMapInfo() {
   if (!grid) return;
-  let placed = 0, paths = 0, spawns = 0, towers = 0;
+  let placed = 0,
+    paths = 0,
+    spawns = 0,
+    towers = 0;
   const items = st.items || {};
   const serverStructures = items.structures || {};
 
@@ -511,10 +558,12 @@ function _updateMapInfo() {
     if (serverStructures[t] || t === 'tower_slot') towers++;
   }
 
-  const el = function(id) { return container.querySelector('#' + id); };
-  if (el('info-total'))  el('info-total').textContent  = grid.tiles.size;
+  const el = function (id) {
+    return container.querySelector('#' + id);
+  };
+  if (el('info-total')) el('info-total').textContent = grid.tiles.size;
   if (el('info-placed')) el('info-placed').textContent = placed;
-  if (el('info-paths'))  el('info-paths').textContent  = paths;
+  if (el('info-paths')) el('info-paths').textContent = paths;
   if (el('info-spawns')) el('info-spawns').textContent = spawns;
   if (el('info-towers')) el('info-towers').textContent = towers;
 }
@@ -522,20 +571,22 @@ function _updateMapInfo() {
 // ── Toolbar ─────────────────────────────────────────────────
 
 function _bindToolbar() {
-  const $ = function(id) { return container.querySelector('#' + id); };
+  const $ = function (id) {
+    return container.querySelector('#' + id);
+  };
 
-  $('map-save').addEventListener('click', async function() {
+  $('map-save').addEventListener('click', async function () {
     try {
       const data = grid.toJSON();
       const tiles = data.tiles || {};
       const resp = await rest.saveMap(tiles);
-      
+
       if (resp && resp.success === false) {
         _showMapError(resp.error || 'Save failed');
         _flashButton($('map-save'), 'Failed!');
         return;
       }
-      
+
       _flashButton($('map-save'), 'Saved!');
       _clearDirty();
     } catch (err) {
@@ -550,7 +601,7 @@ function _flashButton(btn, text) {
   const orig = btn.textContent;
   btn.textContent = text;
   btn.style.color = 'var(--success)';
-  setTimeout(function() {
+  setTimeout(function () {
     btn.textContent = orig;
     btn.style.color = '';
   }, 1200);
@@ -560,7 +611,7 @@ function _showMapError(message) {
   const banner = container.querySelector('#map-error-banner');
   banner.textContent = '❌ ' + message;
   banner.style.display = 'block';
-  setTimeout(function() {
+  setTimeout(function () {
     banner.style.display = 'none';
   }, 5000);
 }

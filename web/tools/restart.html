@@ -301,6 +301,13 @@
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ env: currentEnv }),
         });
+        if (!r.ok) {
+          const text = await r.text();
+          log(`Deploy error ${r.status}: ${text.slice(0, 200)}`, 'err');
+          setStatus(`Deploy failed (${r.status})`, 'err');
+          enableAll();
+          return;
+        }
         const data = await r.json();
         if (data.ok) {
           log(`${data.message}`, 'ok');

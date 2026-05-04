@@ -56,7 +56,10 @@ export function createBattleWs(ctx) {
 
     const { rest } = window._defenseWsRestRef || {};
     const restMod = rest || window._restModule;
-    if (!restMod) { console.warn('[BattleWs] rest module not available'); return; }
+    if (!restMod) {
+      console.warn('[BattleWs] rest module not available');
+      return;
+    }
 
     const restBase = restMod.baseUrl || `http://${window.location.hostname}:8080`;
     const restUrl = new URL(restBase);
@@ -90,7 +93,11 @@ export function createBattleWs(ctx) {
       const st = ctx.getSt();
       const pendingId = ctx.getPendingAttackId();
       const spectateUid = ctx.getSpectateUid();
-      send({ type: 'battle_register', target_uid: spectateUid ?? st?.summary?.uid, ...(pendingId != null ? { attack_id: pendingId } : {}) });
+      send({
+        type: 'battle_register',
+        target_uid: spectateUid ?? st?.summary?.uid,
+        ...(pendingId != null ? { attack_id: pendingId } : {}),
+      });
     });
 
     ws.addEventListener('message', (ev) => {
@@ -193,8 +200,8 @@ export function createBattleWs(ctx) {
     const ACTIVE_PHASES = ['in_siege', 'in_battle'];
     const summary = st?.summary || {};
     const allAttacks = [...(summary.attacks_incoming || []), ...(summary.attacks_outgoing || [])];
-    const hasActiveAttack = ctx.getPendingAttackId() != null
-      || allAttacks.some(a => ACTIVE_PHASES.includes(a.phase));
+    const hasActiveAttack =
+      ctx.getPendingAttackId() != null || allAttacks.some((a) => ACTIVE_PHASES.includes(a.phase));
 
     ctx.updateBattleStatusVisibility(hasActiveAttack);
 
@@ -205,7 +212,9 @@ export function createBattleWs(ctx) {
     }
   }
 
-  function isConnected() { return _wsConnected; }
+  function isConnected() {
+    return _wsConnected;
+  }
 
   return { connect, disconnect, send, connectIfNeeded, isConnected };
 }

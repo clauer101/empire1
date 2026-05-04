@@ -15,7 +15,7 @@ let st;
 let container;
 let _unsub = [];
 let _availableCritters = [];
-let _critterSprites = {};  // iid → {sprite, animation} for all critters incl. locked
+let _critterSprites = {}; // iid → {sprite, animation} for all critters incl. locked
 let _empiresCache = [];
 /** iid.toUpperCase() → Roman numeral string (e.g. "III") */
 let _critterEraRoman = {};
@@ -33,20 +33,20 @@ function _waveEraPrice(eraIndex) {
 function _slotPrice(slots) {
   const p = _critterSlotParams;
   if (!p) return 0;
-  return p.u + (slots * p.y) * Math.pow(slots + p.z, p.v);
+  return p.u + slots * p.y * Math.pow(slots + p.z, p.v);
 }
 
 function _applyCritUpgrades(c) {
   const upgrades = st.summary?.item_upgrades?.[c.iid] ?? {};
   const d = _critUpgDef;
   if (!d) return c;
-  const hpLvl  = upgrades.health ?? 0;
-  const spdLvl = upgrades.speed  ?? 0;
+  const hpLvl = upgrades.health ?? 0;
+  const spdLvl = upgrades.speed ?? 0;
   const armLvl = upgrades.armour ?? 0;
   return {
     ...c,
     health: c.health * (1 + (d.health / 100) * hpLvl),
-    speed:  c.speed  * (1 + (d.speed  / 100) * spdLvl),
+    speed: c.speed * (1 + (d.speed / 100) * spdLvl),
     armour: (c.armour || 0) * (1 + (d.armour / 100) * armLvl),
   };
 }
@@ -58,7 +58,7 @@ function _buildCritterEraRoman() {
     const key = ERA_YAML_TO_KEY[info.era] || null;
     if (!key) continue;
     const idx = ERA_KEYS.indexOf(key);
-    const roman = idx >= 0 ? ['I','II','III','IV','V','VI','VII','VIII','IX'][idx] : '';
+    const roman = idx >= 0 ? ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][idx] : '';
     _critterEraRoman[iid.toUpperCase()] = roman;
   }
 }
@@ -146,24 +146,30 @@ function init(el, _api, _state) {
     newArmyOverlay.style.display = 'none';
   });
   container.querySelector('#new-army-confirm').addEventListener('click', onCreateArmy);
-  container.querySelector('#new-army-name').addEventListener('keydown', e => {
+  container.querySelector('#new-army-name').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') onCreateArmy();
     if (e.key === 'Escape') newArmyOverlay.style.display = 'none';
   });
-  newArmyOverlay.addEventListener('click', e => {
+  newArmyOverlay.addEventListener('click', (e) => {
     if (e.target === newArmyOverlay) newArmyOverlay.style.display = 'none';
   });
 
   // Bind spy attack panel
   const spyInput = container.querySelector('#spy-target-input');
-  container.querySelector('#spy-target-clear').addEventListener('click', () => { spyInput.value = ''; });
+  container.querySelector('#spy-target-clear').addEventListener('click', () => {
+    spyInput.value = '';
+  });
   _bindAutocomplete(spyInput);
   container.querySelector('#spy-attack-btn').addEventListener('click', onSpyAttack);
 
   // Bind spy report overlay close
   const spyOverlay = container.querySelector('#spy-report-overlay');
-  container.querySelector('#spy-report-close').addEventListener('click', () => { spyOverlay.style.display = 'none'; });
-  spyOverlay.addEventListener('click', e => { if (e.target === spyOverlay) spyOverlay.style.display = 'none'; });
+  container.querySelector('#spy-report-close').addEventListener('click', () => {
+    spyOverlay.style.display = 'none';
+  });
+  spyOverlay.addEventListener('click', (e) => {
+    if (e.target === spyOverlay) spyOverlay.style.display = 'none';
+  });
 
   // Bind critter overlay close
   const critterOverlay = container.querySelector('#critter-overlay');
@@ -187,13 +193,13 @@ async function enter() {
   _unsub.push(eventBus.on('state:military', _updateSpyButton));
   _unsub.push(eventBus.on('state:summary', updateCreateArmyButton));
   _unsub.push(eventBus.on('server:spy_report', _onSpyReport));
-  
+
   // Load once on entry
   _loadEmpires();
   try {
     await rest.getSummary();
     updateCreateArmyButton();
-    const [,, eraMap] = await Promise.all([rest.getItems(), rest.getMilitary(), rest.getEraMap()]);
+    const [, , eraMap] = await Promise.all([rest.getItems(), rest.getMilitary(), rest.getEraMap()]);
     if (eraMap) {
       _critUpgDef = eraMap.critter_upgrade_def ?? null;
       _waveEraCosts = eraMap.wave_era_costs ?? [];
@@ -211,7 +217,9 @@ async function enter() {
     st.pendingAttackTarget = null;
     // Fill all target-uid inputs with the empire name and scroll to first one
     const inputs = container.querySelectorAll('.target-uid-input');
-    inputs.forEach(inp => { inp.value = name || uid; });
+    inputs.forEach((inp) => {
+      inp.value = name || uid;
+    });
     if (inputs.length > 0) {
       inputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -236,15 +244,15 @@ function showMessage(inputElement, text, type = 'error', persistent = false) {
     text-align: center;
     animation: fadeIn 0.2s;
   `;
-  
+
   if (type === 'error') {
     msgEl.style.background = 'var(--red, #d32f2f)';
   } else if (type === 'success') {
     msgEl.style.background = 'var(--green, #388e3c)';
   }
-  
+
   msgEl.textContent = text;
-  
+
   // Check if this is a wave/critter-related message
   const armyGroup = inputElement.closest('.army-group');
   if (armyGroup) {
@@ -256,7 +264,7 @@ function showMessage(inputElement, text, type = 'error', persistent = false) {
       if (existingMsg) {
         existingMsg.remove();
       }
-      
+
       // Insert message after waves container
       const messageContainer = document.createElement('div');
       messageContainer.className = 'wave-message-container';
@@ -270,7 +278,7 @@ function showMessage(inputElement, text, type = 'error', persistent = false) {
     // For non-wave messages (like army creation), use old behavior
     inputElement.parentNode.insertBefore(msgEl, inputElement.nextSibling);
   }
-  
+
   if (!persistent) {
     setTimeout(() => {
       msgEl.remove();
@@ -286,7 +294,7 @@ function showMessage(inputElement, text, type = 'error', persistent = false) {
 function _startEtaTicker() {
   if (_etaTicker) return;
   _etaTicker = setInterval(() => {
-    container.querySelectorAll('.eta-live[data-eta-ts]').forEach(el => {
+    container.querySelectorAll('.eta-live[data-eta-ts]').forEach((el) => {
       const ts = Number(el.dataset.etaTs);
       const remaining = (ts - Date.now()) / 1000;
       const prefix = el.dataset.etaPrefix || 'ETA';
@@ -296,9 +304,12 @@ function _startEtaTicker() {
 }
 
 function leave() {
-  _unsub.forEach(fn => fn());
+  _unsub.forEach((fn) => fn());
   _unsub = [];
-  if (_etaTicker) { clearInterval(_etaTicker); _etaTicker = null; }
+  if (_etaTicker) {
+    clearInterval(_etaTicker);
+    _etaTicker = null;
+  }
 }
 
 function updateCreateArmyButton() {
@@ -311,7 +322,9 @@ function updateCreateArmyButton() {
   priceDisplay.textContent = `💰 ${Math.round(armyPrice)} Gold`;
   priceDisplay.style.color = canAfford ? '' : 'var(--danger)';
   btn.style.opacity = canAfford ? '1' : '0.5';
-  btn.title = canAfford ? `Armee kaufen (${Math.round(armyPrice)} Gold)` : `Nicht genug Gold (${Math.round(armyPrice)} benötigt)`;
+  btn.title = canAfford
+    ? `Armee kaufen (${Math.round(armyPrice)} Gold)`
+    : `Nicht genug Gold (${Math.round(armyPrice)} benötigt)`;
 }
 
 async function onCreateArmy() {
@@ -406,14 +419,18 @@ async function onEditArmyName(e) {
 async function onAddWave(e) {
   const waveTile = e.currentTarget;
   const canAfford = waveTile.getAttribute('data-can-afford') === 'true';
-  
+
   if (!canAfford) {
     const price = waveTile.getAttribute('data-price') || '0';
     const currentGold = st.summary?.resources?.gold || 0;
-    showMessage(waveTile, `Not enough gold (need ${price}, have ${Math.round(currentGold)})`, 'error');
+    showMessage(
+      waveTile,
+      `Not enough gold (need ${price}, have ${Math.round(currentGold)})`,
+      'error'
+    );
     return;
   }
-  
+
   const armyGroup = waveTile.closest('.army-group');
   const aid = parseInt(armyGroup.getAttribute('data-aid'), 10);
 
@@ -457,13 +474,13 @@ const _SPRITE_EXTS = ['.png', '.webp', '.jpg'];
  * preserving the original aspect ratio (letterboxed into the canvas).
  */
 function _initCritterCanvases(el) {
-  el.querySelectorAll('.critter-sprite-canvas').forEach(canvas => {
+  el.querySelectorAll('.critter-sprite-canvas').forEach((canvas) => {
     const drawFrame = (img) => {
       const ctx = canvas.getContext('2d');
       const fw = img.width / 4;
       const fh = img.height / 4;
       const scale = Math.min(canvas.width / fw, canvas.height / fh);
-      const dx = Math.floor((canvas.width  - fw * scale) / 2);
+      const dx = Math.floor((canvas.width - fw * scale) / 2);
       const dy = Math.floor((canvas.height - fh * scale) / 2);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, fw, fh, dx, dy, fw * scale, fh * scale);
@@ -474,7 +491,9 @@ function _initCritterCanvases(el) {
     if (sprite) {
       const img = new Image();
       img.onload = () => drawFrame(img);
-      img.onerror = () => { canvas.style.display = 'none'; };
+      img.onerror = () => {
+        canvas.style.display = 'none';
+      };
       img.src = sprite;
       return;
     }
@@ -491,7 +510,10 @@ function _initCritterCanvases(el) {
       baseUrl = `assets/sprites/critters/${iid.toLowerCase()}/${iid.toLowerCase()}`;
     }
     function tryLoad(idx) {
-      if (idx >= _SPRITE_EXTS.length) { canvas.style.display = 'none'; return; }
+      if (idx >= _SPRITE_EXTS.length) {
+        canvas.style.display = 'none';
+        return;
+      }
       const img = new Image();
       img.onload = () => drawFrame(img);
       img.onerror = () => tryLoad(idx + 1);
@@ -505,7 +527,15 @@ function _initCritterCanvases(el) {
  * Open the critter picker overlay for a specific wave.
  * Shows all available critters as tiles with stats.
  */
-function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice = 0, nextSlotPrice = 0, currentSlots = 0) {
+function _openCritterOverlay(
+  aid,
+  waveIdx,
+  currentIid,
+  maxEra = 0,
+  nextEraPrice = 0,
+  nextSlotPrice = 0,
+  currentSlots = 0
+) {
   const overlay = container.querySelector('#critter-overlay');
   const body = container.querySelector('#critter-overlay-body');
   if (!overlay || !body) return;
@@ -542,9 +572,10 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
           <div style="font-size:18px;font-weight:700;color:#c9a84c;line-height:1.1;">${eraRoman} <span style="font-size:12px;font-weight:400;color:var(--text-dim);">${eraLabel}</span></div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Max era · unlocks critter types</div>
         </div>
-        ${isMaxEra
-          ? `<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Max</span>`
-          : `<button id="wave-era-upgrade-btn"
+        ${
+          isMaxEra
+            ? `<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Max</span>`
+            : `<button id="wave-era-upgrade-btn"
               style="flex-shrink:0;font-size:11px;padding:4px 10px;background:transparent;color:${canAffordEra ? '#c9a84c' : 'var(--danger)'};border:1px solid ${canAffordEra ? '#c9a84c' : 'var(--danger)'};border-radius:var(--radius);cursor:${canAffordEra ? 'pointer' : 'not-allowed'};opacity:${canAffordEra ? '1' : '0.6'};"
               data-can-afford="${canAffordEra}" title="${canAffordEra ? `Unlock ${nextEraLabel}` : 'Not enough gold'}">
               ${ERA_ROMAN[nextEraKey] || ''} · 💰${Math.round(nextEraPrice)}
@@ -553,13 +584,15 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
       </div>
     </div>
     <div class="critter-picker-grid">
-      ${[..._availableCritters].reverse().map(c => {
-        const isSelected = c.iid === currentIid;
-        const isMuted = (c.era_index ?? 0) > maxEra;
-        const u = _applyCritUpgrades(c);
-        const upgLevels = st.summary?.item_upgrades?.[c.iid] ?? {};
-        const totalUpgLvl = Object.values(upgLevels).reduce((a, b) => a + b, 0);
-        return `
+      ${[..._availableCritters]
+        .reverse()
+        .map((c) => {
+          const isSelected = c.iid === currentIid;
+          const isMuted = (c.era_index ?? 0) > maxEra;
+          const u = _applyCritUpgrades(c);
+          const upgLevels = st.summary?.item_upgrades?.[c.iid] ?? {};
+          const totalUpgLvl = Object.values(upgLevels).reduce((a, b) => a + b, 0);
+          return `
           <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}${isMuted ? ' critter-pick-tile--muted' : ''}"
               data-iid="${c.iid}" ${isMuted ? 'title="Era not unlocked for this wave"' : ''}>
             <div class="cpt-sprite" style="${isMuted ? 'opacity:0.35;filter:grayscale(1);' : ''}">
@@ -578,7 +611,8 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
               ${c.time_between_ms ? `<span class="cpt-stat cpt-interval" title="Time between spawns">⏱ ${(c.time_between_ms / 1000).toFixed(1)}s</span>` : ''}
             </div>
           </button>`;
-      }).join('')}
+        })
+        .join('')}
     </div>
   `;
 
@@ -591,10 +625,26 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
       if (slotUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
       const newSlots = currentSlots + 1;
       const newNextSlotPrice = _slotPrice(newSlots + 1);
-      _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, newNextSlotPrice, newSlots);
-      rest.buyCritterSlot(aid, waveIdx).then(resp => {
+      _openCritterOverlay(
+        aid,
+        waveIdx,
+        currentIid,
+        maxEra,
+        nextEraPrice,
+        newNextSlotPrice,
+        newSlots
+      );
+      rest.buyCritterSlot(aid, waveIdx).then((resp) => {
         if (!resp.success) {
-          _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, nextSlotPrice, currentSlots);
+          _openCritterOverlay(
+            aid,
+            waveIdx,
+            currentIid,
+            maxEra,
+            nextEraPrice,
+            nextSlotPrice,
+            currentSlots
+          );
         } else {
           Promise.all([rest.getSummary(), rest.getMilitary()]);
         }
@@ -609,10 +659,26 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
       if (eraUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
       const newMaxEra = maxEra + 1;
       const newNextEraPrice = _waveEraPrice(newMaxEra + 1);
-      _openCritterOverlay(aid, waveIdx, currentIid, newMaxEra, newNextEraPrice, nextSlotPrice, currentSlots);
-      rest.buyWaveEra(aid, waveIdx).then(resp => {
+      _openCritterOverlay(
+        aid,
+        waveIdx,
+        currentIid,
+        newMaxEra,
+        newNextEraPrice,
+        nextSlotPrice,
+        currentSlots
+      );
+      rest.buyWaveEra(aid, waveIdx).then((resp) => {
         if (!resp.success) {
-          _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, nextSlotPrice, currentSlots);
+          _openCritterOverlay(
+            aid,
+            waveIdx,
+            currentIid,
+            maxEra,
+            nextEraPrice,
+            nextSlotPrice,
+            currentSlots
+          );
         } else {
           Promise.all([rest.getSummary(), rest.getMilitary()]);
         }
@@ -621,7 +687,7 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
   }
 
   // Bind tile clicks (muted critters are not selectable)
-  body.querySelectorAll('.critter-pick-tile').forEach(btn => {
+  body.querySelectorAll('.critter-pick-tile').forEach((btn) => {
     btn.addEventListener('click', async () => {
       if (btn.classList.contains('critter-pick-tile--muted')) return;
       const iid = btn.dataset.iid;
@@ -636,21 +702,29 @@ function _openCritterOverlay(aid, waveIdx, currentIid, maxEra = 0, nextEraPrice 
 async function onIncreaseSlots(e) {
   const btn = e.currentTarget;
   const canAfford = btn.getAttribute('data-can-afford') === 'true';
-  
+
   if (!canAfford) {
     const price = btn.getAttribute('data-price') || '0';
     const currentGold = st.summary?.resources?.gold || 0;
-    showMessage(btn.closest('.wave-tile'), `Not enough gold (need ${price}, have ${Math.round(currentGold)})`, 'error');
+    showMessage(
+      btn.closest('.wave-tile'),
+      `Not enough gold (need ${price}, have ${Math.round(currentGold)})`,
+      'error'
+    );
     return;
   }
-  
+
   const aid = parseInt(btn.getAttribute('data-aid'), 10);
   const waveIdx = parseInt(btn.getAttribute('data-wave-idx'), 10);
 
   try {
     const resp = await rest.buyCritterSlot(aid, waveIdx);
     if (resp.success) {
-      showMessage(btn.closest('.wave-tile'), `✓ Critter added! Cost: ${Math.round(resp.cost)} gold`, 'success');
+      showMessage(
+        btn.closest('.wave-tile'),
+        `✓ Critter added! Cost: ${Math.round(resp.cost)} gold`,
+        'success'
+      );
       // Reload summary to update prices and gold
       await rest.getSummary();
       await rest.getMilitary();
@@ -668,12 +742,12 @@ async function onDecreaseSlots(e) {
   const aid = parseInt(btn.getAttribute('data-aid'), 10);
   const waveIdx = parseInt(btn.getAttribute('data-wave-idx'), 10);
   const currentCount = parseInt(btn.getAttribute('data-count'), 10) || 1;
-  
+
   // Don't allow decreasing below 1 slot
   if (currentCount <= 1) {
     return;
   }
-  
+
   const newCount = currentCount - 1;
 
   try {
@@ -703,12 +777,12 @@ function _updateSpyButton() {
   if (!btn) return;
 
   const armies = st.military?.armies || [];
-  const firstArmy = armies.length ? armies.reduce((a, b) => a.aid < b.aid ? a : b) : null;
+  const firstArmy = armies.length ? armies.reduce((a, b) => (a.aid < b.aid ? a : b)) : null;
   if (titleEl && firstArmy) {
     titleEl.innerHTML = `🕵 Spy Attack <span style="font-size:11px;font-weight:400;">(disguises as "${escHtml(firstArmy.name)}", half travel time)</span>`;
   }
 
-  const activeSpies = (st.military?.attacks_outgoing || []).filter(a => a.is_spy);
+  const activeSpies = (st.military?.attacks_outgoing || []).filter((a) => a.is_spy);
   if (activeSpies.length > 0) {
     const eta = fmtTravelTime(activeSpies[0].eta_seconds);
     btn.disabled = true;
@@ -796,31 +870,43 @@ function _onSpyReport(msg) {
   const era = msg.era || '?';
   const defName = msg.defender_name || `Player ${msg.defender_uid}`;
 
-  const structHtml = (msg.structures || []).map(s => {
-    const upg = Object.entries(s.upgrades || {})
-      .filter(([, v]) => v > 0)
-      .map(([k, v]) => {
-        const abbr = {damage:'dmg',range:'rng',reload:'rld',effect_duration:'eff_dur',effect_value:'eff_val'};
-        return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k]||k}+${v}</span>`;
-      }).join(' ');
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+  const structHtml = (msg.structures || [])
+    .map((s) => {
+      const upg = Object.entries(s.upgrades || {})
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => {
+          const abbr = {
+            damage: 'dmg',
+            range: 'rng',
+            reload: 'rld',
+            effect_duration: 'eff_dur',
+            effect_value: 'eff_val',
+          };
+          return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k] || k}+${v}</span>`;
+        })
+        .join(' ');
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
       <span>🗼 ${escHtml(s.name)}</span>
       <span>${upg || '<span style="opacity:0.4;font-size:11px;">no upgrades</span>'}</span>
     </div>`;
-  }).join('');
+    })
+    .join('');
 
-  const critterHtml = (msg.critters || []).map(c => {
-    const upg = Object.entries(c.upgrades || {})
-      .filter(([, v]) => v > 0)
-      .map(([k, v]) => {
-        const abbr = {health:'hp',speed:'spd',armour:'arm'};
-        return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k]||k}+${v}</span>`;
-      }).join(' ');
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+  const critterHtml = (msg.critters || [])
+    .map((c) => {
+      const upg = Object.entries(c.upgrades || {})
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => {
+          const abbr = { health: 'hp', speed: 'spd', armour: 'arm' };
+          return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k] || k}+${v}</span>`;
+        })
+        .join(' ');
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
       <span>⚔ ${escHtml(c.name)}</span>
       <span>${upg || '<span style="opacity:0.4;font-size:11px;">no upgrades</span>'}</span>
     </div>`;
-  }).join('');
+    })
+    .join('');
 
   body.innerHTML = `
     <h3 style="margin:0 0 4px;font-size:15px;">🔬 Workshop Report</h3>
@@ -883,9 +969,11 @@ function fmtTravelTime(seconds) {
   if (!seconds || seconds <= 0) return '';
   const s = Math.round(seconds);
   if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60), r = s % 60;
+  const m = Math.floor(s / 60),
+    r = s % 60;
   if (m < 60) return r ? `${m}m ${r}s` : `${m}m`;
-  const h = Math.floor(m / 60), rm = m % 60;
+  const h = Math.floor(m / 60),
+    rm = m % 60;
   return rm ? `${h}h ${rm}m` : `${h}h`;
 }
 
@@ -925,16 +1013,22 @@ function _bindAutocomplete(input) {
   function _render(items, q) {
     _filtered = items;
     _activeIdx = -1;
-    if (!items.length) { dropdown.style.display = 'none'; return; }
+    if (!items.length) {
+      dropdown.style.display = 'none';
+      return;
+    }
     const shown = items.slice(0, 12);
-    dropdown.innerHTML = shown.map((e, i) =>
-      `<div class="empire-ac-item" data-idx="${i}">
+    dropdown.innerHTML = shown
+      .map(
+        (e, i) =>
+          `<div class="empire-ac-item" data-idx="${i}">
         <span class="eac-label">${_hilite(e.name, q)} <span class="eac-meta">${e.username ? '(@' + _hilite(e.username, q) + ', ' : '('}uid:${_hilite(String(e.uid), q)})${e.is_self ? ' <em>(you)</em>' : ''}</span></span>
       </div>`
-    ).join('');
+      )
+      .join('');
     dropdown.style.display = 'block';
-    dropdown.querySelectorAll('.empire-ac-item').forEach(el => {
-      el.addEventListener('mousedown', ev => {
+    dropdown.querySelectorAll('.empire-ac-item').forEach((el) => {
+      el.addEventListener('mousedown', (ev) => {
         ev.preventDefault();
         _selectItem(parseInt(el.dataset.idx, 10));
       });
@@ -956,19 +1050,29 @@ function _bindAutocomplete(input) {
 
   function _search() {
     const q = input.value.trim().toLowerCase();
-    if (!q) { dropdown.style.display = 'none'; return; }
-    const matches = _empiresCache.filter(e =>
-      e.name.toLowerCase().includes(q) ||
-      (e.username || '').toLowerCase().includes(q) ||
-      String(e.uid).includes(q)
+    if (!q) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    const matches = _empiresCache.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        (e.username || '').toLowerCase().includes(q) ||
+        String(e.uid).includes(q)
     );
     _render(matches, q);
   }
 
   input.addEventListener('input', _search);
-  input.addEventListener('focus', () => { if (input.value.trim()) _search(); });
-  input.addEventListener('blur', () => { setTimeout(() => { dropdown.style.display = 'none'; }, 150); });
-  input.addEventListener('keydown', e => {
+  input.addEventListener('focus', () => {
+    if (input.value.trim()) _search();
+  });
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      dropdown.style.display = 'none';
+    }, 150);
+  });
+  input.addEventListener('keydown', (e) => {
     if (dropdown.style.display === 'none') return;
     const count = Math.min(_filtered.length, 12);
     if (e.key === 'ArrowDown') {
@@ -991,7 +1095,8 @@ function _bindAutocomplete(input) {
 function renderArmies(data) {
   const el = container.querySelector('#army-list');
   if (!data) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No data available</p></div>';
+    el.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚔</div><p>No data available</p></div>';
     return;
   }
 
@@ -999,7 +1104,7 @@ function renderArmies(data) {
   const scrollY = window.scrollY;
 
   const savedTargets = {};
-  el.querySelectorAll('.target-uid-input').forEach(inp => {
+  el.querySelectorAll('.target-uid-input').forEach((inp) => {
     if (inp.value) savedTargets[inp.dataset.aid] = inp.value;
   });
 
@@ -1009,7 +1114,8 @@ function renderArmies(data) {
 
   const armies = data.armies || [];
   if (armies.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No armies yet. Create one above to get started.</p></div>';
+    el.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚔</div><p>No armies yet. Create one above to get started.</p></div>';
     return;
   }
 
@@ -1019,37 +1125,42 @@ function renderArmies(data) {
   const travelLabel = travelTime ? fmtTravelTime(travelTime) : '';
 
   el.classList.add('armies-container');
-  el.innerHTML = armies.map((a, idx) => {
-    const realAtk = (st.military?.attacks_outgoing || []).find(atk => !atk.is_spy && atk.army_aid === a.aid);
-    const spyAtk  = (st.military?.attacks_outgoing || []).find(atk =>  atk.is_spy && atk.army_name === a.name);
-    const btnDisabled = !!realAtk;
-    let btnContent;
-    const _atkPhaseLabel = (atk) => {
-      if (atk.phase === 'in_siege') return '🏰 In Siege';
-      if (atk.phase === 'in_battle') return '⚔ In Battle';
-      return '⚔ Attacking';
-    };
-    const _atkEtaSpan = (atk) => {
-      if (atk.phase === 'in_siege') {
-        const endTs = Date.now() + atk.siege_remaining_seconds * 1000;
-        return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:10px;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
+  el.innerHTML = armies
+    .map((a, idx) => {
+      const realAtk = (st.military?.attacks_outgoing || []).find(
+        (atk) => !atk.is_spy && atk.army_aid === a.aid
+      );
+      const spyAtk = (st.military?.attacks_outgoing || []).find(
+        (atk) => atk.is_spy && atk.army_name === a.name
+      );
+      const btnDisabled = !!realAtk;
+      let btnContent;
+      const _atkPhaseLabel = (atk) => {
+        if (atk.phase === 'in_siege') return '🏰 In Siege';
+        if (atk.phase === 'in_battle') return '⚔ In Battle';
+        return '⚔ Attacking';
+      };
+      const _atkEtaSpan = (atk) => {
+        if (atk.phase === 'in_siege') {
+          const endTs = Date.now() + atk.siege_remaining_seconds * 1000;
+          return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:10px;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
+        }
+        if (atk.phase === 'traveling') {
+          const endTs = Date.now() + atk.eta_seconds * 1000;
+          return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:10px;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
+        }
+        return '';
+      };
+      if (spyAtk && realAtk) {
+        btnContent = `<span>${_atkPhaseLabel(realAtk)} · 🕵 "${a.name}"</span>${_atkEtaSpan(realAtk)}`;
+      } else if (spyAtk) {
+        btnContent = `<span>🕵 "${a.name}"</span>${_atkEtaSpan(spyAtk)}`;
+      } else if (realAtk) {
+        btnContent = `<span>${_atkPhaseLabel(realAtk)}</span>${_atkEtaSpan(realAtk)}`;
+      } else {
+        btnContent = `<span>⚔ Attack</span>${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}`;
       }
-      if (atk.phase === 'traveling') {
-        const endTs = Date.now() + atk.eta_seconds * 1000;
-        return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:10px;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
-      }
-      return '';
-    };
-    if (spyAtk && realAtk) {
-      btnContent = `<span>${_atkPhaseLabel(realAtk)} · 🕵 "${a.name}"</span>${_atkEtaSpan(realAtk)}`;
-    } else if (spyAtk) {
-      btnContent = `<span>🕵 "${a.name}"</span>${_atkEtaSpan(spyAtk)}`;
-    } else if (realAtk) {
-      btnContent = `<span>${_atkPhaseLabel(realAtk)}</span>${_atkEtaSpan(realAtk)}`;
-    } else {
-      btnContent = `<span>⚔ Attack</span>${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}`;
-    }
-    return `
+      return `
     <div class="army-group" data-aid="${a.aid}">
       <div class="army-name-header">
         <div class="army-name">${a.name} <span class="army-id"></span></div>(ID: ${a.aid})
@@ -1070,23 +1181,27 @@ function renderArmies(data) {
         </button>
       </div>
       <div class="waves-container">
-        ${(a.waves || []).length > 0 ? `
-          ${(a.waves || []).map((w, i) => {
-            const nextSlotPrice = w.next_slot_price || 0;
-            const canAffordSlot = currentGold >= nextSlotPrice;
-            const selectedCritter = _availableCritters.find(c => c.iid === w.iid);
-            const spriteInfo = _critterSprites[w.iid] || {};
-            const critterSlotCost = selectedCritter?.slots || 1;
-            const numCritters = critterCountInWave(w.slots || 0, critterSlotCost);
-            const hasSprite = w.iid && (spriteInfo.sprite || spriteInfo.animation);
-            return `
+        ${
+          (a.waves || []).length > 0
+            ? `
+          ${(a.waves || [])
+            .map((w, i) => {
+              const nextSlotPrice = w.next_slot_price || 0;
+              const canAffordSlot = currentGold >= nextSlotPrice;
+              const selectedCritter = _availableCritters.find((c) => c.iid === w.iid);
+              const spriteInfo = _critterSprites[w.iid] || {};
+              const critterSlotCost = selectedCritter?.slots || 1;
+              const numCritters = critterCountInWave(w.slots || 0, critterSlotCost);
+              const hasSprite = w.iid && (spriteInfo.sprite || spriteInfo.animation);
+              return `
             <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
               <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}">
                 <span class="wave-tile__edit-hint">✎</span>
-                ${hasSprite
-                  ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
+                ${
+                  hasSprite
+                    ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
                         style="image-rendering:pixelated;"></canvas>`
-                  : `<div class="wave-tile__no-critter">＋</div>`
+                    : `<div class="wave-tile__no-critter">＋</div>`
                 }
                 <div class="wave-tile__count">${hasSprite ? numCritters : ''}</div>
               </button>
@@ -1095,8 +1210,12 @@ function renderArmies(data) {
                 <span class="wave-tile__era era-roman-badge" title="${ERA_LABEL_EN[ERA_KEYS[w.max_era ?? 0]] || ''}" style="font-size:0.75em;">${ERA_ROMAN[ERA_KEYS[w.max_era ?? 0]] || 'I'}</span>
               </div>
             </div>
-          `;}).join('')}
-        ` : ''}
+          `;
+            })
+            .join('')}
+        `
+            : ''
+        }
         ${(() => {
           const wp = a.next_wave_price || 0;
           const canAff = currentGold >= wp;
@@ -1115,20 +1234,21 @@ function renderArmies(data) {
       ${idx < armies.length - 1 ? '<div class="army-separator"></div>' : ''}
     </div>
   `;
-  }).join('');
+    })
+    .join('');
 
   // Attach edit button listeners
-  el.querySelectorAll('.army-edit-btn').forEach(btn => {
+  el.querySelectorAll('.army-edit-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => onEditArmyName(e));
   });
 
   // Attach wave-add button listeners
-  el.querySelectorAll('.wave-tile-add').forEach(btn => {
+  el.querySelectorAll('.wave-tile-add').forEach((btn) => {
     btn.addEventListener('click', (e) => onAddWave(e));
   });
 
   // Attach critter picker button listeners
-  el.querySelectorAll('.wave-critter-btn').forEach(btn => {
+  el.querySelectorAll('.wave-critter-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const aid = parseInt(btn.getAttribute('data-aid'), 10);
@@ -1138,12 +1258,20 @@ function renderArmies(data) {
       const nextEraPrice = parseFloat(btn.getAttribute('data-next-era-price') || '0');
       const nextSlotPrice = parseFloat(btn.getAttribute('data-next-slot-price') || '0');
       const currentSlots = parseInt(btn.getAttribute('data-slots') || '0', 10);
-      _openCritterOverlay(aid, waveIdx, currentIid, maxEra, nextEraPrice, nextSlotPrice, currentSlots);
+      _openCritterOverlay(
+        aid,
+        waveIdx,
+        currentIid,
+        maxEra,
+        nextEraPrice,
+        nextSlotPrice,
+        currentSlots
+      );
     });
   });
 
   // Attach attack button listeners
-  el.querySelectorAll('.army-attack-btn').forEach(btn => {
+  el.querySelectorAll('.army-attack-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => onAttackOpponent(e));
   });
 
@@ -1160,7 +1288,7 @@ function renderArmies(data) {
   el.querySelectorAll('.target-uid-input').forEach(_bindAutocomplete);
 
   // Bind clear buttons
-  el.querySelectorAll('.target-uid-clear').forEach(btn => {
+  el.querySelectorAll('.target-uid-clear').forEach((btn) => {
     btn.addEventListener('click', () => {
       const aid = btn.getAttribute('data-aid');
       const inp = el.querySelector(`#target-uid-${aid}`);

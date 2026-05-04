@@ -18,8 +18,7 @@ let _overlay = null;
 
 /* ── Cached data ─────────────────────────────────────────── */
 
-let _unlocksMap = {};     // reverse dependency map
-
+let _unlocksMap = {}; // reverse dependency map
 
 const _isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 let _activeNode = null;
@@ -57,15 +56,14 @@ async function enter() {
     await Promise.all([rest.getSummary(), rest.getItems()]);
     render();
   } catch (err) {
-    container.querySelector('#tt-wrap').innerHTML =
-      `<div class="error-msg">${err.message}</div>`;
+    container.querySelector('#tt-wrap').innerHTML = `<div class="error-msg">${err.message}</div>`;
   }
 }
 
 let _clickHandler = null;
 
 function leave() {
-  _unsub.forEach(fn => fn());
+  _unsub.forEach((fn) => fn());
   _unsub = [];
   _activeNode = null;
   _rendered = false;
@@ -85,7 +83,7 @@ function _buildUnlocksMap() {
   const map = {};
   const catalog = st.items?.catalog || {};
   for (const [iid, info] of Object.entries(catalog)) {
-    for (const req of (info.requirements || [])) {
+    for (const req of info.requirements || []) {
       if (!map[req]) map[req] = [];
       map[req].push({ iid, name: info.name || iid, category: info.item_type || 'knowledge' });
     }
@@ -116,24 +114,29 @@ function _layoutNodes() {
 
   for (const era of eras) {
     const iids = knowledgeGroups[era] || [];
-    if (iids.length === 0) { result[era] = []; continue; }
+    if (iids.length === 0) {
+      result[era] = [];
+      continue;
+    }
 
     // All IIDs placed in previous eras
     const allPlaced = new Set();
     for (const prevEra of eras) {
       if (prevEra === era) break;
-      for (const iid of (knowledgeGroups[prevEra] || [])) allPlaced.add(iid);
+      for (const iid of knowledgeGroups[prevEra] || []) allPlaced.add(iid);
     }
 
     const placed = new Set();
-    const remaining = new Map(iids.map(iid => [iid, catalog[iid] || { requirements: [] }]));
+    const remaining = new Map(iids.map((iid) => [iid, catalog[iid] || { requirements: [] }]));
     const rows = [];
 
     while (remaining.size > 0) {
       const ready = [];
       for (const [iid, info] of remaining) {
-        const reqs = (info.requirements || []).filter(r => r in catalog && catalog[r]?.item_type === 'knowledge');
-        const satisfied = reqs.every(r => placed.has(r) || allPlaced.has(r));
+        const reqs = (info.requirements || []).filter(
+          (r) => r in catalog && catalog[r]?.item_type === 'knowledge'
+        );
+        const satisfied = reqs.every((r) => placed.has(r) || allPlaced.has(r));
         if (satisfied) ready.push(iid);
       }
 
@@ -166,18 +169,20 @@ const _fmtEffort = fmtEffort;
 
 function _fmtEffects(effects) {
   if (!effects || Object.keys(effects).length === 0) return '';
-  return Object.entries(effects).map(([k, v]) => {
-    const sign = v > 0 ? '+' : '';
-    if (k === 'gold_offset') {
-      return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-    }
-    if (k === 'culture_offset') {
-      return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-    }
-    const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
-    return `${name}: ${sign}${v}`;
-  }).join(', ');
+  return Object.entries(effects)
+    .map(([k, v]) => {
+      const sign = v > 0 ? '+' : '';
+      if (k === 'gold_offset') {
+        return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+      }
+      if (k === 'culture_offset') {
+        return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+      }
+      const name = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
+      return `${name}: ${sign}${v}`;
+    })
+    .join(', ');
 }
 
 /* ── Render (full DOM build — only on init or items change) ── */
@@ -225,11 +230,15 @@ function render() {
         const unlocks = _unlocksMap[iid] || [];
         let unlocksHtml = '';
         if (unlocks.length > 0) {
-          unlocksHtml = '<div class="tt-unlocks">' +
-            unlocks.map(u =>
-              `<span class="tt-ubadge tt-cat-${u.category}" data-unlock="${u.iid}" title="${u.iid}">${u.name}</span>`
-            ).join('') +
-          '</div>';
+          unlocksHtml =
+            '<div class="tt-unlocks">' +
+            unlocks
+              .map(
+                (u) =>
+                  `<span class="tt-ubadge tt-cat-${u.category}" data-unlock="${u.iid}" title="${u.iid}">${u.name}</span>`
+              )
+              .join('') +
+            '</div>';
         }
 
         html += `<div class="tt-node" data-iid="${iid}">
@@ -250,7 +259,7 @@ function render() {
   wrap.innerHTML = html;
 
   // Bind node interactions (once)
-  wrap.querySelectorAll('.tt-node').forEach(node => {
+  wrap.querySelectorAll('.tt-node').forEach((node) => {
     const iid = node.dataset.iid;
 
     node.addEventListener('mouseenter', () => {
@@ -311,7 +320,7 @@ function _updateStatus() {
 
   const catalog = st.items?.catalog || {};
 
-  container.querySelectorAll('.tt-node').forEach(node => {
+  container.querySelectorAll('.tt-node').forEach((node) => {
     const iid = node.dataset.iid;
     const avail = knowledge[iid];
     const isCompleted = completed.has(iid);
@@ -335,9 +344,9 @@ function _updateStatus() {
 
     // Update unlock badges: ready (all reqs met if this tech is researched) vs blocked
     const hypothetical = new Set([...completed, iid]);
-    node.querySelectorAll('.tt-ubadge[data-unlock]').forEach(badge => {
+    node.querySelectorAll('.tt-ubadge[data-unlock]').forEach((badge) => {
       const uInfo = catalog[badge.dataset.unlock];
-      const allMet = (uInfo?.requirements || []).every(r => hypothetical.has(r));
+      const allMet = (uInfo?.requirements || []).every((r) => hypothetical.has(r));
       badge.classList.toggle('tt-ubadge-ready', allMet);
       badge.classList.toggle('tt-ubadge-blocked', !allMet);
     });
@@ -375,7 +384,7 @@ function _drawConnectors() {
   const catalog = st.items?.catalog || {};
   const nodePos = {};
 
-  wrap.querySelectorAll('.tt-node').forEach(el => {
+  wrap.querySelectorAll('.tt-node').forEach((el) => {
     const rect = el.getBoundingClientRect();
     nodePos[el.dataset.iid] = {
       cx: rect.left + rect.width / 2 - wrapRect.left + wrap.scrollLeft,
@@ -388,7 +397,7 @@ function _drawConnectors() {
   for (const [iid, pos] of Object.entries(nodePos)) {
     const info = catalog[iid];
     if (!info) continue;
-    for (const req of (info.requirements || [])) {
+    for (const req of info.requirements || []) {
       const source = nodePos[req];
       if (!source) continue;
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -411,7 +420,7 @@ function _highlightChain(iid) {
 
   // Direct prerequisites
   const info = catalog[iid];
-  for (const req of (info?.requirements || [])) {
+  for (const req of info?.requirements || []) {
     if (req in catalog && catalog[req]?.item_type === 'knowledge') connected.add(req);
   }
 
@@ -422,7 +431,7 @@ function _highlightChain(iid) {
     }
   }
 
-  container.querySelectorAll('.tt-node').forEach(el => {
+  container.querySelectorAll('.tt-node').forEach((el) => {
     if (connected.has(el.dataset.iid)) {
       el.classList.add('hl');
       el.classList.remove('dimmed');
@@ -432,7 +441,7 @@ function _highlightChain(iid) {
     }
   });
 
-  container.querySelectorAll('#tt-svg line').forEach(line => {
+  container.querySelectorAll('#tt-svg line').forEach((line) => {
     const directlyConnected = line.dataset.from === iid || line.dataset.to === iid;
     if (directlyConnected) {
       line.classList.add('hl');
@@ -445,10 +454,10 @@ function _highlightChain(iid) {
 }
 
 function _clearHighlight() {
-  container.querySelectorAll('.tt-node.hl, .tt-node.dimmed').forEach(el => {
+  container.querySelectorAll('.tt-node.hl, .tt-node.dimmed').forEach((el) => {
     el.classList.remove('hl', 'dimmed');
   });
-  container.querySelectorAll('#tt-svg line.hl, #tt-svg line.dimmed').forEach(line => {
+  container.querySelectorAll('#tt-svg line.hl, #tt-svg line.dimmed').forEach((line) => {
     line.classList.remove('hl', 'dimmed');
   });
 }

@@ -13,12 +13,12 @@
   :root {
     --gap: 8px;
   }
-  
+
   #shell {
     grid-template-columns: var(--nav-w) 1fr;
     padding: var(--gap);
   }
-  
+
   #app {
     padding: 16px 20px;
   }
@@ -32,7 +32,8 @@
   }
 
   /* Lock body — prevents iOS rubber-band on body level */
-  html, body {
+  html,
+  body {
     overflow: hidden;
     height: 100%;
     position: fixed;
@@ -73,11 +74,20 @@
     font-size: 22px;
     flex-shrink: 0;
     height: 100%;
-    background: linear-gradient(180deg,#e8d5a3 0%,#faf0d7 18%,#c9a84c 40%,#a07c2a 50%,#c9a84c 60%,#faf0d7 82%,#e8d5a3 100%);
+    background: linear-gradient(
+      180deg,
+      #e8d5a3 0%,
+      #faf0d7 18%,
+      #c9a84c 40%,
+      #a07c2a 50%,
+      #c9a84c 60%,
+      #faf0d7 82%,
+      #e8d5a3 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
   }
 
   #main-nav a {
@@ -114,9 +124,9 @@
     border-radius: 0;
     padding: 16px;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
-    overflow-y: scroll;                  /* scroll, not auto — iOS needs explicit scroll */
-    -webkit-overflow-scrolling: touch;   /* momentum scrolling */
-    overscroll-behavior-y: contain;      /* bounce inside #app, but not body */
+    overflow-y: scroll; /* scroll, not auto — iOS needs explicit scroll */
+    -webkit-overflow-scrolling: touch; /* momentum scrolling */
+    overscroll-behavior-y: contain; /* bounce inside #app, but not body */
     min-height: 0;
     box-sizing: border-box;
   }
@@ -127,17 +137,18 @@
   }
 
   /* Touch-optimized buttons */
-  button, .btn {
+  button,
+  .btn {
     min-height: var(--touch-target);
     padding: 10px 20px;
     font-size: 14px;
   }
 
   /* Larger form inputs for touch */
-  input[type="text"],
-  input[type="password"],
-  input[type="number"],
-  input[type="email"],
+  input[type='text'],
+  input[type='password'],
+  input[type='number'],
+  input[type='email'],
   select,
   textarea {
     min-height: var(--touch-target);
@@ -151,37 +162,37 @@
   :root {
     font-size: 14px;
   }
-  
+
   #app {
     padding: 12px;
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
-  
+
   h2 {
     font-size: 20px;
     margin-bottom: 16px;
   }
-  
+
   /* Stack form rows vertically */
   .form-row {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   /* Responsive tables */
   table {
     font-size: 12px;
   }
-  
+
   thead th {
     padding: 6px 8px;
     font-size: 9px;
   }
-  
+
   tbody td {
     padding: 8px;
   }
-  
+
   /* Login card full width on mobile */
   .login-card {
     padding: 24px 20px;
@@ -189,48 +200,48 @@
     max-width: 100%;
     margin: 0 12px;
   }
-  
+
   /* Toast notifications */
   #toast-container {
     right: 8px;
     bottom: 8px;
     left: 8px;
   }
-  
+
   .toast {
     max-width: 100%;
   }
-  
+
   /* Armies & waves */
   .army-attack-row,
   .army-opponent-row {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .army-attack-btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .waves-container {
     gap: 6px;
   }
-  
+
   .wave-tile {
     flex: 0 0 90px;
     height: 110px;
   }
-  
+
   /* Cards more compact */
   .card {
     padding: 12px;
   }
-  
+
   .panel {
     padding: 12px;
   }
-  
+
   /* Debug toggle smaller */
   .debug-toggle {
     width: 44px;
@@ -246,29 +257,29 @@
     font-size: 18px;
     padding: 0 12px;
   }
-  
+
   #main-nav a {
     padding: 10px 12px;
     font-size: 12px;
   }
-  
+
   #app {
     padding: 8px;
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
-  
+
   h2 {
     font-size: 18px;
   }
-  
+
   .wave-tile {
     flex: 0 0 80px;
     height: 100px;
   }
-  
-  button, .btn {
+
+  button,
+  .btn {
     padding: 8px 16px;
     font-size: 13px;
   }
 }
-

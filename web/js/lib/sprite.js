@@ -37,9 +37,9 @@ const DEFAULT_FPS = 8;
 
 /** Map direction name → row index. */
 const DIRECTION_ROW = {
-  forward:  0,
-  left:     1,
-  right:    2,
+  forward: 0,
+  left: 1,
+  right: 2,
   backward: 3,
 };
 
@@ -51,12 +51,10 @@ const DIRECTION_ROW = {
  */
 async function loadFrames(url) {
   // 1. Fetch the raw image
-  const img = await createImageBitmap(
-    await fetch(url).then(r => r.blob())
-  );
+  const img = await createImageBitmap(await fetch(url).then((r) => r.blob()));
 
   // 2. Compute per-frame dimensions from actual image size
-  const frameW = Math.floor(img.width  / COLS);
+  const frameW = Math.floor(img.width / COLS);
   const frameH = Math.floor(img.height / ROWS);
 
   // 3. Slice into individual frame ImageBitmaps (for fast canvas blitting)
@@ -64,9 +62,7 @@ async function loadFrames(url) {
   for (let row = 0; row < ROWS; row++) {
     frames[row] = [];
     for (let col = 0; col < COLS; col++) {
-      frames[row][col] = await createImageBitmap(
-        img, col * frameW, row * frameH, frameW, frameH
-      );
+      frames[row][col] = await createImageBitmap(img, col * frameW, row * frameH, frameW, frameH);
     }
   }
   return { frames, frameW, frameH };
@@ -101,8 +97,8 @@ export class Sprite {
     this._loading = true;
     this._loadPromise = loadFrames(this.url).then(({ frames, frameW, frameH }) => {
       this._frames = frames;
-      this.frameW  = frameW;
-      this.frameH  = frameH;
+      this.frameW = frameW;
+      this.frameH = frameH;
       this._loading = false;
     });
     return this._loadPromise;

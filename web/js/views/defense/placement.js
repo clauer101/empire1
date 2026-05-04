@@ -152,7 +152,11 @@ export function createPlacement(ctx) {
       const statItems = [];
       if (s.damage) statItems.push({ text: '⚔️ ' + s.damage, tip: 'Damage: ' + s.damage });
       if (s.range) statItems.push({ text: '🎯 ' + s.range, tip: 'Range: ' + s.range });
-      if (s.reload_time_ms) statItems.push({ text: '⏱️ ' + (s.reload_time_ms / 1000).toFixed(1) + 's', tip: 'Reload Time: ' + (s.reload_time_ms / 1000).toFixed(1) + 's' });
+      if (s.reload_time_ms)
+        statItems.push({
+          text: '⏱️ ' + (s.reload_time_ms / 1000).toFixed(1) + 's',
+          tip: 'Reload Time: ' + (s.reload_time_ms / 1000).toFixed(1) + 's',
+        });
       statItems.forEach((item) => {
         const span = document.createElement('span');
         span.title = item.tip;
@@ -168,15 +172,44 @@ export function createPlacement(ctx) {
       const ef = s.effects;
       const efxItems = [];
       if (ef.burn_duration || ef.burn_dps) {
-        const txt = '🔥 ' + ((ef.burn_duration || 0) / 1000).toFixed(1) + 's @ ' + (ef.burn_dps || 0) + ' dps';
-        efxItems.push({ text: txt, tip: 'Burn Damage: ' + (ef.burn_dps || 0) + ' dps for ' + ((ef.burn_duration || 0) / 1000).toFixed(1) + 's' });
+        const txt =
+          '🔥 ' +
+          ((ef.burn_duration || 0) / 1000).toFixed(1) +
+          's @ ' +
+          (ef.burn_dps || 0) +
+          ' dps';
+        efxItems.push({
+          text: txt,
+          tip:
+            'Burn Damage: ' +
+            (ef.burn_dps || 0) +
+            ' dps for ' +
+            ((ef.burn_duration || 0) / 1000).toFixed(1) +
+            's',
+        });
       }
       if (ef.slow_duration || ef.slow_ratio != null) {
-        const txt = '❄ ' + ((ef.slow_duration || 0) / 1000).toFixed(1) + 's @ ' + Math.round((ef.slow_ratio || 0) * 100) + '%';
-        efxItems.push({ text: txt, tip: 'Slow Effect: ' + Math.round((ef.slow_ratio || 0) * 100) + '% speed for ' + ((ef.slow_duration || 0) / 1000).toFixed(1) + 's' });
+        const txt =
+          '❄ ' +
+          ((ef.slow_duration || 0) / 1000).toFixed(1) +
+          's @ ' +
+          Math.round((ef.slow_ratio || 0) * 100) +
+          '%';
+        efxItems.push({
+          text: txt,
+          tip:
+            'Slow Effect: ' +
+            Math.round((ef.slow_ratio || 0) * 100) +
+            '% speed for ' +
+            ((ef.slow_duration || 0) / 1000).toFixed(1) +
+            's',
+        });
       }
       if (ef.splash_radius) {
-        efxItems.push({ text: '💥 ' + ef.splash_radius, tip: 'Splash Radius: ' + ef.splash_radius + ' tiles' });
+        efxItems.push({
+          text: '💥 ' + ef.splash_radius,
+          tip: 'Splash Radius: ' + ef.splash_radius + ' tiles',
+        });
       }
       efxItems.forEach((item) => {
         const span = document.createElement('span');
@@ -210,7 +243,10 @@ export function createPlacement(ctx) {
     grid.setTile(q, r, typeId);
     const cost = ctx.getTileType(typeId)?.serverData?.costs?.gold || 0;
     if (cost && ctx.getSt().summary?.resources) {
-      ctx.getSt().summary.resources.gold = Math.max(0, (ctx.getSt().summary.resources.gold || 0) - cost);
+      ctx.getSt().summary.resources.gold = Math.max(
+        0,
+        (ctx.getSt().summary.resources.gold || 0) - cost
+      );
     }
     checkPathAndSave();
   }
@@ -231,7 +267,8 @@ export function createPlacement(ctx) {
   function checkPathAndSave() {
     if (ctx.getSpectateUid() != null) return;
     const grid = ctx.getGrid();
-    let hasSpawnpoint = false, hasCastle = false;
+    let hasSpawnpoint = false,
+      hasCastle = false;
     for (const [, data] of grid.tiles) {
       if (data.type === 'spawnpoint') hasSpawnpoint = true;
       if (data.type === 'castle') hasCastle = true;
@@ -257,15 +294,27 @@ export function createPlacement(ctx) {
     const myUid = ctx.getSt()?.auth?.uid;
     const battleState = ctx.getBattleState();
     if (myUid == null || (battleState.defender_uid != null && battleState.defender_uid !== myUid)) {
-      console.error('[Battle] _saveMap blocked: displayed map belongs to uid', battleState.defender_uid, '(mine:', myUid, ')');
+      console.error(
+        '[Battle] _saveMap blocked: displayed map belongs to uid',
+        battleState.defender_uid,
+        '(mine:',
+        myUid,
+        ')'
+      );
       const errBanner = ctx.getContainer().querySelector('#map-error-banner');
-      if (errBanner) { errBanner.textContent = '❌ Cannot save: wrong map loaded'; errBanner.style.display = 'block'; }
+      if (errBanner) {
+        errBanner.textContent = '❌ Cannot save: wrong map loaded';
+        errBanner.style.display = 'block';
+      }
       return;
     }
     const grid = ctx.getGrid();
     const btn = ctx.getContainer().querySelector('#map-save');
     const errBanner = ctx.getContainer().querySelector('#map-error-banner');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+    }
     if (errBanner) errBanner.style.display = 'none';
     try {
       const data = grid.toJSON();
@@ -273,22 +322,55 @@ export function createPlacement(ctx) {
       if (resp && resp.success === false) {
         const msg = resp.error || 'Save failed';
         console.error('[Battle] Map save failed:', msg);
-        if (errBanner) { errBanner.textContent = '❌ ' + msg; errBanner.style.display = 'block'; }
-        if (btn) { btn.textContent = '✗ Error'; btn.style.color = 'var(--danger)'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; btn.disabled = false; }, 2000); }
+        if (errBanner) {
+          errBanner.textContent = '❌ ' + msg;
+          errBanner.style.display = 'block';
+        }
+        if (btn) {
+          btn.textContent = '✗ Error';
+          btn.style.color = 'var(--danger)';
+          setTimeout(() => {
+            btn.textContent = '💾 Save';
+            btn.style.color = '';
+            btn.disabled = false;
+          }, 2000);
+        }
       } else {
         clearPathDirty();
-        if (resp?.tiles && grid) { grid.fromJSON({ tiles: resp.tiles }); grid.addVoidNeighbors(); }
+        if (resp?.tiles && grid) {
+          grid.fromJSON({ tiles: resp.tiles });
+          grid.addVoidNeighbors();
+        }
         const path = resp?.path ? resp.path.map(([q, r]) => ({ q, r })) : null;
         grid.setDisplayPath(path);
         if (path) ctx.clearMapError();
         if (errBanner) errBanner.style.display = 'none';
-        if (btn) { btn.textContent = '✓ Saved'; btn.style.color = 'var(--success)'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; btn.disabled = false; }, 1200); }
+        if (btn) {
+          btn.textContent = '✓ Saved';
+          btn.style.color = 'var(--success)';
+          setTimeout(() => {
+            btn.textContent = '💾 Save';
+            btn.style.color = '';
+            btn.disabled = false;
+          }, 1200);
+        }
       }
     } catch (err) {
       const msg = err.message || 'Network error';
       console.error('[Battle] _saveMap error:', err);
-      if (errBanner) { errBanner.textContent = '❌ ' + msg; errBanner.style.display = 'block'; }
-      if (btn) { btn.textContent = '✗ Error'; btn.style.color = 'var(--danger)'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; btn.disabled = false; }, 2000); }
+      if (errBanner) {
+        errBanner.textContent = '❌ ' + msg;
+        errBanner.style.display = 'block';
+      }
+      if (btn) {
+        btn.textContent = '✗ Error';
+        btn.style.color = 'var(--danger)';
+        setTimeout(() => {
+          btn.textContent = '💾 Save';
+          btn.style.color = '';
+          btn.disabled = false;
+        }, 2000);
+      }
     }
   }
 
@@ -297,7 +379,10 @@ export function createPlacement(ctx) {
     clearTimeout(_autoSaveTimer);
     _autoSaveTimer = setTimeout(async () => {
       const grid = ctx.getGrid();
-      if (!grid) { console.warn('[Battle] Auto-save skipped: grid destroyed (view left)'); return; }
+      if (!grid) {
+        console.warn('[Battle] Auto-save skipped: grid destroyed (view left)');
+        return;
+      }
       try {
         const data = grid.toJSON();
         const resp = await ctx.rest.saveMap(data.tiles || {});
@@ -307,7 +392,10 @@ export function createPlacement(ctx) {
           grid.setDisplayPath(null);
         } else {
           clearPathDirty();
-          if (resp?.tiles && grid) { grid.fromJSON({ tiles: resp.tiles }); grid.addVoidNeighbors(); }
+          if (resp?.tiles && grid) {
+            grid.fromJSON({ tiles: resp.tiles });
+            grid.addVoidNeighbors();
+          }
           const path = resp?.path ? resp.path.map(([q, r]) => ({ q, r })) : null;
           grid.setDisplayPath(path);
           if (path) ctx.clearMapError();
@@ -323,8 +411,12 @@ export function createPlacement(ctx) {
     _autoSaveTimer = null;
   }
 
-  function isDirtyPath() { return _isDirtyPath; }
-  function hasAutoSaveTimer() { return _autoSaveTimer != null; }
+  function isDirtyPath() {
+    return _isDirtyPath;
+  }
+  function hasAutoSaveTimer() {
+    return _autoSaveTimer != null;
+  }
 
   return {
     openPlacementMenu,

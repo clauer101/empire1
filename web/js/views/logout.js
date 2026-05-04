@@ -12,11 +12,11 @@ async function _subscribePush() {
   const res = await fetch('/api/push/vapid-public-key');
   const { key } = await res.json();
   const raw = atob(key.replace(/-/g, '+').replace(/_/g, '/'));
-  const keyBytes = Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  const keyBytes = Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
   sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes });
   await fetch('/api/push/subscribe', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${rest.getToken()}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${rest.getToken()}` },
     body: JSON.stringify({ subscription: sub.toJSON() }),
   });
 }
@@ -28,7 +28,7 @@ async function _unsubscribePush() {
   if (!sub) return;
   await fetch('/api/push/subscribe', {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${rest.getToken()}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${rest.getToken()}` },
     body: JSON.stringify({ subscription: sub.toJSON() }),
   });
   await sub.unsubscribe();
@@ -40,12 +40,22 @@ function init(el) {
 
 function enter() {
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-  const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && window.isSecureContext && (!isIos || isStandalone);
-  const pushHint = !window.isSecureContext ? 'Requires HTTPS' :
-                   !('serviceWorker' in navigator) ? 'Service Worker not supported' :
-                   (isIos && !isStandalone) ? 'Add to home screen to enable' :
-                   !('PushManager' in window) ? 'Not supported in this browser' : '';
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const pushSupported =
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    window.isSecureContext &&
+    (!isIos || isStandalone);
+  const pushHint = !window.isSecureContext
+    ? 'Requires HTTPS'
+    : !('serviceWorker' in navigator)
+      ? 'Service Worker not supported'
+      : isIos && !isStandalone
+        ? 'Add to home screen to enable'
+        : !('PushManager' in window)
+          ? 'Not supported in this browser'
+          : '';
   const pushEnabled = localStorage.getItem(PUSH_KEY) === '1';
 
   container.innerHTML = `

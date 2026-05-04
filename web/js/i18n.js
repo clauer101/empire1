@@ -60,22 +60,22 @@ export function t(key) {
  * Production offsets (/s):  unit:'/s', decimals:2
  */
 export const effectMeta = {
-  gold_offset:                   { unit: '/s',  decimals: 2 },
-  gold_modifier:                 { scale: 100, unit: '%',   decimals: 0 },
-  culture_offset:                { unit: '/s',  decimals: 2 },
-  culture_modifier:              { scale: 100, unit: '%',   decimals: 0 },
-  life_offset:                   { unit: '/s',    decimals: 3 },
-  build_speed_offset:            { unit: '/s',  decimals: 2 },
-  build_speed_modifier:          { scale: 100, unit: '%',   decimals: 0 },
-  research_speed_offset:         { unit: '/s',  decimals: 2 },
-  research_speed_modifier:       { scale: 100, unit: '%',   decimals: 0 },
-  siege_offset:                  { fmt: 'duration' },
-  travel_offset:                 { fmt: 'duration' },
-  wave_delay_offset:             { unit: 's',   decimals: 1 },
-  wave_delay_modifier:           { scale: 100, unit: '%',   decimals: 0 },
-  max_life_modifier:             { unit: '',    decimals: 1 },
-  restore_life_after_loss_offset:{ unit: '',    decimals: 0 },
-  tower_sell_refund_modifier:    { scale: 100, unit: '%',   decimals: 0 },
+  gold_offset: { unit: '/s', decimals: 2 },
+  gold_modifier: { scale: 100, unit: '%', decimals: 0 },
+  culture_offset: { unit: '/s', decimals: 2 },
+  culture_modifier: { scale: 100, unit: '%', decimals: 0 },
+  life_offset: { unit: '/s', decimals: 3 },
+  build_speed_offset: { unit: '/s', decimals: 2 },
+  build_speed_modifier: { scale: 100, unit: '%', decimals: 0 },
+  research_speed_offset: { unit: '/s', decimals: 2 },
+  research_speed_modifier: { scale: 100, unit: '%', decimals: 0 },
+  siege_offset: { fmt: 'duration' },
+  travel_offset: { fmt: 'duration' },
+  wave_delay_offset: { unit: 's', decimals: 1 },
+  wave_delay_modifier: { scale: 100, unit: '%', decimals: 0 },
+  max_life_modifier: { unit: '', decimals: 1 },
+  restore_life_after_loss_offset: { unit: '', decimals: 0 },
+  tower_sell_refund_modifier: { scale: 100, unit: '%', decimals: 0 },
 };
 
 /**
@@ -103,13 +103,12 @@ export function formatEffect(key, value) {
   }
 
   const scale = meta.scale ?? 1;
-  const unit  = meta.unit  ?? '';
+  const unit = meta.unit ?? '';
   const decimals = meta.decimals;
 
   const scaled = value * scale;
-  const formatted = decimals != null
-    ? scaled.toFixed(decimals)
-    : (Math.round(scaled * 100) / 100).toString();
+  const formatted =
+    decimals != null ? scaled.toFixed(decimals) : (Math.round(scaled * 100) / 100).toString();
 
   const sign = scaled > 0 ? '+' : '';
   return `${description} (${sign}${formatted}${unit})`;

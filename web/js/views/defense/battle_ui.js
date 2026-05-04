@@ -30,7 +30,7 @@ export function createBattleUi(ctx) {
     const div = document.createElement('div');
     div.className = 'fly-wrap';
     div.style.left = cx + 'px';
-    div.style.top  = cy + 'px';
+    div.style.top = cy + 'px';
     const img = document.createElement('img');
     img.src = imgSrc;
     img.className = 'fly-icon';
@@ -39,7 +39,7 @@ export function createBattleUi(ctx) {
       const span = document.createElement('span');
       span.className = 'fly-label';
       if (labelColor) span.style.color = labelColor;
-      span.textContent = (typeof label === 'string' && label.startsWith('-')) ? label : '+' + label;
+      span.textContent = typeof label === 'string' && label.startsWith('-') ? label : '+' + label;
       div.appendChild(span);
     }
     wrap.appendChild(div);
@@ -114,7 +114,7 @@ export function createBattleUi(ctx) {
       if (ctx.getBattleState().phase === 'in_battle') {
         grid.setBattlePath(msg.path);
       } else {
-        const path = msg.path.map(p => Array.isArray(p) ? { q: p[0], r: p[1] } : p);
+        const path = msg.path.map((p) => (Array.isArray(p) ? { q: p[0], r: p[1] } : p));
         grid.setDisplayPath(path);
       }
     }
@@ -122,10 +122,13 @@ export function createBattleUi(ctx) {
     if (msg.structures) {
       for (const s of msg.structures) {
         const key = ctx.hexKey(s.q, s.r);
-        const _meta = (s.select && s.select !== 'first') ? { select: s.select } : {};
+        const _meta = s.select && s.select !== 'first' ? { select: s.select } : {};
         grid.setTile(s.q, s.r, s.iid, _meta);
         const tile = grid.tiles.get(key);
-        if (tile) { tile.sid = s.sid; tile.structure_data = s; }
+        if (tile) {
+          tile.sid = s.sid;
+          tile.structure_data = s;
+        }
       }
     }
 
@@ -154,11 +157,14 @@ export function createBattleUi(ctx) {
     }
 
     for (const s of msg.structures) {
-      const _meta = (s.select && s.select !== 'first') ? { select: s.select } : {};
+      const _meta = s.select && s.select !== 'first' ? { select: s.select } : {};
       grid.setTile(s.q, s.r, s.iid, _meta);
       const key = ctx.hexKey(s.q, s.r);
       const tile = grid.tiles.get(key);
-      if (tile) { tile.sid = s.sid; tile.structure_data = s; }
+      if (tile) {
+        tile.sid = s.sid;
+        tile.structure_data = s;
+      }
     }
 
     grid._invalidateBase();
@@ -187,12 +193,23 @@ export function createBattleUi(ctx) {
             const raw = grid._getCritterPixelPos(rc.path_progress, grid.hexSize);
             const cx = raw.x * grid.zoom + grid.offsetX;
             const cy = raw.y * grid.zoom + grid.offsetY;
-            spawnFlyingIcon('/assets/sprites/hud/flying_coin.webp', cx, cy, rc.value != null ? Math.round(rc.value) : null);
+            spawnFlyingIcon(
+              '/assets/sprites/hud/flying_coin.webp',
+              cx,
+              cy,
+              rc.value != null ? Math.round(rc.value) : null
+            );
           } else if (rc.reason === 'reached') {
             const raw = grid._getCritterPixelPos(1.0, grid.hexSize);
             const cx = raw.x * grid.zoom + grid.offsetX;
             const cy = raw.y * grid.zoom + grid.offsetY;
-            spawnFlyingIcon('/assets/sprites/hud/flying_hearth.webp', cx, cy, rc.damage != null ? `-${Math.round(rc.damage)}` : null, '#ef5350');
+            spawnFlyingIcon(
+              '/assets/sprites/hud/flying_hearth.webp',
+              cx,
+              cy,
+              rc.damage != null ? `-${Math.round(rc.damage)}` : null,
+              '#ef5350'
+            );
           }
         }
       }
@@ -232,7 +249,8 @@ export function createBattleUi(ctx) {
       grid.clearBattle();
       const path = msg.path ? msg.path.map(([q, r]) => ({ q, r })) : null;
       grid.setDisplayPath(path);
-      if (!path) ctx.showPersistentError('⚠️ No path from spawn to castle — please remove obstacles.');
+      if (!path)
+        ctx.showPersistentError('⚠️ No path from spawn to castle — please remove obstacles.');
       else ctx.clearMapError();
     }, 1500);
 
@@ -250,7 +268,10 @@ export function createBattleUi(ctx) {
   }
 
   function stopStatusLoop() {
-    if (_statusLoopId) { clearInterval(_statusLoopId); _statusLoopId = null; }
+    if (_statusLoopId) {
+      clearInterval(_statusLoopId);
+      _statusLoopId = null;
+    }
   }
 
   function updateStatus(text) {
@@ -301,7 +322,10 @@ export function createBattleUi(ctx) {
 
     const fightNowItem = container.querySelector('#fight-now-item');
     if (fightNowItem) {
-      const showFightNow = ctx.getPendingAttackId() !== null && bs.phase === 'in_siege' && ctx.getSpectateUid() == null;
+      const showFightNow =
+        ctx.getPendingAttackId() !== null &&
+        bs.phase === 'in_siege' &&
+        ctx.getSpectateUid() == null;
       fightNowItem.style.display = showFightNow ? '' : 'none';
     }
 
@@ -310,8 +334,13 @@ export function createBattleUi(ctx) {
       const wi = bs.wave_info;
       if (bs.phase === 'travelling') {
         const st = ctx.getSt();
-        const attackSummary = (st.summary?.attacks_incoming || []).find(a => a.attack_id === ctx.getPendingAttackId())
-          || (st.summary?.attacks_outgoing || []).find(a => a.attack_id === ctx.getPendingAttackId());
+        const attackSummary =
+          (st.summary?.attacks_incoming || []).find(
+            (a) => a.attack_id === ctx.getPendingAttackId()
+          ) ||
+          (st.summary?.attacks_outgoing || []).find(
+            (a) => a.attack_id === ctx.getPendingAttackId()
+          );
         const etaSec = attackSummary?.eta_seconds ?? null;
         if (etaSec !== null) bs.eta_seconds = etaSec;
         if (wi && etaSec !== null) {
@@ -323,8 +352,8 @@ export function createBattleUi(ctx) {
           nextWaveEl.textContent = '-';
         }
       } else if (wi) {
-        const siegeRemainingMs = bs.phase === 'in_siege' && bs.time_since_start_s < 0
-          ? -bs.time_since_start_s * 1000 : 0;
+        const siegeRemainingMs =
+          bs.phase === 'in_siege' && bs.time_since_start_s < 0 ? -bs.time_since_start_s * 1000 : 0;
         const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
         const timeStr = totalCountdownSec > 0 ? `${totalCountdownSec}s` : 'now';
         const critterCount = Math.max(1, Math.floor(wi.slots / (wi.critter_slot_cost || 1)));
@@ -457,13 +486,17 @@ export function createBattleUi(ctx) {
       content.appendChild(row);
 
       const sendFeedback = async (rating) => {
-        row.querySelectorAll('button').forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+        row.querySelectorAll('button').forEach((b) => {
+          b.disabled = true;
+          b.style.opacity = '0.6';
+        });
         try {
           await ctx.rest.battleFeedback(msg.army_name, rating);
         } catch (e) {
           console.warn('[feedback] failed:', e);
         }
-        row.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">✓ Feedback sent</span>';
+        row.innerHTML =
+          '<span style="color:var(--text-muted);font-size:12px;">✓ Feedback sent</span>';
       };
 
       row.querySelector('#feedback-easy').addEventListener('click', () => sendFeedback('too_easy'));

@@ -77,12 +77,30 @@ async function onSignup() {
   errEl.hidden = true;
 
   // ── Client-side validation ──────────────────────────────
-  if (!empire) { showError('Empire name is required'); return; }
-  if (!user)   { showError('Username is required'); return; }
-  if (email && !EMAIL_RE.test(email)) { showError('Invalid email format'); return; }
-  if (!pwd)    { showError('Password is required'); return; }
-  if (pwd.length < 4) { showError('Password must be at least 4 characters'); return; }
-  if (pwd !== pwd2) { showError('Passwords do not match'); return; }
+  if (!empire) {
+    showError('Empire name is required');
+    return;
+  }
+  if (!user) {
+    showError('Username is required');
+    return;
+  }
+  if (email && !EMAIL_RE.test(email)) {
+    showError('Invalid email format');
+    return;
+  }
+  if (!pwd) {
+    showError('Password is required');
+    return;
+  }
+  if (pwd.length < 4) {
+    showError('Password must be at least 4 characters');
+    return;
+  }
+  if (pwd !== pwd2) {
+    showError('Passwords do not match');
+    return;
+  }
 
   try {
     const resp = await rest.signup(user, pwd, email, empire);

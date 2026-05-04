@@ -109,7 +109,9 @@ class ApiClient {
         this._ws.removeEventListener('close', this._onSocketClose);
         this._ws.removeEventListener('error', this._onSocketError);
         this._ws.removeEventListener('message', this._onSocketMessage);
-        try { this._ws.close(1000, 'reinitialize'); } catch (_) {}
+        try {
+          this._ws.close(1000, 'reinitialize');
+        } catch (_) {}
         this._ws = null;
       }
 
@@ -128,7 +130,10 @@ class ApiClient {
       this._onSocketOpen = async () => {
         const isReconnect = this._hasConnectedOnce;
         this._hasConnectedOnce = true;
-        console.log(isReconnect ? '[ApiClient] reconnected to' : '[ApiClient] connected to', this.wsUrl);
+        console.log(
+          isReconnect ? '[ApiClient] reconnected to' : '[ApiClient] connected to',
+          this.wsUrl
+        );
         state.setConnected(true);
 
         if (!settled) {
@@ -327,8 +332,13 @@ class ApiClient {
         eventBus.emit('server:spy_report', msg);
         break;
       case 'attack_response':
-        console.warn('[ApiClient] ⚠️  attack_response received as PUSH (request_id missing!):', msg);
-        console.warn('[ApiClient] This means the request_id was not preserved. Check server.py or message handler.');
+        console.warn(
+          '[ApiClient] ⚠️  attack_response received as PUSH (request_id missing!):',
+          msg
+        );
+        console.warn(
+          '[ApiClient] This means the request_id was not preserved. Check server.py or message handler.'
+        );
         eventBus.emit('server:message', msg);
         break;
       default:
@@ -402,10 +412,7 @@ class ApiClient {
    * @returns {Promise<{success: boolean, uid: number, reason?: string}>}
    */
   async login(username, password) {
-    const resp = await this._request(
-      { type: 'auth_request', username, password },
-      'auth_response'
-    );
+    const resp = await this._request({ type: 'auth_request', username, password }, 'auth_response');
     if (resp.success) {
       this._saveCredentials(username, password);
       state.setAuth(resp.uid, username);
@@ -492,10 +499,7 @@ class ApiClient {
    * @returns {Promise<object>} item_response
    */
   async getItems() {
-    const resp = await this._request(
-      { type: 'item_request' },
-      'item_response'
-    );
+    const resp = await this._request({ type: 'item_request' }, 'item_response');
     state.setItems(resp);
     return resp;
   }
@@ -518,10 +522,7 @@ class ApiClient {
    * @returns {Promise<object>} map_load_response with tiles
    */
   async loadMap() {
-    const resp = await this._request(
-      { type: 'map_load_request' },
-      'map_load_response'
-    );
+    const resp = await this._request({ type: 'map_load_request' }, 'map_load_response');
     return resp;
   }
 
@@ -531,18 +532,12 @@ class ApiClient {
    * @returns {Promise<object>} map_save_response
    */
   async saveMap(tiles) {
-    const resp = await this._request(
-      { type: 'map_save_request', tiles },
-      'map_save_response'
-    );
+    const resp = await this._request({ type: 'map_save_request', tiles }, 'map_save_response');
     return resp;
   }
 
   async startBattle() {
-    const resp = await this._request(
-      { type: 'battle_request' },
-      'battle_response'
-    );
+    const resp = await this._request({ type: 'battle_request' }, 'battle_response');
     return resp;
   }
 
@@ -566,10 +561,7 @@ class ApiClient {
    * @returns {Promise<object>} userinfo_response
    */
   async getUserInfo(uids) {
-    return this._request(
-      { type: 'userinfo_request', uids },
-      'userinfo_response'
-    );
+    return this._request({ type: 'userinfo_request', uids }, 'userinfo_response');
   }
 
   /**
@@ -577,10 +569,7 @@ class ApiClient {
    * @returns {Promise<object>} hall_of_fame_response
    */
   async getHallOfFame() {
-    return this._request(
-      { type: 'hall_of_fame_request' },
-      'hall_of_fame_response'
-    );
+    return this._request({ type: 'hall_of_fame_request' }, 'hall_of_fame_response');
   }
 
   /**
@@ -588,10 +577,7 @@ class ApiClient {
    * @returns {Promise<object>} preferences_response
    */
   async getPreferences() {
-    return this._request(
-      { type: 'preferences_request' },
-      'preferences_response'
-    );
+    return this._request({ type: 'preferences_request' }, 'preferences_response');
   }
 
   /**
@@ -600,10 +586,7 @@ class ApiClient {
    * @returns {Promise<object>} battle_next_wave_response
    */
   async getBattleNextWave(bid) {
-    return this._request(
-      { type: 'battle_next_wave_request', bid },
-      'battle_next_wave_response'
-    );
+    return this._request({ type: 'battle_next_wave_request', bid }, 'battle_next_wave_response');
   }
 
   /**
@@ -611,10 +594,7 @@ class ApiClient {
    * @returns {Promise<object>} notification_response
    */
   async getNotifications() {
-    return this._request(
-      { type: 'notification_request' },
-      'notification_response'
-    );
+    return this._request({ type: 'notification_request' }, 'notification_response');
   }
 
   // ── Commands (fire-and-forget) ─────────────────────────────
@@ -661,10 +641,7 @@ class ApiClient {
    * @param {number} hexR hex row
    */
   async placeStructure(iid, hexQ, hexR) {
-    return this._request(
-      { type: 'new_structure', iid, hex_q: hexQ, hex_r: hexR },
-      null
-    );
+    return this._request({ type: 'new_structure', iid, hex_q: hexQ, hex_r: hexR }, null);
   }
 
   /**
@@ -786,10 +763,7 @@ class ApiClient {
    * @param {int} aid Army ID
    */
   async addWave(aid) {
-    return this._request(
-      { type: 'new_wave', aid },
-      null
-    );
+    return this._request({ type: 'new_wave', aid }, null);
   }
 
   /**
@@ -855,10 +829,7 @@ class ApiClient {
    * @param {string} body
    */
   async sendMessage(targetUid, body) {
-    return this._request(
-      { type: 'user_message', target_uid: targetUid, body },
-      null
-    );
+    return this._request({ type: 'user_message', target_uid: targetUid, body }, null);
   }
 
   /**
@@ -867,10 +838,7 @@ class ApiClient {
    * @param {string} email
    */
   async changePreferences(statement, email) {
-    return this._request(
-      { type: 'change_preferences', statement, email },
-      null
-    );
+    return this._request({ type: 'change_preferences', statement, email }, null);
   }
 
   /**

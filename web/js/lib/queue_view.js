@@ -71,11 +71,14 @@ export function createQueueView(cfg) {
   }
 
   function leave() {
-    _unsub.forEach(fn => fn());
+    _unsub.forEach((fn) => fn());
     if (_overlay) _overlay.hide();
     _unsub = [];
     hideCompleted = true;
-    if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+    if (_tickTimer) {
+      clearInterval(_tickTimer);
+      _tickTimer = null;
+    }
     _tickRemainSecs = null;
     _tickTs = null;
   }
@@ -91,15 +94,24 @@ export function createQueueView(cfg) {
   function _fmtCosts(costs, summary, wasStarted = false) {
     if (!costs || Object.keys(costs).length === 0) return '—';
     const res = summary?.resources || {};
-    return Object.entries(costs).map(([resource, cost]) => {
-      const canAfford = (res[resource] || 0) >= cost;
-      const color = canAfford ? 'var(--text)' : 'var(--danger)';
-      const strike = wasStarted && resource === 'gold';
-      const icon = resource === 'gold' ? '💰' : resource === 'culture' ? '📚' : resource === 'life' ? '❤️' : '';
-      const name = resource.charAt(0).toUpperCase() + resource.slice(1);
-      const extra = strike ? 'text-decoration:line-through;opacity:0.45;' : '';
-      return `<span style="color:${color};margin-right:12px;white-space:nowrap;${extra}">${icon} ${Math.round(cost)} ${name}</span>`;
-    }).join('');
+    return Object.entries(costs)
+      .map(([resource, cost]) => {
+        const canAfford = (res[resource] || 0) >= cost;
+        const color = canAfford ? 'var(--text)' : 'var(--danger)';
+        const strike = wasStarted && resource === 'gold';
+        const icon =
+          resource === 'gold'
+            ? '💰'
+            : resource === 'culture'
+              ? '📚'
+              : resource === 'life'
+                ? '❤️'
+                : '';
+        const name = resource.charAt(0).toUpperCase() + resource.slice(1);
+        const extra = strike ? 'text-decoration:line-through;opacity:0.45;' : '';
+        return `<span style="color:${color};margin-right:12px;white-space:nowrap;${extra}">${icon} ${Math.round(cost)} ${name}</span>`;
+      })
+      .join('');
   }
 
   function render() {
@@ -108,23 +120,24 @@ export function createQueueView(cfg) {
     const summary = st.summary;
     if (!items || !summary) return;
 
-    const completed = new Set(
-      cfg.completedKeys.flatMap(k => summary[k] || [])
-    );
+    const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
     const activeQueue = summary[cfg.queueKey];
     const itemMap = items[cfg.categoryKey] || {};
 
     // Build reverse-requirement map from full catalog
     const catalog = items.catalog || {};
     const _allByIid = Object.assign(
-      {}, items.buildings || {}, items.knowledge || {},
-      items.structures || {}, items.critters || {},
+      {},
+      items.buildings || {},
+      items.knowledge || {},
+      items.structures || {},
+      items.critters || {}
     );
     const unlocksMap = {};
     for (const [depIid, depInfo] of Object.entries(catalog)) {
       const category = depInfo.item_type || cfg.defaultCategory;
       const name = depInfo.name || _allByIid[depIid]?.name || depIid;
-      for (const req of (depInfo.requirements || [])) {
+      for (const req of depInfo.requirements || []) {
         if (!unlocksMap[req]) unlocksMap[req] = [];
         unlocksMap[req].push({ iid: depIid, name, category });
       }
@@ -144,23 +157,25 @@ export function createQueueView(cfg) {
       return;
     }
 
-    const rows = entries.map(([iid, info]) => {
-      let status = 'available';
-      if (completed.has(iid)) status = 'completed';
-      else if (iid === activeQueue) status = 'in-progress';
+    const rows = entries
+      .map(([iid, info]) => {
+        let status = 'available';
+        if (completed.has(iid)) status = 'completed';
+        else if (iid === activeQueue) status = 'in-progress';
 
-      const badgeText = status === 'in-progress' ? cfg.actionVerb : status;
+        const badgeText = status === 'in-progress' ? cfg.actionVerb : status;
 
-      const fullEffort = info.effort;
-      const stored = summary[cfg.storedKey]?.[iid];
-      const remaining = (stored != null && stored < fullEffort) ? stored : fullEffort;
-      const multiplier = cfg.speedFn(summary);
-      const remainSecs = multiplier > 0 ? remaining / multiplier : remaining;
-      const pct = fullEffort > 0 ? Math.max(0, Math.min(100, (1 - remaining / fullEffort) * 100)) : 0;
-      const wasStarted = stored != null && stored < fullEffort;
+        const fullEffort = info.effort;
+        const stored = summary[cfg.storedKey]?.[iid];
+        const remaining = stored != null && stored < fullEffort ? stored : fullEffort;
+        const multiplier = cfg.speedFn(summary);
+        const remainSecs = multiplier > 0 ? remaining / multiplier : remaining;
+        const pct =
+          fullEffort > 0 ? Math.max(0, Math.min(100, (1 - remaining / fullEffort) * 100)) : 0;
+        const wasStarted = stored != null && stored < fullEffort;
 
-      const imgUrl = info.image ? `/${info.image}/${info.image.split('/').pop()}.webp` : '';
-      return `<tr>
+        const imgUrl = info.image ? `/${info.image}/${info.image.split('/').pop()}.webp` : '';
+        return `<tr>
         <td class="col-name" data-label="Name" style="padding:0;">
           <div class="item-header" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;overflow:hidden;height:100%;padding:8px 12px;box-sizing:border-box;">
             ${imgUrl ? `<div class="item-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;filter:blur(0.2px);transform:scale(1.02);" data-bg="${imgUrl}"></div><div class="item-bg-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;"></div>` : ''}
@@ -170,9 +185,11 @@ export function createQueueView(cfg) {
               <div class="item-description" style="font-size:0.9em; color:#aaa; margin-top:4px;">${info.description || '—'}</div>
             </div>
             <div style="margin-left:12px;position:relative;">
-              ${status === 'available'
-                ? `<button class="btn-sm ${cfg.btnClass}" data-iid="${iid}">${cfg.actionLabel}</button>`
-                : `<span class="badge badge--${status}">${badgeText}</span>`}
+              ${
+                status === 'available'
+                  ? `<button class="btn-sm ${cfg.btnClass}" data-iid="${iid}">${cfg.actionLabel}</button>`
+                  : `<span class="badge badge--${status}">${badgeText}</span>`
+              }
             </div>
           </div>
         </td>
@@ -181,10 +198,11 @@ export function createQueueView(cfg) {
           <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px"><div class="queue-progress-bar" style="background:${cfg.progressColor};width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div></div>
           ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${_fmtCosts(info.costs, summary, wasStarted)}</div>` : ''}
           ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${_fmtEffects(info.effects)}</div>` : ''}
-          ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map(u => _overlay.linkBadge(u.iid, u.name, u.category)).join('')}</div>` : ''}
+          ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map((u) => _overlay.linkBadge(u.iid, u.name, u.category)).join('')}</div>` : ''}
         </td>
       </tr>`;
-    }).join('');
+      })
+      .join('');
 
     el.innerHTML = `
       <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
@@ -207,12 +225,15 @@ export function createQueueView(cfg) {
       _tickTs = Date.now();
       if (!_tickTimer) _tickTimer = setInterval(_tick, 1000);
     } else {
-      if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+      if (_tickTimer) {
+        clearInterval(_tickTimer);
+        _tickTimer = null;
+      }
       _tickRemainSecs = null;
       _tickTs = null;
     }
 
-    el.querySelectorAll('.item-bg[data-bg]').forEach(bgDiv => {
+    el.querySelectorAll('.item-bg[data-bg]').forEach((bgDiv) => {
       const url = bgDiv.dataset.bg;
       const img = new Image();
       img.onload = () => {
@@ -230,7 +251,7 @@ export function createQueueView(cfg) {
 
     _overlay.bindBadgeClicks(el);
 
-    el.querySelectorAll(`.${cfg.btnClass}`).forEach(btn => {
+    el.querySelectorAll(`.${cfg.btnClass}`).forEach((btn) => {
       btn.addEventListener('click', async () => {
         btn.disabled = true;
         const iid = btn.dataset.iid;
@@ -251,7 +272,9 @@ export function createQueueView(cfg) {
           msgEl.style.color = 'var(--danger)';
         } finally {
           btn.disabled = false;
-          setTimeout(() => { msgEl.textContent = ''; }, 3000);
+          setTimeout(() => {
+            msgEl.textContent = '';
+          }, 3000);
         }
       });
     });

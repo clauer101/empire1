@@ -7,12 +7,12 @@
 
 // ── Directions (axial: dq, dr) ──────────────────────────────
 export const DIRS = [
-  [1, 0],   // E
-  [1, -1],  // NE
-  [0, -1],  // NW
-  [-1, 0],  // W
-  [-1, 1],  // SW
-  [0, 1],   // SE
+  [1, 0], // E
+  [1, -1], // NE
+  [0, -1], // NW
+  [-1, 0], // W
+  [-1, 1], // SW
+  [0, 1], // SE
 ];
 
 // ── Core functions ──────────────────────────────────────────
@@ -32,7 +32,7 @@ export function parseKey(key) {
 export function hexDistance(a, b) {
   const dq = Math.abs(a.q - b.q);
   const dr = Math.abs(a.r - b.r);
-  const ds = Math.abs((-a.q - a.r) - (-b.q - b.r));
+  const ds = Math.abs(-a.q - a.r - (-b.q - b.r));
   return Math.max(dq, dr, ds);
 }
 
@@ -58,7 +58,8 @@ export function hexDisk(cq, cr, radius) {
 export function hexRing(cq, cr, radius) {
   if (radius <= 0) return [{ q: cq, r: cr }];
   const result = [];
-  let q = cq - radius, r = cr + radius;
+  let q = cq - radius,
+    r = cr + radius;
   for (const [dq, dr] of DIRS) {
     for (let i = 0; i < radius; i++) {
       result.push({ q, r });
@@ -79,8 +80,8 @@ export function hexRing(cq, cr, radius) {
  * @returns {{x: number, y: number}}
  */
 export function hexToPixel(q, r, size) {
-  const x = size * (3 / 2 * q);
-  const y = size * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r);
+  const x = size * ((3 / 2) * q);
+  const y = size * ((Math.sqrt(3) / 2) * q + Math.sqrt(3) * r);
   return { x, y };
 }
 
@@ -92,8 +93,8 @@ export function hexToPixel(q, r, size) {
  * @returns {{q: number, r: number}}
  */
 export function pixelToHex(px, py, size) {
-  const q = (2 / 3 * px) / size;
-  const r = (-1 / 3 * px + Math.sqrt(3) / 3 * py) / size;
+  const q = ((2 / 3) * px) / size;
+  const r = ((-1 / 3) * px + (Math.sqrt(3) / 3) * py) / size;
   return cubeRound(q, r);
 }
 
@@ -148,7 +149,7 @@ export function hexAStar(start, goal, isWalkable) {
   const sk = hexKey(start.q, start.r);
   const gk = hexKey(goal.q, goal.r);
 
-  const openSet = new Map();   // key → { q, r, g, f, parent }
+  const openSet = new Map(); // key → { q, r, g, f, parent }
   const closedSet = new Set();
 
   const h = (a) => hexDistance(a, goal);
@@ -157,9 +158,13 @@ export function hexAStar(start, goal, isWalkable) {
 
   while (openSet.size > 0) {
     // Pick node with lowest f
-    let bestKey = null, bestF = Infinity;
+    let bestKey = null,
+      bestF = Infinity;
     for (const [key, node] of openSet) {
-      if (node.f < bestF) { bestF = node.f; bestKey = key; }
+      if (node.f < bestF) {
+        bestF = node.f;
+        bestKey = key;
+      }
     }
 
     const current = openSet.get(bestKey);
@@ -167,7 +172,10 @@ export function hexAStar(start, goal, isWalkable) {
       // Reconstruct path
       const path = [];
       let n = current;
-      while (n) { path.unshift({ q: n.q, r: n.r }); n = n.parent; }
+      while (n) {
+        path.unshift({ q: n.q, r: n.r });
+        n = n.parent;
+      }
       return path;
     }
 
@@ -185,7 +193,8 @@ export function hexAStar(start, goal, isWalkable) {
       if (existing && g >= existing.g) continue;
 
       openSet.set(nk, {
-        q: nb.q, r: nb.r,
+        q: nb.q,
+        r: nb.r,
         g,
         f: g + h(nb),
         parent: current,

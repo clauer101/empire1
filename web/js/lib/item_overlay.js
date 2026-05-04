@@ -51,7 +51,7 @@ export class ItemOverlay {
     const map = {};
     const catalog = this._st.items?.catalog || {};
     for (const [iid, info] of Object.entries(catalog)) {
-      for (const req of (info.requirements || [])) {
+      for (const req of info.requirements || []) {
         if (!map[req]) map[req] = [];
         map[req].push({ iid, name: info.name || iid, category: info.item_type || 'knowledge' });
       }
@@ -66,7 +66,7 @@ export class ItemOverlay {
 
   /** Bind click handlers on all .tt-link badges inside el. */
   bindBadgeClicks(el) {
-    el.querySelectorAll('.tt-link').forEach(badge => {
+    el.querySelectorAll('.tt-link').forEach((badge) => {
       badge.addEventListener('click', (e) => {
         e.stopPropagation();
         this.show(badge.dataset.iid, badge.dataset.cat);
@@ -116,11 +116,14 @@ export class ItemOverlay {
         </div>
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
-        ${itemUnlocks.length > 0 ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Unlocks</div><div class="tt-dp-unlocks">${itemUnlocks.map(u =>
-          this.linkBadge(u.iid, u.name, u.category)
-        ).join('')}</div></div>` : ''}
+        ${
+          itemUnlocks.length > 0
+            ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Unlocks</div><div class="tt-dp-unlocks">${itemUnlocks
+                .map((u) => this.linkBadge(u.iid, u.name, u.category))
+                .join('')}</div></div>`
+            : ''
+        }
       `;
-
     } else if (category === 'building') {
       const b = buildings[iid] || catInfo;
       const name = b?.name || catInfo.name || iid;
@@ -143,7 +146,6 @@ export class ItemOverlay {
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
       `;
-
     } else if (category === 'structure') {
       const s = structures[iid] || catInfo;
       const name = s?.name || catInfo.name || iid;
@@ -166,7 +168,6 @@ export class ItemOverlay {
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
       `;
-
     } else if (category === 'artefact') {
       const a = catInfo;
       const name = a?.name || iid;
@@ -185,7 +186,6 @@ export class ItemOverlay {
         ${effectRows ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Effects</div><div class="tt-dp-props">${effectRows}</div></div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
       `;
-
     } else if (category === 'critter') {
       const c = critters[iid] || catInfo;
       const name = c?.name || catInfo.name || iid;
@@ -236,93 +236,149 @@ export class ItemOverlay {
 
   destroy() {
     if (this._keyHandler) document.removeEventListener('keydown', this._keyHandler);
-    if (this._el) { this._el.remove(); this._el = null; this._panel = null; }
+    if (this._el) {
+      this._el.remove();
+      this._el = null;
+      this._panel = null;
+    }
     this._history = [];
   }
 
   // ── Format helpers ────────────────────────────────────────
 
-  _fmtEffort(n) { return fmtEffort(n); }
+  _fmtEffort(n) {
+    return fmtEffort(n);
+  }
 
   _fmtEffectRows(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
     const LABELS = {
-      gold_offset:               ['💰', 'Gold income',        v => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`],
-      culture_offset:            ['🎭', 'Culture income',     v => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`],
-      life_offset:               ['❤️', 'Life regen',         v => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(2)}/h`],
-      gold_modifier:             ['💰', 'Gold bonus',         v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      culture_modifier:          ['🎭', 'Culture bonus',      v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      life_modifier:             ['❤️', 'Life bonus',         v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      max_life_modifier:         ['❤️', 'Max life',           v => `${v > 0 ? '+' : ''}${v}`],
-      build_speed_modifier:      ['🏗', 'Build speed',        v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      build_speed_offset:        ['🏗', 'Build speed',        v => `${v > 0 ? '+' : ''}${v}`],
-      research_speed_modifier:   ['🔬', 'Research speed',     v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      research_speed_offset:     ['🔬', 'Research speed',     v => `${v > 0 ? '+' : ''}${v}`],
-      damage_modifier:           ['⚔️', 'Tower damage',       v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      range_modifier:            ['🎯', 'Tower range',        v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      reload_modifier:           ['⏱', 'Reload speed',       v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      wave_delay_offset:         ['⏳', 'Wave delay',         v => `${v > 0 ? '+' : ''}${v}s`],
-      wave_delay_modifier:       ['⏳', 'Wave delay',         v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      spy_disguise_chance:       ['🕵️', 'Spy disguise',       v => `${(v * 100).toFixed(0)}%`],
-      artefact_steal_chance_modifier: ['⚜', 'Artefact steal', v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      culture_steal_modifier:    ['🎭', 'Culture steal',      v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      knowledge_steal_modifier:  ['📚', 'Knowledge steal',    v => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      gold_offset: [
+        '💰',
+        'Gold income',
+        (v) =>
+          `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`,
+      ],
+      culture_offset: [
+        '🎭',
+        'Culture income',
+        (v) =>
+          `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`,
+      ],
+      life_offset: ['❤️', 'Life regen', (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(2)}/h`],
+      gold_modifier: ['💰', 'Gold bonus', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      culture_modifier: [
+        '🎭',
+        'Culture bonus',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
+      life_modifier: ['❤️', 'Life bonus', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      max_life_modifier: ['❤️', 'Max life', (v) => `${v > 0 ? '+' : ''}${v}`],
+      build_speed_modifier: [
+        '🏗',
+        'Build speed',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
+      build_speed_offset: ['🏗', 'Build speed', (v) => `${v > 0 ? '+' : ''}${v}`],
+      research_speed_modifier: [
+        '🔬',
+        'Research speed',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
+      research_speed_offset: ['🔬', 'Research speed', (v) => `${v > 0 ? '+' : ''}${v}`],
+      damage_modifier: ['⚔️', 'Tower damage', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      range_modifier: ['🎯', 'Tower range', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      reload_modifier: ['⏱', 'Reload speed', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+      wave_delay_offset: ['⏳', 'Wave delay', (v) => `${v > 0 ? '+' : ''}${v}s`],
+      wave_delay_modifier: [
+        '⏳',
+        'Wave delay',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
+      spy_disguise_chance: ['🕵️', 'Spy disguise', (v) => `${(v * 100).toFixed(0)}%`],
+      artefact_steal_chance_modifier: [
+        '⚜',
+        'Artefact steal',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
+      culture_steal_modifier: [
+        '🎭',
+        'Culture steal',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
+      knowledge_steal_modifier: [
+        '📚',
+        'Knowledge steal',
+        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
+      ],
     };
-    return Object.entries(effects).map(([k, v]) => {
-      const def = LABELS[k];
-      if (def) {
-        const [icon, label, fmt] = def;
-        return `<span class="tt-dp-label">${icon} ${label}:</span><span>${fmt(v)}</span>`;
-      }
-      const sign = v > 0 ? '+' : '';
-      const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      const val = Math.abs(v) < 1 ? `${sign}${(v * 100).toFixed(0)}%` : `${sign}${v}`;
-      return `<span class="tt-dp-label">${label}:</span><span>${val}</span>`;
-    }).join('');
+    return Object.entries(effects)
+      .map(([k, v]) => {
+        const def = LABELS[k];
+        if (def) {
+          const [icon, label, fmt] = def;
+          return `<span class="tt-dp-label">${icon} ${label}:</span><span>${fmt(v)}</span>`;
+        }
+        const sign = v > 0 ? '+' : '';
+        const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        const val = Math.abs(v) < 1 ? `${sign}${(v * 100).toFixed(0)}%` : `${sign}${v}`;
+        return `<span class="tt-dp-label">${label}:</span><span>${val}</span>`;
+      })
+      .join('');
   }
 
   _fmtEffects(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
-    return Object.entries(effects).map(([k, v]) => {
-      const sign = v > 0 ? '+' : '';
-      if (k === 'gold_offset') return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-      if (k === 'culture_offset') return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-      const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
-      return `${name}: ${sign}${v}`;
-    }).join(', ');
+    return Object.entries(effects)
+      .map(([k, v]) => {
+        const sign = v > 0 ? '+' : '';
+        if (k === 'gold_offset')
+          return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+        if (k === 'culture_offset')
+          return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
+        const name = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
+        return `${name}: ${sign}${v}`;
+      })
+      .join(', ');
   }
 
   _fmtItemEffects(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
-    return Object.entries(effects).map(([k, v]) => {
-      if (k === 'burn_duration') return `🔥 ${(v / 1000).toFixed(1)}s burn`;
-      if (k === 'burn_dps') return `🔥 ${v} dps`;
-      if (k === 'slow_duration') return `❄ ${(v / 1000).toFixed(1)}s slow`;
-      if (k === 'slow_ratio') return `❄ ${Math.round(v * 100)}% speed`;
-      if (k === 'splash_radius') return `💥 ${v} hex`;
-      const name = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      const sign = v > 0 ? '+' : '';
-      if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
-      return `${name}: ${sign}${v}`;
-    }).join(', ');
+    return Object.entries(effects)
+      .map(([k, v]) => {
+        if (k === 'burn_duration') return `🔥 ${(v / 1000).toFixed(1)}s burn`;
+        if (k === 'burn_dps') return `🔥 ${v} dps`;
+        if (k === 'slow_duration') return `❄ ${(v / 1000).toFixed(1)}s slow`;
+        if (k === 'slow_ratio') return `❄ ${Math.round(v * 100)}% speed`;
+        if (k === 'splash_radius') return `💥 ${v} hex`;
+        const name = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        const sign = v > 0 ? '+' : '';
+        if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
+        return `${name}: ${sign}${v}`;
+      })
+      .join(', ');
   }
 
   _fmtCosts(costs) {
     if (!costs || Object.keys(costs).length === 0) return '';
-    return Object.entries(costs).map(([r, v]) => {
-      const icon = r === 'gold' ? '💰' : r === 'culture' ? '📚' : r === 'life' ? '❤️' : '';
-      return `${icon} ${Math.round(v)} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
-    }).join(', ');
+    return Object.entries(costs)
+      .map(([r, v]) => {
+        const icon = r === 'gold' ? '💰' : r === 'culture' ? '📚' : r === 'life' ? '❤️' : '';
+        return `${icon} ${Math.round(v)} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
+      })
+      .join(', ');
   }
 
   _reqLinks(requirements) {
     const catalog = this._st.items?.catalog || {};
-    return (requirements || []).map(r => {
-      const info = catalog[r];
-      if (info) return this.linkBadge(r, info.name || r, info.item_type || 'knowledge');
-      return `<span class="tt-ubadge">${r}</span>`;
-    }).join(' ');
+    return (requirements || [])
+      .map((r) => {
+        const info = catalog[r];
+        if (info) return this.linkBadge(r, info.name || r, info.item_type || 'knowledge');
+        return `<span class="tt-ubadge">${r}</span>`;
+      })
+      .join(' ');
   }
 
   _getEraLabel(iid) {

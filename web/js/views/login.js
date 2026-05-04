@@ -13,27 +13,36 @@ let container;
 
 // [name, ext, aspectRatio]  ratio = frameW/frameH
 const _CRITTERS = [
-  ['warrior',      'png',  2/3],
-  ['knight',       'webp', 2/3],   // 170×256
-  ['horseman_fast','png',  1  ],   // 80×80
-  ['legionary',    'webp', 2/3],   // 170×256
-  ['swordman',     'png',  2/3],
-  ['ninja',        'webp', 2/3],
-  ['musketeer',    'webp', 2/3],
-  ['the_king',     'png',  2/3],   // 39×58
-  ['mech_warrior', 'webp', 1  ],   // 50×50
-  ['specops',      'png',  2/3],
-  ['dragooner',    'webp', 1  ],   // 80×80
-  ['samurai',      'webp', 2/3],
-  ['crusader',     'webp', 2/3],
-  ['siege_tank',   'webp', 1  ],   // 80×80
-  ['pikeneer',     'png',  2/3],
+  ['warrior', 'png', 2 / 3],
+  ['knight', 'webp', 2 / 3], // 170×256
+  ['horseman_fast', 'png', 1], // 80×80
+  ['legionary', 'webp', 2 / 3], // 170×256
+  ['swordman', 'png', 2 / 3],
+  ['ninja', 'webp', 2 / 3],
+  ['musketeer', 'webp', 2 / 3],
+  ['the_king', 'png', 2 / 3], // 39×58
+  ['mech_warrior', 'webp', 1], // 50×50
+  ['specops', 'png', 2 / 3],
+  ['dragooner', 'webp', 1], // 80×80
+  ['samurai', 'webp', 2 / 3],
+  ['crusader', 'webp', 2 / 3],
+  ['siege_tank', 'webp', 1], // 80×80
+  ['pikeneer', 'png', 2 / 3],
 ];
 
 const _STRUCTURES = [
-  'arrow_tower', 'fire_tower', 'catapults', 'heavy_tower',
-  'cannon_tower', 'ice_tower', 'rocket_tower', 'mg_bunker',
-  'tar_tower', 'sniper_tower', 'torch_tower', 'ballista_tower',
+  'arrow_tower',
+  'fire_tower',
+  'catapults',
+  'heavy_tower',
+  'cannon_tower',
+  'ice_tower',
+  'rocket_tower',
+  'mg_bunker',
+  'tar_tower',
+  'sniper_tower',
+  'torch_tower',
+  'ballista_tower',
 ];
 
 function _critterEl([name, ext, ratio]) {
@@ -53,7 +62,7 @@ function init(el, _api, _state) {
   api = _api;
   st = _state;
 
-  const critterRow   = _CRITTERS.map(_critterEl).join('');
+  const critterRow = _CRITTERS.map(_critterEl).join('');
   const structureRow = _STRUCTURES.map(_structureEl).join('');
 
   container.innerHTML = `

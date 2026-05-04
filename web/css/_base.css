@@ -3,7 +3,9 @@
    ─────────────────────────────────────────────────────────── */
 
 /* ── Reset & Base ────────────────────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -11,44 +13,45 @@
 
 :root {
   /* surfaces */
-  --bg:            #0d0d14;
-  --surface:       rgba(20, 20, 31, 0.72);
-  --surface-alt:   rgba(26, 26, 40, 0.72);
+  --bg: #0d0d14;
+  --surface: rgba(20, 20, 31, 0.72);
+  --surface-alt: rgba(26, 26, 40, 0.72);
   --surface-hover: rgba(34, 34, 47, 0.82);
-  --border:        #2a2a3a;
+  --border: #2a2a3a;
 
   /* accents */
-  --accent:        #4fc3f7;
-  --accent-dim:    #2a7da5;
-  --accent-glow:   rgba(79, 195, 247, .12);
-  --danger:        #ef5350;
-  --success:       #66bb6a;
-  --warning:       #ffa726;
-  --muted:         #888;
+  --accent: #4fc3f7;
+  --accent-dim: #2a7da5;
+  --accent-glow: rgba(79, 195, 247, 0.12);
+  --danger: #ef5350;
+  --success: #66bb6a;
+  --warning: #ffa726;
+  --muted: #888;
 
   /* text */
-  --text:          #e0e0e6;
-  --text-dim:      #9999a8;
-  --text-bright:   #ffffff;
+  --text: #e0e0e6;
+  --text-dim: #9999a8;
+  --text-bright: #ffffff;
 
   /* layout */
-  --nav-w:         200px;
-  --status-w:      260px;
-  --gap:           6px;
-  --radius:        6px;
+  --nav-w: 200px;
+  --status-w: 260px;
+  --gap: 6px;
+  --radius: 6px;
 
   /* typo */
-  --font:          'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --mono:          'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  
+  --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
   /* touch targets (min 44x44px for mobile) */
-  --touch-target:  44px;
+  --touch-target: 44px;
 
   /* mobile nav bar height */
-  --mobile-nav-h:  52px;
+  --mobile-nav-h: 52px;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
@@ -70,4 +73,3 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
-

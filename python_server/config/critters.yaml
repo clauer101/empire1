@@ -597,7 +597,7 @@ SIEGE_TANK:
   era: modern
   name: "Siege Tank"
   description: "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy."
-  speed: 0.3
+  speed: 0.35
   health: 222
   value: 857
   damage: 2

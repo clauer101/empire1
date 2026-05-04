@@ -14,18 +14,18 @@ import { debug } from './debug.js';
 import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
 
-import loginView   from './views/login.js';
-import dashView    from './views/status.js?v=20260413a';
-import buildView   from './views/buildings.js';
-import resView     from './views/research.js';
-import armyView    from './views/army.js';
-import treeView    from './views/techtree.js';
-import battleView  from './views/defense.js';
-import socialView  from './views/social.js';
-import signupView  from './views/signup.js';
-import replayView    from './views/replay.js';
-import workshopView  from './views/workshop.js';
-import logoutView    from './views/logout.js';
+import loginView from './views/login.js';
+import dashView from './views/status.js?v=20260413a';
+import buildView from './views/buildings.js';
+import resView from './views/research.js';
+import armyView from './views/army.js';
+import treeView from './views/techtree.js';
+import battleView from './views/defense.js';
+import socialView from './views/social.js';
+import signupView from './views/signup.js';
+import replayView from './views/replay.js';
+import workshopView from './views/workshop.js';
+import logoutView from './views/logout.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
@@ -33,7 +33,7 @@ const restUrl = params.get('rest') || window.location.origin;
 
 // ── Instantiate core objects ───────────────────────────────
 rest.init(restUrl);
-const appEl  = document.getElementById('app');
+const appEl = document.getElementById('app');
 const router = new Router(appEl, null, state);
 
 // On REST unauthorized, redirect to login
@@ -43,12 +43,26 @@ eventBus.on('rest:unauthorized', () => {
 });
 
 // ── Register views ─────────────────────────────────────────
-[loginView, signupView, dashView, buildView, resView, armyView, treeView, battleView, socialView, replayView, workshopView, logoutView]
-  .forEach(v => router.register(v));
+[
+  loginView,
+  signupView,
+  dashView,
+  buildView,
+  resView,
+  armyView,
+  treeView,
+  battleView,
+  socialView,
+  replayView,
+  workshopView,
+  logoutView,
+].forEach((v) => router.register(v));
 
 // ── Toast notifications for push messages ──────────────────
-eventBus.on('quick_message', (data) => showToast(data.message || data.text || JSON.stringify(data)));
-eventBus.on('notification',  (data) => showToast(data.message || data.text || JSON.stringify(data)));
+eventBus.on('quick_message', (data) =>
+  showToast(data.message || data.text || JSON.stringify(data))
+);
+eventBus.on('notification', (data) => showToast(data.message || data.text || JSON.stringify(data)));
 
 // ── Item completed: immediately refresh items + summary ────
 eventBus.on('server:item_completed', () => {
@@ -70,33 +84,41 @@ debug.setToastCallback((text, type) => showToast(text, type));
 
 // ── Resource live ticker ─────────────────────────────────────
 let _lastResources = null;
-let _liveGold    = 0;
+let _liveGold = 0;
 let _liveCulture = 0;
-let _rateGold    = 0;  // per hour
-let _rateCulture = 0;  // per hour
-let _liveTs      = 0;
-let _liveTicker  = null;
+let _rateGold = 0; // per hour
+let _rateCulture = 0; // per hour
+let _liveTs = 0;
+let _liveTicker = null;
 
 function _fmtRes(val, digits = 0) {
   const v = val ?? 0;
-  return v >= 1000 ? Math.floor(v / 1000) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
+  return v >= 1000
+    ? Math.floor(v / 1000) + 'k'
+    : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
 function _tickTitleResources() {
   const elapsed = (Date.now() - _liveTs) / 3600000; // hours
-  const gold    = _liveGold    + _rateGold    * elapsed;
+  const gold = _liveGold + _rateGold * elapsed;
   const culture = _liveCulture + _rateCulture * elapsed;
-  appEl.querySelectorAll('.title-gold').forEach(el => { el.textContent = '💰 ' + _fmtRes(gold); });
-  appEl.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(culture); });
+  appEl.querySelectorAll('.title-gold').forEach((el) => {
+    el.textContent = '💰 ' + _fmtRes(gold);
+  });
+  appEl.querySelectorAll('.title-culture').forEach((el) => {
+    el.textContent = '🎭 ' + _fmtRes(culture);
+  });
 }
 
 function _updateTitleResources(r, rates) {
-  _liveGold    = r.gold    ?? 0;
+  _liveGold = r.gold ?? 0;
   _liveCulture = r.culture ?? 0;
-  _rateGold    = rates?.gold    ?? 0;
+  _rateGold = rates?.gold ?? 0;
   _rateCulture = rates?.culture ?? 0;
-  _liveTs      = Date.now();
-  appEl.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0); });
+  _liveTs = Date.now();
+  appEl.querySelectorAll('.title-life').forEach((el) => {
+    el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0);
+  });
   if (!_liveTicker) _liveTicker = setInterval(_tickTitleResources, 100);
   _tickTitleResources();
 }
@@ -146,7 +168,9 @@ function _buildEraOverlay() {
     <div class="era-effects"></div>
   </div>`;
   document.body.appendChild(el);
-  el.addEventListener('click', (e) => { if (e.target === el) _hideEraOverlay(); });
+  el.addEventListener('click', (e) => {
+    if (e.target === el) _hideEraOverlay();
+  });
   el.querySelector('.era-close').addEventListener('click', _hideEraOverlay);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && _eraOverlay?.classList.contains('visible')) _hideEraOverlay();
@@ -162,7 +186,9 @@ async function _showEraOverlay() {
     try {
       const eraMap = await rest.getEraMap();
       _eraEffects = eraMap.era_effects || {};
-    } catch (_) { /* use empty */ }
+    } catch (_) {
+      /* use empty */
+    }
   }
   const era = _currentEra;
   const sprite = ERA_SPRITE_KEY[era] || 'stone';
@@ -170,9 +196,9 @@ async function _showEraOverlay() {
   _eraOverlay.querySelector('.era-numeral').textContent = ERA_ROMAN[era] || '';
   _eraOverlay.querySelector('.era-name').textContent = ERA_LABEL_EN[era] || era;
   _eraOverlay.querySelector('.era-base-img').src = `/assets/sprites/bases/base_${sprite}.webp`;
-  const effectRows = Object.entries(effects).map(([k, v]) =>
-    `<div class="era-effect-row">${formatEffect(k, v)}</div>`
-  ).join('');
+  const effectRows = Object.entries(effects)
+    .map(([k, v]) => `<div class="era-effect-row">${formatEffect(k, v)}</div>`)
+    .join('');
   _eraOverlay.querySelector('.era-effects').innerHTML = effectRows;
   _eraOverlay.classList.add('visible');
 }
@@ -190,8 +216,12 @@ eventBus.on('state:summary', (data) => {
     const ef = data.effects || {};
     const ci = data.citizens || {};
     const ce = data.citizen_effect || 0;
-    const goldRate    = (data.base_gold    ?? 0 + (ef.gold_offset    || 0)) * (1 + (ci.merchant || 0) * ce + (ef.gold_modifier    || 0));
-    const cultureRate = (data.base_culture ?? 0 + (ef.culture_offset || 0)) * (1 + (ci.artist   || 0) * ce + (ef.culture_modifier || 0));
+    const goldRate =
+      (data.base_gold ?? 0 + (ef.gold_offset || 0)) *
+      (1 + (ci.merchant || 0) * ce + (ef.gold_modifier || 0));
+    const cultureRate =
+      (data.base_culture ?? 0 + (ef.culture_offset || 0)) *
+      (1 + (ci.artist || 0) * ce + (ef.culture_modifier || 0));
     _updateTitleResources(data.resources, { gold: goldRate, culture: cultureRate });
   }
   if (navBrand && data?.current_era) {
@@ -200,10 +230,10 @@ eventBus.on('state:summary', (data) => {
   }
   const incoming = data?.attacks_incoming || [];
   const hasIncoming = incoming.length > 0;
-  const hasActive = incoming.some(a => a.phase === 'in_siege' || a.phase === 'in_battle');
+  const hasActive = incoming.some((a) => a.phase === 'in_siege' || a.phase === 'in_battle');
 
   if (navDashboard) navDashboard.classList.remove('alarm');
-  if (navDefense)   navDefense.classList.toggle('alarm', hasActive);
+  if (navDefense) navDefense.classList.toggle('alarm', hasActive);
 
   // Unread messages badge
   const unread = data?.unread_messages || 0;
@@ -223,8 +253,8 @@ function startPolling() {
     if (!state.auth.authenticated) return;
     try {
       const summary = await rest.getSummary();
-      const count = ((summary?.completed_buildings ?? []).length)
-                  + ((summary?.completed_research  ?? []).length);
+      const count =
+        (summary?.completed_buildings ?? []).length + (summary?.completed_research ?? []).length;
       // First poll: just record baseline, don't fetch yet
       if (_prevCompletedCount === -1) {
         _prevCompletedCount = count;
@@ -235,12 +265,17 @@ function startPolling() {
         rest.getItems().catch(() => {});
       }
       _prevCompletedCount = count;
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
   }, 5000);
 }
 
 function stopPolling() {
-  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  if (_pollTimer) {
+    clearInterval(_pollTimer);
+    _pollTimer = null;
+  }
   _prevCompletedCount = -1;
 }
 

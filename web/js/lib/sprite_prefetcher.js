@@ -228,7 +228,7 @@ export async function prefetchAllSprites() {
   // Fetch in batches of 6 to avoid saturating mobile connections
   for (let i = 0; i < STATIC_SPRITES.length; i += 6) {
     await Promise.allSettled(
-      STATIC_SPRITES.slice(i, i + 6).map(async url => {
+      STATIC_SPRITES.slice(i, i + 6).map(async (url) => {
         const hit = await cache.match(url);
         if (hit) return;
         const res = await fetch(url);

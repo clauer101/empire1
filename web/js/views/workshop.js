@@ -14,28 +14,28 @@ import { eventBus } from '../events.js';
 // ── Module state ──────────────────────────────────────────────
 let _container = null;
 let _selectedIid = null;
-let _tab = 'structures';   // 'structures' | 'critters'
-let _itemUpgrades = {};    // iid → { stat → level }
-let _upgradeDefs = null;   // { structure_upgrade_def, critter_upgrade_def }
-let _eraLabels = {};       // era_key → German label
-let _iidEraIndex = {};     // iid → era index 0–8
+let _tab = 'structures'; // 'structures' | 'critters'
+let _itemUpgrades = {}; // iid → { stat → level }
+let _upgradeDefs = null; // { structure_upgrade_def, critter_upgrade_def }
+let _eraLabels = {}; // era_key → German label
+let _iidEraIndex = {}; // iid → era index 0–8
 let _unsubSummary = null;
 let _unsubItems = null;
-let _gridScroll    = { structures: 0, critters: 0 };
+let _gridScroll = { structures: 0, critters: 0 };
 let _selectedByTab = { structures: null, critters: null };
 
 // ── Stat definitions ──────────────────────────────────────────
 const STRUCTURE_STATS = [
-  { key: 'damage',          label: 'Damage',          unit: ''    },
-  { key: 'range',           label: 'Range',           unit: 'hex' },
-  { key: 'reload',          label: 'Reload Speed',    unit: '%'   },
-  { key: 'effect_duration', label: 'Effect Duration', unit: 's'   },
-  { key: 'effect_value',    label: 'Effect Value',    unit: '%'   },
+  { key: 'damage', label: 'Damage', unit: '' },
+  { key: 'range', label: 'Range', unit: 'hex' },
+  { key: 'reload', label: 'Reload Speed', unit: '%' },
+  { key: 'effect_duration', label: 'Effect Duration', unit: 's' },
+  { key: 'effect_value', label: 'Effect Value', unit: '%' },
 ];
 const CRITTER_STATS = [
-  { key: 'health', label: 'Health', unit: ''      },
-  { key: 'speed',  label: 'Speed',  unit: 'hex/s' },
-  { key: 'armour', label: 'Armour', unit: ''      },
+  { key: 'health', label: 'Health', unit: '' },
+  { key: 'speed', label: 'Speed', unit: 'hex/s' },
+  { key: 'armour', label: 'Armour', unit: '' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -46,16 +46,24 @@ function _gold() {
 
 function _fmtRes(val, digits = 0) {
   const v = val ?? 0;
-  return v >= 1000 ? Math.floor(v / 1000) + 'k' : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
+  return v >= 1000
+    ? Math.floor(v / 1000) + 'k'
+    : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
 function _fillTitleResources() {
   if (!_container) return;
   const r = state.summary?.resources;
   if (!r) return;
-  _container.querySelectorAll('.title-gold').forEach(el => { el.textContent = '💰 ' + _fmtRes(r.gold); });
-  _container.querySelectorAll('.title-culture').forEach(el => { el.textContent = '🎭 ' + _fmtRes(r.culture); });
-  _container.querySelectorAll('.title-life').forEach(el => { el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0); });
+  _container.querySelectorAll('.title-gold').forEach((el) => {
+    el.textContent = '💰 ' + _fmtRes(r.gold);
+  });
+  _container.querySelectorAll('.title-culture').forEach((el) => {
+    el.textContent = '🎭 ' + _fmtRes(r.culture);
+  });
+  _container.querySelectorAll('.title-life').forEach((el) => {
+    el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0);
+  });
 }
 
 function _catalog() {
@@ -66,7 +74,7 @@ function _catalog() {
 function _completedSet() {
   return new Set([
     ...(state.summary?.completed_buildings ?? []),
-    ...(state.summary?.completed_research  ?? []),
+    ...(state.summary?.completed_research ?? []),
   ]);
 }
 
@@ -79,7 +87,7 @@ function _unlockedCritters() {
       if (info.item_type !== 'critter') return false;
       if (info.is_boss) return false;
       const reqs = info.requirements ?? [];
-      return reqs.every(r => completed.has(r));
+      return reqs.every((r) => completed.has(r));
     })
     .map(([iid]) => iid)
     .reverse();
@@ -89,18 +97,27 @@ function _unlockedCritters() {
 function _unlockedStructures() {
   const catalog = _catalog();
   const completed = _completedSet();
-  return Object.keys(catalog).filter(iid => {
-    const info = catalog[iid];
-    if (info.item_type !== 'structure') return false;
-    const reqs = info.requirements ?? [];
-    return reqs.every(r => completed.has(r));
-  }).reverse();
+  return Object.keys(catalog)
+    .filter((iid) => {
+      const info = catalog[iid];
+      if (info.item_type !== 'structure') return false;
+      const reqs = info.requirements ?? [];
+      return reqs.every((r) => completed.has(r));
+    })
+    .reverse();
 }
 
 // Maps item.era (YAML string) → era index 0–8, matching ERA_ITEM_TO_INDEX in Python
 const _ERA_ITEM_TO_INDEX = {
-  STONE_AGE: 0, NEOLITHIC: 1, BRONZE_AGE: 2, IRON_AGE: 3,
-  MEDIEVAL: 4, RENAISSANCE: 5, INDUSTRIAL: 6, MODERN: 7, FUTURE: 8,
+  STONE_AGE: 0,
+  NEOLITHIC: 1,
+  BRONZE_AGE: 2,
+  IRON_AGE: 3,
+  MEDIEVAL: 4,
+  RENAISSANCE: 5,
+  INDUSTRIAL: 6,
+  MODERN: 7,
+  FUTURE: 8,
 };
 
 function _calcPrice(iid) {
@@ -121,7 +138,7 @@ function _currentValue(baseVal, stat, level, defs) {
   const defKey = _DECREASING_STATS[stat] ?? stat;
   const bonusPerLevel = defs[defKey] ?? 0;
   const sign = stat in _DECREASING_STATS ? -1 : 1;
-  return baseVal * (1 + sign * bonusPerLevel / 100 * level);
+  return baseVal * (1 + ((sign * bonusPerLevel) / 100) * level);
 }
 
 function _fmtVal(val) {
@@ -146,45 +163,62 @@ function _statRows(iid, statDefs, upgradeDefs) {
   const canAfford = gold >= price && price > 0;
 
   const efx = item.effects ?? {};
-  const hasSlow    = 'slow_duration' in efx;
-  const hasBurn    = 'burn_duration' in efx;
-  const hasSplash  = 'splash_radius' in efx;
+  const hasSlow = 'slow_duration' in efx;
+  const hasBurn = 'burn_duration' in efx;
+  const hasSplash = 'splash_radius' in efx;
 
-  return statDefs.map(({ key, label, unit }) => {
-    let displayLabel = label;
-    let displayBase = 0;
-    let displayUnit = unit;
-    let calcKey = key; // used for _currentValue direction; key stays as API stat name
+  return statDefs
+    .map(({ key, label, unit }) => {
+      let displayLabel = label;
+      let displayBase;
+      let displayUnit = unit;
+      let calcKey = key; // used for _currentValue direction; key stays as API stat name
 
-    if (key === 'reload') {
-      displayBase = (item.reload_time_ms ?? 0) / 1000;
-      displayUnit = 's';
-    } else if (key === 'effect_duration') {
-      if (hasSlow)  { displayLabel = 'Slow Duration'; displayBase = (efx.slow_duration ?? 0) / 1000; displayUnit = 's'; }
-      else if (hasBurn) { displayLabel = 'Burn Duration'; displayBase = (efx.burn_duration ?? 0) / 1000; displayUnit = 's'; }
-      else return null; // no duration effect → skip row
-    } else if (key === 'effect_value') {
-      if (hasSplash)    { displayLabel = 'Splash Radius'; displayBase = efx.splash_radius ?? 0; displayUnit = 'hex'; }
-      else if (hasSlow) { displayLabel = 'Slow Effect';   displayBase = efx.slow_ratio ?? 0;    displayUnit = ''; calcKey = 'slow_value'; }
-      else if (hasBurn) { displayLabel = 'Burn DPS';      displayBase = efx.burn_dps ?? 0;      displayUnit = ''; }
-      else return null; // no value effect → skip row
-    } else {
-      displayBase = item[key] ?? 0;
-    }
+      if (key === 'reload') {
+        displayBase = (item.reload_time_ms ?? 0) / 1000;
+        displayUnit = 's';
+      } else if (key === 'effect_duration') {
+        if (hasSlow) {
+          displayLabel = 'Slow Duration';
+          displayBase = (efx.slow_duration ?? 0) / 1000;
+          displayUnit = 's';
+        } else if (hasBurn) {
+          displayLabel = 'Burn Duration';
+          displayBase = (efx.burn_duration ?? 0) / 1000;
+          displayUnit = 's';
+        } else return null; // no duration effect → skip row
+      } else if (key === 'effect_value') {
+        if (hasSplash) {
+          displayLabel = 'Splash Radius';
+          displayBase = efx.splash_radius ?? 0;
+          displayUnit = 'hex';
+        } else if (hasSlow) {
+          displayLabel = 'Slow Effect';
+          displayBase = efx.slow_ratio ?? 0;
+          displayUnit = '';
+          calcKey = 'slow_value';
+        } else if (hasBurn) {
+          displayLabel = 'Burn DPS';
+          displayBase = efx.burn_dps ?? 0;
+          displayUnit = '';
+        } else return null; // no value effect → skip row
+      } else {
+        displayBase = item[key] ?? 0;
+      }
 
-    const level = iidUpgrades[key] ?? 0;
-    const curVal = _currentValue(displayBase, calcKey, level, upgradeDefs);
-    const hasBase = displayBase > 0;
+      const level = iidUpgrades[key] ?? 0;
+      const curVal = _currentValue(displayBase, calcKey, level, upgradeDefs);
+      const hasBase = displayBase > 0;
 
-    const btnColor = canAfford ? '#c9a84c' : 'var(--danger, #e53935)';
-    const btnStyle = `
+      const btnColor = canAfford ? '#c9a84c' : 'var(--danger, #e53935)';
+      const btnStyle = `
       background:transparent;color:${btnColor};
       border:1px solid ${btnColor};border-radius:var(--radius,4px);
       padding:2px 10px;font-size:12px;cursor:${canAfford ? 'pointer' : 'not-allowed'};
       opacity:${canAfford ? '1' : '0.6'};white-space:nowrap;flex-shrink:0;
     `.replace(/\s+/g, ' ');
 
-    return `
+      return `
       <tr class="ws-stat-row" data-stat="${key}" data-iid="${iid}">
         <td style="padding:6px 8px;color:var(--text-dim,#888);font-size:13px;">${displayLabel}</td>
         <td style="padding:6px 8px;font-size:13px;text-align:right;">${hasBase ? _fmtVal(curVal) + ' ' + displayUnit : '—'}</td>
@@ -194,7 +228,9 @@ function _statRows(iid, statDefs, upgradeDefs) {
           ${price > 0 ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}" style="${btnStyle}" ${canAfford ? '' : 'disabled'}>💰${price.toFixed(2)}</button>` : `<span style="font-size:11px;color:var(--text-dim,#888);">—</span>`}
         </td>
       </tr>`;
-  }).filter(Boolean).join('');
+    })
+    .filter(Boolean)
+    .join('');
 }
 
 function _renderDetail_html(iid) {
@@ -214,12 +250,12 @@ function _renderDetail_html(iid) {
 
   const spritePath = item.sprite ? '/' + item.sprite : null;
   const thumbHtml = isStructure
-    ? (spritePath
-        ? `<img src="${spritePath}" alt="${item.name ?? iid}"
+    ? spritePath
+      ? `<img src="${spritePath}" alt="${item.name ?? iid}"
                style="width:72px;height:72px;object-fit:contain;border-radius:8px;
                       background:rgba(255,255,255,0.04);padding:4px;"
                onerror="this.style.display='none'">`
-        : '')
+      : ''
     : `<canvas class="ws-critter-canvas" width="72" height="72"
                data-iid="${iid}" ${spritePath ? `data-sprite="${spritePath}"` : ''}
                style="border-radius:8px;background:rgba(255,255,255,0.04);"></canvas>`;
@@ -231,9 +267,11 @@ function _renderDetail_html(iid) {
         <div>
           <div style="font-size:18px;font-weight:bold;margin-bottom:4px;">${item.name ?? iid}</div>
           <div style="font-size:12px;color:var(--text-dim,#888);margin-bottom:6px;">${eraLabel}</div>
-          ${totalLevels > 0
-            ? `<div style="font-size:12px;background:rgba(201,168,76,0.15);color:#c9a84c;padding:2px 8px;border-radius:12px;display:inline-block;">⬆ ${totalLevels} upgrade${totalLevels !== 1 ? 's' : ''}</div>`
-            : `<div style="font-size:12px;color:var(--text-dim,#888);">No upgrades yet</div>`}
+          ${
+            totalLevels > 0
+              ? `<div style="font-size:12px;background:rgba(201,168,76,0.15);color:#c9a84c;padding:2px 8px;border-radius:12px;display:inline-block;">⬆ ${totalLevels} upgrade${totalLevels !== 1 ? 's' : ''}</div>`
+              : `<div style="font-size:12px;color:var(--text-dim,#888);">No upgrades yet</div>`
+          }
         </div>
       </div>
 
@@ -260,22 +298,24 @@ function _itemGridHtml(iids, isStructure) {
   if (iids.length === 0) {
     return `<div style="padding:24px 16px;color:var(--text-dim,#888);font-size:13px;">Nothing unlocked yet.</div>`;
   }
-  return `<div style="display:flex;flex-wrap:nowrap;gap:8px;padding:10px;">` +
-    iids.map(iid => {
-      const item = catalog[iid] ?? {};
-      const iidUpgrades = _itemUpgrades[iid] ?? {};
-      const totalLevels = Object.values(iidUpgrades).reduce((a, b) => a + b, 0);
-      const isSelected = iid === _selectedIid;
-      const spritePath = item.sprite ? '/' + item.sprite : null;
+  return (
+    `<div style="display:flex;flex-wrap:nowrap;gap:8px;padding:10px;">` +
+    iids
+      .map((iid) => {
+        const item = catalog[iid] ?? {};
+        const iidUpgrades = _itemUpgrades[iid] ?? {};
+        const totalLevels = Object.values(iidUpgrades).reduce((a, b) => a + b, 0);
+        const isSelected = iid === _selectedIid;
+        const spritePath = item.sprite ? '/' + item.sprite : null;
 
-      const thumbHtml = isStructure
-        ? (spritePath
+        const thumbHtml = isStructure
+          ? spritePath
             ? `<img src="${spritePath}" alt="" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display='none'">`
-            : `<div style="width:48px;height:48px;background:rgba(255,255,255,0.06);border-radius:4px;"></div>`)
-        : `<canvas class="ws-critter-canvas" width="48" height="48"
+            : `<div style="width:48px;height:48px;background:rgba(255,255,255,0.06);border-radius:4px;"></div>`
+          : `<canvas class="ws-critter-canvas" width="48" height="48"
                    data-iid="${iid}" ${spritePath ? `data-sprite="${spritePath}"` : ''}></canvas>`;
 
-      return `
+        return `
         <div class="ws-item-row" data-iid="${iid}" style="
           position:relative;cursor:pointer;border-radius:8px;padding:8px;width:80px;
           background:${isSelected ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)'};
@@ -286,21 +326,29 @@ function _itemGridHtml(iids, isStructure) {
                -webkit-line-clamp:2;-webkit-box-orient:vertical;color:${isSelected ? '#c9a84c' : 'inherit'};">
             ${item.name ?? iid}
           </div>
-          ${totalLevels > 0 ? `<div style="position:absolute;top:3px;right:4px;font-size:9px;
-            background:rgba(201,168,76,0.25);color:#c9a84c;padding:0 4px;border-radius:8px;">⬆${totalLevels}</div>` : ''}
+          ${
+            totalLevels > 0
+              ? `<div style="position:absolute;top:3px;right:4px;font-size:9px;
+            background:rgba(201,168,76,0.25);color:#c9a84c;padding:0 4px;border-radius:8px;">⬆${totalLevels}</div>`
+              : ''
+          }
         </div>`;
-    }).join('') + `</div>`;
+      })
+      .join('') +
+    `</div>`
+  );
 }
 
 const _SPRITE_EXTS = ['.png', '.webp', '.jpg'];
 
 function _initCanvases(el) {
-  el.querySelectorAll('.ws-critter-canvas').forEach(canvas => {
+  el.querySelectorAll('.ws-critter-canvas').forEach((canvas) => {
     const drawFrame = (img) => {
       const ctx = canvas.getContext('2d');
-      const fw = img.width / 4, fh = img.height / 4;
+      const fw = img.width / 4,
+        fh = img.height / 4;
       const scale = Math.min(canvas.width / fw, canvas.height / fh);
-      const dx = Math.floor((canvas.width  - fw * scale) / 2);
+      const dx = Math.floor((canvas.width - fw * scale) / 2);
       const dy = Math.floor((canvas.height - fh * scale) / 2);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, fw, fh, dx, dy, fw * scale, fh * scale);
@@ -309,7 +357,9 @@ function _initCanvases(el) {
     if (canvas.dataset.sprite) {
       const img = new Image();
       img.onload = () => drawFrame(img);
-      img.onerror = () => { canvas.style.display = 'none'; };
+      img.onerror = () => {
+        canvas.style.display = 'none';
+      };
       img.src = canvas.dataset.sprite;
       return;
     }
@@ -317,7 +367,10 @@ function _initCanvases(el) {
     const iid = canvas.dataset.iid.toLowerCase();
     const base = `assets/sprites/critters/${iid}/${iid}`;
     const tryLoad = (idx) => {
-      if (idx >= _SPRITE_EXTS.length) { canvas.style.display = 'none'; return; }
+      if (idx >= _SPRITE_EXTS.length) {
+        canvas.style.display = 'none';
+        return;
+      }
       const img = new Image();
       img.onload = () => drawFrame(img);
       img.onerror = () => tryLoad(idx + 1);
@@ -333,7 +386,7 @@ function _renderDetail() {
   if (!detailEl) return;
   detailEl.innerHTML = _renderDetail_html(_selectedIid);
   requestAnimationFrame(() => _initCanvases(detailEl));
-  detailEl.querySelectorAll('.ws-upgrade-btn').forEach(btn => {
+  detailEl.querySelectorAll('.ws-upgrade-btn').forEach((btn) => {
     btn.addEventListener('click', _onUpgradeClick);
   });
 }
@@ -341,9 +394,8 @@ function _renderDetail() {
 function _render() {
   if (!_container) return;
 
-
   const structureIids = _unlockedStructures();
-  const critterIids   = _unlockedCritters();
+  const critterIids = _unlockedCritters();
   const iids = _tab === 'structures' ? structureIids : critterIids;
 
   // Ensure selected IID is valid for current tab
@@ -366,7 +418,7 @@ function _render() {
     </h2>
     <div style="padding:8px 16px 4px;display:flex;gap:8px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.08);">
       ${tabBtn('structures', '🛡 Towers', _tab === 'structures')}
-      ${tabBtn('critters',   '⚔ Critters', _tab === 'critters')}
+      ${tabBtn('critters', '⚔ Critters', _tab === 'critters')}
     </div>
     <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
       <!-- Item grid (top, horizontal scroll) -->
@@ -377,10 +429,14 @@ function _render() {
 
       <!-- Detail panel (below, fills remaining space) -->
       <div id="ws-detail" style="flex:1;overflow-y:auto;">
-        ${_selectedIid ? _renderDetail_html(_selectedIid) : `
+        ${
+          _selectedIid
+            ? _renderDetail_html(_selectedIid)
+            : `
           <div style="padding:32px;color:var(--text-dim,#888);font-size:13px;">
             Select an item above.
-          </div>`}
+          </div>`
+        }
       </div>
     </div>`;
 
@@ -396,7 +452,7 @@ function _render() {
 function _bindEvents() {
   if (!_container) return;
 
-  _container.querySelectorAll('.ws-tab').forEach(btn => {
+  _container.querySelectorAll('.ws-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
       const scroller = _container.querySelector('.ws-grid-scroller');
       if (scroller) _gridScroll[_tab] = scroller.scrollLeft;
@@ -407,7 +463,7 @@ function _bindEvents() {
     });
   });
 
-  _container.querySelectorAll('.ws-item-row').forEach(row => {
+  _container.querySelectorAll('.ws-item-row').forEach((row) => {
     row.addEventListener('click', () => {
       const scroller = _container.querySelector('.ws-grid-scroller');
       if (scroller) _gridScroll[_tab] = scroller.scrollLeft;
@@ -417,14 +473,14 @@ function _bindEvents() {
     });
   });
 
-  _container.querySelectorAll('.ws-upgrade-btn').forEach(btn => {
+  _container.querySelectorAll('.ws-upgrade-btn').forEach((btn) => {
     btn.addEventListener('click', _onUpgradeClick);
   });
 }
 
 async function _onUpgradeClick(e) {
   const btn = e.currentTarget;
-  const iid  = btn.dataset.iid;
+  const iid = btn.dataset.iid;
   const stat = btn.dataset.stat;
   if (!iid || !stat) return;
 
@@ -465,20 +521,19 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
-  _unsubSummary = eventBus.on('state:summary', () => { _itemUpgrades = state.summary?.item_upgrades ?? _itemUpgrades; _renderDetail(); });
-  _unsubItems   = eventBus.on('state:items',   () => _render());
+  _unsubSummary = eventBus.on('state:summary', () => {
+    _itemUpgrades = state.summary?.item_upgrades ?? _itemUpgrades;
+    _renderDetail();
+  });
+  _unsubItems = eventBus.on('state:items', () => _render());
 
   // Load data in parallel
-  const [, , eraMap] = await Promise.all([
-    rest.getSummary(),
-    rest.getItems(),
-    rest.getEraMap(),
-  ]);
+  const [, , eraMap] = await Promise.all([rest.getSummary(), rest.getItems(), rest.getEraMap()]);
 
   // Pick up item_upgrades from summary
   _itemUpgrades = state.summary?.item_upgrades ?? {};
-  _upgradeDefs  = eraMap ?? null;
-  _eraLabels    = eraMap?.labels_de ?? {};
+  _upgradeDefs = eraMap ?? null;
+  _eraLabels = eraMap?.labels_de ?? {};
 
   // Build iid → era index from era-map groups
   _iidEraIndex = {};
@@ -496,8 +551,14 @@ async function enter() {
 }
 
 function leave() {
-  if (_unsubSummary) { _unsubSummary(); _unsubSummary = null; }
-  if (_unsubItems)   { _unsubItems();   _unsubItems   = null; }
+  if (_unsubSummary) {
+    _unsubSummary();
+    _unsubSummary = null;
+  }
+  if (_unsubItems) {
+    _unsubItems();
+    _unsubItems = null;
+  }
   _selectedIid = null;
 }
 

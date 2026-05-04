@@ -34,7 +34,9 @@ const _liveRate = { gold: 0, culture: 0 }; // per hour
 let _liveTimer = null;
 
 const _ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
-function _toRoman(n) { return _ROMAN[n] || String(n); }
+function _toRoman(n) {
+  return _ROMAN[n] || String(n);
+}
 
 function init(el, _api, _state) {
   container = el;
@@ -55,7 +57,11 @@ function init(el, _api, _state) {
 function enter() {
   // Register listeners first
   _unsub.push(eventBus.on('state:summary', render));
-  _unsub.push(eventBus.on('state:items', () => { if (st.summary) render(st.summary); }));
+  _unsub.push(
+    eventBus.on('state:items', () => {
+      if (st.summary) render(st.summary);
+    })
+  );
 
   // Render immediately if summary already exists
   // (avoids race condition if event fired before listener was added)
@@ -65,10 +71,10 @@ function enter() {
     // Otherwise fetch it
     refresh();
   }
-  
+
   // Ensure items are loaded (if not already)
   if (!st.items) {
-    rest.getItems().catch(err => console.error('[dashboard] getItems failed:', err));
+    rest.getItems().catch((err) => console.error('[dashboard] getItems failed:', err));
   }
 
   // Load empire rankings and poll for new players every 30s
@@ -77,14 +83,29 @@ function enter() {
 }
 
 function leave() {
-  _unsub.forEach(fn => fn());
+  _unsub.forEach((fn) => fn());
   _unsub = [];
   _empiresData = null;
-  if (_empiresTimer) { clearInterval(_empiresTimer); _empiresTimer = null; }
-  if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
-  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
-  if (render._stopRaf) { render._stopRaf(); render._stopRaf = null; }
-  if (_liveTimer) { clearInterval(_liveTimer); _liveTimer = null; }
+  if (_empiresTimer) {
+    clearInterval(_empiresTimer);
+    _empiresTimer = null;
+  }
+  if (_tickTimer) {
+    clearInterval(_tickTimer);
+    _tickTimer = null;
+  }
+  if (_rafId) {
+    cancelAnimationFrame(_rafId);
+    _rafId = null;
+  }
+  if (render._stopRaf) {
+    render._stopRaf();
+    render._stopRaf = null;
+  }
+  if (_liveTimer) {
+    clearInterval(_liveTimer);
+    _liveTimer = null;
+  }
   _tickData = null;
   _tickTs = null;
 }
@@ -115,13 +136,13 @@ async function refreshEmpires() {
       if (incEl) {
         const inc = summary.attacks_incoming || [];
         incEl.innerHTML = inc.length
-          ? inc.map(a => _attackEntry(a, 'in')).join('')
+          ? inc.map((a) => _attackEntry(a, 'in')).join('')
           : `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
       }
       if (outEl) {
         const out = summary.attacks_outgoing || [];
         outEl.innerHTML = out.length
-          ? out.map(a => _attackEntry(a, 'out')).join('')
+          ? out.map((a) => _attackEntry(a, 'out')).join('')
           : `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
       }
     }
@@ -133,7 +154,8 @@ async function refreshEmpires() {
 function render(data) {
   const el = container.querySelector('#dashboard-content');
   if (!data) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">◈</div><p>No empire data available</p></div>';
+    el.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">◈</div><p>No empire data available</p></div>';
     return;
   }
   const r = data.resources || {};
@@ -163,25 +185,29 @@ function render(data) {
           const arts = data.artefacts || [];
           if (!arts.length) return '';
           const catalog = st?.items?.catalog || {};
-          const badges = arts.map(iid => {
-            const name = catalog[iid]?.name || iid;
-            const type = catalog[iid]?.type || 'normal';
-            return `<span class="art-badge art-badge-${type} art-badge-clickable" data-iid="${iid}">⚜ ${name}</span>`;
-          }).join('');
+          const badges = arts
+            .map((iid) => {
+              const name = catalog[iid]?.name || iid;
+              const type = catalog[iid]?.type || 'normal';
+              return `<span class="art-badge art-badge-${type} art-badge-clickable" data-iid="${iid}">⚜ ${name}</span>`;
+            })
+            .join('');
           return `<div class="panel-header">Artefacts</div><div class="art-badge-list">${badges}</div><div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>`;
         })()}
         <div class="panel-header">Incoming</div>
         <div id="attacks-incoming-list">${(() => {
           const inc = data.attacks_incoming || [];
-          if (!inc.length) return `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
-          return inc.map(a => _attackEntry(a, 'in')).join('');
+          if (!inc.length)
+            return `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
+          return inc.map((a) => _attackEntry(a, 'in')).join('');
         })()}</div>
 
         <div class="panel-header" style="margin-top:8px">Outgoing</div>
         <div id="attacks-outgoing-list">${(() => {
           const out = data.attacks_outgoing || [];
-          if (!out.length) return `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
-          return out.map(a => _attackEntry(a, 'out')).join('');
+          if (!out.length)
+            return `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
+          return out.map((a) => _attackEntry(a, 'out')).join('');
         })()}</div>
 
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
@@ -239,7 +265,7 @@ function render(data) {
         if (resp.success) {
           msgEl.textContent = '✓ Citizen acquired!';
           msgEl.style.color = 'var(--success)';
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise((r) => setTimeout(r, 2000));
           await refresh();
         } else if (resp.error) {
           msgEl.textContent = `✗ ${resp.error}`;
@@ -252,13 +278,13 @@ function render(data) {
       btn.disabled = false;
     };
   }
-  
+
   // Bind production detail overlay
   const detailBtn = el.querySelector('#resources-detail-btn');
   if (detailBtn) detailBtn.addEventListener('click', () => _showProductionOverlay(data));
 
   // Bind artefact badge clicks
-  el.querySelectorAll('.art-badge-clickable').forEach(badge => {
+  el.querySelectorAll('.art-badge-clickable').forEach((badge) => {
     badge.addEventListener('click', () => _showArtefactOverlay(badge.dataset.iid));
   });
 
@@ -277,14 +303,26 @@ function render(data) {
 
   // Update live counter base/rate from fresh server data and (re)start counter
   const r2 = data.resources || {};
-  _liveRes.gold    = r2.gold    ?? 0;
+  _liveRes.gold = r2.gold ?? 0;
   _liveRes.culture = r2.culture ?? 0;
-  _liveRate.gold    = calcIncome('gold',    data.effects, data.citizens, data.citizen_effect, data.base_gold);
-  _liveRate.culture = calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture);
+  _liveRate.gold = calcIncome(
+    'gold',
+    data.effects,
+    data.citizens,
+    data.citizen_effect,
+    data.base_gold
+  );
+  _liveRate.culture = calcIncome(
+    'culture',
+    data.effects,
+    data.citizens,
+    data.citizen_effect,
+    data.base_culture
+  );
   _startLiveCounter();
 
   // Bind incoming attack clicks
-  el.querySelectorAll('.attack-in-clickable').forEach(entry => {
+  el.querySelectorAll('.attack-in-clickable').forEach((entry) => {
     entry.addEventListener('click', () => {
       const attackId = parseInt(entry.dataset.attackId, 10);
       const attackerUid = parseInt(entry.dataset.attackerUid, 10);
@@ -294,7 +332,7 @@ function render(data) {
   });
 
   // Bind outgoing watch entries (spectate defender's battle)
-  el.querySelectorAll('.atk-watch-entry').forEach(entry => {
+  el.querySelectorAll('.atk-watch-entry').forEach((entry) => {
     entry.addEventListener('click', () => {
       const attackId = parseInt(entry.dataset.attackId, 10);
       const defenderUid = parseInt(entry.dataset.defenderUid, 10);
@@ -310,7 +348,7 @@ function _tick() {
   if (!el) return;
   const elapsedS = (Date.now() - _tickTs) / 1000;
 
-  el.querySelectorAll('[data-atk-cd]').forEach(span => {
+  el.querySelectorAll('[data-atk-cd]').forEach((span) => {
     const remain = Math.max(0, parseFloat(span.dataset.remain) - elapsedS);
     span.textContent = _fmtSecs(remain);
     const total = parseFloat(span.dataset.total);
@@ -321,23 +359,22 @@ function _tick() {
     }
   });
 
-  el.querySelectorAll('[data-queue-cd]').forEach(span => {
+  el.querySelectorAll('[data-queue-cd]').forEach((span) => {
     const remain = Math.max(0, parseFloat(span.dataset.remain) - elapsedS);
     span.textContent = _fmtSecs(remain);
     const wallTotal = parseFloat(span.dataset.wallTotal);
     if (wallTotal > 0) {
-      const pct = Math.min(100, parseFloat(span.dataset.pctStart) + elapsedS / wallTotal * 100);
+      const pct = Math.min(100, parseFloat(span.dataset.pctStart) + (elapsedS / wallTotal) * 100);
       const bar = el.querySelector(`[data-queue-bar="${span.dataset.queueCd}"]`);
       if (bar) bar.style.width = pct.toFixed(1) + '%';
     }
   });
-
 }
 
 function _startLiveCounter() {
   if (_liveTimer) return; // already running
   _liveTimer = setInterval(() => {
-    _liveRes.gold    += _liveRate.gold    / 10;
+    _liveRes.gold += _liveRate.gold / 10;
     _liveRes.culture += _liveRate.culture / 10;
     const el = container.querySelector('#dashboard-content');
     if (!el) return;
@@ -364,12 +401,64 @@ function _showProductionOverlay(data) {
   }
 
   const artefacts = data.artefacts || [];
-  const goldHtml = renderResourceIncome('gold', effects, citizens, citizenEffect, data.base_gold, completedBuildings, items, completedResearch, artefacts);
-  const cultureHtml = renderResourceIncome('culture', effects, citizens, citizenEffect, data.base_culture, completedBuildings, items, completedResearch, artefacts);
-  const lifeHtml = renderResourceIncome('life', effects, citizens, citizenEffect, 0, completedBuildings, items, completedResearch, artefacts);
-  const buildHtml = renderBuildSpeed(effects, completedBuildings, completedResearch, items, data.base_build_speed, artefacts);
-  const researchHtml = renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, data.base_research_speed, artefacts);
-  const restoreHtml = renderRestoreLife(effects, completedBuildings, completedResearch, items, artefacts);
+  const goldHtml = renderResourceIncome(
+    'gold',
+    effects,
+    citizens,
+    citizenEffect,
+    data.base_gold,
+    completedBuildings,
+    items,
+    completedResearch,
+    artefacts
+  );
+  const cultureHtml = renderResourceIncome(
+    'culture',
+    effects,
+    citizens,
+    citizenEffect,
+    data.base_culture,
+    completedBuildings,
+    items,
+    completedResearch,
+    artefacts
+  );
+  const lifeHtml = renderResourceIncome(
+    'life',
+    effects,
+    citizens,
+    citizenEffect,
+    0,
+    completedBuildings,
+    items,
+    completedResearch,
+    artefacts
+  );
+  const buildHtml = renderBuildSpeed(
+    effects,
+    completedBuildings,
+    completedResearch,
+    items,
+    data.base_build_speed,
+    artefacts
+  );
+  const researchHtml = renderResearchSpeed(
+    effects,
+    citizens,
+    citizenEffect,
+    completedBuildings,
+    completedResearch,
+    items,
+    data.base_research_speed,
+    artefacts
+  );
+  const restoreHtml = renderRestoreLife(
+    effects,
+    completedBuildings,
+    completedResearch,
+    items,
+    artefacts
+  );
 
   const overlay = document.createElement('div');
   overlay.className = 'prod-overlay';
@@ -387,7 +476,7 @@ function _showProductionOverlay(data) {
   `;
 
   // Close on backdrop click or ✕ button
-  overlay.addEventListener('click', e => {
+  overlay.addEventListener('click', (e) => {
     if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) {
       overlay.remove();
     }
@@ -406,18 +495,20 @@ function renderCitizens(citizens) {
   const s = citizens.scientist || 0;
   const a = citizens.artist || 0;
   const total = m + s + a;
-  if (total === 0) return '<div class="panel-row"><span class="value" style="color:#666;">No citizens yet</span></div>';
-  const p1 = total > 0 ? (m / total * 100).toFixed(2) : 33.33;
-  const p2 = total > 0 ? ((m + s) / total * 100).toFixed(2) : 66.66;
-  const hint = (total >= 1 && total <= 5)
-    ? `<div class="csl-hint">Drag the handles to assign citizens to tasks</div>`
-    : '';
+  if (total === 0)
+    return '<div class="panel-row"><span class="value" style="color:#666;">No citizens yet</span></div>';
+  const p1 = total > 0 ? ((m / total) * 100).toFixed(2) : 33.33;
+  const p2 = total > 0 ? (((m + s) / total) * 100).toFixed(2) : 66.66;
+  const hint =
+    total >= 1 && total <= 5
+      ? `<div class="csl-hint">Drag the handles to assign citizens to tasks</div>`
+      : '';
   return `${hint}
     <div class="csl-wrap" data-merchant="${m}" data-scientist="${s}" data-artist="${a}" data-total="${total}">
       <div class="csl-track">
         <div class="csl-seg csl-merchant" style="left:0;width:${p1}%"></div>
-        <div class="csl-seg csl-scientist" style="left:${p1}%;width:${(p2-p1).toFixed(2)}%"></div>
-        <div class="csl-seg csl-artist" style="left:${p2}%;width:${(100-p2).toFixed(2)}%"></div>
+        <div class="csl-seg csl-scientist" style="left:${p1}%;width:${(p2 - p1).toFixed(2)}%"></div>
+        <div class="csl-seg csl-artist" style="left:${p2}%;width:${(100 - p2).toFixed(2)}%"></div>
         <div class="csl-handle" id="csl-h1" style="left:${p1}%;background:#ffa726">🔭</div>
         <div class="csl-handle" id="csl-h2" style="left:${p2}%;background:#81c784">🎨</div>
       </div>
@@ -451,17 +542,19 @@ function _initCitizenSlider(el, data) {
   let steps1 = parseInt(wrap.dataset.merchant, 10); // left handle = merchant count
   let steps2 = steps1 + parseInt(wrap.dataset.scientist, 10); // right handle = merchant+scientist
 
-  function pct(steps) { return (steps / total * 100).toFixed(2) + '%'; }
+  function pct(steps) {
+    return ((steps / total) * 100).toFixed(2) + '%';
+  }
 
   function updateDOM() {
-    const p1 = steps1 / total * 100;
-    const p2 = steps2 / total * 100;
+    const p1 = (steps1 / total) * 100;
+    const p2 = (steps2 / total) * 100;
     h1.style.left = p1.toFixed(2) + '%';
     h2.style.left = p2.toFixed(2) + '%';
     segM.style.width = p1.toFixed(2) + '%';
-    segS.style.left  = p1.toFixed(2) + '%';
+    segS.style.left = p1.toFixed(2) + '%';
     segS.style.width = (p2 - p1).toFixed(2) + '%';
-    segA.style.left  = p2.toFixed(2) + '%';
+    segA.style.left = p2.toFixed(2) + '%';
     segA.style.width = (100 - p2).toFixed(2) + '%';
     lblM.textContent = steps1;
     lblS.textContent = steps2 - steps1;
@@ -472,7 +565,7 @@ function _initCitizenSlider(el, data) {
     // in the middle with overlap, h1 on top (left drag is more natural)
     if (steps1 === steps2) {
       h1.style.zIndex = steps1 >= total ? '3' : '3';
-      h2.style.zIndex = steps2 <= 0    ? '4' : '2';
+      h2.style.zIndex = steps2 <= 0 ? '4' : '2';
     } else {
       h1.style.zIndex = '2';
       h2.style.zIndex = '2';
@@ -488,7 +581,9 @@ function _initCitizenSlider(el, data) {
         const resp = await rest.changeCitizen(dist);
         if (resp.success) refresh();
         else if (resp.error) console.error('[citizen-slider]', resp.error);
-      } catch (e) { console.error('[citizen-slider]', e); }
+      } catch (e) {
+        console.error('[citizen-slider]', e);
+      }
     }, 300);
   }
 
@@ -538,16 +633,17 @@ function _initCitizenSlider(el, data) {
     document.addEventListener('touchend', onUp);
   }
 
-  h1.addEventListener('mousedown',  e => dragHandle(h1, true,  e));
-  h1.addEventListener('touchstart', e => dragHandle(h1, true,  e), { passive: false });
-  h2.addEventListener('mousedown',  e => dragHandle(h2, false, e));
-  h2.addEventListener('touchstart', e => dragHandle(h2, false, e), { passive: false });
+  h1.addEventListener('mousedown', (e) => dragHandle(h1, true, e));
+  h1.addEventListener('touchstart', (e) => dragHandle(h1, true, e), { passive: false });
+  h2.addEventListener('mousedown', (e) => dragHandle(h2, false, e));
+  h2.addEventListener('touchstart', (e) => dragHandle(h2, false, e), { passive: false });
 
   // Set initial z-indices in case handles already overlap on first render
   updateDOM();
 }
 
-function renderProduction(label, items) {  if (!items || typeof items !== 'object' || Object.keys(items).length === 0) {
+function renderProduction(label, items) {
+  if (!items || typeof items !== 'object' || Object.keys(items).length === 0) {
     return `<div class="panel-row"><span class="label">${label}</span><span class="value">idle</span></div>`;
   }
   // Show only the first (current) item
@@ -559,11 +655,18 @@ function renderProduction(label, items) {  if (!items || typeof items !== 'objec
   return `<div class="panel-row"><span class="label">${iid}</span><span class="value">${fmt(remaining)} left</span></div>`;
 }
 
-function renderBuildSpeed(effects, completedBuildings, completedResearch, items, baseBuildSpeed, ownedArtefacts) {
+function renderBuildSpeed(
+  effects,
+  completedBuildings,
+  completedResearch,
+  items,
+  baseBuildSpeed,
+  ownedArtefacts
+) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
-  const buildOffset   = effects?.build_speed_offset   || 0;
+  const buildOffset = effects?.build_speed_offset || 0;
   const buildModifier = effects?.build_speed_modifier || 0;
-  const effective     = calcBuildSpeed({ base_build_speed: baseBuildSpeed, effects });
+  const effective = calcBuildSpeed({ base_build_speed: baseBuildSpeed, effects });
 
   let html = '';
   html += `<div class="panel-row"><span class="label">+${baseBuildSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
@@ -586,7 +689,7 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
       }
     }
   }
-  for (const iid of (ownedArtefacts || [])) {
+  for (const iid of ownedArtefacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.build_speed_offset > 0) {
       itemBuildOffset += art.effects.build_speed_offset;
@@ -596,7 +699,8 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
   const eraBuildOffset = buildOffset - itemBuildOffset;
   if (eraBuildOffset > 0.0005)
     html += `<div class="panel-row"><span class="label">+${eraBuildOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
-  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html +=
+    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   let itemBuildModifier = 0;
   if (completedBuildings && items?.buildings) {
     for (const iid of completedBuildings) {
@@ -616,7 +720,7 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
       }
     }
   }
-  for (const iid of (ownedArtefacts || [])) {
+  for (const iid of ownedArtefacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.build_speed_modifier > 0) {
       itemBuildModifier += art.effects.build_speed_modifier;
@@ -627,21 +731,36 @@ function renderBuildSpeed(effects, completedBuildings, completedResearch, items,
   if (eraBuildModifier > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(eraBuildModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
   const totalOffset = baseBuildSpeed + buildOffset;
-  const multiplier  = 1 + buildModifier;
-  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  const multiplier = 1 + buildModifier;
+  html +=
+    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
 }
 
-function renderResearchSpeed(effects, citizens, citizenEffect, completedBuildings, completedResearch, items, baseResearchSpeed, ownedArtefacts) {
-  baseResearchSpeed   = baseResearchSpeed ?? 1.0;
-  const researchOffset   = effects?.research_speed_offset   || 0;
+function renderResearchSpeed(
+  effects,
+  citizens,
+  citizenEffect,
+  completedBuildings,
+  completedResearch,
+  items,
+  baseResearchSpeed,
+  ownedArtefacts
+) {
+  baseResearchSpeed = baseResearchSpeed ?? 1.0;
+  const researchOffset = effects?.research_speed_offset || 0;
   const researchModifier = effects?.research_speed_modifier || 0;
   const scientistCount = citizens?.scientist || 0;
   const scientistBonus = scientistCount * citizenEffect;
-  const totalOffset   = baseResearchSpeed + researchOffset;
-  const multiplier    = 1 + researchModifier + scientistBonus;
-  const effective     = calcResearchSpeed({ base_research_speed: baseResearchSpeed, effects, citizens, citizen_effect: citizenEffect });
+  const totalOffset = baseResearchSpeed + researchOffset;
+  const multiplier = 1 + researchModifier + scientistBonus;
+  const effective = calcResearchSpeed({
+    base_research_speed: baseResearchSpeed,
+    effects,
+    citizens,
+    citizen_effect: citizenEffect,
+  });
 
   let html = '';
   html += `<div class="panel-row"><span class="label">+${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
@@ -664,7 +783,7 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
       }
     }
   }
-  for (const iid of (ownedArtefacts || [])) {
+  for (const iid of ownedArtefacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.research_speed_offset > 0) {
       itemResearchOffset += art.effects.research_speed_offset;
@@ -674,7 +793,8 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
   const eraResearchOffset = researchOffset - itemResearchOffset;
   if (eraResearchOffset > 0.0005)
     html += `<div class="panel-row"><span class="label">+${eraResearchOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
-  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html +=
+    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row"><span class="label">+${(scientistBonus * 100).toFixed(0)}%</span><span class="value">(${scientistCount} 🔭 × ${citizenEffect})</span></div>`;
   let itemResearchModifier = 0;
   if (completedBuildings && items?.buildings) {
@@ -695,7 +815,7 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
       }
     }
   }
-  for (const iid of (ownedArtefacts || [])) {
+  for (const iid of ownedArtefacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.research_speed_modifier > 0) {
       itemResearchModifier += art.effects.research_speed_modifier;
@@ -705,7 +825,8 @@ function renderResearchSpeed(effects, citizens, citizenEffect, completedBuilding
   const eraResearchModifier = researchModifier - itemResearchModifier;
   if (eraResearchModifier > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(eraResearchModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
-  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html +=
+    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
 }
@@ -715,21 +836,21 @@ function renderRestoreLife(effects, completedBuildings, completedResearch, items
   let html = '';
   let total = 0;
 
-  for (const iid of (completedBuildings || [])) {
+  for (const iid of completedBuildings || []) {
     const item = items?.buildings?.[iid];
     if (item?.effects?.[key] > 0) {
       total += item.effects[key];
       html += `<div class="panel-row"><span class="label">+${item.effects[key].toFixed(1)}%</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
-  for (const iid of (completedResearch || [])) {
+  for (const iid of completedResearch || []) {
     const item = items?.knowledge?.[iid];
     if (item?.effects?.[key] > 0) {
       total += item.effects[key];
       html += `<div class="panel-row"><span class="label">+${item.effects[key].toFixed(1)}%</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
-  for (const iid of (ownedArtefacts || [])) {
+  for (const iid of ownedArtefacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.[key] > 0) {
       total += art.effects[key];
@@ -744,7 +865,8 @@ function renderRestoreLife(effects, completedBuildings, completedResearch, items
     html += `<div class="panel-row"><span class="label">+${eraContrib.toFixed(1)}%</span><span class="value">(Era)</span></div>`;
   total = effects?.[key] || total;
 
-  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html +=
+    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#ef9a9a;font-weight:bold"><span class="label">= ${total.toFixed(1)}% life restored after loss</span></div>`;
   return html;
 }
@@ -753,7 +875,7 @@ function fmtPerH(perSecond) {
   const h = perSecond * 3600;
   if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
   if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
-  if (Math.abs(h) >= 10)  return Math.round(h) + '';
+  if (Math.abs(h) >= 10) return Math.round(h) + '';
   return h.toFixed(1);
 }
 
@@ -766,20 +888,32 @@ function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) 
     return baseAmount + (effects?.life_offset || 0);
   }
   if (resourceType === 'gold') {
-    const offset   = baseAmount + (effects?.gold_offset    || 0);
-    const modifier = (citizens?.merchant || 0) * (citizenEffect || 0) + (effects?.gold_modifier    || 0);
+    const offset = baseAmount + (effects?.gold_offset || 0);
+    const modifier =
+      (citizens?.merchant || 0) * (citizenEffect || 0) + (effects?.gold_modifier || 0);
     return offset * (1 + modifier);
   }
   // culture
-  const offset   = baseAmount + (effects?.culture_offset || 0);
-  const modifier = (citizens?.artist   || 0) * (citizenEffect || 0) + (effects?.culture_modifier || 0);
+  const offset = baseAmount + (effects?.culture_offset || 0);
+  const modifier =
+    (citizens?.artist || 0) * (citizenEffect || 0) + (effects?.culture_modifier || 0);
   return offset * (1 + modifier);
 }
 
-function renderResourceIncome(resourceType, effects, citizens, citizenEffect, baseAmount, completedBuildings, items, completedResearch, ownedArtefacts) {
+function renderResourceIncome(
+  resourceType,
+  effects,
+  citizens,
+  citizenEffect,
+  baseAmount,
+  completedBuildings,
+  items,
+  completedResearch,
+  ownedArtefacts
+) {
   completedResearch = completedResearch || [];
   let html = '';
-  
+
   // Determine which citizen type and effect keys
   let citizenType, effectOffsetKey, effectModifierKey, citizenCount;
   if (resourceType === 'gold') {
@@ -801,12 +935,12 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
 
   // Base amount (only show if > 0)
   baseAmount = baseAmount ?? 0;
-  const toH = v => v * 3600;
-  const fmtH = v => {
+  const toH = (v) => v * 3600;
+  const fmtH = (v) => {
     const h = toH(v);
     if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
     if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
-    if (Math.abs(h) >= 10)  return Math.round(h) + '';
+    if (Math.abs(h) >= 10) return Math.round(h) + '';
     return h.toFixed(1);
   };
 
@@ -818,16 +952,16 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   let totalOffset = baseAmount;
   function addOffsetSources(catalog) {
     if (!catalog) return;
-    for (const iid of (completedBuildings.concat(completedResearch))) {
+    for (const iid of completedBuildings.concat(completedResearch)) {
       const item = catalog.buildings?.[iid] || catalog.knowledge?.[iid];
       if (item?.effects?.[effectOffsetKey] > 0) {
         const offset = item.effects[effectOffsetKey];
         totalOffset += offset;
-                html += `<div class="panel-row"><span class="label">+${fmtH(offset)}</span><span class="value">(${item.name || iid})</span></div>`;
+        html += `<div class="panel-row"><span class="label">+${fmtH(offset)}</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
     // Artefact offsets
-    for (const iid of (ownedArtefacts || [])) {
+    for (const iid of ownedArtefacts || []) {
       const art = catalog.catalog?.[iid];
       if (art?.effects?.[effectOffsetKey]) {
         const offset = art.effects[effectOffsetKey];
@@ -840,7 +974,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
 
   // Helper to add artefact modifiers (called after the buildings/research modifier loop)
   function addArtefactModifiers() {
-    for (const iid of (ownedArtefacts || [])) {
+    for (const iid of ownedArtefacts || []) {
       const art = items?.catalog?.[iid];
       if (art?.effects?.[effectModifierKey] > 0) {
         const modifier = art.effects[effectModifierKey];
@@ -860,13 +994,15 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   // For life, only show offset without multiplier
   if (resourceType === 'life') {
     const color = '#90ee90';
-    html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
+    html +=
+      '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
     html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${fmtH(totalOffset)}/h</span></div>`;
     return html;
   }
 
   // Separator line
-  html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
+  html +=
+    '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
 
   // Citizen bonus percentage
   const citizenBonus = citizenCount * citizenEffect;
@@ -874,7 +1010,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
 
   // Effect modifiers from buildings/research
   let totalModifier = citizenBonus;
-  for (const iid of (completedBuildings.concat(completedResearch))) {
+  for (const iid of completedBuildings.concat(completedResearch)) {
     const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
     if (item?.effects?.[effectModifierKey] > 0) {
       const modifier = item.effects[effectModifierKey];
@@ -885,7 +1021,9 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   addArtefactModifiers();
 
   // Era modifier contribution
-  const eraModifier = effectModifierKey ? (effects[effectModifierKey] || 0) - (totalModifier - citizenBonus) : 0;
+  const eraModifier = effectModifierKey
+    ? (effects[effectModifierKey] || 0) - (totalModifier - citizenBonus)
+    : 0;
   if (eraModifier > 0.0005) {
     totalModifier += eraModifier;
     html += `<div class="panel-row"><span class="label">+${(eraModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
@@ -895,10 +1033,11 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
   const multiplier = 1 + totalModifier;
   const total = totalOffset * multiplier;
   const color = resourceType === 'gold' ? '#4fc3f7' : '#ffa726';
-  
-  html += '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
+
+  html +=
+    '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
   html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${fmtH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${fmtH(total)}/h</span></div>`;
-  
+
   return html;
 }
 
@@ -907,7 +1046,7 @@ function renderResourceIncome(resourceType, effects, citizens, citizenEffect, ba
 function _resolveEmpireName(uid) {
   if (uid === 0 || uid === '0') return 'AI';
   if (_empiresData) {
-    const e = _empiresData.find(x => x.uid === uid);
+    const e = _empiresData.find((x) => x.uid === uid);
     if (e) return e.name;
   }
   return `#${uid}`;
@@ -915,7 +1054,7 @@ function _resolveEmpireName(uid) {
 
 function _resolveEmpireUsername(uid) {
   if (_empiresData) {
-    const e = _empiresData.find(x => x.uid === uid);
+    const e = _empiresData.find((x) => x.uid === uid);
     if (e) return e.username || '';
   }
   return '';
@@ -933,23 +1072,26 @@ function _fmtSecs(s) {
 
 const PHASE_LABEL = {
   travelling: { text: 'travelling', cls: 'phase-travelling' },
-  in_siege:   { text: 'siege',      cls: 'phase-siege' },
-  in_battle:  { text: 'battle',     cls: 'phase-battle' },
+  in_siege: { text: 'siege', cls: 'phase-siege' },
+  in_battle: { text: 'battle', cls: 'phase-battle' },
 };
 
 function _attackEntry(a, direction) {
   const pInfo = PHASE_LABEL[a.phase] || { text: a.phase, cls: '' };
-  const otherUid  = direction === 'in' ? a.attacker_uid : a.defender_uid;
+  const otherUid = direction === 'in' ? a.attacker_uid : a.defender_uid;
   const empireName = _resolveEmpireName(otherUid);
   const isAI = otherUid === 0 || otherUid === '0';
-  const username  = isAI ? '' : (direction === 'in'
-    ? (a.attacker_username || _resolveEmpireUsername(otherUid))
-    : _resolveEmpireUsername(otherUid));
-  const empLabel  = isAI ? 'AI' : (username ? `${empireName} (${username})` : empireName);
-  const armyName  = a.army_name || '';
-  const displayedArmyName = armyName && a.is_spy && direction === 'out' ? `"${armyName}"` : armyName;
+  const username = isAI
+    ? ''
+    : direction === 'in'
+      ? a.attacker_username || _resolveEmpireUsername(otherUid)
+      : _resolveEmpireUsername(otherUid);
+  const empLabel = isAI ? 'AI' : username ? `${empireName} (${username})` : empireName;
+  const armyName = a.army_name || '';
+  const displayedArmyName =
+    armyName && a.is_spy && direction === 'out' ? `"${armyName}"` : armyName;
   // Show army name as primary label; empire/username as secondary hint
-  const empName   = displayedArmyName
+  const empName = displayedArmyName
     ? `${displayedArmyName}<span class="atk-empire-hint"> · ${empLabel}</span>`
     : empLabel;
 
@@ -965,14 +1107,13 @@ function _attackEntry(a, direction) {
   let pct = 0;
   if (a.phase === 'travelling') {
     countdown = `<span class="atk-cd" data-atk-cd="${a.attack_id}" data-remain="${a.eta_seconds.toFixed(2)}" data-total="${a.total_eta_seconds.toFixed(2)}">${_fmtSecs(a.eta_seconds)}</span>`;
-    pct = a.total_eta_seconds > 0
-      ? Math.round((1 - a.eta_seconds / a.total_eta_seconds) * 100)
-      : 0;
+    pct = a.total_eta_seconds > 0 ? Math.round((1 - a.eta_seconds / a.total_eta_seconds) * 100) : 0;
   } else if (a.phase === 'in_siege') {
     countdown = `<span class="atk-cd" data-atk-cd="${a.attack_id}" data-remain="${a.siege_remaining_seconds.toFixed(2)}" data-total="${a.total_siege_seconds.toFixed(2)}">${_fmtSecs(a.siege_remaining_seconds)}</span>`;
-    pct = a.total_siege_seconds > 0
-      ? Math.round((1 - a.siege_remaining_seconds / a.total_siege_seconds) * 100)
-      : 0;
+    pct =
+      a.total_siege_seconds > 0
+        ? Math.round((1 - a.siege_remaining_seconds / a.total_siege_seconds) * 100)
+        : 0;
   } else if (a.phase === 'in_battle') {
     countdown = `<span class="atk-cd atk-cd-battle">⚔ battle!</span>`;
     pct = 100;
@@ -980,7 +1121,7 @@ function _attackEntry(a, direction) {
   pct = Math.max(0, Math.min(100, pct));
 
   // Icon: ⚠ for incoming, 👁 for watchable outgoing, → otherwise
-  const icon = direction === 'in' ? '⚠' : (showWatch ? '👁' : '→');
+  const icon = direction === 'in' ? '⚠' : showWatch ? '👁' : '→';
 
   return `
     <div class="attack-entry attack-${direction}${direction === 'in' ? ' attack-in-clickable' : ''}${outClickable ? ' atk-watch-entry' : ''}" ${direction === 'in' ? `data-attack-id="${a.attack_id}" data-attacker-uid="${a.attacker_uid}" title="Click to open battle view" style="cursor:pointer"` : outDataAttrs}>
@@ -991,23 +1132,23 @@ function _attackEntry(a, direction) {
         ${countdown}
       </div>
       <div class="atk-progress-wrap">
-        <div class="atk-progress-bar atk-progress-${a.phase.replace('_','-')}" data-atk-bar="${a.attack_id}" style="width:${pct}%"></div>
+        <div class="atk-progress-bar atk-progress-${a.phase.replace('_', '-')}" data-atk-bar="${a.attack_id}" style="width:${pct}%"></div>
       </div>
     </div>`;
 }
 
 function renderAttacksBar(data) {
-  const incoming = (data.attacks_incoming || []);
-  const outgoing = (data.attacks_outgoing || []);
+  const incoming = data.attacks_incoming || [];
+  const outgoing = data.attacks_outgoing || [];
 
-  const inRows  = incoming.length
-    ? incoming.map(a => _attackEntry(a, 'in')).join('')
+  const inRows = incoming.length
+    ? incoming.map((a) => _attackEntry(a, 'in')).join('')
     : '<div class="atk-empty">No active attacks</div>';
   const outRows = outgoing.length
-    ? outgoing.map(a => _attackEntry(a, 'out')).join('')
+    ? outgoing.map((a) => _attackEntry(a, 'out')).join('')
     : '<div class="atk-empty">No active attacks</div>';
 
-  const inHeader  = `Incoming${incoming.length ? ` <span class="atk-badge atk-badge-in">${incoming.length}</span>` : ''}`;
+  const inHeader = `Incoming${incoming.length ? ` <span class="atk-badge atk-badge-in">${incoming.length}</span>` : ''}`;
   const outHeader = `Outgoing${outgoing.length ? ` <span class="atk-badge atk-badge-out">${outgoing.length}</span>` : ''}`;
 
   return `
@@ -1030,7 +1171,10 @@ function renderEffects(effects) {
     return '<div class="panel-row"><span class="value">—</span></div>';
   }
   return Object.entries(effects)
-    .map(([k, v]) => `<div class="panel-row"><span class="label">${formatEffect(k, v)}</span><span class="value"></span></div>`)
+    .map(
+      ([k, v]) =>
+        `<div class="panel-row"><span class="label">${formatEffect(k, v)}</span><span class="value"></span></div>`
+    )
     .join('');
 }
 
@@ -1042,9 +1186,15 @@ function renderEmpiresSection(empires) {
     return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">—</span></div></div>`;
   }
 
-  const dot = (online) => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${online ? 'var(--success,#66bb6a)' : '#3a3a4a'};${online ? 'box-shadow:0 0 4px var(--success,#66bb6a)' : ''}"></span>`;
+  const dot = (online) =>
+    `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${online ? 'var(--success,#66bb6a)' : '#3a3a4a'};${online ? 'box-shadow:0 0 4px var(--success,#66bb6a)' : ''}"></span>`;
 
-  const rows = empires.map((e, i) => `
+  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
+  const canAttack = (targetEra) => targetEra >= selfEra - 1;
+
+  const rows = empires
+    .map(
+      (e, i) => `
     <div class="panel-row" style="display:flex;flex-direction:row;align-items:stretch;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);">
       <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;">
         <span style="color:#888;font-size:0.8em;min-width:16px;">${i + 1}</span>
@@ -1055,13 +1205,18 @@ function renderEmpiresSection(empires) {
         </div>
       </div>
       <div style="display:flex;flex-direction:row;align-items:center;gap:4px;">
-        ${e.is_self ? '' : `
+        ${
+          !e.is_self && canAttack(e.era || 1)
+            ? `
           <button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>
-          <button class="msg-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;">✉</button>
-        `}
+        `
+            : ''
+        }
       </div>
     </div>
-  `).join('');
+  `
+    )
+    .join('');
 
   return `
     <div class="panel">
@@ -1075,16 +1230,15 @@ function bindEmpiresEvents() {
   const sec = container.querySelector('#empires-section');
   if (!sec) return;
 
-  sec.querySelectorAll('.attack-btn').forEach(btn => {
+  sec.querySelectorAll('.attack-btn').forEach((btn) => {
     btn.onclick = () => onAttackClick(btn);
   });
 
-  sec.querySelectorAll('.msg-btn').forEach(btn => {
-    btn.onclick = () => onMessageClick(btn);
-  });
-
-  sec.querySelectorAll('.art-info-trigger').forEach(el => {
-    el.onclick = (e) => { e.stopPropagation(); _showArtefactInfoOverlay(); };
+  sec.querySelectorAll('.art-info-trigger').forEach((el) => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      _showArtefactInfoOverlay();
+    };
   });
 }
 
@@ -1103,7 +1257,7 @@ function _showArtefactInfoOverlay() {
       </div>
     </div>
   `;
-  overlay.addEventListener('click', e => {
+  overlay.addEventListener('click', (e) => {
     if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
   });
   document.body.appendChild(overlay);

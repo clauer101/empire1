@@ -111,13 +111,19 @@ class RestClient {
   }
 
   /** @returns {Promise<object>} */
-  _get(path) { return this._fetch('GET', path); }
+  _get(path) {
+    return this._fetch('GET', path);
+  }
 
   /** @returns {Promise<object>} */
-  _post(path, body) { return this._fetch('POST', path, body); }
+  _post(path, body) {
+    return this._fetch('POST', path, body);
+  }
 
   /** @returns {Promise<object>} */
-  _put(path, body) { return this._fetch('PUT', path, body); }
+  _put(path, body) {
+    return this._fetch('PUT', path, body);
+  }
 
   // ── Auth ──────────────────────────────────────────────────
 
@@ -272,7 +278,7 @@ class RestClient {
       // Try to get the display name from the empire list
       try {
         const resp = await this.getEmpires();
-        const found = (resp.empires || []).find(e => e.uid === uid);
+        const found = (resp.empires || []).find((e) => e.uid === uid);
         return { uid, name: found ? found.name : `UID ${uid}` };
       } catch (_) {
         return { uid, name: `UID ${uid}` };
@@ -284,10 +290,10 @@ class RestClient {
     const empires = resp.empires || [];
     const ql = q.toLowerCase();
     const match =
-      empires.find(e => e.name.toLowerCase() === ql) ||
-      empires.find(e => (e.username || '').toLowerCase() === ql) ||
-      empires.find(e => e.name.toLowerCase().startsWith(ql)) ||
-      empires.find(e => (e.username || '').toLowerCase().startsWith(ql));
+      empires.find((e) => e.name.toLowerCase() === ql) ||
+      empires.find((e) => (e.username || '').toLowerCase() === ql) ||
+      empires.find((e) => e.name.toLowerCase().startsWith(ql)) ||
+      empires.find((e) => (e.username || '').toLowerCase().startsWith(ql));
     if (!match) throw new Error(`Kein Empire gefunden: "${q}"`);
     return { uid: match.uid, name: match.name };
   }

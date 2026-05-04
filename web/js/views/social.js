@@ -64,7 +64,10 @@ async function enter() {
 }
 
 function leave() {
-  if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+  if (_pollInterval) {
+    clearInterval(_pollInterval);
+    _pollInterval = null;
+  }
 }
 
 // ── Data ─────────────────────────────────────────────────────────────
@@ -75,7 +78,8 @@ async function _refresh() {
     _render(_data);
   } catch (err) {
     const el = container.querySelector('#message-list');
-    if (el) el.innerHTML = `<div class="error-msg" style="padding:12px">Error: ${_esc(err.message)}</div>`;
+    if (el)
+      el.innerHTML = `<div class="error-msg" style="padding:12px">Error: ${_esc(err.message)}</div>`;
   }
 }
 
@@ -86,44 +90,51 @@ function _render(data) {
   if (!el) return;
 
   if (!data) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports</p></div>';
+    el.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports</p></div>';
     return;
   }
 
   const myUid = st.auth?.uid;
   _renderBattleReports(el, data.battle_reports || [], myUid);
   // Mark battle reports read
-  (data.battle_reports || []).filter(m => !m.read).forEach(m => {
-    rest.markMessageRead(m.id).catch(() => {});
-    m.read = true;
-  });
+  (data.battle_reports || [])
+    .filter((m) => !m.read)
+    .forEach((m) => {
+      rest.markMessageRead(m.id).catch(() => {});
+      m.read = true;
+    });
   if (data.unread_battle !== undefined) data.unread_battle = 0;
 }
 
 function _parseBattleReportSummary(body) {
   const lines = body.split('\n');
   const result = lines[0] || '';
-  const opponentLine = lines.find((l, i) => i > 0 && /^[⚔🛡]/.test(l.trimStart()) && !l.includes('──'));
+  const opponentLine = lines.find(
+    (l, i) => i > 0 && /^[⚔🛡]/u.test(l.trimStart()) && !l.includes('──')
+  );
   const opponent = opponentLine ? opponentLine.replace(/^[⚔🛡]\s*\w+:\s*/u, '').trim() : '';
   return { result, opponent };
 }
 
 function _renderBattleReports(el, messages, myUid) {
   const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
-  messages = messages.filter(m => new Date(m.sent_at).getTime() >= cutoff);
+  messages = messages.filter((m) => new Date(m.sent_at).getTime() >= cutoff);
   if (!messages.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports in the last 3 days.</p></div>';
+    el.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports in the last 3 days.</p></div>';
     return;
   }
-  el.innerHTML = messages.map((m, idx) => {
-    const unreadDot = !m.read
-      ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
-      : '';
-    const { result, opponent } = _parseBattleReportSummary(m.body || '');
-    const detailId = 'br-detail-' + idx;
-    const won = /Won/i.test(result);
-    const resultColor = won ? 'var(--success,#66bb6a)' : 'var(--danger,#ef5350)';
-    return `
+  el.innerHTML = messages
+    .map((m, idx) => {
+      const unreadDot = !m.read
+        ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
+        : '';
+      const { result, opponent } = _parseBattleReportSummary(m.body || '');
+      const detailId = 'br-detail-' + idx;
+      const won = /Won/i.test(result);
+      const resultColor = won ? 'var(--success,#66bb6a)' : 'var(--danger,#ef5350)';
+      return `
       <div class="panel" style="margin-bottom:6px;padding:0;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
         <button class="br-header" data-target="${detailId}" data-msg-id="${m.id}"
           style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -142,10 +153,11 @@ function _renderBattleReports(el, messages, myUid) {
           <div style="font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${_linkify(_esc(m.body))}</div>
         </div>
       </div>`;
-  }).join('');
+    })
+    .join('');
 
   // Restore open state
-  el.querySelectorAll('.br-header').forEach(btn => {
+  el.querySelectorAll('.br-header').forEach((btn) => {
     const msgId = btn.dataset.msgId;
     const detail = el.querySelector('#' + btn.dataset.target);
     if (detail && msgId && _openBattleReportIds.has(msgId)) {
@@ -155,7 +167,7 @@ function _renderBattleReports(el, messages, myUid) {
   });
 
   // Bind toggle
-  el.querySelectorAll('.br-header').forEach(btn => {
+  el.querySelectorAll('.br-header').forEach((btn) => {
     btn.addEventListener('click', () => {
       const detail = el.querySelector('#' + btn.dataset.target);
       if (!detail) return;
@@ -189,12 +201,13 @@ function _fmtTime(sent_at) {
   if (!sent_at) return '';
   const d = new Date(sent_at);
   if (isNaN(d)) return sent_at.replace('T', ' ');
-  const tz  = 'Europe/Berlin';
+  const tz = 'Europe/Berlin';
   const now = new Date();
   const dateStr = d.toLocaleDateString('de-DE', { timeZone: tz });
-  const nowStr  = now.toLocaleDateString('de-DE', { timeZone: tz });
-  const yest    = new Date(now); yest.setDate(now.getDate() - 1);
-  const time    = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+  const nowStr = now.toLocaleDateString('de-DE', { timeZone: tz });
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
+  const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: tz });
   if (dateStr === nowStr) return time;
   if (dateStr === yest.toLocaleDateString('de-DE', { timeZone: tz })) return `Yesterday ${time}`;
   return dateStr + ' ' + time;

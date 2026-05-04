@@ -19,7 +19,7 @@ COPY web ./web
 COPY docker-entrypoint.sh ./entrypoint.sh
 
 # Non-root user
-RUN useradd -r -u 1001 -s /sbin/nologin appuser \
+RUN useradd -r -u 1000 -s /sbin/nologin appuser \
     && mkdir -p /app/data /app/logs /home/appuser/.cache/uv \
     && chmod +x /app/entrypoint.sh \
     && chown -R appuser:appuser /app /home/appuser

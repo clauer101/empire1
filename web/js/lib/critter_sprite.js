@@ -44,9 +44,9 @@ export const DEFAULT_FPS = 8;
 
 /** Direction name → sprite-sheet row index. */
 export const DIRECTION_ROW = {
-  forward:  0,
-  left:     1,
-  right:    2,
+  forward: 0,
+  left: 1,
+  right: 2,
   backward: 3,
 };
 
@@ -70,18 +70,18 @@ export const DIRECTIONS = ['forward', 'left', 'right', 'backward'];
  * @returns {Promise<{sheet: OffscreenCanvas, frameW: number, frameH: number}>}
  */
 async function loadSheetFrames(url) {
-  const blob = await fetch(url).then(r => {
+  const blob = await fetch(url).then((r) => {
     if (!r.ok) throw new Error(`HTTP ${r.status} loading ${url}`);
     return r.blob();
   });
   const img = await createImageBitmap(blob);
 
-  const frameW = Math.floor(img.width  / COLS);
+  const frameW = Math.floor(img.width / COLS);
   const frameH = Math.floor(img.height / ROWS);
 
   // Draw the full sheet onto a single OffscreenCanvas
   const sheet = new OffscreenCanvas(img.width, img.height);
-  const ctx   = sheet.getContext('2d');
+  const ctx = sheet.getContext('2d');
   ctx.drawImage(img, 0, 0);
 
   // Free the source ImageBitmap — we no longer need it
@@ -102,19 +102,25 @@ async function loadSheetFrames(url) {
  */
 async function loadGifImgs(urls) {
   const imgs = {};
-  let frameW = 0, frameH = 0;
+  let frameW = 0,
+    frameH = 0;
 
-  await Promise.all(DIRECTIONS.map(dir => new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      imgs[dir] = img;
-      frameW    = Math.max(frameW, img.naturalWidth);
-      frameH    = Math.max(frameH, img.naturalHeight);
-      resolve();
-    };
-    img.onerror = () => reject(new Error(`Failed to load GIF: ${img.src}`));
-    img.src = urls[dir];
-  })));
+  await Promise.all(
+    DIRECTIONS.map(
+      (dir) =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            imgs[dir] = img;
+            frameW = Math.max(frameW, img.naturalWidth);
+            frameH = Math.max(frameH, img.naturalHeight);
+            resolve();
+          };
+          img.onerror = () => reject(new Error(`Failed to load GIF: ${img.src}`));
+          img.src = urls[dir];
+        })
+    )
+  );
 
   return { imgs, frameW, frameH };
 }
@@ -131,8 +137,8 @@ export class CritterSprite {
    */
   constructor(type, src, fps = DEFAULT_FPS) {
     this.type = type;
-    this._src  = src;
-    this.fps   = fps;
+    this._src = src;
+    this.fps = fps;
 
     // Set after load()
     this.frameW = 0;
@@ -163,7 +169,7 @@ export class CritterSprite {
   static fromManifest(entry, base = '', fps = DEFAULT_FPS) {
     if (entry.type === 'gifs') {
       const files = base
-        ? Object.fromEntries(DIRECTIONS.map(d => [d, `${base}/${entry.files[d]}`]))
+        ? Object.fromEntries(DIRECTIONS.map((d) => [d, `${base}/${entry.files[d]}`]))
         : entry.files;
       return new CritterSprite('gifs', files, fps);
     }
@@ -190,7 +196,7 @@ export class CritterSprite {
     } else {
       // GIF: src is already a map of direction → absolute URL
       this._loadPromise = loadGifImgs(this._src).then(({ imgs, frameW, frameH }) => {
-        this._imgs  = imgs;
+        this._imgs = imgs;
         this.frameW = frameW;
         this.frameH = frameH;
         this._ready = true;
@@ -201,7 +207,9 @@ export class CritterSprite {
   }
 
   /** True once load() has completed successfully. */
-  get ready() { return this._ready; }
+  get ready() {
+    return this._ready;
+  }
 
   /**
    * For GIF critters: return the live <img> element for a direction.
@@ -271,8 +279,8 @@ export class CritterSprite {
   _drawSheetFrame(ctx, row, col, x, y, size) {
     const sx = col * this.frameW;
     const sy = row * this.frameH;
-    const w  = size;
-    const h  = (this.frameH / this.frameW) * size;
+    const w = size;
+    const h = (this.frameH / this.frameW) * size;
     ctx.drawImage(this._sheet, sx, sy, this.frameW, this.frameH, x - w / 2, y - h / 2, w, h);
   }
 
