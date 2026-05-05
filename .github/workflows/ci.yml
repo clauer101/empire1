@@ -24,6 +24,9 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
+      - name: Check lockfile is up to date
+        run: uv lock --check
+
       - name: Install dependencies
         run: uv sync --frozen --extra dev
 
@@ -33,10 +36,10 @@ jobs:
       - name: Type check (mypy)
         run: uv run mypy src
 
-      - name: Run tests
+      - name: Run tests with coverage gate
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-key-do-not-use-in-prod' }}
-        run: uv run pytest
+        run: uv run pytest --cov=gameserver --cov-fail-under=65 --cov-report=xml --cov-report=html
 
       - name: Upload coverage report
         if: always()

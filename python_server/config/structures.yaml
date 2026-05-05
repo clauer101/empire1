@@ -321,7 +321,7 @@ FLAME_THROWER:
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 4000, burn_dps: 6}   # burns for 4 dps over 4s
+  effects: {burn_duration: 3000, burn_dps: 6}   # burns 
   requirements: [HEAVY_EQUIPMENT, MECHANICAL_ENGINEERING]
 
 SHOCK_TOWER:

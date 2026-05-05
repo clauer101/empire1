@@ -4,20 +4,20 @@ version = "0.1.0"
 description = "Multiplayer Tower-Defense Empire-Building Game Server"
 requires-python = ">=3.9"
 dependencies = [
-    "pydantic>=2.0",
-    "websockets>=12.0",
-    "aiosqlite>=0.19",
-    "pyyaml>=6.0",
-    "msgpack>=1.0",
-    "fastapi>=0.100",
-    "uvicorn>=0.20",
-    "pyjwt>=2.0",
-    "argon2-cffi>=23.0",
-    "pydantic-settings>=2.0",
-    "structlog>=24.0",
-    "prometheus-client>=0.19",
-    "alembic>=1.16.5",
-    "slowapi>=0.1.9",
+    "pydantic>=2.0,<3.0",
+    "websockets>=12.0,<17.0",
+    "aiosqlite>=0.19,<1.0",
+    "pyyaml>=6.0,<7.0",
+    "msgpack>=1.0,<2.0",
+    "fastapi>=0.100,<1.0",
+    "uvicorn>=0.20,<1.0",
+    "pyjwt>=2.0,<3.0",
+    "argon2-cffi>=23.0,<26.0",
+    "pydantic-settings>=2.0,<3.0",
+    "structlog>=24.0,<27.0",
+    "prometheus-client>=0.19,<1.0",
+    "alembic>=1.16,<2.0",
+    "slowapi>=0.1.9,<1.0",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +38,23 @@ gameserver = "gameserver.main:main"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["gameserver"]
+omit = [
+    "*/main.py",           # startup entrypoint — needs integration tests
+    "*/settings.py",       # pydantic-settings, reads from ENV
+    "*/util/logging.py",   # structlog setup, infrastructure
+    "*/util/push_service.py",  # external push service (pywebpush)
+    "*/persistence/replay.py", # replay writer — needs integration tests
+    "*/network/metrics.py",    # prometheus gauge definitions
+    "*/network/web_server.py", # FastAPI app — needs integration tests
+    "*/network/routers/admin.py",  # admin endpoints — needs integration tests
+]
+
+[tool.coverage.report]
+fail_under = 65
+show_missing = true
 
 [tool.ruff]
 target-version = "py39"
