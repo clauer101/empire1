@@ -23,8 +23,10 @@ def _make_minimal_battle(army: Army | None = None) -> BattleState:
     battle = BattleState(
         bid=99,
         defender=defender,
-        attacker=attacker,
-        army=army,
+        attacker_uids=[attacker.uid],
+        attack_ids=[1],
+        armies={1: army},
+        attacker_gains={attacker.uid: {}},
         structures={},
         critter_path=[HexCoord(0, 0), HexCoord(1, 0)],
     )

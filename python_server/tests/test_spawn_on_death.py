@@ -51,7 +51,7 @@ def _critter(path_progress=0.5, health=10.0, spawn_on_death=None, cid=1) -> Crit
 
 def _battle(*critters: Critter, **kwargs) -> BattleState:
     return BattleState(
-        bid=1, defender=None, attacker=None,
+        bid=1, defender=None,
         critters={c.cid: c for c in critters},
         **kwargs,
     )

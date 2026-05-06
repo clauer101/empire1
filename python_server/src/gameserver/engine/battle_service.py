@@ -175,7 +175,7 @@ class BattleService:
         battle.broadcast_timer_ms = broadcast_interval_ms
         
         log.info("[battle_loop] Starting battle (bid=%d, defender=%d, attackers=%s)",
-                 battle.bid, battle.defender.uid if battle.defender else None, battle.attacker.uid if battle.attacker else None)
+                 battle.bid, battle.defender.uid if battle.defender else None, battle.attacker_uids)
         
         last = time.monotonic()
         while battle.keep_alive:
@@ -607,39 +607,40 @@ class BattleService:
         return critters
 
     def _step_armies(self, battle: BattleState, dt_ms: float) -> None:
-        """Advance wave timers, spawn critters from active waves.
-        
-        Steps all waves and assigns the precomputed critter path to spawned critters.
-        """
-        if not battle.army:
-            return
-        
-        # Get the precomputed critter path (calculated when battle was created)
+        """Advance wave timers, spawn critters from all active armies."""
         if not battle.critter_path:
             log.warning("[_step_armies] Battle %d has no critter path", battle.bid)
             return
-        
-        attacker_item_upgrades = battle.attacker.item_upgrades if battle.attacker else None
 
-        # Step all waves up to and including the next wave
-        for wave in battle.army.waves:
-            new_critters = self._step_wave(wave, dt_ms)
+        cu = self._gc.critter_upgrades if self._gc else None
 
-            for critter in new_critters:
-                critter.path = battle.critter_path
-                # Apply per-IID upgrades at spawn time
-                cu = self._gc.critter_upgrades if self._gc else None
-                if cu and attacker_item_upgrades:
-                    iid_upgrades = attacker_item_upgrades.get(critter.iid, {})
-                    critter.health *= 1.0 + (cu.health / 100.0) * iid_upgrades.get("health", 0)
-                    critter.max_health = critter.health
-                    critter.speed  *= 1.0 + (cu.speed  / 100.0) * iid_upgrades.get("speed",  0)
-                    critter.armour *= 1.0 + (cu.armour / 100.0) * iid_upgrades.get("armour", 0)
+        for army in battle.armies.values():
+            uid = army.uid  # owner uid from the Army object (not the dict key)
+            attacker_item_upgrades: dict[str, Any] | None = None
+            from gameserver.network.handlers._core import _svc as _core_svc
+            try:
+                svc = _core_svc()
+                emp = svc.empire_service.get(uid) if svc.empire_service else None
+                attacker_item_upgrades = emp.item_upgrades if emp else None
+            except Exception:
+                pass
 
-                battle.critters[critter.cid] = critter
-                battle.critters_spawned += 1
-                log.info("[SPAWN] Critter cid=%d (%s) spawned from wave %d (progress=%d/%d, path_length=%d)",
-                         critter.cid, critter.iid, wave.wave_id, wave.num_critters_spawned, wave.slots, len(critter.path))
+            for wave in army.waves:
+                new_critters = self._step_wave(wave, dt_ms)
+                for critter in new_critters:
+                    critter.path = battle.critter_path
+                    critter.owner_uid = uid
+                    if cu and attacker_item_upgrades:
+                        iid_upgrades = attacker_item_upgrades.get(critter.iid, {})
+                        critter.health *= 1.0 + (cu.health / 100.0) * iid_upgrades.get("health", 0)
+                        critter.max_health = critter.health
+                        critter.speed  *= 1.0 + (cu.speed  / 100.0) * iid_upgrades.get("speed",  0)
+                        critter.armour *= 1.0 + (cu.armour / 100.0) * iid_upgrades.get("armour", 0)
+                    battle.critters[critter.cid] = critter
+                    battle.critters_spawned += 1
+                    log.info("[SPAWN] Critter cid=%d (%s) owner=%d wave=%d (%d/%d, path=%d)",
+                             critter.cid, critter.iid, uid, wave.wave_id,
+                             wave.num_critters_spawned, wave.slots, len(critter.path))
 
 
     # -- Finish conditions -----------------------------------------------
@@ -650,28 +651,27 @@ class BattleService:
         if battle.elapsed_ms < battle.MIN_KEEP_ALIVE_MS:
             return
 
-        # Check if defender has lost all life (< 1.0 accounts for fractional offsets like life_offset)
         if battle.defender and battle.defender.resources.get("life", 0) < 1.0:
             battle.is_finished = True
             battle.keep_alive = False
-            battle.defender_won = False  # defender lost all life
+            battle.defender_won = False
             log.info("[FINISH] Battle bid=%d finished (defender lost all life)", battle.bid)
             return
-        
-        # Check if attacker has finished dispatching all waves
+
+        # All armies from all attackers must be exhausted
         all_armies_done = True
-        if battle.army:
-            for wave in battle.army.waves:
+        for army in battle.armies.values():
+            for wave in army.waves:
                 if not self._mark_wave_complete_if_blocked(wave):
                     all_armies_done = False
                     break
-        
-        no_critters = len(battle.critters) == 0
+            if not all_armies_done:
+                break
 
-        if all_armies_done and no_critters:
+        if all_armies_done and len(battle.critters) == 0:
             battle.is_finished = True
             battle.keep_alive = False
-            battle.defender_won = True  # critters didn't break through
+            battle.defender_won = True
             log.info("[FINISH] Battle bid=%d finished (defender won)", battle.bid)
         
         
@@ -702,16 +702,15 @@ class BattleService:
         # Track defender losses for summary
         battle.defender_losses["life"] = battle.defender_losses.get("life", 0.0) + life_damage
         
-        # Give capture resources to attacker (if any beyond life damage)
-        if battle.attacker and critter.capture:
-            attacker_uid = battle.attacker.uid
-            if attacker_uid not in battle.attacker_gains:
-                battle.attacker_gains[attacker_uid] = {}
-            
+        # Give capture resources to the owning attacker
+        owner_uid = critter.owner_uid or (battle.attacker_uids[0] if battle.attacker_uids else 0)
+        if owner_uid and critter.capture:
+            if owner_uid not in battle.attacker_gains:
+                battle.attacker_gains[owner_uid] = {}
             for resource, amount in critter.capture.items():
-                if resource != "life":  # life is defender loss, not attacker gain
-                    battle.attacker_gains[attacker_uid][resource] = (
-                        battle.attacker_gains[attacker_uid].get(resource, 0.0) + amount
+                if resource != "life":
+                    battle.attacker_gains[owner_uid][resource] = (
+                        battle.attacker_gains[owner_uid].get(resource, 0.0) + amount
                     )
 
     def _critter_died(self, battle: BattleState, critter: Critter) -> None:
@@ -805,16 +804,17 @@ class BattleService:
         defender_life = battle.defender.resources.get("life", 0) if battle.defender else 0
         defender_max_life = battle.defender.max_life if battle.defender else 10
 
-        # Wave info — first wave that hasn't started spawning yet
-        wave_info = None
-        if battle.army and battle.army.waves:
-            total_waves = len(battle.army.waves)
-            for i, w in enumerate(battle.army.waves):
+        # Wave info per army — first unstarted wave for each attacker
+        wave_infos: list[dict[str, Any]] = []
+        for army in battle.armies.values():
+            total_waves = len(army.waves)
+            for i, w in enumerate(army.waves):
                 if w.num_critters_spawned == 0:
                     item = self._items_by_iid.get(w.iid)
                     critter_name = item.name if item else w.iid
                     critter_slot_cost = max(1, int(getattr(item, "slots", 1) or 1)) if item else 1
-                    wave_info = {
+                    wave_infos.append({
+                        "owner_uid": army.uid,
                         "wave_index": i + 1,
                         "total_waves": total_waves,
                         "iid": w.iid,
@@ -823,8 +823,10 @@ class BattleService:
                         "critter_slot_cost": critter_slot_cost,
                         "spawned": 0,
                         "next_critter_ms": max(0.0, w.next_critter_ms),
-                    }
+                    })
                     break
+        # Backward compat: single wave_info = first entry
+        wave_info = wave_infos[0] if wave_infos else None
 
         msg: dict[str, Any] = {
             "type": "battle_update",
@@ -836,6 +838,7 @@ class BattleService:
             "defender_life": defender_life,
             "defender_max_life": defender_max_life,
             "wave_info": wave_info,
+            "wave_infos": wave_infos,
         }
         
         # Record for replay before clearing deltas
@@ -861,20 +864,38 @@ class BattleService:
             loot: Optional loot dict computed after battle ends (only on defender loss).
                   Shape: {knowledge, culture, artefact}
         """
+        total_waves = sum(len(a.waves) for a in battle.armies.values())
+        # army_names: uid → list of army names (one uid can have multiple armies)
+        army_names_by_uid: dict[int, list[str]] = {}
+        for a in battle.armies.values():
+            army_names_by_uid.setdefault(a.uid, []).append(a.name)
+        # attacker_empire_names: uid → empire name (resolved from defender/svc if available)
+        attacker_empire_names: dict[int, str] = {}
+        try:
+            from gameserver.network.handlers._core import _svc as _core_svc
+            _s = _core_svc()
+            for uid in battle.attacker_uids:
+                emp = _s.empire_service.get(uid) if _s.empire_service else None
+                attacker_empire_names[uid] = emp.name if emp else str(uid)
+        except Exception:
+            pass
         msg: dict[str, Any] = {
             "type": "battle_summary",
             "bid": battle.bid,
             "defender_won": battle.defender_won or False,
-            "attacker_uid": battle.attacker.uid if battle.attacker else None,
+            "attacker_uid": battle.attacker_uids[0] if battle.attacker_uids else None,
+            "attacker_uids": list(battle.attacker_uids),
             "army_name": battle.army.name if battle.army else "",
-            "attacker_gains": dict(battle.attacker_gains),  # Dict of {uid: {resource: amount}}
+            "army_names": army_names_by_uid,
+            "attacker_empire_names": attacker_empire_names,
+            "attacker_gains": dict(battle.attacker_gains),
             "defender_losses": dict(battle.defender_losses),
             "defender_gold_earned": battle.defender_gold_earned,
             "critters_spawned": battle.critters_spawned,
             "critters_killed": battle.critters_killed,
             "critters_reached": battle.critters_reached,
             "duration_s": round(battle.elapsed_ms / 1000, 1),
-            "num_waves": len(battle.army.waves) if battle.army and battle.army.waves else 0,
+            "num_waves": total_waves,
             "num_towers": len(battle.structures),
             "loot": loot or {},
         }

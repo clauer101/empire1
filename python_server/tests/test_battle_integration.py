@@ -101,12 +101,13 @@ class TestBattleIntegration:
         battle = BattleState(
             bid=1,
             defender=defender,
-            attacker=attacker,
-            army=army,
+            attacker_uids=[attacker.uid],
+            armies={1: army},
+            attacker_gains={attacker.uid: {}},
             structures={1: tower},
             critter_path=critter_path,
         )
-        
+
         # Track events
         total_spawned = 0
         total_killed = 0
@@ -234,12 +235,13 @@ class TestBattleIntegration:
         battle = BattleState(
             bid=1,
             defender=defender,
-            attacker=attacker,
-            army=army,
+            attacker_uids=[attacker.uid],
+            armies={1: army},
+            attacker_gains={attacker.uid: {}},
             structures={1: tower},
             critter_path=critter_path,
         )
-        
+
         initial_life = defender.resources["life"]
         
         # Run battle
@@ -273,7 +275,6 @@ class TestBattleIntegration:
         battle = BattleState(
             bid=1,
             defender=defender,
-            attacker=None,
             critters={1: critter},
         )
         
@@ -310,7 +311,6 @@ class TestCritterKillGoldReward:
         battle = BattleState(
             bid=1,
             defender=defender,
-            attacker=None,
             critters={1: critter},
         )
         return service, battle, defender, critter
@@ -364,7 +364,7 @@ class TestCritterKillGoldReward:
                        speed=0.2, value=float(i) * 2, path=path, path_progress=0.5)
             for i in range(1, 4)  # values: 2, 4, 6 → total 12
         }
-        battle = BattleState(bid=1, defender=defender, attacker=None, critters=critters)
+        battle = BattleState(bid=1, defender=defender, critters=critters)
 
         for critter in list(critters.values()):
             service._critter_died(battle, critter)
@@ -389,7 +389,7 @@ class TestCritterKillGoldReward:
             path=[HexCoord(0, 0), HexCoord(1, 0)],
             path_progress=0.99,
         )
-        battle = BattleState(bid=1, defender=defender, attacker=None, critters={1: critter})
+        battle = BattleState(bid=1, defender=defender, critters={1: critter})
 
         service._step_critters(battle, 200.0)  # moves to >= 1.0 → marks reached_goal
         service._flush_reached(battle)          # triggers _critter_finished

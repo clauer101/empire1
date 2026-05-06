@@ -382,9 +382,19 @@ export function createBattleUi(ctx) {
     const isDefender = myUid != null && myUid == bs.defender_uid;
 
     const defenderName = bs.defender_name || 'Defender';
-    const armyPart = msg.army_name || bs.attacker_army_name || 'the attacker';
-    const usernamePart = bs.attacker_username ? ` (${bs.attacker_username})` : '';
-    const attackLabel = `${armyPart}${usernamePart}`;
+
+    // Build attacker label: list all participating empires / armies
+    const attackerUids = msg.attacker_uids || (msg.attacker_uid != null ? [msg.attacker_uid] : []);
+    const empireNames = msg.attacker_empire_names || {};
+    const armyNamesByUid = msg.army_names || {};  // uid → [armyName, ...]
+    const multiAttacker = attackerUids.length > 1;
+
+    // Single-attacker fallback label (for title sentence)
+    const firstUid = attackerUids[0];
+    const firstEmpire = empireNames[firstUid] || bs.attacker_username || bs.attacker_name || 'the attacker';
+    const firstArmy = (armyNamesByUid[firstUid] || [])[0] || msg.army_name || bs.attacker_army_name || '';
+    const singleLabel = firstArmy ? `${firstArmy} (${firstEmpire})` : firstEmpire;
+    const attackLabel = multiAttacker ? `${attackerUids.length} empires` : singleLabel;
 
     let html = '<div style="margin-top:8px">';
 
@@ -394,6 +404,34 @@ export function createBattleUi(ctx) {
       html += `<p style="text-align:center">${attackLabel} broke through ${defenderName}'s defenses.</p>`;
     }
 
+    // ── Attacking armies list ──────────────────────────────────────
+    {
+      const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
+      const liSt = `style="padding:3px 0"`;
+      html += `<div ${sep}>`;
+      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">⚔ Attacking Armies</strong>`;
+      html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
+      if (attackerUids.length === 0) {
+        html += `<li ${liSt}>${msg.army_name || 'Unknown'}</li>`;
+      } else {
+        for (const uid of attackerUids) {
+          const eName = empireNames[uid] || `uid ${uid}`;
+          const aNames = armyNamesByUid[uid] || [];
+          const gains = (msg.attacker_gains || {})[uid] || {};
+          const gainParts = Object.entries(gains)
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => `+${Math.round(v)} ${k}`)
+            .join(', ');
+          const armyStr = aNames.length > 0 ? aNames.join(', ') : '–';
+          html += `<li ${liSt}><strong>${eName}</strong>: ${armyStr}`;
+          if (gainParts) html += ` <span style="color:var(--gold,#f9a825)">${gainParts}</span>`;
+          html += `</li>`;
+        }
+      }
+      html += '</ul></div>';
+    }
+
+    // ── Battle statistics ──────────────────────────────────────────
     {
       const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
       const liSt = `style="padding:3px 0"`;
@@ -404,10 +442,10 @@ export function createBattleUi(ctx) {
       const reached = msg.critters_reached ?? 0;
       const killed = msg.critters_killed ?? 0;
       const waves = msg.num_waves ?? 0;
-      html += `<li ${liSt}>⚔ Attacker: ${spawned} critters in ${waves} waves — ${reached} reached goal, ${killed} killed</li>`;
+      html += `<li ${liSt}>🐛 Critters: ${spawned} in ${waves} waves — ${reached} reached goal, ${killed} killed</li>`;
       const towers = msg.num_towers ?? 0;
       const goldEarned = Math.round(msg.defender_gold_earned ?? 0);
-      html += `<li ${liSt}>🛡 Defender: ${towers} towers — ${goldEarned} gold earned</li>`;
+      html += `<li ${liSt}>🗼 Towers: ${towers} — ${goldEarned} gold earned</li>`;
       if (msg.duration_s > 0) {
         const dur = msg.duration_s;
         const dm = Math.floor(dur / 60);
@@ -449,12 +487,14 @@ export function createBattleUi(ctx) {
       }
       html += '</ul></div>';
 
+      const attackersLabel = multiAttacker ? 'Attackers get' : 'The Attacker gets';
       html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🎓 The Attacker gets</strong>`;
+      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🎓 ${attackersLabel}</strong>`;
       html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
       if (loot.knowledge) {
         const kn = loot.knowledge;
-        html += `<li ${liSt}>📖 ${kn.pct}% of <strong>${kn.name}</strong> → +${kn.amount} 🧪</li>`;
+        const perW = kn.per_winner != null && multiAttacker ? ` (${kn.per_winner} each)` : '';
+        html += `<li ${liSt}>📖 ${kn.pct}% of <strong>${kn.name}</strong> → +${kn.amount} 🧪${perW}</li>`;
       } else {
         html += `<li ${mutedSt}>📖 Knowledge: –</li>`;
       }

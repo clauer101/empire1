@@ -39,7 +39,6 @@ class TestTowerShooting:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             structures={1: tower},
             critters={100: critter},
         )
@@ -88,7 +87,6 @@ class TestTowerShooting:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             structures={1: tower},
             critters={100: critter},
         )
@@ -131,7 +129,6 @@ class TestTowerShooting:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             structures={1: tower},
             critters={100: critter},
         )
@@ -182,7 +179,6 @@ class TestTowerShooting:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             structures={1: tower},
             critters={100: critter1, 101: critter2},
         )

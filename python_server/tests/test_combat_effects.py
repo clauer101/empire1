@@ -30,7 +30,7 @@ def _critter(health: float = 100.0, speed: float = 2.0) -> Critter:
 
 def _battle(*critters: Critter, **kwargs) -> BattleState:
     return BattleState(
-        bid=1, defender=None, attacker=None,
+        bid=1, defender=None,
         critters={c.cid: c for c in critters},
         **kwargs,
     )
@@ -285,7 +285,7 @@ class TestTowerEffectsFromStructure:
         c.path_progress = 0.1  # hex ~1-2 away from tower at (0,0) — within range 5
         struct = self._slow_structure()
         b = BattleState(
-            bid=1, defender=None, attacker=None,
+            bid=1, defender=None,
             critters={c.cid: c},
             structures={struct.sid: struct},
         )
@@ -305,7 +305,7 @@ class TestTowerEffectsFromStructure:
         struct = self._slow_structure()
         struct.reload_remaining_ms = 0.0
         b = BattleState(
-            bid=1, defender=None, attacker=None,
+            bid=1, defender=None,
             critters={c.cid: c},
             structures={struct.sid: struct},
         )
@@ -323,7 +323,7 @@ class TestTowerEffectsFromStructure:
         c.path_progress = 0.1
         struct = self._burn_structure()
         b = BattleState(
-            bid=1, defender=None, attacker=None,
+            bid=1, defender=None,
             critters={c.cid: c},
             structures={struct.sid: struct},
         )

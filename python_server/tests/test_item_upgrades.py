@@ -112,7 +112,7 @@ class TestTowerDamageUpgrade:
         defender = _empire(item_upgrades={IID_TOWER: {"damage": level}})
         c = _critter_in_range(health=200.0)
         struct = _tower_structure(damage=BASE_DAMAGE)
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         _fire_and_land(svc, b)
         return c
@@ -145,7 +145,7 @@ class TestTowerDamageUpgrade:
             reload_time_ms=BASE_RELOAD_MS,
             shot_speed=10.0, effects={}, reload_remaining_ms=0.0,
         )
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={other_struct.sid: other_struct})
         _fire_and_land(svc, b)
         assert c.health == pytest.approx(200.0 - BASE_DAMAGE)
@@ -163,7 +163,7 @@ class TestTowerRangeUpgrade:
                     speed=0.01, armour=0.0,
                     path=_path(), path_progress=critter_progress)
         struct = _tower_structure(rng=base_range)
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b, 50.0)
         return b
@@ -183,7 +183,7 @@ class TestTowerRangeUpgrade:
                     speed=0.01, armour=0.0,
                     path=_path(), path_progress=0.1)
         struct = _tower_structure(rng=0.3)
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b, 50.0)
         assert len(b.pending_shots) == 0
@@ -206,7 +206,7 @@ class TestTowerReloadUpgrade:
         c = _critter_in_range()
         struct = _tower_structure()
         struct.reload_remaining_ms = remaining_ms
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b, tick_ms)
         return b
@@ -225,7 +225,7 @@ class TestTowerReloadUpgrade:
         c = _critter_in_range()
         struct = _tower_structure()
         struct.reload_remaining_ms = 500.0
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b, 300.0)
         assert len(b.pending_shots) == 0
@@ -246,7 +246,7 @@ class TestTowerEffectDurationUpgrade:
         defender = _empire(item_upgrades={IID_TOWER: {"effect_duration": level}})
         c = _critter_in_range()
         struct = _tower_structure(effects=base_effects)
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b, 50.0)
         assert b.pending_shots, "Tower must have fired"
@@ -282,7 +282,7 @@ class TestTowerEffectValueUpgrade:
         defender = _empire(item_upgrades={IID_TOWER: {"effect_value": level}})
         c = _critter_in_range()
         struct = _tower_structure(effects=base_effects)
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b, 50.0)
         assert b.pending_shots, "Tower must have fired"
@@ -422,10 +422,10 @@ class TestUpgradeIsolation:
         s_base = _tower_structure()
         s_upg  = _tower_structure(sid=2)
 
-        b_base = BattleState(bid=1, defender=_empire(), attacker=None,
+        b_base = BattleState(bid=1, defender=_empire(), 
                              critters={c.cid: c}, structures={s_base.sid: s_base})
         c2 = _critter_in_range()
-        b_upg  = BattleState(bid=2, defender=defender, attacker=None,
+        b_upg  = BattleState(bid=2, defender=defender, 
                              critters={c2.cid: c2}, structures={s_upg.sid: s_upg})
         svc._step_towers(b_base, 50.0)
         svc._step_towers(b_upg,  50.0)

@@ -48,10 +48,12 @@ class ReplayRecorder:
 
     def __init__(self, bid: int, defender_uid: int = 0,
                  attacker_uid: int = 0,
+                 attacker_uids: list[int] | None = None,
                  replay_dir: str = DEFAULT_REPLAY_DIR) -> None:
         self.bid = bid
         self.defender_uid = defender_uid
         self.attacker_uid = attacker_uid
+        self.attacker_uids: list[int] = attacker_uids if attacker_uids is not None else ([attacker_uid] if attacker_uid else [])
         self._replay_dir = Path(replay_dir)
         self._events: list[dict[str, Any]] = []
         self.created_at = time.time()
@@ -72,6 +74,7 @@ class ReplayRecorder:
             "replay_key": self.replay_key,
             "defender_uid": self.defender_uid,
             "attacker_uid": self.attacker_uid,
+            "attacker_uids": self.attacker_uids,
             "created_at": self.created_at,
             "events": self._events,
         }, separators=(",", ":")).encode("utf-8")

@@ -37,9 +37,13 @@ def _make_svc(items: dict = None):
 
 
 def _make_battle(attacker_uid: int, defender_uid: int) -> BattleState:
-    attacker = Empire(uid=attacker_uid, name="Attacker")
     defender = Empire(uid=defender_uid, name="Defender")
-    battle = BattleState(bid=1, defender=defender, attacker=attacker)
+    battle = BattleState(
+        bid=1,
+        defender=defender,
+        attacker_uids=[attacker_uid],
+        attacker_gains={attacker_uid: {}},
+    )
     battle.defender_won = False
     return battle
 
@@ -123,7 +127,8 @@ class TestAiWinsKnowledgeSteal:
 
         _compute_and_apply_loot(battle, svc)
 
-        assert "TECH" not in battle.attacker.knowledge
+        # AI never receives knowledge credits — attacker_gains has no knowledge entry
+        assert "TECH" not in battle.attacker_gains.get(AI_UID, {})
 
 
 # ── AI loses — no knowledge steal ────────────────────────────────────────────
@@ -150,16 +155,15 @@ class TestAiDefeatNoKnowledgeSteal:
 
         battle = _make_battle(attacker_uid=AI_UID, defender_uid=1)
         battle.defender.artefacts = ["CROWN"]
-        battle.attacker.artefacts = ["SWORD"]
         svc = _make_svc()
         svc.game_config.base_artifact_steal_victory = 1.0
         svc.game_config.base_artifact_steal_defeat = 1.0
 
-        result = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=False)
 
-        assert result is None
+        assert iid is None
+        assert winner_uid is None
         assert battle.defender.artefacts == ["CROWN"]
-        assert battle.attacker.artefacts == ["SWORD"]
 
     def test_ai_win_no_artefact_stolen(self):
         """AI never steals artefacts even on win."""
@@ -170,7 +174,8 @@ class TestAiDefeatNoKnowledgeSteal:
         svc = _make_svc()
         svc.game_config.base_artifact_steal_victory = 1.0
 
-        result = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
 
-        assert result is None
+        assert iid is None
+        assert winner_uid is None
         assert battle.defender.artefacts == ["CROWN"]

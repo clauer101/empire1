@@ -27,7 +27,7 @@ def _bs() -> BattleService:
 
 
 def _battle(critters: dict[int, Critter]) -> BattleState:
-    return BattleState(bid=0, defender=None, attacker=None, critters=critters)
+    return BattleState(bid=0, defender=None, critters=critters)
 
 
 def _tower(q: int = 0, r: int = 0, range_: float = 1.0, select: str = "first") -> Structure:

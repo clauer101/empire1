@@ -85,7 +85,6 @@ def _make_battle() -> BattleState:
     return BattleState(
         bid=7,
         defender=None,
-        attacker=None,
         critters={
             200: Critter(cid=200, iid="orc", health=20.0, max_health=20.0,
                          speed=1.0, armour=1.0,

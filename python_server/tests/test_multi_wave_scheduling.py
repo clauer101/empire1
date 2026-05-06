@@ -68,9 +68,10 @@ def test_two_waves_spawn_in_sequence(battle_service, test_path, two_wave_army):
     battle = BattleState(
         bid=1,
         defender=None,
-        attacker=None,
-        attack_id=1,
-        army=two_wave_army,
+        attack_ids=[1],
+        attacker_uids=[100],
+        armies={100: two_wave_army},
+        attacker_gains={100: {}},
         critter_path=test_path,
         structures={},
         observer_uids=set(),
@@ -123,14 +124,15 @@ def test_wave_spawn_intervals(battle_service, test_path):
     battle = BattleState(
         bid=1,
         defender=None,
-        attacker=None,
-        attack_id=1,
-        army=army,
+        attack_ids=[1],
+        attacker_uids=[100],
+        armies={100: army},
+        attacker_gains={100: {}},
         critter_path=test_path,
         structures={},
         observer_uids=set(),
     )
-    
+
     spawn_times = []
     seen_cids = set()
     tick_interval_ms = 15.0
@@ -191,9 +193,10 @@ def test_wave_with_unspawnable_remaining_slots_completes_and_battle_finishes(tes
     battle = BattleState(
         bid=1,
         defender=None,
-        attacker=None,
-        attack_id=1,
-        army=army,
+        attack_ids=[1],
+        attacker_uids=[100],
+        armies={100: army},
+        attacker_gains={100: {}},
         critter_path=test_path,
         structures={},
         observer_uids=set(),

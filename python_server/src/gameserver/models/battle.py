@@ -24,48 +24,39 @@ if TYPE_CHECKING:
 class BattleState:
     """Mutable state container for an active tower-defense battle.
 
+    Supports multiple simultaneous attackers against the same defender.
+    All attackers share a single critter pool; towers fire at the combined
+    pool at their normal reload rate.
+
     Attributes:
         bid: Unique battle ID.
-        defender_uid: UID of the defending player.
-        attacker_uids: UIDs of all attacking players.
+        defender: The defending empire.
+        attacker_uids: UIDs of all attacking players (join order).
+        attack_ids: Attack IDs of all participating attacks.
+        armies: Active armies keyed by attacker UID.
 
-        armies: Active armies 
         critters: All live critters on the field, keyed by CID.
         structures: Defender's towers, keyed by SID.
         pending_shots: Shots in flight.
+        critter_path: Precomputed path for critters to follow.
 
-        elapsed_ms: Total elapsed battle time.
-        broadcast_timer_ms: Countdown to next broadcast window.
-        keep_alive: Whether the battle loop should continue.
-        is_finished: Whether the battle has concluded.
-        defender_won: Whether the defender won (set on finish).
-
-        # Delta tracking for broadcasts
-        new_critters: Critters added since last broadcast.
-        new_shots: Shots fired since last broadcast.
-        dead_critter_ids: CIDs of critters killed since last broadcast.
-        finished_critter_ids: CIDs of critters that reached the end.
-        new_structure_ids: SIDs of structures added since last broadcast.
-
-        # Observers
         observer_uids: UIDs of players watching this battle.
-
-        # Summary
         attacker_gains: Resources gained per attacker UID.
         defender_losses: Resources lost by defender.
     """
 
     bid: int
     defender: Empire | None
-    attacker: Empire | None
-    attack_id: int | None = None  # Reference to Attack (if battle is part of an attack)
 
-    army: Army | None = None  # The attacking empire
+    attacker_uids: list[int] = field(default_factory=list)
+    attack_ids: list[int] = field(default_factory=list)
+    armies: dict[int, Army] = field(default_factory=dict)  # attack_id -> Army
+
     critters: dict[int, Critter] = field(default_factory=dict)
     structures: dict[int, Structure] = field(default_factory=dict)
     pending_shots: list[Shot] = field(default_factory=list)
-    
-    critter_path: list[HexCoord] = field(default_factory=list)  # Precomputed path for critters to follow
+
+    critter_path: list[HexCoord] = field(default_factory=list)
 
     elapsed_ms: float = 0.0
     broadcast_timer_ms: float = 0.0
@@ -73,37 +64,49 @@ class BattleState:
     is_finished: bool = False
     defender_won: bool | None = None
 
-    # Observers
     observer_uids: set[int] = field(default_factory=set)
 
-    # Summary
     attacker_gains: dict[int, dict[str, float]] = field(default_factory=dict)
     defender_losses: dict[str, float] = field(default_factory=dict)
-    defender_gold_earned: float = 0.0  # Gold earned by defender from killing critters
+    defender_gold_earned: float = 0.0
 
-    # Stats counters
     critters_spawned: int = 0
     critters_killed: int = 0
     critters_reached: int = 0
 
-    # Critters removed since last broadcast: [{cid, reason, path_progress}]
     # reason: "died" | "reached"
     removed_critters: list[dict[str, Any]] = field(default_factory=list)
 
-    # Configuration (set at battle creation time, from game.yaml)
     broadcast_interval_ms: float = 250.0
-
-    # Replay recorder (set at battle creation to record all events)
     recorder: ReplayRecorder | None = None
-
-    # -- Constants -------------------------------------------------------
 
     MIN_KEEP_ALIVE_MS: float = 10_000.0
 
+    # -- Backward-compat properties (single-attacker callers) ------------
+
+    @property
+    def attacker(self) -> Empire | None:
+        """Primary attacker empire (first in join order)."""
+        from gameserver.network.handlers._core import _svc
+        svc = _svc()
+        uid = self.attacker_uids[0] if self.attacker_uids else None
+        if uid is None or svc.empire_service is None:
+            return None
+        return svc.empire_service.get(uid)
+
+    @property
+    def attack_id(self) -> int | None:
+        """Primary attack ID (first in list)."""
+        return self.attack_ids[0] if self.attack_ids else None
+
+    @property
+    def army(self) -> Army | None:
+        """Primary army (first attack's army, keyed by attack_id)."""
+        aid = self.attack_ids[0] if self.attack_ids else None
+        return self.armies.get(aid) if aid is not None else None  # type: ignore[arg-type]
+
     def should_broadcast(self) -> bool:
-        """Check if enough time has passed for a network update."""
         return self.broadcast_timer_ms <= 0
 
     def reset_broadcast(self) -> None:
-        """Reset broadcast timer and clear delta lists."""
         pass

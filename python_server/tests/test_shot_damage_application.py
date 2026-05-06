@@ -37,7 +37,6 @@ class TestShotDamageApplication:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={100: critter},
             pending_shots=[shot],
         )
@@ -79,7 +78,6 @@ class TestShotDamageApplication:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={100: critter},
             pending_shots=[shot],
         )
@@ -122,7 +120,6 @@ class TestShotDamageApplication:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={100: critter},
             pending_shots=[shot],
         )
@@ -157,7 +154,6 @@ class TestShotDamageApplication:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={100: critter},
             pending_shots=[shot],
         )
@@ -196,7 +192,6 @@ class TestShotDamageApplication:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={100: critter},
             pending_shots=[shot],
         )
@@ -224,7 +219,6 @@ class TestShotDamageApplication:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={},  # No critters
             pending_shots=[shot],
         )
@@ -261,7 +255,6 @@ class TestBurnDamageOverTime:
         battle = BattleState(
             bid=1,
             defender=None,
-            attacker=None,
             critters={100: critter},
         )
         

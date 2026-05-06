@@ -24,7 +24,6 @@ __all__ = [
     "_create_battle_observer_broadcast_handler",
     "_abort_battle_setup",
     "_create_battle_start_handler",
-    "_on_battle_start_requested",
     "_sync_battle_structures",
 ]
 
@@ -62,19 +61,40 @@ def _get_active_battles() -> "dict[int, BattleState]":
 async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) -> None:
     """Send current battle state to an observer.
 
-    This sends status updates during IN_SIEGE and IN_BATTLE phases.
+    When a live BattleState exists, triggers a broadcast to all observers so the
+    caller receives an up-to-date battle_update with all critters and all armies.
+    Falls back to a lightweight battle_status for siege phase.
     """
     svc = _svc()
     assert svc.empire_service is not None
 
-    # Get defender and attacker empires
+    _active_battles = _get_active_battles()
+    battle = _active_battles.get(attack.defender_uid)
+
+    # In-battle: trigger a real broadcast from BattleService so the observer
+    # immediately receives a battle_update with the full critter pool.
+    if battle is not None and not battle.is_finished and attack.phase == AttackPhase.IN_BATTLE:
+        from gameserver.engine.battle_service import BattleService
+        items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+        battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None)
+
+        async def _send_fn(uid: int, data: dict[str, Any]) -> bool:
+            if svc.server:
+                return bool(await svc.server.send_to(uid, data))
+            return False
+
+        # Temporarily add observer so _broadcast delivers to them
+        battle.observer_uids.add(observer_uid)
+        await battle_svc._broadcast(battle, _send_fn)
+        return
+
+    # Siege phase or no active battle: send a lightweight status message
     defender_empire = svc.empire_service.get(attack.defender_uid)
     attacker_empire = svc.empire_service.get(attack.attacker_uid)
 
     if not defender_empire or not attacker_empire:
         return
 
-    # Get attacking army
     attacking_army = None
     for army in attacker_empire.armies:
         if army.aid == attack.army_aid:
@@ -84,30 +104,13 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
     if not attacking_army:
         return
 
-    # Prepare wave information
-    waves_info = []
-    for i, wave in enumerate(attacking_army.waves):
-        waves_info.append({
-            "wave_id": wave.wave_id,  # Use actual wave_id from wave object, not index
-            "critter_iid": wave.iid,
-            "slots": wave.slots,
-        })
-
-    # Get battle state (if battle is running)
-    _active_battles = _get_active_battles()
-    battle = _active_battles.get(attack.defender_uid)
-
-    # Determine phase-specific timing and status text
     if attack.phase == AttackPhase.IN_SIEGE:
-        time_since_start_s = -attack.siege_remaining_seconds  # Negative = countdown to battle start
+        time_since_start_s = -attack.siege_remaining_seconds
     elif attack.phase == AttackPhase.IN_BATTLE and battle:
         time_since_start_s = battle.elapsed_ms / 1000.0
     else:
-        # TRAVELLING, FINISHED, or IN_BATTLE without active battle
         time_since_start_s = 0
-    status = attack.phase.value
 
-    # Build wave_info for first unstarted wave
     svc_items = svc.upgrade_provider.items if svc.upgrade_provider else {}
     wave_info = None
     if attacking_army and attacking_army.waves:
@@ -127,7 +130,6 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
                 }
                 break
 
-    # Resolve attacker username from DB
     attacker_username = ""
     if svc.database is not None:
         for _urow3 in await svc.database.list_users():
@@ -135,11 +137,10 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
                 attacker_username = _urow3["username"]
                 break
 
-    # Send battle status update
     status_msg = {
         "type": "battle_status",
         "attack_id": attack.attack_id,
-        "phase": status,
+        "phase": attack.phase.value,
         "defender_uid": attack.defender_uid,
         "defender_name": defender_empire.name,
         "attacker_uid": attack.attacker_uid,
@@ -158,7 +159,8 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
 async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) -> None:
     """Send battle_setup message to initialize the battle view.
 
-    This includes the defender's map, structures, and paths.
+    If an active BattleState exists for the defender, uses its data (all attacker armies).
+    Otherwise falls back to building setup from the defender's map directly.
     """
     from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
     from gameserver.models.hex import HexCoord
@@ -166,7 +168,35 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
     svc = _svc()
     assert svc.empire_service is not None
 
-    # Get defender empire (owner of the map)
+    # Prefer the live BattleState — it has all armies and the canonical structures
+    _active_battles = _get_active_battles()
+    battle = _active_battles.get(attack.defender_uid)
+    if battle is not None and not battle.is_finished:
+        setup_msg = {
+            "type": "battle_setup",
+            "bid": battle.bid,
+            "replay_key": battle.recorder.replay_key if battle.recorder else "",
+            "defender_uid": attack.defender_uid,
+            "attacker_uid": battle.attacker_uids[0] if battle.attacker_uids else attack.attacker_uid,
+            "attacker_uids": list(battle.attacker_uids),
+            "defender_name": battle.defender.name if battle.defender else "",
+            "attacker_name": (svc.empire_service.get(battle.attacker_uids[0]).name
+                              if battle.attacker_uids and svc.empire_service else ""),
+            "tiles": battle.defender.hex_map if battle.defender else {},
+            "structures": [
+                {"sid": s.sid, "iid": s.iid, "q": s.position.q, "r": s.position.r,
+                 "damage": s.damage, "range": s.range, "select": s.select}
+                for s in battle.structures.values()
+            ],
+            "path": [{"q": h.q, "r": h.r} for h in battle.critter_path],
+        }
+        if svc.server:
+            await svc.server.send_to(observer_uid, setup_msg)
+            log.info("_send_battle_setup: sent to uid=%d (battle bid=%d, %d attackers)",
+                     observer_uid, battle.bid, len(battle.attacker_uids))
+        return
+
+    # Fallback: no active battle yet (still in siege) — build from defender map
     defender_empire = svc.empire_service.get(attack.defender_uid)
     if not defender_empire:
         log.warning("_send_battle_setup: defender %d not found", attack.defender_uid)
@@ -177,32 +207,23 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
         return
 
     tiles = defender_empire.hex_map
-
-    # Compute path using the canonical pathfinder (traverses empty, path, spawnpoint, castle)
     normalized = {k: _tile_type(v) for k, v in tiles.items()}
     computed_path = find_path_from_spawn_to_castle(normalized)
     hex_path = computed_path if computed_path else []
 
-    # ── Get structures ───────────────────────────────────
-    # Load structures from hex_map tiles and create Structure objects
     structures_dict = {}
     if defender_empire.structures:
         structures_dict = dict(defender_empire.structures)
 
-    # Also load structures from hex_map tiles (for backwards compatibility)
     from gameserver.models.structure import structure_from_item
     structure_sid = 1
     items_dict = svc.upgrade_provider.items if svc.upgrade_provider else {}
     for tile_key, tile_val in tiles.items():
-        # Check if tile_type is a structure (not path, castle, etc.)
         tile_type = _tile_type(tile_val)
         if tile_type not in ("empty", "path", "spawnpoint", "castle", "blocked", "void"):
-            # This is a structure tile, load stats from item provider
             item = items_dict.get(tile_type)
             if item:
-                # Parse q,r from key "q,r"
                 q, r = map(int, tile_key.split(","))
-                # Create Structure object with stats from item config
                 structure = structure_from_item(
                     sid=structure_sid, iid=tile_type, position=HexCoord(q, r),
                     item=item, select_override=_tile_select(tile_val, getattr(item, "select", "first")),
@@ -212,23 +233,16 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
                 log.debug("[_send_battle_setup] Loaded structure sid=%d iid=%s at (%d,%d)",
                          structure.sid, structure.iid, q, r)
 
-    # ── Send battle_setup ────────────────────────────────
     setup_msg = {
         "type": "battle_setup",
         "bid": attack.attack_id,
         "defender_uid": attack.defender_uid,
         "attacker_uid": attack.attacker_uid,
+        "attacker_uids": [attack.attacker_uid],
         "tiles": tiles,
         "structures": [
-            {
-                "sid": s.sid,
-                "iid": s.iid,
-                "q": s.position.q,
-                "r": s.position.r,
-                "damage": s.damage,
-                "range": s.range,
-                "select": s.select,
-            }
+            {"sid": s.sid, "iid": s.iid, "q": s.position.q, "r": s.position.r,
+             "damage": s.damage, "range": s.range, "select": s.select}
             for s in structures_dict.values()
         ],
         "path": [{"q": h.q, "r": h.r} for h in hex_path],
@@ -260,7 +274,7 @@ def _evict_observer_from_all(
             log.debug("_evict_observer_from_all: uid=%d removed from attack %d observers", uid, a.attack_id)
 
     for defender_uid, battle in active_battles.items():
-        if exclude_attack_id is not None and battle.attack_id == exclude_attack_id:
+        if exclude_attack_id is not None and exclude_attack_id in battle.attack_ids:
             continue
         if uid in battle.observer_uids:
             battle.observer_uids.discard(uid)
@@ -404,5 +418,4 @@ from gameserver.network.handlers.battle_task import (  # noqa: F401, E402
     _create_battle_observer_broadcast_handler,
     _abort_battle_setup,
     _create_battle_start_handler,
-    _on_battle_start_requested,
 )

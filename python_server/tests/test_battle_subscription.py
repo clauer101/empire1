@@ -31,8 +31,7 @@ def _make_battle(bid: int, defender_uid: int, attack_id: int, observers: set[int
     return BattleState(
         bid=bid,
         defender=None,
-        attacker=None,
-        attack_id=attack_id,
+        attack_ids=[attack_id],
         observer_uids=set(observers),
     )
 

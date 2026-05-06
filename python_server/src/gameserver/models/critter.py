@@ -75,6 +75,9 @@ class Critter:
     # can still intercept it before it deals castle damage.
     reached_goal: bool = False
 
+    # Which attacker spawned this critter (for multi-attacker loot attribution)
+    owner_uid: int = 0
+
     # Visual scale (from ItemDetails.scale)
     scale: float = 1.0
 

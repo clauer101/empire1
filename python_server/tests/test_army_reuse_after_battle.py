@@ -41,8 +41,9 @@ def _make_battle(waves: list[CritterWave]) -> tuple[BattleState, BattleService]:
     battle = BattleState(
         bid=42,
         defender=defender,
-        attacker=attacker,
-        army=army,
+        attacker_uids=[attacker.uid],
+        armies={1: army},
+        attacker_gains={attacker.uid: {}},
         structures={},
         critter_path=[HexCoord(0, 0), HexCoord(1, 0), HexCoord(2, 0)],
     )
@@ -101,7 +102,7 @@ class TestResetWavesAllowsReuse:
             w.next_critter_ms = 0
 
         battle, svc = _make_battle(army.waves)
-        battle.army = army
+        battle.armies = {1: army}
 
         spawned_ever = 0
         for _ in range(500):

@@ -353,12 +353,17 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
         critter_path = [HexCoord(int(c.get("q", 0)), int(c.get("r", 0))) 
                         for c in d.get("critter_path", [])]
 
+    attacker_uids = [int(u) for u in d.get("attacker_uids", [])]
+    attack_ids_raw = d.get("attack_ids", [])
+    if not attack_ids_raw and d.get("attack_id") is not None:
+        attack_ids_raw = [d["attack_id"]]
+    attack_ids = [int(a) for a in attack_ids_raw]
+
     return BattleState(
         bid=d["bid"],
-        defender=None,  # Will be loaded separately
-        attacker=None,  # Will be loaded separately
-        attack_id=d.get("attack_id"),
-        army=None,  # Will be loaded separately
+        defender=None,  # resolved by caller
+        attacker_uids=attacker_uids,
+        attack_ids=attack_ids,
         critters=critters,
         structures=structures,
         pending_shots=pending_shots,

@@ -60,7 +60,7 @@ def _critter(cid: int = 1, health: float = 100.0, speed: float = 2.0,
 def _battle(*critters: Critter, structures: dict | None = None,
             pending_shots: list | None = None) -> BattleState:
     return BattleState(
-        bid=1, defender=None, attacker=None,
+        bid=1, defender=None, 
         critters={c.cid: c for c in critters},
         structures=structures or {},
         pending_shots=pending_shots or [],
@@ -508,7 +508,7 @@ class TestTowerEmpireModifiers:
         c.path_progress = 0.1
         struct = self._basic_structure(damage=10.0)
         defender = _empire(item_upgrades={"BASIC_TOWER": {"damage": 1}})
-        b = BattleState(bid=1, defender=defender, attacker=None,
+        b = BattleState(bid=1, defender=defender, 
                         critters={c.cid: c}, structures={struct.sid: struct})
 
         svc._step_towers(b, 50.0)
@@ -530,7 +530,7 @@ class TestTowerEmpireModifiers:
         struct = self._basic_structure(rng=0.3)
 
         # Without upgrade: no shot
-        b_no = BattleState(bid=1, defender=_empire(), attacker=None,
+        b_no = BattleState(bid=1, defender=_empire(), 
                            critters={c.cid: c}, structures={struct.sid: struct})
         svc._step_towers(b_no, 50.0)
         assert len(b_no.pending_shots) == 0, "Tower must not fire without upgrade"
@@ -540,7 +540,7 @@ class TestTowerEmpireModifiers:
         c2.path_progress = 0.1
         struct2 = self._basic_structure(rng=0.3)
         defender = _empire(item_upgrades={"BASIC_TOWER": {"range": 1}})
-        b_mod = BattleState(bid=2, defender=defender, attacker=None,
+        b_mod = BattleState(bid=2, defender=defender, 
                             critters={c2.cid: c2}, structures={struct2.sid: struct2})
         svc._step_towers(b_mod, 50.0)
         assert len(b_mod.pending_shots) == 1, "Tower should fire with range upgrade"
@@ -559,7 +559,7 @@ class TestTowerEmpireModifiers:
         # No upgrade → no shot
         struct1 = self._basic_structure(reload_ms=2000.0)
         struct1.reload_remaining_ms = 500.0
-        b_no = BattleState(bid=1, defender=_empire(), attacker=None,
+        b_no = BattleState(bid=1, defender=_empire(), 
                            critters={c.cid: c}, structures={struct1.sid: struct1})
         svc._step_towers(b_no, 300.0)
         assert len(b_no.pending_shots) == 0, "Tower must not fire without upgrade"
@@ -570,7 +570,7 @@ class TestTowerEmpireModifiers:
         struct2 = self._basic_structure(reload_ms=2000.0)
         struct2.reload_remaining_ms = 500.0
         defender = _empire(item_upgrades={"BASIC_TOWER": {"reload": 1}})
-        b_mod = BattleState(bid=2, defender=defender, attacker=None,
+        b_mod = BattleState(bid=2, defender=defender, 
                             critters={c2.cid: c2}, structures={struct2.sid: struct2})
         svc._step_towers(b_mod, 300.0)
         assert len(b_mod.pending_shots) == 1, "Tower should fire with reload upgrade"
