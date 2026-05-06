@@ -205,7 +205,7 @@ def _serialize_spy_army(spy: SpyArmy) -> dict[str, Any]:
     }
 
 
-def _serialize_editor_hex_map(hex_map: dict) -> list[dict[str, Any]]:
+def _serialize_editor_hex_map(hex_map: dict[str, Any]) -> list[dict[str, Any]]:
     """Convert editor hex_map from dict format {"q,r": "type"} to list format.
     
     Converts the internal representation used by composer.js to the

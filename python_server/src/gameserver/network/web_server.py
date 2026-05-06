@@ -12,6 +12,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 import yaml
 from fastapi import FastAPI, Request, Body
@@ -74,7 +75,7 @@ NON_TOWER = {"castle", "spawnpoint", "path", "empty", "blocked", "void", ""}
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 
-def _parse_ai_waves():
+def _parse_ai_waves() -> list[dict[str, Any]]:
     raw = AI_WAVES_PATH.read_text(encoding="utf-8")
     data = yaml.safe_load(raw)
     waves = data.get("armies", [])
@@ -106,7 +107,7 @@ def _parse_yaml_era_groups(path: Path) -> dict[str, list[str]]:
     return result
 
 
-def _parse_era_items() -> dict:
+def _parse_era_items() -> dict[str, list[str]]:
     result: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
     for path in (BUILDINGS_PATH, KNOWLEDGE_PATH):
         for era, iids in _parse_yaml_era_groups(path).items():
@@ -114,7 +115,7 @@ def _parse_era_items() -> dict:
     return result
 
 
-def _build_era_map() -> dict:
+def _build_era_map() -> dict[str, Any]:
     critters_by_era = _parse_yaml_era_groups(CRITTERS_PATH)
     structures_by_era = _parse_yaml_era_groups(STRUCTURES_PATH)
     bk: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
@@ -130,7 +131,7 @@ def _build_era_map() -> dict:
     }
 
 
-def _write_ai_waves(waves_with_era: list[dict]) -> str:
+def _write_ai_waves(waves_with_era: list[dict[str, Any]]) -> str:
     header = (
         "# ============================================================\n"
         "# AI Hardcoded Wave Definitions\n"
@@ -170,7 +171,7 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
         "\n"
         "armies:\n"
     )
-    groups: dict[str, list] = {}
+    groups: dict[str, list[dict[str, Any]]] = {}
     for w in waves_with_era:
         era = w.get("era", "stone")
         groups.setdefault(era, []).append(w)
@@ -208,7 +209,7 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _parse_items_full(path: Path) -> list[dict]:
+def _parse_items_full(path: Path) -> list[dict[str, Any]]:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     result = []
     for iid, item in data.items():
@@ -226,7 +227,7 @@ def _parse_items_full(path: Path) -> list[dict]:
     return result
 
 
-def _save_efforts(path: Path, updates: dict) -> None:
+def _save_efforts(path: Path, updates: dict[str, Any]) -> None:
     lines = path.read_text(encoding="utf-8").split("\n")
     result = []
     current_iid = None
@@ -247,7 +248,7 @@ def _save_efforts(path: Path, updates: dict) -> None:
     path.write_text("\n".join(result), encoding="utf-8")
 
 
-def _save_gold_costs(path: Path, updates: dict) -> None:
+def _save_gold_costs(path: Path, updates: dict[str, Any]) -> None:
     lines = path.read_text(encoding="utf-8").split("\n")
     result = []
     current_iid = None
@@ -299,7 +300,7 @@ def _resolve_sprite(web_dir: Path, animation: str) -> str:
     return f"{folder}/{name}.png"
 
 
-def _parse_critters(web_dir: Path, path: Path) -> list[dict]:
+def _parse_critters(web_dir: Path, path: Path) -> list[dict[str, Any]]:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     result = []
     for iid, item in data.items():
@@ -323,7 +324,7 @@ def _parse_critters(web_dir: Path, path: Path) -> list[dict]:
     return result
 
 
-def _parse_structures(path: Path) -> list[dict]:
+def _parse_structures(path: Path) -> list[dict[str, Any]]:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     result = []
     for iid, item in data.items():
@@ -344,7 +345,7 @@ def _parse_structures(path: Path) -> list[dict]:
     return result
 
 
-def _fmt_yaml(v) -> str:
+def _fmt_yaml(v: Any) -> str:
     if isinstance(v, bool):
         return "true" if v else "false"
     if isinstance(v, float) and v == int(v):
@@ -354,7 +355,7 @@ def _fmt_yaml(v) -> str:
     return str(v)
 
 
-def _patch_yaml_inplace(path: Path, changes: dict) -> None:
+def _patch_yaml_inplace(path: Path, changes: dict[str, Any]) -> None:
     lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
     key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
     key_positions: dict[str, int] = {}
@@ -370,7 +371,7 @@ def _patch_yaml_inplace(path: Path, changes: dict) -> None:
                 return pos
         return len(lines)
 
-    def fmt(v) -> str:
+    def fmt(v: Any) -> str:
         if isinstance(v, bool):
             return "true" if v else "false"
         if isinstance(v, int):
@@ -408,7 +409,7 @@ def _patch_yaml_inplace(path: Path, changes: dict) -> None:
     path.write_text("".join(lines), encoding="utf-8")
 
 
-def _add_effect_to_yaml(path: Path, iid: str, eff_key: str, value) -> bool:
+def _add_effect_to_yaml(path: Path, iid: str, eff_key: str, value: Any) -> bool:
     lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
     key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
     key_positions: dict[str, int] = {}
@@ -537,7 +538,7 @@ def _set_era_field_in_yaml(path: Path, iid: str, era: str) -> None:
     path.write_text("".join(lines), encoding="utf-8")
 
 
-def _get_map_power_upgrades():
+def _get_map_power_upgrades() -> Any:
     global _map_power_upgrades
     if _map_power_upgrades is None:
         from gameserver.main import load_configuration
@@ -562,7 +563,7 @@ def _get_structure_era_map() -> dict[str, str]:
     return _structure_era_map
 
 
-def _compute_map_age_pct(m: dict) -> dict[str, float]:
+def _compute_map_age_pct(m: dict[str, Any]) -> dict[str, float]:
     tower_era = _get_structure_era_map()
     counts: dict[str, int] = {}
     for t in (m.get("hex_map") or []):
@@ -580,7 +581,7 @@ def _compute_map_age_pct(m: dict) -> dict[str, float]:
     return {era: round(cnt / total * 100, 1) for era, cnt in counts.items()}
 
 
-def _compute_map_defense_power(m: dict) -> float:
+def _compute_map_defense_power(m: dict[str, Any]) -> float:
     from gameserver.engine.power_service import defense_power
     from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
     from gameserver.models.empire import Empire
@@ -605,7 +606,7 @@ def _compute_map_defense_power(m: dict) -> float:
 class NoCacheStaticFiles(StaticFiles):
     """StaticFiles that sets no-cache headers on every response."""
 
-    async def get_response(self, path: str, scope):
+    async def get_response(self, path: str, scope: Any) -> Any:
         response = await super().get_response(path, scope)
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
         response.headers["Pragma"] = "no-cache"
@@ -633,7 +634,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         parse_slot_by_iid as _parse_slot_by_iid,
     )
 
-    def _generate_army(era: str, seed: int) -> dict:
+    def _generate_army(era: str, seed: int) -> dict[str, Any]:
         raw_cfg = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
         ai_generator_cfg = raw_cfg.get("ai_generator", {})
         critter_era_groups = _parse_critter_era_groups(CRITTERS_PATH)
@@ -648,18 +649,18 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return {"era": era, "seed": seed, "name": result["name"], "waves": result["waves"]}
 
     @app.get("/health")
-    async def health_check():
+    async def health_check() -> Any:
         return {"status": "ok", "service": "Relics & Rockets"}
 
     @app.get("/api/ai-waves")
-    async def get_ai_waves():
+    async def get_ai_waves() -> Any:
         try:
             return JSONResponse({"waves": _parse_ai_waves()})
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/ai-waves")
-    async def save_ai_waves(request: Request):
+    async def save_ai_waves(request: Request) -> Any:
         try:
             body = await request.json()
             AI_WAVES_PATH.write_text(_write_ai_waves(body.get("waves", [])), encoding="utf-8")
@@ -668,21 +669,21 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/era-items")
-    async def get_era_items():
+    async def get_era_items() -> Any:
         try:
             return JSONResponse({"eras": _parse_era_items()})
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/era-map")
-    async def get_era_map():
+    async def get_era_map() -> Any:
         try:
             return JSONResponse(_build_era_map())
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/prices")
-    async def get_prices():
+    async def get_prices() -> Any:
         try:
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
             return JSONResponse(raw.get("prices", {}))
@@ -690,7 +691,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/prices")
-    async def save_prices(request: Request):
+    async def save_prices(request: Request) -> Any:
         try:
             prices = await request.json()
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
@@ -704,7 +705,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/ai-generator")
-    async def get_ai_generator():
+    async def get_ai_generator() -> Any:
         try:
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
             return JSONResponse(raw.get("ai_generator", {}))
@@ -712,7 +713,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/ai-generator")
-    async def save_ai_generator(request: Request):
+    async def save_ai_generator(request: Request) -> Any:
         try:
             data = await request.json()
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
@@ -726,7 +727,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/ai-generator/generate")
-    async def generate_ai_army(era: str, seed: int):
+    async def generate_ai_army(era: str, seed: int) -> Any:
         try:
             return JSONResponse(_generate_army(era, seed))
         except ValueError as exc:
@@ -735,15 +736,15 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/buildings")
-    async def get_buildings():
+    async def get_buildings() -> Any:
         return JSONResponse(_parse_items_full(BUILDINGS_PATH))
 
     @app.get("/api/knowledge")
-    async def get_knowledge():
+    async def get_knowledge() -> Any:
         return JSONResponse(_parse_items_full(KNOWLEDGE_PATH))
 
     @app.post("/api/buildings")
-    async def save_buildings(request: Request):
+    async def save_buildings(request: Request) -> Any:
         try:
             _save_efforts(BUILDINGS_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -751,7 +752,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/knowledge")
-    async def save_knowledge(request: Request):
+    async def save_knowledge(request: Request) -> Any:
         try:
             _save_efforts(KNOWLEDGE_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -759,7 +760,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/buildings-gold")
-    async def save_buildings_gold(request: Request):
+    async def save_buildings_gold(request: Request) -> Any:
         try:
             _save_gold_costs(BUILDINGS_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -767,7 +768,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/knowledge-gold")
-    async def save_knowledge_gold(request: Request):
+    async def save_knowledge_gold(request: Request) -> Any:
         try:
             _save_gold_costs(KNOWLEDGE_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -775,61 +776,61 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/critter-stats")
-    async def get_critter_stats():
+    async def get_critter_stats() -> Any:
         return JSONResponse(_parse_critters(web_dir, CRITTERS_PATH))
 
     @app.patch("/api/critter-stats")
-    async def patch_critter_stats(changes: dict = Body(...)):
+    async def patch_critter_stats(changes: dict[str, Any] = Body(...)) -> Any:
         _patch_yaml_inplace(CRITTERS_PATH, changes)
         return {"ok": True}
 
     @app.patch("/api/critter-era")
-    async def patch_critter_era(changes: dict = Body(...)):
+    async def patch_critter_era(changes: dict[str, Any] = Body(...)) -> Any:
         for iid, era in changes.items():
             _set_era_field_in_yaml(CRITTERS_PATH, str(iid), str(era))
         return {"ok": True}
 
     @app.get("/api/structure-stats")
-    async def get_structure_stats():
+    async def get_structure_stats() -> Any:
         return JSONResponse(_parse_structures(STRUCTURES_PATH))
 
     @app.patch("/api/structure-stats")
-    async def patch_structure_stats(changes: dict = Body(...)):
+    async def patch_structure_stats(changes: dict[str, Any] = Body(...)) -> Any:
         _patch_yaml_inplace(STRUCTURES_PATH, changes)
         return {"ok": True}
 
     @app.patch("/api/building-effects")
-    async def patch_building_effects(changes: dict = Body(...)):
+    async def patch_building_effects(changes: dict[str, Any] = Body(...)) -> Any:
         _patch_yaml_inplace(BUILDINGS_PATH, changes)
         return {"ok": True}
 
     @app.patch("/api/knowledge-effects")
-    async def patch_knowledge_effects(changes: dict = Body(...)):
+    async def patch_knowledge_effects(changes: dict[str, Any] = Body(...)) -> Any:
         _patch_yaml_inplace(KNOWLEDGE_PATH, changes)
         return {"ok": True}
 
     @app.post("/api/building-effects")
-    async def add_building_effect(body: dict = Body(...)):
+    async def add_building_effect(body: dict[str, Any] = Body(...)) -> Any:
         ok = _add_effect_to_yaml(BUILDINGS_PATH, body["iid"], body["effect"], body["value"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.post("/api/knowledge-effects")
-    async def add_knowledge_effect(body: dict = Body(...)):
+    async def add_knowledge_effect(body: dict[str, Any] = Body(...)) -> Any:
         ok = _add_effect_to_yaml(KNOWLEDGE_PATH, body["iid"], body["effect"], body["value"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.post("/api/building-effects/remove")
-    async def remove_building_effect(body: dict = Body(...)):
+    async def remove_building_effect(body: dict[str, Any] = Body(...)) -> Any:
         ok = _remove_effect_from_yaml(BUILDINGS_PATH, body["iid"], body["effect"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.post("/api/knowledge-effects/remove")
-    async def remove_knowledge_effect(body: dict = Body(...)):
+    async def remove_knowledge_effect(body: dict[str, Any] = Body(...)) -> Any:
         ok = _remove_effect_from_yaml(KNOWLEDGE_PATH, body["iid"], body["effect"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.patch("/api/item-requirements")
-    async def patch_item_requirements(body: dict = Body(...)):
+    async def patch_item_requirements(body: dict[str, Any] = Body(...)) -> Any:
         results = {}
         yaml_files = [BUILDINGS_PATH, KNOWLEDGE_PATH, CRITTERS_PATH, STRUCTURES_PATH]
         raw_by_path = {p: yaml.safe_load(p.read_text(encoding="utf-8")) or {} for p in yaml_files}
@@ -847,8 +848,8 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return {"results": results}
 
     @app.patch("/api/tower-effects/{iid}")
-    async def patch_tower_effects(iid: str, body: dict = Body(...)):
-        new_effects: dict = body.get("effects", {})
+    async def patch_tower_effects(iid: str, body: dict[str, Any] = Body(...)) -> Any:
+        new_effects: dict[str, Any] = body.get("effects", {})
         lines = STRUCTURES_PATH.read_text(encoding="utf-8").splitlines()
         iid_idx = next((i for i, ln in enumerate(lines) if ln.startswith(f"{iid}:")), None)
         if iid_idx is None:
@@ -872,7 +873,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"error": "effects line not found"}, status_code=500)
 
     @app.get("/api/artefacts")
-    async def get_artefacts():
+    async def get_artefacts() -> Any:
         try:
             raw = yaml.safe_load(ARTEFACTS_PATH.read_text(encoding="utf-8")) or {}
             result = [
@@ -885,7 +886,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/artefacts")
-    async def save_artefacts(request: Request):
+    async def save_artefacts(request: Request) -> Any:
         try:
             items = await request.json()
             raw = {}
@@ -905,8 +906,8 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.get("/api/admin/catalog")
-    async def get_catalog():
-        def _load(path):
+    async def get_catalog() -> Any:
+        def _load(path: Path) -> dict[str, Any]:
             with open(path) as f:
                 raw = yaml.safe_load(f) or {}
             return {
@@ -916,7 +917,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"buildings": _load(BUILDINGS_PATH), "knowledge": _load(KNOWLEDGE_PATH)})
 
     @app.get("/api/sprite-files")
-    async def list_sprite_files():
+    async def list_sprite_files() -> Any:
         tools_dir = web_dir / "tools"
         files = sorted(
             f.name for f in tools_dir.iterdir()
@@ -926,7 +927,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"files": files})
 
     @app.get("/api/maps")
-    async def list_maps():
+    async def list_maps() -> Any:
         maps_dir = web_dir / "assets" / "sprites" / "maps"
         if not maps_dir.is_dir():
             return JSONResponse({"maps": []})
@@ -939,7 +940,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"maps": files})
 
     @app.get("/api/critters")
-    async def list_critters():
+    async def list_critters() -> Any:
         critters_dir = web_dir / "assets" / "sprites" / "critters"
         if not critters_dir.is_dir():
             return JSONResponse({"critters": []})
@@ -961,7 +962,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"critters": result})
 
     @app.get("/api/saved-maps")
-    async def list_saved_maps():
+    async def list_saved_maps() -> Any:
         if not _SAVED_MAPS_PATH.exists():
             return JSONResponse({"maps": [], "life": {}})
         data = yaml.safe_load(_SAVED_MAPS_PATH.read_text()) or {}
@@ -984,7 +985,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"maps": names, "life": life, "power": power, "age_pct": age_pct})
 
     @app.put("/api/tools/map-life")
-    async def set_map_life(payload: dict):
+    async def set_map_life(payload: dict[str, Any]) -> Any:
         map_name = payload.get("map_name", "")
         life = payload.get("life")
         if not map_name or life is None:
@@ -1008,7 +1009,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"ok": True})
 
     @app.get("/api/tools/sim-map")
-    async def sim_map(map_name: str, era: str, n: int):
+    async def sim_map(map_name: str, era: str, n: int) -> Any:
         import asyncio
         import tempfile
         script = Path(__file__).resolve().parent.parent.parent.parent.parent / "sim_map.py"
@@ -1016,7 +1017,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         out_fd, out_path = tempfile.mkstemp(suffix=".jsonl", prefix="sim_map_")
         os.close(out_fd)
 
-        async def generate():
+        async def generate() -> Any:
             proc = await asyncio.create_subprocess_exec(
                 str(python), str(script), map_name, era, str(n), out_path,
                 stdout=asyncio.subprocess.DEVNULL,

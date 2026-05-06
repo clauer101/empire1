@@ -10,6 +10,7 @@ Provides async database operations for:
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import aiosqlite
 
@@ -75,7 +76,7 @@ class Database:
 
     # -- User operations -------------------------------------------------
 
-    async def get_user_by_uid(self, uid: int) -> dict | None:
+    async def get_user_by_uid(self, uid: int) -> dict[str, Any] | None:
         """Look up a user by UID."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -87,7 +88,7 @@ class Database:
                 return None
             return {"uid": row[0], "username": row[1], "email": row[2], "empire_name": row[3]}
 
-    async def get_user(self, username: str) -> dict | None:
+    async def get_user(self, username: str) -> dict[str, Any] | None:
         """Look up a user by username (case-insensitive)."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -161,7 +162,7 @@ class Database:
         )
         await self._conn.commit()
 
-    async def list_users(self) -> list[dict]:
+    async def list_users(self) -> list[dict[str, Any]]:
         """Return all user accounts (without password hashes)."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -195,7 +196,7 @@ class Database:
 
     # -- Message operations ----------------------------------------------
 
-    async def send_message(self, from_uid: int, to_uid: int, body: str) -> dict:
+    async def send_message(self, from_uid: int, to_uid: int, body: str) -> dict[str, Any]:
         """Store a new message and return it as a dict."""
         assert self._conn is not None
         read = 1 if from_uid == 0 else 0  # system/AI messages pre-read
@@ -213,7 +214,7 @@ class Database:
             row = await cursor.fetchone()
         return self._msg_row_to_dict(row)
 
-    async def get_inbox(self, uid: int) -> list[dict]:
+    async def get_inbox(self, uid: int) -> list[dict[str, Any]]:
         """Return all messages received by uid, newest first."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -223,7 +224,7 @@ class Database:
             rows = await cursor.fetchall()
         return [self._msg_row_to_dict(r) for r in rows]
 
-    async def get_sent(self, uid: int) -> list[dict]:
+    async def get_sent(self, uid: int) -> list[dict[str, Any]]:
         """Return all messages sent by uid, newest first."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -255,7 +256,7 @@ class Database:
             row = await cursor.fetchone()
         return row[0] if row else 0
 
-    async def get_global(self, limit: int = 200) -> list[dict]:
+    async def get_global(self, limit: int = 200) -> list[dict[str, Any]]:
         """Return global chat messages (to_uid=0, from real players), oldest first."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -266,7 +267,7 @@ class Database:
             rows = await cursor.fetchall()
         return list(reversed([self._msg_row_to_dict(r) for r in rows]))
 
-    async def get_private_for(self, uid: int) -> list[dict]:
+    async def get_private_for(self, uid: int) -> list[dict[str, Any]]:
         """Return private messages where uid is sender or receiver (no global, no battle reports)."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -277,7 +278,7 @@ class Database:
             rows = await cursor.fetchall()
         return [self._msg_row_to_dict(r) for r in rows]
 
-    async def get_battle_reports_for(self, uid: int) -> list[dict]:
+    async def get_battle_reports_for(self, uid: int) -> list[dict[str, Any]]:
         """Return system/battle-report messages sent to uid (from_uid=0)."""
         assert self._conn is not None
         async with self._conn.execute(
@@ -351,7 +352,7 @@ class Database:
         log.info("MessageStore: migrated %d messages from %s", count, yaml_path)
         return count
 
-    def _msg_row_to_dict(self, row) -> dict:
+    def _msg_row_to_dict(self, row: Any) -> dict[str, Any]:
         return {
             "id": row[0],
             "from_uid": row[1],
@@ -368,14 +369,14 @@ class Database:
         # TODO: implement
         pass
 
-    async def get_rankings(self, limit: int = 20) -> list[dict]:
+    async def get_rankings(self, limit: int = 20) -> list[dict[str, Any]]:
         """Get top rankings."""
         # TODO: implement
         return []
 
     # -- Push subscription operations ------------------------------------
 
-    async def save_push_subscription(self, uid: int, subscription: dict) -> None:
+    async def save_push_subscription(self, uid: int, subscription: dict[str, Any]) -> None:
         assert self._conn is not None
         import json
         endpoint = subscription.get("endpoint", "")
@@ -393,7 +394,7 @@ class Database:
         )
         await self._conn.commit()
 
-    async def get_push_subscriptions(self, uid: int) -> list[dict]:
+    async def get_push_subscriptions(self, uid: int) -> list[dict[str, Any]]:
         assert self._conn is not None
         import json
         async with self._conn.execute(

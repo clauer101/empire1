@@ -10,7 +10,7 @@ The arrival logic (siege/battle) is not yet implemented.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from gameserver.engine.empire_service import EmpireService
@@ -58,7 +58,7 @@ class AttackService:
 
     # -- Era travel offset -----------------------------------------------
 
-    def _era_travel_offset(self, empire) -> float:
+    def _era_travel_offset(self, empire: Any) -> float:
         """Return the travel offset for the attacker's current era.
 
         Iterates eras in order; the highest era where at least one knowledge

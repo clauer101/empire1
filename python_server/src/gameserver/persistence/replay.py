@@ -97,14 +97,16 @@ def load_replay(key: str, replay_dir: str = DEFAULT_REPLAY_DIR) -> dict[str, Any
     gz_path = d / f"{key}.json.gz"
     if gz_path.exists():
         try:
-            return json.loads(gzip.decompress(gz_path.read_bytes()).decode("utf-8"))
+            result: dict[str, Any] = json.loads(gzip.decompress(gz_path.read_bytes()).decode("utf-8"))
+            return result
         except Exception:
             log.exception("Failed to load replay %s", gz_path)
             return None
     json_path = d / f"{key}.json"
     if json_path.exists():
         try:
-            return json.loads(json_path.read_text(encoding="utf-8"))
+            result_json: dict[str, Any] = json.loads(json_path.read_text(encoding="utf-8"))
+            return result_json
         except Exception:
             log.exception("Failed to load replay %s", json_path)
             return None

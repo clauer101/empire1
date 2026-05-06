@@ -22,7 +22,7 @@ def make_router(services: "Services") -> APIRouter:  # noqa: ARG001
         return {"replays": replays}
 
     @router.get("/api/replays/{key}")
-    async def get_replay(key: str, uid: int = Depends(get_current_uid)):
+    async def get_replay(key: str, uid: int = Depends(get_current_uid)) -> Any:
         """Get a full battle replay by replay key.
 
         Returns raw gzip bytes for .json.gz files (client decompresses via

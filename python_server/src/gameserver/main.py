@@ -25,7 +25,7 @@ import sys
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from gameserver.engine.ai_service import AIService
 from gameserver.engine.army_service import ArmyService
@@ -69,13 +69,13 @@ DEFAULT_MESSAGES_PATH = "messages.yaml"
 class Configuration:
     """Holds all data loaded from config files."""
 
-    items: list = field(default_factory=list)
+    items: list[Any] = field(default_factory=list)
     hex_map: Optional[HexMap] = None
-    ai_waves: list = field(default_factory=list)
+    ai_waves: list[Any] = field(default_factory=list)
     game: GameConfig = field(default_factory=GameConfig)
-    knowledge_era_groups: dict = field(default_factory=dict)
-    building_era_groups: dict = field(default_factory=dict)
-    item_era_index: dict = field(default_factory=dict)
+    knowledge_era_groups: dict[str, list[str]] = field(default_factory=dict)
+    building_era_groups: dict[str, list[str]] = field(default_factory=dict)
+    item_era_index: dict[str, int] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ def load_configuration(
 # ===================================================================
 
 
-async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "state.yaml") -> tuple:
+async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "state.yaml") -> tuple[Any, ...]:
     """Open the database and try to restore previous game state.
 
     Args:

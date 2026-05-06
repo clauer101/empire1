@@ -255,13 +255,13 @@ def make_router(services: "Services") -> APIRouter:
 
 
     @router.get("/api/admin/users")
-    async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict]:
+    async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
         if services.database is None:
             return []
         return await services.database.list_users()
 
     @router.delete("/api/admin/users/{username}")
-    async def admin_delete_user(username: str, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_delete_user(username: str, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.database is None:
             return {"ok": False, "error": "no database"}
         user = await services.database.get_user(username)
@@ -273,7 +273,7 @@ def make_router(services: "Services") -> APIRouter:
         return {"ok": deleted}
 
     @router.post("/api/admin/users")
-    async def admin_create_user(body: dict, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_create_user(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.database is None:
             return {"ok": False, "error": "no database"}
         import bcrypt  # type: ignore[import-not-found]
@@ -293,10 +293,10 @@ def make_router(services: "Services") -> APIRouter:
             return {"ok": False, "error": str(exc)}
 
     @router.put("/api/admin/users/{username}/password")
-    async def admin_reset_password(username: str, body: dict, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_reset_password(username: str, body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.database is None:
             return {"ok": False, "error": "no database"}
-        import bcrypt  # type: ignore[import-not-found]
+        import bcrypt
         pw = body.get("password", "")
         if not pw:
             return {"ok": False, "error": "password required"}
@@ -310,7 +310,7 @@ def make_router(services: "Services") -> APIRouter:
         return {"ok": updated}
 
     @router.put("/api/admin/users/{uid}/empire_name")
-    async def admin_rename_empire(uid: int, body: dict, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_rename_empire(uid: int, body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.database is None:
             return {"ok": False, "error": "no database"}
         name = body.get("empire_name", "").strip()
@@ -472,7 +472,7 @@ def make_router(services: "Services") -> APIRouter:
         from gameserver.engine.power_service import defense_power as _defense_power
         from gameserver.models.empire import Empire as _Empire
 
-        def _defense_power_for_tiles(tiles: list[dict], life: float, path_length: int | None = None) -> float | None:
+        def _defense_power_for_tiles(tiles: list[dict[str, Any]], life: float, path_length: int | None = None) -> float | None:
             try:
                 up = services.empire_service._upgrades  # type: ignore[union-attr]
                 if up is None:
@@ -485,8 +485,8 @@ def make_router(services: "Services") -> APIRouter:
                 # Defense power computation is optional — return None if map data is invalid
                 return None
 
-        def _analyze(tiles: list[dict], source: str, empire_name: str, uid: int, life: float = 10.0) -> dict:
-            tile_map: dict[tuple, str] = {}
+        def _analyze(tiles: list[dict[str, Any]], source: str, empire_name: str, uid: int, life: float = 10.0) -> dict[str, Any]:
+            tile_map: dict[tuple[int, int], str] = {}
             for t in tiles:
                 tt = t["type"]
                 if isinstance(tt, dict):
@@ -556,7 +556,7 @@ def make_router(services: "Services") -> APIRouter:
                 "power":       power,
             }
 
-        results: list[dict] = []
+        results: list[dict[str, Any]] = []
 
         if _SAVED_MAPS_PATH.exists():
             try:
@@ -591,7 +591,7 @@ def make_router(services: "Services") -> APIRouter:
         return results
 
     @router.post("/api/admin/saved-maps/from-live/{uid}")
-    async def admin_save_live_map(uid: int, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_save_live_map(uid: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         import time as _time
         assert services.empire_service is not None
         empire = services.empire_service.get(uid)
@@ -616,7 +616,7 @@ def make_router(services: "Services") -> APIRouter:
         return {"ok": True, "map_id": map_id, "name": name}
 
     @router.delete("/api/admin/saved-maps/{map_id}")
-    async def admin_delete_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_delete_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         maps = _load_saved_maps()
         new_maps = [m for m in maps if m.get("id") != map_id]
         if len(new_maps) == len(maps):
@@ -626,7 +626,7 @@ def make_router(services: "Services") -> APIRouter:
 
     @router.patch("/api/admin/saved-maps/{map_id}")
     async def admin_rename_saved_map(map_id: str, body: SavedMapRenameBody,
-                                     _uid: int = Depends(require_admin)) -> dict:
+                                     _uid: int = Depends(require_admin)) -> dict[str, Any]:
         maps = _load_saved_maps()
         for m in maps:
             if m.get("id") == map_id:
@@ -638,7 +638,7 @@ def make_router(services: "Services") -> APIRouter:
         raise HTTPException(status_code=404, detail=f"map_id '{map_id}' not found")
 
     @router.post("/api/admin/saved-maps/{map_id}/activate")
-    async def admin_activate_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict:
+    async def admin_activate_saved_map(map_id: str, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         import time as _time
         TARGET_UID = 4
         assert services.empire_service is not None
@@ -740,7 +740,7 @@ def make_router(services: "Services") -> APIRouter:
         travel_time: float | None = body.get("travel_time")
         army_name: str = body.get("army_name") or "Admin Attack"
 
-        waves_raw: list[dict] = body.get("waves") or []
+        waves_raw: list[dict[str, Any]] = body.get("waves") or []
         if not waves_raw:
             hw = services.ai_service._hardcoded_waves if services.ai_service else []
             entry = next((e for e in hw if e.get("name") == army_name), None)

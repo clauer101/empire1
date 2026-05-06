@@ -7,7 +7,29 @@ from __future__ import annotations
 import logging
 from typing import Any, Iterable, Optional, TYPE_CHECKING
 
+__all__ = [
+    # public handlers
+    "handle_battle_register",
+    "handle_battle_unregister",
+    "handle_battle_next_wave",
+    # private names explicitly exported for importers
+    "_evict_observer_from_all",
+    "_apply_artefact_steal",
+    "_compute_and_apply_loot",
+    "_sync_battle_structures",
+    "_run_battle_task",
+    "_create_item_completed_handler",
+    "_create_attack_phase_handler",
+    "_create_spy_arrived_handler",
+    "_create_battle_observer_broadcast_handler",
+    "_abort_battle_setup",
+    "_create_battle_start_handler",
+    "_on_battle_start_requested",
+    "_sync_battle_structures",
+]
+
 if TYPE_CHECKING:
+    from gameserver.main import Services
     from gameserver.models.battle import BattleState
     from gameserver.models.attack import Attack
 
@@ -17,17 +39,17 @@ from gameserver.models.messages import GameMessage
 log = logging.getLogger(__name__)
 
 
-def _svc():
+def _svc() -> "Services":
     from gameserver.network.handlers._core import _svc as _core_svc
     return _core_svc()
 
 
-def _tile_type(v) -> str:
+def _tile_type(v: Any) -> str:
     from gameserver.network.handlers._core import _tile_type as _core_tile_type
     return _core_tile_type(v)
 
 
-def _tile_select(v, item_default: str = 'first') -> str:
+def _tile_select(v: Any, item_default: str = 'first') -> str:
     from gameserver.network.handlers._core import _tile_select as _core_tile_select
     return _core_tile_select(v, item_default)
 
@@ -43,6 +65,7 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
     This sends status updates during IN_SIEGE and IN_BATTLE phases.
     """
     svc = _svc()
+    assert svc.empire_service is not None
 
     # Get defender and attacker empires
     defender_empire = svc.empire_service.get(attack.defender_uid)
@@ -141,6 +164,7 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
     from gameserver.models.hex import HexCoord
 
     svc = _svc()
+    assert svc.empire_service is not None
 
     # Get defender empire (owner of the map)
     defender_empire = svc.empire_service.get(attack.defender_uid)
@@ -257,6 +281,7 @@ async def handle_battle_register(
         return {"type": "error", "message": "Missing target_uid"}
 
     svc = _svc()
+    assert svc.attack_service is not None
     _active_battles = _get_active_battles()
 
     # Find attack involving this target_uid (either as attacker or defender)
@@ -300,10 +325,10 @@ async def handle_battle_register(
     # This ensures each UID is observing at most one attack / battle at a time.
     _evict_observer_from_all(sender_uid, attack_svc.get_all_attacks(), _active_battles, exclude_attack_id=attack.attack_id)
 
-    # Register observer
+    # Register observer (dynamic attribute on Attack)
     if not hasattr(attack, '_observers'):
-        attack._observers = set()
-    attack._observers.add(sender_uid)
+        setattr(attack, '_observers', set())
+    getattr(attack, '_observers').add(sender_uid)
 
     # Also add to the active BattleState so _broadcast() delivers updates
     battle = _active_battles.get(attack.defender_uid)
@@ -337,11 +362,13 @@ async def handle_battle_unregister(
     svc = _svc()
     _active_battles = _get_active_battles()
     attack_svc = svc.attack_service
+    assert attack_svc is not None
 
     # Find attack and remove observer
     for attack in attack_svc.get_all_attacks():
-        if hasattr(attack, '_observers') and sender_uid in attack._observers:
-            attack._observers.remove(sender_uid)
+        observers = getattr(attack, '_observers', None)
+        if observers is not None and sender_uid in observers:
+            observers.remove(sender_uid)
             # Also remove from active BattleState
             battle = _active_battles.get(attack.defender_uid)
             if battle:

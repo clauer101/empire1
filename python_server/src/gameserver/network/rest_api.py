@@ -168,17 +168,30 @@ def _update_effects_in_yaml(yaml_path: Any, iid: str, new_effects: dict[str, Any
     return False
 
 
-def _load_saved_maps() -> list[dict]:
+def _load_saved_maps() -> list[dict[str, Any]]:
     import yaml as _y
     if not _SAVED_MAPS_PATH.exists():
         return []
     return _y.safe_load(_SAVED_MAPS_PATH.read_text()).get("maps") or []
 
 
-def _write_saved_maps(maps: list[dict]) -> None:
+def _write_saved_maps(maps: list[dict[str, Any]]) -> None:
     import yaml as _y
     _SAVED_MAPS_PATH.write_text(_y.dump({"maps": maps}, allow_unicode=True,
                                          default_flow_style=False, sort_keys=False))
+
+
+# Re-exports for routers (mypy strict requires explicit __all__ for underscore names)
+__all__ = [
+    "create_app",
+    "_ERA_KEYS", "_ERA_LABELS_DE", "_ERA_LABELS_EN",
+    "_STRUCTURE_ERAS", "_CRITTER_ERAS", "_TOWER_ERAS",
+    "_CONFIG_DIR", "_SAVED_MAPS_PATH",
+    "_load_saved_maps", "_write_saved_maps",
+    "_update_effects_in_yaml", "_load_era_effects",
+    "_is_recently_active", "_stub_message",
+    "_critter_groups", "_structure_groups", "_knowledge_groups", "_building_groups",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +224,7 @@ def create_app(services: "Services") -> FastAPI:
     )
 
     @app.middleware("http")
-    async def request_id_middleware(request: Request, call_next):
+    async def request_id_middleware(request: Request, call_next: Any) -> Any:
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
@@ -220,7 +233,7 @@ def create_app(services: "Services") -> FastAPI:
         return response
 
     @app.middleware("http")
-    async def security_headers(request: Request, call_next):
+    async def security_headers(request: Request, call_next: Any) -> Any:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -240,7 +253,7 @@ def create_app(services: "Services") -> FastAPI:
     _last_seen_cache: dict[int, float] = {}
 
     @app.middleware("http")
-    async def track_last_seen(request: Request, call_next):
+    async def track_last_seen(request: Request, call_next: Any) -> Any:
         response = await call_next(request)
         if services.database is not None:
             auth = request.headers.get("authorization", "")
@@ -275,7 +288,7 @@ def create_app(services: "Services") -> FastAPI:
 
     # WebSocket endpoint — stays here
     @app.websocket("/ws")
-    async def websocket_endpoint(ws: WebSocket):
+    async def websocket_endpoint(ws: WebSocket) -> None:
         """Bridge a FastAPI WebSocket to the game server's message router."""
         token = ws.query_params.get("token")
         uid: int | None = None
@@ -389,6 +402,6 @@ class _FastAPIWSAdapter:
                 pass
 
     @property
-    def remote_address(self):
+    def remote_address(self) -> tuple[str, int]:
         client = self._ws.client
         return (client.host, client.port) if client else ("unknown", 0)

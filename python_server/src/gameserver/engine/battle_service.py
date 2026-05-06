@@ -39,7 +39,7 @@ _VISUAL_SLOW   = 1
 _VISUAL_BURN   = 2
 _VISUAL_SPLASH = 3
 
-def _shot_visual_type(effects: dict) -> int:
+def _shot_visual_type(effects: dict[str, Any]) -> int:
     """Derive a visual shot-type integer from the effects dict (for client rendering only)."""
     if "splash_radius" in effects:
         return _VISUAL_SPLASH
@@ -101,7 +101,7 @@ class BattleService:
     decoupled from the WebSocket server.
     """
 
-    def __init__(self, items: list | dict | None = None, gc=None) -> None:
+    def __init__(self, items: list[Any] | dict[str, Any] | None = None, gc: Any = None) -> None:
         """Initialize battle service.
 
         Args:
@@ -116,12 +116,12 @@ class BattleService:
             self._items_by_iid = {item.iid: item for item in items}
         self._gc = gc
 
-    def _get_wave_critter_slot_cost(self, wave) -> int:
+    def _get_wave_critter_slot_cost(self, wave: Any) -> int:
         """Return the slot cost for the next critter of this wave."""
         item = self._items_by_iid.get(wave.iid)
         return max(1, int(getattr(item, "slots", 1) or 1))
 
-    def _mark_wave_complete_if_blocked(self, wave) -> bool:
+    def _mark_wave_complete_if_blocked(self, wave: Any) -> bool:
         """Mark a wave complete when its remaining slots cannot fit another critter.
         
         Always lets the first critter through regardless of slot cost.
@@ -528,8 +528,8 @@ class BattleService:
         """Get interval between waves (wave_start_ms) for a wave."""
         return 10000.0  # Fallback default
 
-    def _make_critter_from_item(self, iid: str, path: list, path_progress: float = 0.0,
-                                attacker_item_upgrades: "dict | None" = None) -> Critter:
+    def _make_critter_from_item(self, iid: str, path: list[Any], path_progress: float = 0.0,
+                                attacker_item_upgrades: "dict[str, Any] | None" = None) -> Critter:
         """Create a Critter from item config, placing it at path_progress."""
         item = self._items_by_iid.get(iid)
         health = getattr(item, 'health', 1.0) if item else 1.0
@@ -558,7 +558,7 @@ class BattleService:
             spawn_on_death=dict(getattr(item, 'spawn_on_death', None) or {}),
         )
 
-    def _step_wave(self, wave, dt_ms: float) -> list[Critter]:
+    def _step_wave(self, wave: Any, dt_ms: float) -> list[Critter]:
         """Step a wave: decrement spawn timer and spawn critters as needed.
 
         This function manages the spawn timing for a single wave, spawning
@@ -853,7 +853,7 @@ class BattleService:
         self,
         battle: BattleState,
         send_fn: Callable[[int, dict[str, Any]], Awaitable[bool]],
-        loot: dict | None = None,
+        loot: dict[str, Any] | None = None,
     ) -> None:
         """Send battle_summary when battle ends.
         

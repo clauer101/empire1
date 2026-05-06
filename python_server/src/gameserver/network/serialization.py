@@ -22,4 +22,5 @@ def decode(raw: bytes, compressed: bool = False) -> dict[str, Any]:
     """Decode bytes to a message dict."""
     if compressed:
         raw = zlib.decompress(raw)
-    return json.loads(raw.decode("utf-8"))
+    result: dict[str, Any] = json.loads(raw.decode("utf-8"))
+    return result

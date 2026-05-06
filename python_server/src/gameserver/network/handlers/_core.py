@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional, TYPE_CHECKING, cast
+from typing import Any, Optional, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from gameserver.main import Services
@@ -63,7 +63,7 @@ def _svc() -> Services:
 # Connection / Keepalive
 # ===================================================================
 
-async def handle_ping(message: GameMessage, sender_uid: int) -> dict:
+async def handle_ping(message: GameMessage, sender_uid: int) -> dict[str, Any]:
     """Simple ping handler to keep connections alive.
 
     iOS Safari and other mobile browsers can aggressively close
@@ -78,19 +78,20 @@ async def handle_ping(message: GameMessage, sender_uid: int) -> dict:
 # Map validation helpers
 # ===================================================================
 
-def _tile_type(v) -> str:
+def _tile_type(v: Any) -> str:
     """Extract tile type from a string or dict tile value."""
     return v if isinstance(v, str) else v.get('type', 'empty')
 
 
-def _tile_select(v, item_default: str = 'first') -> str:
+def _tile_select(v: Any, item_default: str = 'first') -> str:
     """Return per-tile select override, or fall back to the item-level default."""
     if isinstance(v, dict):
-        return v.get('select', item_default)
+        sel: str = v.get('select', item_default)
+        return sel
     return item_default
 
 
-def _has_path_from_spawn_to_castle(tiles) -> bool:
+def _has_path_from_spawn_to_castle(tiles: Any) -> bool:
     """Check if there's a path from any spawnpoint to the castle.
 
     Uses the centralized pathfinding logic from hex_pathfinding module.
@@ -111,7 +112,7 @@ def _has_path_from_spawn_to_castle(tiles) -> bool:
 # Battle globals
 # ===================================================================
 
-_active_battles: dict[int, "BattleState"] = {}  # uid → BattleState
+_active_battles: "dict[int, BattleState]" = {}  # uid → BattleState
 _next_bid: int = 1
 
 

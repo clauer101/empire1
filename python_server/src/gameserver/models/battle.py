@@ -7,7 +7,7 @@ Business logic is in engine/battle_service.py.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from gameserver.models.critter import Critter
 from gameserver.models.shot import Shot
@@ -15,7 +15,8 @@ from gameserver.models.structure import Structure
 from gameserver.models.hex import HexCoord
 
 if TYPE_CHECKING:
-    from gameserver.models.empire import Army, Empire
+    from gameserver.models.army import Army
+    from gameserver.models.empire import Empire
     from gameserver.persistence.replay import ReplayRecorder
 
 
@@ -87,7 +88,7 @@ class BattleState:
 
     # Critters removed since last broadcast: [{cid, reason, path_progress}]
     # reason: "died" | "reached"
-    removed_critters: list[dict] = field(default_factory=list)
+    removed_critters: list[dict[str, Any]] = field(default_factory=list)
 
     # Configuration (set at battle creation time, from game.yaml)
     broadcast_interval_ms: float = 250.0

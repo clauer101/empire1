@@ -12,7 +12,7 @@ from gameserver.models.messages import GameMessage
 log = logging.getLogger(__name__)
 
 
-def _svc():
+def _svc() -> Any:
     from gameserver.network.handlers._core import _svc as _core_svc
     return _core_svc()
 
@@ -99,7 +99,7 @@ async def handle_military_request(
         for _urow in await svc.database.list_users():
             _uid_to_username[_urow["uid"]] = _urow["username"]
 
-    def _attack_dto(a):
+    def _attack_dto(a: Any) -> dict[str, Any]:
         if a.army_name_override:
             _army_name = a.army_name_override
         else:
@@ -307,7 +307,7 @@ async def handle_new_attack(
     }
 
 
-def _build_spy_report(defender, svc) -> tuple[str, dict]:
+def _build_spy_report(defender: Any, svc: Any) -> tuple[str, dict[str, Any]]:
     """Build a workshop intelligence report for the attacker.
 
     Returns (text_report, structured_data) covering only structures and critters
@@ -336,7 +336,7 @@ def _build_spy_report(defender, svc) -> tuple[str, dict]:
             lvls = upgrades.get(iid, {})
             critters.append((item.name, lvls))
 
-    def _fmt_upgrades(lvls: dict) -> str:
+    def _fmt_upgrades(lvls: dict[str, Any]) -> str:
         if not lvls:
             return "(no upgrades)"
         abbrev = {"damage": "dmg", "range": "rng", "reload": "rld",

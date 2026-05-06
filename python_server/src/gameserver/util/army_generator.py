@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
@@ -65,12 +65,12 @@ def parse_slot_by_iid(critters_yaml: Path) -> dict[str, int]:
 
 def generate_army(
     era_internal: str,
-    ai_generator_cfg: dict,
+    ai_generator_cfg: dict[str, Any],
     critter_era_groups: dict[str, list[str]],
     slot_by_iid: dict[str, int],
     seed: int | None = None,
     name: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Generate a random army for the given internal era key.
 
     Args:
@@ -114,7 +114,7 @@ def generate_army(
         hi = max(lo, hi)
         return lo + int(rng() * (hi - lo + 1))
 
-    def make_wave(pool: list[str]) -> dict:
+    def make_wave(pool: list[str]) -> dict[str, Any]:
         iid = pool[int(rng() * len(pool))]
         slot_unit = slot_by_iid.get(iid, 1)
         raw_s = min_slots + rng() * (max_slots - min_slots)
@@ -126,7 +126,7 @@ def generate_army(
     num_next  = min(rand_int(min_next, max_next_era), num_waves - num_prev)
     num_main  = num_waves - num_prev - num_next
 
-    waves: list[dict] = []
+    waves: list[dict[str, Any]] = []
     for _ in range(num_main):
         waves.append(make_wave(main_pool))
     for _ in range(num_prev):
@@ -147,7 +147,7 @@ def generate_army(
 
 # ── Seeded RNG (matches JS Mulberry32 in ai_generator.html) ──────────────────
 
-def _mulberry32(seed: int):
+def _mulberry32(seed: int) -> Any:
     s = [int(seed) & 0xFFFFFFFF or 1]
 
     def u32(x: int) -> int:

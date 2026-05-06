@@ -145,7 +145,7 @@ class BattleFeedbackRequest(BaseModel):
 
 
 class PushSubscribeRequest(BaseModel):
-    subscription: dict  # Web Push subscription object from browser
+    subscription: dict[str, Any]  # Web Push subscription object from browser
 
 
 class BuyItemUpgradeRequest(BaseModel):

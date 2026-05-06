@@ -56,7 +56,7 @@ def make_router(services: "Services") -> APIRouter:
         def _username(u: int) -> str:
             return uid_to_username.get(u) or ""
 
-        def _annotate(m: dict) -> dict:
+        def _annotate(m: dict[str, Any]) -> dict[str, Any]:
             return {
                 **m,
                 "from_name": _name(m["from_uid"]),

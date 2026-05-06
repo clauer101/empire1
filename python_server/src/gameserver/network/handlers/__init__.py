@@ -10,7 +10,18 @@ see the live value from _core, not a stale import-time snapshot.
 """
 import types
 import sys
+from typing import Any
 from gameserver.network.handlers import _core  # noqa: F401
+
+# mypy strict requires explicit __all__ for underscore-prefixed re-exports
+__all__ = [
+    "_evict_observer_from_all", "_apply_artefact_steal", "_compute_and_apply_loot",
+    "_create_empire_for_new_user", "_build_empire_summary", "_build_session_state",
+    "register_all_handlers",
+    "handle_notification_request", "handle_user_message", "handle_timeline_request",
+    "handle_userinfo_request", "handle_hall_of_fame",
+    "handle_preferences_request", "handle_change_preferences",
+]
 
 # Re-export the full public surface of the legacy god module.
 from gameserver.network.handlers._core import *  # noqa: F401, F403
@@ -41,7 +52,7 @@ from gameserver.network.handlers.social import (  # noqa: F401
 _FORWARDED = frozenset({"_services", "_active_battles", "_next_bid", "_next_cid", "_next_wid"})
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     if name in _FORWARDED:
         return getattr(_core, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

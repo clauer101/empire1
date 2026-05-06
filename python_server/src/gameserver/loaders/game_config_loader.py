@@ -65,7 +65,7 @@ class Prices:
     wave: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
     critter_slot: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
     army: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
-    wave_era_costs: list = field(default_factory=lambda: [0, 200, 500, 1200, 2500, 5000, 9000, 15000, 25000])
+    wave_era_costs: list[int] = field(default_factory=lambda: [0, 200, 500, 1200, 2500, 5000, 9000, 15000, 25000])
 
 
 @dataclass
@@ -166,7 +166,7 @@ class GameConfig:
     # -- Unit upgrades -----------------------------------------------
     structure_upgrades: StructureUpgradeDef = field(default_factory=StructureUpgradeDef)
     critter_upgrades: CritterUpgradeDef = field(default_factory=CritterUpgradeDef)
-    item_upgrade_base_costs: list = field(default_factory=lambda: [1, 15, 100, 300, 600, 1200, 2500, 5000, 10000])
+    item_upgrade_base_costs: list[int] = field(default_factory=lambda: [1, 15, 100, 300, 600, 1200, 2500, 5000, 10000])
 
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower

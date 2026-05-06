@@ -5,14 +5,23 @@ Contains authentication, signup, and empire-creation handlers.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gameserver.main import Services
 
 from gameserver.models.messages import GameMessage
 
 log = logging.getLogger(__name__)
 
+# mypy strict requires explicit __all__ for underscore-prefixed re-exports
+__all__ = [
+    "handle_auth_request", "handle_signup", "handle_create_empire",
+    "_build_empire_summary", "_build_session_state", "_create_empire_for_new_user",
+]
 
-def _svc():
+
+def _svc() -> "Services":
     from gameserver.network.handlers._core import _svc as _core_svc
     return _core_svc()
 
@@ -27,6 +36,7 @@ def _build_session_state(uid: int) -> dict[str, Any]:
     """
     svc = _svc()
     attack_svc = svc.attack_service
+    assert attack_svc is not None
 
     active_battles: list[dict[str, Any]] = []
     for a in attack_svc.get_incoming(uid):
@@ -47,7 +57,7 @@ def _build_session_state(uid: int) -> dict[str, Any]:
     }
 
 
-def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
+def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
     """Build a complete empire summary for a given UID.
 
     Used by both handle_summary_request() and handle_auth_request().
@@ -55,6 +65,8 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
     structures, and ongoing attacks.
     """
     svc = _svc()
+    assert svc.empire_service is not None
+    assert svc.attack_service is not None
 
     # Active builds: buildings with remaining effort > 0
     active_buildings = {
@@ -90,10 +102,11 @@ def _build_empire_summary(empire, uid: int) -> dict[str, Any]:
         })
 
     # Ongoing attacks
-    def _attack_dto(a):
+    def _attack_dto(a: Any) -> dict[str, Any]:
         if a.army_name_override:
             _army_name = a.army_name_override
         else:
+            assert svc.empire_service is not None
             _att_emp = svc.empire_service.get(a.attacker_uid)
             _army_name = ""
             if _att_emp:
@@ -184,6 +197,7 @@ def _create_empire_for_new_user(uid: int, username: str, empire_name: str) -> No
     """
     from gameserver.models.empire import Empire
     svc = _svc()
+    assert svc.empire_service is not None
     starting_res = dict(svc.game_config.starting_resources) if svc.game_config else {"gold": 0.0, "culture": 0.0, "life": 10.0}
     starting_max_life = svc.game_config.starting_max_life if svc.game_config else 10.0
     empire = Empire(
@@ -211,6 +225,8 @@ async def handle_auth_request(
     observer registrations that were lost during a reconnect).
     """
     svc = _svc()
+    assert svc.auth_service is not None
+    assert svc.empire_service is not None
     username = getattr(message, "username", "")
     password = getattr(message, "password", "")
 
@@ -244,6 +260,7 @@ async def handle_signup(
 ) -> Optional[dict[str, Any]]:
     """Handle ``signup`` — create a new account."""
     svc = _svc()
+    assert svc.auth_service is not None
     username = getattr(message, "username", "")
     password = getattr(message, "password", "")
     email = getattr(message, "email", "")

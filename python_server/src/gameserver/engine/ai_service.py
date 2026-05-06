@@ -54,7 +54,7 @@ import logging
 import random
 from collections import deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gameserver.engine.attack_service import AttackService
@@ -137,19 +137,19 @@ class AIService:
     def __init__(
         self,
         upgrade_provider: UpgradeProvider,
-        game_config=None,
-        hardcoded_waves: list | None = None,
+        game_config: Any = None,
+        hardcoded_waves: list[dict[str, Any]] | None = None,
     ) -> None:
         self._upgrades = upgrade_provider
         from gameserver.loaders.game_config_loader import GameConfig as _GC
         self._game_config: _GC = game_config or _GC()
-        self._hardcoded_waves: list[dict] = hardcoded_waves or []
+        self._hardcoded_waves: list[dict[str, Any]] = hardcoded_waves or []
         self._params = AIParams()
         # Army IDs are now allocated globally via empire_service.next_army_id()
         # deque of bool: True = AI won, False = defender won
         self._history: deque[bool] = deque(maxlen=self._params.history_window)
         # Pending battles: attack_id → {defender_uid, army_summary}
-        self._pending: dict[int, dict] = {}
+        self._pending: dict[int, dict[str, Any]] = {}
         # Barbarian attack ticker
         self._barbarian_elapsed_s: float = 0.0
         self._BARBARIAN_INTERVAL_S: float = 60.0

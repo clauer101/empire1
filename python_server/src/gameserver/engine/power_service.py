@@ -18,7 +18,7 @@ Design principles
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gameserver.engine.upgrade_provider import UpgradeProvider
@@ -80,7 +80,7 @@ class PowerReport:
     defense:  float
     total:    float
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "economy": round(self.economy,  1),
             "attack":  round(self.attack,   1),

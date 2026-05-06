@@ -12,33 +12,33 @@ from gameserver.models.messages import GameMessage, MapSaveRequest
 log = logging.getLogger(__name__)
 
 
-def _svc():
+def _svc() -> Any:
     from gameserver.network.handlers._core import _svc as _core_svc
     return _core_svc()
 
 
-def _tile_type(v) -> str:
+def _tile_type(v: Any) -> str:
     from gameserver.network.handlers._core import _tile_type as _core_tile_type
     return _core_tile_type(v)
 
 
-def _tile_select(v, item_default: str = 'first') -> str:
+def _tile_select(v: Any, item_default: str = 'first') -> str:
     from gameserver.network.handlers._core import _tile_select as _core_tile_select
     return _core_tile_select(v, item_default)
 
 
-def _has_path_from_spawn_to_castle(tiles) -> bool:
+def _has_path_from_spawn_to_castle(tiles: Any) -> bool:
     from gameserver.network.handlers._core import _has_path_from_spawn_to_castle as _core_hpfsc
     return _core_hpfsc(tiles)
 
 
-def _get_active_battles():
+def _get_active_battles() -> Any:
     from gameserver.network.handlers._core import _active_battles
     return _active_battles
 
 
-def _sync_battle_structures(battle, tiles, items_dict):
-    from gameserver.network.handlers.battle import _sync_battle_structures as _bss
+def _sync_battle_structures(battle: Any, tiles: dict[str, Any], items_dict: dict[str, Any]) -> list[int]:
+    from gameserver.network.handlers.battle_task import _sync_battle_structures as _bss
     return _bss(battle, tiles, items_dict)
 
 

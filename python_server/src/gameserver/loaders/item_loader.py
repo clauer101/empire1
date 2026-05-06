@@ -10,6 +10,8 @@ Supports two modes:
 
 from __future__ import annotations
 
+from typing import Any
+
 from pathlib import Path
 
 import yaml
@@ -26,7 +28,7 @@ def _type_for_category(cat: str) -> ItemType:
     return ItemType(singular)
 
 
-def _parse_section(type_key: str, section: dict) -> list[ItemDetails]:
+def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
     """Parse a single category section dict into ItemDetails."""
     item_type = _type_for_category(type_key)
     items: list[ItemDetails] = []

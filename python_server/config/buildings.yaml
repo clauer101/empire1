@@ -895,7 +895,7 @@ ARTS_GALLERY:
   costs: {gold: 1892621}
   requirements: [PAINTING, SOCIAL_SCIENCES]
   effects:
-    culture_offset: 0.6
+    culture_offset: 1.0
 
 RESEARCH_LAB:
   era: modern
@@ -906,7 +906,7 @@ RESEARCH_LAB:
   costs: {gold: 1923646}
   requirements: [SCIENCE, COMPUTER_TECHNOLOGY]
   effects:
-    research_speed_offset: 0.4
+    research_speed_offset: 0.5
 
 ECHELON_DEFENSE_FACILITY:
   era: modern
@@ -983,8 +983,8 @@ NUCLEAR_POWER_PLANT:
   costs: {gold: 2249426}
   requirements: [NUCLEAR_REACTION]
   effects:
-    gold_offset: 0.4
-    research_speed_modifier: 0.2
+    gold_offset: 0.5
+    research_speed_modifier: 0.3
 
 ROBO_MANUFACTURE:
   era: modern
@@ -995,8 +995,8 @@ ROBO_MANUFACTURE:
   costs: {gold: 2326993}
   requirements: [MECHANICAL_ENGINEERING, COMPUTER_TECHNOLOGY]
   effects:
-    build_speed_modifier: 0.4
-    build_speed_offset: 0.4
+    build_speed_modifier: 0.5
+    build_speed_offset: 0.5
 
 INTELLIGENCE_AGENCY:
   era: modern
@@ -1028,7 +1028,7 @@ ELITE_ACADEMY:
   costs: {gold: 3102658}
   requirements: [COMMAND_CHAIN, CRYPTOLOGY]
   effects:
-    research_speed_modifier: 0.25
+    research_speed_modifier: 0.35
 
 RECRUITING_OFFICE:
   era: modern
@@ -1039,7 +1039,7 @@ RECRUITING_OFFICE:
   costs: {gold: 3040604}
   requirements: [MILITARY_SERVICE]
   effects:
-    culture_offset: 0.2
+    culture_offset: 0.4
 
 # ============================================================
 #   ZUKUNFT  (Effort 40.000.000 – 80.000.000)

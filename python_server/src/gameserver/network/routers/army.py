@@ -76,6 +76,7 @@ def make_router(services: "Services") -> APIRouter:
     @router.post("/api/item/buy-upgrade")
     async def buy_item_upgrade(body: BuyItemUpgradeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         from gameserver.network.handlers import handle_buy_item_upgrade
-        return await handle_buy_item_upgrade(body.iid, body.stat, uid)
+        result: dict[str, Any] = await handle_buy_item_upgrade(body.iid, body.stat, uid)
+        return result
 
     return router

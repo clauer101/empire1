@@ -25,27 +25,27 @@ from gameserver.util import effects as fx
 log = logging.getLogger(__name__)
 
 
-def _svc():
+def _svc() -> Any:
     from gameserver.network.handlers._core import _svc as _core_svc
     return _core_svc()
 
 
-def _tile_type(v) -> str:
+def _tile_type(v: Any) -> str:
     from gameserver.network.handlers._core import _tile_type as _core_tile_type
     return _core_tile_type(v)
 
 
-def _tile_select(v, item_default: str = "first") -> str:
+def _tile_select(v: Any, item_default: str = "first") -> str:
     from gameserver.network.handlers._core import _tile_select as _core_tile_select
     return _core_tile_select(v, item_default)
 
 
-def _get_active_battles():
+def _get_active_battles() -> Any:
     from gameserver.network.handlers._core import _active_battles
     return _active_battles
 
 
-def _sync_battle_structures(battle: "BattleState", tiles: dict, items_dict: dict) -> list[int]:
+def _sync_battle_structures(battle: "BattleState", tiles: dict[str, Any], items_dict: dict[str, Any]) -> list[int]:
     """Sync battle.structures from the current tile map.
 
     Adds towers placed after battle started, removes demolished towers, and leaves
@@ -147,7 +147,7 @@ async def _run_battle_task(
     try:
         log.info("[battle] bid=%d complete: attacker_wins=%s", bid, not battle.defender_won)
 
-        loot: dict = {}
+        loot: dict[str, Any] = {}
         attacker_won = battle.defender_won is False
         if attacker_won:
             loot = _compute_and_apply_loot(battle, svc)
@@ -314,7 +314,7 @@ def _apply_artefact_steal(battle: "BattleState", svc: Any, attacker_won: bool) -
     return stolen
 
 
-def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict:
+def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
     """Compute and apply loot on defender loss. Returns loot dict."""
     import random as _random
 
@@ -325,7 +325,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict:
 
     cfg = svc.game_config
     items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    loot: dict = {"knowledge": None, "culture": 0.0, "artefact": None, "life_restored": 0.0}
+    loot: dict[str, Any] = {"knowledge": None, "culture": 0.0, "artefact": None, "life_restored": 0.0}
 
     from gameserver.engine.ai_service import AI_UID as _AI_UID
     _attacker_is_ai = attacker.uid == _AI_UID
@@ -411,7 +411,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict:
     return loot
 
 
-def _create_item_completed_handler() -> Callable:
+def _create_item_completed_handler() -> Callable[..., Any]:
     """Push an item_completed message to the owning player when a build/research finishes."""
     async def _async_item_completed(event: "ItemCompleted") -> None:
         svc = _svc()
@@ -425,7 +425,7 @@ def _create_item_completed_handler() -> Callable:
     return _on_item_completed
 
 
-def _create_attack_phase_handler() -> Callable:
+def _create_attack_phase_handler() -> Callable[..., Any]:
     """Create a handler for AttackPhaseChanged events."""
     async def _async_phase_changed(event: "AttackPhaseChanged") -> None:
         svc = _svc()
@@ -476,7 +476,7 @@ def _create_attack_phase_handler() -> Callable:
     return _on_attack_phase_changed
 
 
-def _create_spy_arrived_handler() -> Callable:
+def _create_spy_arrived_handler() -> Callable[..., Any]:
     """Create a handler for SpyArrived events."""
     async def _async_spy_arrived(event: "SpyArrived") -> None:
         svc = _svc()
@@ -521,7 +521,7 @@ def _create_spy_arrived_handler() -> Callable:
     return _on_spy_arrived
 
 
-def _create_battle_observer_broadcast_handler() -> Callable:
+def _create_battle_observer_broadcast_handler() -> Callable[..., Any]:
     """Create a handler for BattleObserverBroadcast events."""
     async def _async_broadcast_to_observers(event: "BattleObserverBroadcast") -> None:
         svc = _svc()
@@ -563,7 +563,7 @@ def _abort_battle_setup(attack_id: int, army: Any = None) -> None:
         log.info("[battle:abort] army waves reset for attack_id=%d", attack_id)
 
 
-def _create_battle_start_handler() -> Callable:
+def _create_battle_start_handler() -> Callable[..., Any]:
     """Create a handler for BattleStartRequested events."""
     async def _async_create_battle(event: "BattleStartRequested") -> None:
         from gameserver.engine.battle_service import BattleService
@@ -715,9 +715,9 @@ def _create_battle_start_handler() -> Callable:
         if svc.game_config and hasattr(svc.game_config, "broadcast_interval_ms"):
             broadcast_interval_ms = svc.game_config.broadcast_interval_ms
 
-        async def send_fn(uid: int, data: dict) -> bool:
+        async def send_fn(uid: int, data: dict[str, Any]) -> bool:
             if svc.server:
-                return await svc.server.send_to(uid, data)
+                return bool(await svc.server.send_to(uid, data))
             return False
 
         asyncio.create_task(_run_battle_task(bid, battle, battle_svc, send_fn, broadcast_interval_ms))
@@ -834,9 +834,9 @@ async def _on_battle_start_requested(event: "BattleStartRequested") -> None:
     if svc.game_config and hasattr(svc.game_config, "broadcast_interval_ms"):
         broadcast_interval_ms = svc.game_config.broadcast_interval_ms
 
-    async def send_fn(uid: int, data: dict) -> bool:
+    async def send_fn(uid: int, data: dict[str, Any]) -> bool:
         if svc.server:
-            return await svc.server.send_to(uid, data)
+            return bool(await svc.server.send_to(uid, data))
         return False
 
     asyncio.create_task(_run_battle_task(bid, battle, battle_svc, send_fn, broadcast_interval_ms))

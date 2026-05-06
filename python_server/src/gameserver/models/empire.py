@@ -7,7 +7,7 @@ citizens, effects, artefacts, and the player's hex map.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 from gameserver.models.army import Army, SpyArmy
 from gameserver.models.critter import Critter
@@ -62,7 +62,7 @@ class Empire:
     item_upgrades: dict[str, dict[str, int]] = field(default_factory=dict)
     artefacts: list[str] = field(default_factory=list)
     bosses: dict[str, Critter] = field(default_factory=dict)
-    hex_map: dict = field(default_factory=dict)  # Composer hex tiles
+    hex_map: dict[str, Any] = field(default_factory=dict)  # Composer hex tiles
     max_life: float = 10.0
 
     # -- Helpers ---------------------------------------------------------

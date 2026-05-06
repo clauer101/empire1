@@ -379,7 +379,7 @@ class EmpireService:
 
     def _citizen_price(self, i: int) -> float:
         p = self._gc.prices.citizen
-        return p.u + (i * p.y) * (i + p.z) ** p.v
+        return float(p.u + (i * p.y) * (i + p.z) ** p.v)
 
     @staticmethod
     def _sigmoid(i: int, maxv: float, minv: float, spread: float, steep: float) -> float:
@@ -388,19 +388,19 @@ class EmpireService:
 
     def _tile_price(self, i: int) -> float:
         p = self._gc.prices.tile
-        return p.u + (i * p.y) * (i + p.z) ** p.v
+        return float(p.u + (i * p.y) * (i + p.z) ** p.v)
 
     def _wave_price(self, i: int) -> float:
         p = self._gc.prices.wave
-        return p.u + (i * p.y) * (i + p.z) ** p.v
+        return float(p.u + (i * p.y) * (i + p.z) ** p.v)
 
     def _critter_slot_price(self, i: int) -> float:
         p = self._gc.prices.critter_slot
-        return p.u + (i * p.y) * (i + p.z) ** p.v
+        return float(p.u + (i * p.y) * (i + p.z) ** p.v)
 
     def _army_price(self, i: int) -> float:
         p = self._gc.prices.army
-        return p.u + (i * p.y) * (i + p.z) ** p.v
+        return float(p.u + (i * p.y) * (i + p.z) ** p.v)
 
     def _wave_era_price(self, era_index: int) -> float:
         costs = self._gc.prices.wave_era_costs
