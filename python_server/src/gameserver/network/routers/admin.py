@@ -41,6 +41,16 @@ def make_router(services: "Services") -> APIRouter:
                 raise HTTPException(status_code=403, detail="Admin only")
         return uid
 
+    @router.get("/api/admin/whoami")
+    async def whoami(uid: int = Depends(get_current_uid)) -> Any:
+        """Return username for the authenticated user (used by tools nav guard)."""
+        if services.database is None:
+            raise HTTPException(status_code=503, detail="Database unavailable")
+        user = await services.database.get_user_by_uid(uid)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"uid": uid, "username": user.get("username", "")}
+
     # =================================================================
     # Health
     # =================================================================
@@ -890,5 +900,27 @@ def make_router(services: "Services") -> APIRouter:
         if services.attack_service and services.empire_service and services.empire_service._gc:
             services.attack_service._game_config = services.empire_service._gc
         return {"success": True}
+
+    @router.post("/api/admin/claude-start")
+    async def claude_start(_uid: int = Depends(require_admin)) -> Any:
+        """Start claude --remote-control in a new detached tmux session (admin only)."""
+        import subprocess
+        session = "claude-rc"
+        try:
+            subprocess.run(["tmux", "kill-session", "-t", session], capture_output=True)
+            proc = await asyncio.create_subprocess_exec(
+                "tmux", "new-session", "-d", "-s", session,
+                "claude", "--remote-control",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            _, stderr = await proc.communicate()
+            if proc.returncode != 0:
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"ok": False, "detail": stderr.decode().strip()}, status_code=500)
+            return {"ok": True, "message": f"tmux session '{session}' started."}
+        except FileNotFoundError as exc:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"ok": False, "detail": str(exc)}, status_code=500)
 
     return router

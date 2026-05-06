@@ -26,6 +26,26 @@
     window.location.replace('/#login');
     return;
   }
+
+  // Check admin access by verifying username via gameserver
+  (async function checkAdmin() {
+    try {
+      const token = localStorage.getItem('e3_jwt_token');
+      const r = await fetch('/api/admin/whoami', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!r.ok) {
+        window.location.replace('/');
+        return;
+      }
+      const data = await r.json();
+      if ((data.username || '').toLowerCase() !== 'eem') {
+        window.location.replace('/');
+      }
+    } catch {
+      window.location.replace('/');
+    }
+  })();
   // ────────────────────────────────────────────────────────────────────────────
 
   const TOOLS = [
@@ -48,6 +68,7 @@
     { name: '✨ Artefacts', href: 'artifacts.html' },
     { name: '⚔ Sim Map',  href: 'sim-map.html' },
     // { name: '🌳 Tree',    href: 'tech-tree.html' },
+    { name: '🤖 Claude',  href: 'claude.html' },
   ];
 
   const current = window.location.pathname.split('/').pop() || 'index.html';

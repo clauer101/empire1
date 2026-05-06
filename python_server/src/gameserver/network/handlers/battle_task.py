@@ -455,29 +455,33 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                     )
                     defender.research_queue = None
 
-    # --- Culture steal (divided equally among winners) ---
+    # --- Culture steal (divided equally among human winners; AI just destroys it) ---
     min_c = getattr(cfg, "min_lose_culture", 0.01) if cfg else 0.01
     max_c = getattr(cfg, "max_lose_culture", 0.05) if cfg else 0.05
     pct_culture = _random.uniform(min_c, max_c)
     culture_pool = defender.resources.get("culture", 0.0)
-    total_culture_stolen = round(culture_pool * pct_culture, 2)
-    if total_culture_stolen > 0:
-        per_winner_culture = round(total_culture_stolen / n_winners, 2)
+    total_culture_stolen = culture_pool * pct_culture
+    if total_culture_stolen > 0.01:
         payout_total = 0.0
-        for uid in winners:
-            w_emp = svc.empire_service.get(uid) if svc.empire_service else None
-            if w_emp is None:
-                continue
-            w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + per_winner_culture
-            payout_total += per_winner_culture
-            loot["per_attacker"].setdefault(uid, {})["culture"] = per_winner_culture
-            battle.attacker_gains.setdefault(uid, {})
-            battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + per_winner_culture
+        if winners:
+            per_winner_culture = round(total_culture_stolen / n_winners, 2)
+            for uid in winners:
+                w_emp = svc.empire_service.get(uid) if svc.empire_service else None
+                if w_emp is None:
+                    continue
+                w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + per_winner_culture
+                payout_total += per_winner_culture
+                loot["per_attacker"].setdefault(uid, {})["culture"] = per_winner_culture
+                battle.attacker_gains.setdefault(uid, {})
+                battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + per_winner_culture
+        else:
+            # AI attack: culture is lost by the defender but not credited to anyone
+            payout_total = round(total_culture_stolen, 2)
         defender.resources["culture"] = max(0.0, culture_pool - payout_total)
         battle.defender_losses["culture"] = battle.defender_losses.get("culture", 0.0) + payout_total
         loot["culture"] = payout_total
-        log.info("[LOOT] Culture stolen from uid=%d: %.1f total (%.2f each x%d winners, %.1f%%)",
-                 defender.uid, payout_total, per_winner_culture, n_winners, pct_culture * 100)
+        log.info("[LOOT] Culture stolen from uid=%d: %.1f total (%.2f%%, %d winners)",
+                 defender.uid, payout_total, pct_culture * 100, n_winners)
 
     # --- Life restore (once per battle for defender) ---
     from gameserver.util.effects import RESTORE_LIFE_AFTER_LOSS_OFFSET

@@ -510,6 +510,32 @@ class BattleService:
 
     # -- Army wave dispatch ---------
 
+    def build_upcoming_waves(self, armies: "dict[Any, Any]") -> list[dict[str, Any]]:
+        """Return sorted list of next unstarted waves across all armies with eta_ms."""
+        upcoming: list[dict[str, Any]] = []
+        for army in armies.values():
+            total_waves = len(army.waves)
+            for i, w in enumerate(army.waves):
+                if w.num_critters_spawned >= w.slots:
+                    continue  # fully spent
+                if w.num_critters_spawned > 0:
+                    continue  # active wave, currently spawning
+                item = self._items_by_iid.get(w.iid)
+                critter_name = item.name if item else w.iid
+                critter_slot_cost = self._get_wave_critter_slot_cost(w)
+                critter_count = max(1, w.slots // critter_slot_cost)
+                upcoming.append({
+                    "army_uid": army.uid,
+                    "wave_index": i + 1,
+                    "total_waves": total_waves,
+                    "iid": w.iid,
+                    "critter_name": critter_name,
+                    "critter_count": critter_count,
+                    "eta_ms": round(max(0.0, w.next_critter_ms)),
+                })
+        upcoming.sort(key=lambda e: e["eta_ms"])
+        return upcoming
+
     def _get_critter_spawn_interval(self, critter_iid: str) -> float:
         """Get spawn interval (time_between_ms) for a critter type.
         
@@ -804,29 +830,9 @@ class BattleService:
         defender_life = battle.defender.resources.get("life", 0) if battle.defender else 0
         defender_max_life = battle.defender.max_life if battle.defender else 10
 
-        # Wave info per army — first unstarted wave for each attacker
-        wave_infos: list[dict[str, Any]] = []
-        for army in battle.armies.values():
-            total_waves = len(army.waves)
-            for i, w in enumerate(army.waves):
-                if w.num_critters_spawned == 0:
-                    item = self._items_by_iid.get(w.iid)
-                    critter_name = item.name if item else w.iid
-                    critter_slot_cost = max(1, int(getattr(item, "slots", 1) or 1)) if item else 1
-                    wave_infos.append({
-                        "owner_uid": army.uid,
-                        "wave_index": i + 1,
-                        "total_waves": total_waves,
-                        "iid": w.iid,
-                        "critter_name": critter_name,
-                        "slots": w.slots,
-                        "critter_slot_cost": critter_slot_cost,
-                        "spawned": 0,
-                        "next_critter_ms": max(0.0, w.next_critter_ms),
-                    })
-                    break
-        # Backward compat: single wave_info = first entry
-        wave_info = wave_infos[0] if wave_infos else None
+        upcoming_waves = self.build_upcoming_waves(battle.armies)
+        wave_info = upcoming_waves[0] if upcoming_waves else None
+        wave_infos = upcoming_waves
 
         msg: dict[str, Any] = {
             "type": "battle_update",

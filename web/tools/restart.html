@@ -180,18 +180,6 @@
     <button class="env-tab"        id="tab-dev"  onclick="selectEnv('dev')">DEV</button>
   </div>
 
-  <!-- Deploy card -->
-  <div class="card">
-    <div class="card-title">🚀 Deploy</div>
-    <p>
-      Builds the Docker image and redeploys the selected environment.<br>
-      Saves game state before stopping the old container.
-    </p>
-    <button class="btn-accent" id="btn-deploy" onclick="doDeploy()">
-      Deploy
-    </button>
-  </div>
-
   <!-- Restart card -->
   <div class="card">
     <div class="card-title">🔁 Process Restart</div>
@@ -255,12 +243,12 @@
     }
 
     function disableAll() {
-      ['btn-deploy', 'btn-restart', 'btn-restart-both'].forEach(id => {
+      ['btn-restart', 'btn-restart-both'].forEach(id => {
         document.getElementById(id).disabled = true;
       });
     }
     function enableAll() {
-      ['btn-deploy', 'btn-restart', 'btn-restart-both'].forEach(id => {
+      ['btn-restart', 'btn-restart-both'].forEach(id => {
         document.getElementById(id).disabled = false;
       });
     }
@@ -288,44 +276,6 @@
       log('Timeout: server not reachable after 90s', 'err');
       setStatus('Server not reachable — check manually', 'err');
       enableAll();
-    }
-
-    async function doDeploy() {
-      disableAll();
-      setStatus(`Deploying ${currentEnv} …`, 'warn');
-      log(`Starting deploy: ${currentEnv} …`, 'warn');
-
-      try {
-        const r = await fetch(API + '/api/admin/deploy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({ env: currentEnv }),
-        });
-        if (!r.ok) {
-          const text = await r.text();
-          log(`Deploy error ${r.status}: ${text.slice(0, 200)}`, 'err');
-          setStatus(`Deploy failed (${r.status})`, 'err');
-          enableAll();
-          return;
-        }
-        const data = await r.json();
-        if (data.ok) {
-          log(`${data.message}`, 'ok');
-          setStatus(`Deploy running — waiting for ${currentEnv} to come back …`, 'warn');
-          // Deploy takes longer (build step) — wait before polling
-          await new Promise(r => setTimeout(r, 8000));
-          log('Polling for server …');
-          await pollUntilBack(120000);
-        } else {
-          log(`Deploy error: ${data.detail || JSON.stringify(data)}`, 'err');
-          setStatus('Deploy failed', 'err');
-          enableAll();
-        }
-      } catch (e) {
-        log(`Request failed: ${e.message}`, 'err');
-        setStatus('Deploy request failed', 'err');
-        enableAll();
-      }
     }
 
     async function doRestart() {

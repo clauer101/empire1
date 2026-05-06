@@ -23,6 +23,10 @@
 
 export function createBattleUi(ctx) {
   let _statusLoopId = null;
+  // Snapshot of the last wave_info received from the server + the wall-clock time it arrived.
+  // Used to compute a smooth client-side countdown independent of broadcast interval.
+  let _waveInfoSnapshot = null;   // { wave_info, receivedAt: DOMHighResTimeStamp }
+
 
   function spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
     const wrap = ctx.getContainer().querySelector('#canvas-wrap');
@@ -60,7 +64,10 @@ export function createBattleUi(ctx) {
     bs.attacker_army_name = msg.attacker_army_name || '';
     bs.attacker_username = msg.attacker_username || '';
     bs.time_since_start_s = msg.time_since_start_s || 0;
-    if ('wave_info' in msg) bs.wave_info = msg.wave_info;
+    if ('wave_info' in msg) {
+      bs.wave_info = msg.wave_info;
+      _waveInfoSnapshot = msg.wave_info ? { wave_info: msg.wave_info, receivedAt: performance.now() } : null;
+    }
 
     const grid = ctx.getGrid();
     if (msg.phase === 'in_battle' && grid && !grid.battleActive) {
@@ -78,6 +85,7 @@ export function createBattleUi(ctx) {
     console.log('[Battle] Battle setup:', msg);
     ctx.addDebugLog(`🎮 Battle Setup: ${msg.defender_name} vs ${msg.attacker_name}`);
     ctx.acquireWakeLock();
+    _waveInfoSnapshot = null;
 
     ctx.setBattleState({
       active: true,
@@ -228,7 +236,11 @@ export function createBattleUi(ctx) {
     }
 
     if (msg.defender_life != null) grid.setDefenderLives(msg.defender_life, msg.defender_max_life);
-    if ('wave_info' in msg) ctx.getBattleState().wave_info = msg.wave_info;
+    if ('wave_info' in msg) {
+      ctx.getBattleState().wave_info = msg.wave_info;
+      _waveInfoSnapshot = msg.wave_info ? { wave_info: msg.wave_info, receivedAt: performance.now() } : null;
+      _updateNextWaveDisplay();
+    }
     grid._dirty = true;
   }
 
@@ -264,6 +276,7 @@ export function createBattleUi(ctx) {
     _statusLoopId = setInterval(() => {
       if (ctx.getBattleState().active) ctx.getBattleState().elapsed_ms += 100;
       updateStatusPanel();
+      _updateNextWaveDisplay();
     }, 100);
   }
 
@@ -329,39 +342,52 @@ export function createBattleUi(ctx) {
       fightNowItem.style.display = showFightNow ? '' : 'none';
     }
 
+    _updateNextWaveDisplay();
+  }
+
+  function _updateNextWaveDisplay() {
+    const bs = ctx.getBattleState();
+    const container = ctx.getContainer();
     const nextWaveEl = container.querySelector('#battle-next-wave');
-    if (nextWaveEl) {
+    if (!nextWaveEl) return;
+
+    if (bs.phase === 'travelling') {
+      // Before battle: show army arrival ETA from the attack summary
+      const st = ctx.getSt();
+      const attackSummary =
+        (st.summary?.attacks_incoming || []).find(
+          (a) => a.attack_id === ctx.getPendingAttackId()
+        ) ||
+        (st.summary?.attacks_outgoing || []).find(
+          (a) => a.attack_id === ctx.getPendingAttackId()
+        );
+      const etaSec = attackSummary?.eta_seconds ?? null;
+      if (etaSec !== null) bs.eta_seconds = etaSec;
       const wi = bs.wave_info;
-      if (bs.phase === 'travelling') {
-        const st = ctx.getSt();
-        const attackSummary =
-          (st.summary?.attacks_incoming || []).find(
-            (a) => a.attack_id === ctx.getPendingAttackId()
-          ) ||
-          (st.summary?.attacks_outgoing || []).find(
-            (a) => a.attack_id === ctx.getPendingAttackId()
-          );
-        const etaSec = attackSummary?.eta_seconds ?? null;
-        if (etaSec !== null) bs.eta_seconds = etaSec;
-        if (wi && etaSec !== null) {
-          const critterCount = Math.max(1, Math.floor(wi.slots / (wi.critter_slot_cost || 1)));
-          nextWaveEl.textContent = `Wave (${wi.wave_index}/${wi.total_waves}): ${critterCount}× ${wi.critter_name}, eta: ${Math.ceil(etaSec)}s`;
-        } else if (etaSec !== null) {
-          nextWaveEl.textContent = `Arriving in ${Math.ceil(etaSec)}s`;
-        } else {
-          nextWaveEl.textContent = '-';
-        }
-      } else if (wi) {
-        const siegeRemainingMs =
-          bs.phase === 'in_siege' && bs.time_since_start_s < 0 ? -bs.time_since_start_s * 1000 : 0;
-        const totalCountdownSec = Math.ceil((siegeRemainingMs + wi.next_critter_ms) / 1000);
-        const timeStr = totalCountdownSec > 0 ? `${totalCountdownSec}s` : 'now';
-        const critterCount = Math.max(1, Math.floor(wi.slots / (wi.critter_slot_cost || 1)));
-        nextWaveEl.textContent = `Wave (${wi.wave_index}/${wi.total_waves}): ${critterCount}× ${wi.critter_name}, eta: ${timeStr}`;
+      if (wi && etaSec !== null) {
+        nextWaveEl.textContent = `Next Wave (${wi.wave_index}/${wi.total_waves}): ${wi.critter_count}× ${wi.critter_name}, eta: ${Math.ceil(etaSec)}s`;
+      } else if (etaSec !== null) {
+        nextWaveEl.textContent = `Arriving in ${Math.ceil(etaSec)}s`;
       } else {
-        nextWaveEl.textContent = bs.phase === 'in_battle' ? 'All waves done' : '-';
+        nextWaveEl.textContent = '-';
       }
+      return;
     }
+
+    // Siege / in_battle: smooth client-side countdown using server eta_ms + elapsed time since receipt
+    if (!_waveInfoSnapshot) {
+      nextWaveEl.textContent = bs.phase === 'in_battle' ? 'All waves done' : '-';
+      return;
+    }
+
+    const { wave_info: wi, receivedAt } = _waveInfoSnapshot;
+    const elapsedSinceReceipt = performance.now() - receivedAt;
+    const siegeRemainingMs =
+      bs.phase === 'in_siege' && bs.time_since_start_s < 0 ? -bs.time_since_start_s * 1000 : 0;
+    const remainingMs = siegeRemainingMs + (wi.eta_ms ?? 0) - elapsedSinceReceipt;
+    const etaSec = Math.ceil(remainingMs / 1000);
+    const timeStr = etaSec > 0 ? `${etaSec}s` : 'now';
+    nextWaveEl.textContent = `Next Wave (${wi.wave_index}/${wi.total_waves}): ${wi.critter_count}× ${wi.critter_name}, eta: ${timeStr}`;
   }
 
   // ── Summary overlay ───────────────────────────────────────

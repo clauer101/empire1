@@ -111,24 +111,13 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
     else:
         time_since_start_s = 0
 
-    svc_items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    wave_info = None
-    if attacking_army and attacking_army.waves:
-        total_waves = len(attacking_army.waves)
-        for i, w in enumerate(attacking_army.waves):
-            if w.num_critters_spawned == 0:
-                item = svc_items.get(w.iid)
-                critter_name = item.name if item else w.iid
-                wave_info = {
-                    "wave_index": i + 1,
-                    "total_waves": total_waves,
-                    "iid": w.iid,
-                    "critter_name": critter_name,
-                    "slots": w.slots,
-                    "critter_slot_cost": item.slots if item else 1,
-                    "next_critter_ms": max(0.0, w.next_critter_ms),
-                }
-                break
+    from gameserver.engine.battle_service import BattleService
+    items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None)
+    # Build a fake armies dict with just this army so we can reuse build_upcoming_waves
+    armies = {attacking_army.aid: attacking_army} if attacking_army else {}
+    upcoming = battle_svc.build_upcoming_waves(armies)
+    wave_info = upcoming[0] if upcoming else None
 
     attacker_username = ""
     if svc.database is not None:

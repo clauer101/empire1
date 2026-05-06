@@ -49,7 +49,7 @@ era_effects:
     gold_offset: 2.3
   modern:
     travel_offset: 16200
-    gold_offset: 2.6
+    gold_offset: 2.7
   future:
     travel_offset: 18000
     gold_offset: 5
