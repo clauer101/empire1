@@ -16,6 +16,7 @@ services:
     volumes:
       - ./data/dev:/app/data
       - gameserver_dev_logs:/app/logs
+      - ./python_server/config:/app/config
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
@@ -33,6 +34,8 @@ services:
     env_file: .env.dev
     ports:
       - "127.0.0.1:8100:8000"
+    volumes:
+      - ./python_server/config:/app/config
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
