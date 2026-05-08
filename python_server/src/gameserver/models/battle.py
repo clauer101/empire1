@@ -103,7 +103,7 @@ class BattleState:
     def army(self) -> Army | None:
         """Primary army (first attack's army, keyed by attack_id)."""
         aid = self.attack_ids[0] if self.attack_ids else None
-        return self.armies.get(aid) if aid is not None else None  # type: ignore[arg-type]
+        return self.armies.get(aid) if aid is not None else None
 
     def should_broadcast(self) -> bool:
         return self.broadcast_timer_ms <= 0

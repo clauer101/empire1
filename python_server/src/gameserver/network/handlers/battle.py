@@ -169,7 +169,7 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
             "attacker_uid": battle.attacker_uids[0] if battle.attacker_uids else attack.attacker_uid,
             "attacker_uids": list(battle.attacker_uids),
             "defender_name": battle.defender.name if battle.defender else "",
-            "attacker_name": (svc.empire_service.get(battle.attacker_uids[0]).name
+            "attacker_name": (e.name if (e := svc.empire_service.get(battle.attacker_uids[0])) else ""
                               if battle.attacker_uids and svc.empire_service else ""),
             "tiles": battle.defender.hex_map if battle.defender else {},
             "structures": [

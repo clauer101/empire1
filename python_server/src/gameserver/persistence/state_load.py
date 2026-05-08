@@ -123,10 +123,6 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
         defender_uid = battle_dict.get("defender_uid")
         if defender_uid and defender_uid in result.empires:
             battle.defender = result.empires[defender_uid]
-        # Link attacker (first attacker_uid)
-        attacker_uids = battle_dict.get("attacker_uids", [])
-        if attacker_uids and attacker_uids[0] in result.empires:
-            battle.attacker = result.empires[attacker_uids[0]]
 
     log.info("Restored %d empires, %d attacks, %d battles",
              len(result.empires), len(result.attacks), len(result.battles))
