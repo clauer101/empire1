@@ -358,7 +358,7 @@ class Database:
             "from_uid": row[1],
             "to_uid": row[2],
             "body": row[3],
-            "sent_at": str(row[4]) if row[4] else "",
+            "sent_at": (str(row[4]).rstrip("Z") + "Z") if row[4] else "",
             "read": bool(row[5]),
         }
 

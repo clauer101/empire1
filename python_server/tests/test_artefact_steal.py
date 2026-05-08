@@ -1,6 +1,6 @@
 """Unit tests for _apply_artefact_steal in handlers.py."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from gameserver.models.empire import Empire
 from gameserver.models.battle import BattleState

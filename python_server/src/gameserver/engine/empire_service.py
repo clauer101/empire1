@@ -56,6 +56,7 @@ class EmpireService:
         self._citizen_effect = _gc.citizen_effect
         self._base_build_speed = _gc.base_build_speed
         self._base_research_speed = _gc.base_research_speed
+        self._base_restore_life = _gc.restore_life_after_loss_offset
         self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
         self._building_era_groups: dict[str, list[str]] = building_era_groups or {}
         self._item_era_index: dict[str, int] = item_era_index or {}

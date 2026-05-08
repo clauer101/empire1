@@ -176,34 +176,34 @@ ai_generator:
     max_next_era: 2
   renaissance:
     min_waves: 8
-    max_waves: 11
+    max_waves: 12
     min_slots: 14
     max_slots: 22
     min_previous_era: 2
-    max_previous_era: 4
+    max_previous_era: 5
     min_next_era: 0
-    max_next_era: 2
+    max_next_era: 3
   industrial:
     min_waves: 10
-    max_waves: 13
+    max_waves: 14
     min_slots: 16
     max_slots: 26
     min_previous_era: 2
-    max_previous_era: 4
+    max_previous_era: 5
     min_next_era: 0
-    max_next_era: 2
+    max_next_era: 3
   modern:
     min_waves: 11
-    max_waves: 14
+    max_waves: 15
     min_slots: 18
     max_slots: 30
     min_previous_era: 2
-    max_previous_era: 5
+    max_previous_era: 7
     min_next_era: 0
-    max_next_era: 2
+    max_next_era: 4
   future:
     min_waves: 12
-    max_waves: 16
+    max_waves: 17
     min_slots: 20
     max_slots: 32
     min_previous_era: 5

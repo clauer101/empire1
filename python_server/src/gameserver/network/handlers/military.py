@@ -17,6 +17,11 @@ def _svc() -> Any:
     return _core_svc()
 
 
+def _active_battles() -> Any:
+    from gameserver.network.handlers._core import _active_battles
+    return _active_battles
+
+
 async def handle_military_request(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
@@ -110,6 +115,8 @@ async def handle_military_request(
                     if _arm.aid == a.army_aid:
                         _army_name = _arm.name
                         break
+        battle = _active_battles().get(a.defender_uid)
+        battle_elapsed = round(battle.elapsed_ms / 1000.0, 1) if battle else 0.0
         return {
             "attack_id": a.attack_id,
             "attacker_uid": a.attacker_uid,
@@ -123,6 +130,7 @@ async def handle_military_request(
             "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
             "total_siege_seconds": round(a.total_siege_seconds, 1),
             "is_spy": a.is_spy,
+            "battle_elapsed_seconds": battle_elapsed,
         }
 
     incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(target_uid)]
@@ -345,16 +353,77 @@ def _build_spy_report(defender: Any, svc: Any) -> tuple[str, dict[str, Any]]:
         parts = [f"{abbrev.get(k, k)}+{v}" for k, v in lvls.items() if v > 0]
         return " ".join(parts) if parts else "(no upgrades)"
 
+    # Placed towers from the defender's hex map
+    _NON_TOWER = {"path", "castle", "spawnpoint", "empty", "void", "blocked"}
+    _hex_map: dict[str, Any] = defender.hex_map or {}
+    str_map: dict[str, str] = {k: (v if isinstance(v, str) else v.get("type", "empty"))
+                                for k, v in _hex_map.items()}
+    placed_towers = [
+        {"type": tile_type}
+        for tile_type in str_map.values()
+        if tile_type not in _NON_TOWER
+    ]
+
+    # Path length
+    path_length: int | None = None
+    try:
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+        _path = find_path_from_spawn_to_castle(str_map)
+        path_length = len(_path) - 1 if _path and len(_path) > 1 else None
+    except Exception:
+        pass
+
+    _TOWER_ERA: dict[str, str] = {
+        "BASIC_TOWER": "Stone Age", "SLING_TOWER": "Stone Age",
+        "DOUBLE_SLING_TOWER": "Neolith.", "SPIKE_TRAP": "Neolith.",
+        "ARROW_TOWER": "Bronze", "BALLISTA_TOWER": "Bronze", "FIRE_TOWER": "Bronze",
+        "CATAPULTS": "Iron Age", "ARBELESTE_TOWER": "Iron Age",
+        "TAR_TOWER": "Medieval", "HEAVY_TOWER": "Medieval", "BOILING_OIL": "Medieval",
+        "CANNON_TOWER": "Renaissance", "RIFLE_TOWER": "Renaissance",
+        "COLD_TOWER": "Renaissance", "ICE_TOWER": "Renaissance",
+        "FLAME_THROWER": "Industrial", "SHOCK_TOWER": "Industrial",
+        "PARALYZNG_TOWER": "Industrial", "GATLING_TOWER": "Industrial",
+        "NAPALM_THROWER": "Modern", "MG_TOWER": "Modern",
+        "RAPID_FIRE_MG_BUNKER": "Modern", "RADAR_TOWER": "Modern",
+        "ANTI_AIR_TOWER": "Modern", "LASER_TOWER": "Modern",
+        "SNIPER_TOWER": "Future", "ROCKET_TOWER": "Future",
+    }
+    _ERA_ORDER_STAT = ["Stone Age", "Neolith.", "Bronze", "Iron Age",
+                       "Medieval", "Renaissance", "Industrial", "Modern", "Future"]
+    by_era: dict[str, int] = {}
+    for t in placed_towers:
+        era_name = _TOWER_ERA.get(t["type"], "?")
+        by_era[era_name] = by_era.get(era_name, 0) + 1
+    bar_width = 16
+    max_count = max(by_era.values(), default=1)
+    era_bar_lines = []
+    for era_name in _ERA_ORDER_STAT:
+        cnt = by_era.get(era_name)
+        if not cnt:
+            continue
+        filled = round((cnt / max_count) * bar_width)
+        bar = "█" * filled + "░" * (bar_width - filled)
+        pct = round((cnt / len(placed_towers)) * 100)
+        era_bar_lines.append(f"  {era_name:<11} {bar} {cnt:2}× {pct:3}%")
+
     lines = [
-        f"🔬 Workshop Intelligence — {era_label}",
+        f"🕵 Spy report on {defender.name}",
+        "🛡 Defense Intelligence",
         "─" * 32,
-        "─── Towers ───",
+        f"  Path length: {path_length if path_length is not None else '?'} tiles",
+        f"  Towers placed: {len(placed_towers)}",
+    ]
+    lines.extend(era_bar_lines)
+    lines += [
+        "─" * 32,
+        f"🔬 Workshop Intelligence — {era_label}",
+        "─── Towers (current era) ───",
     ]
     for name, lvls in sorted(structures):
         lines.append(f"  🗼 {name:<20} {_fmt_upgrades(lvls)}")
     if not structures:
         lines.append("  (none)")
-    lines.append("─── Units ───")
+    lines.append("─── Units (current era) ───")
     for name, lvls in sorted(critters):
         lines.append(f"  ⚔ {name:<20} {_fmt_upgrades(lvls)}")
     if not critters:
@@ -362,11 +431,14 @@ def _build_spy_report(defender: Any, svc: Any) -> tuple[str, dict[str, Any]]:
     lines.append("─" * 32)
 
     text = "\n".join(lines)
+
     data = {
         "era": era_label,
         "era_idx": era_idx,
         "structures": [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)],
         "critters": [{"name": n, "upgrades": lvl} for n, lvl in sorted(critters)],
+        "placed_towers": placed_towers,
+        "path_length": path_length,
     }
     return text, data
 

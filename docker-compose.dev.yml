@@ -32,6 +32,8 @@ services:
     image: empire1-webserver-dev
     restart: unless-stopped
     env_file: .env.dev
+    environment:
+      BUILD_MODE: production
     ports:
       - "127.0.0.1:8100:8000"
     volumes:

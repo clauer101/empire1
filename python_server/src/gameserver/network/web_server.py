@@ -775,6 +775,14 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
+    @app.post("/api/structure-gold")
+    async def save_structure_gold(request: Request) -> Any:
+        try:
+            _save_gold_costs(STRUCTURES_PATH, await request.json())
+            return JSONResponse({"success": True})
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
     @app.get("/api/critter-stats")
     async def get_critter_stats() -> Any:
         return JSONResponse(_parse_critters(web_dir, CRITTERS_PATH))

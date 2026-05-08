@@ -6,6 +6,7 @@ import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { escHtml, hilite } from '../lib/html.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY, ERA_ROMAN, ERA_LABEL_EN } from '../lib/eras.js';
+import { _buildEraStatsHTML } from './defense/era_data.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -464,7 +465,7 @@ async function onChangeCritter(aid, waveIdx, critterIid) {
   }
 }
 
-const _SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+const _SPRITE_EXTS = ['.webp'];
 
 /**
  * Initialize canvas elements with class .critter-sprite-canvas.
@@ -908,13 +909,31 @@ function _onSpyReport(msg) {
     })
     .join('');
 
+  const eraDistHTML = _buildEraStatsHTML(msg.placed_towers || []);
+
+  const pathLenHtml = msg.path_length != null
+    ? `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 6px;font-size:12px;font-family:monospace;">${msg.path_length} tiles</span>`
+    : '<span style="opacity:0.4;font-size:12px;">unknown</span>';
+  const towerCountHtml = `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 6px;font-size:12px;font-family:monospace;">${(msg.placed_towers || []).length}</span>`;
+
   body.innerHTML = `
-    <h3 style="margin:0 0 4px;font-size:15px;">🔬 Workshop Report</h3>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">${escHtml(defName)} &mdash; ${escHtml(era)}</div>
-    <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text-dim);">Towers</div>
-    <div style="margin-bottom:12px;">${structHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
-    <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text-dim);">Units</div>
-    <div>${critterHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
+    <h3 style="margin:0 0 4px;font-size:15px;">🕵 Spy Report</h3>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">${escHtml(defName)}</div>
+
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--accent,#4fc3f7);">🛡 Defense Intelligence</div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:6px;">
+      <div style="font-size:12px;margin-bottom:3px;">🛤 Path length: ${pathLenHtml}</div>
+      <div style="font-size:12px;margin-bottom:8px;">🏰 Towers placed: ${towerCountHtml}</div>
+      ${eraDistHTML}
+    </div>
+
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">🔬 Workshop Intelligence &mdash; ${escHtml(era)}</div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Towers</div>
+      <div style="margin-bottom:10px;">${structHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Units</div>
+      <div>${critterHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
+    </div>
   `;
 
   overlay.style.display = 'flex';
@@ -1145,18 +1164,24 @@ function renderArmies(data) {
           const endTs = Date.now() + atk.siege_remaining_seconds * 1000;
           return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:10px;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
         }
-        if (atk.phase === 'traveling') {
+        if (atk.phase === 'travelling' || atk.phase === 'traveling') {
           const endTs = Date.now() + atk.eta_seconds * 1000;
           return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:10px;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
         }
         return '';
       };
+      const _targetName = (atk) => {
+        const emp = _empiresCache.find((e) => e.uid === atk.defender_uid);
+        return emp ? emp.name : `#${atk.defender_uid}`;
+      };
+      const _targetSpan = (atk) =>
+        `<span style="font-size:10px;opacity:0.7;">→ ${escHtml(_targetName(atk))}</span>`;
       if (spyAtk && realAtk) {
-        btnContent = `<span>${_atkPhaseLabel(realAtk)} · 🕵 "${a.name}"</span>${_atkEtaSpan(realAtk)}`;
+        btnContent = `<span>${_atkPhaseLabel(realAtk)} · 🕵 "${a.name}"</span>${_targetSpan(realAtk)}${_atkEtaSpan(realAtk)}`;
       } else if (spyAtk) {
-        btnContent = `<span>🕵 "${a.name}"</span>${_atkEtaSpan(spyAtk)}`;
+        btnContent = `<span>🕵 "${a.name}"</span>${_targetSpan(spyAtk)}${_atkEtaSpan(spyAtk)}`;
       } else if (realAtk) {
-        btnContent = `<span>${_atkPhaseLabel(realAtk)}</span>${_atkEtaSpan(realAtk)}`;
+        btnContent = `<span>${_atkPhaseLabel(realAtk)}</span>${_targetSpan(realAtk)}${_atkEtaSpan(realAtk)}`;
       } else {
         btnContent = `<span>⚔ Attack</span>${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}`;
       }

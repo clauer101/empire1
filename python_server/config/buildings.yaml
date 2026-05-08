@@ -1052,7 +1052,7 @@ THE_WORLD_WONDER:
   type: wonder
   description: "Ultimate achievement combining science, culture and power."
   effort: 2149344
-  costs: {gold: 26250000}
+  costs: {gold: 7664712}
   requirements: [NUCLEAR_REACTION, GLOBALIZATION_STRATEGIES, SPECIAL_FORCES]
   effects:
     culture_modifier: 5.0
@@ -1065,7 +1065,7 @@ SPACE_CENTER:
   name: "Space Center"
   description: "Space exploration and orbital research facility."
   effort: 1612008
-  costs: {gold: 12600000}
+  costs: {gold: 4754656}
   requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
     research_speed_offset: 5
@@ -1076,7 +1076,7 @@ CYBER_COMMAND:
   name: "Cyber Command"
   description: "Digital warfare and cyber operations headquarters."
   effort: 1612008
-  costs: {gold: 14700000}
+  costs: {gold: 4292239}
   requirements: [COMPUTER_TECHNOLOGY, BIONICS]
   effects: []
 
@@ -1086,7 +1086,7 @@ FUSION_REACTOR:
   name: "Fusion Reactor"
   description: "Ultimate clean energy source through nuclear fusion."
   effort: 1612008
-  costs: {gold: 16800000}
+  costs: {gold: 4660146}
   requirements: [COLD_FUSION]
   effects:
     gold_offset: 5

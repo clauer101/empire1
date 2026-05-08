@@ -13,21 +13,21 @@ let container;
 
 // [name, ext, aspectRatio]  ratio = frameW/frameH
 const _CRITTERS = [
-  ['warrior', 'png', 2 / 3],
-  ['knight', 'webp', 2 / 3], // 170×256
-  ['horseman_fast', 'png', 1], // 80×80
-  ['legionary', 'webp', 2 / 3], // 170×256
-  ['swordman', 'png', 2 / 3],
+  ['warrior', 'webp', 2 / 3],
+  ['knight', 'webp', 2 / 3],
+  ['horseman_fast', 'webp', 1],
+  ['legionary', 'webp', 2 / 3],
+  ['swordman', 'webp', 2 / 3],
   ['ninja', 'webp', 2 / 3],
   ['musketeer', 'webp', 2 / 3],
-  ['the_king', 'png', 2 / 3], // 39×58
-  ['mech_warrior', 'webp', 1], // 50×50
-  ['specops', 'png', 2 / 3],
-  ['dragooner', 'webp', 1], // 80×80
+  ['the_king', 'webp', 2 / 3],
+  ['mech_warrior', 'webp', 1],
+  ['specops', 'webp', 2 / 3],
+  ['dragooner', 'webp', 1],
   ['samurai', 'webp', 2 / 3],
   ['crusader', 'webp', 2 / 3],
-  ['siege_tank', 'webp', 1], // 80×80
-  ['pikeneer', 'png', 2 / 3],
+  ['siege_tank', 'webp', 1],
+  ['pikeneer', 'webp', 2 / 3],
 ];
 
 const _STRUCTURES = [

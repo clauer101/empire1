@@ -393,8 +393,14 @@ export function createPlacement(ctx) {
         } else {
           clearPathDirty();
           if (resp?.tiles && grid) {
+            const _savedZoom = grid.zoom;
+            const _savedOffX = grid.offsetX;
+            const _savedOffY = grid.offsetY;
             grid.fromJSON({ tiles: resp.tiles });
             grid.addVoidNeighbors();
+            grid.zoom = _savedZoom;
+            grid.offsetX = _savedOffX;
+            grid.offsetY = _savedOffY;
           }
           const path = resp?.path ? resp.path.map(([q, r]) => ({ q, r })) : null;
           grid.setDisplayPath(path);

@@ -278,6 +278,7 @@
     range:       { label: 'Range',      step: 0.5,  min: 0.5 },
     reload_time: { label: 'Reload',     step: 100,  min: 100 },
     shot_speed:  { label: 'Shot Speed', step: 0.1,  min: 0.1 },
+    gold:        { label: 'Gold',       step: 1,    min: 0   },
   };
 
   function fmtVal(v, step) {
@@ -308,11 +309,27 @@
   saveBtn.addEventListener('click', async () => {
     saveBtn.disabled = true;
     try {
+      // Split towerChanges: gold goes via /api/structure-gold, rest via /api/structure-stats
+      const goldChanges = {};
+      const statChanges = {};
+      for (const [iid, fields] of Object.entries(towerChanges)) {
+        for (const [field, value] of Object.entries(fields)) {
+          if (field === 'gold') {
+            goldChanges[iid] = value;
+          } else {
+            if (!statChanges[iid]) statChanges[iid] = {};
+            statChanges[iid][field] = value;
+          }
+        }
+      }
+
       const reqs = [];
       if (Object.keys(critterChanges).length)
         reqs.push(fetch('/api/critter-stats',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(critterChanges) }));
-      if (Object.keys(towerChanges).length)
-        reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(towerChanges) }));
+      if (Object.keys(statChanges).length)
+        reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(statChanges) }));
+      if (Object.keys(goldChanges).length)
+        reqs.push(fetch('/api/structure-gold',  { method: 'POST',  headers: {'Content-Type':'application/json'}, body: JSON.stringify(goldChanges) }));
       if (Object.keys(reqChanges).length)
         reqs.push(fetch('/api/item-requirements', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(reqChanges) }));
       if (Object.keys(eraChanges).length)
@@ -633,11 +650,11 @@
   }
 
   function critterSprite(c) {
-    // animation = "assets/sprites/critters/slave" → folder contains slave.png
+    // animation = "assets/sprites/critters/slave" → folder contains slave.webp
     if (!c.animation) return '';
     const folder = c.animation.replace(/^\//, '');
     const name = folder.split('/').pop();
-    return `/${folder}/${name}.png`;
+    return `/${folder}/${name}.webp`;
   }
 
   function roleScoresHtml(c) {
@@ -718,8 +735,8 @@
             ${editStat(t.iid,'tower','range',t.range)}
             ${editStat(t.iid,'tower','reload_time',t.reload_time)}
             ${editStat(t.iid,'tower','shot_speed',t.shot_speed)}
+            ${editStat(t.iid,'tower','gold',t.costs?.gold || 0)}
             <span class="stat"><span class="stat-label">DPS</span> <span class="stat-value">${d.toFixed(1)}</span></span>
-            <span class="stat"><span class="stat-label">Cost</span> <span class="stat-value">${fmtNum(t.costs?.gold || 0)}g</span></span>
           </div>
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px">
             <span class="tag tag-${t.shot_type}">${t.shot_type}</span>
@@ -961,7 +978,7 @@
   });
 
   // ── Render critter sprites via canvas (extract first frame from 4×4 sheet) ──
-  const SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+  const SPRITE_EXTS = ['.webp'];
   document.querySelectorAll('.critter-sprite-canvas').forEach(canvas => {
     const baseUrl = canvas.dataset.src.replace(/\.\w+$/, ''); // strip extension
     function tryLoad(idx) {

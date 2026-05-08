@@ -599,7 +599,7 @@ def _create_spy_arrived_handler() -> Callable[..., Any]:
                 **report_data,
             })
 
-        inbox_body = f"🕵 Spy report on {defender.name}\n" + report_text
+        inbox_body = report_text
         await svc.database.send_message(from_uid=0, to_uid=attacker_uid, body=inbox_body)
         log.info("[spy] Report sent: attacker=%d defender=%d era=%s",
                  attacker_uid, defender_uid, report_data.get("era", "?"))

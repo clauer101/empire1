@@ -130,15 +130,18 @@ function _calcPrice(iid) {
   return Math.round(baseCost * Math.pow(totalLevels + 1, 2) * 10) / 10;
 }
 
-// Stats that decrease with level (subtract) and whose def key differs from the stat key.
-const _DECREASING_STATS = { reload: 'reload', slow_value: 'effect_value' };
+// Maps calcKey → def key in upgradeDefs (when they differ)
+const _DEF_KEY_MAP = { slow_value: 'effect_value' };
 
 function _currentValue(baseVal, stat, level, defs) {
   if (!defs || level === 0) return baseVal;
-  const defKey = _DECREASING_STATS[stat] ?? stat;
+  const defKey = _DEF_KEY_MAP[stat] ?? stat;
   const bonusPerLevel = defs[defKey] ?? 0;
-  const sign = stat in _DECREASING_STATS ? -1 : 1;
-  return baseVal * (1 + ((sign * bonusPerLevel) / 100) * level);
+  if (stat === 'reload') {
+    // Reload time decreases via division (matches defense.js and battle_service)
+    return baseVal / (1 + (bonusPerLevel / 100) * level);
+  }
+  return baseVal * (1 + (bonusPerLevel / 100) * level);
 }
 
 function _fmtVal(val) {
@@ -339,7 +342,7 @@ function _itemGridHtml(iids, isStructure) {
   );
 }
 
-const _SPRITE_EXTS = ['.png', '.webp', '.jpg'];
+const _SPRITE_EXTS = ['.webp'];
 
 function _initCanvases(el) {
   el.querySelectorAll('.ws-critter-canvas').forEach((canvas) => {

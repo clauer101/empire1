@@ -64,6 +64,9 @@ deploy() {
 
     save_state_before_stop "$env" "$port"
 
+    echo "  Building frontend..."
+    (export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && cd web && npm run build --silent)
+
     docker compose -p "$project" -f "$compose_file" build
     docker compose -p "$project" -f "$compose_file" up -d
     docker compose -p "$project" -f "$compose_file" ps

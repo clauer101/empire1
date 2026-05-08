@@ -64,6 +64,7 @@ export function createBattleUi(ctx) {
     bs.attacker_army_name = msg.attacker_army_name || '';
     bs.attacker_username = msg.attacker_username || '';
     bs.time_since_start_s = msg.time_since_start_s || 0;
+    if (msg.time_since_start_s != null) bs.elapsed_ms = msg.time_since_start_s * 1000;
     if ('wave_info' in msg) {
       bs.wave_info = msg.wave_info;
       _waveInfoSnapshot = msg.wave_info ? { wave_info: msg.wave_info, receivedAt: performance.now() } : null;
@@ -85,7 +86,26 @@ export function createBattleUi(ctx) {
     console.log('[Battle] Battle setup:', msg);
     ctx.addDebugLog(`🎮 Battle Setup: ${msg.defender_name} vs ${msg.attacker_name}`);
     ctx.acquireWakeLock();
+
+    // If a battle is already active on this client, ignore re-initialization triggered
+    // by a second observer connecting (e.g. same user on another device).
+    if (ctx.getGrid().battleActive) {
+      ctx.addDebugLog('⚡ Battle setup ignored — battle already active on this client');
+      return;
+    }
+
     _waveInfoSnapshot = null;
+
+    // Check if a battle is already in progress from the summary (user opened defense mid-battle)
+    const _st = ctx.getSt();
+    const _pendingId = ctx.getPendingAttackId();
+    const _existingAtk =
+      ((_st?.summary?.attacks_incoming || []).find((a) => a.attack_id === _pendingId)) ||
+      ((_st?.summary?.attacks_outgoing || []).find((a) => a.attack_id === _pendingId));
+    const _resumePhase = _existingAtk?.phase === 'in_battle' ? 'in_battle'
+      : _existingAtk?.phase === 'in_siege' ? 'in_siege'
+      : 'waiting';
+    const _resumeElapsed = _existingAtk?.battle_elapsed_seconds ?? 0;
 
     ctx.setBattleState({
       active: true,
@@ -96,16 +116,15 @@ export function createBattleUi(ctx) {
       attacker_name: msg.attacker_name || '',
       attacker_army_name: msg.attacker_army_name || '',
       attacker_username: '',
-      elapsed_ms: 0,
+      elapsed_ms: _resumeElapsed * 1000,
       is_finished: false,
       defender_won: null,
-      phase: 'waiting',
-      time_since_start_s: 0,
+      phase: _resumePhase,
+      time_since_start_s: _resumeElapsed,
       wave_info: null,
     });
 
     const grid = ctx.getGrid();
-    const wasActive = grid.battleActive;
     grid.clearBattle();
 
     if (msg.tiles) {
@@ -114,7 +133,7 @@ export function createBattleUi(ctx) {
       if (!isDirty && !hasTimer) {
         grid.fromJSON({ tiles: msg.tiles });
         grid.addVoidNeighbors();
-        if (!wasActive) grid._centerGrid();
+        grid._centerGrid();
       }
     }
 
@@ -147,7 +166,7 @@ export function createBattleUi(ctx) {
       ctx.setBattleTitle(`👁 ${msg.defender_name}`);
     }
 
-    updateStatus('Battle starting...');
+    updateStatusFromBattleMsg();
   }
 
   function onStructureUpdate(msg) {
@@ -308,7 +327,7 @@ export function createBattleUi(ctx) {
         bs.eta_seconds = Math.max(0, bs.eta_seconds - 0.1);
         elapsedEl.textContent = _formatTime(-bs.eta_seconds * 1000);
       } else if (bs.phase !== 'travelling') {
-        elapsedEl.textContent = _formatTime(bs.time_since_start_s * 1000);
+        elapsedEl.textContent = _formatTime(bs.elapsed_ms);
       }
     }
   }

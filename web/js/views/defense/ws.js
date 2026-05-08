@@ -199,9 +199,11 @@ export function createBattleWs(ctx) {
     const st = ctx.getSt();
     const ACTIVE_PHASES = ['in_siege', 'in_battle'];
     const summary = st?.summary || {};
-    const allAttacks = [...(summary.attacks_incoming || []), ...(summary.attacks_outgoing || [])];
+    const incomingAttacks = summary.attacks_incoming || [];
+    const battleFinished = ctx.getBattleState().phase === 'finished';
     const hasActiveAttack =
-      ctx.getPendingAttackId() != null || allAttacks.some((a) => ACTIVE_PHASES.includes(a.phase));
+      (ctx.getPendingAttackId() != null && !battleFinished) ||
+      incomingAttacks.some((a) => ACTIVE_PHASES.includes(a.phase));
 
     ctx.updateBattleStatusVisibility(hasActiveAttack);
 

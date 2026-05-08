@@ -570,6 +570,16 @@ async def save_knowledge_gold(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+@app.post("/api/structure-gold")
+async def save_structure_gold(request: Request):
+    try:
+        updates = await request.json()  # {iid: gold, ...}
+        _save_gold_costs(STRUCTURES_PATH, updates)
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
 _SPRITE_EXTS = [".png", ".webp", ".jpg"]
 
 
@@ -1367,6 +1377,26 @@ async def serve_index():
     html = html.replace("https://relicsnrockets.io", _SITE_URL)
     return HTMLResponse(html)
 
+
+# In production mode, dist/ only contains bundled JS/CSS — serve non-bundled dirs raw
+if _BUILD_MODE == "production":
+    app.mount(
+        "/tools",
+        NoCacheStaticFiles(directory=str(WEB_DIR / "tools"), html=True),
+        name="tools"
+    )
+    # Sprites: register before the bundle-assets mount so the more-specific path wins
+    app.mount(
+        "/assets/sprites",
+        NoCacheStaticFiles(directory=str(WEB_DIR / "assets" / "sprites")),
+        name="sprites"
+    )
+    # Vite bundle assets (hashed JS/CSS/fonts)
+    app.mount(
+        "/assets",
+        NoCacheStaticFiles(directory=str(WEB_DIR / "dist" / "assets")),
+        name="dist-assets"
+    )
 
 app.mount(
     "/",

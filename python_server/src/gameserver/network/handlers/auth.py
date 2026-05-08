@@ -102,6 +102,8 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         })
 
     # Ongoing attacks
+    from gameserver.network.handlers._core import _active_battles
+
     def _attack_dto(a: Any) -> dict[str, Any]:
         if a.army_name_override:
             _army_name = a.army_name_override
@@ -114,6 +116,8 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
                     if _arm.aid == a.army_aid:
                         _army_name = _arm.name
                         break
+        _battle = _active_battles.get(a.defender_uid)
+        _elapsed = round(_battle.elapsed_ms / 1000, 1) if _battle else 0.0
         return {
             "attack_id": a.attack_id,
             "attacker_uid": a.attacker_uid,
@@ -127,6 +131,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
             "siege_remaining_seconds": round(a.siege_remaining_seconds, 1),
             "total_siege_seconds": round(a.total_siege_seconds, 1),
             "is_spy": a.is_spy,
+            "battle_elapsed_seconds": _elapsed,
         }
 
     attacks_incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(uid)]
@@ -166,6 +171,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "base_culture": svc.empire_service._base_culture,
         "base_build_speed": svc.empire_service._base_build_speed,
         "base_research_speed": svc.empire_service._base_research_speed,
+        "base_restore_life": svc.empire_service._base_restore_life,
         "max_life": empire.max_life,
         "effects": dict(empire.effects),
         "artefacts": list(empire.artefacts),

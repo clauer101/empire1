@@ -145,6 +145,7 @@ async function refreshEmpires() {
           ? out.map((a) => _attackEntry(a, 'out')).join('')
           : `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
       }
+      _bindAttackEntryClicks(container.querySelector('#dashboard-content'));
     }
   } catch (err) {
     console.error('[dashboard] getEmpires failed:', err);
@@ -321,7 +322,11 @@ function render(data) {
   );
   _startLiveCounter();
 
-  // Bind incoming attack clicks
+  _bindAttackEntryClicks(el);
+}
+
+function _bindAttackEntryClicks(el) {
+  if (!el) return;
   el.querySelectorAll('.attack-in-clickable').forEach((entry) => {
     entry.addEventListener('click', () => {
       const attackId = parseInt(entry.dataset.attackId, 10);
@@ -331,7 +336,6 @@ function render(data) {
     });
   });
 
-  // Bind outgoing watch entries (spectate defender's battle)
   el.querySelectorAll('.atk-watch-entry').forEach((entry) => {
     entry.addEventListener('click', () => {
       const attackId = parseInt(entry.dataset.attackId, 10);
@@ -357,6 +361,11 @@ function _tick() {
       const bar = span.closest('.attack-entry')?.querySelector('[data-atk-bar]');
       if (bar) bar.style.width = pct.toFixed(1) + '%';
     }
+  });
+
+  el.querySelectorAll('[data-atk-battle-elapsed]').forEach((span) => {
+    const elapsed = parseFloat(span.dataset.atkBattleElapsed) + elapsedS;
+    span.textContent = '⚔ ' + _fmtSecs(elapsed);
   });
 
   el.querySelectorAll('[data-queue-cd]').forEach((span) => {
@@ -457,7 +466,8 @@ function _showProductionOverlay(data) {
     completedBuildings,
     completedResearch,
     items,
-    artefacts
+    artefacts,
+    data.base_restore_life ?? 1
   );
 
   const overlay = document.createElement('div');
@@ -471,7 +481,7 @@ function _showProductionOverlay(data) {
       ${section('<span style="color:#90ee90">● Life Regen</span>', lifeHtml)}
       ${section('<span style="color:#4fc3f7">● Construction Speed</span>', buildHtml)}
       ${section('<span style="color:#ffa726">● Research Speed</span>', researchHtml)}
-      ${restoreHtml ? section('<span style="color:#ef9a9a">● Restore Life After Battle</span>', restoreHtml) : ''}
+      ${restoreHtml ? section('<span style="color:#ef9a9a">● Restore Life After Defeat</span>', restoreHtml) : ''}
     </div>
   `;
 
@@ -831,43 +841,45 @@ function renderResearchSpeed(
   return html;
 }
 
-function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtefacts) {
+function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtefacts, baseRestore) {
   const key = 'restore_life_after_loss_offset';
   let html = '';
-  let total = 0;
+  let bonus = 0;
 
   for (const iid of completedBuildings || []) {
     const item = items?.buildings?.[iid];
     if (item?.effects?.[key] > 0) {
-      total += item.effects[key];
-      html += `<div class="panel-row"><span class="label">+${item.effects[key].toFixed(1)}%</span><span class="value">(${item.name || iid})</span></div>`;
+      bonus += item.effects[key];
+      html += `<div class="panel-row"><span class="label">+${Math.round(item.effects[key])}</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
   for (const iid of completedResearch || []) {
     const item = items?.knowledge?.[iid];
     if (item?.effects?.[key] > 0) {
-      total += item.effects[key];
-      html += `<div class="panel-row"><span class="label">+${item.effects[key].toFixed(1)}%</span><span class="value">(${item.name || iid})</span></div>`;
+      bonus += item.effects[key];
+      html += `<div class="panel-row"><span class="label">+${Math.round(item.effects[key])}</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
   for (const iid of ownedArtefacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.[key] > 0) {
-      total += art.effects[key];
-      html += `<div class="panel-row"><span class="label">+${art.effects[key].toFixed(1)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
+      bonus += art.effects[key];
+      html += `<div class="panel-row"><span class="label">+${Math.round(art.effects[key])}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
     }
   }
-  if (!total) return '';
+  if (!bonus) return '';
 
-  // Also include era contribution from aggregated effects
-  const eraContrib = (effects?.[key] || 0) - total;
+  // Era contribution
+  const eraContrib = (effects?.[key] || 0) - bonus;
   if (eraContrib > 0.05)
-    html += `<div class="panel-row"><span class="label">+${eraContrib.toFixed(1)}%</span><span class="value">(Era)</span></div>`;
-  total = effects?.[key] || total;
+    html += `<div class="panel-row"><span class="label">+${Math.round(eraContrib)}</span><span class="value">(Era)</span></div>`;
+
+  const totalBonus = Math.round(effects?.[key] || bonus);
+  const base = Math.round(baseRestore ?? 1);
 
   html +=
     '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row" style="color:#ef9a9a;font-weight:bold"><span class="label">= ${total.toFixed(1)}% life restored after loss</span></div>`;
+  html += `<div class="panel-row" style="color:#ef9a9a;font-weight:bold"><span class="label">= ${base + totalBonus} (${base} +${totalBonus})</span></div>`;
   return html;
 }
 
@@ -1115,7 +1127,8 @@ function _attackEntry(a, direction) {
         ? Math.round((1 - a.siege_remaining_seconds / a.total_siege_seconds) * 100)
         : 0;
   } else if (a.phase === 'in_battle') {
-    countdown = `<span class="atk-cd atk-cd-battle">⚔ battle!</span>`;
+    const elapsed = a.battle_elapsed_seconds ?? 0;
+    countdown = `<span class="atk-cd atk-cd-battle" data-atk-battle-elapsed="${elapsed.toFixed(2)}">⚔ ${_fmtSecs(elapsed)}</span>`;
     pct = 100;
   }
   pct = Math.max(0, Math.min(100, pct));

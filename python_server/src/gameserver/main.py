@@ -427,8 +427,10 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                 slot = f"{hour_slot:02d}"
                 shutil.copy2(_state_file, hourly_dir / f"state_{slot}.yaml")
                 if db_path and Path(db_path).exists():
+                    hourly_db = hourly_dir / f"gameserver_{slot}.db"
+                    hourly_db.unlink(missing_ok=True)
                     services.database._conn and await services.database._conn.execute(  # type: ignore[union-attr]
-                        f"VACUUM INTO '{hourly_dir / f'gameserver_{slot}.db'}'"
+                        f"VACUUM INTO '{hourly_db}'"
                     )
                 log.info("Hourly backup written: slot %s", slot)
                 hour_slot = (hour_slot + 1) % 24
@@ -439,8 +441,10 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                     day = f"day{today}"
                     shutil.copy2(_state_file, daily_dir / f"state_{day}.yaml")
                     if db_path and Path(db_path).exists():
+                        daily_db = daily_dir / f"gameserver_{day}.db"
+                        daily_db.unlink(missing_ok=True)
                         services.database._conn and await services.database._conn.execute(  # type: ignore[union-attr]
-                            f"VACUUM INTO '{daily_dir / f'gameserver_{day}.db'}'"
+                            f"VACUUM INTO '{daily_db}'"
                         )
                     log.info("Daily backup written: slot %s", day)
                     last_daily_day = today

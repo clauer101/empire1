@@ -460,7 +460,7 @@ ANTI_AIR_TOWER:
   upgrade_costs: {}
   max_level: 1
   select: first
-  costs: {gold: 350000}
+  costs: {gold: 450000}
   effects: {}
   requirements: [ECHELON_DEFENSE_FACILITY, AVIATION]
 

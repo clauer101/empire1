@@ -598,7 +598,7 @@ SIEGE_TANK:
   name: "Siege Tank"
   description: "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy."
   speed: 0.35
-  health: 222
+  health: 223
   value: 857
   damage: 2
   armour: 15
@@ -617,7 +617,7 @@ SPECOPS:
   name: "Special Ops"
   description: "Elite special forces with advanced armor and tactical precision. Balanced speed and durability."
   speed: 0.6
-  health: 210
+  health: 211
   value: 941
   damage: 2
   armour: 8
@@ -678,10 +678,10 @@ MECH_WARRIOR:
   name: "Mech Warrior"
   description: "A two-slot combat mech with heavy armor that releases Special Ops on destruction. The pinnacle of future warfare."
   speed: 0.5
-  health: 250
-  value: 2000
-  damage: 1
-  armour: 9
+  health: 350
+  value: 3000
+  damage: 5
+  armour: 10
   slots: 2
   time_between: 2000
   is_boss: false

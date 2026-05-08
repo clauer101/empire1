@@ -25,4 +25,28 @@ Travel offsets are stored as legacy flat fields: `stone_travel_offset`, `middle_
 - Critter stats: `health`, `speed`, `armour` (+2% per level).
 - Applied in `battle_service._step_armies()` at spawn time (normal waves) and `_make_critter_from_item()` (spawn-on-death).
 
-# 2) 
+# 2) Multi-Device Login (gleiche UID, zwei Browser-Tabs/Geräte)
+
+### Problem
+
+Der Server erlaubt pro UID nur **eine aktive WS-Verbindung**. Verbindet sich ein zweites Device mit der gleichen UID, schließt `register_session()` (`network/server.py:119`) die erste Verbindung mit Code 1008 ("Superseded by new connection"). Das löst auf Device 1 einen Reconnect-Timer aus (2s), der wiederum Device 2 verdrängt → Loop alle ~5s, beide Devices ruckeln dauerhaft.
+
+### Betroffene Dateien
+
+| Datei | Stelle | Rolle |
+|-------|--------|-------|
+| `network/server.py:102–125` | `register_session()` | schließt alte WS bei gleicher UID |
+| `network/server.py:127–142` | `unregister_session()` | räumt Session auf |
+| `network/handlers/battle.py:327–350` | `handle_battle_register` | `_evict_observer_from_all` entfernt UID aus anderen Battles |
+| `web/js/views/defense/ws.js:114–124` | `close`-Handler | reconnect nach 2s wenn nicht intentional |
+
+### Lösungsoptionen
+
+**Option A — Multi-Connection pro UID (empfohlen)**
+`_connections` von `dict[uid, ws]` auf `dict[uid, set[ws]]` umstellen. `send_to` sendet an alle WS der UID. `register_session` verdrängt nicht mehr. `observer_uids` in `BattleState` bleibt unverändert (UID-basiert). Aufwand: mittel, alle `send_to`-Aufrufe bleiben kompatibel wenn `send_to` intern iteriert.
+
+**Option B — Reconnect bei 1008 unterdrücken**
+Client erkennt Code 1008 und verzichtet auf Reconnect. Verhindert den Loop, aber das zweite Device bekommt nach dem ersten Reconnect-Zyklus dauerhaft keine Updates mehr. Kein echtes Multi-Device.
+
+**Option C — Nur im Battle-Kontext: observer_uids als connection-basiertes Set**
+Statt UID-basierter Observer ein `set[ws]` oder `set[(uid, ws_id)]`. Aufwändiger, da alle Broadcast-Pfade angepasst werden müssen.
