@@ -205,3 +205,8 @@ Die bestehende Anzeige gibt alle Effect-Keys automatisch aus:
 Object.entries(s.effects).map(([k, v]) => k + ': ' + v).join(', ')
 ```
 Falls eine schönere Darstellung gewünscht ist, dort eigene Labels eintragen.
+
+
+### 8. Textbeschreibung für neue effects:
+
+Neue efeects bekommen eine textbeschreibung in web/js/i18n.js

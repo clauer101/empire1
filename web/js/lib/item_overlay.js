@@ -91,6 +91,7 @@ export class ItemOverlay {
     this._history.push({ iid, category });
 
     const catInfo = catalog[iid] || {};
+    let spriteUrl = null;
     let html = `<button class="tt-close">&times;</button>`;
     if (this._history.length > 1) {
       html += `<button class="tt-back">← Back</button>`;
@@ -177,6 +178,7 @@ export class ItemOverlay {
       const reqs = this._reqLinks(a?.requirements);
       const eraLabel = this._getEraLabel(iid);
       const typeColor = type === 'legendary' ? '#ab47bc' : '#c9a84c';
+      spriteUrl = a?.sprite ? '/' + a.sprite : null;
 
       html += `
         <div class="tt-dp-name" style="color:${typeColor}">⚜ ${name}</div>
@@ -208,6 +210,20 @@ export class ItemOverlay {
     }
 
     this._panel.innerHTML = html;
+
+    // Artefact sprite as panel background with fade-to-dark gradient
+    if (category === 'artefact' && spriteUrl) {
+      this._panel.style.backgroundImage =
+        `linear-gradient(to bottom, rgba(14,14,22,0.35) 0%, rgba(14,14,22,0.97) 55%), url('${spriteUrl}')`;
+      this._panel.style.backgroundSize = 'cover, cover';
+      this._panel.style.backgroundPosition = 'center top, center top';
+      this._panel.style.backgroundRepeat = 'no-repeat, no-repeat';
+    } else {
+      this._panel.style.backgroundImage = '';
+      this._panel.style.backgroundSize = '';
+      this._panel.style.backgroundPosition = '';
+      this._panel.style.backgroundRepeat = '';
+    }
 
     // Bind close
     this._panel.querySelector('.tt-close').addEventListener('click', () => this.hide());

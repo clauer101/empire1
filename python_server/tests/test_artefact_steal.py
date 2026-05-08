@@ -73,7 +73,7 @@ class TestAttackerWin:
         assert iid is None
         assert winner_uid is None
 
-    def test_only_one_artefact_stolen_even_if_multiple_exist(self):
+    def test_all_artefacts_stolen_when_chance_is_one(self):
         battle, attacker, defender = _make_battle()
         defender.artefacts = ["ART_A", "ART_B", "ART_C"]
         svc = _make_svc(attacker, victory_chance=1.0)
@@ -81,8 +81,8 @@ class TestAttackerWin:
         iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
 
         assert iid is not None
-        assert len(attacker.artefacts) == 1
-        assert len(defender.artefacts) == 2
+        assert len(attacker.artefacts) == 3
+        assert len(defender.artefacts) == 0
 
     def test_recalculate_effects_called_on_both_empires(self):
         battle, attacker, defender = _make_battle()

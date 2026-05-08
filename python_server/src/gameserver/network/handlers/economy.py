@@ -212,6 +212,7 @@ async def handle_item_request(
                 "effects": dict(item.effects),
                 "description": item.description,
                 "type": item.subtype or 'normal',
+                "sprite": item.sprite,
             })
         catalog[item.iid] = entry
 

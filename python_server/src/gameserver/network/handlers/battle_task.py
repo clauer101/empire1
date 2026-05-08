@@ -332,37 +332,49 @@ def _apply_artefact_steal(
     if not human_uids:
         return None, None
 
-    winners = human_uids if attacker_won else human_uids
     victim = battle.defender
 
     cfg = svc.game_config
-    if attacker_won:
-        chance = getattr(cfg, "base_artifact_steal_victory", 0.5) if cfg else 0.5
-    else:
-        chance = getattr(cfg, "base_artifact_steal_defeat", 0.05) if cfg else 0.05
+    effect_key = "artifact_steal_victory_modifier" if attacker_won else "artifact_steal_defeat_modifier"
+    base_cfg_key = "base_artifact_steal_victory" if attacker_won else "base_artifact_steal_defeat"
+    base_chance = getattr(cfg, base_cfg_key, 0.5 if attacker_won else 0.05) if cfg else (0.5 if attacker_won else 0.05)
+
+    # Per-attacker chance, resolved once
+    attacker_chances: list[tuple[int, float]] = []
+    for uid in human_uids:
+        emp = svc.empire_service.get(uid) if svc.empire_service else None
+        modifier = emp.get_effect(effect_key, 0.0) if emp is not None else 0.0
+        attacker_chances.append((uid, base_chance + modifier))
+
+    first_stolen_artefact: Any = None
+    first_thief_uid: int | None = None
 
     for artefact in list(victim.artefacts):
-        roll = _random.random()
-        if roll < chance:
-            winner_uid = _random.choice(winners)
-            thief_empire = svc.empire_service.get(winner_uid) if svc.empire_service else None
-            if thief_empire is None:
-                continue
-            victim.artefacts.remove(artefact)
-            thief_empire.artefacts.append(artefact)
-            log.info(
-                "[LOOT] Artefact stolen: %s  thief uid=%d  victim uid=%d  roll=%.3f < chance=%.2f (attacker_won=%s)",
-                artefact, winner_uid, victim.uid, roll, chance, attacker_won,
-            )
-            svc.empire_service.recalculate_effects(victim)
-            svc.empire_service.recalculate_effects(thief_empire)
-            return artefact, winner_uid
-        else:
-            log.info(
-                "[LOOT] Artefact steal failed: %s  roll=%.3f >= chance=%.2f (attacker_won=%s)",
-                artefact, roll, chance, attacker_won,
-            )
-    return None, None
+        for uid, chance in attacker_chances:
+            roll = _random.random()
+            if roll < chance:
+                thief_empire = svc.empire_service.get(uid) if svc.empire_service else None
+                if thief_empire is None:
+                    continue
+                victim.artefacts.remove(artefact)
+                thief_empire.artefacts.append(artefact)
+                log.info(
+                    "[LOOT] Artefact stolen: %s  thief uid=%d  victim uid=%d  roll=%.3f < chance=%.2f (attacker_won=%s)",
+                    artefact, uid, victim.uid, roll, chance, attacker_won,
+                )
+                svc.empire_service.recalculate_effects(victim)
+                svc.empire_service.recalculate_effects(thief_empire)
+                if first_stolen_artefact is None:
+                    first_stolen_artefact = artefact
+                    first_thief_uid = uid
+                break  # artefact claimed — next artefact
+            else:
+                log.info(
+                    "[LOOT] Artefact steal failed: %s  uid=%d  roll=%.3f >= chance=%.2f (attacker_won=%s)",
+                    artefact, uid, roll, chance, attacker_won,
+                )
+
+    return first_stolen_artefact, first_thief_uid
 
 
 def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
@@ -579,7 +591,7 @@ def _create_spy_arrived_handler() -> Callable[..., Any]:
             return
 
         from gameserver.network.handlers.military import _build_spy_report
-        report_text, report_data = _build_spy_report(defender, svc)
+        report_text, report_data = _build_spy_report(defender, svc, attacker=attacker_empire)
 
         finished_msg = {
             "type": "attack_phase_changed",

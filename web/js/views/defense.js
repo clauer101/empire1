@@ -524,7 +524,26 @@ function _initCanvas() {
       const isOnPath = grid.battlePath?.some((p) => p.q === q && p.r === r);
       const inBattle = _battleState.phase === 'in_battle';
 
+      const isTower =
+        tileData &&
+        !['void', 'empty', 'path', 'castle', 'spawnpoint'].includes(tileData.type) &&
+        !isOnPath;
+      if (isTower) {
+        const isMobile = window.innerWidth <= 1100;
+        const rangeActive =
+          grid.rangeOverlay && grid.rangeOverlay.q === q && grid.rangeOverlay.r === r;
+        _setRangeOverlay(q, r, tileData);
+        if (isMobile && !rangeActive) {
+          // Mobile first tap: range circle only
+          return;
+        }
+        // Desktop: always fall through to show details in side panel
+        // Mobile second tap: fall through to open overlay
+      }
+
       if (isOnPath) {
+        grid.rangeOverlay = null;
+        grid._dirty = true;
         if (inBattle) {
           _showTileDetails(q, r, { type: 'path' });
         } else if (tileData?.type === 'castle' || tileData?.type === 'spawnpoint') {
@@ -536,17 +555,24 @@ function _initCanvas() {
       }
 
       if (!tileData || tileData.type === 'void') {
+        grid.rangeOverlay = null;
+        grid._dirty = true;
         _showTileDetails(q, r, tileData);
         return;
       }
       if (tileData.type === 'castle' || tileData.type === 'spawnpoint') {
+        grid.rangeOverlay = null;
+        grid._dirty = true;
         if (!inBattle) _showTileDetails(q, r, tileData);
         return;
       }
       if (tileData.type === 'empty') {
+        grid.rangeOverlay = null;
+        grid._dirty = true;
         if (_spectateDefenderUid == null) _placement?.openPlacementMenu(q, r);
         return;
       }
+
       _showTileDetails(q, r, tileData);
     },
     onTileHover: null,
@@ -816,6 +842,19 @@ function _onVisibilityChange() {
       _ws?.connectIfNeeded();
     }
   }
+}
+
+function _setRangeOverlay(q, r, tileData) {
+  if (!grid) return;
+  const t = getTileType(tileData.type);
+  const s = t.serverData ? _applyStructUpgrades(t.serverData, tileData.type) : null;
+  const range = s?.range ?? 0;
+  if (range > 0) {
+    grid.rangeOverlay = { q, r, radius: range };
+  } else {
+    grid.rangeOverlay = null;
+  }
+  grid._dirty = true;
 }
 
 async function _loadMapBackground() {

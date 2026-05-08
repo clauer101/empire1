@@ -151,7 +151,6 @@ BOW_MAKER:
   requirements: [HUNTING, POTTERY]
   effects: {}
 
-
 HERBALIST:
   era: neolithic
   image: assets/sprites/buildings/medicus
@@ -258,6 +257,7 @@ TOWN_GUARD:
   requirements: [DRILL]
   effects: 
     siege_offset: 1800
+    spy_workshop: 1  # only true or false
 
 
 CHURCH:
@@ -319,6 +319,8 @@ TREASURE_CHAMBER:
   requirements: [CURRENCY, MATHMATICS]
   effects:
     gold_offset: 0.5
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
 
 CARTOGRAPHER:
   era: iron
@@ -558,7 +560,8 @@ COURTHOUSE:
   costs: {gold: 216000}
   requirements: [LAWS, FEUDALISM]
   effects: 
-    wave_delay_offset: 1000
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
 
 
 PARADE_GROUND:
@@ -672,8 +675,8 @@ PARLIAMENT:
   costs: {gold: 294000}
   requirements: [CONSTITUTION]
   effects:
-    culture_modifier: 0.15
-    gold_modifier: 0.5
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
 
 EMPERORS_PALACE:
   era: renaissance
@@ -865,6 +868,8 @@ CRYPTOGRAPHERS_GUILD:
   requirements: [CRYPTOLOGY]
   effects:
     siege_offset: 3600
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
 
 ROCKET_SILO:
   era: modern
@@ -1008,6 +1013,8 @@ INTELLIGENCE_AGENCY:
   requirements: [STEALTH_SECRECY, SPECIAL_FORCES]
   effects: 
     siege_offset: 3600
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
 
 MECH_WARRIOR_LAB:
   era: modern

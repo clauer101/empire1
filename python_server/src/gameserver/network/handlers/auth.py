@@ -189,6 +189,9 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "attacks_incoming": attacks_incoming,
         "attacks_outgoing": attacks_outgoing,
         "travel_time_seconds": round(max(1.0, svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_offset", 0.0)), 0),
+        "era_travel_base_seconds": round(svc.attack_service._era_travel_offset(empire), 0),
+        "base_artifact_steal_victory": svc.game_config.base_artifact_steal_victory if svc.game_config else 0.0,
+        "base_artifact_steal_defeat": svc.game_config.base_artifact_steal_defeat if svc.game_config else 0.0,
         "current_era": svc.empire_service.get_current_era(empire),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
     }

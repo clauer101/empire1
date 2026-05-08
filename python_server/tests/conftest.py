@@ -12,7 +12,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 # Provide a test secret so jwt_auth can be imported without a real .env
-os.environ.setdefault("JWT_SECRET", "test-secret-key-for-pytest-only")
+os.environ.setdefault("JWT_SECRET", "test-secret-key-for-pytest-only!")
 
 import pytest
 

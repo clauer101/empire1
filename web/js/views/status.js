@@ -9,8 +9,6 @@ import { eventBus } from '../events.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
-import { ItemOverlay } from '../lib/item_overlay.js';
-
 /** @type {import('../api.js').ApiClient} */
 let api;
 /** @type {import('../state.js').StateStore} */
@@ -20,8 +18,6 @@ let container;
 let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
-/** @type {ItemOverlay|null} */
-let _itemOverlay = null;
 let _empiresTimer = null;
 let _tickTimer = null;
 let _tickData = null;
@@ -50,8 +46,22 @@ function init(el, _api, _state) {
     </div>
   `;
 
-  _itemOverlay = new ItemOverlay(_state);
-  _itemOverlay.mount(container);
+  const _titleEl = container.querySelector('.battle-title');
+  if (_titleEl) {
+    const _resourceWrap = _titleEl.querySelector('.title-resources');
+    _titleEl.textContent = '';
+    const _labelSpan = document.createElement('span');
+    _labelSpan.textContent = '🏰 Empire Status ';
+    const _efxBtn = document.createElement('button');
+    _efxBtn.id = 'status-effects-btn';
+    _efxBtn.className = 'prod-info-btn';
+    _efxBtn.title = 'Show production details';
+    _efxBtn.textContent = '🔍';
+    _efxBtn.addEventListener('click', () => { if (st.summary) _showProductionOverlay(st.summary); });
+    _labelSpan.appendChild(_efxBtn);
+    _titleEl.appendChild(_labelSpan);
+    if (_resourceWrap) _titleEl.appendChild(_resourceWrap);
+  }
 }
 
 function enter() {
@@ -166,7 +176,7 @@ function render(data) {
     <div class="dashboard-2col">
 
       <div class="panel">
-        <div class="panel-header">Resources <button class="prod-info-btn" id="resources-detail-btn" title="Show income details">🔍</button></div>
+        <div class="panel-header">Resources</div>
         <div class="panel-row"><span class="label">💰 Gold</span><span class="value"><span data-live-res="gold">${fmt(r.gold)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))}/h)</span></span></div>
         <div class="panel-row"><span class="label">🎭 Culture</span><span class="value"><span data-live-res="culture">${fmt(r.culture)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))}/h)</span></span></div>
         <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0))}/h)</span></span></div>
@@ -279,10 +289,6 @@ function render(data) {
       btn.disabled = false;
     };
   }
-
-  // Bind production detail overlay
-  const detailBtn = el.querySelector('#resources-detail-btn');
-  if (detailBtn) detailBtn.addEventListener('click', () => _showProductionOverlay(data));
 
   // Bind artefact badge clicks
   el.querySelectorAll('.art-badge-clickable').forEach((badge) => {
@@ -496,7 +502,53 @@ function _showProductionOverlay(data) {
 }
 
 function _showArtefactOverlay(iid) {
-  if (_itemOverlay) _itemOverlay.show(iid, 'artefact');
+  document.querySelector('.art-detail-overlay')?.remove();
+
+  const catalog = st?.items?.catalog || {};
+  const a = catalog[iid] || {};
+  const name = a.name || iid;
+  const desc = a.description || '';
+  const type = a.type || 'normal';
+  const effects = a.effects || {};
+  const sprite = a.sprite ? '/' + a.sprite : null;
+  const typeColor = type === 'legendary' ? '#ab47bc' : '#c9a84c';
+
+  const effectRows = Object.entries(effects)
+    .map(([k, v]) => {
+      const sign = v > 0 ? '+' : '';
+      const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const isOffset = k.endsWith('_offset') || k === 'max_life_modifier';
+      const decimals = k === 'life_offset' ? 3 : 2;
+      const val = isOffset ? `${sign}${Number.isInteger(v) ? v : v.toFixed(decimals)}` : `${sign}${(v * 100).toFixed(0)}%`;
+      const unit = k.endsWith('_offset') ? '/s' : '';
+      return `<div class="panel-row"><span class="label" style="color:#aaa">${label}</span><span class="value">${val}${unit}</span></div>`;
+    })
+    .join('');
+
+  const bgStyle = sprite
+    ? `background-image:linear-gradient(to bottom,rgba(14,14,22,0.15) 0%,rgba(14,14,22,0.7) 55%,rgba(14,14,22,0.88) 100%),url('${sprite}');background-size:cover;background-position:center top;background-repeat:no-repeat;`
+    : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'art-detail-overlay prod-overlay';
+  overlay.style.alignItems = 'center';
+  overlay.innerHTML = `
+    <div class="prod-overlay-box" style="${bgStyle}max-width:380px">
+      <button class="prod-overlay-close" title="Close">✕</button>
+      <div style="color:${typeColor};font-size:1.1em;font-weight:700;margin-bottom:4px">⚜ ${name}</div>
+      <div style="font-size:11px;color:#666;font-family:monospace;margin-bottom:10px">${iid}</div>
+      ${desc ? `<div style="color:#ccc;font-size:0.9em;margin-bottom:12px;line-height:1.5">${desc}</div>` : ''}
+      ${effectRows ? `<div style="font-weight:600;font-size:0.78em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Effects</div>${effectRows}` : ''}
+    </div>
+  `;
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) {
+      overlay.remove();
+    }
+  });
+
+  document.body.appendChild(overlay);
 }
 
 function renderCitizens(citizens) {

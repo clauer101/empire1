@@ -64,6 +64,108 @@ function _buildCritterEraRoman() {
   }
 }
 
+function _armyEffectRows(effectKey, completedBuildings, completedResearch, items, fmt) {
+  const rows = [];
+  for (const iid of completedBuildings || []) {
+    const item = items?.buildings?.[iid];
+    const val = item?.effects?.[effectKey];
+    if (val)
+      rows.push(
+        `<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`
+      );
+  }
+  for (const iid of completedResearch || []) {
+    const item = items?.knowledge?.[iid];
+    const val = item?.effects?.[effectKey];
+    if (val)
+      rows.push(
+        `<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`
+      );
+  }
+  if (!rows.length)
+    return `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
+  return rows.join('');
+}
+
+function _showArmyEffectsOverlay() {
+  document.querySelector('.army-effects-overlay')?.remove();
+  const summary = st.summary || {};
+  const effects = summary.effects || {};
+  const completedBuildings = summary.completed_buildings || [];
+  const completedResearch = summary.completed_research || [];
+  const items = st.items || {};
+
+  const eraBase = summary.era_travel_base_seconds ?? summary.travel_time_seconds ?? 0;
+  const travelOffset = effects.travel_offset || 0;
+  const travelTotal = summary.travel_time_seconds ?? (eraBase + travelOffset);
+
+  function _fmtS(s) {
+    return (s / 3600).toFixed(2).replace(/\.?0+$/, '') + 'h';
+  }
+
+  function section(icon, title, color, rows, footer) {
+    const footerHtml = footer
+      ? `<div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px">
+          <span class="label" style="color:#ddd;font-weight:bold">Total</span>
+          <span class="value" style="color:#fff;font-weight:bold">${footer}</span>
+        </div>`
+      : '';
+    return `
+      <div class="prod-overlay-section">
+        <div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>
+        ${rows}
+        ${footerHtml}
+      </div>`;
+  }
+
+  // Travel time: base row + per-item offsets
+  const travelBaseRow = `<div class="panel-row"><span class="label">${_fmtS(eraBase)}</span><span class="value" style="color:#ccc">Era base (${summary.current_era || '?'})</span></div>`;
+  const travelOffsetRows = _armyEffectRows('travel_offset', completedBuildings, completedResearch, items, (v) => (v < 0 ? '' : '+') + _fmtS(v));
+  const travelRows = travelBaseRow + (travelOffset !== 0 ? travelOffsetRows : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+
+  // Artifact steal chances
+  const baseVictory = summary.base_artifact_steal_victory ?? 0;
+  const baseDefeat = summary.base_artifact_steal_defeat ?? 0;
+  const stealVictoryMod = effects.artifact_steal_victory_modifier || 0;
+  const stealDefeatMod = effects.artifact_steal_defeat_modifier || 0;
+  const totalVictory = baseVictory + stealVictoryMod;
+  const totalDefeat = baseDefeat + stealDefeatMod;
+
+  function _fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
+
+  const stealVictoryBaseRow = `<div class="panel-row"><span class="label">${_fmtPct(baseVictory)}</span><span class="value" style="color:#ccc">Base chance</span></div>`;
+  const stealVictoryModRows = _armyEffectRows('artifact_steal_victory_modifier', completedBuildings, completedResearch, items, (v) => (v >= 0 ? '+' : '') + _fmtPct(v));
+  const stealVictoryRows = stealVictoryBaseRow + (stealVictoryMod !== 0 ? stealVictoryModRows : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+
+  const stealDefeatBaseRow = `<div class="panel-row"><span class="label">${_fmtPct(baseDefeat)}</span><span class="value" style="color:#ccc">Base chance</span></div>`;
+  const stealDefeatModRows = _armyEffectRows('artifact_steal_defeat_modifier', completedBuildings, completedResearch, items, (v) => (v >= 0 ? '+' : '') + _fmtPct(v));
+  const stealDefeatRows = stealDefeatBaseRow + (stealDefeatMod !== 0 ? stealDefeatModRows : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+
+  // Spy workshop
+  const spyWorkshop = effects.spy_workshop || 0;
+  const spyContent = `<div class="panel-row">
+    <span class="label" style="color:#ccc">Workshop intel (upgrades) visible in spy reports</span>
+    <span class="value" style="color:${spyWorkshop > 0 ? '#4fc3f7' : '#555'};font-weight:bold">${spyWorkshop > 0 ? 'Active' : 'No'}</span>
+  </div>`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'prod-overlay army-effects-overlay';
+  overlay.innerHTML = `
+    <div class="prod-overlay-box">
+      <button class="prod-overlay-close" title="Close">✕</button>
+      <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">⚔ Army Effects</div>
+      ${section('🕐', 'Travel Time', '#ffa726', travelRows, _fmtS(travelTotal))}
+      ${section('🏆', 'Artifact Steal — Victory', '#c9a84c', stealVictoryRows, _fmtPct(totalVictory))}
+      ${section('💀', 'Artifact Steal — Defeat', '#e57373', stealDefeatRows, _fmtPct(totalDefeat))}
+      ${section('🕵', 'Spy Capabilities', '#4fc3f7', spyContent, '')}
+    </div>`;
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+}
+
 function init(el, _api, _state) {
   container = el;
   api = _api;
@@ -135,6 +237,38 @@ function init(el, _api, _state) {
       </div>
     </div>
   `;
+
+  if (!document.getElementById('dashboard-grid-style')) {
+    const s = document.createElement('style');
+    s.id = 'dashboard-grid-style';
+    s.textContent = `
+      .prod-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto}
+      .prod-overlay-box{background:var(--panel-bg,#1e1e1e);border:1px solid var(--border-color,#444);border-radius:8px;width:100%;max-width:480px;padding:16px 18px;position:relative}
+      .prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
+      .prod-overlay-section{margin-bottom:14px}
+      .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
+      .prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
+      .prod-info-btn:hover{opacity:1}
+    `;
+    document.head.appendChild(s);
+  }
+
+  const _titleEl = container.querySelector('.battle-title');
+  if (_titleEl) {
+    const _resourceWrap = _titleEl.querySelector('.title-resources');
+    _titleEl.textContent = '';
+    const _labelSpan = document.createElement('span');
+    _labelSpan.textContent = '🗡 Army Composer ';
+    const _efxBtn = document.createElement('button');
+    _efxBtn.id = 'army-effects-btn';
+    _efxBtn.className = 'prod-info-btn';
+    _efxBtn.title = 'Show army effects';
+    _efxBtn.textContent = '🔍';
+    _efxBtn.addEventListener('click', _showArmyEffectsOverlay);
+    _labelSpan.appendChild(_efxBtn);
+    _titleEl.appendChild(_labelSpan);
+    if (_resourceWrap) _titleEl.appendChild(_resourceWrap);
+  }
 
   const newArmyOverlay = container.querySelector('#new-army-overlay');
   container.querySelector('#create-army-btn').addEventListener('click', () => {

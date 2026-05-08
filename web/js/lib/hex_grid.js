@@ -86,6 +86,9 @@ export class HexGrid {
     this.onTileHover = opts.onTileHover || null;
     this.onTileDrop = opts.onTileDrop || null;
 
+    // Range overlay: { q, r, radius } or null
+    this.rangeOverlay = null;
+
     // Map data: key → { type: string, ...metadata }
     this.tiles = new Map();
 
@@ -1563,6 +1566,23 @@ export class HexGrid {
 
     // Apply zoom for critters and shots (they are not in the cache)
     ctx.scale(this.zoom, this.zoom);
+
+    // Draw range circle overlay if set
+    if (this.rangeOverlay) {
+      const { q, r, radius } = this.rangeOverlay;
+      const { x, y } = hexToPixel(q, r, this.hexSize);
+      const pxRadius = radius * this.hexSize * Math.sqrt(3);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, pxRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(100,180,255,0.85)';
+      ctx.lineWidth = 2 / this.zoom;
+      ctx.setLineDash([6 / this.zoom, 4 / this.zoom]);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(100,180,255,0.08)';
+      ctx.fill();
+      ctx.restore();
+    }
 
     // Draw shots first (behind critters)
     if (this.battleShots.size > 0) {

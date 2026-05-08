@@ -20,6 +20,9 @@ export const dict = {
   max_life_modifier: 'Increases maximum life',
   restore_life_after_loss_offset: 'Restores life after a lost battle',
   tower_sell_refund_modifier: 'Increases tower sell refund',
+  artifact_steal_victory_modifier: 'Increases artifact steal chance on victory',
+  artifact_steal_defeat_modifier: 'Increases artifact steal chance on defeat',
+  spy_workshop: 'Unlocks workshop intelligence in spy reports',
 
   // Common UI labels
   effort: 'Effort',
@@ -76,6 +79,9 @@ export const effectMeta = {
   max_life_modifier: { unit: '', decimals: 1 },
   restore_life_after_loss_offset: { unit: '', decimals: 0 },
   tower_sell_refund_modifier: { scale: 100, unit: '%', decimals: 0 },
+  artifact_steal_victory_modifier: { scale: 100, unit: '%', decimals: 0 },
+  artifact_steal_defeat_modifier: { scale: 100, unit: '%', decimals: 0 },
+  spy_workshop: { unit: '', decimals: 2 },
 };
 
 /**

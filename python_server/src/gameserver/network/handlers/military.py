@@ -315,11 +315,12 @@ async def handle_new_attack(
     }
 
 
-def _build_spy_report(defender: Any, svc: Any) -> tuple[str, dict[str, Any]]:
-    """Build a workshop intelligence report for the attacker.
+def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[str, dict[str, Any]]:
+    """Build a spy intelligence report for the attacker.
 
-    Returns (text_report, structured_data) covering only structures and critters
-    of the defender's current era.
+    Always includes tower placement and era distribution.
+    Workshop tech (structures/critters upgrades) is included only when the
+    attacker has spy_workshop > 0.
     """
     from gameserver.util.eras import ERA_ORDER, ERA_LABELS_EN
     from gameserver.models.items import ItemType
@@ -406,6 +407,8 @@ def _build_spy_report(defender: Any, svc: Any) -> tuple[str, dict[str, Any]]:
         pct = round((cnt / len(placed_towers)) * 100)
         era_bar_lines.append(f"  {era_name:<11} {bar} {cnt:2}× {pct:3}%")
 
+    has_workshop_intel = attacker is not None and attacker.get_effect("spy_workshop", 0.0) > 0
+
     lines = [
         f"🕵 Spy report on {defender.name}",
         "🛡 Defense Intelligence",
@@ -414,32 +417,36 @@ def _build_spy_report(defender: Any, svc: Any) -> tuple[str, dict[str, Any]]:
         f"  Towers placed: {len(placed_towers)}",
     ]
     lines.extend(era_bar_lines)
-    lines += [
-        "─" * 32,
-        f"🔬 Workshop Intelligence — {era_label}",
-        "─── Towers (current era) ───",
-    ]
-    for name, lvls in sorted(structures):
-        lines.append(f"  🗼 {name:<20} {_fmt_upgrades(lvls)}")
-    if not structures:
-        lines.append("  (none)")
-    lines.append("─── Units (current era) ───")
-    for name, lvls in sorted(critters):
-        lines.append(f"  ⚔ {name:<20} {_fmt_upgrades(lvls)}")
-    if not critters:
-        lines.append("  (none)")
+
+    if has_workshop_intel:
+        lines += [
+            "─" * 32,
+            f"🔬 Workshop Intelligence — {era_label}",
+            "─── Towers (current era) ───",
+        ]
+        for name, lvls in sorted(structures):
+            lines.append(f"  🗼 {name:<20} {_fmt_upgrades(lvls)}")
+        if not structures:
+            lines.append("  (none)")
+        lines.append("─── Units (current era) ───")
+        for name, lvls in sorted(critters):
+            lines.append(f"  ⚔ {name:<20} {_fmt_upgrades(lvls)}")
+        if not critters:
+            lines.append("  (none)")
+
     lines.append("─" * 32)
 
     text = "\n".join(lines)
 
-    data = {
+    data: dict[str, Any] = {
         "era": era_label,
         "era_idx": era_idx,
-        "structures": [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)],
-        "critters": [{"name": n, "upgrades": lvl} for n, lvl in sorted(critters)],
         "placed_towers": placed_towers,
         "path_length": path_length,
     }
+    if has_workshop_intel:
+        data["structures"] = [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)]
+        data["critters"] = [{"name": n, "upgrades": lvl} for n, lvl in sorted(critters)]
     return text, data
 
 
