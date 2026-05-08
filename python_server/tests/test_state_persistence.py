@@ -114,8 +114,7 @@ class TestSaveLoad:
     """Round-trip serialization / deserialization tests."""
 
     def _run(self, coro):
-        """Helper to run async tests on Python 3.9."""
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_save_creates_file(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")

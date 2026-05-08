@@ -118,7 +118,11 @@ class Server:
         old_ws = self._connections.get(uid)
         if old_ws is not None and old_ws is not ws:
             log.info("Superseding existing session: uid=%d", uid)
-            asyncio.ensure_future(old_ws.close(1008, "Superseded by new connection"))
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(old_ws.close(1008, "Superseded by new connection"))
+            except RuntimeError:
+                pass  # no running loop in tests that call register_session synchronously
 
         self._connections[uid] = ws
         self._ws_to_uid[id(ws)] = uid
