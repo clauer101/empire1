@@ -7,13 +7,9 @@ including when destination files already exist (VACUUM INTO overwrites).
 from __future__ import annotations
 
 import asyncio
-import shutil
 import sqlite3
-import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -41,7 +37,6 @@ async def _run_backup_once(
     Returns (new_hour_slot, new_last_daily_day).
     """
     import shutil as _shutil
-    from datetime import datetime, timezone
 
     data_dir = state_file.parent
     hourly_dir = data_dir / "states" / "hourly"
