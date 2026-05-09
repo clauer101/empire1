@@ -50,3 +50,8 @@ Client erkennt Code 1008 und verzichtet auf Reconnect. Verhindert den Loop, aber
 
 **Option C — Nur im Battle-Kontext: observer_uids als connection-basiertes Set**
 Statt UID-basierter Observer ein `set[ws]` oder `set[(uid, ws_id)]`. Aufwändiger, da alle Broadcast-Pfade angepasst werden müssen.
+
+
+### Webserver autharkie
+
+Überprüfen welche configs der webserver selbst ließt und welche daten er vom gameserver bekommt

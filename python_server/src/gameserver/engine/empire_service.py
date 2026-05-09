@@ -233,9 +233,23 @@ class EmpireService:
         """Add the effects of a completed item to the empire.
 
         Performs a full recalculate because completing an item may change
-        the empire's era, which has its own set of effects.
+        the era, which has its own set of effects. Also triggers the end
+        rally if this item matches the configured end_criterion.
         """
         self.recalculate_effects(empire)
+        if self._gc is not None and self._gc.end_criterion and iid == self._gc.end_criterion:
+            from gameserver.engine.global_state import try_set_end_criterion_activated
+            if try_set_end_criterion_activated(
+                empire_uid=empire.uid,
+                empire_name=empire.name,
+            ):
+                log.info(
+                    "End criterion met: empire %d (%s) completed %s — end rally started",
+                    empire.uid, empire.name, iid,
+                )
+                # Recalculate effects for ALL empires to apply rally effects immediately
+                for emp in self._empires.values():
+                    self.recalculate_effects(emp)
 
     def recalculate_effects(self, empire: Empire) -> None:
         """Rebuild empire effects from all completed buildings, knowledge, and current era.
@@ -264,6 +278,12 @@ class EmpireService:
         era_fx = era_effects_all.get(era_key, {})
         for key, value in era_fx.items():
             empire.effects[key] = empire.effects.get(key, 0.0) + value
+        # Apply end-rally global effects if active
+        if self._gc is not None:
+            from gameserver.engine.global_state import is_end_rally_active
+            if is_end_rally_active(self._gc):
+                for key, value in self._gc.end_rally_effects.items():
+                    empire.effects[key] = empire.effects.get(key, 0.0) + value
         self._recalculate_max_life(empire)
         log.info("Empire %d: recalculated effects → %s", empire.uid, empire.effects)
 

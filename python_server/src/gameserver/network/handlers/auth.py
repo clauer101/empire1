@@ -18,12 +18,36 @@ log = logging.getLogger(__name__)
 __all__ = [
     "handle_auth_request", "handle_signup", "handle_create_empire",
     "_build_empire_summary", "_build_session_state", "_create_empire_for_new_user",
+    "_build_end_rally_info",
 ]
 
 
 def _svc() -> "Services":
     from gameserver.network.handlers._core import _svc as _core_svc
     return _core_svc()
+
+
+def _build_end_rally_info(gc: Any) -> dict[str, Any]:
+    """Return end-rally status dict for the client."""
+    from gameserver.engine.global_state import (
+        get_end_criterion_activated, is_end_rally_active, end_rally_seconds_remaining,
+        get_end_criterion_empire_uid, get_end_criterion_empire_name,
+    )
+    from gameserver.network.rest_api import _item_names
+    if gc is None:
+        return {"active": False, "effects": {}, "seconds_remaining": 0.0}
+    activated = get_end_criterion_activated()
+    active = is_end_rally_active(gc)
+    return {
+        "active": active,
+        "effects": dict(gc.end_rally_effects) if active else {},
+        "seconds_remaining": round(end_rally_seconds_remaining(gc), 0) if active else 0.0,
+        "activated_at": activated.isoformat() if activated else None,
+        "end_criterion": gc.end_criterion,
+        "end_criterion_name": _item_names.get(gc.end_criterion, gc.end_criterion),
+        "triggered_by_uid": get_end_criterion_empire_uid(),
+        "triggered_by_name": get_end_criterion_empire_name(),
+    }
 
 
 def _build_session_state(uid: int) -> dict[str, Any]:
@@ -188,12 +212,13 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "spy_count": len(empire.spies),
         "attacks_incoming": attacks_incoming,
         "attacks_outgoing": attacks_outgoing,
-        "travel_time_seconds": round(max(1.0, svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_offset", 0.0)), 0),
+        "travel_time_seconds": round(max(1.0, (svc.attack_service._era_travel_offset(empire) + empire.get_effect("travel_offset", 0.0)) * (1.0 - empire.get_effect("travel_time_modifier", 0.0))), 0),
         "era_travel_base_seconds": round(svc.attack_service._era_travel_offset(empire), 0),
         "base_artifact_steal_victory": svc.game_config.base_artifact_steal_victory if svc.game_config else 0.0,
         "base_artifact_steal_defeat": svc.game_config.base_artifact_steal_defeat if svc.game_config else 0.0,
         "current_era": svc.empire_service.get_current_era(empire),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
+        "end_rally": _build_end_rally_info(svc.game_config),
     }
 
 

@@ -114,10 +114,20 @@
     font-size: 18px;
   }
 
-  /* App: fixed beneath nav, full remaining height, OWN scroll */
-  #app {
+  /* Banner: fixed beneath nav */
+  #rally-banner {
     position: fixed;
     top: var(--mobile-nav-h);
+    left: 0;
+    right: 0;
+    z-index: 99;
+    border-radius: 0;
+  }
+
+  /* App: fixed beneath nav (+ optional rally banner), full remaining height, OWN scroll */
+  #app {
+    position: fixed;
+    top: calc(var(--mobile-nav-h) + var(--rally-banner-h));
     left: 0;
     right: 0;
     bottom: 0;

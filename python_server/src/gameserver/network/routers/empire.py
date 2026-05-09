@@ -29,6 +29,26 @@ if TYPE_CHECKING:
     from gameserver.main import Services
 
 
+def _build_end_rally_info_for_era_map(gc: Any) -> dict[str, Any]:
+    from gameserver.engine.global_state import (
+        get_end_criterion_activated, is_end_rally_active, end_rally_seconds_remaining,
+    )
+    from gameserver.network.rest_api import _item_names
+    if gc is None:
+        return {"active": False, "effects": {}, "duration": 0.0, "end_criterion": "", "end_criterion_name": ""}
+    active = is_end_rally_active(gc)
+    activated = get_end_criterion_activated()
+    return {
+        "active": active,
+        "effects": dict(gc.end_rally_effects),
+        "duration": gc.end_rally_duration,
+        "end_criterion": gc.end_criterion,
+        "end_criterion_name": _item_names.get(gc.end_criterion, gc.end_criterion),
+        "seconds_remaining": round(end_rally_seconds_remaining(gc), 0),
+        "activated_at": activated.isoformat() if activated else None,
+    }
+
+
 def make_router(services: "Services") -> APIRouter:
     router = APIRouter()
     assert services.empire_service is not None
@@ -145,6 +165,7 @@ def make_router(services: "Services") -> APIRouter:
             "knowledge":  _knowledge_groups,
             "buildings":  _building_groups,
             "era_effects": _rest_api._era_effects_data,
+            "end_rally": _build_end_rally_info_for_era_map(gc),
             "structure_upgrade_def": {
                 "damage": su.damage, "range": su.range, "reload": su.reload,
                 "effect_duration": su.effect_duration, "effect_value": su.effect_value,

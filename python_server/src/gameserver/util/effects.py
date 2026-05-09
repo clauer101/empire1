@@ -22,8 +22,9 @@ RESEARCH_SPEED_OFFSET = "research_speed_offset"
 SPLASH_RADIUS = "splash_radius"
 
 # -- Travel & Siege ------------------------------------------------------
-TRAVEL_TIME_OFFSET = "travel_offset"  # only attacker can modify this
-SIEGE_TIME_OFFSET = "siege_offset"  # only defender can modify this
+TRAVEL_TIME_OFFSET = "travel_offset"      # only attacker: flat seconds added/removed
+TRAVEL_TIME_MODIFIER = "travel_time_modifier"  # only attacker: percentage reduction (0.0–1.0)
+SIEGE_TIME_OFFSET = "siege_offset"        # only defender can modify this
 
 RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately restore life after losing a battle
 

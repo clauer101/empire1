@@ -14,7 +14,11 @@ from typing import Any, Optional
 
 import yaml
 
-from gameserver.engine.global_state import get_end_criterion_activated
+from gameserver.engine.global_state import (
+    get_end_criterion_activated,
+    get_end_criterion_empire_uid,
+    get_end_criterion_empire_name,
+)
 from gameserver.models.army import Army, CritterWave, SpyArmy
 from gameserver.models.attack import Attack
 from gameserver.models.battle import BattleState
@@ -99,6 +103,8 @@ def _serialize_global() -> dict[str, Any]:
     eca = get_end_criterion_activated()
     return {
         "end_criterion_activated": eca.isoformat() if eca is not None else None,
+        "end_criterion_empire_uid": get_end_criterion_empire_uid(),
+        "end_criterion_empire_name": get_end_criterion_empire_name(),
     }
 
 

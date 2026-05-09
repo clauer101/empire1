@@ -1,13 +1,16 @@
 """Tests for travel- and siege-time offsets.
 
 Effects tested:
-  TRAVEL_TIME_OFFSET  – attacker effect; added to base travel time.
-                        Negative value = faster travel.
-                        Formula: eta = max(1, base + offset)
+  TRAVEL_TIME_OFFSET    – attacker effect; added to base travel time.
+                          Negative value = faster travel.
+                          Formula: eta = max(1, (base + offset) × (1 - modifier))
 
-  SIEGE_TIME_OFFSET   – defender effect; added to base siege time.
-                        Positive value = longer siege.
-                        Formula: siege = max(1, base + offset)
+  TRAVEL_TIME_MODIFIER  – attacker effect; percentage reduction on travel time.
+                          0.5 = 50% faster. Applied after offset.
+
+  SIEGE_TIME_OFFSET     – defender effect; added to base siege time.
+                          Positive value = longer siege.
+                          Formula: siege = max(1, base + offset)
 """
 
 import pytest
@@ -110,6 +113,41 @@ class TestTravelTimeModifiers:
         """TRAVEL_TIME_OFFSET on the *defender* has no effect on ETA."""
         attack_service, empire_service = svc
         empire_service.get(DEFENDER_UID).effects[fx.TRAVEL_TIME_OFFSET] = -50.0
+
+        attack = _start(svc)
+        assert attack.eta_seconds == pytest.approx(BASE_TRAVEL)
+
+    def test_travel_time_modifier_reduces_eta(self, svc):
+        """TRAVEL_TIME_MODIFIER 0.5 reduces ETA by 50%."""
+        attack_service, empire_service = svc
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_MODIFIER] = 0.5
+
+        attack = _start(svc)
+        # 100 × (1 - 0.5) = 50
+        assert attack.eta_seconds == pytest.approx(50.0)
+
+    def test_travel_time_modifier_combined_with_offset(self, svc):
+        """Modifier is applied after offset: (base + offset) × (1 - modifier)."""
+        attack_service, empire_service = svc
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_OFFSET] = -20.0
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_MODIFIER] = 0.25
+
+        attack = _start(svc)
+        # (100 - 20) × (1 - 0.25) = 80 × 0.75 = 60
+        assert attack.eta_seconds == pytest.approx(60.0)
+
+    def test_travel_time_modifier_clamped_to_one(self, svc):
+        """Modifier of 1.0 (100%) clamps ETA to minimum 1.0s."""
+        attack_service, empire_service = svc
+        empire_service.get(ATTACKER_UID).effects[fx.TRAVEL_TIME_MODIFIER] = 1.0
+
+        attack = _start(svc)
+        assert attack.eta_seconds == pytest.approx(1.0)
+
+    def test_travel_time_modifier_defender_has_no_effect(self, svc):
+        """TRAVEL_TIME_MODIFIER on defender does not affect attacker ETA."""
+        attack_service, empire_service = svc
+        empire_service.get(DEFENDER_UID).effects[fx.TRAVEL_TIME_MODIFIER] = 0.9
 
         attack = _start(svc)
         assert attack.eta_seconds == pytest.approx(BASE_TRAVEL)

@@ -121,8 +121,8 @@ def _parse_era_items() -> dict:
     return result
 
 
-def _build_era_map() -> dict:
-    """Return comprehensive era map for all YAML categories."""
+def _build_era_map_static() -> dict:
+    """Return the static parts of the era map (no async required)."""
     critters_by_era = _parse_yaml_era_groups(CRITTERS_PATH)
     structures_by_era = _parse_yaml_era_groups(STRUCTURES_PATH)
     bk: dict[str, list[str]] = {era: [] for era in _ERA_ORDER}
@@ -321,7 +321,7 @@ async def get_era_items():
 async def get_era_map():
     """Return era order + item IIDs per era for all YAML categories."""
     try:
-        return JSONResponse(_build_era_map())
+        return JSONResponse(_build_era_map_static())
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)
 

@@ -20,6 +20,7 @@ const EFFECT_META = {
   build_speed_offset:             ['🏗',  'Build speed',      (v) => `${v > 0 ? '+' : ''}${v}`],
   research_speed_modifier:        ['🔬', 'Research speed',    (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
   research_speed_offset:          ['🔬', 'Research speed',    (v) => `${v > 0 ? '+' : ''}${v}`],
+  travel_time_modifier:           ['🚀', 'Travel speed',      (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
   wave_delay_offset:              ['⏳', 'Wave delay',        (v) => `${v > 0 ? '+' : ''}${v}s`],
   artifact_steal_victory_modifier:['⚜',  'Artifact steal (victory)', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
   artifact_steal_defeat_modifier: ['⚜',  'Artifact steal (defeat)',  (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],

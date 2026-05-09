@@ -193,11 +193,14 @@ class AttackService:
                         and not existing.is_spy):
                     return "Army is already attacking"
 
-        # Calculate travel time: era_base + attacker.TRAVEL_TIME_OFFSET
-        # Negative offset = faster travel; positive = slower.
+        # Calculate travel time: (era_base + offset) × (1 - modifier)
+        # TRAVEL_TIME_OFFSET: flat seconds added/removed (negative = faster)
+        # TRAVEL_TIME_MODIFIER: percentage reduction 0.0–1.0 (0.5 = 50% faster)
         from gameserver.util import effects as fx
         travel_offset = att_empire.get_effect(fx.TRAVEL_TIME_OFFSET, 0.0)
-        eta = max(1.0, self._era_travel_offset(att_empire) + travel_offset)
+        travel_modifier = att_empire.get_effect(fx.TRAVEL_TIME_MODIFIER, 0.0)
+        eta_base = self._era_travel_offset(att_empire) + travel_offset
+        eta = max(1.0, eta_base * (1.0 - travel_modifier))
         if is_spy:
             eta = max(1.0, eta / 2.0)
             # Unique virtual army_aid that never collides with real armies

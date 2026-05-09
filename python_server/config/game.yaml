@@ -26,6 +26,11 @@ barbarians_aggressiveness:
   industrial: 0.0019
   modern: 0.002
   future: 0.0022
+end_criterion: [THE_WORLD_WONDER]
+end_ralley_effects:
+  gold_offset: 2
+  travel_time_modifier: 0.5
+end_ralley_duration: 604800  # 3600 * 24 * 7 = 1 week
 era_effects:
   stone:
     travel_offset: 300.0

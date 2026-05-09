@@ -168,6 +168,14 @@ class GameConfig:
     critter_upgrades: CritterUpgradeDef = field(default_factory=CritterUpgradeDef)
     item_upgrade_base_costs: list[int] = field(default_factory=lambda: [1, 15, 100, 300, 600, 1200, 2500, 5000, 10000])
 
+    # -- End-game rally ----------------------------------------------
+    # iid of the item whose completion triggers the end rally
+    end_criterion: str = ""
+    # Effects applied to ALL empires while the rally is active
+    end_rally_effects: Dict[str, float] = field(default_factory=dict)
+    # Duration of the rally in seconds (after activation, game ends)
+    end_rally_duration: float = 604800.0  # 1 week default
+
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower
     max_spy_armies: int = 1
@@ -273,6 +281,16 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         if isinstance(barbarians_raw, dict) else {}
     )
 
+    # Handle end_ralley_effects (YAML key uses "ralley" spelling)
+    end_rally_effects_raw = raw.pop("end_ralley_effects", None)
+    end_rally_effects: Dict[str, float] = (
+        {k: float(v) for k, v in end_rally_effects_raw.items() if isinstance(v, (int, float))}
+        if isinstance(end_rally_effects_raw, dict) else {}
+    )
+    # end_ralley_duration uses "ralley" spelling in YAML too
+    if "end_ralley_duration" in raw:
+        raw["end_rally_duration"] = raw.pop("end_ralley_duration")
+
     # Build config from flat keys + nested spy_costs + era_effects
     cfg = GameConfig(
         spy_costs=spy,
@@ -282,9 +300,11 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         ai_generator=ai_generator,
         structure_upgrades=structure_upgrades,
         critter_upgrades=critter_upgrades,
+        end_rally_effects=end_rally_effects,
         **{
             k: v for k, v in raw.items()
-            if k in GameConfig.__dataclass_fields__ and k not in ("era_effects", "barbarians_aggressiveness")
+            if k in GameConfig.__dataclass_fields__
+            and k not in ("era_effects", "barbarians_aggressiveness", "end_rally_effects")
         },
     )
     return cfg

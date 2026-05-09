@@ -572,7 +572,6 @@ class TestRestoreLifeAfterLossOffset:
     def _make_battle_and_svc(self, defender: "Empire", base_restore: float = 1.0):
         from unittest.mock import MagicMock
         from gameserver.models.battle import BattleState
-        from gameserver.engine.ai_service import AI_UID
 
         attacker = Empire(uid=2, name="Attacker")
         battle = BattleState(bid=1, defender=defender, attacker_uids=[2], attacker_gains={2: {}})
@@ -618,7 +617,7 @@ class TestRestoreLifeAfterLossOffset:
         defender.effects["restore_life_after_loss_offset"] = 2.0
         battle, svc = self._make_battle_and_svc(defender, base_restore=1.0)
 
-        loot = _compute_and_apply_loot(battle, svc)
+        _compute_and_apply_loot(battle, svc)
 
         # base 1 + effect 2 = 3 restored
         assert defender.resources["life"] == pytest.approx(5.0)

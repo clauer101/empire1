@@ -7,7 +7,7 @@
   grid-template-rows: 1fr;
   gap: var(--gap);
   height: 100vh;
-  height: 100dvh; /* dynamic viewport height — fixes iOS address bar issue */
+  height: 100dvh;
   padding: var(--gap);
 }
 
@@ -168,6 +168,12 @@
 }
 
 /* ── Center: Main Content ────────────────────────────────── */
+#main-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 #app {
   background: var(--surface);
   border-radius: var(--radius);
@@ -175,7 +181,7 @@
   overflow-x: hidden;
   padding: 24px 28px;
   min-height: 0;
-  height: 100%;
+  flex: 1;
 }
 
 /* individual view wrappers */

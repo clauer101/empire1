@@ -219,9 +219,17 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "st
     if restored is not None:
         log.info("  state:        restored from disk (%d empires, %d attacks)",
                  len(restored.empires), len(restored.attacks))
-        restore_end_criterion_activated(restored.end_criterion_activated)
+        restore_end_criterion_activated(
+            restored.end_criterion_activated,
+            empire_uid=restored.end_criterion_empire_uid,
+            empire_name=restored.end_criterion_empire_name,
+        )
         if restored.end_criterion_activated:
-            log.info("  end criterion activated at %s", restored.end_criterion_activated.isoformat())
+            log.info(
+                "  end criterion activated at %s by empire '%s'",
+                restored.end_criterion_activated.isoformat(),
+                restored.end_criterion_empire_name or "?",
+            )
     else:
         log.info("  state:        no previous state found — fresh start")
 

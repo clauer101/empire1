@@ -144,6 +144,7 @@ if (navDefense) {
 }
 
 let _eraEffects = {}; // loaded from /api/era-map
+let _endRally = null; // { active, effects, seconds_remaining, end_criterion } from summary
 
 function _fmtOffset(secs) {
   const h = Math.floor(secs / 3600);
@@ -166,6 +167,11 @@ function _buildEraOverlay() {
     <div class="era-name"></div>
     <img class="era-base-img" src="" alt="">
     <div class="era-effects"></div>
+    <div class="era-rally" style="display:none">
+      <div class="era-rally-title">⚔ End Rally Active</div>
+      <div class="era-rally-effects"></div>
+      <div class="era-rally-timer"></div>
+    </div>
   </div>`;
   document.body.appendChild(el);
   el.addEventListener('click', (e) => {
@@ -200,6 +206,20 @@ async function _showEraOverlay() {
     .map(([k, v]) => `<div class="era-effect-row">${formatEffect(k, v)}</div>`)
     .join('');
   _eraOverlay.querySelector('.era-effects').innerHTML = effectRows;
+  // Show end-rally section if active
+  const rallyEl = _eraOverlay.querySelector('.era-rally');
+  if (_endRally?.active) {
+    const rallyEffectRows = Object.entries(_endRally.effects || {})
+      .map(([k, v]) => `<div class="era-effect-row">${formatEffect(k, v)}</div>`)
+      .join('');
+    _eraOverlay.querySelector('.era-rally-effects').innerHTML = rallyEffectRows;
+    const secsLeft = _endRally.seconds_remaining || 0;
+    _eraOverlay.querySelector('.era-rally-timer').textContent =
+      `Ends in ${_fmtOffset(secsLeft)}`;
+    rallyEl.style.display = '';
+  } else {
+    rallyEl.style.display = 'none';
+  }
   _eraOverlay.classList.add('visible');
 }
 
@@ -228,6 +248,10 @@ eventBus.on('state:summary', (data) => {
     _currentEra = data.current_era;
     navBrand.textContent = ERA_ROMAN[data.current_era] || data.current_era;
   }
+  if (data?.end_rally) {
+    _endRally = data.end_rally;
+    _updateRallyBanner(data.end_rally, data.name || '');
+  }
   const incoming = data?.attacks_incoming || [];
   const hasIncoming = incoming.length > 0;
   const hasActive = incoming.some((a) => a.phase === 'in_siege' || a.phase === 'in_battle');
@@ -242,6 +266,59 @@ eventBus.on('state:summary', (data) => {
     navMsgBadge.style.display = unread > 0 ? '' : 'none';
   }
 });
+
+// ── End-rally banner ─────────────────────────────────────────
+let _rallySecondsRemaining = 0;
+let _rallySecondsTs = 0; // Date.now() when _rallySecondsRemaining was set
+let _rallyCountdownTimer = null;
+let _rallyBannerBaseText = '';
+
+function _fmtRallyTime(secs) {
+  if (secs >= 86400) return `${Math.floor(secs / 86400)}d`;
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = Math.floor(secs % 60);
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function _tickRallyBanner() {
+  const banner = document.getElementById('rally-banner');
+  if (!banner || banner.style.display === 'none') return;
+  const elapsed = (Date.now() - _rallySecondsTs) / 1000;
+  const secs = Math.max(0, _rallySecondsRemaining - elapsed);
+  const timeStr = _fmtRallyTime(secs);
+  banner.textContent = `${_rallyBannerBaseText} (season ends in ${timeStr})`;
+  // Switch from per-day to countdown when under 1 day
+  if (secs < 86400 && !_rallyCountdownTimer) {
+    _rallyCountdownTimer = setInterval(_tickRallyBanner, 1000);
+  }
+}
+
+function _updateRallyBanner(rally, selfName) {
+  const banner = document.getElementById('rally-banner');
+  if (!banner) return;
+  if (!rally?.active) {
+    banner.style.display = 'none';
+    document.documentElement.style.setProperty('--rally-banner-h', '0px');
+    if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
+    return;
+  }
+  const builderName = rally.triggered_by_name || '?';
+  const criterion = rally.end_criterion_name || rally.end_criterion || 'the wonder';
+  const leadingLabel = selfName === builderName ? 'You are leading' : `${builderName} is leading`;
+  _rallyBannerBaseText = `⚔ ${builderName} has built ${criterion} — ${leadingLabel}, go get them!`;
+  _rallySecondsRemaining = rally.seconds_remaining || 0;
+  _rallySecondsTs = Date.now();
+  // Start per-second countdown only when under 1 day
+  if (_rallySecondsRemaining < 86400 && !_rallyCountdownTimer) {
+    _rallyCountdownTimer = setInterval(_tickRallyBanner, 1000);
+  }
+  _tickRallyBanner();
+  banner.style.display = 'block';
+  requestAnimationFrame(() => {
+    document.documentElement.style.setProperty('--rally-banner-h', banner.offsetHeight + 'px');
+  });
+}
 
 // ── Summary polling (every 5s while authenticated) ─────────
 let _pollTimer = null;
@@ -334,6 +411,18 @@ if ('serviceWorker' in navigator) {
 }
 
 (async () => {
+  // 0. Load era-map for end-rally banner (no auth required)
+  try {
+    const eraMap = await rest.getEraMap();
+    _eraEffects = eraMap.era_effects || {};
+    if (eraMap.end_rally) {
+      _endRally = eraMap.end_rally;
+      _updateRallyBanner(eraMap.end_rally, '');
+    }
+  } catch (_) {
+    /* non-fatal */
+  }
+
   // 1. Try REST auto-login (validates stored JWT or credentials)
   try {
     await rest.tryAutoLogin();

@@ -7,6 +7,7 @@
 
 import { eventBus } from '../events.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
+import { fmtEffectRow } from '../lib/format.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
 /** @type {import('../api.js').ApiClient} */
@@ -416,6 +417,7 @@ function _showProductionOverlay(data) {
   }
 
   const artifacts = data.artifacts || [];
+  const rallyEffects = (data.end_rally?.active && data.end_rally?.effects) ? data.end_rally.effects : {};
   const goldHtml = renderResourceIncome(
     'gold',
     effects,
@@ -425,7 +427,8 @@ function _showProductionOverlay(data) {
     completedBuildings,
     items,
     completedResearch,
-    artifacts
+    artifacts,
+    rallyEffects
   );
   const cultureHtml = renderResourceIncome(
     'culture',
@@ -436,7 +439,8 @@ function _showProductionOverlay(data) {
     completedBuildings,
     items,
     completedResearch,
-    artifacts
+    artifacts,
+    rallyEffects
   );
   const lifeHtml = renderResourceIncome(
     'life',
@@ -447,7 +451,8 @@ function _showProductionOverlay(data) {
     completedBuildings,
     items,
     completedResearch,
-    artifacts
+    artifacts,
+    rallyEffects
   );
   const buildHtml = renderBuildSpeed(
     effects,
@@ -488,6 +493,17 @@ function _showProductionOverlay(data) {
       ${section('<span style="color:#4fc3f7">● Construction Speed</span>', buildHtml)}
       ${section('<span style="color:#ffa726">● Research Speed</span>', researchHtml)}
       ${restoreHtml ? section('<span style="color:#ef9a9a">● Restore Life After Defeat</span>', restoreHtml) : ''}
+      ${(() => {
+        const ttm = effects.travel_time_modifier || 0;
+        const rallyTtm = rallyEffects.travel_time_modifier || 0;
+        let html = '';
+        if (ttm > 0) {
+          html += `<div class="panel-row"><span class="label">-${(ttm * 100).toFixed(0)}%</span><span class="value">travel time</span></div>`;
+          if (rallyTtm > 0)
+            html += `<div class="panel-row"><span class="label" style="padding-left:12px">↳ -${(rallyTtm * 100).toFixed(0)}%</span><span class="value">(⚔ End Rally)</span></div>`;
+        }
+        return html ? section('<span style="color:#ce93d8">● Army Effects</span>', html) : '';
+      })()}
     </div>
   `;
 
@@ -973,7 +989,8 @@ function renderResourceIncome(
   completedBuildings,
   items,
   completedResearch,
-  ownedArtifacts
+  ownedArtifacts,
+  rallyEffects = {}
 ) {
   completedResearch = completedResearch || [];
   let html = '';
@@ -1048,12 +1065,19 @@ function renderResourceIncome(
     }
   }
 
-  // Era offset contribution (difference between aggregated backend value and item sum)
-  const eraOffset = (effects[effectOffsetKey] || 0) - (totalOffset - baseAmount);
+  // Rally offset contribution (shown separately before Era)
+  const rallyOffset = rallyEffects[effectOffsetKey] || 0;
+  if (rallyOffset > 0.0005) {
+    html += `<div class="panel-row"><span class="label">+${fmtH(rallyOffset)}</span><span class="value">(⚔ End Rally)</span></div>`;
+  }
+
+  // Era offset contribution (difference between aggregated backend value and item sum, minus rally)
+  const eraOffset = (effects[effectOffsetKey] || 0) - rallyOffset - (totalOffset - baseAmount);
   if (eraOffset > 0.0005) {
     html += `<div class="panel-row"><span class="label">+${fmtH(eraOffset)}</span><span class="value">(Era)</span></div>`;
     totalOffset += eraOffset;
   }
+  totalOffset += rallyOffset;
 
   // For life, only show offset without multiplier
   if (resourceType === 'life') {

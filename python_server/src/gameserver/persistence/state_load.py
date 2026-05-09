@@ -47,6 +47,8 @@ class RestoredState:
     battles: list[BattleState] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
     end_criterion_activated: Optional[datetime] = None
+    end_criterion_empire_uid: Optional[int] = None
+    end_criterion_empire_name: str = ""
 
 
 # ===================================================================
@@ -100,6 +102,8 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
             result.end_criterion_activated = dt
         except (ValueError, TypeError):
             log.warning("Could not parse end_criterion_activated: %r", eca_raw)
+    result.end_criterion_empire_uid = global_dict.get("end_criterion_empire_uid")
+    result.end_criterion_empire_name = str(global_dict.get("end_criterion_empire_name") or "")
 
     # ---- Empires ----
     for empire_dict in raw.get("empires", []):

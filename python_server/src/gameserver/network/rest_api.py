@@ -95,6 +95,22 @@ _structure_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "structures.yaml")
 _knowledge_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "knowledge.yaml")
 _building_groups = _parse_yaml_era_groups_gs(_CONFIG_DIR / "buildings.yaml")
 
+# iid → display name (from all YAML configs)
+def _build_item_names() -> dict[str, str]:
+    import yaml as _yaml
+    result: dict[str, str] = {}
+    for config_file in ("buildings.yaml", "knowledge.yaml", "structures.yaml", "critters.yaml", "artifacts.yaml"):
+        path = _CONFIG_DIR / config_file
+        if not path.exists():
+            continue
+        data = _yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for iid, item in data.items():
+            if isinstance(item, dict) and "name" in item:
+                result[str(iid)] = item["name"]
+    return result
+
+_item_names: dict[str, str] = _build_item_names()
+
 # iid → English era label
 _CRITTER_ERAS: dict[str, str] = {
     iid: _ERA_LABELS_EN[era]
