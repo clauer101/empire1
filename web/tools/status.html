@@ -396,11 +396,11 @@ function buildDetailHTML(e) {
         </div>`;
       }).join('');
 
-  // Artefacts
-  const artCount = e.artefact_count ?? (e.artefacts?.length ?? 0);
+  // Artifacts
+  const artCount = e.artifact_count ?? (e.artifacts?.length ?? 0);
   let artHTML = artCount === 0
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
-    : (e.artefacts ? e.artefacts.map(a => `<span class="chip art">${a}</span>`).join('') : `<span class="chip art">⚜ ×${artCount}</span>`);
+    : (e.artifacts ? e.artifacts.map(a => `<span class="chip art">${a}</span>`).join('') : `<span class="chip art">⚜ ×${artCount}</span>`);
 
   const pw = e.power || {};
   const powerHTML = `
@@ -430,7 +430,7 @@ function buildDetailHTML(e) {
       ${armyHTML}
     </div>
     <div class="detail-section">
-      <div class="detail-title">Artefacts</div>
+      <div class="detail-title">Artifacts</div>
       ${artHTML}
     </div>
     <div class="detail-section">

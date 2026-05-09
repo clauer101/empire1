@@ -174,7 +174,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "base_restore_life": svc.empire_service._base_restore_life,
         "max_life": empire.max_life,
         "effects": dict(empire.effects),
-        "artefacts": list(empire.artefacts),
+        "artifacts": list(empire.artifacts),
         "buildings": dict(empire.buildings),  # iid -> remaining effort
         "knowledge": dict(empire.knowledge),  # iid -> remaining effort
         "active_buildings": active_buildings,

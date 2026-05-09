@@ -166,11 +166,9 @@ class EmpireService:
         culture_offset = empire.get_effect("culture_offset", 0.0)
         empire.resources["culture"] += ((self._base_culture + culture_offset) * (1 + culture_modifier)) * dt
 
-        # Life regeneration: life_offset is the base regen rate, life_modifier scales it
-        life_offset = empire.get_effect("life_offset", 0.0)
-        if life_offset > 0:
-            life_modifier = empire.get_effect("life_modifier", 0.0)
-            regen = life_offset * (1.0 + life_modifier)
+        life_regen_modifier = empire.get_effect("life_regen_modifier", 0.0)
+        if life_regen_modifier > 0:
+            regen = life_regen_modifier
             empire.resources["life"] = min(
                 empire.resources.get("life", 0.0) + regen * dt,
                 empire.max_life,
@@ -256,7 +254,7 @@ class EmpireService:
                 effects = self._upgrades.get_effects(iid)
                 for key, value in effects.items():
                     empire.effects[key] = empire.effects.get(key, 0.0) + value
-        for iid in empire.artefacts:
+        for iid in empire.artifacts:
             effects = self._upgrades.get_effects(iid)
             for key, value in effects.items():
                 empire.effects[key] = empire.effects.get(key, 0.0) + value
@@ -296,7 +294,7 @@ class EmpireService:
         for k, v in empire.knowledge.items():
             if v <= 0:
                 completed.add(k)
-        completed.update(empire.artefacts)
+        completed.update(empire.artifacts)
 
         if not self._upgrades.check_requirements(iid, completed):
             return f"Requirements not met for {iid}"

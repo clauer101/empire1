@@ -93,7 +93,7 @@ const EFFECT_LABELS = {
   gold_modifier:                  'Gold Multiplier',
   culture_offset:                 'Culture / tick',
   culture_modifier:               'Culture Multiplier',
-  life_offset:                    'Life Regen / tick',
+  life_regen_modifier:                    'Life Regen / tick',
   life_modifier:                  'Life Regen Multiplier',
   max_life_modifier:              'Max Life +',
   restore_life_after_loss_offset: 'Life Restored after Loss (offset)',
@@ -126,7 +126,7 @@ const EFFECT_LABELS = {
   capture_culture:                'Capture Culture % ⚠',
   culture_steal_modifier:         'Culture Steal Modifier ⚠',
   knowledge_steal_modifier:       'Knowledge Steal Modifier ⚠',
-  artefact_steal_chance_modifier: 'Artefact Steal Chance ⚠',
+  artifact_steal_chance_modifier: 'Artifact Steal Chance ⚠',
   destroy_wonder_percent:         'Destroy Wonder % ⚠',
   // Structures — NOT yet implemented
   tower_sell_refund_modifier:     'Tower Sell Refund Modifier ⚠',
@@ -138,7 +138,7 @@ const EFFECT_GROUPS = [
   {
     label: '💰 Economy',
     keys: ['gold_offset','gold_modifier','culture_offset','culture_modifier',
-           'life_offset','life_modifier','max_life_modifier','restore_life_after_loss_offset',
+           'life_regen_modifier','life_modifier','max_life_modifier','restore_life_after_loss_offset',
            'build_speed_modifier','build_speed_offset','research_speed_offset','research_speed_modifier'],
   },
   {
@@ -161,7 +161,7 @@ const EFFECT_GROUPS = [
   {
     label: '💀 Loot (⚠ not yet applied)',
     keys: ['capture_gold','capture_culture','culture_steal_modifier',
-           'knowledge_steal_modifier','artefact_steal_chance_modifier','destroy_wonder_percent'],
+           'knowledge_steal_modifier','artifact_steal_chance_modifier','destroy_wonder_percent'],
   },
   {
     label: '🏗 Structures (⚠ not yet applied)',

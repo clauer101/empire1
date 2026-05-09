@@ -183,7 +183,7 @@
     .gold-input:focus { border-color: var(--warning); }
     .gold-label { color: var(--warning); font-size: 11px; }
 
-    /* effects editor — matches artefacts.html */
+    /* effects editor — matches artifacts.html */
     .effects-section { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
     .effects-label { color: var(--text-dim); font-size: 11px; }
     .effect-row { display: flex; align-items: center; gap: 6px; }
@@ -359,7 +359,7 @@ function markDirtyEffects() { dirtyEffects = true; _enableSave(); }
 
 const ALL_EFFECT_IDS = [
   'gold_modifier','gold_offset','culture_modifier','culture_offset',
-  'life_modifier','life_offset','restore_life','max_life_modifier',
+  'life_modifier','life_regen_modifier','restore_life','max_life_modifier',
   'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
   'damage_modifier','range_modifier','reload_modifier',
   'slow_target','slow_target_duration','burn_target','burn_target_duration',
@@ -367,7 +367,7 @@ const ALL_EFFECT_IDS = [
   'speed_modifier','health_modifier','armour_modifier','slot_offset',
   'travel_offset','siege_offset','restore_life_after_loss_offset',
   'wave_delay_offset','wave_delay_modifier',
-  'capture_gold','capture_culture','lose_knowledge','lose_artefact',
+  'capture_gold','capture_culture','lose_knowledge','lose_artifact',
   'culture_steal_modifier','knowledge_steal_modifier','spy_disguise_chance',
 ];
 
@@ -651,7 +651,7 @@ function renderAll() {
 
       reqInput.addEventListener('blur', () => setTimeout(() => { reqDrop.style.display = 'none'; }, 150));
 
-      // Effects — same pattern as artefacts.html
+      // Effects — same pattern as artifacts.html
       if (!item.effects) item.effects = {};
       if (!origEffects[item.iid]) origEffects[item.iid] = { ...item.effects };
 

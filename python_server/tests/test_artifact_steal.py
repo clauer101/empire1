@@ -1,10 +1,10 @@
-"""Unit tests for _apply_artefact_steal in handlers.py."""
+"""Unit tests for _apply_artifact_steal in handlers.py."""
 
 from unittest.mock import MagicMock
 
 from gameserver.models.empire import Empire
 from gameserver.models.battle import BattleState
-from gameserver.network.handlers import _apply_artefact_steal
+from gameserver.network.handlers import _apply_artifact_steal
 
 ATTACKER_UID = 2
 DEFENDER_UID = 1
@@ -40,56 +40,56 @@ def _make_svc(attacker: Empire, victory_chance: float = 0.5, defeat_chance: floa
 # ── Attacker-win (victory) ────────────────────────────────────────────────────
 
 class TestAttackerWin:
-    def test_steals_artefact_when_roll_succeeds(self):
+    def test_steals_artifact_when_roll_succeeds(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["SWORD_OF_POWER"]
+        defender.artifacts = ["SWORD_OF_POWER"]
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid == "SWORD_OF_POWER"
         assert winner_uid == ATTACKER_UID
-        assert "SWORD_OF_POWER" not in defender.artefacts
-        assert "SWORD_OF_POWER" in attacker.artefacts
+        assert "SWORD_OF_POWER" not in defender.artifacts
+        assert "SWORD_OF_POWER" in attacker.artifacts
 
     def test_no_steal_when_roll_fails(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["SWORD_OF_POWER"]
+        defender.artifacts = ["SWORD_OF_POWER"]
         svc = _make_svc(attacker, victory_chance=0.0)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is None
         assert winner_uid is None
-        assert defender.artefacts == ["SWORD_OF_POWER"]
-        assert attacker.artefacts == []
+        assert defender.artifacts == ["SWORD_OF_POWER"]
+        assert attacker.artifacts == []
 
-    def test_no_steal_when_defender_has_no_artefacts(self):
+    def test_no_steal_when_defender_has_no_artifacts(self):
         battle, attacker, defender = _make_battle()
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is None
         assert winner_uid is None
 
-    def test_all_artefacts_stolen_when_chance_is_one(self):
+    def test_all_artifacts_stolen_when_chance_is_one(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART_A", "ART_B", "ART_C"]
+        defender.artifacts = ["ART_A", "ART_B", "ART_C"]
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is not None
-        assert len(attacker.artefacts) == 3
-        assert len(defender.artefacts) == 0
+        assert len(attacker.artifacts) == 3
+        assert len(defender.artifacts) == 0
 
     def test_recalculate_effects_called_on_both_empires(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["SWORD_OF_POWER"]
+        defender.artifacts = ["SWORD_OF_POWER"]
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        _apply_artefact_steal(battle, svc, attacker_won=True)
+        _apply_artifact_steal(battle, svc, attacker_won=True)
 
         calls = [c.args[0] for c in svc.empire_service.recalculate_effects.call_args_list]
         assert defender in calls
@@ -97,47 +97,47 @@ class TestAttackerWin:
 
     def test_uses_victory_chance_not_defeat_chance(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         svc = _make_svc(attacker, victory_chance=0.0, defeat_chance=1.0)
 
-        iid, _ = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is None  # victory_chance=0 → no steal despite defeat_chance=1
 
 
 # ── Defender-win (attacker defeated) ─────────────────────────────────────────
-# Artefacts are always stolen FROM the defender — the attacker never loses artefacts.
+# Artifacts are always stolen FROM the defender — the attacker never loses artifacts.
 
 class TestDefenderWin:
     def test_attacker_can_still_steal_from_defender_on_loss(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["CROWN"]
+        defender.artifacts = ["CROWN"]
         svc = _make_svc(attacker, defeat_chance=1.0)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert iid == "CROWN"
         assert winner_uid == ATTACKER_UID
-        assert "CROWN" not in defender.artefacts
-        assert "CROWN" in attacker.artefacts
+        assert "CROWN" not in defender.artifacts
+        assert "CROWN" in attacker.artifacts
 
-    def test_attacker_does_not_lose_own_artefacts_on_loss(self):
+    def test_attacker_does_not_lose_own_artifacts_on_loss(self):
         battle, attacker, defender = _make_battle()
-        attacker.artefacts = ["SWORD"]
-        defender.artefacts = []
+        attacker.artifacts = ["SWORD"]
+        defender.artifacts = []
         svc = _make_svc(attacker, defeat_chance=1.0)
 
-        _apply_artefact_steal(battle, svc, attacker_won=False)
+        _apply_artifact_steal(battle, svc, attacker_won=False)
 
-        assert attacker.artefacts == ["SWORD"]
+        assert attacker.artifacts == ["SWORD"]
 
     def test_no_steal_when_roll_fails(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["CROWN"]
+        defender.artifacts = ["CROWN"]
         svc = _make_svc(attacker, defeat_chance=0.0)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert iid is None
         assert winner_uid is None
-        assert defender.artefacts == ["CROWN"]
+        assert defender.artifacts == ["CROWN"]

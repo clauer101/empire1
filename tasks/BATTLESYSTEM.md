@@ -14,7 +14,7 @@ Gewünschter stand:
 * towers müssen gegen alle critters gelichzeitig kämpfen, schießen aber in ihrer ursprünglichen rate
 * spectatos subscriben nicht mehr zu einer sepzifischen battle sondern zu einem verteildigenden empire
 * loot wird zwischen allen anfreifern gleich geteilt.
-* artefacte wird zufälig ausgewürfelt, artefakt bekommt nur einer bei erfolg
+* artifacte wird zufälig ausgewürfelt, artefakt bekommt nur einer bei erfolg
 
 Testing:
 * Passe existierende unit tests an

@@ -18,7 +18,7 @@ BASE_CAMP:
   costs: {gold: 5}
   requirements: []
   effects:
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     siege_offset: 120.0
 
 FIRE_PLACE:
@@ -138,7 +138,7 @@ FIELD_HEALER:
   costs: {gold: 1200}
   requirements: [HERBOLOGY]
   effects:
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     restore_life_after_loss_offset: 2
 
 BOW_MAKER:
@@ -792,7 +792,7 @@ HOSPITAL:
   costs: {gold: 797828}
   requirements: [MEDICINE]
   effects:
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     max_life_modifier: 10
 
 FACTORY:
@@ -817,7 +817,7 @@ EMERGENCY_ROOM:
   costs: {gold: 856925}
   requirements: [ELECTRICITY]
   effects:
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     restore_life_after_loss_offset: 5
 
 BARRACKS:

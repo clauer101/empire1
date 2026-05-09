@@ -1,5 +1,5 @@
-# Artefact definitions (collectible passive effect items)
-# effects: passive bonuses while the artefact is owned
+# Artifact definitions (collectible passive effect items)
+# effects: passive bonuses while the artifact is owned
 # description: flavour text
 
 AWE_INSPIRING_GRAIL:
@@ -25,7 +25,7 @@ LOST_ALMANAC:
     build_speed_modifier: 0.6
     build_speed_offset: 0.6
     restore_life_after_loss_offset: 10
-    life_offset: 0.003
+    life_regen_modifier: 0.003
 
 ANCIENT_RELIQUE:
   name: Ancient Relique
@@ -64,8 +64,8 @@ GOLDEN_ARC:
   type: ''
   effects: {}
 
-HOLY_ARTEFACT:
-  name: Holy Artefact
+HOLY_ARTIFACT:
+  name: Holy Artifact
   description: 'Pilgrims walked for months to see it. Most wept. None could explain why.'
   type: ''
   effects: {}

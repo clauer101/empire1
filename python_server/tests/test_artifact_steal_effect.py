@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from gameserver.models.empire import Empire
 from gameserver.models.battle import BattleState
-from gameserver.network.handlers import _apply_artefact_steal
+from gameserver.network.handlers import _apply_artifact_steal
 
 ATTACKER_UID = 2
 DEFENDER_UID = 1
@@ -43,23 +43,23 @@ class TestArtifactStealVictoryEffect:
     def test_modifier_zero_leaves_base_chance_unchanged(self):
         """get_effect returns 0.0 by default → chance = base * 1.0."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         # base=0.0 means no steal — modifier doesn't help
         svc = _make_svc(attacker, base_victory=0.0)
 
-        iid, _ = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is None
 
     def test_modifier_adds_to_base_chance(self):
         """artifact_steal_victory=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         attacker.effects["artifact_steal_victory_modifier"] = 0.5
         # base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal
         svc = _make_svc(attacker, base_victory=0.5)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid == "ART"
         assert winner_uid == ATTACKER_UID
@@ -67,37 +67,37 @@ class TestArtifactStealVictoryEffect:
     def test_modifier_raises_below_threshold_chance_to_guarantee(self):
         """base=0.4 + modifier=0.6 → effective=1.0 → guaranteed steal."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         attacker.effects["artifact_steal_victory_modifier"] = 0.6
         svc = _make_svc(attacker, base_victory=0.4)
 
-        iid, _ = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid == "ART"
 
     def test_modifier_does_not_affect_defeat_chance(self):
         """artifact_steal_victory modifier must not bleed into defeat path."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         attacker.effects["artifact_steal_victory_modifier"] = 100.0
         # defeat_chance=0.0 → no steal regardless of victory modifier
         svc = _make_svc(attacker, base_victory=0.5, base_defeat=0.0)
 
-        iid, _ = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert iid is None
 
-    def test_multiple_artefacts_all_stolen_with_guaranteed_chance(self):
-        """base=0.5 + modifier=0.5 → effective=1.0 → all artefacts stolen."""
+    def test_multiple_artifacts_all_stolen_with_guaranteed_chance(self):
+        """base=0.5 + modifier=0.5 → effective=1.0 → all artifacts stolen."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["A", "B", "C"]
+        defender.artifacts = ["A", "B", "C"]
         attacker.effects["artifact_steal_victory_modifier"] = 0.5
         svc = _make_svc(attacker, base_victory=0.5)
 
-        _apply_artefact_steal(battle, svc, attacker_won=True)
+        _apply_artifact_steal(battle, svc, attacker_won=True)
 
-        assert len(attacker.artefacts) == 3
-        assert len(defender.artefacts) == 0
+        assert len(attacker.artifacts) == 3
+        assert len(defender.artifacts) == 0
 
 
 # ── artifact_steal_defeat modifier ───────────────────────────────────────────
@@ -105,22 +105,22 @@ class TestArtifactStealVictoryEffect:
 class TestArtifactStealDefeatEffect:
     def test_modifier_zero_leaves_base_chance_unchanged(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         svc = _make_svc(attacker, base_defeat=0.0)
 
-        iid, _ = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert iid is None
 
     def test_modifier_adds_to_defeat_chance(self):
         """base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         attacker.effects["artifact_steal_defeat_modifier"] = 0.5
         # base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal
         svc = _make_svc(attacker, base_defeat=0.5)
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert iid == "ART"
         assert winner_uid == ATTACKER_UID
@@ -128,24 +128,24 @@ class TestArtifactStealDefeatEffect:
     def test_modifier_does_not_affect_victory_chance(self):
         """artifact_steal_defeat modifier must not bleed into victory path."""
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
         attacker.effects["artifact_steal_defeat_modifier"] = 100.0
         svc = _make_svc(attacker, base_victory=0.0, base_defeat=0.5)
 
-        iid, _ = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is None
 
-    def test_multiple_artefacts_all_stolen_on_defeat_with_guaranteed_chance(self):
+    def test_multiple_artifacts_all_stolen_on_defeat_with_guaranteed_chance(self):
         battle, attacker, defender = _make_battle()
-        defender.artefacts = ["X", "Y"]
+        defender.artifacts = ["X", "Y"]
         attacker.effects["artifact_steal_defeat_modifier"] = 0.5
         svc = _make_svc(attacker, base_defeat=0.5)
 
-        _apply_artefact_steal(battle, svc, attacker_won=False)
+        _apply_artifact_steal(battle, svc, attacker_won=False)
 
-        assert len(attacker.artefacts) == 2
-        assert len(defender.artefacts) == 0
+        assert len(attacker.artifacts) == 2
+        assert len(defender.artifacts) == 0
 
 
 # ── Multi-attacker per-empire chance ─────────────────────────────────────────
@@ -166,7 +166,7 @@ class TestMultiAttackerEffects:
     def test_each_attacker_uses_own_modifier(self):
         """att1 has modifier=-0.5 (base=0.5-0.5=0 → miss), att2 has modifier=0.5 → effective=1.0 → guaranteed."""
         battle, att1, att2, defender = self._make_multi_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
 
         att1.effects["artifact_steal_victory_modifier"] = -0.5   # effective = 0.5 - 0.5 = 0.0
         att2.effects["artifact_steal_victory_modifier"] = 0.5    # effective = 0.5 + 0.5 = 1.0
@@ -184,18 +184,18 @@ class TestMultiAttackerEffects:
         svc.game_config = cfg
         svc.empire_service = empire_svc
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         # att1 misses (effective=0), att2 steals (effective=1.0)
         assert iid == "ART"
         assert winner_uid == 11
-        assert "ART" in att2.artefacts
-        assert "ART" not in att1.artefacts
+        assert "ART" in att2.artifacts
+        assert "ART" not in att1.artifacts
 
     def test_first_attacker_steals_second_gets_nothing(self):
-        """When both have guaranteed chance, first in list takes the artefact."""
+        """When both have guaranteed chance, first in list takes the artifact."""
         battle, att1, att2, defender = self._make_multi_battle()
-        defender.artefacts = ["ART"]
+        defender.artifacts = ["ART"]
 
         cfg = MagicMock()
         cfg.base_artifact_steal_victory = 1.0
@@ -210,9 +210,9 @@ class TestMultiAttackerEffects:
         svc.game_config = cfg
         svc.empire_service = empire_svc
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid == "ART"
         assert winner_uid == 10
-        assert "ART" in att1.artefacts
-        assert att2.artefacts == []
+        assert "ART" in att1.artifacts
+        assert att2.artifacts == []

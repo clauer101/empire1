@@ -5,7 +5,7 @@ Replaces the Java ItemInterpreter SAX parser.
 Supports two modes:
   1. Single file with all sections (legacy items.yaml)
   2. Directory with per-category files: buildings.yaml, knowledge.yaml,
-     structures.yaml, critters.yaml, artefacts.yaml
+     structures.yaml, critters.yaml, artifacts.yaml
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import yaml
 from gameserver.models.items import ItemDetails, ItemType
 
 # Category keys and the file stems they map to.
-_CATEGORIES = ("buildings", "knowledge", "structures", "critters", "artefacts", "wonders")
+_CATEGORIES = ("buildings", "knowledge", "structures", "critters", "artifacts", "wonders")
 
 
 def _type_for_category(cat: str) -> ItemType:

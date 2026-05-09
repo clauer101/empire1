@@ -139,7 +139,7 @@ These are explicit non-goals. Doing any of them counts as task failure.
   current branch is a signal, not a target.
 - **Do NOT modify game-balance YAMLs** in `python_server/config/*.yaml`
   (game.yaml, buildings.yaml, structures.yaml, critters.yaml, ai_waves.yaml,
-  artefacts.yaml, knowledge.yaml, maps/*.yaml). These are content, not code.
+  artifacts.yaml, knowledge.yaml, maps/*.yaml). These are content, not code.
 - **Do NOT introduce frameworks** beyond this allow-list:
   FastAPI, pydantic v2, structlog, slowapi, Alembic, argon2-cffi, Vite,
   Playwright, ESLint/Prettier, sharp/imagemin, uv, pytest plugins already in
@@ -173,7 +173,7 @@ empire1/
 │   │   ├── critters.yaml
 │   │   ├── ai_waves.yaml
 │   │   ├── knowledge.yaml
-│   │   ├── artefacts.yaml
+│   │   ├── artifacts.yaml
 │   │   └── maps/
 │   ├── src/gameserver/
 │   │   ├── main.py
@@ -914,7 +914,7 @@ mechanical).
   - **auth**: login, signup, logout, password reset, account
   - **military**: army, attack, defense, battle, military_request
   - **economy**: build, research, upgrade, item_upgrade, knowledge_steal,
-    artefact_steal
+    artifact_steal
   - **social**: messages, threads, alliances
   - **admin**: status, debug, time travel
   Each new file has a `register(dispatcher)` function. The thin dispatcher

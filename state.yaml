@@ -160,7 +160,7 @@ empires:
     gold_offset: 8.131
     build_speed_modifier: 2.1
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.003
+    life_regen_modifier: 0.003
     build_speed_offset: 1.05
     culture_modifier: 1.7
     max_life_modifier: 18.0
@@ -197,7 +197,7 @@ empires:
       damage: 2
     RAPID_FIRE_MG_BUNKER:
       damage: 2
-  artefacts: []
+  artifacts: []
   max_life: 28.0
   structures: {}
   armies:
@@ -779,7 +779,7 @@ empires:
     gold_offset: 7.231
     build_speed_modifier: 2.1
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.004
+    life_regen_modifier: 0.004
     build_speed_offset: 1.05
     culture_modifier: 1.7
     max_life_modifier: 38.0
@@ -804,7 +804,7 @@ empires:
     RAPID_FIRE_MG_BUNKER:
       reload: 4
       damage: 10
-  artefacts: []
+  artifacts: []
   max_life: 48.0
   structures: {}
   armies:
@@ -1270,7 +1270,7 @@ empires:
     scientist: 0
   effects: {}
   item_upgrades: {}
-  artefacts: []
+  artifacts: []
   max_life: 10.0
   structures: {}
   armies: []
@@ -1345,7 +1345,7 @@ empires:
     scientist: 0
   effects: {}
   item_upgrades: {}
-  artefacts: []
+  artifacts: []
   max_life: 10.0
   structures: {}
   armies:
@@ -2744,7 +2744,7 @@ empires:
     gold_offset: 7.231
     build_speed_modifier: 2.1
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 1.05
     culture_modifier: 1.7
     research_speed_modifier: 3.0
@@ -2805,7 +2805,7 @@ empires:
       speed: 1
     RAPID_FIRE_MG_BUNKER:
       damage: 6
-  artefacts: []
+  artifacts: []
   max_life: 28.0
   structures: {}
   armies:
@@ -3401,7 +3401,7 @@ empires:
     gold_offset: 7.231
     build_speed_modifier: 2.7
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.007
+    life_regen_modifier: 0.007
     build_speed_offset: 1.65
     culture_modifier: 1.7
     max_life_modifier: 38.0
@@ -3437,7 +3437,7 @@ empires:
       speed: 6
     RADAR_TOWER:
       range: 1
-  artefacts:
+  artifacts:
   - LOST_ALMANAC
   max_life: 48.0
   structures: {}
@@ -4103,7 +4103,7 @@ empires:
     culture_offset: 1.1500000000000001
     gold_modifier: 0.8
     gold_offset: 2.431
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     research_speed_modifier: 1.3
     culture_modifier: 0.45
@@ -4113,7 +4113,7 @@ empires:
     tower_sell_refund_modifier: 0.1
     research_speed_offset: 0.1
   item_upgrades: {}
-  artefacts: []
+  artifacts: []
   max_life: 13.0
   structures: {}
   armies:
@@ -4442,7 +4442,7 @@ empires:
     gold_modifier: 1.7999999999999998
     gold_offset: 5.131
     build_speed_modifier: 1.5
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.85
     culture_modifier: 1.4999999999999998
     research_speed_modifier: 2.7
@@ -4470,7 +4470,7 @@ empires:
       speed: 5
     COLD_TOWER:
       damage: 5
-  artefacts: []
+  artifacts: []
   max_life: 23.0
   structures: {}
   armies:
@@ -5031,7 +5031,7 @@ empires:
     gold_offset: 5.430999999999999
     build_speed_modifier: 1.9
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 1.05
     culture_modifier: 1.7
     research_speed_modifier: 2.7
@@ -5059,7 +5059,7 @@ empires:
       effect_duration: 2
     CANNON_TOWER:
       effect_value: 3
-  artefacts: []
+  artifacts: []
   max_life: 28.0
   structures: {}
   armies:
@@ -5129,7 +5129,7 @@ empires:
       next_critter_ms: 0
   - aid: 11117
     uid: 13
-    name: Artefact Diggers
+    name: Artifact Diggers
     waves:
     - wave_id: 1
       iid: SLAVE
@@ -5139,7 +5139,7 @@ empires:
       next_critter_ms: 0
   - aid: 11928
     uid: 13
-    name: Artefact Digger2
+    name: Artifact Digger2
     waves:
     - wave_id: 2
       iid: SLAVE
@@ -5535,7 +5535,7 @@ empires:
     gold_offset: 5.8309999999999995
     build_speed_modifier: 1.5
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 2.03
     research_speed_modifier: 2.7
@@ -5567,7 +5567,7 @@ empires:
     CARGO:
       health: 5
       speed: 1
-  artefacts:
+  artifacts:
   - AWE_INSPIRING_GRAIL
   max_life: 38.0
   structures: {}
@@ -6073,7 +6073,7 @@ empires:
     gold_offset: 4.8309999999999995
     build_speed_modifier: 1.5
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 1.7
     research_speed_modifier: 2.6999999999999997
@@ -6097,7 +6097,7 @@ empires:
       reload: 1
     DRAGOONER:
       speed: 7
-  artefacts: []
+  artifacts: []
   max_life: 28.0
   structures: {}
   armies:
@@ -6524,7 +6524,7 @@ empires:
     gold_offset: 5.430999999999999
     build_speed_modifier: 1.9000000000000001
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 1.05
     culture_modifier: 1.7
     research_speed_modifier: 2.7
@@ -6547,7 +6547,7 @@ empires:
       effect_value: 5
     FLAME_THROWER:
       effect_value: 4
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -6900,14 +6900,14 @@ empires:
     gold_offset: 4.3309999999999995
     build_speed_modifier: 1.3
     tower_sell_refund_modifier: 0.2
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 1.55
     research_speed_modifier: 1.3
     research_speed_offset: 0.30000000000000004
     max_life_modifier: 13.0
   item_upgrades: {}
-  artefacts: []
+  artifacts: []
   max_life: 23.0
   structures: {}
   armies:
@@ -7115,7 +7115,7 @@ empires:
     gold_offset: 0.71
     culture_offset: 0.6000000000000001
     research_speed_modifier: 0.44999999999999996
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     build_speed_offset: 0.1
     research_speed_offset: 0.1
     culture_modifier: 0.2
@@ -7136,7 +7136,7 @@ empires:
       damage: 3
       effect_duration: 2
       range: 2
-  artefacts: []
+  artifacts: []
   max_life: 10.0
   structures: {}
   armies:
@@ -7228,7 +7228,7 @@ empires:
     gold_modifier: 0.1
     max_life_modifier: 3.0
     research_speed_modifier: 0.44999999999999996
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     build_speed_offset: 0.1
     research_speed_offset: 0.1
     culture_modifier: 0.2
@@ -7262,7 +7262,7 @@ empires:
       health: 1
     SLING_TOWER:
       damage: 1
-  artefacts: []
+  artifacts: []
   max_life: 13.0
   structures: {}
   armies:
@@ -7457,7 +7457,7 @@ empires:
     culture_offset: 2.3500000000000005
     gold_modifier: 1.3
     gold_offset: 4.231
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 1.3499999999999999
     research_speed_modifier: 0.8
@@ -7487,7 +7487,7 @@ empires:
       reload: 5
     BOILING_OIL:
       reload: 1
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -7818,7 +7818,7 @@ empires:
     culture_offset: 2.1500000000000004
     gold_modifier: 1.3
     gold_offset: 3.4309999999999996
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 0.8999999999999999
     research_speed_modifier: 1.0
@@ -7863,7 +7863,7 @@ empires:
       effect_duration: 1
     CONDOTTERI:
       speed: 1
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -8286,7 +8286,7 @@ empires:
     culture_offset: 2.3500000000000005
     gold_modifier: 1.3
     gold_offset: 4.8309999999999995
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 1.3499999999999999
     research_speed_modifier: 0.8
@@ -8314,7 +8314,7 @@ empires:
       reload: 10
     BOILING_OIL:
       reload: 1
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -8639,7 +8639,7 @@ empires:
     culture_offset: 2.1500000000000004
     gold_modifier: 1.3
     gold_offset: 3.4309999999999996
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     research_speed_modifier: 0.8
     culture_modifier: 0.8999999999999999
     build_speed_modifier: 1.3
@@ -8674,7 +8674,7 @@ empires:
     HEAVY_TOWER:
       reload: 9
       damage: 3
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -8959,7 +8959,7 @@ empires:
     culture_offset: 2.3500000000000005
     gold_modifier: 1.3
     gold_offset: 4.231
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     culture_modifier: 1.3499999999999999
     research_speed_modifier: 1.5
@@ -8997,7 +8997,7 @@ empires:
       effect_duration: 5
     BOILING_OIL:
       effect_value: 5
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -9341,7 +9341,7 @@ empires:
     culture_offset: 2.1500000000000004
     gold_modifier: 1.3
     gold_offset: 3.9309999999999996
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     culture_modifier: 1.05
     research_speed_modifier: 0.8
     build_speed_modifier: 1.3
@@ -9364,7 +9364,7 @@ empires:
       reload: 3
     HEAVY_TOWER:
       reload: 5
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -9687,7 +9687,7 @@ empires:
     culture_offset: 1.6500000000000001
     gold_modifier: 1.3
     gold_offset: 3.4309999999999996
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     build_speed_offset: 0.44999999999999996
     research_speed_modifier: 1.0
     build_speed_modifier: 1.3
@@ -9725,7 +9725,7 @@ empires:
       range: 2
     BOILING_OIL:
       effect_duration: 4
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -10008,7 +10008,7 @@ empires:
     travel_offset: -5400.0
     max_life_modifier: 6.0
     research_speed_modifier: 0.8
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     culture_modifier: 0.8999999999999999
     tower_sell_refund_modifier: 0.2
     build_speed_offset: 0.44999999999999996
@@ -10037,7 +10037,7 @@ empires:
       reload: 5
     TAR_TOWER:
       reload: 3
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -10289,7 +10289,7 @@ empires:
     scientist: 1
     artist: 0
   effects:
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     siege_offset: 7320.0
     gold_offset: 2.931
     build_speed_modifier: 0.8
@@ -10319,7 +10319,7 @@ empires:
       damage: 5
     HEAVY_TOWER:
       reload: 5
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -10565,7 +10565,7 @@ empires:
     scientist: 5
     artist: 6
   effects:
-    life_offset: 0.002
+    life_regen_modifier: 0.002
     siege_offset: 7320.0
     gold_offset: 1.731
     culture_offset: 1.05
@@ -10596,7 +10596,7 @@ empires:
       range: 1
     BALLISTA_TOWER:
       reload: 4
-  artefacts: []
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -10769,7 +10769,7 @@ empires:
     scientist: 3
     artist: 3
   effects:
-    life_offset: 0.001
+    life_regen_modifier: 0.001
     siege_offset: 120.0
     gold_offset: 1.2309999999999999
     culture_offset: 0.6000000000000001
@@ -10792,7 +10792,7 @@ empires:
       speed: 1
     CLUBMAN:
       armour: 2
-  artefacts: []
+  artifacts: []
   max_life: 10.0
   structures: {}
   armies:

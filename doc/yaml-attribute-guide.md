@@ -23,7 +23,7 @@ BASIC_TOWER:
 | Forschung    | `config/knowledge.yaml`        |
 | Türme        | `config/structures.yaml`       |
 | Critter      | `config/critters.yaml`         |
-| Artefakte    | `config/artefacts.yaml`        |
+| Artefakte    | `config/artifacts.yaml`        |
 | Spielregeln  | `config/game.yaml`             |
 
 ---

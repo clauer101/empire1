@@ -33,7 +33,7 @@ def _make_empire(uid: int = 1, name: str = "TestEmpire") -> Empire:
         knowledge={"archery": 30.0, "masonry": 0.0},
         citizens={"merchant": 3, "scientist": 2, "artist": 1},
         effects={"gold_modifier": 0.5, "research_speed_modifier": 0.2},
-        artefacts=["ruby_ring", "iron_shield"],
+        artifacts=["ruby_ring", "iron_shield"],
         max_life=12.0,
         structures={
             10: Structure(
@@ -164,13 +164,13 @@ class TestSaveLoad:
         e = self._run(load_state(path)).empires[src.uid]
         assert e.citizens == {"merchant": 3, "scientist": 2, "artist": 1}
 
-    def test_round_trip_effects_artefacts(self, tmp_path: Path) -> None:
+    def test_round_trip_effects_artifacts(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")
         src = _make_empire()
         self._run(save_state({src.uid: src}, path=path))
         e = self._run(load_state(path)).empires[src.uid]
         assert e.effects["gold_modifier"] == pytest.approx(0.5)
-        assert e.artefacts == ["ruby_ring", "iron_shield"]
+        assert e.artifacts == ["ruby_ring", "iron_shield"]
 
     def test_round_trip_structures(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")

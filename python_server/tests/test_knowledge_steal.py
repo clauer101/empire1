@@ -149,33 +149,33 @@ class TestAiDefeatNoKnowledgeSteal:
         # (No call = no change)
         assert battle.defender.knowledge == original
 
-    def test_ai_defeat_no_artefact_stolen(self):
-        """When AI loses, no artefact is stolen in either direction."""
-        from gameserver.network.handlers import _apply_artefact_steal
+    def test_ai_defeat_no_artifact_stolen(self):
+        """When AI loses, no artifact is stolen in either direction."""
+        from gameserver.network.handlers import _apply_artifact_steal
 
         battle = _make_battle(attacker_uid=AI_UID, defender_uid=1)
-        battle.defender.artefacts = ["CROWN"]
+        battle.defender.artifacts = ["CROWN"]
         svc = _make_svc()
         svc.game_config.base_artifact_steal_victory = 1.0
         svc.game_config.base_artifact_steal_defeat = 1.0
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=False)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert iid is None
         assert winner_uid is None
-        assert battle.defender.artefacts == ["CROWN"]
+        assert battle.defender.artifacts == ["CROWN"]
 
-    def test_ai_win_no_artefact_stolen(self):
-        """AI never steals artefacts even on win."""
-        from gameserver.network.handlers import _apply_artefact_steal
+    def test_ai_win_no_artifact_stolen(self):
+        """AI never steals artifacts even on win."""
+        from gameserver.network.handlers import _apply_artifact_steal
 
         battle = _make_battle(attacker_uid=AI_UID, defender_uid=1)
-        battle.defender.artefacts = ["CROWN"]
+        battle.defender.artifacts = ["CROWN"]
         svc = _make_svc()
         svc.game_config.base_artifact_steal_victory = 1.0
 
-        iid, winner_uid = _apply_artefact_steal(battle, svc, attacker_won=True)
+        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert iid is None
         assert winner_uid is None
-        assert battle.defender.artefacts == ["CROWN"]
+        assert battle.defender.artifacts == ["CROWN"]

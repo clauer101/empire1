@@ -361,7 +361,7 @@ The frontend `js/api.js` depends on the exact wire format.
 
 Never modify `python_server/config/*.yaml` in a code/refactoring commit. These are content
 files (game.yaml, buildings.yaml, structures.yaml, critters.yaml, ai_waves.yaml,
-artefacts.yaml, knowledge.yaml, maps/*.yaml).
+artifacts.yaml, knowledge.yaml, maps/*.yaml).
 
 ### 8.3 Three era key systems — never mix
 

@@ -70,4 +70,4 @@ class SpyArmy:
     #   spy_build_queue: 1000  — view construction progress
     #   spy_research_queue: 2000 — view research progress
     #   spy_attacks: 5000      — view incoming/outgoing attacks
-    #   spy_artefacts: 10000   — view artefact collection
+    #   spy_artifacts: 10000   — view artifact collection

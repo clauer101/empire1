@@ -2,7 +2,7 @@
  * Dashboard view — empire summary overview.
  *
  * Displays: resources, citizens, build/research queue status,
- * army count, effects, artefacts.
+ * army count, effects, artifacts.
  */
 
 import { eventBus } from '../events.js';
@@ -193,7 +193,7 @@ function render(data) {
 
       <div class="panel">
         ${(() => {
-          const arts = data.artefacts || [];
+          const arts = data.artifacts || [];
           if (!arts.length) return '';
           const catalog = st?.items?.catalog || {};
           const badges = arts
@@ -203,7 +203,7 @@ function render(data) {
               return `<span class="art-badge art-badge-${type} art-badge-clickable" data-iid="${iid}">⚜ ${name}</span>`;
             })
             .join('');
-          return `<div class="panel-header">Artefacts</div><div class="art-badge-list">${badges}</div><div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>`;
+          return `<div class="panel-header">Artifacts</div><div class="art-badge-list">${badges}</div><div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>`;
         })()}
         <div class="panel-header">Incoming</div>
         <div id="attacks-incoming-list">${(() => {
@@ -290,9 +290,9 @@ function render(data) {
     };
   }
 
-  // Bind artefact badge clicks
+  // Bind artifact badge clicks
   el.querySelectorAll('.art-badge-clickable').forEach((badge) => {
-    badge.addEventListener('click', () => _showArtefactOverlay(badge.dataset.iid));
+    badge.addEventListener('click', () => _showArtifactOverlay(badge.dataset.iid));
   });
 
   // Replace old citizen-btn handler with slider init
@@ -415,7 +415,7 @@ function _showProductionOverlay(data) {
     return `<div class="prod-overlay-section"><div class="prod-overlay-title">${title}</div>${html}</div>`;
   }
 
-  const artefacts = data.artefacts || [];
+  const artifacts = data.artifacts || [];
   const goldHtml = renderResourceIncome(
     'gold',
     effects,
@@ -425,7 +425,7 @@ function _showProductionOverlay(data) {
     completedBuildings,
     items,
     completedResearch,
-    artefacts
+    artifacts
   );
   const cultureHtml = renderResourceIncome(
     'culture',
@@ -436,7 +436,7 @@ function _showProductionOverlay(data) {
     completedBuildings,
     items,
     completedResearch,
-    artefacts
+    artifacts
   );
   const lifeHtml = renderResourceIncome(
     'life',
@@ -447,7 +447,7 @@ function _showProductionOverlay(data) {
     completedBuildings,
     items,
     completedResearch,
-    artefacts
+    artifacts
   );
   const buildHtml = renderBuildSpeed(
     effects,
@@ -455,7 +455,7 @@ function _showProductionOverlay(data) {
     completedResearch,
     items,
     data.base_build_speed,
-    artefacts
+    artifacts
   );
   const researchHtml = renderResearchSpeed(
     effects,
@@ -465,14 +465,14 @@ function _showProductionOverlay(data) {
     completedResearch,
     items,
     data.base_research_speed,
-    artefacts
+    artifacts
   );
   const restoreHtml = renderRestoreLife(
     effects,
     completedBuildings,
     completedResearch,
     items,
-    artefacts,
+    artifacts,
     data.base_restore_life ?? 1
   );
 
@@ -501,7 +501,7 @@ function _showProductionOverlay(data) {
   document.body.appendChild(overlay);
 }
 
-function _showArtefactOverlay(iid) {
+function _showArtifactOverlay(iid) {
   document.querySelector('.art-detail-overlay')?.remove();
 
   const catalog = st?.items?.catalog || {};
@@ -518,7 +518,7 @@ function _showArtefactOverlay(iid) {
       const sign = v > 0 ? '+' : '';
       const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
       const isOffset = k.endsWith('_offset') || k === 'max_life_modifier';
-      const decimals = k === 'life_offset' ? 3 : 2;
+      const decimals = k === 'life_regen_modifier' ? 3 : 2;
       const val = isOffset ? `${sign}${Number.isInteger(v) ? v : v.toFixed(decimals)}` : `${sign}${(v * 100).toFixed(0)}%`;
       const unit = k.endsWith('_offset') ? '/s' : '';
       return `<div class="panel-row"><span class="label" style="color:#aaa">${label}</span><span class="value">${val}${unit}</span></div>`;
@@ -723,7 +723,7 @@ function renderBuildSpeed(
   completedResearch,
   items,
   baseBuildSpeed,
-  ownedArtefacts
+  ownedArtifacts
 ) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
   const buildOffset = effects?.build_speed_offset || 0;
@@ -751,7 +751,7 @@ function renderBuildSpeed(
       }
     }
   }
-  for (const iid of ownedArtefacts || []) {
+  for (const iid of ownedArtifacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.build_speed_offset > 0) {
       itemBuildOffset += art.effects.build_speed_offset;
@@ -782,7 +782,7 @@ function renderBuildSpeed(
       }
     }
   }
-  for (const iid of ownedArtefacts || []) {
+  for (const iid of ownedArtifacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.build_speed_modifier > 0) {
       itemBuildModifier += art.effects.build_speed_modifier;
@@ -808,7 +808,7 @@ function renderResearchSpeed(
   completedResearch,
   items,
   baseResearchSpeed,
-  ownedArtefacts
+  ownedArtifacts
 ) {
   baseResearchSpeed = baseResearchSpeed ?? 1.0;
   const researchOffset = effects?.research_speed_offset || 0;
@@ -845,7 +845,7 @@ function renderResearchSpeed(
       }
     }
   }
-  for (const iid of ownedArtefacts || []) {
+  for (const iid of ownedArtifacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.research_speed_offset > 0) {
       itemResearchOffset += art.effects.research_speed_offset;
@@ -877,7 +877,7 @@ function renderResearchSpeed(
       }
     }
   }
-  for (const iid of ownedArtefacts || []) {
+  for (const iid of ownedArtifacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.research_speed_modifier > 0) {
       itemResearchModifier += art.effects.research_speed_modifier;
@@ -893,7 +893,7 @@ function renderResearchSpeed(
   return html;
 }
 
-function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtefacts, baseRestore) {
+function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtifacts, baseRestore) {
   const key = 'restore_life_after_loss_offset';
   let html = '';
   let bonus = 0;
@@ -912,7 +912,7 @@ function renderRestoreLife(effects, completedBuildings, completedResearch, items
       html += `<div class="panel-row"><span class="label">+${Math.round(item.effects[key])}</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
-  for (const iid of ownedArtefacts || []) {
+  for (const iid of ownedArtifacts || []) {
     const art = items?.catalog?.[iid];
     if (art?.effects?.[key] > 0) {
       bonus += art.effects[key];
@@ -949,7 +949,7 @@ function fmtPerH(perSecond) {
 function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) {
   baseAmount = baseAmount ?? 0;
   if (resourceType === 'life') {
-    return baseAmount + (effects?.life_offset || 0);
+    return baseAmount + (effects?.life_regen_modifier || 0);
   }
   if (resourceType === 'gold') {
     const offset = baseAmount + (effects?.gold_offset || 0);
@@ -973,7 +973,7 @@ function renderResourceIncome(
   completedBuildings,
   items,
   completedResearch,
-  ownedArtefacts
+  ownedArtifacts
 ) {
   completedResearch = completedResearch || [];
   let html = '';
@@ -992,7 +992,7 @@ function renderResourceIncome(
     citizenCount = citizens?.artist || 0;
   } else if (resourceType === 'life') {
     citizenType = null; // No citizen effect for life
-    effectOffsetKey = 'life_offset';
+    effectOffsetKey = 'life_regen_modifier';
     effectModifierKey = null;
     citizenCount = 0;
   }
@@ -1024,8 +1024,8 @@ function renderResourceIncome(
         html += `<div class="panel-row"><span class="label">+${fmtH(offset)}</span><span class="value">(${item.name || iid})</span></div>`;
       }
     }
-    // Artefact offsets
-    for (const iid of ownedArtefacts || []) {
+    // Artifact offsets
+    for (const iid of ownedArtifacts || []) {
       const art = catalog.catalog?.[iid];
       if (art?.effects?.[effectOffsetKey]) {
         const offset = art.effects[effectOffsetKey];
@@ -1036,9 +1036,9 @@ function renderResourceIncome(
   }
   addOffsetSources(items);
 
-  // Helper to add artefact modifiers (called after the buildings/research modifier loop)
-  function addArtefactModifiers() {
-    for (const iid of ownedArtefacts || []) {
+  // Helper to add artifact modifiers (called after the buildings/research modifier loop)
+  function addArtifactModifiers() {
+    for (const iid of ownedArtifacts || []) {
       const art = items?.catalog?.[iid];
       if (art?.effects?.[effectModifierKey] > 0) {
         const modifier = art.effects[effectModifierKey];
@@ -1082,7 +1082,7 @@ function renderResourceIncome(
       html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
     }
   }
-  addArtefactModifiers();
+  addArtifactModifiers();
 
   // Era modifier contribution
   const eraModifier = effectModifierKey
@@ -1266,7 +1266,7 @@ function renderEmpiresSection(empires) {
         ${dot(e.online)}
         <div style="min-width:0;">
           <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</div>
-          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artefact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;color:#c9a84c;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artefacts?">${'⚜'.repeat(e.artefact_count)}</span>` : ''}</div>
+          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artifact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;color:#c9a84c;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artifacts?">${'⚜'.repeat(e.artifact_count)}</span>` : ''}</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:row;align-items:center;gap:4px;">
@@ -1302,23 +1302,23 @@ function bindEmpiresEvents() {
   sec.querySelectorAll('.art-info-trigger').forEach((el) => {
     el.onclick = (e) => {
       e.stopPropagation();
-      _showArtefactInfoOverlay();
+      _showArtifactInfoOverlay();
     };
   });
 }
 
-function _showArtefactInfoOverlay() {
+function _showArtifactInfoOverlay() {
   document.querySelector('.art-info-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.className = 'art-info-overlay tt-overlay visible';
   overlay.innerHTML = `
     <div class="tt-panel">
       <button class="tt-close">&times;</button>
-      <div class="tt-dp-name" style="color:#c9a84c">⚜ Artefacts</div>
+      <div class="tt-dp-name" style="color:#c9a84c">⚜ Artifacts</div>
       <div class="tt-dp-desc" style="margin-top:10px;font-style:normal;line-height:1.7;font-size:0.92em">
-        <p style="margin-bottom:10px">Artefacts are powerful ancient objects that grant their owner extraordinary advantages — boosting gold income, culture, research speed, and more.</p>
-        <p style="margin-bottom:10px">They are rare and highly coveted. When you defeat an enemy empire in battle, there is a chance to seize one of their artefacts for yourself.</p>
-        <p>Even in defeat, a small chance remains: a skilled attacker may still manage to claim an artefact from the defender — so no raid is ever truly wasted.</p>
+        <p style="margin-bottom:10px">Artifacts are powerful ancient objects that grant their owner extraordinary advantages — boosting gold income, culture, research speed, and more.</p>
+        <p style="margin-bottom:10px">They are rare and highly coveted. When you defeat an enemy empire in battle, there is a chance to seize one of their artifacts for yourself.</p>
+        <p>Even in defeat, a small chance remains: a skilled attacker may still manage to claim an artifact from the defender — so no raid is ever truly wasted.</p>
       </div>
     </div>
   `;

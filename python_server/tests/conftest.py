@@ -39,7 +39,7 @@ def make_empire(
     knowledge: dict | None = None,
     citizens: dict | None = None,
     effects: dict | None = None,
-    artefacts: list | None = None,
+    artifacts: list | None = None,
     structures: dict | None = None,
     armies: list | None = None,
 ) -> Empire:
@@ -52,7 +52,7 @@ def make_empire(
         knowledge=knowledge or {},
         citizens=citizens or {},
         effects=effects or {},
-        artefacts=artefacts or [],
+        artifacts=artifacts or [],
         max_life=max_life,
         structures=structures or {},
         armies=armies or [],

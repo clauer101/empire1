@@ -9,9 +9,7 @@ GOLD_MODIFIER = "gold_modifier"
 GOLD_OFFSET = "gold_offset"
 CULTURE_MODIFIER = "culture_modifier"
 CULTURE_OFFSET = "culture_offset"
-LIFE_MODIFIER = "life_modifier"
-LIFE_OFFSET = "life_offset"
-RESTORE_LIFE = "restore_life"
+LIFE_REGEN_MODIFIER = "life_regen_modifier"
 MAX_LIFE_MODIFIER = "max_life_modifier"
 
 # -- Building & Research -------------------------------------------------
@@ -21,22 +19,7 @@ RESEARCH_SPEED_MODIFIER = "research_speed_modifier"
 RESEARCH_SPEED_OFFSET = "research_speed_offset"
 
 # -- Structure / Tower ---------------------------------------------------
-DAMAGE_MODIFIER = "damage_modifier"
-RANGE_MODIFIER = "range_modifier"
-RELOAD_MODIFIER = "reload_modifier"
-SLOW_TARGET = "slow_target"
-SLOW_TARGET_DURATION = "slow_target_duration"
-BURN_TARGET = "burn_target"
-BURN_TARGET_DURATION = "burn_target_duration"
-SPLASH_DAMAGE = "splash_damage"
 SPLASH_RADIUS = "splash_radius"
-
-# -- Critter / Army -----------------------------------------------------
-SPEED_MODIFIER = "speed_modifier"
-HEALTH_MODIFIER = "health_modifier"
-ARMOUR_MODIFIER = "armour_modifier"
-SLOT_OFFSET = "slot_offset"
-SLOT_ADDER_PER_LEVEL = "slot_adder_per_level"
 
 # -- Travel & Siege ------------------------------------------------------
 TRAVEL_TIME_OFFSET = "travel_offset"  # only attacker can modify this
@@ -46,17 +29,3 @@ RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately
 
 # -- Battle / Defense ----------------------------------------------------
 WAVE_DELAY_OFFSET = "wave_delay_offset"
-WAVE_DELAY_MODIFIER = "wave_delay_modifier"
-
-# -- Loot ----------------------------------------------------------------
-CAPTURE_GOLD = "capture_gold"
-CAPTURE_CULTURE = "capture_culture"
-LOSE_KNOWLEDGE = "lose_knowledge"
-LOSE_ARTEFACT = "lose_artefact"
-DESTROY_WONDER_PERCENT = "destroy_wonder_percent"
-CULTURE_STEAL_MODIFIER = "culture_steal_modifier"
-ARTEFACT_STEAL_CHANCE_MODIFIER = "artefact_steal_chance_modifier"
-KNOWLEDGE_STEAL_MODIFIER = "knowledge_steal_modifier"
-
-# -- Spy -----------------------------------------------------------------
-SPY_DISGUISE_CHANCE = "spy_disguise_chance"

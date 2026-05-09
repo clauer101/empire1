@@ -122,7 +122,7 @@ def economy_power(empire: "Empire", upgrades: "UpgradeProvider") -> float:
     # ── Income rates (from effects) ──────────────────────────────────
     gold_rate    = fx.get("gold_offset",    0.0) * (1.0 + fx.get("gold_modifier",    0.0))
     culture_rate = fx.get("culture_offset", 0.0) * (1.0 + fx.get("culture_modifier", 0.0))
-    life_rate    = fx.get("life_offset",    0.0) * (1.0 + fx.get("life_modifier",    0.0))
+    life_rate    = fx.get("life_regen_modifier",    0.0) * (1.0 + fx.get("life_modifier",    0.0))
     score += gold_rate    * _GOLD_RATE_W
     score += culture_rate * _CULTURE_RATE_W
     score += life_rate    * _LIFE_RATE_W
@@ -253,8 +253,8 @@ def defense_power(empire: "Empire", upgrades: "UpgradeProvider", path_length: in
     # ── Life pool (absorbs critter damage before losing) ─────────────
     score += empire.max_life * 10.0
 
-    # ── Artefacts (any artefact grants a bonus) ───────────────────────
-    score += len(empire.artefacts) * 150.0
+    # ── Artifacts (any artifact grants a bonus) ───────────────────────
+    score += len(empire.artifacts) * 150.0
 
     # ── Path length multiplier ────────────────────────────────────────
     if path_length and path_length > 0:

@@ -1,7 +1,7 @@
 """Empire model — a player's complete game state.
 
 An Empire holds all resources, buildings, research, armies, structures,
-citizens, effects, artefacts, and the player's hex map.
+citizens, effects, artifacts, and the player's hex map.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ class Empire:
         spies: Player's spy armies.
         citizens: Citizen distribution {type: count}.
         effects: Accumulated passive effects {key: value}.
-        artefacts: Collected artefact IIDs.
+        artifacts: Collected artifact IIDs.
         bosses: Boss critters {iid: Critter}.
         max_life: Maximum life points.
     """
@@ -60,7 +60,7 @@ class Empire:
     })
     effects: dict[str, float] = field(default_factory=dict)
     item_upgrades: dict[str, dict[str, int]] = field(default_factory=dict)
-    artefacts: list[str] = field(default_factory=list)
+    artifacts: list[str] = field(default_factory=list)
     bosses: dict[str, Critter] = field(default_factory=dict)
     hex_map: dict[str, Any] = field(default_factory=dict)  # Composer hex tiles
     max_life: float = 10.0

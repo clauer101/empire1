@@ -67,8 +67,8 @@ Empire-Effects werden durch abgeschlossene Knowledge-Items freigeschaltet und vi
 |---|---|---|
 | `gold_offset` | float | Goldertrag pro Sekunde (additiv) |
 | `culture_offset` | float | Kulturertrag pro Sekunde (additiv) |
-| `life_offset` | float | Life-Regen pro Sekunde (additiv) |
-| `life_modifier` | float (0.0–1.0+) | Multiplikator auf `life_offset`: `regen = life_offset × (1 + life_modifier)` |
+| `life_regen_modifier` | float | Life-Regen pro Sekunde (additiv) |
+| `life_modifier` | float (0.0–1.0+) | Multiplikator auf `life_regen_modifier`: `regen = life_regen_modifier × (1 + life_modifier)` |
 
 ### Baugeschwindigkeit & Forschung
 

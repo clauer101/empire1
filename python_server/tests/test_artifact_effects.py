@@ -1,4 +1,4 @@
-"""Unit tests verifying that artefact effects are correctly applied
+"""Unit tests verifying that artifact effects are correctly applied
 via EmpireService.recalculate_effects."""
 
 from unittest.mock import MagicMock
@@ -43,20 +43,20 @@ def _make_service(items: list[ItemDetails]) -> EmpireService:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
-class TestArtefactEffectsApplied:
-    def test_single_artefact_gold_offset_applied(self):
-        art = _make_item("MAGIC_COIN", ItemType.ARTEFACT, {"gold_offset": 5.0})
+class TestArtifactEffectsApplied:
+    def test_single_artifact_gold_offset_applied(self):
+        art = _make_item("MAGIC_COIN", ItemType.ARTIFACT, {"gold_offset": 5.0})
         svc = _make_service([art])
-        empire = Empire(uid=1, artefacts=["MAGIC_COIN"])
+        empire = Empire(uid=1, artifacts=["MAGIC_COIN"])
 
         svc.recalculate_effects(empire)
 
         assert empire.effects.get("gold_offset") == pytest.approx(5.0)
 
-    def test_single_artefact_culture_offset_applied(self):
-        art = _make_item("GOLDEN_LYRE", ItemType.ARTEFACT, {"culture_offset": 3.5})
+    def test_single_artifact_culture_offset_applied(self):
+        art = _make_item("GOLDEN_LYRE", ItemType.ARTIFACT, {"culture_offset": 3.5})
         svc = _make_service([art])
-        empire = Empire(uid=1, artefacts=["GOLDEN_LYRE"])
+        empire = Empire(uid=1, artifacts=["GOLDEN_LYRE"])
 
         svc.recalculate_effects(empire)
 
@@ -69,58 +69,58 @@ class TestArtefactEffectsApplied:
             "research_speed_modifier": 0.1,
             "build_speed_modifier": 0.05,
         }
-        art = _make_item("WONDER_ORB", ItemType.ARTEFACT, effects)
+        art = _make_item("WONDER_ORB", ItemType.ARTIFACT, effects)
         svc = _make_service([art])
-        empire = Empire(uid=1, artefacts=["WONDER_ORB"])
+        empire = Empire(uid=1, artifacts=["WONDER_ORB"])
 
         svc.recalculate_effects(empire)
 
         for key, val in effects.items():
             assert empire.effects.get(key) == pytest.approx(val), f"effect {key} not applied"
 
-    def test_multiple_artefacts_effects_stacked(self):
-        art1 = _make_item("ART_A", ItemType.ARTEFACT, {"gold_offset": 3.0})
-        art2 = _make_item("ART_B", ItemType.ARTEFACT, {"gold_offset": 2.0})
+    def test_multiple_artifacts_effects_stacked(self):
+        art1 = _make_item("ART_A", ItemType.ARTIFACT, {"gold_offset": 3.0})
+        art2 = _make_item("ART_B", ItemType.ARTIFACT, {"gold_offset": 2.0})
         svc = _make_service([art1, art2])
-        empire = Empire(uid=1, artefacts=["ART_A", "ART_B"])
+        empire = Empire(uid=1, artifacts=["ART_A", "ART_B"])
 
         svc.recalculate_effects(empire)
 
         assert empire.effects.get("gold_offset") == pytest.approx(5.0)
 
-    def test_artefact_effects_stack_with_building_effects(self):
+    def test_artifact_effects_stack_with_building_effects(self):
         building = _make_item("MARKET", ItemType.BUILDING, {"gold_offset": 10.0})
-        art = _make_item("COIN_PURSE", ItemType.ARTEFACT, {"gold_offset": 4.0})
+        art = _make_item("COIN_PURSE", ItemType.ARTIFACT, {"gold_offset": 4.0})
         svc = _make_service([building, art])
-        empire = Empire(uid=1, buildings={"MARKET": 0.0}, artefacts=["COIN_PURSE"])
+        empire = Empire(uid=1, buildings={"MARKET": 0.0}, artifacts=["COIN_PURSE"])
 
         svc.recalculate_effects(empire)
 
         assert empire.effects.get("gold_offset") == pytest.approx(14.0)
 
-    def test_no_artefacts_no_artefact_effects(self):
-        art = _make_item("LOST_GRAIL", ItemType.ARTEFACT, {"gold_offset": 99.0})
+    def test_no_artifacts_no_artifact_effects(self):
+        art = _make_item("LOST_GRAIL", ItemType.ARTIFACT, {"gold_offset": 99.0})
         svc = _make_service([art])
-        empire = Empire(uid=1, artefacts=[])
+        empire = Empire(uid=1, artifacts=[])
 
         svc.recalculate_effects(empire)
 
         assert empire.effects.get("gold_offset", 0.0) == pytest.approx(0.0)
 
-    def test_unknown_artefact_iid_does_not_crash(self):
+    def test_unknown_artifact_iid_does_not_crash(self):
         svc = _make_service([])
-        empire = Empire(uid=1, artefacts=["NONEXISTENT_ART"])
+        empire = Empire(uid=1, artifacts=["NONEXISTENT_ART"])
 
         svc.recalculate_effects(empire)  # must not raise
 
-    def test_effects_cleared_when_artefact_removed(self):
-        art = _make_item("CROWN", ItemType.ARTEFACT, {"gold_offset": 7.0})
+    def test_effects_cleared_when_artifact_removed(self):
+        art = _make_item("CROWN", ItemType.ARTIFACT, {"gold_offset": 7.0})
         svc = _make_service([art])
-        empire = Empire(uid=1, artefacts=["CROWN"])
+        empire = Empire(uid=1, artifacts=["CROWN"])
         svc.recalculate_effects(empire)
         assert empire.effects.get("gold_offset") == pytest.approx(7.0)
 
-        empire.artefacts.remove("CROWN")
+        empire.artifacts.remove("CROWN")
         svc.recalculate_effects(empire)
 
         assert empire.effects.get("gold_offset", 0.0) == pytest.approx(0.0)

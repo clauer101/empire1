@@ -11,7 +11,7 @@
  *   overlay.destroy();                   // cleanup
  */
 
-import { fmtEffort } from './format.js';
+import { fmtEffort, fmtEffectRow, fmtEffectsInline, fmtTowerEffects } from './format.js';
 import { ERA_YAML_TO_KEY, ERA_LABEL_EN } from './eras.js';
 
 export class ItemOverlay {
@@ -169,7 +169,7 @@ export class ItemOverlay {
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
       `;
-    } else if (category === 'artefact') {
+    } else if (category === 'artifact') {
       const a = catInfo;
       const name = a?.name || iid;
       const desc = a?.description || '';
@@ -211,8 +211,8 @@ export class ItemOverlay {
 
     this._panel.innerHTML = html;
 
-    // Artefact sprite as panel background with fade-to-dark gradient
-    if (category === 'artefact' && spriteUrl) {
+    // Artifact sprite as panel background with fade-to-dark gradient
+    if (category === 'artifact' && spriteUrl) {
       this._panel.style.backgroundImage =
         `linear-gradient(to bottom, rgba(14,14,22,0.35) 0%, rgba(14,14,22,0.97) 55%), url('${spriteUrl}')`;
       this._panel.style.backgroundSize = 'cover, cover';
@@ -268,112 +268,15 @@ export class ItemOverlay {
 
   _fmtEffectRows(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
-    const LABELS = {
-      gold_offset: [
-        '💰',
-        'Gold income',
-        (v) =>
-          `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`,
-      ],
-      culture_offset: [
-        '🎭',
-        'Culture income',
-        (v) =>
-          `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`,
-      ],
-      life_offset: ['❤️', 'Life regen', (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(2)}/h`],
-      gold_modifier: ['💰', 'Gold bonus', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      culture_modifier: [
-        '🎭',
-        'Culture bonus',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-      life_modifier: ['❤️', 'Life bonus', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      max_life_modifier: ['❤️', 'Max life', (v) => `${v > 0 ? '+' : ''}${v}`],
-      build_speed_modifier: [
-        '🏗',
-        'Build speed',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-      build_speed_offset: ['🏗', 'Build speed', (v) => `${v > 0 ? '+' : ''}${v}`],
-      research_speed_modifier: [
-        '🔬',
-        'Research speed',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-      research_speed_offset: ['🔬', 'Research speed', (v) => `${v > 0 ? '+' : ''}${v}`],
-      damage_modifier: ['⚔️', 'Tower damage', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      range_modifier: ['🎯', 'Tower range', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      reload_modifier: ['⏱', 'Reload speed', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-      wave_delay_offset: ['⏳', 'Wave delay', (v) => `${v > 0 ? '+' : ''}${v}s`],
-      wave_delay_modifier: [
-        '⏳',
-        'Wave delay',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-      spy_disguise_chance: ['🕵️', 'Spy disguise', (v) => `${(v * 100).toFixed(0)}%`],
-      artefact_steal_chance_modifier: [
-        '⚜',
-        'Artefact steal',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-      culture_steal_modifier: [
-        '🎭',
-        'Culture steal',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-      knowledge_steal_modifier: [
-        '📚',
-        'Knowledge steal',
-        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,
-      ],
-    };
-    return Object.entries(effects)
-      .map(([k, v]) => {
-        const def = LABELS[k];
-        if (def) {
-          const [icon, label, fmt] = def;
-          return `<span class="tt-dp-label">${icon} ${label}:</span><span>${fmt(v)}</span>`;
-        }
-        const sign = v > 0 ? '+' : '';
-        const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-        const val = Math.abs(v) < 1 ? `${sign}${(v * 100).toFixed(0)}%` : `${sign}${v}`;
-        return `<span class="tt-dp-label">${label}:</span><span>${val}</span>`;
-      })
-      .join('');
+    return Object.entries(effects).map(([k, v]) => fmtEffectRow(k, v)).join('');
   }
 
   _fmtEffects(effects) {
-    if (!effects || Object.keys(effects).length === 0) return '';
-    return Object.entries(effects)
-      .map(([k, v]) => {
-        const sign = v > 0 ? '+' : '';
-        if (k === 'gold_offset')
-          return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-        if (k === 'culture_offset')
-          return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-        const name = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-        if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
-        return `${name}: ${sign}${v}`;
-      })
-      .join(', ');
+    return fmtEffectsInline(effects);
   }
 
   _fmtItemEffects(effects) {
-    if (!effects || Object.keys(effects).length === 0) return '';
-    return Object.entries(effects)
-      .map(([k, v]) => {
-        if (k === 'burn_duration') return `🔥 ${(v / 1000).toFixed(1)}s burn`;
-        if (k === 'burn_dps') return `🔥 ${v} dps`;
-        if (k === 'slow_duration') return `❄ ${(v / 1000).toFixed(1)}s slow`;
-        if (k === 'slow_ratio') return `❄ ${Math.round(v * 100)}% speed`;
-        if (k === 'splash_radius') return `💥 ${v} hex`;
-        const name = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-        const sign = v > 0 ? '+' : '';
-        if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
-        return `${name}: ${sign}${v}`;
-      })
-      .join(', ');
+    return fmtTowerEffects(effects);
   }
 
   _fmtCosts(costs) {

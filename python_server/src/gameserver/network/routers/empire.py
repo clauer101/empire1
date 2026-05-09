@@ -81,7 +81,7 @@ def make_router(services: "Services") -> APIRouter:
                 "is_self": empire.uid == uid,
                 "era": era_idx,
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
-                "artefact_count": len(empire.artefacts),
+                "artifact_count": len(empire.artifacts),
             })
         empires.sort(key=lambda e: float(e.get("culture") or 0),  # type: ignore[arg-type]
                      reverse=True)

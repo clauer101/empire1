@@ -80,7 +80,7 @@ def _make_empire(uid: int = 100, name: str = "TestEmpire") -> Empire:
         },
         armies=[Army(aid=1, uid=uid, name="Alpha")],
         effects={"speed": 1.5},
-        artefacts=["golden_shield"],
+        artifacts=["golden_shield"],
         max_life=10.0,
     )
 
@@ -277,12 +277,12 @@ class TestHandleSummaryRequest:
         assert result["spy_count"] == 0
 
     @pytest.mark.asyncio
-    async def test_effects_and_artefacts(self):
+    async def test_effects_and_artifacts(self):
         msg = parse_message({"type": "summary_request", "sender": 100})
         result = await handle_summary_request(msg, sender_uid=100)
 
         assert result["effects"] == {"speed": 1.5}
-        assert result["artefacts"] == ["golden_shield"]
+        assert result["artifacts"] == ["golden_shield"]
 
     @pytest.mark.asyncio
     async def test_max_life(self):
@@ -912,7 +912,7 @@ class TestSummaryEdgeCases:
         assert result["structures"] == []
         assert result["army_count"] == 0
         assert result["spy_count"] == 0
-        assert result["artefacts"] == []
+        assert result["artifacts"] == []
         assert result["effects"] == {}
 
     @pytest.mark.asyncio

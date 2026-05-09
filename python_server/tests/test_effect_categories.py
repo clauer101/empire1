@@ -149,35 +149,35 @@ class TestCultureOffset:
 class TestLifeOffset:
     """LIFE_OFFSET regenerates life each tick, capped at max_life."""
 
-    def test_life_offset_regenerates_life(self):
+    def test_life_regen_modifier_regenerates_life(self):
         svc = _svc()
         e = _empire()
         e.resources["life"] = 5.0
         e.max_life = 10.0
-        e.effects[fx.LIFE_OFFSET] = 2.0   # +2 HP/s
+        e.effects[fx.LIFE_REGEN_MODIFIER] = 2.0   # +2 HP/s
 
         svc._generate_resources(e, dt=1.0)
 
         assert e.resources["life"] == pytest.approx(7.0)
 
-    def test_life_offset_capped_at_max_life(self):
+    def test_life_regen_modifier_capped_at_max_life(self):
         svc = _svc()
         e = _empire()
         e.resources["life"] = 9.5
         e.max_life = 10.0
-        e.effects[fx.LIFE_OFFSET] = 5.0   # would exceed max
+        e.effects[fx.LIFE_REGEN_MODIFIER] = 5.0   # would exceed max
 
         svc._generate_resources(e, dt=1.0)
 
         assert e.resources["life"] == pytest.approx(10.0)
 
-    def test_negative_life_offset_does_not_regen(self):
-        """life_offset ≤ 0 must not change life (no drain via this path)."""
+    def test_negative_life_regen_modifier_does_not_regen(self):
+        """life_regen_modifier ≤ 0 must not change life (no drain via this path)."""
         svc = _svc()
         e = _empire()
         e.resources["life"] = 5.0
         e.max_life = 10.0
-        e.effects[fx.LIFE_OFFSET] = -1.0
+        e.effects[fx.LIFE_REGEN_MODIFIER] = -1.0
 
         svc._generate_resources(e, dt=1.0)
 
@@ -206,20 +206,6 @@ class TestMaxLifeModifier:
         assert e.max_life == pytest.approx(10.0)
 
 
-class TestLifeModifier:
-    """LIFE_MODIFIER scales the life regeneration rate (multiplicative on life_offset)."""
-
-    def test_life_modifier_should_scale_life_regen(self):
-        svc = _svc()
-        e = _empire()
-        e.resources["life"] = 5.0
-        e.max_life = 20.0
-        e.effects[fx.LIFE_OFFSET] = 1.0   # base regen 1 HP/s
-        e.effects[fx.LIFE_MODIFIER] = 1.0  # ×2 → 2 HP/s
-
-        svc._generate_resources(e, dt=1.0)
-
-        assert e.resources["life"] == pytest.approx(7.0)  # 5 + 2
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -574,3 +560,154 @@ class TestTowerEmpireModifiers:
                             critters={c2.cid: c2}, structures={struct2.sid: struct2})
         svc._step_towers(b_mod, 300.0)
         assert len(b_mod.pending_shots) == 1, "Tower should fire with reload upgrade"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. RESTORE_LIFE_AFTER_LOSS_OFFSET
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestRestoreLifeAfterLossOffset:
+    """RESTORE_LIFE_AFTER_LOSS_OFFSET adds extra life restore on defender loss."""
+
+    def _make_battle_and_svc(self, defender: "Empire", base_restore: float = 1.0):
+        from unittest.mock import MagicMock
+        from gameserver.models.battle import BattleState
+        from gameserver.engine.ai_service import AI_UID
+
+        attacker = Empire(uid=2, name="Attacker")
+        battle = BattleState(bid=1, defender=defender, attacker_uids=[2], attacker_gains={2: {}})
+
+        cfg = MagicMock()
+        cfg.restore_life_after_loss_offset = base_restore
+        cfg.base_artifact_steal_victory = 0.0
+        cfg.base_artifact_steal_defeat = 0.0
+        cfg.base_culture_steal = 0.0
+        cfg.base_knowledge_steal = 0.0
+        cfg.min_lose_culture = 0.0
+        cfg.max_lose_culture = 0.0
+
+        empire_svc = MagicMock()
+        empire_svc.get = MagicMock(return_value=attacker)
+        empire_svc.recalculate_effects = MagicMock()
+
+        svc = MagicMock()
+        svc.game_config = cfg
+        svc.empire_service = empire_svc
+        svc.upgrade_provider.items = {}
+        return battle, svc
+
+    def test_base_restore_applied_on_loss(self):
+        """Defender recovers base_restore life after losing."""
+        from gameserver.network.handlers import _compute_and_apply_loot
+        defender = Empire(uid=1, name="Defender")
+        defender.resources["life"] = 2.0
+        defender.max_life = 10.0
+        battle, svc = self._make_battle_and_svc(defender, base_restore=3.0)
+
+        loot = _compute_and_apply_loot(battle, svc)
+
+        assert defender.resources["life"] == pytest.approx(5.0)
+        assert loot["life_restored"] == pytest.approx(3.0)
+
+    def test_effect_offset_adds_to_base_restore(self):
+        """Effect offset stacks with the base restore."""
+        from gameserver.network.handlers import _compute_and_apply_loot
+        defender = Empire(uid=1, name="Defender")
+        defender.resources["life"] = 2.0
+        defender.max_life = 10.0
+        defender.effects["restore_life_after_loss_offset"] = 2.0
+        battle, svc = self._make_battle_and_svc(defender, base_restore=1.0)
+
+        loot = _compute_and_apply_loot(battle, svc)
+
+        # base 1 + effect 2 = 3 restored
+        assert defender.resources["life"] == pytest.approx(5.0)
+
+    def test_restore_capped_at_max_life(self):
+        """Life cannot exceed max_life even if restore would overshoot."""
+        from gameserver.network.handlers import _compute_and_apply_loot
+        defender = Empire(uid=1, name="Defender")
+        defender.resources["life"] = 9.0
+        defender.max_life = 10.0
+        battle, svc = self._make_battle_and_svc(defender, base_restore=5.0)
+
+        _compute_and_apply_loot(battle, svc)
+
+        assert defender.resources["life"] == pytest.approx(10.0)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. TOWER_SELL_REFUND_MODIFIER
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestTowerSellRefundModifier:
+    """TOWER_SELL_REFUND_MODIFIER scales the gold refund when a tower is sold."""
+
+    def _refund(self, empire: "Empire", base_refund: float, tower_cost: float) -> float:
+        """Mirror the refund formula from economy.py handler."""
+        refund_modifier = empire.get_effect("tower_sell_refund_modifier", 0.0)
+        refund_rate = base_refund * (1.0 + refund_modifier)
+        return tower_cost * refund_rate
+
+    def test_no_modifier_uses_base_refund(self):
+        e = _empire()
+        assert self._refund(e, base_refund=0.3, tower_cost=100.0) == pytest.approx(30.0)
+
+    def test_modifier_scales_refund(self):
+        """Modifier 1.0 → rate doubles from 30% to 60%."""
+        e = _empire()
+        e.effects["tower_sell_refund_modifier"] = 1.0
+        assert self._refund(e, base_refund=0.3, tower_cost=100.0) == pytest.approx(60.0)
+
+    def test_modifier_zero_leaves_refund_unchanged(self):
+        e = _empire()
+        e.effects["tower_sell_refund_modifier"] = 0.0
+        assert self._refund(e, base_refund=0.5, tower_cost=200.0) == pytest.approx(100.0)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 7. SPY_WORKSHOP
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestSpyWorkshop:
+    """spy_workshop unlocks the structures/critters section in the spy report data."""
+
+    def _make_svc(self):
+        from unittest.mock import MagicMock
+        svc = MagicMock()
+        svc.upgrade_provider.items = {}
+        svc.empire_service.get_current_era = MagicMock(return_value="STEINZEIT")
+        svc.empire_service._item_era_index = {}
+        return svc
+
+    def test_without_spy_workshop_no_structures_in_data(self):
+        """No spy_workshop → data dict has no 'structures' key."""
+        from gameserver.network.handlers.military import _build_spy_report
+        defender = _empire()
+        attacker = _empire()
+        attacker.effects["spy_workshop"] = 0.0
+
+        _, data = _build_spy_report(defender, self._make_svc(), attacker=attacker)
+
+        assert "structures" not in data
+
+    def test_with_spy_workshop_structures_included_in_data(self):
+        """spy_workshop > 0 → 'structures' and 'critters' keys present in data."""
+        from gameserver.network.handlers.military import _build_spy_report
+        defender = _empire()
+        attacker = _empire()
+        attacker.effects["spy_workshop"] = 1.0
+
+        _, data = _build_spy_report(defender, self._make_svc(), attacker=attacker)
+
+        assert "structures" in data
+        assert "critters" in data
+
+    def test_no_attacker_means_no_workshop_intel(self):
+        """No attacker passed → no workshop intel section."""
+        from gameserver.network.handlers.military import _build_spy_report
+        defender = _empire()
+
+        _, data = _build_spy_report(defender, self._make_svc(), attacker=None)
+
+        assert "structures" not in data

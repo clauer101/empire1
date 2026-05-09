@@ -81,6 +81,18 @@ When adding new image assets (JPG/PNG sprites): run `npm run assets:optimize` to
 generate WebP siblings. The build step runs this automatically. Skip PWA icons
 (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) — those must stay PNG.
 
+## Frontend Shared Utilities (`web/js/lib/format.js`)
+
+All formatting logic lives in `web/js/lib/format.js`. Do not inline formatting elsewhere.
+
+| Function | Purpose |
+|---|---|
+| `fmtEffort(n)` | Numbers with K/M suffix |
+| `fmtSecs(s)` | Seconds → `1h 2m 3s` |
+| `fmtEffectRow(key, value)` | Two-column HTML row: `<span>icon label:</span><span>+value</span>` — for overlays/detail panels |
+| `fmtEffectsInline(effects)` | Compact comma string: `"💰 +3.6/h, 🎭 +5%"` — for card previews |
+| `fmtTowerEffects(effects)` | Tower combat effects: burn / slow / splash |
+
 ## Adding Python Packages
 
 1. Add to `python_server/pyproject.toml` under `dependencies`
@@ -144,7 +156,7 @@ All game balance lives in YAML:
 - `game.yaml` — Timings, resource rates, era effects
 - `buildings.yaml`, `structures.yaml`, `critters.yaml` — Entity definitions
 - `ai_waves.yaml` — AI wave definitions across 9 eras (Stone → Future)
-- `artefacts.yaml`, `knowledge.yaml` — Tech tree content
+- `artifacts.yaml`, `knowledge.yaml` — Tech tree content
 - `maps/default.yaml` — Default map
 
 ### Frontend (`web/`)
@@ -183,3 +195,8 @@ Travel offsets are stored as legacy flat fields: `stone_travel_offset`, `middle_
 - Structure stats: `damage`, `range`, `reload`, `effect_duration`, `effect_value` (+2–3% per level).
 - Critter stats: `health`, `speed`, `armour` (+2% per level).
 - Applied in `battle_service._step_armies()` at spawn time (normal waves) and `_make_critter_from_item()` (spawn-on-death).
+
+
+### Language in text
+
+ All text in the front-end should be written in american english 

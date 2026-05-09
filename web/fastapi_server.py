@@ -993,14 +993,14 @@ async def patch_tower_effects(iid: str, body: dict = Body(...)):
     return JSONResponse({"error": "effects line not found"}, status_code=500)
 
 
-ARTEFACTS_PATH = _CONFIG_DIR / "artefacts.yaml"
+ARTIFACTS_PATH = _CONFIG_DIR / "artifacts.yaml"
 
 
-@app.get("/api/artefacts")
-async def get_artefacts():
-    """Return all artefacts from artefacts.yaml."""
+@app.get("/api/artifacts")
+async def get_artifacts():
+    """Return all artifacts from artifacts.yaml."""
     try:
-        raw = yaml.safe_load(ARTEFACTS_PATH.read_text(encoding="utf-8")) or {}
+        raw = yaml.safe_load(ARTIFACTS_PATH.read_text(encoding="utf-8")) or {}
         result = []
         for iid, data in raw.items():
             if isinstance(data, dict):
@@ -1016,9 +1016,9 @@ async def get_artefacts():
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
-@app.post("/api/artefacts")
-async def save_artefacts(request: Request):
-    """Save full artefacts list to artefacts.yaml."""
+@app.post("/api/artifacts")
+async def save_artifacts(request: Request):
+    """Save full artifacts list to artifacts.yaml."""
     try:
         items = await request.json()
         raw = {}
@@ -1030,9 +1030,9 @@ async def save_artefacts(request: Request):
                 "type": item.get("type", ""),
                 "effects": item.get("effects") or {},
             }
-        header = "# Artefact definitions (collectible passive effect items)\n# effects: passive bonuses while the artefact is owned\n# description: flavour text\n\n"
+        header = "# Artifact definitions (collectible passive effect items)\n# effects: passive bonuses while the artifact is owned\n# description: flavour text\n\n"
         body = yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False)
-        ARTEFACTS_PATH.write_text(header + body, encoding="utf-8")
+        ARTIFACTS_PATH.write_text(header + body, encoding="utf-8")
         return JSONResponse({"success": True})
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)

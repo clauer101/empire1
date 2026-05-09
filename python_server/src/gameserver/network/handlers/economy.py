@@ -51,7 +51,7 @@ async def handle_summary_request(
     that passes through the GameEngine.
 
     The response contains resources, citizens, buildings, research,
-    structures, effects, artefacts, and life status.
+    structures, effects, artifacts, and life status.
     """
     from gameserver.network.handlers.auth import _build_empire_summary
     svc = _svc()
@@ -89,7 +89,7 @@ async def handle_item_request(
             "structures": {},
         }
 
-    # Completed items = buildings done + knowledge done + artefacts owned
+    # Completed items = buildings done + knowledge done + artifacts owned
     completed: set[str] = set()
     for iid, remaining in empire.buildings.items():
         if remaining <= 0:
@@ -97,7 +97,7 @@ async def handle_item_request(
     for iid, remaining in empire.knowledge.items():
         if remaining <= 0:
             completed.add(iid)
-    completed.update(empire.artefacts)
+    completed.update(empire.artifacts)
 
     from gameserver.models.items import ItemType
     up = svc.upgrade_provider
@@ -207,7 +207,7 @@ async def handle_item_request(
                 "description": item.description,
                 "image": item.image,
             })
-        elif item.item_type == ItemType.ARTEFACT:
+        elif item.item_type == ItemType.ARTIFACT:
             entry.update({
                 "effects": dict(item.effects),
                 "description": item.description,

@@ -69,7 +69,7 @@ spy_costs:
   build_queue: 1000
   research_queue: 2000
   attacks: 5000
-  artefacts: 10000
+  artifacts: 10000
 prices:
   citizen:
     u: 34

@@ -17,7 +17,7 @@ class TestLoadItemsFromConfigDir:
     def test_config_directory_exists(self):
         assert CONFIG_DIR.is_dir(), f"Config directory not found: {CONFIG_DIR}"
 
-    @pytest.mark.parametrize("category", ["buildings", "knowledge", "structures", "critters", "artefacts"])
+    @pytest.mark.parametrize("category", ["buildings", "knowledge", "structures", "critters", "artifacts"])
     def test_category_file_exists(self, category):
         f = CONFIG_DIR / f"{category}.yaml"
         assert f.exists(), f"Missing config file: {f}"
@@ -34,7 +34,7 @@ class TestLoadItemsFromConfigDir:
     def test_expected_categories_present(self):
         items = load_items(CONFIG_DIR)
         types_found = {item.item_type for item in items}
-        for expected in (ItemType.BUILDING, ItemType.KNOWLEDGE, ItemType.STRUCTURE, ItemType.CRITTER, ItemType.ARTEFACT):
+        for expected in (ItemType.BUILDING, ItemType.KNOWLEDGE, ItemType.STRUCTURE, ItemType.CRITTER, ItemType.ARTIFACT):
             assert expected in types_found, f"No items of type {expected} loaded"
 
     def test_expected_item_counts(self):
@@ -48,7 +48,7 @@ class TestLoadItemsFromConfigDir:
         assert len(by_type[ItemType.KNOWLEDGE]) >= 50
         assert len(by_type[ItemType.STRUCTURE]) >= 15
         assert len(by_type[ItemType.CRITTER]) >= 20
-        assert len(by_type[ItemType.ARTEFACT]) >= 10
+        assert len(by_type[ItemType.ARTIFACT]) >= 10
 
     def test_items_have_iid_and_name(self):
         items = load_items(CONFIG_DIR)
@@ -164,9 +164,9 @@ class TestLoadItemsFromDirectory:
 
     def test_partial_categories(self, tmp_path):
         """Only some category files present — should not error."""
-        (tmp_path / "artefacts.yaml").write_text(
+        (tmp_path / "artifacts.yaml").write_text(
             "ring:\n  name: Ring of Power\n"
         )
         items = load_items(tmp_path)
         assert len(items) == 1
-        assert items[0].item_type == ItemType.ARTEFACT
+        assert items[0].item_type == ItemType.ARTIFACT

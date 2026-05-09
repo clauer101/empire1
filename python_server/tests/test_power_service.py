@@ -226,9 +226,9 @@ class TestDefensePower:
         e_high = _empire(max_life=50.0)
         assert defense_power(e_high, _upgrades()) > defense_power(e_low, _upgrades())
 
-    def test_artefacts_contribute(self):
+    def test_artifacts_contribute(self):
         e_none = _empire()
-        e_art  = _empire(artefacts=["SWORD", "SHIELD"])
+        e_art  = _empire(artifacts=["SWORD", "SHIELD"])
         assert defense_power(e_art, _upgrades()) > defense_power(e_none, _upgrades())
 
 

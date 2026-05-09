@@ -524,11 +524,11 @@ export function createBattleUi(ctx) {
       } else {
         html += `<li ${mutedSt}>🎭 Culture: –</li>`;
       }
-      if (loot.artefact) {
-        const artefactName = items?.artefacts?.[loot.artefact]?.name || loot.artefact;
-        html += `<li ${liSt}>⚗️ Artefact: <strong>${artefactName}</strong></li>`;
+      if (loot.artifact) {
+        const artifactName = items?.artifacts?.[loot.artifact]?.name || loot.artifact;
+        html += `<li ${liSt}>⚗️ Artifact: <strong>${artifactName}</strong></li>`;
       } else {
-        html += `<li ${mutedSt}>⚗️ Artefact: –</li>`;
+        html += `<li ${mutedSt}>⚗️ Artifact: –</li>`;
       }
       html += '</ul></div>';
 

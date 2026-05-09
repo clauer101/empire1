@@ -868,7 +868,7 @@ class BattleService:
         
         Args:
             loot: Optional loot dict computed after battle ends (only on defender loss).
-                  Shape: {knowledge, culture, artefact}
+                  Shape: {knowledge, culture, artifact}
         """
         total_waves = sum(len(a.waves) for a in battle.armies.values())
         # army_names: uid → list of army names (one uid can have multiple armies)

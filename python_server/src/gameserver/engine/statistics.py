@@ -2,11 +2,11 @@
 
 TAI (Total Achievement Index):
     sqrt(build_progress + research_progress + structure_costs * 3)
-    * (1 + artefact_bonus + citizen_bonus)
+    * (1 + artifact_bonus + citizen_bonus)
 
 Win conditions:
 - World Wonder: Complete a wonder building.
-- Treasure Hunter: Hold N different artefacts for M days.
+- Treasure Hunter: Hold N different artifacts for M days.
 - Defense God: Undefeated for 28 days.
 - Prosperity: Highest TAI after the apocalypse phase.
 """

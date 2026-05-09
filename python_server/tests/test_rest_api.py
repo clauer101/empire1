@@ -50,7 +50,7 @@ def _make_empire(uid: int = TEST_UID, name: str = "TestEmpire") -> Empire:
         },
         armies=[Army(aid=1, uid=uid, name="Alpha")],
         effects={"speed": 1.5},
-        artefacts=["golden_shield"],
+        artifacts=["golden_shield"],
         max_life=10.0,
     )
 

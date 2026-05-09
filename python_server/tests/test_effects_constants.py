@@ -22,6 +22,6 @@ class TestEffectsConstants:
     def test_key_constants_exist(self):
         assert eff.GOLD_MODIFIER == "gold_modifier"
         assert eff.BUILD_SPEED_MODIFIER == "build_speed_modifier"
-        assert eff.DAMAGE_MODIFIER == "damage_modifier"
+        assert eff.LIFE_REGEN_MODIFIER == "life_regen_modifier"
         assert eff.TRAVEL_TIME_OFFSET == "travel_offset"
-        assert eff.CAPTURE_GOLD == "capture_gold"
+        assert eff.WAVE_DELAY_OFFSET == "wave_delay_offset"

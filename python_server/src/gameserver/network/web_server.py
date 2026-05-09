@@ -29,7 +29,7 @@ BUILDINGS_PATH  = _CONFIG_DIR / "buildings.yaml"
 KNOWLEDGE_PATH  = _CONFIG_DIR / "knowledge.yaml"
 CRITTERS_PATH   = _CONFIG_DIR / "critters.yaml"
 STRUCTURES_PATH = _CONFIG_DIR / "structures.yaml"
-ARTEFACTS_PATH  = _CONFIG_DIR / "artefacts.yaml"
+ARTIFACTS_PATH  = _CONFIG_DIR / "artifacts.yaml"
 _SAVED_MAPS_PATH = _CONFIG_DIR / "saved_maps.yaml"
 
 _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
@@ -880,10 +880,10 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
                 return JSONResponse({"ok": True})
         return JSONResponse({"error": "effects line not found"}, status_code=500)
 
-    @app.get("/api/artefacts")
-    async def get_artefacts() -> Any:
+    @app.get("/api/artifacts")
+    async def get_artifacts() -> Any:
         try:
-            raw = yaml.safe_load(ARTEFACTS_PATH.read_text(encoding="utf-8")) or {}
+            raw = yaml.safe_load(ARTIFACTS_PATH.read_text(encoding="utf-8")) or {}
             result = [
                 {"iid": iid, "name": data.get("name", ""), "description": data.get("description", ""),
                  "type": data.get("type", ""), "effects": data.get("effects") or {}}
@@ -893,8 +893,8 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
-    @app.post("/api/artefacts")
-    async def save_artefacts(request: Request) -> Any:
+    @app.post("/api/artifacts")
+    async def save_artifacts(request: Request) -> Any:
         try:
             items = await request.json()
             raw = {}
@@ -904,8 +904,8 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
                     "name": item.get("name", ""), "description": item.get("description", ""),
                     "type": item.get("type", ""), "effects": item.get("effects") or {},
                 }
-            header = "# Artefact definitions (collectible passive effect items)\n# effects: passive bonuses while the artefact is owned\n# description: flavour text\n\n"
-            ARTEFACTS_PATH.write_text(
+            header = "# Artifact definitions (collectible passive effect items)\n# effects: passive bonuses while the artifact is owned\n# description: flavour text\n\n"
+            ARTIFACTS_PATH.write_text(
                 header + yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
                 encoding="utf-8",
             )

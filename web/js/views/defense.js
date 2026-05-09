@@ -91,7 +91,7 @@ function _calcRate(resourceType, summary) {
   const fx = summary.effects || {};
   const citizens = summary.citizens || {};
   const ce = summary.citizen_effect || 0;
-  if (resourceType === 'life') return (summary.base_life ?? 0) + (fx.life_offset || 0);
+  if (resourceType === 'life') return (summary.base_life ?? 0) + (fx.life_regen_modifier || 0);
   if (resourceType === 'gold') {
     const offset = (summary.base_gold ?? 0) + (fx.gold_offset || 0);
     const mod = (citizens.merchant || 0) * ce + (fx.gold_modifier || 0);

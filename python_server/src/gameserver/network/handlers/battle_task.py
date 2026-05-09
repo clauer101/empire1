@@ -155,11 +155,11 @@ async def _run_battle_task(
         attacker_won = battle.defender_won is False
         if attacker_won:
             loot = _compute_and_apply_loot(battle, svc)
-        stolen_artefact_iid, artefact_winner_uid = _apply_artefact_steal(battle, svc, attacker_won)
-        if stolen_artefact_iid:
-            loot["artefact"] = stolen_artefact_iid
-            loot["artefact_winner_uid"] = artefact_winner_uid
-        if attacker_won or stolen_artefact_iid:
+        stolen_artifact_iid, artifact_winner_uid = _apply_artifact_steal(battle, svc, attacker_won)
+        if stolen_artifact_iid:
+            loot["artifact"] = stolen_artifact_iid
+            loot["artifact_winner_uid"] = artifact_winner_uid
+        if attacker_won or stolen_artifact_iid:
             await battle_svc.send_summary(battle, send_fn, loot)
         elif not _summary_sent:
             await battle_svc.send_summary(battle, send_fn, loot={})
@@ -217,17 +217,17 @@ async def _run_battle_task(
                 if loot:
                     culture_stolen = loot.get("culture", 0.0)
                     knowledge_loot = loot.get("knowledge")
-                    artefact_iid = loot.get("artefact")
+                    artifact_iid = loot.get("artifact")
                     if culture_stolen > 0:
                         loot_def_lines += f"🎭 Culture stolen:    -{culture_stolen:.1f}\n"
                     if knowledge_loot:
                         k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                         k_pct  = knowledge_loot.get("pct", 0.0)
                         loot_def_lines += f"📚 Knowledge stolen: {k_name} ({k_pct:.0f}%)\n"
-                    if artefact_iid:
-                        art_item = svc.upgrade_provider.items.get(artefact_iid) if svc.upgrade_provider else None
-                        art_name = art_item.name if art_item else artefact_iid
-                        loot_def_lines += f"✨ Artefact stolen:  {art_name}\n"
+                    if artifact_iid:
+                        art_item = svc.upgrade_provider.items.get(artifact_iid) if svc.upgrade_provider else None
+                        art_name = art_item.name if art_item else artifact_iid
+                        loot_def_lines += f"✨ Artifact stolen:  {art_name}\n"
 
                 def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
                 def_body = (
@@ -274,18 +274,18 @@ async def _run_battle_task(
                         per_atk = loot.get("per_attacker", {}).get(uid, {})
                         atk_culture = per_atk.get("culture", 0.0)
                         knowledge_loot = loot.get("knowledge")
-                        artefact_iid = loot.get("artefact")
-                        artefact_winner = loot.get("artefact_winner_uid")
+                        artifact_iid = loot.get("artifact")
+                        artifact_winner = loot.get("artifact_winner_uid")
                         if atk_culture > 0:
                             loot_atk_lines += f"🎭 Stolen culture:    +{atk_culture:.1f}\n"
                         if knowledge_loot:
                             k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                             k_pct  = knowledge_loot.get("pct", 0.0)
                             loot_atk_lines += f"📚 Stolen knowledge: {k_name} ({k_pct:.0f}%)\n"
-                        if artefact_iid and artefact_winner == uid:
-                            art_item = svc.upgrade_provider.items.get(artefact_iid) if svc.upgrade_provider else None
-                            art_name = art_item.name if art_item else artefact_iid
-                            loot_atk_lines += f"✨ Stolen artefact:  {art_name}\n"
+                        if artifact_iid and artifact_winner == uid:
+                            art_item = svc.upgrade_provider.items.get(artifact_iid) if svc.upgrade_provider else None
+                            art_name = art_item.name if art_item else artifact_iid
+                            loot_atk_lines += f"✨ Stolen artifact:  {art_name}\n"
 
                     atk_result = "⚔ You Won!" if not defender_won else "⚔ You Lost!"
                     atk_body = (
@@ -313,13 +313,13 @@ async def _run_battle_task(
             _get_active_battles().pop(battle.defender.uid, None)
 
 
-def _apply_artefact_steal(
+def _apply_artifact_steal(
     battle: "BattleState", svc: Any, attacker_won: bool
 ) -> "tuple[str | None, int | None]":
-    """Roll one artefact steal for the whole battle. Returns (artefact_iid, winner_uid) or (None, None).
+    """Roll one artifact steal for the whole battle. Returns (artifact_iid, winner_uid) or (None, None).
 
-    AI attackers never steal artefacts. One random winner among human attackers receives
-    the artefact if the roll succeeds.
+    AI attackers never steal artifacts. One random winner among human attackers receives
+    the artifact if the roll succeeds.
     """
     import random as _random
     from gameserver.engine.ai_service import AI_UID as _AI_UID
@@ -346,35 +346,35 @@ def _apply_artefact_steal(
         modifier = emp.get_effect(effect_key, 0.0) if emp is not None else 0.0
         attacker_chances.append((uid, base_chance + modifier))
 
-    first_stolen_artefact: Any = None
+    first_stolen_artifact: Any = None
     first_thief_uid: int | None = None
 
-    for artefact in list(victim.artefacts):
+    for artifact in list(victim.artifacts):
         for uid, chance in attacker_chances:
             roll = _random.random()
             if roll < chance:
                 thief_empire = svc.empire_service.get(uid) if svc.empire_service else None
                 if thief_empire is None:
                     continue
-                victim.artefacts.remove(artefact)
-                thief_empire.artefacts.append(artefact)
+                victim.artifacts.remove(artifact)
+                thief_empire.artifacts.append(artifact)
                 log.info(
-                    "[LOOT] Artefact stolen: %s  thief uid=%d  victim uid=%d  roll=%.3f < chance=%.2f (attacker_won=%s)",
-                    artefact, uid, victim.uid, roll, chance, attacker_won,
+                    "[LOOT] Artifact stolen: %s  thief uid=%d  victim uid=%d  roll=%.3f < chance=%.2f (attacker_won=%s)",
+                    artifact, uid, victim.uid, roll, chance, attacker_won,
                 )
                 svc.empire_service.recalculate_effects(victim)
                 svc.empire_service.recalculate_effects(thief_empire)
-                if first_stolen_artefact is None:
-                    first_stolen_artefact = artefact
+                if first_stolen_artifact is None:
+                    first_stolen_artifact = artifact
                     first_thief_uid = uid
-                break  # artefact claimed — next artefact
+                break  # artifact claimed — next artifact
             else:
                 log.info(
-                    "[LOOT] Artefact steal failed: %s  uid=%d  roll=%.3f >= chance=%.2f (attacker_won=%s)",
-                    artefact, uid, roll, chance, attacker_won,
+                    "[LOOT] Artifact steal failed: %s  uid=%d  roll=%.3f >= chance=%.2f (attacker_won=%s)",
+                    artifact, uid, roll, chance, attacker_won,
                 )
 
-    return first_stolen_artefact, first_thief_uid
+    return first_stolen_artifact, first_thief_uid
 
 
 def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
@@ -396,7 +396,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
 
     cfg = svc.game_config
     items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    loot: dict[str, Any] = {"knowledge": None, "culture": 0.0, "artefact": None, "life_restored": 0.0,
+    loot: dict[str, Any] = {"knowledge": None, "culture": 0.0, "artifact": None, "life_restored": 0.0,
                              "per_attacker": {}}
 
     # --- Knowledge steal (one chosen iid; effort divided by n_winners) ---
@@ -459,7 +459,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                 for k, v in defender.knowledge.items():
                     if v <= 0:
                         completed.add(k)
-                completed.update(defender.artefacts)
+                completed.update(defender.artifacts)
                 if not upgrades.check_requirements(defender.research_queue, completed):
                     log.info(
                         "[LOOT] Pausing research %s for uid=%d: requirements no longer met after knowledge steal",

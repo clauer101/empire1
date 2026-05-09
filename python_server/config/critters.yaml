@@ -31,7 +31,7 @@ SLAVE:
   spawn_on_death: null
   scale: 0.8
   animation: assets/sprites/critters/slave
-  requirements: []
+  requirements: [BASE_CAMP, HUNTING]
 
 CLUBMAN:
   era: stone

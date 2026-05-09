@@ -75,7 +75,7 @@ class SpyCosts:
     build_queue: int = 1000
     research_queue: int = 2000
     attacks: int = 5000
-    artefacts: int = 10000
+    artifacts: int = 10000
 
 
 @dataclass
@@ -153,7 +153,7 @@ class GameConfig:
     max_lose_knowledge: float = 0.15
     min_lose_culture: float = 0.01
     max_lose_culture: float = 0.05
-    artefact_steal_chance: float = 0.33
+    artifact_steal_chance: float = 0.33
     base_artifact_steal_victory: float = 0.5
     base_artifact_steal_defeat: float = 0.05
 

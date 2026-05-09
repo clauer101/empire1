@@ -131,7 +131,7 @@ from gameserver.network.handlers.military import *  # noqa: E402,F401,F403
 from gameserver.network.handlers.battle import *  # noqa: E402,F401,F403
 from gameserver.network.handlers.battle import (  # noqa: E402,F401
     _evict_observer_from_all,
-    _apply_artefact_steal,
+    _apply_artifact_steal,
     _compute_and_apply_loot,
 )
 

@@ -1,6 +1,6 @@
 """Item definition models.
 
-Defines all game items: buildings, knowledge, structures, critters, artefacts, wonders.
+Defines all game items: buildings, knowledge, structures, critters, artifacts, wonders.
 Loaded from config/items.yaml via the item_loader.
 """
 
@@ -17,7 +17,7 @@ class ItemType(Enum):
     KNOWLEDGE = "knowledge"
     STRUCTURE = "structure"
     CRITTER = "critter"
-    ARTEFACT = "artefact"
+    ARTIFACT = "artifact"
     WONDER = "wonder"
 
 
@@ -95,4 +95,4 @@ class ItemDetails:
     animation: str = ""  # Sprite folder path, e.g. assets/sprites/critters/slave
     image: str = ""  # Image path prefix, e.g. assets/sprites/buildings/hangar
     era: str = ""    # Era key from YAML (e.g. "stone")
-    subtype: str = ""  # Artefact rarity: "normal" | "legendary"
+    subtype: str = ""  # Artifact rarity: "normal" | "legendary"

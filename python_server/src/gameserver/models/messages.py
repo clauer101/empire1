@@ -62,7 +62,7 @@ class SummaryResponse(GameMessage):
     type: Literal["summary_response"] = "summary_response"
     resources: dict[str, float] = {}
     citizens: dict[str, int] = {}
-    artefacts: list[str] = []
+    artifacts: list[str] = []
     effects: dict[str, float] = {}
     max_life: float = 0.0
 

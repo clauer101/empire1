@@ -159,7 +159,7 @@ def make_router(services: "Services") -> APIRouter:
                 "resources": {k: round(v, 1) for k, v in empire.resources.items()},
                 "max_life": round(empire.max_life, 1),
                 "citizens": empire.citizens,
-                "artefact_count": len(empire.artefacts),
+                "artifact_count": len(empire.artifacts),
                 "build_queue": empire.build_queue,
                 "research_queue": empire.research_queue,
                 "buildings_done": buildings_done,

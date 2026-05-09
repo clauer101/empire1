@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Artefacts</title>
+  <title>Artifacts</title>
   <style>
     :root {
       --bg: #0d0d14; --surface: #14141f; --surface-alt: #1a1a28;
@@ -43,7 +43,7 @@
 
     #content { max-width: 900px; margin: 0 auto; padding: 16px 16px 80px; display: flex; flex-direction: column; gap: 10px; }
 
-    /* artefact card */
+    /* artifact card */
     .art-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); overflow: hidden;
@@ -121,9 +121,9 @@
 <script src="nav.js"></script>
 
 <div id="topbar">
-  <h1>✨ Artefacts</h1>
+  <h1>✨ Artifacts</h1>
   <span id="save-status"></span>
-  <button class="add-btn" id="add-btn">+ New Artefact</button>
+  <button class="add-btn" id="add-btn">+ New Artifact</button>
   <button class="save-btn" id="save-btn">Save</button>
 </div>
 
@@ -134,7 +134,7 @@
 <script>
 const ALL_EFFECT_IDS = [
   'gold_modifier','gold_offset','culture_modifier','culture_offset',
-  'life_modifier','life_offset','restore_life','max_life_modifier',
+  'life_modifier','life_regen_modifier','restore_life','max_life_modifier',
   'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
   'damage_modifier','range_modifier','reload_modifier',
   'slow_target','slow_target_duration','burn_target','burn_target_duration',
@@ -142,15 +142,15 @@ const ALL_EFFECT_IDS = [
   'speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level',
   'travel_offset','siege_offset','restore_life_after_loss_offset',
   'wave_delay_offset','wave_delay_modifier',
-  'capture_gold','capture_culture','lose_knowledge','lose_artefact','destroy_wonder_percent',
-  'culture_steal_modifier','artefact_steal_chance_modifier','knowledge_steal_modifier',
+  'capture_gold','capture_culture','lose_knowledge','lose_artifact','destroy_wonder_percent',
+  'culture_steal_modifier','artifact_steal_chance_modifier','knowledge_steal_modifier',
   'spy_disguise_chance',
 ];
 
-const ARTEFACT_TYPES = ['normal', 'legendary'];
+const ARTIFACT_TYPES = ['normal', 'legendary'];
 
-// artefacts data array: { iid, name, description, type, effects: {key: value} }
-let artefacts = [];
+// artifacts data array: { iid, name, description, type, effects: {key: value} }
+let artifacts = [];
 let _uid = 0;
 
 function markDirty() {
@@ -199,19 +199,19 @@ function renderAll() {
   const content = document.getElementById('content');
   content.innerHTML = '';
 
-  artefacts.forEach((art, ai) => {
+  artifacts.forEach((art, ai) => {
     const card = document.createElement('div');
     card.className = 'art-card';
     card.innerHTML = `
       <div class="art-header">
         <span class="art-iid">${art.iid || '—'}</span>
-        <span class="art-name-display">${art.name || 'New Artefact'}</span>
+        <span class="art-name-display">${art.name || 'New Artifact'}</span>
         <button class="art-del-btn" title="Delete">✕</button>
       </div>
       <div class="art-body">
         <div class="field-row">
           <span class="field-label">IID</span>
-          <input class="field-input mono" data-field="iid" value="${art.iid || ''}" placeholder="ARTEFACT_KEY" />
+          <input class="field-input mono" data-field="iid" value="${art.iid || ''}" placeholder="ARTIFACT_KEY" />
         </div>
         <div class="field-row">
           <span class="field-label">Name</span>
@@ -224,7 +224,7 @@ function renderAll() {
         <div class="field-row">
           <span class="field-label">Type</span>
           <select class="field-input" data-field="type">
-            ${ARTEFACT_TYPES.map(t => `<option value="${t}" ${(art.type || 'normal') === t ? 'selected' : ''}>${t}</option>`).join('')}
+            ${ARTIFACT_TYPES.map(t => `<option value="${t}" ${(art.type || 'normal') === t ? 'selected' : ''}>${t}</option>`).join('')}
           </select>
         </div>
         <div class="effects-section">
@@ -240,14 +240,14 @@ function renderAll() {
       inp.addEventListener('input', () => {
         art[inp.dataset.field] = inp.value;
         if (inp.dataset.field === 'iid') card.querySelector('.art-iid').textContent = inp.value || '—';
-        if (inp.dataset.field === 'name') card.querySelector('.art-name-display').textContent = inp.value || 'New Artefact';
+        if (inp.dataset.field === 'name') card.querySelector('.art-name-display').textContent = inp.value || 'New Artifact';
         markDirty();
       });
     });
 
     // Delete card
     card.querySelector('.art-del-btn').addEventListener('click', () => {
-      artefacts.splice(ai, 1);
+      artifacts.splice(ai, 1);
       markDirty();
       renderAll();
     });
@@ -318,9 +318,9 @@ function renderAll() {
   });
 }
 
-// ── Add new artefact ─────────────────────────────────────────
+// ── Add new artifact ─────────────────────────────────────────
 document.getElementById('add-btn').addEventListener('click', () => {
-  artefacts.push({ iid: '', name: '', description: '', type: 'normal', effects: {} });
+  artifacts.push({ iid: '', name: '', description: '', type: 'normal', effects: {} });
   markDirty();
   renderAll();
   // Scroll to bottom and focus IID input
@@ -338,10 +338,10 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   const st  = document.getElementById('save-status');
   btn.disabled = true; st.textContent = 'Saving…'; st.className = '';
   try {
-    const r = await fetch('/api/artefacts', {
+    const r = await fetch('/api/artifacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(artefacts),
+      body: JSON.stringify(artifacts),
     });
     const data = await r.json();
     if (data.success) { st.textContent = '✓ Saved'; st.className = 'ok'; }
@@ -356,12 +356,12 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 // ── Load ─────────────────────────────────────────────────────
 (async () => {
   try {
-    const resp = await fetch('/api/artefacts');
+    const resp = await fetch('/api/artifacts');
     const data = await resp.json();
     if (!resp.ok || !Array.isArray(data)) {
       throw new Error(data.error || `Server returned ${resp.status}`);
     }
-    artefacts = data;
+    artifacts = data;
     document.getElementById('loading').remove();
     renderAll();
     document.getElementById('save-btn').disabled = true;

@@ -5,7 +5,7 @@
 import { eventBus } from '../events.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
-import { fmtEffort } from '../lib/format.js';
+import { fmtEffort, fmtEffectsInline } from '../lib/format.js';
 import { ERA_ROMAN, ERA_KEYS, ERA_YAML_TO_KEY, ERA_LABEL_EN } from '../lib/eras.js';
 
 /** @type {import('../state.js').StateStore} */
@@ -167,23 +167,7 @@ function _layoutNodes() {
 
 const _fmtEffort = fmtEffort;
 
-function _fmtEffects(effects) {
-  if (!effects || Object.keys(effects).length === 0) return '';
-  return Object.entries(effects)
-    .map(([k, v]) => {
-      const sign = v > 0 ? '+' : '';
-      if (k === 'gold_offset') {
-        return `💰 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-      }
-      if (k === 'culture_offset') {
-        return `🎭 ${sign}${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`;
-      }
-      const name = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      if (Math.abs(v) < 1) return `${name}: ${sign}${(v * 100).toFixed(0)}%`;
-      return `${name}: ${sign}${v}`;
-    })
-    .join(', ');
-}
+const _fmtEffects = fmtEffectsInline;
 
 /* ── Render (full DOM build — only on init or items change) ── */
 

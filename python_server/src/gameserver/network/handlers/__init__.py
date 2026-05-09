@@ -15,7 +15,7 @@ from gameserver.network.handlers import _core  # noqa: F401
 
 # mypy strict requires explicit __all__ for underscore-prefixed re-exports
 __all__ = [
-    "_evict_observer_from_all", "_apply_artefact_steal", "_compute_and_apply_loot",
+    "_evict_observer_from_all", "_apply_artifact_steal", "_compute_and_apply_loot",
     "_create_empire_for_new_user", "_build_empire_summary", "_build_session_state",
     "register_all_handlers",
     "handle_notification_request", "handle_user_message", "handle_timeline_request",
@@ -28,7 +28,7 @@ from gameserver.network.handlers._core import *  # noqa: F401, F403
 from gameserver.network.handlers._core import (  # noqa: F401
     # private names needed by tests / internal callers
     _evict_observer_from_all,
-    _apply_artefact_steal,
+    _apply_artifact_steal,
     _compute_and_apply_loot,
     _create_empire_for_new_user,
     _build_empire_summary,
