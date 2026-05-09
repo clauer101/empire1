@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -45,6 +46,7 @@ class RestoredState:
     attacks: list[Attack] = field(default_factory=list)
     battles: list[BattleState] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
+    end_criterion_activated: Optional[datetime] = None
 
 
 # ===================================================================
@@ -86,6 +88,18 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     result.meta = raw.get("meta", {})
     log.info("Restoring state from %s (saved at %s, version %s)",
              path, result.meta.get("saved_at", "?"), result.meta.get("version", "?"))
+
+    # ---- Global state ----
+    global_dict = raw.get("global", {})
+    eca_raw = global_dict.get("end_criterion_activated")
+    if eca_raw:
+        try:
+            dt = datetime.fromisoformat(str(eca_raw))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            result.end_criterion_activated = dt
+        except (ValueError, TypeError):
+            log.warning("Could not parse end_criterion_activated: %r", eca_raw)
 
     # ---- Empires ----
     for empire_dict in raw.get("empires", []):

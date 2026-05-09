@@ -1325,15 +1325,18 @@ export class HexGrid {
       if (bitmap === 'loading') continue;
       const { q, r } = parseKey(key);
       const { x, y } = hexToPixel(q, r, sz);
-      const spriteSize = sz * 1.7;
+      const spriteSize = sz * 2.1;
       const yOffset =
         data.type === 'castle' || data.type === 'spawnpoint' ? spriteSize * 0.1 : spriteSize * 0.15;
+      const aspect = bitmap.width / bitmap.height;
+      const drawW = aspect >= 1 ? spriteSize : spriteSize * aspect;
+      const drawH = aspect >= 1 ? spriteSize / aspect : spriteSize;
       ctx.drawImage(
         bitmap,
-        x - spriteSize / 2,
-        y - spriteSize / 2 - yOffset,
-        spriteSize,
-        spriteSize
+        x - drawW / 2,
+        y - drawH / 2 - yOffset,
+        drawW,
+        drawH
       );
     }
 

@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 import yaml
 
+from gameserver.engine.global_state import get_end_criterion_activated
 from gameserver.models.army import Army, CritterWave, SpyArmy
 from gameserver.models.attack import Attack
 from gameserver.models.battle import BattleState
@@ -50,6 +51,7 @@ async def save_state(
     """
     state: dict[str, Any] = {
         "meta": _serialize_meta(),
+        "global": _serialize_global(),
         "empires": [_serialize_empire(e) for e in empires.values()],
         "attacks": [_serialize_attack(a) for a in (attacks or [])],
         "battles": [_serialize_battle(b) for b in (battles or [])],
@@ -86,6 +88,17 @@ def _serialize_meta() -> dict[str, Any]:
         "version": 1,
         "saved_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "saved_at_unix": time.time(),
+    }
+
+
+# ===================================================================
+# Global state
+# ===================================================================
+
+def _serialize_global() -> dict[str, Any]:
+    eca = get_end_criterion_activated()
+    return {
+        "end_criterion_activated": eca.isoformat() if eca is not None else None,
     }
 
 

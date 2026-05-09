@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from gameserver.engine.ai_service import AIService
+from gameserver.engine.global_state import restore_end_criterion_activated
 from gameserver.engine.army_service import ArmyService
 from gameserver.engine.attack_service import AttackService
 from gameserver.engine.battle_service import BattleService
@@ -218,6 +219,9 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "st
     if restored is not None:
         log.info("  state:        restored from disk (%d empires, %d attacks)",
                  len(restored.empires), len(restored.attacks))
+        restore_end_criterion_activated(restored.end_criterion_activated)
+        if restored.end_criterion_activated:
+            log.info("  end criterion activated at %s", restored.end_criterion_activated.isoformat())
     else:
         log.info("  state:        no previous state found — fresh start")
 
