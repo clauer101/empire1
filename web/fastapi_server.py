@@ -392,6 +392,30 @@ async def save_ai_generator(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+@app.get("/api/barbarians-aggressiveness")
+async def get_barbarians_aggressiveness():
+    try:
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        return JSONResponse(raw.get("barbarians_aggressiveness", {}))
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/barbarians-aggressiveness")
+async def save_barbarians_aggressiveness(request: Request):
+    try:
+        data = await request.json()
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        raw["barbarians_aggressiveness"] = data
+        GAME_CONFIG_PATH.write_text(
+            yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
 # ── Army generation ───────────────────────────────────────────────────────────
 
 import sys as _sys

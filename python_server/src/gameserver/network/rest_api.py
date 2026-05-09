@@ -304,19 +304,20 @@ def create_app(services: "Services") -> FastAPI:
         if uid is None:
             uid = services.server._next_guest_uid
             services.server._next_guest_uid -= 1
+        sender_uid: int = uid  # narrows int | None → int for mypy
 
         await ws.accept()
 
         adapter = _FastAPIWSAdapter(ws)
-        services.server.register_session(uid, adapter)  # type: ignore[arg-type]
+        services.server.register_session(sender_uid, adapter)  # type: ignore[arg-type]
 
         await ws.send_json({
             "type": "welcome",
-            "temp_uid": uid,
+            "temp_uid": sender_uid,
             "via": "rest_ws",
         })
 
-        log.info("REST-WS client connected: uid=%d", uid)
+        log.info("REST-WS client connected: uid=%d", sender_uid)
 
         try:
             while True:
@@ -335,9 +336,9 @@ def create_app(services: "Services") -> FastAPI:
                 msg_type = data.get("type", "")
 
                 try:
-                    response = await services.server._router.route(data, uid)
+                    response = await services.server._router.route(data, sender_uid)
                 except Exception as exc:
-                    log.exception("REST-WS handler error: type=%s uid=%d", msg_type, uid)
+                    log.exception("REST-WS handler error: type=%s uid=%d", msg_type, sender_uid)
                     err = {"type": "error", "message": str(exc)}
                     if request_id is not None:
                         err["request_id"] = request_id
@@ -353,12 +354,12 @@ def create_app(services: "Services") -> FastAPI:
                         real_uid = response["uid"]
                         services.server.unregister_session(adapter)  # type: ignore[arg-type]
                         services.server.register_session(real_uid, adapter)  # type: ignore[arg-type]
-                        uid = real_uid
+                        sender_uid = real_uid
 
         except WebSocketDisconnect:
-            log.info("REST-WS client disconnected: uid=%d", uid)
+            log.info("REST-WS client disconnected: uid=%d", sender_uid)
         except Exception as e:
-            log.error("REST-WS error: uid=%d error=%s", uid, e)
+            log.error("REST-WS error: uid=%d error=%s", sender_uid, e)
         finally:
             services.server.unregister_session(adapter)  # type: ignore[arg-type]
 

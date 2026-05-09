@@ -19,7 +19,7 @@ repos:
           - argon2-cffi>=23.0
           - pyjwt>=2.0
           - types-PyYAML
-          - types-msgpack
+          - msgpack-types
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
