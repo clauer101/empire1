@@ -70,7 +70,7 @@ function init(el, _api, _state) {
 
       <!-- ── Hero ──────────────────────────────── -->
       <div class="lp-hero">
-        <img src="/assets/banner.webp" alt="Relics &amp; Rockets — Multiplayer Tower Defense Strategy Game"
+        <img src="/assets/sprites/banner.webp" alt="Relics &amp; Rockets — Multiplayer Tower Defense Strategy Game"
              width="1024" height="254" fetchpriority="high">
         <div class="lp-hero__text">
           <h1 class="lp-title">Relics'n'Rockets</h1>
