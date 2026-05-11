@@ -54,11 +54,11 @@ def parse_critter_era_groups(critters_yaml: Path) -> dict[str, list[str]]:
     return result
 
 
-def parse_slot_by_iid(critters_yaml: Path) -> dict[str, int]:
+def parse_slot_by_iid(critters_yaml: Path) -> dict[str, float]:
     """Return {iid: slot_cost} from critters.yaml."""
     import yaml
     data = yaml.safe_load(critters_yaml.read_text(encoding="utf-8")) or {}
-    return {iid: max(1, int(v.get("slots", 1))) for iid, v in data.items() if isinstance(v, dict)}
+    return {iid: max(0.1, float(v.get("slots", 1))) for iid, v in data.items() if isinstance(v, dict)}
 
 
 # ── Army generation ───────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ def generate_army(
     era_internal: str,
     ai_generator_cfg: dict[str, Any],
     critter_era_groups: dict[str, list[str]],
-    slot_by_iid: dict[str, int],
+    slot_by_iid: dict[str, float],
     seed: int | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:

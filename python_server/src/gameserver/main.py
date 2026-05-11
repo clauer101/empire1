@@ -523,6 +523,20 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
     if services.server is not None:
         await services.server.stop()
         log.info("  WebSocket server stopped")
+
+    # Second save: captures any battle completions that ran during server.stop()
+    if services.empire_service is not None and services.attack_service is not None:
+        try:
+            await save_state(
+                empires=services.empire_service.all_empires,
+                attacks=services.attack_service.get_all_attacks(),
+                battles=[],
+                path=state_file,
+            )
+            log.info("Game state saved (post-server-stop)")
+        except Exception:
+            log.exception("Post-server-stop state save failed")
+
     rest_server = getattr(services, "_rest_server", None)
     rest_task = getattr(services, "_rest_task", None)
     if rest_server is not None:

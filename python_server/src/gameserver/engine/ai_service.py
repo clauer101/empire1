@@ -1,4 +1,4 @@
-"""AI service — periodic AI attacks every 15 minutes.
+"""AI service — periodic AI attacks every 8–14 hours (era-dependent).
 
 The AI generates an army tailored to the player's current state using a
 small set of tunable parameters.  After each battle the outcome is logged
@@ -450,7 +450,7 @@ class AIService:
                 waves.append(CritterWave(
                     wave_id=i + 1,
                     iid=critter_iid.upper() if critter_iid else critter_iid,
-                    slots=int(slots),
+                    slots=float(slots),
                     num_critters_spawned=0,
                     next_critter_ms=0,
                 ))
@@ -626,7 +626,7 @@ class AIService:
         empire_service: "EmpireService",
         attack_service: "AttackService",
     ) -> None:
-        """Called every game tick. Every 60 s, rolls a Bernoulli trial per player."""
+        """Called every game tick. Every 60 s, rolls a Bernoulli trial per player (p from barbarians_aggressiveness). Mean attack interval: ~8–14 h depending on era."""
         self._barbarian_elapsed_s += dt
         if self._barbarian_elapsed_s < self._BARBARIAN_INTERVAL_S:
             return

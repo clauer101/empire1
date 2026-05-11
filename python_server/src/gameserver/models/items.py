@@ -75,6 +75,7 @@ class ItemDetails:
     shot_speed: float = 0.0
     shot_type: str = "normal"
     shot_sprite: str = ""  # Sprite URL for the projectile visual
+    shot_sprite_scale: float = 1.0  # Size multiplier for the projectile sprite (2.0 = double size)
     projectile_y_offset: float = 0.0  # Vertical origin offset as fraction of tower sprite height
     select: str = "first"  # Targeting strategy: first | last | random
     sprite: str | None = None
@@ -85,7 +86,7 @@ class ItemDetails:
     armour: float = 0.0
     value: float = 0.0  # Gold awarded to defender on kill
     critter_damage: float = 1.0  # Life damage dealt to defender on reaching castle
-    slots: int = 1
+    slots: float = 1.0
     time_between_ms: float = 500.0
     is_boss: bool = False
     capture: dict[str, float] = field(default_factory=dict)

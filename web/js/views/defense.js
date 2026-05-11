@@ -951,7 +951,7 @@ function init(el, _api, _state) {
       <div class="tile-place-menu" id="tile-place-menu" style="display:none;">
         <div class="tile-place-menu__content">
           <div class="tile-place-menu__header">
-            <span>Tile belegen</span>
+            <span>Place Tower</span>
             <button class="tile-overlay__close" id="tile-place-close">✕</button>
           </div>
           <div class="tpm-items" id="tpm-items"></div>

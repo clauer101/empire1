@@ -214,6 +214,11 @@ def make_router(services: "Services") -> APIRouter:
             "attacks": attacks_out,
         }
 
+    def _state_file_path() -> str:
+        from gameserver.persistence.state_save import DEFAULT_STATE_PATH
+        gl = services.game_loop
+        return gl._state_file if gl is not None else DEFAULT_STATE_PATH
+
     @router.post("/api/admin/save-state")
     async def admin_save_state(_uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.empire_service is None:
@@ -224,6 +229,7 @@ def make_router(services: "Services") -> APIRouter:
             empires=services.empire_service.all_empires,
             attacks=services.attack_service.get_all_attacks(),
             battles=[],
+            path=_state_file_path(),
         )
         return {"ok": True, "message": "State saved"}
 
@@ -242,6 +248,7 @@ def make_router(services: "Services") -> APIRouter:
                         empires=services.empire_service.all_empires,
                         attacks=services.attack_service.get_all_attacks(),
                         battles=[],
+                        path=_state_file_path(),
                     )
                 except Exception:
                     # Save failure must not block restart — log and proceed
@@ -763,7 +770,7 @@ def make_router(services: "Services") -> APIRouter:
             waves.append(CritterWave(
                 wave_id=i + 1,
                 iid=str(w.get("critter", "")).upper(),
-                slots=int(w.get("slots", 1)),
+                slots=float(w.get("slots", 1)),
                 num_critters_spawned=0,
                 next_critter_ms=int(i * initial_delay_ms),
             ))

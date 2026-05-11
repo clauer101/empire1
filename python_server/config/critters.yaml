@@ -486,7 +486,7 @@ DRAGOONER:
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 1.3
+  scale: 1.9
   animation: assets/sprites/critters/dragooner
   requirements: [STRATEGIC_WARFARE,  GUNSMITH]
 
@@ -536,7 +536,7 @@ MOTORBIKE:
   era: industrial
   name: "Motorbike"
   description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
-  speed: 1.2
+  speed: 1.25
   health: 91
   value: 264
   damage: 3
@@ -557,7 +557,7 @@ SMALL_TANK:
   description: "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage."
   speed: 0.4
   health: 301
-  value: 154
+  value: 500
   damage: 2
   armour: 9
   slots: 2
@@ -667,11 +667,31 @@ THE_GENERAL:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/the_general
-  requirements: [ELITE_ACADEMY, MILITARY_SERVICE]
+  requirements: [RECRUITING_OFFICE, MILITARY_SERVICE]
 
 # ============================================================
 #   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
 # ============================================================
+
+
+DRONE:
+  era: future
+  name: "Drone"
+  description: "A fast and agile flying unit with light armor. Difficult to hit but vulnerable to area damage."
+  speed: 1.9
+  health: 135
+  value: 1112
+  damage: 1
+  armour: 5
+  slots: 0.6
+  time_between: 400
+  is_boss: false
+  capture: {}
+  bonus: {}
+  spawn_on_death: {}
+  scale: 1.4
+  animation: assets/sprites/critters/drone
+  requirements: [FIBER_COMPOSITE]
 
 MECH_WARRIOR:
   era: future
@@ -681,7 +701,7 @@ MECH_WARRIOR:
   health: 350
   value: 3000
   damage: 5
-  armour: 10
+  armour: 11
   slots: 2
   time_between: 2000
   is_boss: false

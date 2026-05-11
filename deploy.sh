@@ -64,6 +64,10 @@ deploy() {
 
     save_state_before_stop "$env" "$port"
 
+    # Stop old container BEFORE building — prevents the periodic auto-save
+    # from overwriting the just-saved state while the new container starts up
+    docker compose -p "$project" -f "$compose_file" down
+
     echo "  Building frontend..."
     (export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && cd web && npm run build --silent)
 

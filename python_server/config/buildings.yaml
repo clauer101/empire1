@@ -1000,8 +1000,8 @@ ROBO_MANUFACTURE:
   costs: {gold: 2326993}
   requirements: [MECHANICAL_ENGINEERING, COMPUTER_TECHNOLOGY]
   effects:
-    build_speed_modifier: 0.5
-    build_speed_offset: 0.5
+    build_speed_modifier: 0.7
+    build_speed_offset: 0.8
 
 INTELLIGENCE_AGENCY:
   era: modern
@@ -1058,13 +1058,11 @@ THE_WORLD_WONDER:
   name: "The World Wonder"
   type: wonder
   description: "Ultimate achievement combining science, culture and power."
-  effort: 2149344
+  effort: 2749344
   costs: {gold: 7664712}
   requirements: [NUCLEAR_REACTION, GLOBALIZATION_STRATEGIES, SPECIAL_FORCES]
   effects:
     culture_modifier: 5.0
-    gold_modifier: 1.0
-    research_speed_modifier: 2.0
 
 SPACE_CENTER:
   era: future

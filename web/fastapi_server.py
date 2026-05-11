@@ -1409,6 +1409,11 @@ if _BUILD_MODE == "production":
         NoCacheStaticFiles(directory=str(WEB_DIR / "tools"), html=True),
         name="tools"
     )
+    app.mount(
+        "/js",
+        NoCacheStaticFiles(directory=str(WEB_DIR / "js")),
+        name="js"
+    )
     # Sprites: register before the bundle-assets mount so the more-specific path wins
     app.mount(
         "/assets/sprites",

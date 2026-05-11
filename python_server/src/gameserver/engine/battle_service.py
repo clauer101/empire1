@@ -116,10 +116,10 @@ class BattleService:
             self._items_by_iid = {item.iid: item for item in items}
         self._gc = gc
 
-    def _get_wave_critter_slot_cost(self, wave: Any) -> int:
+    def _get_wave_critter_slot_cost(self, wave: Any) -> float:
         """Return the slot cost for the next critter of this wave."""
         item = self._items_by_iid.get(wave.iid)
-        return max(1, int(getattr(item, "slots", 1) or 1))
+        return max(0.1, float(getattr(item, "slots", 1.0) or 1.0))
 
     def _mark_wave_complete_if_blocked(self, wave: Any) -> bool:
         """Mark a wave complete when its remaining slots cannot fit another critter.
@@ -142,7 +142,7 @@ class BattleService:
         critter_slot_cost = self._get_wave_critter_slot_cost(wave)
         if critter_slot_cost > remaining_slots:
             log.info(
-                "[SPAWN] Wave %d completed early: remaining_slots=%d cannot fit critter %s (cost=%d)",
+                "[SPAWN] Wave %d completed early: remaining_slots=%.2f cannot fit critter %s (cost=%.2f)",
                 wave.wave_id,
                 remaining_slots,
                 wave.iid,
@@ -523,7 +523,7 @@ class BattleService:
                 item = self._items_by_iid.get(w.iid)
                 critter_name = item.name if item else w.iid
                 critter_slot_cost = self._get_wave_critter_slot_cost(w)
-                critter_count = max(1, w.slots // critter_slot_cost)
+                critter_count = max(1, round(w.slots / critter_slot_cost))
                 upcoming.append({
                     "army_uid": army.uid,
                     "wave_index": i + 1,
@@ -664,7 +664,7 @@ class BattleService:
                         critter.armour *= 1.0 + (cu.armour / 100.0) * iid_upgrades.get("armour", 0)
                     battle.critters[critter.cid] = critter
                     battle.critters_spawned += 1
-                    log.info("[SPAWN] Critter cid=%d (%s) owner=%d wave=%d (%d/%d, path=%d)",
+                    log.info("[SPAWN] Critter cid=%d (%s) owner=%d wave=%d (%.2f/%.2f, path=%d)",
                              critter.cid, critter.iid, uid, wave.wave_id,
                              wave.num_critters_spawned, wave.slots, len(critter.path))
 
@@ -821,6 +821,7 @@ class BattleService:
                 "target_cid": shot.target_cid,
                 "shot_type": _shot_visual_type(shot.effects),
                 "shot_sprite": src_struct.shot_sprite if src_struct else "",
+                "shot_sprite_scale": src_struct.shot_sprite_scale if src_struct else 1.0,
                 "projectile_y_offset": src_struct.projectile_y_offset if src_struct else 0.0,
                 "path_progress": shot.path_progress,
                 "origin_q": shot.origin.q if shot.origin else 0,

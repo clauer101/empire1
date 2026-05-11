@@ -113,6 +113,7 @@ BALLISTA_TOWER:
   reload_time: 3000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  shot_sprite_scale: 1.0
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
@@ -168,6 +169,7 @@ ARBELESTE_TOWER:
   reload_time: 2600
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/bolt.webp"
+  shot_sprite_scale: 2.5
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
@@ -331,8 +333,9 @@ SHOCK_TOWER:
   damage: 16
   range: 1.5
   reload_time: 1700
-  shot_speed: 5
-  shot_sprite: "assets/sprites/hud/bolt.webp"
+  shot_speed: 20
+  shot_sprite: "assets/sprites/hud/iceball.webp"
+  shot_sprite_scale: 2.0
   projectile_y_offset: 0.2
   upgrade_costs: {}
   max_level: 1
@@ -366,7 +369,8 @@ PARALYZNG_TOWER:
   range: 1.5
   reload_time: 2000
   shot_speed: 5
-  shot_sprite: "assets/sprites/hud/bolt.webp"
+  shot_sprite: "assets/sprites/hud/iceball.webp"
+  shot_sprite_scale: 2.0
   projectile_y_offset: 0.2
   upgrade_costs: {}
   max_level: 1
@@ -392,7 +396,7 @@ NAPALM_THROWER:
   upgrade_costs: {}
   max_level: 1
   select: first
-  costs: {gold: 140000}
+  costs: {gold: 540000}
   effects: {burn_dps: 19, burn_duration: 2000}
   requirements: [WMD_SITE, CHEMICAL_WARFARE]
 
@@ -409,7 +413,7 @@ MG_TOWER:
   upgrade_costs: {}
   max_level: 1
   select: first
-  costs: {gold: 300000}
+  costs: {gold: 400000}
   effects: {}
   requirements: [DEFENSE_DEPARTMENT, MILITARY_SERVICE]
 
@@ -436,15 +440,15 @@ RADAR_TOWER:
   sprite: "assets/sprites/structures/radar_tower/radar_tower.webp"
   damage: 25
   range: 4
-  reload_time: 1900
+  reload_time: 2900
   shot_speed: 5
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_sprite: "assets/sprites/hud/radio.webp"
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
   select: first
-  costs: {gold: 250000}
-  effects: {SPLASH_RADIUS: 0.6}
+  costs: {gold: 500000}
+  effects: {splash_radius: 0.60}
   requirements: [SATELLITE_SYSTEMS]
 
 ANTI_AIR_TOWER:
@@ -468,11 +472,12 @@ LASER_TOWER:
   era: modern
   name: "Laser Tower"
   sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
-  damage: 25
+  damage: 62
   range: 2.5
-  reload_time: 1500
+  reload_time: 3600
   shot_speed: 10
-  shot_sprite: "assets/sprites/hud/bolt.webp"
+  shot_sprite: "assets/sprites/hud/red_laser.webp"
+  shot_sprite_scale: 0.3
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
@@ -509,8 +514,8 @@ ROCKET_TOWER:
   damage: 60
   range: 6
   reload_time: 3500
-  shot_speed: 1
-  shot_sprite: "assets/sprites/hud/shot.webp"
+  shot_speed: 0.5
+  shot_sprite: "assets/sprites/hud/rocket.webp"
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1

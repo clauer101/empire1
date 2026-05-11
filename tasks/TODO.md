@@ -55,3 +55,7 @@ Statt UID-basierter Observer ein `set[ws]` oder `set[(uid, ws_id)]`. Aufwändige
 ### Webserver autharkie
 
 Überprüfen welche configs der webserver selbst ließt und welche daten er vom gameserver bekommt
+
+### shot sprites / animationen
+
+blitz, laser und flammen animationen statt sprites

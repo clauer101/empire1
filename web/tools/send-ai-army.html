@@ -921,15 +921,21 @@ async function loadAll() {
       const d = await armiesR.json();
       critterStats = d.critters || {};
       renderArmies(d.armies || []);
+    } else {
+      document.getElementById('army-list').innerHTML =
+        `<span style="color:var(--danger)">Error ${armiesR.status}: ${armiesR.statusText}</span>`;
     }
 
     if (statusR.ok) {
       const d = await statusR.json();
       renderEmpires(d.empires || []);
+    } else {
+      document.getElementById('empire-list').innerHTML =
+        `<span style="color:var(--danger)">Error ${statusR.status}: ${statusR.statusText}${statusR.status === 401 ? ' — Admin token missing or invalid' : ''}</span>`;
     }
   } catch (e) {
     document.getElementById('empire-list').innerHTML =
-      `<span style="color:var(--danger)">Verbindungsfehler: ${e.message}</span>`;
+      `<span style="color:var(--danger)">Connection error: ${e.message}</span>`;
   }
 }
 

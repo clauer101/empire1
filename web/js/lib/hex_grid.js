@@ -969,6 +969,7 @@ export class HexGrid {
       target_cid: data.target_cid,
       shot_type: data.shot_type,
       shot_sprite: shotSpriteUrl,
+      shot_sprite_scale: data.shot_sprite_scale ?? 1.0,
       path_progress: data.path_progress,
       origin_q: data.origin_q,
       origin_r: data.origin_r,
@@ -1488,11 +1489,14 @@ export class HexGrid {
             const targetPos = this._getCritterVisualCenter(targetCritter, sz);
             angle = Math.atan2(targetPos.y - originPos.y, targetPos.x - originPos.x);
           }
-          const spriteSize = sz * 0.55;
+          const spriteSize = sz * 0.55 * (shot.shot_sprite_scale ?? 1.0);
+          const aspectRatio = bmp.width / bmp.height;
+          const spriteW = spriteSize * Math.max(1, aspectRatio);
+          const spriteH = spriteSize * Math.max(1, 1 / aspectRatio);
           ctx.save();
           ctx.translate(x, y);
           ctx.rotate(angle);
-          ctx.drawImage(bmp, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+          ctx.drawImage(bmp, -spriteW / 2, -spriteH / 2, spriteW, spriteH);
           ctx.restore();
           continue;
         }

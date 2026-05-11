@@ -30,7 +30,7 @@ end_criterion: THE_WORLD_WONDER
 end_ralley_effects:
   gold_offset: 2
   travel_time_modifier: 0.5
-end_ralley_duration: 604800  # 3600 * 24 * 7 = 1 week
+end_ralley_duration: 604800
 era_effects:
   stone:
     travel_offset: 300.0
@@ -57,7 +57,7 @@ era_effects:
     gold_offset: 2.7
   future:
     travel_offset: 18000
-    gold_offset: 5
+    gold_offset: 3.2
 ai_travel_seconds: 60.0
 ai_min_player_score: 500.0
 waves_per_level: 1.0
@@ -151,7 +151,7 @@ ai_generator:
     min_previous_era: 0
     max_previous_era: 1
     min_next_era: 0
-    max_next_era: 0
+    max_next_era: 1
   bronze:
     min_waves: 3
     max_waves: 5
@@ -169,50 +169,50 @@ ai_generator:
     min_previous_era: 1
     max_previous_era: 3
     min_next_era: 0
-    max_next_era: 1
+    max_next_era: 2
   middle_ages:
     min_waves: 6
     max_waves: 9
     min_slots: 11
     max_slots: 18
     min_previous_era: 2
-    max_previous_era: 3
+    max_previous_era: 4
     min_next_era: 0
-    max_next_era: 2
+    max_next_era: 3
   renaissance:
     min_waves: 8
     max_waves: 12
     min_slots: 14
     max_slots: 22
     min_previous_era: 2
-    max_previous_era: 5
+    max_previous_era: 6
     min_next_era: 0
-    max_next_era: 3
+    max_next_era: 4
   industrial:
     min_waves: 10
     max_waves: 14
     min_slots: 16
     max_slots: 26
     min_previous_era: 2
-    max_previous_era: 5
+    max_previous_era: 6
     min_next_era: 0
-    max_next_era: 3
+    max_next_era: 4
   modern:
     min_waves: 11
     max_waves: 15
     min_slots: 18
     max_slots: 30
-    min_previous_era: 2
-    max_previous_era: 7
-    min_next_era: 0
-    max_next_era: 4
+    min_previous_era: 3
+    max_previous_era: 8
+    min_next_era: 1
+    max_next_era: 5
   future:
     min_waves: 12
     max_waves: 17
     min_slots: 20
     max_slots: 32
     min_previous_era: 5
-    max_previous_era: 15
+    max_previous_era: 10
     min_next_era: 0
     max_next_era: 0
 min_username_length: 2
