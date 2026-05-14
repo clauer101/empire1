@@ -25,6 +25,7 @@ SPLASH_RADIUS = "splash_radius"
 TRAVEL_TIME_OFFSET = "travel_offset"      # only attacker: flat seconds added/removed
 TRAVEL_TIME_MODIFIER = "travel_time_modifier"  # only attacker: percentage reduction (0.0–1.0)
 SIEGE_TIME_OFFSET = "siege_offset"        # only defender can modify this
+SIEGE_TIME_MODIFIER = "siege_time_modifier"  # attacker: percentage reduction (0.0–1.0)
 
 RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately restore life after losing a battle
 

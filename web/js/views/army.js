@@ -7,6 +7,7 @@ import { rest } from '../rest.js';
 import { escHtml, hilite } from '../lib/html.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY, ERA_ROMAN, ERA_LABEL_EN } from '../lib/eras.js';
 import { _buildEraStatsHTML } from './defense/era_data.js';
+import { isGameFrozen } from '../lib/game_state.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -343,7 +344,7 @@ async function enter() {
     _buildCritterEraRoman();
     _updateSpyEta();
   } catch (err) {
-    console.error('Failed to load military data:', err);
+    if (!err.message.includes('Unauthorized')) console.error('Failed to load military data:', err);
   }
 
   // Pre-fill target inputs if navigated here from the empire list
@@ -429,6 +430,7 @@ function showMessage(inputElement, text, type = 'error', persistent = false) {
 function _startEtaTicker() {
   if (_etaTicker) return;
   _etaTicker = setInterval(() => {
+    if (isGameFrozen()) return;
     container.querySelectorAll('.eta-live[data-eta-ts]').forEach((el) => {
       const ts = Number(el.dataset.etaTs);
       const remaining = (ts - Date.now()) / 1000;

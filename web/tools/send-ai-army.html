@@ -24,15 +24,12 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { height: 100%; }
-
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--font);
       font-size: 13px;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -47,15 +44,12 @@
     #topbar h1 { font-size: 1rem; color: var(--danger); letter-spacing: 1px; flex: 1; }
 
     #content {
-      flex: 1;
-      min-height: 0;
       max-width: 1100px;
       width: 100%;
       margin: 0 auto;
       padding: 12px 16px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr auto;
       gap: 12px;
     }
 
@@ -68,10 +62,8 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      min-height: 0;
     }
     .card-header {
       padding: 8px 14px;
@@ -82,7 +74,7 @@
       color: var(--accent);
       display: flex; align-items: center; gap: 8px;
     }
-    .card-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
+    .card-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 
     /* ── Full-width cards ── */
     .full-col { grid-column: 1 / -1; }
@@ -406,7 +398,7 @@ function armyStrength(waves) {
   for (const w of waves) {
     const c = critterStats[w.critter.toUpperCase()];
     if (!c) continue;
-    const count = w.slots / (c.slots || 1);
+    const count = Math.floor(w.slots / (c.slots || 1));
     total += count * (c.health + c.armour);
   }
   return Math.round(total);
@@ -610,7 +602,7 @@ function buildArmyBtn(army) {
 
   const waveRows = army.waves.map((w, i) => {
     const c = critterStats[w.critter.toUpperCase()] || {};
-    const count = Math.round(w.slots / (c.slots || 1));
+    const count = Math.floor(w.slots / (c.slots || 1));
     const effHp = c.health !== undefined ? `${(c.health + c.armour).toFixed(1)} eHP` : '';
     const spd   = c.speed  !== undefined ? `⚡${c.speed}` : '';
     const armr  = c.armour ? `🛡${c.armour}` : '';
@@ -761,7 +753,7 @@ function renderArmyAnalysis(army) {
   const totalSlots = army.waves.reduce((s, w) => s + w.slots, 0);
   const totalCount = army.waves.reduce((s, w) => {
     const c = critterStats[w.critter.toUpperCase()];
-    return s + Math.round(w.slots / (c ? c.slots || 1 : 1));
+    return s + Math.floor(w.slots / (c ? c.slots || 1 : 1));
   }, 0);
 
   // Slots per critter type and per era

@@ -15,6 +15,20 @@ from gameserver.models.structure import Structure
 
 
 @dataclass
+class Ruler:
+    """The named ruler of an empire."""
+
+    name: str = ""
+    type: str = ""
+    xp: float = 0.0
+    level: int = 1
+    q: int = 0
+    w: int = 0
+    e: int = 0
+    r: int = 0
+
+
+@dataclass
 class Empire:
     """Complete state of a player's empire.
 
@@ -64,6 +78,7 @@ class Empire:
     bosses: dict[str, Critter] = field(default_factory=dict)
     hex_map: dict[str, Any] = field(default_factory=dict)  # Composer hex tiles
     max_life: float = 10.0
+    ruler: Ruler = field(default_factory=Ruler)
 
     # -- Helpers ---------------------------------------------------------
 

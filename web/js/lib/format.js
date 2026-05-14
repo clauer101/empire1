@@ -13,14 +13,15 @@ const EFFECT_META = {
   gold_modifier:                  ['💰', 'Gold bonus',        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
   culture_offset:                 ['🎭', 'Culture income',    (v) => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`],
   culture_modifier:               ['🎭', 'Culture bonus',     (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-  life_regen_modifier:            ['❤️', 'Life regen',        (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(2)}/h`],
+  life_regen_modifier:            ['❤️', 'Life regen',        (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(1)}/h`],
   max_life_modifier:              ['❤️', 'Max life',          (v) => `${v > 0 ? '+' : ''}${v}`],
   restore_life_after_loss_offset: ['❤️', 'Life restore',      (v) => `${v > 0 ? '+' : ''}${v}`],
   build_speed_modifier:           ['🏗',  'Build speed',      (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-  build_speed_offset:             ['🏗',  'Build speed',      (v) => `${v > 0 ? '+' : ''}${v}`],
+  build_speed_offset:             ['🏗',  'Build speed',      (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(1)}/h`],
   research_speed_modifier:        ['🔬', 'Research speed',    (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
-  research_speed_offset:          ['🔬', 'Research speed',    (v) => `${v > 0 ? '+' : ''}${v}`],
+  research_speed_offset:          ['🔬', 'Research speed',    (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(1)}/h`],
   travel_time_modifier:           ['🚀', 'Travel speed',      (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
+  siege_time_modifier:            ['⚔️', 'Siege speed',       (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
   wave_delay_offset:              ['⏳', 'Wave delay',        (v) => `${v > 0 ? '+' : ''}${v}s`],
   artifact_steal_victory_modifier:['⚜',  'Artifact steal (victory)', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
   artifact_steal_defeat_modifier: ['⚜',  'Artifact steal (defeat)',  (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`],
@@ -33,6 +34,21 @@ function _fallback(k, v) {
   const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   const val = Math.abs(v) < 1 ? `${sign}${(v * 100).toFixed(0)}%` : `${sign}${v}`;
   return [null, label, val];
+}
+
+/** Formatted value string for an effect key, e.g. "+10.8/h". Use this for custom HTML layouts. */
+export function fmtEffectValue(key, value) {
+  const meta = EFFECT_META[key];
+  if (meta) return meta[2](value);
+  const [,, val] = _fallback(key, value);
+  return val;
+}
+
+/** Formatted label (with icon) for an effect key, e.g. "❤️ Life regen". */
+export function fmtEffectLabel(key) {
+  const meta = EFFECT_META[key];
+  if (meta) return `${meta[0]} ${meta[1]}`;
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** Two-column HTML row: "<span>icon label:</span><span>+value</span>" */

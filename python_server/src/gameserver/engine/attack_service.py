@@ -409,7 +409,7 @@ class AttackService:
         """Calculate siege duration at TRAVELLING→IN_SIEGE transition.
 
         Formula:
-            result = max(1.0, base + defender.SIEGE_TIME_OFFSET)
+            result = max(1.0, (base + defender.SIEGE_TIME_OFFSET) * (1 - defender.SIEGE_TIME_MODIFIER))
 
         where base is base_override (from ai_waves siege_time) if provided,
         otherwise self._base_siege_offset from game config.
@@ -431,10 +431,11 @@ class AttackService:
             return base
 
         offset = defender.get_effect(fx.SIEGE_TIME_OFFSET, 0.0)
-        result = max(1.0, base + offset)
+        modifier = defender.get_effect(fx.SIEGE_TIME_MODIFIER, 0.0)
+        result = max(1.0, (base + offset) * (1.0 - modifier))
         log.debug(
-            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f)",
+            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f, defender_modifier=%.3f)",
             attacker_uid, defender_uid, result, base,
-            " [override]" if base_override is not None else "", offset,
+            " [override]" if base_override is not None else "", offset, modifier,
         )
         return result

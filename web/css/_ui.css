@@ -17,6 +17,25 @@
   50% { opacity: 0.85; }
 }
 
+/* ── Game Over Banner ────────────────────────────────────── */
+#game-over-banner {
+  display: none;
+  background: linear-gradient(90deg, #7a5c00, #c49a00, #7a5c00);
+  color: #fff8dc;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 16px;
+  letter-spacing: 0.3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 2px solid #ffd700;
+  animation: gameover-pulse 3s ease-in-out infinite;
+}
+@keyframes gameover-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
 /* ── Era Overlay ─────────────────────────────────────────── */
 #era-overlay {
   display: none;

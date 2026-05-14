@@ -18,7 +18,7 @@ from gameserver.models.army import Army, CritterWave, SpyArmy
 from gameserver.models.attack import Attack, AttackPhase
 from gameserver.models.battle import BattleState
 from gameserver.models.critter import Critter
-from gameserver.models.empire import Empire
+from gameserver.models.empire import Empire, Ruler
 from gameserver.models.hex import HexCoord
 from gameserver.models.shot import Shot
 from gameserver.models.structure import Structure
@@ -198,6 +198,20 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
         spies=spies,
         bosses=bosses,
         hex_map=_deserialize_editor_hex_map(d.get("hex_map", [])),
+        ruler=_deserialize_ruler(d.get("ruler", {})),
+    )
+
+
+def _deserialize_ruler(d: dict[str, Any]) -> Ruler:
+    return Ruler(
+        name=d.get("name", ""),
+        type=d.get("type", ""),
+        xp=float(d.get("xp", 0.0)),
+        level=int(d.get("level", 1)),
+        q=int(d.get("q", 0)),
+        w=int(d.get("w", 0)),
+        e=int(d.get("e", 0)),
+        r=int(d.get("r", 0)),
     )
 
 

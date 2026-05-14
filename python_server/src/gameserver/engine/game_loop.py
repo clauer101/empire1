@@ -57,6 +57,7 @@ class GameLoop:
         self._ai = ai_service
         self._state_file = state_file
         self._running = False
+        self._gc = game_config
         self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
         self._save_every_n_ticks = max(1, int(self.STATE_SAVE_INTERVAL_S / self._step_interval))
 
@@ -124,6 +125,10 @@ class GameLoop:
 
     def _step(self, dt: float) -> None:
         """One tick of the game loop."""
+        from gameserver.engine.global_state import get_end_criterion_activated, is_end_rally_active
+        if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
+            return
+
         # 1. Advance all empires (resources, build progress, research)
         self._empires.step_all(dt)
 

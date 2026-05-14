@@ -684,7 +684,7 @@ DRONE:
   damage: 1
   armour: 5
   slots: 0.6
-  time_between: 400
+  time_between: 300
   is_boss: false
   capture: {}
   bonus: {}

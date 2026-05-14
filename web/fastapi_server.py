@@ -1062,6 +1062,79 @@ async def save_artifacts(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+RULERS_PATH = _CONFIG_DIR / "rulers.yaml"
+
+
+@app.get("/api/rulers")
+async def get_rulers():
+    """Return all rulers from rulers.yaml."""
+    try:
+        if not RULERS_PATH.exists():
+            return JSONResponse([])
+        raw = yaml.safe_load(RULERS_PATH.read_text(encoding="utf-8")) or {}
+        result = []
+        for iid, data in raw.items():
+            if not isinstance(data, dict):
+                continue
+            def _ability(val):
+                if isinstance(val, dict):
+                    levels_raw = val.get("levels", [])
+                    return {
+                        "name": val.get("name", ""),
+                        "description": val.get("description", ""),
+                        "levels": [v if isinstance(v, dict) else {} for v in (levels_raw or [])],
+                    }
+                if isinstance(val, list):
+                    return {"name": "", "description": "", "levels": [v if isinstance(v, dict) else {} for v in val]}
+                return {"name": "", "description": "", "levels": []}
+            result.append({
+                "iid": iid,
+                "name": data.get("name", ""),
+                "type": data.get("type", ""),
+                "q": _ability(data.get("q", {})),
+                "w": _ability(data.get("w", {})),
+                "e": _ability(data.get("e", {})),
+                "r": _ability(data.get("r", {})),
+            })
+        return JSONResponse(result)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/rulers")
+async def save_rulers(request: Request):
+    """Save full rulers list to rulers.yaml."""
+    try:
+        items = await request.json()
+        raw = {}
+        for item in items:
+            iid = item["iid"].strip().upper().replace(" ", "_")
+            if not iid:
+                continue
+            def _ability_out(val):
+                if isinstance(val, dict) and "levels" in val:
+                    return {
+                        "name": val.get("name", ""),
+                        "description": val.get("description", ""),
+                        "levels": val.get("levels") or [],
+                    }
+                return {"name": "", "description": "", "levels": val or []}
+            raw[iid] = {
+                "name": item.get("name", ""),
+                "type": item.get("type", ""),
+                "q": _ability_out(item.get("q", {})),
+                "w": _ability_out(item.get("w", {})),
+                "e": _ability_out(item.get("e", {})),
+                "r": _ability_out(item.get("r", {})),
+            }
+        header = "# Ruler definitions\n# Q/W/E: 5 levels of ability effects\n# R: 3 levels of ability effects\n\n"
+        body = yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        RULERS_PATH.write_text(header + body, encoding="utf-8")
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
 @app.get("/api/admin/catalog")
 async def get_catalog():
     """Return full item catalog (buildings + knowledge) with effects — no auth needed on web port."""

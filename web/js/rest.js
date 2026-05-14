@@ -22,6 +22,18 @@ import { eventBus } from './events.js';
 
 const TOKEN_KEY = 'e3_jwt_token';
 
+function _deviceFingerprint() {
+  const raw = [
+    navigator.userAgent,
+    screen.width, screen.height, screen.colorDepth,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.language,
+  ].join('|');
+  let h = 0;
+  for (let i = 0; i < raw.length; i++) h = (Math.imul(31, h) + raw.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
 class RestClient {
   constructor() {
     /** @type {string} */
@@ -134,7 +146,8 @@ class RestClient {
    * @returns {Promise<object>} { success, uid, token, summary?, reason? }
    */
   async login(username, password) {
-    const resp = await this._post('/api/auth/login', { username, password });
+    const fp = _deviceFingerprint();
+    const resp = await this._post('/api/auth/login', { username, password, fingerprint: fp });
     if (resp.success && resp.token) {
       this.setToken(resp.token);
       localStorage.setItem('e3_username', username);

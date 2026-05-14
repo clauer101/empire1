@@ -30,6 +30,10 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             session_state = _build_session_state(uid)
             empire = empire_service.get(uid)
             summary = _build_empire_summary(empire, uid) if empire else None
+            if services.database is not None:
+                forwarded = request.headers.get("X-Forwarded-For", "")
+                ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "")
+                await services.database.record_login(uid, ip, body.fingerprint)
             return {
                 "success": True,
                 "uid": uid,

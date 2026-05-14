@@ -65,6 +65,7 @@ export function createQueueView(cfg) {
     try {
       await Promise.all([rest.getSummary(), rest.getItems(), _overlay.ensureEraMap()]);
     } catch (err) {
+      if (err.message.includes('Unauthorized')) return; // router already redirects to login
       container.querySelector(`#${cfg.contentId}`).innerHTML =
         `<div class="error-msg">${err.message}</div>`;
     }

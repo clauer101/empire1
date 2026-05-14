@@ -170,6 +170,16 @@ def make_router(services: "Services") -> APIRouter:
                 "hex_tiles": hex_tiles,
                 "path_length": _pl,
                 "power": power,
+                "ruler": {
+                    "name": empire.ruler.name,
+                    "type": empire.ruler.type,
+                    "xp": empire.ruler.xp,
+                    "level": empire.ruler.level,
+                    "q": empire.ruler.q,
+                    "w": empire.ruler.w,
+                    "e": empire.ruler.e,
+                    "r": empire.ruler.r,
+                },
             })
         empires_out.sort(key=lambda e: e["resources"].get("culture", 0), reverse=True)
 
@@ -260,6 +270,12 @@ def make_router(services: "Services") -> APIRouter:
         return {"ok": True, "message": "State saved — restarting …"}
 
 
+
+    @router.get("/api/admin/device-clusters")
+    async def admin_device_clusters(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
+        if services.database is None:
+            return []
+        return await services.database.get_device_clusters()
 
     @router.get("/api/admin/users")
     async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:

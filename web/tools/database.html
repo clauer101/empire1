@@ -158,7 +158,7 @@
   <div id="topbar">
     <h1>DATABASE ADMIN</h1>
     <span id="status-msg">—</span>
-    <button class="btn-primary" onclick="loadUsers()">Refresh</button>
+    <button class="btn-primary" onclick="loadAll()">Refresh</button>
   </div>
 
   <div id="content">
@@ -181,6 +181,24 @@
         </thead>
         <tbody id="users-body">
           <tr><td colspan="9" style="color:var(--text-dim);text-align:center">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="section-title">Shared Devices</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Account A</th>
+            <th></th>
+            <th>Account B</th>
+            <th>Shared IPs</th>
+            <th>Shared Fingerprints</th>
+          </tr>
+        </thead>
+        <tbody id="clusters-body">
+          <tr><td colspan="5" style="color:var(--text-dim);text-align:center">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -241,13 +259,7 @@
     }
 
     async function loadUsers() {
-      try {
-        const users = await api('GET', '/api/admin/users');
-        setStatus(`${users.length} users`, true);
-        renderUsers(users);
-      } catch (e) {
-        setStatus('Cannot connect to gameserver', false);
-      }
+      await loadAll();
     }
 
     function renderUsers(users) {
@@ -256,8 +268,12 @@
         tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim);text-align:center">No users</td></tr>';
         return;
       }
-      tbody.innerHTML = users.map(u => `
-        <tr>
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      tbody.innerHTML = users.map(u => {
+        const lastSeenMs = u.last_seen ? new Date(u.last_seen.trim().replace(' ', 'T').replace(/Z?$/, 'Z')).getTime() : 0;
+        const inactive = lastSeenMs > 0 && lastSeenMs < oneWeekAgo;
+        return `
+        <tr style="${inactive ? 'color:var(--danger);' : ''}">
           <td>${u.uid}</td>
           <td>${u.username}</td>
           <td>${u.empire_name || '—'}</td>
@@ -280,7 +296,7 @@
             <button class="btn-danger" onclick="deleteUser('${u.username}')">Delete</button>
           </td>
         </tr>
-      `).join('');
+      `; }).join('');
     }
 
     async function renameEmpire(uid) {
@@ -322,7 +338,46 @@
       }
     }
 
-    loadUsers();
+    async function loadClusters(userList) {
+      const tbody = document.getElementById('clusters-body');
+      try {
+        const clusters = await api('GET', '/api/admin/device-clusters');
+        if (!clusters.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center">No shared devices detected</td></tr>';
+          return;
+        }
+        const uidToName = {};
+        (userList || []).forEach(u => { uidToName[u.uid] = u.username; });
+        tbody.innerHTML = clusters.map(c => {
+          const nameA = uidToName[c.uid_a] ? `${uidToName[c.uid_a]} (${c.uid_a})` : `uid ${c.uid_a}`;
+          const nameB = uidToName[c.uid_b] ? `${uidToName[c.uid_b]} (${c.uid_b})` : `uid ${c.uid_b}`;
+          const ips = c.shared_ips ? c.shared_ips.split(',').map(ip => `<span style="background:rgba(79,195,247,0.12);color:var(--accent);border-radius:3px;padding:1px 6px;font-size:11px;">📡 ${ip}</span>`).join(' ') : '—';
+          const fps = c.shared_fps ? c.shared_fps.split(',').map(fp => `<span style="background:rgba(102,187,106,0.12);color:var(--success);border-radius:3px;padding:1px 6px;font-size:11px;">🖥 ${fp}</span>`).join(' ') : '—';
+          return `<tr>
+            <td style="font-weight:600;">${nameA}</td>
+            <td style="color:var(--text-dim);text-align:center;">↔</td>
+            <td style="font-weight:600;">${nameB}</td>
+            <td>${ips}</td>
+            <td>${fps}</td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);text-align:center">Failed to load clusters</td></tr>';
+      }
+    }
+
+    async function loadAll() {
+      try {
+        const users = await api('GET', '/api/admin/users');
+        setStatus(`${users.length} users`, true);
+        renderUsers(users);
+        loadClusters(users);
+      } catch (e) {
+        setStatus('Cannot connect to gameserver', false);
+      }
+    }
+
+    loadAll();
   </script>
 </body>
 </html>

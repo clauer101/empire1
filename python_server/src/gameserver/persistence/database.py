@@ -41,6 +41,16 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     subscription_json TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS login_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid INTEGER NOT NULL,
+    ip TEXT NOT NULL DEFAULT '',
+    fingerprint TEXT NOT NULL DEFAULT '',
+    logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS ix_login_events_uid ON login_events(uid);
+CREATE INDEX IF NOT EXISTS ix_login_events_ip  ON login_events(ip);
+CREATE INDEX IF NOT EXISTS ix_login_events_fp  ON login_events(fingerprint);
 """
 
 
@@ -177,6 +187,40 @@ class Database:
                     "empire_name": r[3],
                     "created_at": str(r[4]) if r[4] else "",
                     "last_seen": str(r[5]) if r[5] else "",
+                }
+                for r in rows
+            ]
+
+    async def record_login(self, uid: int, ip: str, fingerprint: str) -> None:
+        """Record a login event with IP and browser fingerprint."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "INSERT INTO login_events (uid, ip, fingerprint) VALUES (?, ?, ?)",
+            (uid, ip or '', fingerprint or ''),
+        )
+        await self._conn.commit()
+
+    async def get_device_clusters(self) -> list[dict[str, Any]]:
+        """Return pairs of UIDs that share an IP or browser fingerprint."""
+        assert self._conn is not None
+        sql = """
+        SELECT a.uid AS uid_a, b.uid AS uid_b,
+               GROUP_CONCAT(DISTINCT CASE WHEN a.ip != '' AND a.ip = b.ip THEN a.ip END) AS shared_ips,
+               GROUP_CONCAT(DISTINCT CASE WHEN a.fingerprint != '' AND a.fingerprint = b.fingerprint THEN a.fingerprint END) AS shared_fps
+        FROM login_events a
+        JOIN login_events b ON (a.ip = b.ip OR a.fingerprint = b.fingerprint)
+                            AND a.uid < b.uid
+        WHERE a.ip != '' OR a.fingerprint != ''
+        GROUP BY a.uid, b.uid
+        """
+        async with self._conn.execute(sql) as cursor:
+            rows = await cursor.fetchall()
+            return [
+                {
+                    "uid_a": r[0],
+                    "uid_b": r[1],
+                    "shared_ips": r[2] or "",
+                    "shared_fps": r[3] or "",
                 }
                 for r in rows
             ]

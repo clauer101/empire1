@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rulers</title>
+  <style>
+    :root {
+      --bg: #0d0d14; --surface: #14141f; --surface-alt: #1a1a28;
+      --surface-hover: #22222f; --border: #2a2a3a;
+      --accent: #4fc3f7; --success: #66bb6a; --danger: #ef5350;
+      --warning: #ffa726; --purple: #ab47bc; --gold: #ffd54f;
+      --text: #e0e0e6; --text-dim: #9999a8; --radius: 6px;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--gold); letter-spacing: 1px; flex: 1; }
+    #save-status { font-size: 12px; min-width: 120px; }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+
+    button.save-btn {
+      background: var(--gold); color: #000; border: none;
+      border-radius: var(--radius); padding: 7px 18px;
+      font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity .15s;
+    }
+    button.save-btn:hover { opacity: .85; }
+    button.save-btn:disabled { opacity: .4; cursor: default; }
+
+    button.add-btn {
+      background: var(--surface-alt); color: var(--gold);
+      border: 1px solid var(--gold); border-radius: var(--radius);
+      padding: 6px 14px; font-size: 13px; cursor: pointer;
+    }
+    button.add-btn:hover { background: var(--surface-hover); }
+
+    #content { max-width: 960px; margin: 0 auto; padding: 16px 16px 80px; display: flex; flex-direction: column; gap: 12px; }
+
+    .ruler-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .ruler-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+    }
+    .ruler-iid {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      background: var(--bg); border-radius: 3px; padding: 2px 6px;
+    }
+    .ruler-name-display { font-weight: 600; font-size: 14px; flex: 1; color: var(--gold); }
+    .ruler-del-btn {
+      background: none; border: none; cursor: pointer; color: var(--text-dim);
+      font-size: 16px; line-height: 1; padding: 0 2px;
+    }
+    .ruler-del-btn:hover { color: var(--danger); }
+
+    .ruler-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+    .field-row { display: flex; align-items: center; gap: 8px; }
+    .field-label { color: var(--text-dim); font-size: 11px; min-width: 60px; }
+    .field-input {
+      background: var(--surface-alt); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 4px 8px; font-size: 13px; outline: none; flex: 1;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input.mono { font-family: var(--mono); }
+
+    /* Ability section (Q/W/E/R) */
+    .ability-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    @media (max-width: 700px) { .ability-grid { grid-template-columns: 1fr 1fr; } }
+
+    .ability-col {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .ability-title {
+      font-weight: 700; font-size: 13px; text-align: center;
+      padding: 2px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+    }
+    .ability-title.q { color: #4fc3f7; }
+    .ability-title.w { color: #66bb6a; }
+    .ability-title.e { color: #ffa726; }
+    .ability-title.r { color: #ef5350; }
+
+    .level-block {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .level-label {
+      font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 2px;
+    }
+
+    /* Effects inside level */
+    .effect-row { display: flex; align-items: center; gap: 4px; }
+    .effect-key-wrap { position: relative; flex: 1; min-width: 0; overflow: visible; }
+    .effect-key {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 6px; font-size: 11px; font-family: var(--mono);
+      width: 100%; outline: none;
+    }
+    .effect-key:focus { border-color: var(--purple); }
+    .effect-val {
+      background: var(--surface); color: var(--warning);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 6px; font-size: 11px; font-family: var(--mono);
+      width: 60px; outline: none; text-align: right; flex-shrink: 0;
+    }
+    .effect-val:focus { border-color: var(--warning); }
+    .effect-del {
+      background: none; border: none; cursor: pointer; color: var(--text-dim);
+      font-size: 14px; line-height: 1; padding: 0 1px; flex-shrink: 0;
+    }
+    .effect-del:hover { color: var(--danger); }
+    .add-effect-btn {
+      background: none; border: 1px dashed var(--border); border-radius: var(--radius);
+      color: var(--text-dim); font-size: 10px; padding: 2px 8px; cursor: pointer;
+      width: 100%;
+    }
+    .add-effect-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+    /* autocomplete */
+    .ac-list {
+      position: absolute; top: 100%; left: 0; z-index: 50;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); min-width: 200px; max-height: 160px;
+      overflow-y: auto; display: none; margin-top: 2px;
+    }
+    .ac-item { padding: 4px 8px; cursor: pointer; font-size: 11px; font-family: var(--mono); }
+    .ac-item:hover, .ac-item.active { background: var(--surface-hover); color: var(--accent); }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>👑 Rulers</h1>
+  <span id="save-status"></span>
+  <button class="add-btn" id="add-btn">+ New Ruler</button>
+  <button class="save-btn" id="save-btn">Save</button>
+</div>
+
+<div id="content">
+  <div id="loading" style="color:var(--text-dim);text-align:center;padding:60px">Loading…</div>
+</div>
+
+<script>
+const ALL_EFFECT_IDS = [
+  'gold_modifier','gold_offset','culture_modifier','culture_offset',
+  'life_modifier','life_regen_modifier','restore_life','max_life_modifier',
+  'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
+  'damage_modifier','range_modifier','reload_modifier',
+  'slow_target','slow_target_duration','burn_target','burn_target_duration',
+  'splash_damage','splash_radius',
+  'speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level',
+  'travel_offset','siege_offset','siege_time_modifier','restore_life_after_loss_offset',
+  'wave_delay_offset','wave_delay_modifier',
+  'capture_gold','capture_culture','lose_knowledge','lose_artifact','destroy_wonder_percent',
+  'culture_steal_modifier','artifact_steal_chance_modifier','knowledge_steal_modifier',
+  'spy_disguise_chance',
+];
+
+// rulers: [{ iid, name, type, q: {name, description, levels: [{...}x5]}, w: ..., e: ..., r: {levels: x3} }]
+let rulers = [];
+
+function markDirty() {
+  document.getElementById('save-btn').disabled = false;
+  const st = document.getElementById('save-status');
+  st.textContent = ''; st.className = '';
+}
+
+function emptyAbility(n) {
+  return { name: '', description: '', levels: Array.from({ length: n }, () => ({})) };
+}
+
+// ── Autocomplete ──────────────────────────────────────────────
+function attachAc(input, listEl) {
+  function show() {
+    const q = input.value.toLowerCase();
+    const matches = ALL_EFFECT_IDS.filter(id => !q || id.includes(q));
+    if (!matches.length) { listEl.style.display = 'none'; return; }
+    listEl.innerHTML = matches.slice(0, 20).map((id, i) =>
+      `<div class="ac-item" data-idx="${i}">${id}</div>`
+    ).join('');
+    listEl.style.display = 'block';
+    listEl.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        input.value = el.textContent;
+        listEl.style.display = 'none';
+        input.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+  input.addEventListener('focus', show);
+  input.addEventListener('input', show);
+  input.addEventListener('blur', () => setTimeout(() => { listEl.style.display = 'none'; }, 150));
+  input.addEventListener('keydown', e => {
+    const items = listEl.querySelectorAll('.ac-item');
+    let active = listEl.querySelector('.ac-item.active');
+    let idx = active ? parseInt(active.dataset.idx) : -1;
+    if (e.key === 'ArrowDown') idx = Math.min(idx + 1, items.length - 1);
+    else if (e.key === 'ArrowUp') idx = Math.max(idx - 1, 0);
+    else if (e.key === 'Enter' && active) { input.value = active.textContent; listEl.style.display = 'none'; input.dispatchEvent(new Event('change')); e.preventDefault(); return; }
+    else if (e.key === 'Escape') { listEl.style.display = 'none'; return; }
+    else return;
+    items.forEach((el, i) => el.classList.toggle('active', i === idx));
+  });
+}
+
+// ── Render a single level's effects ──────────────────────────
+function renderLevelEffects(container, effects, onChange) {
+  container.innerHTML = '';
+  Object.entries(effects).forEach(([key, val]) => {
+    const row = document.createElement('div');
+    row.className = 'effect-row';
+    row.innerHTML = `
+      <div class="effect-key-wrap">
+        <input class="effect-key" value="${key}" placeholder="effect_id" />
+        <div class="ac-list"></div>
+      </div>
+      <input class="effect-val" type="number" step="0.01" value="${val}" />
+      <button class="effect-del" title="Remove">×</button>
+    `;
+    const keyInp = row.querySelector('.effect-key');
+    const valInp = row.querySelector('.effect-val');
+    attachAc(keyInp, row.querySelector('.ac-list'));
+    keyInp.addEventListener('change', () => {
+      const newKey = keyInp.value.trim();
+      if (newKey && newKey !== key) {
+        effects[newKey] = effects[key];
+        delete effects[key];
+        key = newKey;
+        onChange();
+      }
+    });
+    valInp.addEventListener('input', () => {
+      effects[key] = parseFloat(valInp.value) || 0;
+      onChange();
+    });
+    row.querySelector('.effect-del').addEventListener('click', () => {
+      delete effects[key];
+      onChange();
+      renderLevelEffects(container, effects, onChange);
+    });
+    container.appendChild(row);
+  });
+}
+
+// ── Render ability column (Q/W/E/R) ─────────────────────────
+function renderAbilityCol(parent, label, ability, onChange) {
+  const col = document.createElement('div');
+  col.className = 'ability-col';
+  col.innerHTML = `
+    <div class="ability-title ${label.toLowerCase()}">${label}</div>
+    <div class="field-row" style="gap:4px">
+      <input class="field-input" placeholder="Ability name" value="${_esc(ability.name || '')}" style="font-size:11px;padding:3px 6px" />
+    </div>
+    <div class="field-row" style="gap:4px">
+      <input class="field-input" placeholder="Description" value="${_esc(ability.description || '')}" style="font-size:11px;padding:3px 6px;color:var(--text-dim)" />
+    </div>
+  `;
+  const [nameInp, descInp] = col.querySelectorAll('.field-row input');
+  nameInp.addEventListener('input', () => { ability.name = nameInp.value; onChange(); });
+  descInp.addEventListener('input', () => { ability.description = descInp.value; onChange(); });
+
+  const levels = ability.levels;
+  levels.forEach((effects, li) => {
+    const block = document.createElement('div');
+    block.className = 'level-block';
+    block.innerHTML = `<div class="level-label">Level ${li + 1}</div>`;
+
+    const effectsContainer = document.createElement('div');
+    block.appendChild(effectsContainer);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-effect-btn';
+    addBtn.textContent = '+ effect';
+    block.appendChild(addBtn);
+
+    const rerender = () => {
+      renderLevelEffects(effectsContainer, effects, () => { onChange(); });
+    };
+    rerender();
+
+    addBtn.addEventListener('click', () => {
+      let k = 'effect_id'; let n = 1;
+      while (effects[k] !== undefined) k = `effect_id_${n++}`;
+      effects[k] = 0;
+      onChange();
+      rerender();
+      const inputs = effectsContainer.querySelectorAll('.effect-key');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+
+    col.appendChild(block);
+  });
+
+  parent.appendChild(col);
+}
+
+// ── Render all ────────────────────────────────────────────────
+function renderAll() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  rulers.forEach((ruler, ri) => {
+    const card = document.createElement('div');
+    card.className = 'ruler-card';
+    card.innerHTML = `
+      <div class="ruler-header">
+        <span class="ruler-iid">${ruler.iid || '—'}</span>
+        <span class="ruler-name-display">${ruler.name || 'New Ruler'}</span>
+        <button class="ruler-del-btn" title="Delete">✕</button>
+      </div>
+      <div class="ruler-body">
+        <div class="field-row">
+          <span class="field-label">IID</span>
+          <input class="field-input mono" data-field="iid" value="${ruler.iid || ''}" placeholder="RULER_KEY" />
+        </div>
+        <div class="field-row">
+          <span class="field-label">Name</span>
+          <input class="field-input" data-field="name" value="${ruler.name || ''}" placeholder="Display name" />
+        </div>
+        <div class="field-row">
+          <span class="field-label">Type</span>
+          <input class="field-input" data-field="type" value="${ruler.type || ''}" placeholder="e.g. warrior, scholar" />
+        </div>
+        <div class="ability-grid"></div>
+      </div>
+    `;
+
+    card.querySelectorAll('[data-field]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        ruler[inp.dataset.field] = inp.value;
+        if (inp.dataset.field === 'iid') card.querySelector('.ruler-iid').textContent = inp.value || '—';
+        if (inp.dataset.field === 'name') card.querySelector('.ruler-name-display').textContent = inp.value || 'New Ruler';
+        markDirty();
+      });
+    });
+
+    card.querySelector('.ruler-del-btn').addEventListener('click', () => {
+      rulers.splice(ri, 1);
+      markDirty();
+      renderAll();
+    });
+
+    const grid = card.querySelector('.ability-grid');
+    const dirty = () => markDirty();
+    renderAbilityCol(grid, 'Q', ruler.q, dirty);
+    renderAbilityCol(grid, 'W', ruler.w, dirty);
+    renderAbilityCol(grid, 'E', ruler.e, dirty);
+    renderAbilityCol(grid, 'R', ruler.r, dirty);
+
+
+    content.appendChild(card);
+  });
+}
+
+// ── Add new ruler ─────────────────────────────────────────────
+document.getElementById('add-btn').addEventListener('click', () => {
+  rulers.push({
+    iid: '', name: '', type: '',
+    q: emptyAbility(5), w: emptyAbility(5), e: emptyAbility(5), r: emptyAbility(3),
+  });
+  markDirty();
+  renderAll();
+  const cards = document.querySelectorAll('.ruler-card');
+  if (cards.length) {
+    const last = cards[cards.length - 1];
+    last.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    last.querySelector('[data-field="iid"]')?.focus();
+  }
+});
+
+// ── Save ──────────────────────────────────────────────────────
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-btn');
+  const st  = document.getElementById('save-status');
+  btn.disabled = true; st.textContent = 'Saving…'; st.className = '';
+  try {
+    const r = await fetch('/api/rulers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rulers),
+    });
+    const data = await r.json();
+    if (data.success) { st.textContent = '✓ Saved'; st.className = 'ok'; }
+    else throw new Error(data.error || 'Failed');
+  } catch (e) {
+    st.textContent = `Error: ${e.message}`; st.className = 'err';
+    btn.disabled = false;
+  }
+  setTimeout(() => { st.textContent = ''; st.className = ''; }, 3000);
+});
+
+// ── Load ──────────────────────────────────────────────────────
+(async () => {
+  try {
+    const resp = await fetch('/api/rulers');
+    const data = await resp.json();
+    if (!resp.ok || !Array.isArray(data)) throw new Error(data.error || `Server returned ${resp.status}`);
+    // Ensure correct level counts
+    rulers = data.map(r => ({
+      ...r,
+      q: _normAbility(r.q, 5),
+      w: _normAbility(r.w, 5),
+      e: _normAbility(r.e, 5),
+      r: _normAbility(r.r, 3),
+    }));
+    document.getElementById('loading').remove();
+    renderAll();
+    document.getElementById('save-btn').disabled = true;
+  } catch (e) {
+    const el = document.getElementById('loading');
+    if (el) el.textContent = `Error: ${e.message}`;
+  }
+})();
+
+function _normAbility(val, n) {
+  const obj = (val && typeof val === 'object' && !Array.isArray(val)) ? val : {};
+  const base = Array.isArray(obj.levels) ? obj.levels : (Array.isArray(val) ? val : []);
+  const levels = base.slice(0, n).map(v => (v && typeof v === 'object' ? v : {}));
+  while (levels.length < n) levels.push({});
+  return { name: obj.name || '', description: obj.description || '', levels };
+}
+
+function _esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+</script>
+</body>
+</html>

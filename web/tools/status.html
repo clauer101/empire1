@@ -402,6 +402,18 @@ function buildDetailHTML(e) {
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
     : (e.artifacts ? e.artifacts.map(a => `<span class="chip art">${a}</span>`).join('') : `<span class="chip art">⚜ ×${artCount}</span>`);
 
+  // Ruler
+  const ru = e.ruler || {};
+  const rulerHTML = `
+    <div class="detail-row"><span class="detail-key">Name</span><span class="detail-val">${ru.name || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Type</span><span class="detail-val">${ru.type || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Level</span><span class="detail-val">${ru.level ?? '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">XP</span><span class="detail-val">${ru.xp != null ? ru.xp.toFixed(1) : '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Q</span><span class="detail-val">${ru.q || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">W</span><span class="detail-val">${ru.w || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">E</span><span class="detail-val">${ru.e || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">R</span><span class="detail-val">${ru.r || '—'}</span></div>`;
+
   const pw = e.power || {};
   const powerHTML = `
     <div class="detail-row"><span class="detail-key" style="color:#66bb6a">⬆ Economy</span><span class="detail-val">${fmtPow(pw.economy)}</span></div>
@@ -413,6 +425,10 @@ function buildDetailHTML(e) {
     </div>`;
 
   return `<div class="detail-inner">
+    <div class="detail-section">
+      <div class="detail-title">Ruler</div>
+      ${rulerHTML}
+    </div>
     <div class="detail-section">
       <div class="detail-title">Power</div>
       ${powerHTML}

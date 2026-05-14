@@ -219,6 +219,17 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "current_era": svc.empire_service.get_current_era(empire),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
         "end_rally": _build_end_rally_info(svc.game_config),
+        "ruler": {
+            "name": empire.ruler.name,
+            "type": empire.ruler.type,
+            "xp": empire.ruler.xp,
+            "level": empire.ruler.level,
+            "q": empire.ruler.q,
+            "w": empire.ruler.w,
+            "e": empire.ruler.e,
+            "r": empire.ruler.r,
+        },
+        "ruler_effects": svc.empire_service.get_ruler_effects(empire),
     }
 
 

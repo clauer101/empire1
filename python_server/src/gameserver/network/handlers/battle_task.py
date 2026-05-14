@@ -219,7 +219,10 @@ async def _run_battle_task(
                     knowledge_loot = loot.get("knowledge")
                     artifact_iid = loot.get("artifact")
                     if culture_stolen > 0:
-                        loot_def_lines += f"🎭 Culture stolen:    -{culture_stolen:.1f}\n"
+                        per_atk_all = loot.get("per_attacker", {})
+                        any_era_penalty = any(v.get("culture_era_penalty") for v in per_atk_all.values())
+                        era_note = " (reduced — era advantage)" if any_era_penalty else ""
+                        loot_def_lines += f"🎭 Culture stolen:    -{culture_stolen:.1f}{era_note}\n"
                     if knowledge_loot:
                         k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                         k_pct  = knowledge_loot.get("pct", 0.0)
@@ -265,7 +268,7 @@ async def _run_battle_task(
                     gains = battle.attacker_gains.get(uid, {})
                     gains_lines = ""
                     if gains:
-                        parts = ", ".join(f"+{int(v)} {k}" for k, v in gains.items() if v > 0)
+                        parts = ", ".join(f"+{int(v)} {k}" for k, v in gains.items() if isinstance(v, (int, float)) and v > 0)
                         if parts:
                             gains_lines = f"💰 Captured: {parts}\n"
 
@@ -277,7 +280,8 @@ async def _run_battle_task(
                         artifact_iid = loot.get("artifact")
                         artifact_winner = loot.get("artifact_winner_uid")
                         if atk_culture > 0:
-                            loot_atk_lines += f"🎭 Stolen culture:    +{atk_culture:.1f}\n"
+                            era_note = " (era advantage penalty)" if per_atk.get("culture_era_penalty") else ""
+                            loot_atk_lines += f"🎭 Stolen culture:    +{atk_culture:.1f}{era_note}\n"
                         if knowledge_loot:
                             k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                             k_pct  = knowledge_loot.get("pct", 0.0)
@@ -467,25 +471,37 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                     )
                     defender.research_queue = None
 
-    # --- Culture steal (divided equally among human winners; AI just destroys it) ---
+    # --- Culture steal (per attacker; reduced 50% if attacker era > defender era) ---
+    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
     min_c = getattr(cfg, "min_lose_culture", 0.01) if cfg else 0.01
     max_c = getattr(cfg, "max_lose_culture", 0.05) if cfg else 0.05
     pct_culture = _random.uniform(min_c, max_c)
     culture_pool = defender.resources.get("culture", 0.0)
     total_culture_stolen = culture_pool * pct_culture
+    defender_era = svc.empire_service.get_current_era(defender) if svc.empire_service else _ERA_ORDER[0]
+    defender_era_idx = _ERA_ORDER.index(defender_era) if defender_era in _ERA_ORDER else 0
     if total_culture_stolen > 0.01:
         payout_total = 0.0
         if winners:
-            per_winner_culture = round(total_culture_stolen / n_winners, 2)
+            base_per_winner = total_culture_stolen / n_winners
             for uid in winners:
                 w_emp = svc.empire_service.get(uid) if svc.empire_service else None
                 if w_emp is None:
                     continue
-                w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + per_winner_culture
-                payout_total += per_winner_culture
-                loot["per_attacker"].setdefault(uid, {})["culture"] = per_winner_culture
+                attacker_era = svc.empire_service.get_current_era(w_emp)
+                attacker_era_idx = _ERA_ORDER.index(attacker_era) if attacker_era in _ERA_ORDER else 0
+                era_penalty = attacker_era_idx > defender_era_idx
+                era_ratio = getattr(cfg, "culture_era_advantage_ratio", 0.5) if cfg else 0.5
+                payout = round(base_per_winner * (era_ratio if era_penalty else 1.0), 2)
+                w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + payout
+                payout_total += payout
+                loot["per_attacker"].setdefault(uid, {})["culture"] = payout
+                if era_penalty:
+                    loot["per_attacker"][uid]["culture_era_penalty"] = True
                 battle.attacker_gains.setdefault(uid, {})
-                battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + per_winner_culture
+                battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + payout
+                if era_penalty:
+                    battle.attacker_gains[uid]["culture_era_penalty"] = True
         else:
             # AI attack: culture is lost by the defender but not credited to anyone
             payout_total = round(total_culture_stolen, 2)

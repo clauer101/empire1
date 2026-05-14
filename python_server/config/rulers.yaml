@@ -1,0 +1,40 @@
+# Ruler definitions
+# Q/W/E: 5 levels of ability effects
+# R: 3 levels of ability effects
+
+SCIENCE:
+  name: Maja Soulstone
+  q:
+    name: Research Speed Offset
+    description: Increases research speed by 10%
+    levels:
+    - research_speed_offset: 0.1
+    - research_speed_offset: 0.2
+    - research_speed_offset: 0.4
+    - research_speed_offset: 0.8
+    - research_speed_offset: 1.6
+  w:
+    name: Shield
+    description: Provides a damage shield
+    levels:
+    - shield_amount: 100
+    - {}
+    - {}
+    - {}
+    - {}
+  e:
+    name: Energy Drain
+    description: Drains energy from enemies
+    levels:
+    - energy_drain: 50
+    - {}
+    - {}
+    - {}
+    - {}
+  r:
+    name: R
+    description: 3 levels of ability effects
+    levels:
+    - workshop_cost_modifier: 0.05
+    - workshop_cost_modifier: 0.1
+    - workshop_cost_modifier: 0.15

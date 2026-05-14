@@ -153,6 +153,16 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
             for iid, c in empire.bosses.items()
         },
         "hex_map": _serialize_editor_hex_map(empire.hex_map) if hasattr(empire, 'hex_map') else [],
+        "ruler": {
+            "name": empire.ruler.name,
+            "type": empire.ruler.type,
+            "xp": empire.ruler.xp,
+            "level": empire.ruler.level,
+            "q": empire.ruler.q,
+            "w": empire.ruler.w,
+            "e": empire.ruler.e,
+            "r": empire.ruler.r,
+        },
     }
 
 

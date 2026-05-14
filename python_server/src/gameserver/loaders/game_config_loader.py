@@ -153,6 +153,7 @@ class GameConfig:
     max_lose_knowledge: float = 0.15
     min_lose_culture: float = 0.01
     max_lose_culture: float = 0.05
+    culture_era_advantage_ratio: float = 0.5
     artifact_steal_chance: float = 0.33
     base_artifact_steal_victory: float = 0.5
     base_artifact_steal_defeat: float = 0.05

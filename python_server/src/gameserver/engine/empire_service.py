@@ -15,7 +15,7 @@ All methods operate on Empire model objects. No network I/O.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from gameserver.engine.upgrade_provider import UpgradeProvider
@@ -42,7 +42,8 @@ class EmpireService:
                  game_config: GameConfig | None = None,
                  knowledge_era_groups: dict[str, list[str]] | None = None,
                  building_era_groups: dict[str, list[str]] | None = None,
-                 item_era_index: dict[str, int] | None = None) -> None:
+                 item_era_index: dict[str, int] | None = None,
+                 rulers: dict[str, Any] | None = None) -> None:
         self._upgrades = upgrade_provider
         self._events = event_bus
         self._empires: dict[int, Empire] = {}  # uid → Empire
@@ -60,6 +61,7 @@ class EmpireService:
         self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
         self._building_era_groups: dict[str, list[str]] = building_era_groups or {}
         self._item_era_index: dict[str, int] = item_era_index or {}
+        self._rulers: dict[str, Any] = rulers or {}
         self._next_aid: int = 1  # global army ID counter
 
     # -- Army ID allocation ----------------------------------------------
@@ -284,8 +286,29 @@ class EmpireService:
             if is_end_rally_active(self._gc):
                 for key, value in self._gc.end_rally_effects.items():
                     empire.effects[key] = empire.effects.get(key, 0.0) + value
+        # Apply ruler skill effects
+        for key, value in self.get_ruler_effects(empire).items():
+            empire.effects[key] = empire.effects.get(key, 0.0) + value
         self._recalculate_max_life(empire)
         log.info("Empire %d: recalculated effects → %s", empire.uid, empire.effects)
+
+    def get_ruler_effects(self, empire: Empire) -> dict[str, float]:
+        """Return the combined effects from the empire's ruler skills."""
+        ruler_type = empire.ruler.type
+        if not ruler_type or ruler_type not in self._rulers:
+            return {}
+        ruler = self._rulers[ruler_type]
+        result: dict[str, float] = {}
+        for skill in ("q", "w", "e", "r"):
+            level = int(getattr(empire.ruler, skill) or 0)
+            if level <= 0:
+                continue
+            levels: list[dict[str, Any]] = ruler.get(skill, [])
+            if level > len(levels):
+                continue
+            for key, value in levels[level - 1].items():
+                result[key] = result.get(key, 0.0) + float(value)
+        return result
 
     def _recalculate_max_life(self, empire: Empire) -> None:
         """Update empire.max_life based on the max_life_modifier effect."""

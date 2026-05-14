@@ -114,8 +114,8 @@
     font-size: 18px;
   }
 
-  /* Banner: fixed beneath nav */
-  #rally-banner {
+  /* Banners: fixed beneath nav */
+  #rally-banner, #game-over-banner {
     position: fixed;
     top: var(--mobile-nav-h);
     left: 0;

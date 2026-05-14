@@ -782,6 +782,11 @@ async def handle_buy_item_upgrade(
     if stat not in valid_stats:
         return {"success": False, "error": f"Invalid stat '{stat}' for {iid} (valid: {sorted(valid_stats)})"}
 
+    MAX_UPGRADE_LEVEL = 20
+    current_level = empire.item_upgrades.get(iid, {}).get(stat, 0)
+    if current_level >= MAX_UPGRADE_LEVEL:
+        return {"success": False, "error": f"Stat '{stat}' is already at max level ({MAX_UPGRADE_LEVEL})"}
+
     price = svc.empire_service._item_upgrade_price(empire, iid, stat)
     current_gold = empire.resources.get("gold", 0.0)
     if current_gold < price:

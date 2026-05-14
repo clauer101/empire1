@@ -10,6 +10,7 @@ import { state } from './state.js';
 import { prefetchAllSprites } from './lib/sprite_prefetcher.js';
 import { eventBus } from './events.js';
 import { Router } from './router.js';
+import { setEndRally, isGameFrozen } from './lib/game_state.js';
 import { debug } from './debug.js';
 import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
@@ -99,7 +100,7 @@ function _fmtRes(val, digits = 0) {
 }
 
 function _tickTitleResources() {
-  const elapsed = (Date.now() - _liveTs) / 3600000; // hours
+  const elapsed = isGameFrozen() ? 0 : (Date.now() - _liveTs) / 3600000; // hours
   const gold = _liveGold + _rateGold * elapsed;
   const culture = _liveCulture + _rateCulture * elapsed;
   appEl.querySelectorAll('.title-gold').forEach((el) => {
@@ -250,6 +251,7 @@ eventBus.on('state:summary', (data) => {
   }
   if (data?.end_rally) {
     _endRally = data.end_rally;
+    setEndRally(data.end_rally);
     _updateRallyBanner(data.end_rally, data.name || '');
   }
   const incoming = data?.attacks_incoming || [];
@@ -272,6 +274,7 @@ let _rallySecondsRemaining = 0;
 let _rallySecondsTs = 0; // Date.now() when _rallySecondsRemaining was set
 let _rallyCountdownTimer = null;
 let _rallyBannerBaseText = '';
+let _rallyBannerBaseHtml = '';
 
 function _fmtRallyTime(secs) {
   if (secs >= 86400) return `${Math.floor(secs / 86400)}d`;
@@ -287,11 +290,24 @@ function _tickRallyBanner() {
   const elapsed = (Date.now() - _rallySecondsTs) / 1000;
   const secs = Math.max(0, _rallySecondsRemaining - elapsed);
   const timeStr = _fmtRallyTime(secs);
-  banner.textContent = `${_rallyBannerBaseText} (season ends in ${timeStr})`;
+  banner.innerHTML = `${_rallyBannerBaseHtml} (season ends in ${timeStr})`;
   // Switch from per-day to countdown when under 1 day
   if (secs < 86400 && !_rallyCountdownTimer) {
     _rallyCountdownTimer = setInterval(_tickRallyBanner, 1000);
   }
+}
+
+function _updateGameOverBanner(rally) {
+  const banner = document.getElementById('game-over-banner');
+  if (!banner) return;
+  const frozen = rally?.activated_at && !rally?.active;
+  if (!frozen) { banner.style.display = 'none'; return; }
+  const winner = rally.triggered_by_name || '?';
+  banner.textContent = `🏆 ${winner} has won the season — Congratulations!`;
+  banner.style.display = 'block';
+  requestAnimationFrame(() => {
+    document.documentElement.style.setProperty('--rally-banner-h', banner.offsetHeight + 'px');
+  });
 }
 
 function _updateRallyBanner(rally, selfName) {
@@ -299,14 +315,20 @@ function _updateRallyBanner(rally, selfName) {
   if (!banner) return;
   if (!rally?.active) {
     banner.style.display = 'none';
-    document.documentElement.style.setProperty('--rally-banner-h', '0px');
+    if (!rally?.activated_at) document.documentElement.style.setProperty('--rally-banner-h', '0px');
     if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
+    _updateGameOverBanner(rally);
     return;
   }
   const builderName = rally.triggered_by_name || '?';
+  const builderUid = rally.triggered_by_uid;
   const criterion = rally.end_criterion_name || rally.end_criterion || 'the wonder';
   const leadingLabel = selfName === builderName ? 'You are leading' : `${builderName} is leading`;
+  const nameLink = builderUid != null && builderName !== selfName
+    ? `<a href="#army" data-attack-uid="${builderUid}" data-attack-name="${builderName}" style="color:inherit;font-weight:700;text-decoration:underline;cursor:pointer">${builderName}</a>`
+    : `<strong>${builderName}</strong>`;
   _rallyBannerBaseText = `⚔ ${builderName} has built ${criterion} — ${leadingLabel}, go get them!`;
+  _rallyBannerBaseHtml = `⚔ ${nameLink} has built ${criterion} — ${leadingLabel}, go get them!`;
   _rallySecondsRemaining = rally.seconds_remaining || 0;
   _rallySecondsTs = Date.now();
   // Start per-second countdown only when under 1 day
@@ -318,6 +340,19 @@ function _updateRallyBanner(rally, selfName) {
   requestAnimationFrame(() => {
     document.documentElement.style.setProperty('--rally-banner-h', banner.offsetHeight + 'px');
   });
+
+  if (!banner._attackListenerAdded) {
+    banner._attackListenerAdded = true;
+    banner.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-attack-uid]');
+      if (!a) return;
+      e.preventDefault();
+      const uid = parseInt(a.dataset.attackUid, 10);
+      const name = a.dataset.attackName || '';
+      state.pendingAttackTarget = { uid, name };
+      window.location.hash = '#army';
+    });
+  }
 }
 
 // ── Summary polling (every 5s while authenticated) ─────────
@@ -417,6 +452,7 @@ if ('serviceWorker' in navigator) {
     _eraEffects = eraMap.era_effects || {};
     if (eraMap.end_rally) {
       _endRally = eraMap.end_rally;
+      setEndRally(eraMap.end_rally);
       _updateRallyBanner(eraMap.end_rally, '');
     }
   } catch (_) {

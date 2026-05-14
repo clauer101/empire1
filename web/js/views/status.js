@@ -7,9 +7,10 @@
 
 import { eventBus } from '../events.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
-import { fmtEffectRow } from '../lib/format.js';
+import { fmtEffectRow, fmtEffectValue, fmtEffectLabel } from '../lib/format.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
+import { isGameFrozen } from '../lib/game_state.js';
 /** @type {import('../api.js').ApiClient} */
 let api;
 /** @type {import('../state.js').StateStore} */
@@ -126,6 +127,7 @@ async function refresh() {
     const summary = await rest.getSummary();
     st.setSummary(summary);
   } catch (err) {
+    if (err.message.includes('Unauthorized')) return; // router already redirects to login
     container.querySelector('#dashboard-content').innerHTML =
       `<div class="error-msg">Failed to load: ${err.message}</div>`;
   }
@@ -355,6 +357,7 @@ function _bindAttackEntryClicks(el) {
 
 function _tick() {
   if (!_tickData || !_tickTs) return;
+  if (isGameFrozen()) return;
   const el = container.querySelector('#dashboard-content');
   if (!el) return;
   const elapsedS = (Date.now() - _tickTs) / 1000;
@@ -390,6 +393,7 @@ function _tick() {
 function _startLiveCounter() {
   if (_liveTimer) return; // already running
   _liveTimer = setInterval(() => {
+    if (isGameFrozen()) return; // resources frozen, display stays at snapshot
     _liveRes.gold += _liveRate.gold / 10;
     _liveRes.culture += _liveRate.culture / 10;
     const el = container.querySelector('#dashboard-content');
@@ -418,6 +422,8 @@ function _showProductionOverlay(data) {
 
   const artifacts = data.artifacts || [];
   const rallyEffects = (data.end_rally?.active && data.end_rally?.effects) ? data.end_rally.effects : {};
+  const rulerEffects = data.ruler_effects || {};
+  const rulerName = data.ruler?.name || '';
   const goldHtml = renderResourceIncome(
     'gold',
     effects,
@@ -428,7 +434,9 @@ function _showProductionOverlay(data) {
     items,
     completedResearch,
     artifacts,
-    rallyEffects
+    rallyEffects,
+    rulerEffects,
+    rulerName
   );
   const cultureHtml = renderResourceIncome(
     'culture',
@@ -440,7 +448,9 @@ function _showProductionOverlay(data) {
     items,
     completedResearch,
     artifacts,
-    rallyEffects
+    rallyEffects,
+    rulerEffects,
+    rulerName
   );
   const lifeHtml = renderResourceIncome(
     'life',
@@ -452,7 +462,9 @@ function _showProductionOverlay(data) {
     items,
     completedResearch,
     artifacts,
-    rallyEffects
+    rallyEffects,
+    rulerEffects,
+    rulerName
   );
   const buildHtml = renderBuildSpeed(
     effects,
@@ -460,7 +472,9 @@ function _showProductionOverlay(data) {
     completedResearch,
     items,
     data.base_build_speed,
-    artifacts
+    artifacts,
+    rulerEffects,
+    rulerName
   );
   const researchHtml = renderResearchSpeed(
     effects,
@@ -470,7 +484,9 @@ function _showProductionOverlay(data) {
     completedResearch,
     items,
     data.base_research_speed,
-    artifacts
+    artifacts,
+    rulerEffects,
+    rulerName
   );
   const restoreHtml = renderRestoreLife(
     effects,
@@ -478,7 +494,9 @@ function _showProductionOverlay(data) {
     completedResearch,
     items,
     artifacts,
-    data.base_restore_life ?? 1
+    data.base_restore_life ?? 1,
+    rulerEffects,
+    rulerName
   );
 
   const overlay = document.createElement('div');
@@ -496,11 +514,18 @@ function _showProductionOverlay(data) {
       ${(() => {
         const ttm = effects.travel_time_modifier || 0;
         const rallyTtm = rallyEffects.travel_time_modifier || 0;
+        const stm = effects.siege_time_modifier || 0;
+        const rallyStm = rallyEffects.siege_time_modifier || 0;
         let html = '';
         if (ttm > 0) {
           html += `<div class="panel-row"><span class="label">-${(ttm * 100).toFixed(0)}%</span><span class="value">travel time</span></div>`;
           if (rallyTtm > 0)
             html += `<div class="panel-row"><span class="label" style="padding-left:12px">↳ -${(rallyTtm * 100).toFixed(0)}%</span><span class="value">(⚔ End Rally)</span></div>`;
+        }
+        if (stm > 0) {
+          html += `<div class="panel-row"><span class="label">-${(stm * 100).toFixed(0)}%</span><span class="value">siege time</span></div>`;
+          if (rallyStm > 0)
+            html += `<div class="panel-row"><span class="label" style="padding-left:12px">↳ -${(rallyStm * 100).toFixed(0)}%</span><span class="value">(⚔ End Rally)</span></div>`;
         }
         return html ? section('<span style="color:#ce93d8">● Army Effects</span>', html) : '';
       })()}
@@ -530,15 +555,7 @@ function _showArtifactOverlay(iid) {
   const typeColor = type === 'legendary' ? '#ab47bc' : '#c9a84c';
 
   const effectRows = Object.entries(effects)
-    .map(([k, v]) => {
-      const sign = v > 0 ? '+' : '';
-      const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      const isOffset = k.endsWith('_offset') || k === 'max_life_modifier';
-      const decimals = k === 'life_regen_modifier' ? 3 : 2;
-      const val = isOffset ? `${sign}${Number.isInteger(v) ? v : v.toFixed(decimals)}` : `${sign}${(v * 100).toFixed(0)}%`;
-      const unit = k.endsWith('_offset') ? '/s' : '';
-      return `<div class="panel-row"><span class="label" style="color:#aaa">${label}</span><span class="value">${val}${unit}</span></div>`;
-    })
+    .map(([k, v]) => `<div class="panel-row"><span class="label" style="color:#aaa">${fmtEffectLabel(k)}:</span><span class="value">${fmtEffectValue(k, v)}</span></div>`)
     .join('');
 
   const bgStyle = sprite
@@ -739,7 +756,9 @@ function renderBuildSpeed(
   completedResearch,
   items,
   baseBuildSpeed,
-  ownedArtifacts
+  ownedArtifacts,
+  rulerEffects = {},
+  rulerName = ''
 ) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
   const buildOffset = effects?.build_speed_offset || 0;
@@ -774,7 +793,10 @@ function renderBuildSpeed(
       html += `<div class="panel-row"><span class="label">+${art.effects.build_speed_offset.toFixed(2)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
     }
   }
-  const eraBuildOffset = buildOffset - itemBuildOffset;
+  const rulerBuildOffset = rulerEffects.build_speed_offset || 0;
+  if (rulerBuildOffset > 0.0005 && rulerName)
+    html += `<div class="panel-row"><span class="label">+${rulerBuildOffset.toFixed(2)}</span><span class="value">(👑 ${rulerName})</span></div>`;
+  const eraBuildOffset = buildOffset - rulerBuildOffset - itemBuildOffset;
   if (eraBuildOffset > 0.0005)
     html += `<div class="panel-row"><span class="label">+${eraBuildOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
   html +=
@@ -805,7 +827,10 @@ function renderBuildSpeed(
       html += `<div class="panel-row"><span class="label">+${(art.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
     }
   }
-  const eraBuildModifier = buildModifier - itemBuildModifier;
+  const rulerBuildModifier = rulerEffects.build_speed_modifier || 0;
+  if (rulerBuildModifier > 0.0005 && rulerName)
+    html += `<div class="panel-row"><span class="label">+${(rulerBuildModifier * 100).toFixed(0)}%</span><span class="value">(👑 ${rulerName})</span></div>`;
+  const eraBuildModifier = buildModifier - rulerBuildModifier - itemBuildModifier;
   if (eraBuildModifier > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(eraBuildModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
   const totalOffset = baseBuildSpeed + buildOffset;
@@ -824,7 +849,9 @@ function renderResearchSpeed(
   completedResearch,
   items,
   baseResearchSpeed,
-  ownedArtifacts
+  ownedArtifacts,
+  rulerEffects = {},
+  rulerName = ''
 ) {
   baseResearchSpeed = baseResearchSpeed ?? 1.0;
   const researchOffset = effects?.research_speed_offset || 0;
@@ -868,7 +895,10 @@ function renderResearchSpeed(
       html += `<div class="panel-row"><span class="label">+${art.effects.research_speed_offset.toFixed(2)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
     }
   }
-  const eraResearchOffset = researchOffset - itemResearchOffset;
+  const rulerResearchOffset = rulerEffects.research_speed_offset || 0;
+  if (rulerResearchOffset > 0.0005 && rulerName)
+    html += `<div class="panel-row"><span class="label">+${rulerResearchOffset.toFixed(2)}</span><span class="value">(👑 ${rulerName})</span></div>`;
+  const eraResearchOffset = researchOffset - rulerResearchOffset - itemResearchOffset;
   if (eraResearchOffset > 0.0005)
     html += `<div class="panel-row"><span class="label">+${eraResearchOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
   html +=
@@ -900,7 +930,10 @@ function renderResearchSpeed(
       html += `<div class="panel-row"><span class="label">+${(art.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
     }
   }
-  const eraResearchModifier = researchModifier - itemResearchModifier;
+  const rulerResearchModifier = rulerEffects.research_speed_modifier || 0;
+  if (rulerResearchModifier > 0.0005 && rulerName)
+    html += `<div class="panel-row"><span class="label">+${(rulerResearchModifier * 100).toFixed(0)}%</span><span class="value">(👑 ${rulerName})</span></div>`;
+  const eraResearchModifier = researchModifier - rulerResearchModifier - itemResearchModifier;
   if (eraResearchModifier > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(eraResearchModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
   html +=
@@ -909,7 +942,7 @@ function renderResearchSpeed(
   return html;
 }
 
-function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtifacts, baseRestore) {
+function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtifacts, baseRestore, rulerEffects = {}, rulerName = '') {
   const key = 'restore_life_after_loss_offset';
   let html = '';
   let bonus = 0;
@@ -937,8 +970,13 @@ function renderRestoreLife(effects, completedBuildings, completedResearch, items
   }
   if (!bonus) return '';
 
+  // Ruler contribution
+  const rulerContrib = rulerEffects[key] || 0;
+  if (rulerContrib > 0.05 && rulerName)
+    html += `<div class="panel-row"><span class="label">+${Math.round(rulerContrib)}</span><span class="value">(👑 ${rulerName})</span></div>`;
+
   // Era contribution
-  const eraContrib = (effects?.[key] || 0) - bonus;
+  const eraContrib = (effects?.[key] || 0) - rulerContrib - bonus;
   if (eraContrib > 0.05)
     html += `<div class="panel-row"><span class="label">+${Math.round(eraContrib)}</span><span class="value">(Era)</span></div>`;
 
@@ -990,7 +1028,9 @@ function renderResourceIncome(
   items,
   completedResearch,
   ownedArtifacts,
-  rallyEffects = {}
+  rallyEffects = {},
+  rulerEffects = {},
+  rulerName = ''
 ) {
   completedResearch = completedResearch || [];
   let html = '';
@@ -1071,13 +1111,19 @@ function renderResourceIncome(
     html += `<div class="panel-row"><span class="label">+${fmtH(rallyOffset)}</span><span class="value">(⚔ End Rally)</span></div>`;
   }
 
-  // Era offset contribution (difference between aggregated backend value and item sum, minus rally)
-  const eraOffset = (effects[effectOffsetKey] || 0) - rallyOffset - (totalOffset - baseAmount);
+  // Ruler offset contribution
+  const rulerOffset = rulerEffects[effectOffsetKey] || 0;
+  if (rulerOffset > 0.0005 && rulerName) {
+    html += `<div class="panel-row"><span class="label">+${fmtH(rulerOffset)}</span><span class="value">(👑 ${rulerName})</span></div>`;
+  }
+
+  // Era offset contribution (difference between aggregated backend value and item sum, minus rally and ruler)
+  const eraOffset = (effects[effectOffsetKey] || 0) - rallyOffset - rulerOffset - (totalOffset - baseAmount);
   if (eraOffset > 0.0005) {
     html += `<div class="panel-row"><span class="label">+${fmtH(eraOffset)}</span><span class="value">(Era)</span></div>`;
     totalOffset += eraOffset;
   }
-  totalOffset += rallyOffset;
+  totalOffset += rallyOffset + rulerOffset;
 
   // For life, only show offset without multiplier
   if (resourceType === 'life') {
@@ -1108,9 +1154,16 @@ function renderResourceIncome(
   }
   addArtifactModifiers();
 
+  // Ruler modifier contribution
+  const rulerModifier = effectModifierKey ? (rulerEffects[effectModifierKey] || 0) : 0;
+  if (rulerModifier > 0.0005 && rulerName) {
+    totalModifier += rulerModifier;
+    html += `<div class="panel-row"><span class="label">+${(rulerModifier * 100).toFixed(0)}%</span><span class="value">(👑 ${rulerName})</span></div>`;
+  }
+
   // Era modifier contribution
   const eraModifier = effectModifierKey
-    ? (effects[effectModifierKey] || 0) - (totalModifier - citizenBonus)
+    ? (effects[effectModifierKey] || 0) - rulerModifier - (totalModifier - citizenBonus - rulerModifier)
     : 0;
   if (eraModifier > 0.0005) {
     totalModifier += eraModifier;

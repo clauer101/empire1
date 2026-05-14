@@ -944,7 +944,7 @@ EXECUTIVE_CARPOOL:
   costs: {gold: 2125319}
   requirements: [SATELLITE_SYSTEMS, KNO_ARMOUR]
   effects:
-    gold_offset: 0.7
+    gold_offset: 1.3
 
 NAVIGATION_SYSTEM:
   era: modern

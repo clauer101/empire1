@@ -59,7 +59,7 @@ def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
             armour=float(attrs.get("armour", 0)),
             value=float(attrs.get("value", attrs.get("health", 0)) or 0),
             critter_damage=float(attrs.get("damage", 1.0)),
-            slots=int(attrs.get("slots", 1)),
+            slots=float(attrs.get("slots", 1)),
             time_between_ms=float(attrs.get("time_between", 500)),
             is_boss=bool(attrs.get("is_boss", False)),
             capture=attrs.get("capture", {}),

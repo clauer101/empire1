@@ -77,6 +77,8 @@ class Configuration:
     knowledge_era_groups: dict[str, list[str]] = field(default_factory=dict)
     building_era_groups: dict[str, list[str]] = field(default_factory=dict)
     item_era_index: dict[str, int] = field(default_factory=dict)
+    # rulers: iid → {name, type, q/w/e/r: [effects_dict, ...]}
+    rulers: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +131,37 @@ def _load_era_groups_from_yaml(yaml_path: Path) -> dict[str, list[str]]:
         era = item.get("era", "")
         if era:
             result.setdefault(era, []).append(iid)
+    return result
+
+
+def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
+    """Load rulers.yaml → dict keyed by ruler IID."""
+    import yaml as _yaml
+    if not yaml_path.exists():
+        return {}
+    try:
+        data = _yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
+    except OSError:
+        log.warning("Could not read %s for rulers", yaml_path)
+        return {}
+    result: dict[str, Any] = {}
+    for iid, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        def _lvl(val: Any) -> "list[dict[str, float]]":
+            if isinstance(val, dict):
+                val = val.get("levels", [])
+            if isinstance(val, list):
+                return [v if isinstance(v, dict) else {} for v in val]
+            return []
+        result[iid] = {
+            "name": item.get("name", ""),
+            "type": item.get("type", ""),
+            "q": _lvl(item.get("q", [])),
+            "w": _lvl(item.get("w", [])),
+            "e": _lvl(item.get("e", [])),
+            "r": _lvl(item.get("r", [])),
+        }
     return result
 
 
@@ -187,11 +220,15 @@ def load_configuration(
                 item_era_index[_iid] = _idx
     log.info("  item_era_index: %d items indexed", len(item_era_index))
 
+    rulers = _load_rulers(Path(config_dir) / "rulers.yaml")
+    log.info("  rulers:       %d loaded", len(rulers))
+
     return Configuration(items=items, hex_map=hex_map,
                          ai_waves=ai_waves, game=game_cfg,
                          knowledge_era_groups=knowledge_era_groups,
                          building_era_groups=building_era_groups,
-                         item_era_index=item_era_index)
+                         item_era_index=item_era_index,
+                         rulers=rulers)
 
 
 # ===================================================================
@@ -264,7 +301,8 @@ def create_services(config: Configuration, database: Database, state_file: str =
     empire_service = EmpireService(upgrade_provider, event_bus, gc,
                                    knowledge_era_groups=config.knowledge_era_groups,
                                    building_era_groups=config.building_era_groups,
-                                   item_era_index=config.item_era_index)
+                                   item_era_index=config.item_era_index,
+                                   rulers=config.rulers)
     battle_service = BattleService(items=upgrade_provider.items, gc=gc)
     attack_service = AttackService(event_bus, gc, empire_service,
                                    knowledge_era_groups=config.knowledge_era_groups)

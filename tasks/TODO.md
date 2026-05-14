@@ -52,10 +52,61 @@ Client erkennt Code 1008 und verzichtet auf Reconnect. Verhindert den Loop, aber
 Statt UID-basierter Observer ein `set[ws]` oder `set[(uid, ws_id)]`. Aufwändiger, da alle Broadcast-Pfade angepasst werden müssen.
 
 
-### Webserver autharkie
+# 3) Webserver autharkie
 
 Überprüfen welche configs der webserver selbst ließt und welche daten er vom gameserver bekommt
 
-### shot sprites / animationen
+# 4) shot sprites / animationen
 
 blitz, laser und flammen animationen statt sprites
+
+# 5) Ruler
+Standard (Q, W, E)	Rank 5 auf Level 9
+Ulti (R)	Level 6	Level 11 Level 16
+
+## Defense-oriented
+* Q: 
+* W:
+* E:
+* R: wave_delay_offset (0.4, 0.9, 1.5)
+
+## Offense-oriented
+* Q:
+* W:
+* E:
+* R: discound on wave prices (5%, 10%, 15%)
+
+## Tech-oriented
+Dieses 4 x 4 sprite sheet einen ninja soll verändert werden, so dass es eine wissenschaftlerin darstellt.
+a sophisticated female scientist, powerful clothing and     appearance, bottle with green liquid in her hand, pale skin
+
+Die Beinpositionen und Armpositionen sollen nicht verändert werden.
+
+erste reihe 4 frames nach unten
+zweite reihe 4 frames nach links
+dritte reihe 4 frames nach rechts
+vierte reihe 4 frames nach oben
+
+einfarbiger grüner hintergrund 
+
+, transparent background
+cel-shaded, third person, auto
+
+* Q:
+* W:
+* E:
+* R: Workshop discount (5%, 10%, 15%)
+
+## Economy-oriented
+a timeless ruler of merchants, with dagger in his hand, brown skin, walking from right to left, transparent background
+
+* Q:
+* W:
+* E: 
+* R: one-time gold lump sum (500k, 5M, 20M)
+
+## Growth-oriented
+* Q: culture offset (0.2, 0.5, 0.8, 1.2, 1.5)
+* W: next citizen discount (2%, 4%, 6%, 8%, 10%)
+* E: culture steal protection (1%, 2%, 3%, 4%, 5%)
+* R: one-time culture lump sum (400k, 1M, 5M)

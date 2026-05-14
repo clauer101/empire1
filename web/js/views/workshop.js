@@ -213,12 +213,14 @@ function _statRows(iid, statDefs, upgradeDefs) {
       const curVal = _currentValue(displayBase, calcKey, level, upgradeDefs);
       const hasBase = displayBase > 0;
 
-      const btnColor = canAfford ? '#c9a84c' : 'var(--danger, #e53935)';
+      const MAX_LEVEL = 20;
+      const isMaxed = level >= MAX_LEVEL;
+      const btnColor = isMaxed ? 'var(--text-dim,#888)' : canAfford ? '#c9a84c' : 'var(--danger, #e53935)';
       const btnStyle = `
       background:transparent;color:${btnColor};
       border:1px solid ${btnColor};border-radius:var(--radius,4px);
-      padding:2px 10px;font-size:12px;cursor:${canAfford ? 'pointer' : 'not-allowed'};
-      opacity:${canAfford ? '1' : '0.6'};white-space:nowrap;flex-shrink:0;
+      padding:2px 10px;font-size:12px;cursor:not-allowed;
+      opacity:${isMaxed ? '0.5' : canAfford ? '1' : '0.6'};white-space:nowrap;flex-shrink:0;
     `.replace(/\s+/g, ' ');
 
       return `
@@ -226,9 +228,14 @@ function _statRows(iid, statDefs, upgradeDefs) {
         <td style="padding:6px 8px;color:var(--text-dim,#888);font-size:13px;">${displayLabel}</td>
         <td style="padding:6px 8px;font-size:13px;text-align:right;">${hasBase ? _fmtVal(curVal) + ' ' + displayUnit : '—'}</td>
         <td style="padding:6px 8px;font-size:13px;text-align:center;color:#c9a84c;font-weight:bold;">${level}</td>
-        <td style="padding:6px 8px;font-size:13px;text-align:right;color:#7ec8a4;">${hasBase ? _fmtVal(_currentValue(displayBase, calcKey, level + 1, upgradeDefs)) + ' ' + displayUnit : '—'}</td>
+        <td style="padding:6px 8px;font-size:13px;text-align:right;color:#7ec8a4;">${hasBase && !isMaxed ? _fmtVal(_currentValue(displayBase, calcKey, level + 1, upgradeDefs)) + ' ' + displayUnit : '—'}</td>
         <td style="padding:6px 8px;text-align:right;">
-          ${price > 0 ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}" style="${btnStyle}" ${canAfford ? '' : 'disabled'}>💰${price.toFixed(2)}</button>` : `<span style="font-size:11px;color:var(--text-dim,#888);">—</span>`}
+          ${isMaxed
+            ? `<button disabled style="${btnStyle}">maxed out</button>`
+            : price > 0
+              ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}" style="${btnStyle.replace('cursor:not-allowed', `cursor:${canAfford ? 'pointer' : 'not-allowed'}`)}" ${canAfford ? '' : 'disabled'}>💰${price.toFixed(2)}</button>`
+              : `<span style="font-size:11px;color:var(--text-dim,#888);">—</span>`
+          }
         </td>
       </tr>`;
     })
@@ -531,7 +538,13 @@ async function enter() {
   _unsubItems = eventBus.on('state:items', () => _render());
 
   // Load data in parallel
-  const [, , eraMap] = await Promise.all([rest.getSummary(), rest.getItems(), rest.getEraMap()]);
+  let eraMap;
+  try {
+    [, , eraMap] = await Promise.all([rest.getSummary(), rest.getItems(), rest.getEraMap()]);
+  } catch (err) {
+    if (err.message.includes('Unauthorized')) return;
+    throw err;
+  }
 
   // Pick up item_upgrades from summary
   _itemUpgrades = state.summary?.item_upgrades ?? {};

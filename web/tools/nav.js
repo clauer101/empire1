@@ -46,6 +46,7 @@
     { name: '🗺 Maps',     href: 'map-overview.html' },
     { name: '🐾 Critters', href: 'critters.html' },
     { name: '✨ Artifacts', href: 'artifacts.html' },
+    { name: '👑 Rulers',   href: 'rulers.html' },
     { name: '⚔ Sim Map',  href: 'sim-map.html' },
     // { name: '🌳 Tree',    href: 'tech-tree.html' },
   ];

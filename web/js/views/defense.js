@@ -25,6 +25,7 @@ import {
 import { createBattleWs } from './defense/ws.js';
 import { createPlacement } from './defense/placement.js';
 import { createBattleUi } from './defense/battle_ui.js';
+import { isGameFrozen } from '../lib/game_state.js';
 
 // ── Wake Lock ─────────────────────────────────────────────────
 let _wakeLock = null;
@@ -110,7 +111,7 @@ function _fmtTitleResource(value, digits = 0) {
 
 function _tickResources() {
   if (!_tickSummary || !_tickTs) return;
-  const elapsedS = (Date.now() - _tickTs) / 1000;
+  const elapsedS = isGameFrozen() ? 0 : (Date.now() - _tickTs) / 1000;
   const res = _tickSummary.resources || {};
   const gold = (res.gold || 0) + _calcRate('gold', _tickSummary) * elapsedS;
   const culture = (res.culture || 0) + _calcRate('culture', _tickSummary) * elapsedS;
@@ -238,24 +239,29 @@ function _setBattleTitle(label) {
 }
 
 // ── Defense Effects Overlay ─────────────────────────────────
-function _defEffectRows(effectKey, completedBuildings, completedResearch, items, fmt) {
+function _defEffectRows(effectKey, completedBuildings, completedResearch, items, fmt, ownedArtifacts, rulerEffects) {
   const rows = [];
   for (const iid of completedBuildings || []) {
     const item = items?.buildings?.[iid];
     const val = item?.effects?.[effectKey];
     if (val)
-      rows.push(
-        `<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`
-      );
+      rows.push(`<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`);
   }
   for (const iid of completedResearch || []) {
     const item = items?.knowledge?.[iid];
     const val = item?.effects?.[effectKey];
     if (val)
-      rows.push(
-        `<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`
-      );
+      rows.push(`<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#ccc">${item.name || iid}</span></div>`);
   }
+  for (const iid of ownedArtifacts || []) {
+    const art = items?.catalog?.[iid];
+    const val = art?.effects?.[effectKey];
+    if (val)
+      rows.push(`<div class="panel-row"><span class="label">${fmt(val)}</span><span class="value" style="color:#daa520">⚜ ${art.name || iid}</span></div>`);
+  }
+  const rulerVal = rulerEffects?.[effectKey];
+  if (rulerVal)
+    rows.push(`<div class="panel-row"><span class="label">${fmt(rulerVal)}</span><span class="value" style="color:#ffd54f">👑 Ruler</span></div>`);
   if (!rows.length)
     return `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
   return rows.join('');
@@ -267,10 +273,15 @@ function _showDefenseEffectsOverlay() {
   const effects = summary.effects || {};
   const completedBuildings = summary.completed_buildings || [];
   const completedResearch = summary.completed_research || [];
+  const ownedArtifacts = summary.artifacts || [];
   const items = st.items || {};
+  const rallyActive = summary.end_rally?.active;
+  const rallyEffects = (rallyActive && summary.end_rally?.effects) ? summary.end_rally.effects : {};
+  const rulerEffects = summary.ruler_effects || {};
   const siegeTotal = effects.siege_offset || 0;
   const waveTotal = effects.wave_delay_offset || 0;
   const restoreTotal = effects.restore_life_after_loss_offset || 0;
+  const siegeModifier = effects.siege_time_modifier || 0;
 
   function section(icon, title, color, totalStr, rowsHtml) {
     return `
@@ -284,27 +295,75 @@ function _showDefenseEffectsOverlay() {
       </div>`;
   }
 
-  const siegeRows = _defEffectRows(
-    'siege_offset',
-    completedBuildings,
-    completedResearch,
-    items,
-    (v) => `+${v.toFixed(0)}s`
-  );
-  const waveRows = _defEffectRows(
-    'wave_delay_offset',
-    completedBuildings,
-    completedResearch,
-    items,
-    (v) => `+${(v / 1000).toFixed(1)}s`
-  );
-  const restoreRows = _defEffectRows(
-    'restore_life_after_loss_offset',
-    completedBuildings,
-    completedResearch,
-    items,
-    (v) => `+${v.toFixed(1)} ❤`
-  );
+  function sectionNoTotal(icon, title, color, rowsHtml) {
+    return `
+      <div class="prod-overlay-section">
+        <div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>
+        ${rowsHtml}
+      </div>`;
+  }
+
+  function rallyRow(value, fmt) {
+    return `<div class="panel-row"><span class="label">${fmt(value)}</span><span class="value" style="color:#FFD700">⚔ End Rally</span></div>`;
+  }
+
+  const fmtDur = (s) => s >= 3600 ? (s / 3600).toFixed(1) + 'h' : s >= 60 ? Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's' : s.toFixed(0) + 's';
+
+  // Build siege rows mirroring renderResourceIncome structure in status.js
+  let siegeRows = '';
+  let totalOffset = 0;
+  for (const iid of completedBuildings.concat(completedResearch)) {
+    const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
+    const v = item?.effects?.siege_offset;
+    if (v) { totalOffset += v; siegeRows += `<div class="panel-row"><span class="label">+${v.toFixed(0)}s</span><span class="value">${item.name || iid}</span></div>`; }
+  }
+  for (const iid of ownedArtifacts) {
+    const art = items?.catalog?.[iid];
+    const v = art?.effects?.siege_offset;
+    if (v) { totalOffset += v; siegeRows += `<div class="panel-row"><span class="label">${v > 0 ? '+' : ''}${v.toFixed(0)}s</span><span class="value">⚜ ${art.name || iid}</span></div>`; }
+  }
+  if (rulerEffects.siege_offset) {
+    totalOffset += rulerEffects.siege_offset;
+    siegeRows += `<div class="panel-row"><span class="label">+${rulerEffects.siege_offset.toFixed(0)}s</span><span class="value" style="color:#ffd54f">👑 Ruler</span></div>`;
+  }
+  if (rallyEffects.siege_offset) {
+    totalOffset += rallyEffects.siege_offset;
+    siegeRows += rallyRow(rallyEffects.siege_offset, (v) => `+${v.toFixed(0)}s`);
+  }
+
+  siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+
+  let totalModifier = 0;
+  for (const iid of completedBuildings.concat(completedResearch)) {
+    const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
+    const v = item?.effects?.siege_time_modifier;
+    if (v) { totalModifier += v; siegeRows += `<div class="panel-row"><span class="label">-${(v * 100).toFixed(0)}%</span><span class="value">${item.name || iid}</span></div>`; }
+  }
+  for (const iid of ownedArtifacts) {
+    const art = items?.catalog?.[iid];
+    const v = art?.effects?.siege_time_modifier;
+    if (v) { totalModifier += v; siegeRows += `<div class="panel-row"><span class="label">-${(v * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`; }
+  }
+  if (rulerEffects.siege_time_modifier) {
+    totalModifier += rulerEffects.siege_time_modifier;
+    siegeRows += `<div class="panel-row"><span class="label">-${(rulerEffects.siege_time_modifier * 100).toFixed(0)}%</span><span class="value" style="color:#ffd54f">👑 Ruler</span></div>`;
+  }
+  if (rallyEffects.siege_time_modifier) {
+    totalModifier += rallyEffects.siege_time_modifier;
+    siegeRows += rallyRow(rallyEffects.siege_time_modifier, (v) => `-${(v * 100).toFixed(0)}%`);
+  }
+
+  const siegeFinal = totalOffset * (1 - totalModifier);
+  siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  siegeRows += totalModifier > 0
+    ? `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(totalOffset)} × ${((1 - totalModifier) * 100).toFixed(0)}%</span><span class="value">${fmtDur(siegeFinal)}</span></div>`
+    : `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(totalOffset)}</span></div>`;
+
+  let waveRows = _defEffectRows('wave_delay_offset', completedBuildings, completedResearch, items, (v) => `+${(v / 1000).toFixed(1)}s`, ownedArtifacts, rulerEffects);
+  if (rallyEffects.wave_delay_offset) waveRows += rallyRow(rallyEffects.wave_delay_offset, (v) => `+${(v / 1000).toFixed(1)}s`);
+
+  let restoreRows = _defEffectRows('restore_life_after_loss_offset', completedBuildings, completedResearch, items, (v) => `+${v.toFixed(1)} ❤`, ownedArtifacts, rulerEffects);
+  if (rallyEffects.restore_life_after_loss_offset) restoreRows += rallyRow(rallyEffects.restore_life_after_loss_offset, (v) => `+${v.toFixed(1)} ❤`);
 
   const tiles = grid ? [...grid.tiles.values()] : [];
   const eraStatsHTML = `
@@ -320,7 +379,7 @@ function _showDefenseEffectsOverlay() {
       <button class="prod-overlay-close" title="Close">✕</button>
       <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
       ${eraStatsHTML}
-      ${section('⏳', 'Siege Delay', '#ffa726', `+${siegeTotal >= 3600 ? (siegeTotal / 3600).toFixed(1) + 'h' : siegeTotal >= 60 ? Math.floor(siegeTotal / 60) + 'm ' + Math.round(siegeTotal % 60) + 's' : siegeTotal.toFixed(0) + 's'}`, siegeRows)}
+      ${sectionNoTotal('⏳', 'Siege Delay', '#ffa726', siegeRows)}
       ${section('🌊', 'Wave Delay', '#4fc3f7', `+${(waveTotal / 1000).toFixed(1)}s`, waveRows)}
       ${section('❤', 'Restore Life on Loss', '#e05c5c', `+${restoreTotal.toFixed(1)}`, restoreRows)}
     </div>`;
