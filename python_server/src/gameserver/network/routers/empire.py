@@ -230,7 +230,7 @@ def make_router(services: "Services") -> APIRouter:
         setattr(ruler, skill, current + 1)
         # Pay out one-shot lump sums from the newly reached skill level
         ruler_def = empire_service._rulers.get(ruler.type, {})
-        new_level_list: list[dict] = ruler_def.get(skill, [])
+        new_level_list: list[dict[str, object]] = ruler_def.get(skill, [])
         if current < len(new_level_list):  # current = old level = index of new level
             lvl_fx = new_level_list[current]
             gold_lump = float(lvl_fx.get("gold_lump_sum_on_skill_up", 0.0))

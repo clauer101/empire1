@@ -613,7 +613,7 @@ class EmpireService:
 
     def assign_global_spawn_positions(
         self,
-        users_by_creation: list[dict],
+        users_by_creation: list[dict[str, Any]],
         *,
         grid_radius: int = 50,
         min_separation: int = 10,

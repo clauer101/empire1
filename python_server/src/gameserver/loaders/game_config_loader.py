@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 import yaml
 
@@ -208,14 +208,14 @@ class GameConfig:
     uid_ai: int = 2
 
 
-def _require(d: dict, key: str, context: str = "game.yaml") -> object:
+def _require(d: dict[str, object], key: str, context: str = "game.yaml") -> object:
     """Raise ValueError if key is missing from dict."""
     if key not in d:
         raise ValueError(f"Missing required config key '{key}' in {context}")
     return d[key]
 
 
-def _require_price_params(prices_raw: dict, key: str) -> PriceParams:
+def _require_price_params(prices_raw: dict[str, Any], key: str) -> PriceParams:
     if key not in prices_raw:
         raise ValueError(f"Missing required prices.{key} in game.yaml")
     return PriceParams(**prices_raw[key])

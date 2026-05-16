@@ -16,7 +16,7 @@ _VAPID_CLAIMS = {"sub": "mailto:lauer.christoph@gmail.com"}
 async def send_push(subscription: dict[str, Any], title: str, body: str) -> bool:
     """Send a Web Push notification. Returns True on success."""
     import asyncio
-    from pywebpush import webpush, WebPushException  # type: ignore[import-not-found]
+    from pywebpush import webpush, WebPushException  # type: ignore[import-untyped,import-not-found]
     data = json.dumps({"title": title, "body": body})
     try:
         await asyncio.get_event_loop().run_in_executor(

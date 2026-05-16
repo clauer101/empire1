@@ -132,7 +132,7 @@ class BattleService:
         """Return the slot cost for the next critter of this wave."""
         if wave.iid in self._rulers:
             # Ruler occupies all remaining slots so exactly one spawns per wave.
-            return max(wave.slots, 999.0)
+            return float(max(wave.slots, 999.0))
         item = self._items_by_iid.get(wave.iid)
         return max(0.1, float(getattr(item, "slots", 1.0) or 1.0))
 
