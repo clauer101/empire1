@@ -39,7 +39,7 @@ jobs:
       - name: Run tests with coverage gate
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-key-do-not-use-in-prod' }}
-        run: uv run pytest --cov=gameserver --cov-fail-under=65 --cov-report=xml --cov-report=html
+        run: uv run pytest --cov=gameserver --cov-fail-under=66 --cov-report=xml --cov-report=html
 
       - name: Upload coverage report
         if: always()
