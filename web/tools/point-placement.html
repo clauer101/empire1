@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spawn Point Placement</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warn:        #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 13px;
+      height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+      flex-shrink: 0;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #sim-time-display {
+      font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 5px 10px;
+    }
+
+    #main {
+      display: flex; flex: 1; overflow: hidden;
+    }
+
+    #sidebar {
+      width: 280px; flex-shrink: 0; overflow-y: auto;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .card {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 12px;
+    }
+    .ctrl-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .ctrl-row:last-child { margin-bottom: 0; }
+    .ctrl-label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--text-dim);
+    }
+    .ctrl-val { font-family: var(--mono); color: var(--text); font-size: 11px; }
+    input[type=range] {
+      width: 100%; accent-color: var(--accent); cursor: pointer;
+    }
+    select {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); font-size: 12px; padding: 5px 8px;
+      outline: none; cursor: pointer;
+    }
+    select:focus { border-color: var(--accent); }
+    .checkbox-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--text-dim); margin-bottom: 6px; cursor: pointer;
+    }
+    .checkbox-row input { accent-color: var(--accent); cursor: pointer; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      cursor: pointer; border: none; border-radius: var(--radius);
+      padding: 7px 16px; font-size: 12px; font-family: inherit; font-weight: 600;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    .btn-primary { background: var(--accent); color: #0d0d14; }
+    .btn-stop    { background: var(--danger); color: #fff; }
+    .btn-neutral { background: var(--border); color: var(--text); }
+
+    #spawn-log {
+      max-height: 180px; overflow-y: auto;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      display: flex; flex-direction: column-reverse; gap: 2px;
+    }
+    .log-entry { padding: 2px 4px; border-radius: 3px; }
+    .log-entry.burst { color: var(--warn); }
+    .log-entry.solo  { color: var(--text-dim); }
+
+    #canvas-wrap {
+      flex: 1; position: relative; overflow: hidden;
+    }
+    canvas {
+      display: block; width: 100%; height: 100%;
+    }
+
+    #statusbar {
+      position: absolute; bottom: 8px; left: 12px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    #tooltip {
+      position: fixed; display: none; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-family: var(--mono); font-size: 11px; color: var(--text);
+      pointer-events: none; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>🌀 Spawn Point Placement</h1>
+  <div id="sim-time-display">t = 0.0</div>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-play">▶ Play</button>
+    <button class="btn-neutral" id="btn-reset">↺ Reset</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+
+    <div class="card">
+      <div class="section-title">Simulation</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Timeline speed <span class="ctrl-val" id="val-speed">1.0×</span></div>
+        <input type="range" id="sl-speed" min="-1" max="1" step="0.01" value="0">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Spawn rate <span class="ctrl-val" id="val-rate">0.50/s</span></div>
+        <input type="range" id="sl-rate" min="0.1" max="3" step="0.05" value="0.5">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Burst Parameters</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Burst probability <span class="ctrl-val" id="val-burst-prob">0.15</span></div>
+        <input type="range" id="sl-burst-prob" min="0" max="1" step="0.01" value="0.15">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Burst size <span class="ctrl-val" id="val-burst-size">4</span></div>
+        <input type="range" id="sl-burst-size" min="2" max="10" step="1" value="4">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Burst spread (rad) <span class="ctrl-val" id="val-burst-spread">0.08</span></div>
+        <input type="range" id="sl-burst-spread" min="0.01" max="0.5" step="0.005" value="0.08">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Spiral Parameters</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">a (scale) <span class="ctrl-val" id="val-a">5.0</span></div>
+        <input type="range" id="sl-a" min="0.5" max="20" step="0.5" value="5">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">b (growth) <span class="ctrl-val" id="val-b">0.12</span></div>
+        <input type="range" id="sl-b" min="0.01" max="0.5" step="0.005" value="0.12">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">θ rate <span class="ctrl-val" id="val-theta-rate">0.50</span></div>
+        <input type="range" id="sl-theta-rate" min="0.1" max="2" step="0.05" value="0.5">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Log compression <span class="ctrl-val" id="val-log-comp">1.0</span></div>
+        <input type="range" id="sl-log-comp" min="0.1" max="3" step="0.05" value="1.0">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Placement Constraints</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Min distance <span class="ctrl-val" id="val-min-dist">3.0</span></div>
+        <input type="range" id="sl-min-dist" min="0" max="20" step="0.5" value="3">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Display</div>
+      <label class="checkbox-row"><input type="checkbox" id="chk-curve" checked> Show spiral curve</label>
+      <label class="checkbox-row"><input type="checkbox" id="chk-connectors" checked> Show burst connectors</label>
+      <label class="checkbox-row"><input type="checkbox" id="chk-fade" checked> Fade old points</label>
+      <div class="ctrl-row" style="margin-top:8px">
+        <div class="ctrl-label">Point size <span class="ctrl-val" id="val-ptsize">5px</span></div>
+        <input type="range" id="sl-ptsize" min="2" max="12" step="1" value="5">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Color mode</div>
+        <select id="sel-color">
+          <option value="burst">Burst group</option>
+          <option value="age">Age gradient</option>
+          <option value="flat">Flat accent</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Spawn Log</div>
+      <div id="spawn-log"></div>
+    </div>
+
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="spiral-canvas"></canvas>
+    <div id="statusbar">spawns: 0 | θ: 0.00 | r: 0.00</div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Params (live-updated by sliders) ──
+const P = {
+  speed:       1.0,
+  spawnRate:   0.5,
+  burstProb:   0.15,
+  burstSize:   4,
+  burstSpread: 0.08,
+  a:           5.0,
+  b:           0.12,
+  thetaRate:   0.50,
+  logComp:     1.0,
+  pointSize:   5,
+  minDist:     3.0,   // minimum world-unit distance between any two spawn points
+  showCurve:       true,
+  showConnectors:  true,
+  fade:            true,
+  colorMode:       'burst',
+};
+
+// ── State ──
+const state = {
+  running:       false,
+  simTime:       0,
+  lastSpawnTime: -1,
+  lastTheta:     0,
+  nextSpawnTime: 0,
+  pendingEvent:  null,
+  spawns:        [],       // SpawnPoint[]
+  burstGroups:   new Map(), // burstGroupId → SpawnPoint[]
+  burstCounter:  0,
+  spawnCounter:  0,
+  displayScale:  1,        // world → canvas pixels
+  targetScale:   1,
+  panX:          0,
+  panY:          0,
+  dragging:      false,
+  dragStart:     null,
+  hoveredId:     -1,
+  selectedGroup: -1,
+};
+
+// ── RNG helpers ──
+function randExp(mean) {
+  return -mean * Math.log(1 - Math.random());
+}
+function randJitter(range) {
+  return (Math.random() - 0.5) * 2 * range;
+}
+
+// ── Core algorithm ──
+function computeDeltaTheta(dt) {
+  const safe = Math.max(dt, 0.001);
+  return P.thetaRate * Math.pow(Math.log(1 + safe), P.logComp);
+}
+
+function spiralPoint(theta) {
+  const r = P.a * Math.exp(P.b * theta);
+  return { r, x: r * Math.cos(theta), y: r * Math.sin(theta) };
+}
+
+// Arc length of log-spiral r=a·e^(b·θ) from θ=0 to θ (closed form).
+function spiralArcLength(theta) {
+  return (P.a / P.b) * Math.sqrt(1 + P.b * P.b) * (Math.exp(P.b * theta) - 1);
+}
+
+// Check if (x, y) is at least P.minDist away from all existing spawns.
+// Searches only the last ~200 spawns for performance (oldest are far away).
+function satisfiesMinDist(x, y) {
+  if (P.minDist <= 0) return true;
+  const check = state.spawns.length > 200 ? state.spawns.slice(-200) : state.spawns;
+  for (const sp of check) {
+    if (Math.hypot(sp.x - x, sp.y - y) < P.minDist) return false;
+  }
+  return true;
+}
+
+// Resolve minimum-distance violations by advancing theta along the spiral
+// until the point is far enough from all existing spawns.
+function resolveMinDist(x, y, theta) {
+  if (satisfiesMinDist(x, y)) return { x, y, theta };
+  const step = 0.05;
+  for (let i = 1; i <= 60; i++) {
+    const t2 = theta + i * step;
+    const pt = spiralPoint(t2);
+    if (satisfiesMinDist(pt.x, pt.y)) return { x: pt.x, y: pt.y, theta: t2 };
+  }
+  return { x, y, theta };
+}
+
+function spawnSolo(t) {
+  const dt = t - state.lastSpawnTime;
+  const dTheta = computeDeltaTheta(dt);
+  const theta0 = state.lastTheta + dTheta;
+  const base = spiralPoint(theta0);
+  const { x, y, theta } = resolveMinDist(base.x, base.y, theta0);
+  const r = Math.hypot(x, y);
+  const sp = {
+    id: state.spawnCounter++,
+    t, theta, r, x, y,
+    burstGroup: -1, burstIndex: 0, burstSize: 1,
+  };
+  state.spawns.push(sp);
+  state.lastTheta = theta;
+  state.lastSpawnTime = t;
+  logEntry(sp);
+}
+
+function spawnBurst(t, size) {
+  const dt = t - state.lastSpawnTime;
+  const anchorTheta = state.lastTheta + computeDeltaTheta(dt);
+  const groupId = ++state.burstCounter;
+  const group = [];
+
+  // Place burst members sequentially starting from anchorTheta so that each
+  // resolveMinDist search starts after the previously placed sibling.
+  let curTheta = anchorTheta;
+  for (let i = 0; i < size; i++) {
+    const base = spiralPoint(curTheta);
+    const { x, y, theta } = resolveMinDist(base.x, base.y, curTheta);
+    const r = Math.hypot(x, y);
+    const sp = {
+      id: state.spawnCounter++,
+      t, theta, r, x, y,
+      burstGroup: groupId, burstIndex: i, burstSize: size,
+    };
+    state.spawns.push(sp);
+    group.push(sp);
+    logEntry(sp);
+    curTheta = theta + 0.001; // start next search just past the placed point
+  }
+  state.burstGroups.set(groupId, group);
+  state.lastTheta = anchorTheta; // anchor stays as reference for next solo/burst
+  state.lastSpawnTime = t;
+}
+
+function scheduleNext() {
+  const mean = 1 / P.spawnRate;
+  const delay = randExp(mean);
+  const isBurst = Math.random() < P.burstProb;
+  return {
+    delay,
+    type: isBurst ? 'burst' : 'solo',
+    size: isBurst ? Math.round(P.burstSize) : 1,
+  };
+}
+
+// ── Spawn log ──
+const logEl = document.getElementById('spawn-log');
+function logEntry(sp) {
+  const div = document.createElement('div');
+  div.className = 'log-entry ' + (sp.burstGroup >= 0 ? 'burst' : 'solo');
+  const tag = sp.burstGroup >= 0
+    ? `[burst #${sp.burstGroup} ${sp.burstIndex+1}/${sp.burstSize}]`
+    : '[solo]';
+  div.textContent = `t=${sp.t.toFixed(1)} θ=${sp.theta.toFixed(2)} r=${sp.r.toFixed(1)} ${tag}`;
+  logEl.prepend(div);
+  // Keep log bounded
+  while (logEl.children.length > 80) logEl.lastChild.remove();
+}
+
+// ── Canvas setup ──
+const canvas = document.getElementById('spiral-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+resizeCanvas();
+
+// ── World → canvas transform ──
+function w2c(wx, wy) {
+  const cx = canvas.width  / 2 + (wx + state.panX) * state.displayScale;
+  const cy = canvas.height / 2 - (wy + state.panY) * state.displayScale;
+  return [cx, cy];
+}
+function c2w(cx, cy) {
+  return [
+    (cx - canvas.width  / 2) / state.displayScale - state.panX,
+    -(cy - canvas.height / 2) / state.displayScale - state.panY,
+  ];
+}
+
+// ── Color helpers ──
+function burstColor(groupId, alpha = 1) {
+  const hue = (groupId * 137.508) % 360;
+  return `hsla(${hue},70%,65%,${alpha})`;
+}
+function lerpHex(t) {
+  // newest=accent #4fc3f7, oldest=dim #1a1a38
+  const r = Math.round(0x4f + (0x1a - 0x4f) * t);
+  const g = Math.round(0xc3 + (0x1a - 0xc3) * t);
+  const b = Math.round(0xf7 + (0x38 - 0xf7) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+function spawnColor(sp, ageNorm, alpha = 1) {
+  if (P.colorMode === 'burst') {
+    if (sp.burstGroup >= 0) return burstColor(sp.burstGroup, alpha);
+    return `rgba(153,153,168,${alpha})`;
+  }
+  if (P.colorMode === 'age') {
+    const c = lerpHex(ageNorm);
+    return alpha < 1 ? c.replace('rgb', 'rgba').replace(')', `,${alpha})`) : c;
+  }
+  return `rgba(79,195,247,${alpha})`;
+}
+
+// ── Render ──
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Auto-scale: fit the outermost spawn
+  let rMax = P.a; // minimum meaningful radius
+  for (const sp of state.spawns) rMax = Math.max(rMax, sp.r);
+  state.targetScale = Math.min(W, H) * 0.42 / rMax;
+  // Smooth lerp toward target scale
+  state.displayScale += (state.targetScale - state.displayScale) * 0.08;
+
+  // Spiral curve
+  if (P.showCurve && state.spawns.length > 0) {
+    const thetaMax = state.lastTheta;
+    const steps = 600;
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const th = (thetaMax * i) / steps;
+      const r  = P.a * Math.exp(P.b * th);
+      const [px, py] = w2c(r * Math.cos(th), r * Math.sin(th));
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = 'rgba(79,195,247,0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Burst connectors
+  if (P.showConnectors) {
+    for (const [, group] of state.burstGroups) {
+      if (group.length < 2) continue;
+      const sorted = [...group].sort((a, b) => a.theta - b.theta);
+      ctx.beginPath();
+      for (let i = 0; i < sorted.length; i++) {
+        const [px, py] = w2c(sorted[i].x, sorted[i].y);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = burstColor(group[0].burstGroup, 0.25);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  // Spawn points (draw up to last 2000)
+  const visible = state.spawns.length > 2000
+    ? state.spawns.slice(-2000) : state.spawns;
+  const oldest = visible.length ? visible[0].t : 0;
+  const newest = state.simTime;
+  const span = Math.max(newest - oldest, 1);
+
+  for (const sp of visible) {
+    const ageNorm = (newest - sp.t) / span;
+    const alpha = P.fade ? Math.max(0.15, 1 - ageNorm * 0.85) : 1;
+    const [px, py] = w2c(sp.x, sp.y);
+    const r = P.pointSize + (sp.id === state.hoveredId ? 3 : 0);
+    const highlighted = state.selectedGroup >= 0 && sp.burstGroup === state.selectedGroup;
+
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fillStyle = spawnColor(sp, ageNorm, alpha);
+    ctx.fill();
+
+    if (highlighted) {
+      ctx.beginPath();
+      ctx.arc(px, py, r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,167,38,0.9)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // Statusbar
+  document.getElementById('statusbar').textContent =
+    `spawns: ${state.spawns.length} | θ: ${state.lastTheta.toFixed(2)} | r: ${(P.a * Math.exp(P.b * state.lastTheta)).toFixed(1)}`;
+}
+
+// ── Animation loop ──
+let lastWall = null;
+function tick(wall) {
+  if (!state.running) { lastWall = null; return; }
+  if (lastWall === null) lastWall = wall;
+  const wallDt = (wall - lastWall) / 1000;
+  lastWall = wall;
+
+  const simDt = wallDt * P.speed;
+  state.simTime += simDt;
+
+  document.getElementById('sim-time-display').textContent = `t = ${state.simTime.toFixed(1)}`;
+
+  // Process pending spawns
+  while (state.simTime >= state.nextSpawnTime) {
+    const ev = state.pendingEvent;
+    if (ev) {
+      if (ev.type === 'burst') spawnBurst(state.nextSpawnTime, ev.size);
+      else                     spawnSolo(state.nextSpawnTime);
+    }
+    const next = scheduleNext();
+    state.nextSpawnTime = state.simTime + next.delay;
+    state.pendingEvent = next;
+  }
+
+  render();
+  requestAnimationFrame(tick);
+}
+
+// ── Controls ──
+function wireSlider(id, valId, param, fmt, scale = 1) {
+  const sl = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  sl.addEventListener('input', () => {
+    const raw = parseFloat(sl.value);
+    P[param] = raw * scale;
+    vl.textContent = fmt(P[param]);
+  });
+}
+
+wireSlider('sl-speed',        'val-speed',       'speed',       v => v.toFixed(1) + '×',
+  null /* special: logarithmic */);
+// Override speed slider (log scale)
+document.getElementById('sl-speed').addEventListener('input', function() {
+  P.speed = Math.pow(10, parseFloat(this.value));
+  document.getElementById('val-speed').textContent = P.speed.toFixed(2) + '×';
+});
+
+wireSlider('sl-rate',         'val-rate',        'spawnRate',   v => v.toFixed(2) + '/s');
+wireSlider('sl-burst-prob',   'val-burst-prob',  'burstProb',   v => v.toFixed(2));
+wireSlider('sl-burst-size',   'val-burst-size',  'burstSize',   v => Math.round(v));
+wireSlider('sl-burst-spread', 'val-burst-spread','burstSpread', v => v.toFixed(3));
+wireSlider('sl-a',            'val-a',           'a',           v => v.toFixed(1));
+wireSlider('sl-b',            'val-b',           'b',           v => v.toFixed(3));
+wireSlider('sl-theta-rate',   'val-theta-rate',  'thetaRate',   v => v.toFixed(2));
+wireSlider('sl-log-comp',     'val-log-comp',    'logComp',     v => v.toFixed(2));
+wireSlider('sl-min-dist',     'val-min-dist',    'minDist',     v => v.toFixed(1));
+wireSlider('sl-ptsize',       'val-ptsize',      'pointSize',   v => Math.round(v) + 'px');
+
+document.getElementById('chk-curve').addEventListener('change', function() { P.showCurve = this.checked; });
+document.getElementById('chk-connectors').addEventListener('change', function() { P.showConnectors = this.checked; });
+document.getElementById('chk-fade').addEventListener('change', function() { P.fade = this.checked; });
+document.getElementById('sel-color').addEventListener('change', function() { P.colorMode = this.value; });
+
+// Play/Pause
+const btnPlay = document.getElementById('btn-play');
+btnPlay.addEventListener('click', () => {
+  state.running = !state.running;
+  btnPlay.textContent = state.running ? '⏸ Pause' : '▶ Play';
+  btnPlay.className   = state.running ? 'btn-stop' : 'btn-primary';
+  if (state.running) requestAnimationFrame(tick);
+});
+
+// Reset
+document.getElementById('btn-reset').addEventListener('click', () => {
+  state.running = false;
+  btnPlay.textContent = '▶ Play';
+  btnPlay.className   = 'btn-primary';
+  lastWall = null;
+  state.simTime       = 0;
+  state.lastSpawnTime = -1;
+  state.lastTheta     = 0;
+  state.nextSpawnTime = 0;
+  state.pendingEvent  = scheduleNext();
+  state.spawns.length = 0;
+  state.burstGroups.clear();
+  state.burstCounter  = 0;
+  state.spawnCounter  = 0;
+  state.displayScale  = 1;
+  state.targetScale   = 1;
+  state.panX = state.panY = 0;
+  state.selectedGroup = -1;
+  logEl.innerHTML = '';
+  document.getElementById('sim-time-display').textContent = 't = 0.0';
+  render();
+});
+
+// ── Mouse: pan / zoom / hover / click ──
+const tooltip = document.getElementById('tooltip');
+
+canvas.addEventListener('mousedown', e => {
+  state.dragging = true;
+  state.dragStart = { x: e.clientX, y: e.clientY, panX: state.panX, panY: state.panY };
+});
+canvas.addEventListener('mouseup', () => { state.dragging = false; });
+canvas.addEventListener('mouseleave', () => {
+  state.dragging = false;
+  tooltip.style.display = 'none';
+  state.hoveredId = -1;
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (state.dragging) {
+    const dx = e.clientX - state.dragStart.x;
+    const dy = e.clientY - state.dragStart.y;
+    state.panX = state.dragStart.panX + dx / state.displayScale;
+    state.panY = state.dragStart.panY - dy / state.displayScale;
+    return;
+  }
+  // Hover detection
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const hitR = P.pointSize + 5;
+  let found = null;
+  for (let i = state.spawns.length - 1; i >= 0; i--) {
+    const sp = state.spawns[i];
+    const [px, py] = w2c(sp.x, sp.y);
+    if (Math.hypot(px - mx, py - my) <= hitR) { found = sp; break; }
+  }
+  if (found) {
+    state.hoveredId = found.id;
+    const burstLabel = found.burstGroup >= 0
+      ? `burst #${found.burstGroup} [${found.burstIndex+1}/${found.burstSize}]`
+      : 'solo';
+    const arcLen = spiralArcLength(found.theta);
+    tooltip.innerHTML =
+      `<b>spawn #${found.id}</b> &nbsp; ${burstLabel}<br>` +
+      `t = ${found.t.toFixed(2)} &nbsp; θ = ${found.theta.toFixed(3)}<br>` +
+      `arc dist = ${arcLen.toFixed(2)} &nbsp; r = ${found.r.toFixed(2)}`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+  } else {
+    state.hoveredId = -1;
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('click', e => {
+  if (state.hoveredId < 0) { state.selectedGroup = -1; return; }
+  const sp = state.spawns.find(s => s.id === state.hoveredId);
+  if (!sp) return;
+  state.selectedGroup = sp.burstGroup >= 0
+    ? (state.selectedGroup === sp.burstGroup ? -1 : sp.burstGroup)
+    : -1;
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  state.displayScale *= factor;
+  state.targetScale  *= factor;
+}, { passive: false });
+
+// ── Init ──
+state.pendingEvent = scheduleNext();
+state.nextSpawnTime = randExp(1 / P.spawnRate);
+render();
+</script>
+</body>
+</html>

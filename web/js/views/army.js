@@ -88,83 +88,92 @@ function _armyEffectRows(effectKey, completedBuildings, completedResearch, items
   return rows.join('');
 }
 
-function _showArmyEffectsOverlay() {
+async function _showArmyEffectsOverlay() {
   document.querySelector('.army-effects-overlay')?.remove();
   const summary = st.summary || {};
   const effects = summary.effects || {};
-  const completedBuildings = summary.completed_buildings || [];
-  const completedResearch = summary.completed_research || [];
-  const items = st.items || {};
+
+  const overlay = document.createElement('div');
+  overlay.className = 'prod-overlay army-effects-overlay';
+  overlay.innerHTML = `<div class="prod-overlay-box"><button class="prod-overlay-close" title="Close">✕</button><div style="color:#888;padding:20px">Loading…</div></div>`;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+
+  let effectSources = {};
+  try { effectSources = await rest.getEffectSources(); } catch (_) {}
 
   const eraBase = summary.era_travel_base_seconds ?? summary.travel_time_seconds ?? 0;
   const travelOffset = effects.travel_offset || 0;
   const travelTotal = summary.travel_time_seconds ?? (eraBase + travelOffset);
 
-  function _fmtS(s) {
-    return (s / 3600).toFixed(2).replace(/\.?0+$/, '') + 'h';
-  }
+  function _fmtS(s) { return (s / 3600).toFixed(2).replace(/\.?0+$/, '') + 'h'; }
+  function _fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
 
   function section(icon, title, color, rows, footer) {
     const footerHtml = footer
-      ? `<div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px">
-          <span class="label" style="color:#ddd;font-weight:bold">Total</span>
-          <span class="value" style="color:#fff;font-weight:bold">${footer}</span>
-        </div>`
+      ? `<div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px"><span class="label" style="color:#ddd;font-weight:bold">Total</span><span class="value" style="color:#fff;font-weight:bold">${footer}</span></div>`
       : '';
-    return `
-      <div class="prod-overlay-section">
-        <div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>
-        ${rows}
-        ${footerHtml}
-      </div>`;
+    return `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>${rows}${footerHtml}</div>`;
   }
 
-  // Travel time: base row + per-item offsets
-  const travelBaseRow = `<div class="panel-row"><span class="label">${_fmtS(eraBase)}</span><span class="value" style="color:#ccc">Era base (${summary.current_era || '?'})</span></div>`;
-  const travelOffsetRows = _armyEffectRows('travel_offset', completedBuildings, completedResearch, items, (v) => (v < 0 ? '' : '+') + _fmtS(v));
-  const travelRows = travelBaseRow + (travelOffset !== 0 ? travelOffsetRows : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+  const _items = st.items;
+  function _name(iid) {
+    return _items?.buildings?.[iid]?.name || _items?.knowledge?.[iid]?.name || _items?.catalog?.[iid]?.name || iid;
+  }
+  function sourceRows(key, fmt, rulerName) {
+    const src = effectSources[key] || {};
+    let html = '';
+    for (const [iid, v] of Object.entries(src.buildings || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value">${_name(iid)}</span></div>`;
+    for (const [iid, v] of Object.entries(src.knowledge || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value">${_name(iid)}</span></div>`;
+    for (const [iid, v] of Object.entries(src.artifacts || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value" style="color:#FFD700">⚜ ${_name(iid)}</span></div>`;
+    if (src.ruler && rulerName)
+      html += `<div class="panel-row"><span class="label">${fmt(src.ruler)}</span><span class="value" style="color:#FFD700">👑 ${rulerName}</span></div>`;
+    if (src.end_rally)
+      html += `<div class="panel-row"><span class="label">${fmt(src.end_rally)}</span><span class="value" style="color:#87CEEB">⚔ End Rally</span></div>`;
+    if (src.era)
+      html += `<div class="panel-row"><span class="label">${fmt(src.era)}</span><span class="value" style="color:#87CEEB">Era</span></div>`;
+    return html || `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
+  }
 
-  // Artifact steal chances
+  const rulerName = summary.ruler?.name || '';
   const baseVictory = summary.base_artifact_steal_victory ?? 0;
   const baseDefeat = summary.base_artifact_steal_defeat ?? 0;
   const stealVictoryMod = effects.artifact_steal_victory_modifier || 0;
   const stealDefeatMod = effects.artifact_steal_defeat_modifier || 0;
-  const totalVictory = baseVictory + stealVictoryMod;
-  const totalDefeat = baseDefeat + stealDefeatMod;
 
-  function _fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
+  const travelRows = `<div class="panel-row"><span class="label">${_fmtS(eraBase)}</span><span class="value" style="color:#ccc">Era base (${summary.current_era || '?'})</span></div>`
+    + (travelOffset !== 0 ? sourceRows('travel_offset', (v) => (v < 0 ? '' : '+') + _fmtS(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
 
-  const stealVictoryBaseRow = `<div class="panel-row"><span class="label">${_fmtPct(baseVictory)}</span><span class="value" style="color:#ccc">Base chance</span></div>`;
-  const stealVictoryModRows = _armyEffectRows('artifact_steal_victory_modifier', completedBuildings, completedResearch, items, (v) => (v >= 0 ? '+' : '') + _fmtPct(v));
-  const stealVictoryRows = stealVictoryBaseRow + (stealVictoryMod !== 0 ? stealVictoryModRows : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+  const stealVictoryRows = `<div class="panel-row"><span class="label">${_fmtPct(baseVictory)}</span><span class="value" style="color:#ccc">Base chance</span></div>`
+    + (stealVictoryMod !== 0 ? sourceRows('artifact_steal_victory_modifier', (v) => (v >= 0 ? '+' : '') + _fmtPct(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
 
-  const stealDefeatBaseRow = `<div class="panel-row"><span class="label">${_fmtPct(baseDefeat)}</span><span class="value" style="color:#ccc">Base chance</span></div>`;
-  const stealDefeatModRows = _armyEffectRows('artifact_steal_defeat_modifier', completedBuildings, completedResearch, items, (v) => (v >= 0 ? '+' : '') + _fmtPct(v));
-  const stealDefeatRows = stealDefeatBaseRow + (stealDefeatMod !== 0 ? stealDefeatModRows : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+  const stealDefeatRows = `<div class="panel-row"><span class="label">${_fmtPct(baseDefeat)}</span><span class="value" style="color:#ccc">Base chance</span></div>`
+    + (stealDefeatMod !== 0 ? sourceRows('artifact_steal_defeat_modifier', (v) => (v >= 0 ? '+' : '') + _fmtPct(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
 
-  // Spy workshop
   const spyWorkshop = effects.spy_workshop || 0;
-  const spyContent = `<div class="panel-row">
-    <span class="label" style="color:#ccc">Workshop intel (upgrades) visible in spy reports</span>
-    <span class="value" style="color:${spyWorkshop > 0 ? '#4fc3f7' : '#555'};font-weight:bold">${spyWorkshop > 0 ? 'Active' : 'No'}</span>
-  </div>`;
+  const spyContent = `<div class="panel-row"><span class="label" style="color:#ccc">Workshop intel (upgrades) visible in spy reports</span><span class="value" style="color:${spyWorkshop > 0 ? '#4fc3f7' : '#555'};font-weight:bold">${spyWorkshop > 0 ? 'Active' : 'No'}</span></div>`;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'prod-overlay army-effects-overlay';
-  overlay.innerHTML = `
-    <div class="prod-overlay-box">
-      <button class="prod-overlay-close" title="Close">✕</button>
-      <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">⚔ Army Effects</div>
-      ${section('🕐', 'Travel Time', '#ffa726', travelRows, _fmtS(travelTotal))}
-      ${section('🏆', 'Artifact Steal — Victory', '#c9a84c', stealVictoryRows, _fmtPct(totalVictory))}
-      ${section('💀', 'Artifact Steal — Defeat', '#e57373', stealDefeatRows, _fmtPct(totalDefeat))}
-      ${section('🕵', 'Spy Capabilities', '#4fc3f7', spyContent, '')}
-    </div>`;
+  const siegeCorruption = effects.enemy_siege_time_modifier || 0;
+  const siegeCorruptionRows = sourceRows('enemy_siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`, rulerName);
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  const box = overlay.querySelector('.prod-overlay-box');
+  box.innerHTML = `
+    <button class="prod-overlay-close" title="Close">✕</button>
+    <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">⚔ Army Effects</div>
+    ${section('🕐', 'Travel Time', '#ffa726', travelRows, _fmtS(travelTotal))}
+    ${section('⚔️', 'Siege Corruption', '#ef9a9a', siegeCorruptionRows, siegeCorruption > 0 ? `-${(siegeCorruption * 100).toFixed(0)}% enemy siege time` : 'No reduction')}
+    ${section('🏆', 'Artifact Steal — Victory', '#c9a84c', stealVictoryRows, _fmtPct(baseVictory + stealVictoryMod))}
+    ${section('💀', 'Artifact Steal — Defeat', '#e57373', stealDefeatRows, _fmtPct(baseDefeat + stealDefeatMod))}
+    ${section('🕵', 'Spy Capabilities', '#4fc3f7', spyContent, '')}
+  `;
+  box.addEventListener('click', (e) => {
+    if (e.target.classList.contains('prod-overlay-close')) overlay.remove();
   });
-  document.body.appendChild(overlay);
 }
 
 function init(el, _api, _state) {
@@ -186,7 +195,7 @@ function init(el, _api, _state) {
     </div>
 
     <!-- ── New Army Name Overlay ─────────────────────────── -->
-    <div id="new-army-overlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div id="new-army-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
       <div style="background:var(--panel-bg,#1e1e2e);border:1px solid var(--border-color);border-radius:var(--radius,8px);padding:14px 16px;min-width:240px;max-width:90vw;display:flex;flex-direction:column;gap:8px;position:relative;">
         <button id="new-army-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1;">✕</button>
         <div style="font-weight:bold;padding-right:20px;">New Army</div>
@@ -214,7 +223,7 @@ function init(el, _api, _state) {
     </div>
 
     <!-- ── Spy Report Overlay ─────────────────────────── -->
-    <div id="spy-report-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.65);align-items:center;justify-content:center;">
+    <div id="spy-report-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);align-items:center;justify-content:center;">
       <div style="background:var(--panel-bg,#1e1e2e);border:1px solid rgba(150,100,220,0.5);border-radius:var(--radius,8px);padding:20px;min-width:280px;max-width:min(520px,92vw);max-height:80vh;overflow-y:auto;position:relative;">
         <button id="spy-report-close" style="position:absolute;top:8px;right:12px;background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;">✕</button>
         <div id="spy-report-body"></div>
@@ -271,24 +280,30 @@ function init(el, _api, _state) {
     if (_resourceWrap) _titleEl.appendChild(_resourceWrap);
   }
 
-  const newArmyOverlay = container.querySelector('#new-army-overlay');
+  const newArmyOverlay = document.getElementById('new-army-overlay');
   container.querySelector('#create-army-btn').addEventListener('click', () => {
-    container.querySelector('#new-army-name').value = '';
-    container.querySelector('#new-army-msg').textContent = '';
+    document.getElementById('new-army-name').value = '';
+    document.getElementById('new-army-msg').textContent = '';
     newArmyOverlay.style.display = 'flex';
-    container.querySelector('#new-army-name').focus();
+    document.getElementById('new-army-name').focus();
   });
-  container.querySelector('#new-army-close').addEventListener('click', () => {
+  document.getElementById('new-army-close').addEventListener('click', () => {
     newArmyOverlay.style.display = 'none';
   });
-  container.querySelector('#new-army-confirm').addEventListener('click', onCreateArmy);
-  container.querySelector('#new-army-name').addEventListener('keydown', (e) => {
+  document.getElementById('new-army-confirm').addEventListener('click', onCreateArmy);
+  document.getElementById('new-army-name').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') onCreateArmy();
     if (e.key === 'Escape') newArmyOverlay.style.display = 'none';
   });
   newArmyOverlay.addEventListener('click', (e) => {
     if (e.target === newArmyOverlay) newArmyOverlay.style.display = 'none';
   });
+
+  // Move fixed overlays to document.body so they're not inside #shell's stacking context
+  // (otherwise the rally banner at z-index:99 outside #shell beats them despite z-index:9999)
+  document.body.appendChild(container.querySelector('#new-army-overlay'));
+  document.body.appendChild(container.querySelector('#spy-report-overlay'));
+  document.body.appendChild(container.querySelector('#critter-overlay'));
 
   // Bind spy attack panel
   const spyInput = container.querySelector('#spy-target-input');
@@ -299,8 +314,8 @@ function init(el, _api, _state) {
   container.querySelector('#spy-attack-btn').addEventListener('click', onSpyAttack);
 
   // Bind spy report overlay close
-  const spyOverlay = container.querySelector('#spy-report-overlay');
-  container.querySelector('#spy-report-close').addEventListener('click', () => {
+  const spyOverlay = document.getElementById('spy-report-overlay');
+  document.getElementById('spy-report-close').addEventListener('click', () => {
     spyOverlay.style.display = 'none';
   });
   spyOverlay.addEventListener('click', (e) => {
@@ -308,9 +323,9 @@ function init(el, _api, _state) {
   });
 
   // Bind critter overlay close
-  const critterOverlay = container.querySelector('#critter-overlay');
+  const critterOverlay = document.getElementById('critter-overlay');
   const _closeOverlay = () => critterOverlay.classList.remove('is-open');
-  container.querySelector('#critter-overlay-close').addEventListener('click', _closeOverlay);
+  document.getElementById('critter-overlay-close').addEventListener('click', _closeOverlay);
   critterOverlay.addEventListener('click', (e) => {
     if (e.target === critterOverlay) _closeOverlay();
   });
@@ -327,6 +342,7 @@ async function enter() {
   _unsub.push(eventBus.on('state:military', renderArmies));
   _unsub.push(eventBus.on('state:military', () => _startEtaTicker()));
   _unsub.push(eventBus.on('state:military', _updateSpyButton));
+  _unsub.push(eventBus.on('state:items', () => { if (st.military) renderArmies(st.military); }));
   _unsub.push(eventBus.on('state:summary', updateCreateArmyButton));
   _unsub.push(eventBus.on('server:spy_report', _onSpyReport));
 
@@ -447,6 +463,13 @@ function leave() {
     clearInterval(_etaTicker);
     _etaTicker = null;
   }
+  // Hide overlays (they live on document.body across navigations)
+  const _newArmyOv = document.getElementById('new-army-overlay');
+  if (_newArmyOv) _newArmyOv.style.display = 'none';
+  const _spyOv = document.getElementById('spy-report-overlay');
+  if (_spyOv) _spyOv.style.display = 'none';
+  const _critterOv = document.getElementById('critter-overlay');
+  if (_critterOv) _critterOv.classList.remove('is-open');
 }
 
 function updateCreateArmyButton() {
@@ -467,8 +490,8 @@ function updateCreateArmyButton() {
 async function onCreateArmy() {
   const armyPrice = st.summary?.army_price || 0;
   const currentGold = st.summary?.resources?.gold || 0;
-  const nameInput = container.querySelector('#new-army-name');
-  const msgEl = container.querySelector('#new-army-msg');
+  const nameInput = document.getElementById('new-army-name');
+  const msgEl = document.getElementById('new-army-msg');
   const name = nameInput.value.trim();
 
   if (!name) {
@@ -482,12 +505,12 @@ async function onCreateArmy() {
     return;
   }
 
-  const confirmBtn = container.querySelector('#new-army-confirm');
+  const confirmBtn = document.getElementById('new-army-confirm');
   confirmBtn.disabled = true;
   try {
     const resp = await rest.createArmy(name);
     if (resp.success) {
-      container.querySelector('#new-army-overlay').style.display = 'none';
+      document.getElementById('new-army-overlay').style.display = 'none';
       await rest.getSummary();
       await rest.getMilitary();
     } else {
@@ -587,9 +610,28 @@ async function onAddWave(e) {
   }
 }
 
-async function onChangeCritter(aid, waveIdx, critterIid) {
+async function onSetRulerWave(aid, waveIdx, rulerIid) {
+  try {
+    const resp = await rest.setRulerWave(aid, waveIdx, rulerIid);
+    if (resp?.success === false) {
+      console.warn('set ruler wave rejected:', resp.error);
+      return false;
+    }
+    await rest.getMilitary();
+    return true;
+  } catch (err) {
+    console.error('Failed to set ruler wave:', err);
+    return false;
+  }
+}
+
+async function onChangeCritter(aid, waveIdx, critterIid, currentRulerIid = null) {
   if (!critterIid) return;
   try {
+    // If this wave has a ruler assigned, remove it first before setting a critter
+    if (currentRulerIid) {
+      await rest.setRulerWave(aid, waveIdx, '');
+    }
     const resp = await rest.changeWave(aid, waveIdx, critterIid);
     if (resp?.success === false) {
       console.warn('change critter rejected:', resp.error);
@@ -644,6 +686,7 @@ function _initCritterCanvases(el) {
       baseUrl = `${folder}/${name}`;
     } else {
       const iid = canvas.dataset.iid;
+      if (!iid) { canvas.style.display = 'none'; return; }
       baseUrl = `assets/sprites/critters/${iid.toLowerCase()}/${iid.toLowerCase()}`;
     }
     function tryLoad(idx) {
@@ -661,6 +704,25 @@ function _initCritterCanvases(el) {
 }
 
 /**
+ * Compute level-scaled ruler critter stats for display.
+ * Returns null if catalog data is unavailable.
+ */
+function _rulerStats(rulerType, level) {
+  const catalog = st.items?.rulers?.[rulerType];
+  if (!catalog?.critter) return null;
+  const c = catalog.critter;
+  const t = Math.max(0, Math.min(1, level / 18));
+  const lerp = (a, b) => a + (b - a) * t;
+  return {
+    health: lerp(c.health_min, c.health_max),
+    speed: lerp(c.speed_min, c.speed_max),
+    armour: lerp(c.armour_min, c.armour_max),
+    value: c.value_base * level,
+    animation: c.animation || '',
+  };
+}
+
+/**
  * Open the critter picker overlay for a specific wave.
  * Shows all available critters as tiles with stats.
  */
@@ -671,13 +733,17 @@ function _openCritterOverlay(
   maxEra = 0,
   nextEraPrice = 0,
   nextSlotPrice = 0,
-  currentSlots = 0
+  currentSlots = 0,
+  currentRulerIid = null
 ) {
-  const overlay = container.querySelector('#critter-overlay');
-  const body = container.querySelector('#critter-overlay-body');
+  const overlay = document.getElementById('critter-overlay');
+  const body = document.getElementById('critter-overlay-body');
   if (!overlay || !body) return;
 
   const currentGold = st.summary?.resources?.gold || 0;
+  const _fx = st.summary?.effects || {};
+  const _waveDiscount = _fx.wave_cost_modifier || 0;
+  const _eraDiscount = _fx.wave_era_cost_modifier || 0;
   const MAX_ERA_INDEX = 8;
   const eraKey = ERA_KEYS[maxEra] || ERA_KEYS[0];
   const eraLabel = ERA_LABEL_EN[eraKey] || eraKey;
@@ -721,6 +787,45 @@ function _openCritterOverlay(
       </div>
     </div>
     <div class="critter-picker-grid">
+      ${(() => {
+        const ruler = st.summary?.ruler;
+        if (!ruler?.type) return '';
+
+        const armies = st.military?.armies || [];
+        let rulerInOtherWave = false;
+        for (const a of armies) {
+          for (let wi = 0; wi < (a.waves || []).length; wi++) {
+            if (a.waves[wi].iid === ruler.type && !(a.aid === aid && wi === waveIdx)) {
+              rulerInOtherWave = true;
+            }
+          }
+        }
+
+        const isSelected = currentRulerIid === ruler.type;
+        const stats = _rulerStats(ruler.type, ruler.level);
+        const animation = stats?.animation || '';
+        const isMuted = rulerInOtherWave && !isSelected;
+
+        return `
+        <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}${isMuted ? ' critter-pick-tile--muted' : ''}"
+            data-ruler-pick="${ruler.type}"
+            ${isMuted ? 'title="Ruler already assigned to another wave"' : isSelected ? 'title="Click to remove ruler from this wave"' : ''}>
+          <div class="cpt-sprite" style="${isMuted ? 'opacity:0.35;filter:grayscale(1);' : ''}">
+            <canvas class="critter-sprite-canvas" data-animation="${animation}" width="64" height="64"></canvas>
+          </div>
+          <div class="cpt-name" style="display:flex;align-items:baseline;gap:4px;overflow:hidden;${isMuted ? 'opacity:0.4;' : ''}">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">👑 ${ruler.name}</span>
+            <span class="era-roman-badge" style="font-size:9px;flex-shrink:0;">Lv.${ruler.level}</span>
+          </div>
+          <div class="cpt-stats" style="${isMuted ? 'opacity:0.4;' : ''}">
+            ${stats ? `
+              <span class="cpt-stat cpt-hp" title="Health">❤ ${stats.health.toFixed(1)}</span>
+              ${stats.armour ? `<span class="cpt-stat cpt-arm" title="Armour">🛡 ${stats.armour.toFixed(2)}</span>` : ''}
+              <span class="cpt-stat cpt-spd" title="Speed">⚡ ${stats.speed.toFixed(2)}</span>
+            ` : ''}
+          </div>
+        </button>`;
+      })()}
       ${[..._availableCritters]
         .reverse()
         .map((c) => {
@@ -795,7 +900,7 @@ function _openCritterOverlay(
     eraUpgradeBtn.addEventListener('click', async () => {
       if (eraUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
       const newMaxEra = maxEra + 1;
-      const newNextEraPrice = _waveEraPrice(newMaxEra + 1);
+      const newNextEraPrice = _waveEraPrice(newMaxEra + 1) * Math.max(0, 1 - _eraDiscount);
       _openCritterOverlay(
         aid,
         waveIdx,
@@ -827,9 +932,16 @@ function _openCritterOverlay(
   body.querySelectorAll('.critter-pick-tile').forEach((btn) => {
     btn.addEventListener('click', async () => {
       if (btn.classList.contains('critter-pick-tile--muted')) return;
+      const rulerType = btn.dataset.rulerPick;
+      if (rulerType) {
+        // Toggle: click selected ruler tile removes it, click unselected assigns it
+        overlay.classList.remove('is-open');
+        await onSetRulerWave(aid, waveIdx, currentRulerIid === rulerType ? '' : rulerType);
+        return;
+      }
       const iid = btn.dataset.iid;
       overlay.classList.remove('is-open');
-      await onChangeCritter(aid, waveIdx, iid);
+      await onChangeCritter(aid, waveIdx, iid, currentRulerIid);
     });
   });
 
@@ -1000,8 +1112,8 @@ async function onSpyAttack() {
 }
 
 function _onSpyReport(msg) {
-  const overlay = container.querySelector('#spy-report-overlay');
-  const body = container.querySelector('#spy-report-body');
+  const overlay = document.getElementById('spy-report-overlay');
+  const body = document.getElementById('spy-report-body');
   if (!overlay || !body) return;
 
   const era = msg.era || '?';
@@ -1140,7 +1252,7 @@ function fmtTravelTime(seconds) {
  * @returns {number}
  */
 function critterCountInWave(waveSlots, critterSlots = 1) {
-  if (!critterSlots || critterSlots < 1) return Math.max(1, waveSlots);
+  if (!critterSlots || critterSlots <= 0) return Math.max(1, waveSlots);
   return Math.max(1, Math.floor(waveSlots / critterSlots));
 }
 
@@ -1349,26 +1461,37 @@ function renderArmies(data) {
             .map((w, i) => {
               const nextSlotPrice = w.next_slot_price || 0;
               const canAffordSlot = currentGold >= nextSlotPrice;
+              const isRulerWave = !!(st.items?.rulers?.[w.iid]);
               const selectedCritter = _availableCritters.find((c) => c.iid === w.iid);
-              const spriteInfo = _critterSprites[w.iid] || {};
+              const rulerCatalog = isRulerWave ? st.items?.rulers?.[w.iid] : null;
+              const rulerAnimation = rulerCatalog?.critter?.animation || '';
+              const spriteInfo = isRulerWave
+                ? { animation: rulerAnimation, sprite: '' }
+                : (_critterSprites[w.iid] || {});
               const critterSlotCost = selectedCritter?.slots || 1;
-              const numCritters = critterCountInWave(w.slots || 0, critterSlotCost);
-              const hasSprite = w.iid && (spriteInfo.sprite || spriteInfo.animation);
+              const numCritters = isRulerWave ? 1 : critterCountInWave(w.slots || 0, critterSlotCost);
+              const hasSprite = isRulerWave
+                ? !!rulerAnimation
+                : (w.iid && (spriteInfo.sprite || spriteInfo.animation));
+              const rulerName = isRulerWave ? (st.summary?.ruler?.name || w.iid) : '';
               return `
-            <div class="wave-tile" data-aid="${a.aid}" data-wave-idx="${i}">
-              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}">
+            <div class="wave-tile${isRulerWave ? ' wave-tile--ruler' : ''}" data-aid="${a.aid}" data-wave-idx="${i}">
+              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}" data-is-ruler="${isRulerWave ? 'true' : ''}">
                 <span class="wave-tile__edit-hint">✎</span>
                 ${
                   hasSprite
-                    ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
+                    ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid || ''}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
                         style="image-rendering:pixelated;"></canvas>`
                     : `<div class="wave-tile__no-critter">＋</div>`
                 }
-                <div class="wave-tile__count">${hasSprite ? numCritters : ''}</div>
+                <div class="wave-tile__count">${isRulerWave ? '👑' : (hasSprite ? numCritters : '')}</div>
               </button>
               <div class="wave-tile__footer">
-                <span class="wave-tile__slots">${w.slots || 0} Slots</span>
-                <span class="wave-tile__era era-roman-badge" title="${ERA_LABEL_EN[ERA_KEYS[w.max_era ?? 0]] || ''}" style="font-size:0.75em;">${ERA_ROMAN[ERA_KEYS[w.max_era ?? 0]] || 'I'}</span>
+                ${isRulerWave
+                  ? `<span style="font-size:9px;color:#c9a84c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;" title="${rulerName}">👑 ${rulerName}</span>`
+                  : `<span class="wave-tile__slots">${w.slots || 0} Slots</span>
+                     <span class="wave-tile__era era-roman-badge" title="${ERA_LABEL_EN[ERA_KEYS[w.max_era ?? 0]] || ''}" style="font-size:0.75em;">${ERA_ROMAN[ERA_KEYS[w.max_era ?? 0]] || 'I'}</span>`
+                }
               </div>
             </div>
           `;
@@ -1419,6 +1542,7 @@ function renderArmies(data) {
       const nextEraPrice = parseFloat(btn.getAttribute('data-next-era-price') || '0');
       const nextSlotPrice = parseFloat(btn.getAttribute('data-next-slot-price') || '0');
       const currentSlots = parseInt(btn.getAttribute('data-slots') || '0', 10);
+      const currentRulerIid = btn.getAttribute('data-is-ruler') ? currentIid : null;
       _openCritterOverlay(
         aid,
         waveIdx,
@@ -1426,7 +1550,8 @@ function renderArmies(data) {
         maxEra,
         nextEraPrice,
         nextSlotPrice,
-        currentSlots
+        currentSlots,
+        currentRulerIid
       );
     });
   });

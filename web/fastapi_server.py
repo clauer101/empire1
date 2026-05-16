@@ -1209,31 +1209,33 @@ async def list_critters():
     }
 
     result = []
-    for d in sorted(critters_dir.iterdir()):
-        if not d.is_dir():
-            continue
 
-        name = d.name
-        base = f"/assets/sprites/critters/{name}"
+    def _scan_sprite_dir(sprite_dir: Path, name_prefix: str = "") -> None:
+        if not sprite_dir.is_dir():
+            return
+        for d in sorted(sprite_dir.iterdir()):
+            if not d.is_dir():
+                continue
+            name = name_prefix + d.name
+            base = f"/{d.relative_to(WEB_DIR)}"
+            gif_paths = {dir_: d / fname for dir_, fname in GIF_NAMES.items()}
+            if all(p.exists() for p in gif_paths.values()):
+                result.append({
+                    "name": name,
+                    "type": "gifs",
+                    "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()},
+                })
+                continue
+            sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp") and "_splash" not in f.name)
+            if sheets:
+                result.append({
+                    "name": name,
+                    "type": "spritesheet",
+                    "file": f"{base}/{sheets[0]}",
+                })
 
-        # Prefer GIFs when all four are present
-        gif_paths = {dir_: d / fname for dir_, fname in GIF_NAMES.items()}
-        if all(p.exists() for p in gif_paths.values()):
-            result.append({
-                "name": name,
-                "type": "gifs",
-                "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()},
-            })
-            continue
-
-        # Fall back to first PNG/WebP sprite sheet found
-        sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp"))
-        if sheets:
-            result.append({
-                "name": name,
-                "type": "spritesheet",
-                "file": f"{base}/{sheets[0]}",
-            })
+    _scan_sprite_dir(critters_dir)
+    _scan_sprite_dir(WEB_DIR / "assets" / "sprites" / "ruler", name_prefix="ruler_")
 
     return JSONResponse({"critters": result})
 

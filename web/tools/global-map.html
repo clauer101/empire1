@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Map</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 13px;
+      height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+    #topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+      flex-shrink: 0; z-index: 100;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #topbar label { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    #topbar input[type=range] { accent-color: var(--accent); width: 80px; }
+    #topbar span.val { font-family: var(--mono); font-size: 11px; color: var(--text); min-width: 28px; }
+    button {
+      cursor: pointer; border: none; border-radius: var(--radius);
+      padding: 6px 14px; font-size: 12px; font-family: inherit; font-weight: 600;
+      background: var(--border); color: var(--text); transition: opacity .15s;
+    }
+    button:hover { opacity: .8; }
+
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #sidebar {
+      width: 220px; flex-shrink: 0; overflow-y: auto;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 12px;
+    }
+    .s-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 10px;
+    }
+    .empire-entry {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 6px; border-radius: 4px; cursor: pointer;
+      font-size: 11px; margin-bottom: 2px; transition: background .1s;
+    }
+    .empire-entry:hover { background: var(--surface-alt); }
+    .empire-entry.selected { background: var(--surface-alt); outline: 1px solid var(--accent); }
+    .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .empire-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empire-tiles { font-family: var(--mono); color: var(--text-dim); font-size: 10px; }
+
+    #canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    canvas.dragging { cursor: grabbing; }
+
+    #tooltip {
+      position: fixed; display: none; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-family: var(--mono); font-size: 11px; color: var(--text);
+      pointer-events: none; white-space: nowrap; line-height: 1.6;
+    }
+    #statusbar {
+      position: absolute; bottom: 8px; left: 12px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      pointer-events: none;
+    }
+    #error-msg {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #ef5350; font-size: 14px; display: none;
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>🌍 Global Map</h1>
+  <label>Hex size <input type="range" id="sl-size" min="4" max="40" step="1" value="18"> <span class="val" id="val-size">18</span></label>
+  <label><input type="checkbox" id="chk-grid" checked> Grid</label>
+  <label><input type="checkbox" id="chk-labels" checked> Names</label>
+  <label>Tile
+    <select id="sel-tile" style="background:var(--surface-alt);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;cursor:pointer;">
+      <option value="">— none —</option>
+      <option value="grass1.webp">grass 1</option>
+      <option value="grass2.webp">grass 2</option>
+      <option value="grass3.webp">grass 3</option>
+      <option value="grass4.webp">grass 4</option>
+      <option value="grass5.webp">grass 5</option>
+    </select>
+  </label>
+  <label>Opacity <input type="range" id="sl-tile-alpha" min="5" max="100" step="5" value="40" style="width:60px"> <span class="val" id="val-tile-alpha">40%</span></label>
+  <label>Scale <input type="range" id="sl-tile-scale" min="10" max="400" step="10" value="100" style="width:70px"> <span class="val" id="val-tile-scale">100%</span></label>
+  <button id="btn-fit">Fit</button>
+  <button id="btn-reload">↺ Reload</button>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <div class="s-title">Empires</div>
+    <div id="empire-list"></div>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="map-canvas"></canvas>
+    <div id="statusbar">—</div>
+    <div id="error-msg"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Hex math (flat-top axial) ──
+function hexToPixel(q, r, size) {
+  return [size * 1.5 * q, size * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r)];
+}
+function pixelToHex(px, py, size) {
+  const q = (2 / 3 * px) / size;
+  const r = (-1 / 3 * px + Math.sqrt(3) / 3 * py) / size;
+  return hexRound(q, r);
+}
+function hexRound(q, r) {
+  const s = -q - r;
+  let rq = Math.round(q), rr = Math.round(r), rs = Math.round(s);
+  const dq = Math.abs(rq - q), dr = Math.abs(rr - r), ds = Math.abs(rs - s);
+  if (dq > dr && dq > ds) rq = -rr - rs;
+  else if (dr > ds) rr = -rq - rs;
+  return [rq, rr];
+}
+function hexCorners(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 3 * i;
+    pts.push([cx + size * Math.cos(a), cy + size * Math.sin(a)]);
+  }
+  return pts;
+}
+
+// ── Tile type classification ──
+function tileType(raw) {
+  if (!raw) return 'empty';
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object' && raw.type) return raw.type;
+  return 'empty';
+}
+function isBuilding(type) {
+  return type && type !== 'empty' && type !== 'castle' && type !== 'path'
+      && type !== 'spawnpoint' && type !== 'void' && type !== 'blocked';
+}
+
+// ── Empire colors (golden angle HSL) ──
+function empireHue(idx) { return (idx * 137.508) % 360; }
+function empireColor(idx, alpha = 1) { return `hsla(${empireHue(idx)},65%,58%,${alpha})`; }
+
+// ── Background tile ──
+let tileImg = null;
+let tilePattern = null; // CanvasPattern (recreated on image/canvas resize)
+
+function loadTile(filename) {
+  if (!filename) { tileImg = null; tilePattern = null; render(); return; }
+  const img = new Image();
+  img.src = `../assets/sprites/maps/${filename}`;
+  img.onload = () => { tileImg = img; tilePattern = null; render(); };
+}
+
+// ── State ──
+let empires  = [];   // [{uid, name, tiles:[{q,r,type}], idx}]
+let selected = null; // empire uid or null
+
+const view = { scale: 1, panX: 0, panY: 0 };
+
+const canvas  = document.getElementById('map-canvas');
+const ctx     = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const errEl   = document.getElementById('error-msg');
+
+// ── Canvas resize ──
+function resizeCanvas() {
+  canvas.width  = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+  render();
+}
+new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+
+// ── Transform ──
+function w2c(wx, wy) {
+  return [
+    canvas.width  / 2 + (wx + view.panX) * view.scale,
+    canvas.height / 2 + (wy + view.panY) * view.scale,
+  ];
+}
+
+// ── Fit all empires into view ──
+function fitView() {
+  if (!empires.length) return;
+  const sz = parseInt(document.getElementById('sl-size').value);
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const e of empires) {
+    for (const t of e.tiles) {
+      const [wx, wy] = hexToPixel(t.q, t.r, sz);
+      minX = Math.min(minX, wx); maxX = Math.max(maxX, wx);
+      minY = Math.min(minY, wy); maxY = Math.max(maxY, wy);
+    }
+  }
+  const margin = sz * 3;
+  const worldW = maxX - minX + margin * 2;
+  const worldH = maxY - minY + margin * 2;
+  view.scale = Math.min(canvas.width / worldW, canvas.height / worldH);
+  view.panX  = -(minX + maxX) / 2;
+  view.panY  = -(minY + maxY) / 2;
+  render();
+}
+
+// ── Render ──
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const sz      = parseInt(document.getElementById('sl-size').value);
+  const showGrid  = document.getElementById('chk-grid').checked;
+  const showNames = document.getElementById('chk-labels').checked;
+  const pxSz    = sz * view.scale;
+
+  // ── Background tile ──
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+  if (tileImg) {
+    const tileAlpha = parseInt(document.getElementById('sl-tile-alpha').value) / 100;
+    // The tile is 512px in world units at scale=1.
+    // We want the pattern to move/zoom with the world, so we apply a transform offset
+    // that shifts by (panX * scale, panY * scale) modulo (tileSize * scale).
+    const tileScale = parseInt(document.getElementById('sl-tile-scale').value) / 100;
+    const tileWorldSize = 512 * tileScale; // world units the tile covers
+    const tilePx = tileWorldSize * view.scale; // tile size in screen pixels at current zoom
+    // Recreate pattern when tile changes or first time
+    if (!tilePattern) {
+      tilePattern = ctx.createPattern(tileImg, 'repeat');
+    }
+    // Offset so the pattern is anchored to world origin and pans with view
+    const offX = ((W / 2 + view.panX * view.scale) % tilePx + tilePx) % tilePx;
+    const offY = ((H / 2 + view.panY * view.scale) % tilePx + tilePx) % tilePx;
+    ctx.save();
+    ctx.globalAlpha = tileAlpha;
+    const mat = new DOMMatrix().translate(offX, offY).scale(tilePx / 512);
+    tilePattern.setTransform(mat);
+    ctx.fillStyle = tilePattern;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  if (!empires.length) return;
+
+  // Build tile lookup: "q,r" → {empire, tile}
+  const tileMap = new Map();
+  for (const e of empires) {
+    for (const t of e.tiles) {
+      tileMap.set(`${t.q},${t.r}`, { empire: e, tile: t });
+    }
+  }
+
+  // ── Fine hex grid lines across entire viewport ──
+  if (showGrid && pxSz > 3) {
+    // Determine hex range visible in viewport
+    const margin = 2;
+    const [wTL_x, wTL_y] = [(0 - W/2) / view.scale - view.panX, (0 - H/2) / view.scale - view.panY];
+    const [wBR_x, wBR_y] = [(W - W/2) / view.scale - view.panX, (H - H/2) / view.scale - view.panY];
+    const [qTL] = pixelToHex(wTL_x, wTL_y, sz);
+    const [qBR] = pixelToHex(wBR_x, wBR_y, sz);
+    // For r range we need corners
+    const r_vals = [
+      pixelToHex(wTL_x, wTL_y, sz)[1],
+      pixelToHex(wTL_x, wBR_y, sz)[1],
+      pixelToHex(wBR_x, wTL_y, sz)[1],
+      pixelToHex(wBR_x, wBR_y, sz)[1],
+    ];
+    const qMin = Math.min(qTL, qBR) - margin;
+    const qMax = Math.max(qTL, qBR) + margin;
+    const rMin = Math.min(...r_vals) - margin;
+    const rMax = Math.max(...r_vals) + margin;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.5;
+    for (let q = qMin; q <= qMax; q++) {
+      for (let r = rMin; r <= rMax; r++) {
+        const [wx, wy] = hexToPixel(q, r, sz);
+        const [cx, cy] = w2c(wx, wy);
+        const corners = hexCorners(cx, cy, pxSz);
+        ctx.beginPath();
+        ctx.moveTo(...corners[0]);
+        for (let i = 1; i < 6; i++) ctx.lineTo(...corners[i]);
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // Draw tiles
+  for (const e of empires) {
+    const isSelected = selected === e.uid;
+    const baseAlpha  = selected !== null && !isSelected ? 0.35 : 1;
+
+    for (const t of e.tiles) {
+      const type = tileType(t.type);
+
+      const [wx, wy] = hexToPixel(t.q, t.r, sz);
+      const [cx, cy] = w2c(wx, wy);
+
+      // Clip tiles outside viewport
+      if (cx < -pxSz || cx > W + pxSz || cy < -pxSz || cy > H + pxSz) continue;
+
+      const corners = hexCorners(cx, cy, pxSz * 0.97);
+      ctx.beginPath();
+      ctx.moveTo(...corners[0]);
+      for (let i = 1; i < 6; i++) ctx.lineTo(...corners[i]);
+      ctx.closePath();
+
+      // Fill
+      if (type === 'castle') {
+        ctx.fillStyle = `rgba(255,213,79,${0.85 * baseAlpha})`;
+      } else if (isBuilding(type)) {
+        ctx.fillStyle = empireColor(e.idx, 0.55 * baseAlpha);
+      } else {
+        // empty / path / spawnpoint — unlocked but unbuilt
+        ctx.fillStyle = empireColor(e.idx, 0.15 * baseAlpha);
+      }
+      ctx.fill();
+
+      // Empire-colored outline (always, subtle; castle gets gold)
+      ctx.strokeStyle = type === 'castle'
+        ? `rgba(255,213,79,${0.7 * baseAlpha})`
+        : empireColor(e.idx, 0.4 * baseAlpha);
+      ctx.lineWidth = isSelected ? 1.5 : 0.8;
+      ctx.stroke();
+
+      // Castle marker
+      if (type === 'castle' && pxSz > 6) {
+        ctx.fillStyle = `rgba(20,14,0,${0.85 * baseAlpha})`;
+        ctx.font = `bold ${Math.max(8, pxSz * 0.45)}px sans-serif`;
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('♜', cx, cy);
+      }
+    }
+  }
+
+  // Empire name labels (at castle position)
+  if (showNames) {
+    for (const e of empires) {
+      if (selected !== null && selected !== e.uid) continue;
+      const castle = e.tiles.find(t => tileType(t.type) === 'castle');
+      if (!castle) continue;
+      const [wx, wy] = hexToPixel(castle.q, castle.r, sz);
+      const [cx, cy] = w2c(wx, wy);
+      const fontSize  = Math.max(9, Math.min(13, pxSz * 0.55));
+      ctx.font         = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'top';
+      const label = e.name || `uid ${e.uid}`;
+      const tw = ctx.measureText(label).width;
+      // Background pill
+      ctx.fillStyle = 'rgba(13,13,20,0.75)';
+      ctx.beginPath();
+      ctx.roundRect(cx - tw / 2 - 4, cy + pxSz + 2, tw + 8, fontSize + 4, 3);
+      ctx.fill();
+      ctx.fillStyle = empireColor(e.idx, 0.95);
+      ctx.fillText(label, cx, cy + pxSz + 4);
+    }
+  }
+
+  // Status
+  document.getElementById('statusbar').textContent =
+    `empires: ${empires.length} | tiles: ${empires.reduce((s, e) => s + e.tiles.length, 0)}`;
+}
+
+// ── Sidebar empire list ──
+function buildSidebar() {
+  const list = document.getElementById('empire-list');
+  list.innerHTML = '';
+  for (const e of empires) {
+    const div = document.createElement('div');
+    div.className = 'empire-entry' + (selected === e.uid ? ' selected' : '');
+    div.dataset.uid = e.uid;
+    const castle  = e.tiles.find(t => tileType(t.type) === 'castle');
+    const built   = e.tiles.filter(t => isBuilding(tileType(t.type))).length;
+    div.innerHTML = `
+      <div class="swatch" style="background:${empireColor(e.idx)}"></div>
+      <span class="empire-name" title="${e.name || 'uid ' + e.uid}">${e.name || 'uid ' + e.uid}</span>
+      <span class="empire-tiles">${built}🏗</span>`;
+    div.addEventListener('click', () => {
+      selected = selected === e.uid ? null : e.uid;
+      document.querySelectorAll('.empire-entry').forEach(el => {
+        el.classList.toggle('selected', parseInt(el.dataset.uid) === selected);
+      });
+      if (selected !== null && castle) {
+        // Pan to castle
+        const sz = parseInt(document.getElementById('sl-size').value);
+        const [wx, wy] = hexToPixel(castle.q, castle.r, sz);
+        view.panX = -wx;
+        view.panY = -wy;
+      }
+      render();
+    });
+    list.appendChild(div);
+  }
+}
+
+// ── Load from API ──
+async function loadState() {
+  errEl.style.display = 'none';
+  try {
+    const resp = await fetch('/api/global-map');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    empires = (data.empires || [])
+      .filter(e => e.tiles && e.tiles.length > 0)
+      .map((e, idx) => ({
+        uid:   e.uid,
+        name:  e.name || '',
+        tiles: e.tiles,
+        idx,
+      }));
+    selected = null;
+    buildSidebar();
+    fitView();
+  } catch (err) {
+    errEl.textContent = `Failed to load: ${err.message}`;
+    errEl.style.display = 'block';
+    console.error(err);
+  }
+}
+
+// ── Mouse interaction ──
+let dragging = false, dragStart = null;
+
+canvas.addEventListener('mousedown', e => {
+  dragging  = true;
+  dragStart = { x: e.clientX, y: e.clientY, panX: view.panX, panY: view.panY };
+  canvas.classList.add('dragging');
+});
+window.addEventListener('mouseup', () => { dragging = false; canvas.classList.remove('dragging'); });
+
+canvas.addEventListener('mousemove', e => {
+  if (dragging) {
+    view.panX = dragStart.panX + (e.clientX - dragStart.x) / view.scale;
+    view.panY = dragStart.panY + (e.clientY - dragStart.y) / view.scale;
+    render();
+    return;
+  }
+
+  // Hover: find tile under cursor
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const wx = (sx - canvas.width  / 2) / view.scale - view.panX;
+  const wy = (sy - canvas.height / 2) / view.scale - view.panY;
+  const sz = parseInt(document.getElementById('sl-size').value);
+  const [hq, hr] = pixelToHex(wx, wy, sz);
+
+  let found = null;
+  for (const e of empires) {
+    const t = e.tiles.find(t => t.q === hq && t.r === hr);
+    if (t) { found = { empire: e, tile: t }; break; }
+  }
+
+  if (found) {
+    const type = tileType(found.tile.type);
+    tooltip.innerHTML =
+      `<b>${found.empire.name || 'uid ' + found.empire.uid}</b><br>` +
+      `(q=${hq}, r=${hr})<br>` +
+      `${type}`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  // Zoom toward cursor
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left - canvas.width  / 2;
+  const sy = e.clientY - rect.top  - canvas.height / 2;
+  view.panX -= sx / view.scale * (1 - 1 / factor);
+  view.panY -= sy / view.scale * (1 - 1 / factor);
+  view.scale *= factor;
+  render();
+}, { passive: false });
+
+// ── Controls ──
+document.getElementById('sl-size').addEventListener('input', function() {
+  document.getElementById('val-size').textContent = this.value;
+  render();
+});
+document.getElementById('chk-grid').addEventListener('change',  () => render());
+document.getElementById('chk-labels').addEventListener('change',() => render());
+document.getElementById('btn-fit').addEventListener('click', fitView);
+document.getElementById('btn-reload').addEventListener('click', loadState);
+document.getElementById('sel-tile').addEventListener('change', function() {
+  tilePattern = null;
+  loadTile(this.value);
+});
+document.getElementById('sl-tile-alpha').addEventListener('input', function() {
+  document.getElementById('val-tile-alpha').textContent = this.value + '%';
+  render();
+});
+document.getElementById('sl-tile-scale').addEventListener('input', function() {
+  document.getElementById('val-tile-scale').textContent = this.value + '%';
+  render();
+});
+
+// ── Bootstrap ──
+loadState();
+</script>
+</body>
+</html>

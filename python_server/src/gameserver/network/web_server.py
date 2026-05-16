@@ -971,24 +971,28 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
 
     @app.get("/api/critters")
     async def list_critters() -> Any:
-        critters_dir = web_dir / "assets" / "sprites" / "critters"
-        if not critters_dir.is_dir():
-            return JSONResponse({"critters": []})
         GIF_NAMES = {"forward": "front.gif", "left": "left.gif", "right": "right.gif", "backward": "back.gif"}
         result = []
-        for d in sorted(critters_dir.iterdir()):
-            if not d.is_dir():
-                continue
-            name = d.name
-            base = f"/assets/sprites/critters/{name}"
-            gif_paths = {dir_: d / fname for dir_, fname in GIF_NAMES.items()}
-            if all(p.exists() for p in gif_paths.values()):
-                result.append({"name": name, "type": "gifs",
-                                "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()}})
-                continue
-            sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp"))
-            if sheets:
-                result.append({"name": name, "type": "spritesheet", "file": f"{base}/{sheets[0]}"})
+
+        def _scan_dir(sprite_dir: "Path", name_prefix: str = "") -> None:
+            if not sprite_dir.is_dir():
+                return
+            for d in sorted(sprite_dir.iterdir()):
+                if not d.is_dir():
+                    continue
+                name = name_prefix + d.name
+                base = f"/{d.relative_to(web_dir)}"
+                gif_paths = {dir_: d / fname for dir_, fname in GIF_NAMES.items()}
+                if all(p.exists() for p in gif_paths.values()):
+                    result.append({"name": name, "type": "gifs",
+                                    "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()}})
+                    continue
+                sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp") and "_splash" not in f.name)
+                if sheets:
+                    result.append({"name": name, "type": "spritesheet", "file": f"{base}/{sheets[0]}"})
+
+        _scan_dir(web_dir / "assets" / "sprites" / "critters")
+        _scan_dir(web_dir / "assets" / "sprites" / "ruler", name_prefix="ruler_")
         return JSONResponse({"critters": result})
 
     @app.get("/api/saved-maps")

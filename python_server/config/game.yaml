@@ -3,6 +3,7 @@ battle_tick_ms: 50.0
 broadcast_interval_ms: 250.0
 min_keep_alive_ms: 10000.0
 initial_wave_delay_ms: 15000.0
+accounts_per_artifact: 11
 splash_flight_ms: 500.0
 default_reload_time_ms: 2000.0
 base_gold_per_sec: 0.0
@@ -70,6 +71,9 @@ max_lose_culture: 0.05
 culture_era_advantage_ratio: 0.5
 base_artifact_steal_victory: 0.3
 base_artifact_steal_defeat: 0.03
+ruler_xp_per_kill: 1.0
+ruler_xp_per_reached_per_era: 10.0
+ruler_xp_victory_per_era: 50.0
 spy_costs:
   defense: 500
   build_queue: 1000
@@ -102,6 +106,11 @@ prices:
     y: 0.5
     z: 2
     v: 6.8
+  ruler_xp:
+    u: -294
+    y: 20
+    z: 0
+    v: 3.3
   wave_era_costs:
   - 0
   - 200
@@ -119,9 +128,9 @@ structure_upgrades:
   effect_duration: 2.0
   effect_value: 3.0
 critter_upgrades:
-  health: 2.5
-  speed: 3.0
-  armour: 2.5
+  health: 3.0
+  speed: 3.5
+  armour: 3.0
 item_upgrade_base_costs:
 - 2.0
 - 15.0
@@ -228,4 +237,3 @@ debug_port: 9000
 uid_game_server: 0
 uid_game_engine: 1
 uid_ai: 2
-uid_min_player: 1000

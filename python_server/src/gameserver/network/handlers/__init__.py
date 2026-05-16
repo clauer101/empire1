@@ -21,6 +21,7 @@ __all__ = [
     "handle_notification_request", "handle_user_message", "handle_timeline_request",
     "handle_userinfo_request", "handle_hall_of_fame",
     "handle_preferences_request", "handle_change_preferences",
+    "handle_set_ruler_wave",
 ]
 
 # Re-export the full public surface of the legacy god module.
@@ -34,6 +35,11 @@ from gameserver.network.handlers._core import (  # noqa: F401
     _build_empire_summary,
     _build_session_state,
     register_all_handlers,
+)
+
+# Military domain re-exports
+from gameserver.network.handlers.military import (  # noqa: F401
+    handle_set_ruler_wave,
 )
 
 # Domain submodule re-exports (social already migrated)

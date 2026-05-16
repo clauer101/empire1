@@ -422,7 +422,7 @@
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: 9000;
   background: rgba(0, 0, 0, 0.6);
   justify-content: center;
   align-items: center;
@@ -615,9 +615,20 @@
   gap: 8px;
   grid-template-columns: repeat(2, 1fr);
 }
+.dashboard-3col {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 900px) {
+  .dashboard-3col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 @media (max-width: 700px) {
   .dashboard-4col,
-  .dashboard-2col {
+  .dashboard-2col,
+  .dashboard-3col {
     grid-template-columns: 1fr;
   }
 }

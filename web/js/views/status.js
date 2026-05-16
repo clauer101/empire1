@@ -20,6 +20,10 @@ let container;
 let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
+let _empiresRenderedCount = 0; // how many rows are currently in the DOM
+let _empiresObserver = null;   // IntersectionObserver for lazy rendering
+let _empiresScrolledToSelf = false; // only auto-scroll to self on first load
+let _onLeaderUpdated = null;
 let _empiresTimer = null;
 let _tickTimer = null;
 let _tickData = null;
@@ -46,6 +50,7 @@ function init(el, _api, _state) {
     <div id="dashboard-content">
       <div class="empty-state"><div class="empty-icon">◈</div><p>Loading empire data…</p></div>
     </div>
+    <div id="empires-section" style="margin-top:8px"></div>
   `;
 
   const _titleEl = container.querySelector('.battle-title');
@@ -98,6 +103,10 @@ function leave() {
   _unsub.forEach((fn) => fn());
   _unsub = [];
   _empiresData = null;
+  _empiresRenderedCount = 0;
+  _empiresScrolledToSelf = false;
+  if (_empiresObserver) { _empiresObserver.disconnect(); _empiresObserver = null; }
+  container.querySelector('#empires-scroll')?._lazyScrollCleanup?.();
   if (_empiresTimer) {
     clearInterval(_empiresTimer);
     _empiresTimer = null;
@@ -137,9 +146,17 @@ async function refreshEmpires() {
   try {
     const resp = await rest.getEmpires();
     _empiresData = resp.empires || [];
+    if (_onLeaderUpdated) _onLeaderUpdated();
     const sec = container.querySelector('#empires-section');
-    if (sec) sec.innerHTML = renderEmpiresSection(_empiresData);
+    if (sec) {
+      const scrollEl = sec.querySelector('#empires-scroll');
+      const scrollTop = scrollEl ? scrollEl.scrollTop : 0;
+      sec.innerHTML = renderEmpiresSection(_empiresData);
+      const newScrollEl = sec.querySelector('#empires-scroll');
+      if (newScrollEl && scrollTop > 0) newScrollEl.scrollTop = scrollTop;
+    }
     bindEmpiresEvents();
+    _initEmpiresLazyScroll();
 
     // Re-render attack lists now that empire names are known
     const summary = st.summary;
@@ -176,7 +193,7 @@ function render(data) {
 
   const price = data.citizen_price;
   el.innerHTML = `
-    <div class="dashboard-2col">
+    <div class="dashboard-3col">
 
       <div class="panel">
         <div class="panel-header">Resources</div>
@@ -262,10 +279,8 @@ function render(data) {
         })()}
       </div>
 
-    </div>
+      ${renderRulerPanel(data.ruler, st?.items?.rulers, data.ruler_effects, data.effects)}
 
-    <div id="empires-section" style="margin-top:8px">
-      ${renderEmpiresSection(_empiresData)}
     </div>
   `;
   const btn = el.querySelector('#buy-citizen-btn');
@@ -302,6 +317,31 @@ function render(data) {
   _initCitizenSlider(el, data);
 
   // citizenPrice entfernt, Preis kommt vom Backend
+
+  // Bind choose-ruler button (shown when ruler_unlock active but no ruler chosen)
+  const chooseRulerBtn = el.querySelector('#choose-ruler-btn');
+  if (chooseRulerBtn) {
+    chooseRulerBtn.addEventListener('click', () => _showChooseRulerOverlay(st?.items?.rulers));
+  }
+
+  // Bind ruler skill-up buttons
+  el.querySelectorAll('.ruler-skill-up-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        const resp = await rest.rulerSkillUp(btn.dataset.skill);
+        if (resp?.success) {
+          await refresh();
+        } else {
+          btn.disabled = false;
+          alert(resp?.error || 'Could not upgrade skill');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        alert(err.message);
+      }
+    });
+  });
 
   // Bind empire list events (attack buttons, refresh)
   bindEmpiresEvents();
@@ -405,141 +445,206 @@ function _startLiveCounter() {
   }, 100);
 }
 
-function _showProductionOverlay(data) {
+async function _showProductionOverlay(data) {
   // Remove any existing overlay
   document.querySelector('.prod-overlay')?.remove();
 
-  const items = st.items;
   const effects = data.effects || {};
   const citizens = data.citizens || {};
   const citizenEffect = data.citizen_effect || 0;
-  const completedBuildings = data.completed_buildings || [];
-  const completedResearch = data.completed_research || [];
+  const rulerName = data.ruler?.name || '';
+
+  // Show overlay shell immediately, populate after fetch
+  const overlay = document.createElement('div');
+  overlay.className = 'prod-overlay';
+  overlay.innerHTML = `<div class="prod-overlay-box"><button class="prod-overlay-close" title="Close">✕</button><div style="color:#888;padding:20px">Loading…</div></div>`;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+
+  let effectSources = {};
+  try {
+    effectSources = await rest.getEffectSources();
+  } catch (_) { /* render with empty sources */ }
 
   function section(title, html) {
     return `<div class="prod-overlay-section"><div class="prod-overlay-title">${title}</div>${html}</div>`;
   }
 
-  const artifacts = data.artifacts || [];
-  const rallyEffects = (data.end_rally?.active && data.end_rally?.effects) ? data.end_rally.effects : {};
-  const rulerEffects = data.ruler_effects || {};
-  const rulerName = data.ruler?.name || '';
-  const goldHtml = renderResourceIncome(
-    'gold',
-    effects,
-    citizens,
-    citizenEffect,
-    data.base_gold,
-    completedBuildings,
-    items,
-    completedResearch,
-    artifacts,
-    rallyEffects,
-    rulerEffects,
-    rulerName
-  );
-  const cultureHtml = renderResourceIncome(
-    'culture',
-    effects,
-    citizens,
-    citizenEffect,
-    data.base_culture,
-    completedBuildings,
-    items,
-    completedResearch,
-    artifacts,
-    rallyEffects,
-    rulerEffects,
-    rulerName
-  );
-  const lifeHtml = renderResourceIncome(
-    'life',
-    effects,
-    citizens,
-    citizenEffect,
-    0,
-    completedBuildings,
-    items,
-    completedResearch,
-    artifacts,
-    rallyEffects,
-    rulerEffects,
-    rulerName
-  );
-  const buildHtml = renderBuildSpeed(
-    effects,
-    completedBuildings,
-    completedResearch,
-    items,
-    data.base_build_speed,
-    artifacts,
-    rulerEffects,
-    rulerName
-  );
-  const researchHtml = renderResearchSpeed(
-    effects,
-    citizens,
-    citizenEffect,
-    completedBuildings,
-    completedResearch,
-    items,
-    data.base_research_speed,
-    artifacts,
-    rulerEffects,
-    rulerName
-  );
-  const restoreHtml = renderRestoreLife(
-    effects,
-    completedBuildings,
-    completedResearch,
-    items,
-    artifacts,
-    data.base_restore_life ?? 1,
-    rulerEffects,
-    rulerName
-  );
+  const rallyActive = data.end_rally?.active;
+  const goldHtml = renderResourceIncome('gold', effectSources, effects, citizens, citizenEffect, data.base_gold, rulerName, rallyActive);
+  const cultureHtml = renderResourceIncome('culture', effectSources, effects, citizens, citizenEffect, data.base_culture, rulerName, rallyActive);
+  const lifeHtml = renderResourceIncome('life', effectSources, effects, citizens, citizenEffect, 0, rulerName, rallyActive);
+  const buildHtml = renderBuildSpeed(effectSources, effects, data.base_build_speed, rulerName);
+  const researchHtml = renderResearchSpeed(effectSources, effects, citizens, citizenEffect, data.base_research_speed, rulerName);
+  const restoreHtml = renderRestoreLife(effectSources, effects, data.base_restore_life ?? 1, rulerName);
+
+  const box = overlay.querySelector('.prod-overlay-box');
+  box.innerHTML = `
+    <button class="prod-overlay-close" title="Close">✕</button>
+    <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">Production Details</div>
+    ${section('<span style="color:#FFD700">● Gold Income</span>', goldHtml)}
+    ${section('<span style="color:#ffa726">● Culture Income</span>', cultureHtml)}
+    ${section('<span style="color:#90ee90">● Life Regen</span>', lifeHtml)}
+    ${section('<span style="color:#4fc3f7">● Construction Speed</span>', buildHtml)}
+    ${section('<span style="color:#ffa726">● Research Speed</span>', researchHtml)}
+  `;
+  box.addEventListener('click', (e) => {
+    if (e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  });
+}
+
+function _showChooseRulerOverlay(rulersCatalog) {
+  document.querySelector('.choose-ruler-overlay')?.remove();
+  if (!rulersCatalog) return;
+
+  const rulers = Object.entries(rulersCatalog);
+  if (!rulers.length) return;
+
+  // Start with first ruler selected
+  let selectedIid = rulers[0][0];
+
+  function _rulerCardHtml(iid, def) {
+    const splash = def.splash || '';
+    const skills = ['q', 'w', 'e', 'r'];
+    const skillRows = skills.map((sk) => {
+      const s = def.skills?.[sk];
+      if (!s || !s.name) return '';
+      return `<div style="margin-top:5px">
+        <div style="font-size:0.78em;color:#ccc;font-weight:600">${s.name}</div>
+        ${s.description ? `<div style="font-size:0.73em;color:#888;line-height:1.3;margin-top:1px">${s.description}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="ruler-choice-card" data-iid="${iid}" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;transition:border-color .15s;flex:1 1 0;min-width:180px;position:relative;background:var(--panel-bg,#1a1a2a)">
+        ${splash ? `<img src="${splash}" style="width:100%;display:block" alt="">` : ''}
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 10px 8px;background:linear-gradient(to bottom,rgba(0,0,0,0) 0%,rgba(0,0,0,0.7) 25%,rgba(0,0,0,0.92) 100%)">
+          <div style="font-weight:700;font-size:0.9em;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${def.name || iid}</div>
+          <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:5px">${skillRows}</div>
+          ${def.description ? `<div style="font-size:0.75em;color:#bbb;line-height:1.4;margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08)">${def.description}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // Mobile: show one card at a time with prev/next buttons — no swipe/scroll conflict
+  const isMobile = () => window.innerWidth < 700;
+  let mobileIdx = rulers.findIndex(([iid]) => iid === selectedIid);
+  if (mobileIdx < 0) mobileIdx = 0;
+
+  function _buildOverlayHtml() {
+    if (isMobile()) {
+      const [iid, def] = rulers[mobileIdx];
+      const splash = def.splash || '';
+      const skills = ['q', 'w', 'e', 'r'];
+      const skillRows = skills.map((sk) => {
+        const s = def.skills?.[sk];
+        if (!s || !s.name) return '';
+        return `<div style="display:flex;gap:6px;align-items:baseline;margin-top:4px">
+          <span style="font-size:0.78em;color:#ffa726;font-weight:700;white-space:nowrap">${s.name}</span>
+          ${s.description ? `<span style="font-size:0.73em;color:#888;line-height:1.3">${s.description}</span>` : ''}
+        </div>`;
+      }).join('');
+      const dots = rulers.map((_, i) =>
+        `<span data-dot="${i}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${i === mobileIdx ? '#ffa726' : '#555'};cursor:pointer;transition:background .2s"></span>`
+      ).join('');
+      return `
+        <div style="position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:1000;border-radius:12px;overflow:hidden;box-shadow:0 0 0 2px rgba(255,255,255,0.08),0 8px 32px rgba(0,0,0,0.8)">
+          ${splash ? `<img src="${splash}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0.7" alt="">` : ''}
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.85) 100%)"></div>
+
+          <button class="prod-overlay-close" title="Close" style="position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:1.2em;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+
+          <div style="position:absolute;top:12px;left:0;right:0;text-align:center;z-index:2;font-size:0.8em;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase">Choose Your Ruler</div>
+
+          <div style="position:absolute;bottom:0;left:0;right:0;z-index:2;padding:16px 16px 20px">
+            <div style="font-weight:700;font-size:1.3em;color:#fff;margin-bottom:8px">${def.name || iid}</div>
+            <div style="font-size:0.82em">${skillRows}</div>
+            <div style="display:flex;justify-content:center;gap:8px;margin-top:12px">${dots}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px">
+              <button id="ruler-prev" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:8px 18px;cursor:pointer;font-size:1.2em;backdrop-filter:blur(4px)">‹</button>
+              <div style="display:flex;gap:8px">
+                <button id="ruler-choose-cancel" style="background:rgba(0,0,0,0.5);color:#ccc;border:1px solid #555;border-radius:4px;padding:8px 18px;cursor:pointer;backdrop-filter:blur(4px)">Cancel</button>
+                <button id="ruler-choose-confirm" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:8px 18px;font-weight:700;cursor:pointer">Choose</button>
+              </div>
+              <button id="ruler-next" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:8px 18px;cursor:pointer;font-size:1.2em;backdrop-filter:blur(4px)">›</button>
+            </div>
+            <div id="ruler-choose-error" style="color:#ef9a9a;font-size:0.85em;margin-top:8px;min-height:1em;text-align:center"></div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="prod-overlay-box" style="max-width:min(98vw,1600px);width:98vw;max-height:92vh;overflow-y:auto">
+        <button class="prod-overlay-close" title="Close">✕</button>
+        <div style="font-weight:bold;font-size:1.05em;margin-bottom:14px">Choose Your Ruler</div>
+        <div style="overflow:hidden">
+          <div id="ruler-cards" style="display:flex;flex-direction:row;gap:10px;align-items:stretch">
+            ${rulers.map(([iid, def]) => _rulerCardHtml(iid, def)).join('')}
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px">
+          <button id="ruler-choose-cancel" style="background:#333;color:#ccc;border:none;border-radius:4px;padding:7px 18px;cursor:pointer">Cancel</button>
+          <button id="ruler-choose-confirm" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer">Choose</button>
+        </div>
+        <div id="ruler-choose-error" style="color:#e57373;font-size:0.85em;margin-top:8px;min-height:1em"></div>
+      </div>`;
+  }
 
   const overlay = document.createElement('div');
-  overlay.className = 'prod-overlay';
-  overlay.innerHTML = `
-    <div class="prod-overlay-box">
-      <button class="prod-overlay-close" title="Close">✕</button>
-      <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">Production Details</div>
-      ${section('<span style="color:#FFD700">● Gold Income</span>', goldHtml)}
-      ${section('<span style="color:#ffa726">● Culture Income</span>', cultureHtml)}
-      ${section('<span style="color:#90ee90">● Life Regen</span>', lifeHtml)}
-      ${section('<span style="color:#4fc3f7">● Construction Speed</span>', buildHtml)}
-      ${section('<span style="color:#ffa726">● Research Speed</span>', researchHtml)}
-      ${restoreHtml ? section('<span style="color:#ef9a9a">● Restore Life After Defeat</span>', restoreHtml) : ''}
-      ${(() => {
-        const ttm = effects.travel_time_modifier || 0;
-        const rallyTtm = rallyEffects.travel_time_modifier || 0;
-        const stm = effects.siege_time_modifier || 0;
-        const rallyStm = rallyEffects.siege_time_modifier || 0;
-        let html = '';
-        if (ttm > 0) {
-          html += `<div class="panel-row"><span class="label">-${(ttm * 100).toFixed(0)}%</span><span class="value">travel time</span></div>`;
-          if (rallyTtm > 0)
-            html += `<div class="panel-row"><span class="label" style="padding-left:12px">↳ -${(rallyTtm * 100).toFixed(0)}%</span><span class="value">(⚔ End Rally)</span></div>`;
-        }
-        if (stm > 0) {
-          html += `<div class="panel-row"><span class="label">-${(stm * 100).toFixed(0)}%</span><span class="value">siege time</span></div>`;
-          if (rallyStm > 0)
-            html += `<div class="panel-row"><span class="label" style="padding-left:12px">↳ -${(rallyStm * 100).toFixed(0)}%</span><span class="value">(⚔ End Rally)</span></div>`;
-        }
-        return html ? section('<span style="color:#ce93d8">● Army Effects</span>', html) : '';
-      })()}
-    </div>
-  `;
+  overlay.className = 'choose-ruler-overlay prod-overlay';
 
-  // Close on backdrop click or ✕ button
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) {
-      overlay.remove();
-    }
-  });
+  function _rebuildOverlay() {
+    overlay.innerHTML = _buildOverlayHtml();
+    selectedIid = rulers[mobileIdx][0];
+    _updateSelection();
+    _bindOverlayEvents();
+  }
 
+  function _updateSelection() {
+    overlay.querySelectorAll('.ruler-choice-card').forEach((card) => {
+      card.style.borderColor = card.dataset.iid === selectedIid ? '#ffa726' : 'transparent';
+      card.style.background = card.dataset.iid === selectedIid ? 'rgba(255,167,38,0.08)' : '';
+    });
+  }
+
+  function _bindOverlayEvents() {
+    overlay.querySelector('#ruler-choose-cancel')?.addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#ruler-choose-confirm')?.addEventListener('click', async () => {
+      const btn = overlay.querySelector('#ruler-choose-confirm');
+      const errEl = overlay.querySelector('#ruler-choose-error');
+      btn.disabled = true;
+      errEl.textContent = '';
+      try {
+        const resp = await rest.chooseRuler(selectedIid);
+        if (resp?.success) { overlay.remove(); await refresh(); }
+        else { errEl.textContent = resp?.error || 'Could not choose ruler'; btn.disabled = false; }
+      } catch (err) { errEl.textContent = err.message; btn.disabled = false; }
+    });
+    overlay.querySelector('#ruler-prev')?.addEventListener('click', () => {
+      mobileIdx = Math.max(0, mobileIdx - 1); _rebuildOverlay();
+    });
+    overlay.querySelector('#ruler-next')?.addEventListener('click', () => {
+      mobileIdx = Math.min(rulers.length - 1, mobileIdx + 1); _rebuildOverlay();
+    });
+    overlay.querySelectorAll('[data-dot]').forEach((dot) => {
+      dot.addEventListener('click', () => { mobileIdx = parseInt(dot.dataset.dot, 10); _rebuildOverlay(); });
+    });
+    overlay.querySelectorAll('.ruler-choice-card').forEach((card) => {
+      card.addEventListener('click', () => { selectedIid = card.dataset.iid; _updateSelection(); });
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+    });
+  }
+
+  _rebuildOverlay();
   document.body.appendChild(overlay);
+
+  const _onResize = () => _rebuildOverlay();
+  window.addEventListener('resize', _onResize);
+  const origRemove = overlay.remove.bind(overlay);
+  overlay.remove = () => { window.removeEventListener('resize', _onResize); origRemove(); };
 }
 
 function _showArtifactOverlay(iid) {
@@ -582,6 +687,140 @@ function _showArtifactOverlay(iid) {
   });
 
   document.body.appendChild(overlay);
+}
+
+// Returns { can: bool, muted: bool, hint: string|null }
+// can=true: button active; muted=true: point available but level requirement not met
+function _rulerSkillUpState(ruler, skill) {
+  const level = ruler.level || 1;
+  const totalPoints = (ruler.q || 0) + (ruler.w || 0) + (ruler.e || 0) + (ruler.r || 0);
+  const hasPoint = totalPoints < level;
+  const current = ruler[skill] || 0;
+  if (skill === 'q' || skill === 'w' || skill === 'e') {
+    if (current >= 5) return { can: false, muted: false, hint: null };
+    if (current + 1 === 5) {
+      if (!hasPoint) return { can: false, muted: false, hint: null };
+      if (level < 9) return { can: false, muted: true, hint: 'Requires ruler level 9' };
+    }
+    return { can: hasPoint, muted: false, hint: null };
+  }
+  // r: unlock thresholds at ruler levels 6, 11, 16
+  const unlockLevels = [6, 11, 16];
+  if (current >= unlockLevels.length) return { can: false, muted: false, hint: null };
+  if (!hasPoint) return { can: false, muted: false, hint: null };
+  if (level < unlockLevels[current]) return { can: false, muted: true, hint: `Requires ruler level ${unlockLevels[current]}` };
+  return { can: true, muted: false, hint: null };
+}
+
+function _rulerCanSkillUp(ruler, skill) {
+  return _rulerSkillUpState(ruler, skill).can;
+}
+
+function renderRulerPanel(ruler, rulersCatalog, rulerEffects, empireEffects) {
+  const rulerUnlocked = (empireEffects?.ruler_unlock ?? 0) > 0;
+  if (!rulerUnlocked && (!ruler || !ruler.type)) return '';
+  if (!ruler || !ruler.type) {
+    return `
+    <div class="panel">
+      <div class="panel-header">👑 Ruler</div>
+      <div style="color:#aaa;font-size:0.9em;line-height:1.6;padding:6px 0">
+        <p style="margin:0 0 8px">Your empire has unlocked the ruler system.</p>
+        <p style="margin:0 0 8px">Rulers are powerful heroes that can lead your armies into battle, granting unique combat bonuses scaled with their level.</p>
+        <p style="margin:0 0 12px;color:#666;font-size:0.88em">Select a ruler to get started.</p>
+        <button id="choose-ruler-btn" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:6px 18px;font-weight:700;cursor:pointer;font-size:0.95em">Choose Ruler</button>
+      </div>
+    </div>`;
+  }
+  try {
+  const def = rulersCatalog?.[ruler.type];
+  const rulerDisplayName = def?.name || ruler.name || ruler.type;
+  const skills = [
+    { key: 'q', label: 'Q' },
+    { key: 'w', label: 'W' },
+    { key: 'e', label: 'E' },
+    { key: 'r', label: 'R' },
+  ];
+  const skillCards = skills
+    .map(({ key, label }) => {
+      const level = ruler[key] || 0;
+      const skillDef = def?.skills?.[key];
+      const name = skillDef?.name || label;
+      const upState = _rulerSkillUpState(ruler, key);
+      const upBtn = (upState.can || upState.muted)
+        ? `<button class="ruler-skill-up-btn" data-skill="${key}" style="padding:2px 10px;font-size:0.82em;border-radius:3px;font-weight:700;border:none;${upState.can ? 'cursor:pointer;background:#ffa726;color:#111' : 'cursor:default;background:#444;color:#666'}" ${upState.can ? '' : 'disabled'} title="${upState.hint || 'Spend skill point'}">${upState.muted ? '🔒' : '+'}</button>`
+        : '';
+      const currentEffects = level > 0 ? (skillDef?.levels?.[level - 1] || {}) : {};
+      const nextLevelEffects = skillDef?.levels?.[level] || null;
+
+      const _LUMP_SUM_KEYS = new Set(['gold_lump_sum_on_skill_up', 'culture_lump_sum_on_skill_up']);
+      const effectLines = Object.entries(skillDef?.levels?.[0] || {}).map(([k]) => {
+        try {
+          const isLumpSum = _LUMP_SUM_KEYS.has(k);
+          // Lump-sums: read current value from YAML level def (not empire.effects — they're one-shot)
+          const curVal = level > 0
+            ? (isLumpSum ? currentEffects[k] : currentEffects[k])
+            : null;
+          const nxtVal = nextLevelEffects?.[k];
+          const desc = formatEffect(k, curVal ?? (nxtVal ?? 0)).replace(/ \(.*\)$/, '');
+          const curStr = isLumpSum && level > 0
+            ? `<span style="color:#81c784">${fmtEffectValue(k, curVal)} ✓</span>`
+            : curVal != null
+              ? `<span style="color:#81c784">${fmtEffectValue(k, curVal)}</span>`
+              : `<span style="color:#555">not learned</span>`;
+          const nxtStr = nxtVal != null && nextLevelEffects
+            ? `<span style="color:#555;font-size:0.82em"> (next: ${fmtEffectValue(k, nxtVal)})</span>`
+            : '';
+          return `<div style="font-size:0.82em;color:#ccc;margin-top:2px">${desc}: ${curStr}${nxtStr}</div>`;
+        } catch (_) { return ''; }
+      }).join('');
+
+      const maxLvl = key === 'r' ? 3 : 5;
+      const dots = Array.from({length: maxLvl}, (_, i) =>
+        `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;border:1.5px solid #66bb6a;background:${i < level ? '#66bb6a' : 'transparent'}"></span>`
+      ).join('');
+
+      return `<div style="background:var(--panel-bg,#1e1e1e);border:1px solid var(--border-color,#333);border-radius:6px;padding:8px 10px;margin-top:6px">
+        <div style="font-weight:600;font-size:0.9em;color:#ddd;margin-bottom:2px">${name}</div>
+        ${effectLines}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <div style="display:flex;gap:4px">${dots}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${upState.muted && upState.hint ? `<span style="font-size:0.75em;color:#555">${upState.hint}</span>` : ''}
+            ${upBtn}
+          </div>
+        </div>
+      </div>`;
+    })
+    .join('');
+
+  return `
+    <div class="panel">
+      <div class="panel-header">Ruler</div>
+      ${(() => {
+        const xpStart = ruler.level_xp_start || 0;
+        const stepCost = ruler.next_level_xp || 1;
+        const xpTarget = xpStart + stepCost;
+        const xpInLevel = ruler.xp - xpStart;
+        const pct = Math.min(100, (xpInLevel / stepCost) * 100).toFixed(1);
+        const atMax = ruler.level >= 18;
+        return `<div class="panel-row">
+          <span class="label" style="font-weight:700;font-size:1.05em">${rulerDisplayName}</span>
+          <span class="value" style="color:#aaa">Lv ${ruler.level}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82em;color:#888;padding:2px 0 3px">
+          <span>${Math.floor(ruler.xp)} XP</span>
+          <span>${atMax ? 'max level' : `${Math.ceil(xpTarget)} XP`}</span>
+        </div>
+        <div class="atk-progress-wrap">
+          <div class="atk-progress-bar" style="width:${pct}%;background:#66bb6a"></div>
+        </div>`;
+      })()}
+      ${skillCards || '<div style="color:#666;font-size:0.85em;padding:2px 0">No skills assigned</div>'}
+    </div>`;
+  } catch (err) {
+    console.error('renderRulerPanel error:', err);
+    return `<div class="panel"><div class="panel-header">Ruler</div><div style="color:#e57373;font-size:0.85em">Render error: ${err.message}</div></div>`;
+  }
 }
 
 function renderCitizens(citizens) {
@@ -750,243 +989,118 @@ function renderProduction(label, items) {
   return `<div class="panel-row"><span class="label">${iid}</span><span class="value">${fmt(remaining)} left</span></div>`;
 }
 
-function renderBuildSpeed(
-  effects,
-  completedBuildings,
-  completedResearch,
-  items,
-  baseBuildSpeed,
-  ownedArtifacts,
-  rulerEffects = {},
-  rulerName = ''
-) {
+// Colour constants for source labels
+const _SRC_COLOR_ARTIFACT = '#FFD700';   // gold
+const _SRC_COLOR_RULER    = '#FFD700';   // gold
+const _SRC_COLOR_RALLY    = '#87CEEB';   // light blue
+const _SRC_COLOR_ERA      = '#87CEEB';   // light blue
+
+function _resolveName(iid, items) {
+  return items?.buildings?.[iid]?.name
+    || items?.knowledge?.[iid]?.name
+    || items?.catalog?.[iid]?.name
+    || iid;
+}
+
+// Render source breakdown rows for an offset effect key (additive).
+// fmtVal(v) formats a single numeric value (e.g. "+1.23" or "+1.23k").
+// items: st.items for name resolution (optional).
+function _renderOffsetSourceRows(effectSources, key, fmtVal, rulerName, items) {
+  const src = effectSources?.[key] || {};
+  let html = '';
+  for (const [iid, v] of Object.entries(src.buildings || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value">${_resolveName(iid, items)}</span></div>`;
+  for (const [iid, v] of Object.entries(src.knowledge || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value">${_resolveName(iid, items)}</span></div>`;
+  for (const [iid, v] of Object.entries(src.artifacts || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value" style="color:${_SRC_COLOR_ARTIFACT}">⚜ ${_resolveName(iid, items)}</span></div>`;
+  if (src.ruler > 0.0005 && rulerName)
+    html += `<div class="panel-row"><span class="label">${fmtVal(src.ruler)}</span><span class="value" style="color:${_SRC_COLOR_RULER}">👑 ${rulerName}</span></div>`;
+  if (src.end_rally > 0.0005)
+    html += `<div class="panel-row"><span class="label">${fmtVal(src.end_rally)}</span><span class="value" style="color:${_SRC_COLOR_RALLY}">⚔ End Rally</span></div>`;
+  if (src.era > 0.0005)
+    html += `<div class="panel-row"><span class="label">${fmtVal(src.era)}</span><span class="value" style="color:${_SRC_COLOR_ERA}">Era</span></div>`;
+  return html;
+}
+
+// Render source breakdown rows for a modifier effect key (percentage).
+// skipCategories: source category names already rendered separately (e.g. ['citizens']).
+function _renderModifierSourceRows(effectSources, key, rulerName, skipCategories = [], items) {
+  if (!key) return '';
+  const src = effectSources?.[key] || {};
+  let html = '';
+  for (const [iid, v] of Object.entries(src.buildings || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value">${_resolveName(iid, items)}</span></div>`;
+  for (const [iid, v] of Object.entries(src.knowledge || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value">${_resolveName(iid, items)}</span></div>`;
+  for (const [iid, v] of Object.entries(src.artifacts || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_ARTIFACT}">⚜ ${_resolveName(iid, items)}</span></div>`;
+  if (src.ruler > 0.0005 && rulerName)
+    html += `<div class="panel-row"><span class="label">+${(src.ruler * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_RULER}">👑 ${rulerName}</span></div>`;
+  if (src.end_rally > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${(src.end_rally * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_RALLY}">⚔ End Rally</span></div>`;
+  if (src.era > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${(src.era * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_ERA}">Era</span></div>`;
+  return html;
+}
+
+function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
   const buildOffset = effects?.build_speed_offset || 0;
   const buildModifier = effects?.build_speed_modifier || 0;
   const effective = calcBuildSpeed({ base_build_speed: baseBuildSpeed, effects });
 
-  let html = '';
-  html += `<div class="panel-row"><span class="label">+${baseBuildSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
-  let itemBuildOffset = 0;
-  if (completedBuildings && items?.buildings) {
-    for (const iid of completedBuildings) {
-      const item = items.buildings[iid];
-      if (item?.effects?.build_speed_offset > 0) {
-        itemBuildOffset += item.effects.build_speed_offset;
-        html += `<div class="panel-row"><span class="label">+${item.effects.build_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  if (completedResearch && items?.knowledge) {
-    for (const iid of completedResearch) {
-      const item = items.knowledge[iid];
-      if (item?.effects?.build_speed_offset > 0) {
-        itemBuildOffset += item.effects.build_speed_offset;
-        html += `<div class="panel-row"><span class="label">+${item.effects.build_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  for (const iid of ownedArtifacts || []) {
-    const art = items?.catalog?.[iid];
-    if (art?.effects?.build_speed_offset > 0) {
-      itemBuildOffset += art.effects.build_speed_offset;
-      html += `<div class="panel-row"><span class="label">+${art.effects.build_speed_offset.toFixed(2)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-    }
-  }
-  const rulerBuildOffset = rulerEffects.build_speed_offset || 0;
-  if (rulerBuildOffset > 0.0005 && rulerName)
-    html += `<div class="panel-row"><span class="label">+${rulerBuildOffset.toFixed(2)}</span><span class="value">(👑 ${rulerName})</span></div>`;
-  const eraBuildOffset = buildOffset - rulerBuildOffset - itemBuildOffset;
-  if (eraBuildOffset > 0.0005)
-    html += `<div class="panel-row"><span class="label">+${eraBuildOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
-  html +=
-    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  let itemBuildModifier = 0;
-  if (completedBuildings && items?.buildings) {
-    for (const iid of completedBuildings) {
-      const item = items.buildings[iid];
-      if (item?.effects?.build_speed_modifier > 0) {
-        itemBuildModifier += item.effects.build_speed_modifier;
-        html += `<div class="panel-row"><span class="label">+${(item.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  if (completedResearch && items?.knowledge) {
-    for (const iid of completedResearch) {
-      const item = items.knowledge[iid];
-      if (item?.effects?.build_speed_modifier > 0) {
-        itemBuildModifier += item.effects.build_speed_modifier;
-        html += `<div class="panel-row"><span class="label">+${(item.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  for (const iid of ownedArtifacts || []) {
-    const art = items?.catalog?.[iid];
-    if (art?.effects?.build_speed_modifier > 0) {
-      itemBuildModifier += art.effects.build_speed_modifier;
-      html += `<div class="panel-row"><span class="label">+${(art.effects.build_speed_modifier * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-    }
-  }
-  const rulerBuildModifier = rulerEffects.build_speed_modifier || 0;
-  if (rulerBuildModifier > 0.0005 && rulerName)
-    html += `<div class="panel-row"><span class="label">+${(rulerBuildModifier * 100).toFixed(0)}%</span><span class="value">(👑 ${rulerName})</span></div>`;
-  const eraBuildModifier = buildModifier - rulerBuildModifier - itemBuildModifier;
-  if (eraBuildModifier > 0.0005)
-    html += `<div class="panel-row"><span class="label">+${(eraBuildModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
+  const items = st.items;
+  let html = `<div class="panel-row"><span class="label">+${baseBuildSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
+  html += _renderOffsetSourceRows(effectSources, 'build_speed_offset', (v) => `+${v.toFixed(2)}`, rulerName, items);
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html += _renderModifierSourceRows(effectSources, 'build_speed_modifier', rulerName, [], items);
   const totalOffset = baseBuildSpeed + buildOffset;
   const multiplier = 1 + buildModifier;
-  html +=
-    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
 }
 
-function renderResearchSpeed(
-  effects,
-  citizens,
-  citizenEffect,
-  completedBuildings,
-  completedResearch,
-  items,
-  baseResearchSpeed,
-  ownedArtifacts,
-  rulerEffects = {},
-  rulerName = ''
-) {
+function renderResearchSpeed(effectSources, effects, citizens, citizenEffect, baseResearchSpeed, rulerName) {
   baseResearchSpeed = baseResearchSpeed ?? 1.0;
   const researchOffset = effects?.research_speed_offset || 0;
   const researchModifier = effects?.research_speed_modifier || 0;
   const scientistCount = citizens?.scientist || 0;
-  const scientistBonus = scientistCount * citizenEffect;
+  const scientistCitizenBonus = 1 + (effects?.scientist_citizen_bonus || 0);
+  const scientistBonus = scientistCount * citizenEffect * scientistCitizenBonus;
   const totalOffset = baseResearchSpeed + researchOffset;
   const multiplier = 1 + researchModifier + scientistBonus;
-  const effective = calcResearchSpeed({
-    base_research_speed: baseResearchSpeed,
-    effects,
-    citizens,
-    citizen_effect: citizenEffect,
-  });
+  const effective = calcResearchSpeed({ base_research_speed: baseResearchSpeed, effects, citizens, citizen_effect: citizenEffect });
 
-  let html = '';
-  html += `<div class="panel-row"><span class="label">+${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
-  let itemResearchOffset = 0;
-  if (completedBuildings && items?.buildings) {
-    for (const iid of completedBuildings) {
-      const item = items.buildings[iid];
-      if (item?.effects?.research_speed_offset > 0) {
-        itemResearchOffset += item.effects.research_speed_offset;
-        html += `<div class="panel-row"><span class="label">+${item.effects.research_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  if (completedResearch && items?.knowledge) {
-    for (const iid of completedResearch) {
-      const item = items.knowledge[iid];
-      if (item?.effects?.research_speed_offset > 0) {
-        itemResearchOffset += item.effects.research_speed_offset;
-        html += `<div class="panel-row"><span class="label">+${item.effects.research_speed_offset.toFixed(2)}</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  for (const iid of ownedArtifacts || []) {
-    const art = items?.catalog?.[iid];
-    if (art?.effects?.research_speed_offset > 0) {
-      itemResearchOffset += art.effects.research_speed_offset;
-      html += `<div class="panel-row"><span class="label">+${art.effects.research_speed_offset.toFixed(2)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-    }
-  }
-  const rulerResearchOffset = rulerEffects.research_speed_offset || 0;
-  if (rulerResearchOffset > 0.0005 && rulerName)
-    html += `<div class="panel-row"><span class="label">+${rulerResearchOffset.toFixed(2)}</span><span class="value">(👑 ${rulerName})</span></div>`;
-  const eraResearchOffset = researchOffset - rulerResearchOffset - itemResearchOffset;
-  if (eraResearchOffset > 0.0005)
-    html += `<div class="panel-row"><span class="label">+${eraResearchOffset.toFixed(2)}</span><span class="value">(Era)</span></div>`;
-  html +=
-    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row"><span class="label">+${(scientistBonus * 100).toFixed(0)}%</span><span class="value">(${scientistCount} 🔭 × ${citizenEffect})</span></div>`;
-  let itemResearchModifier = 0;
-  if (completedBuildings && items?.buildings) {
-    for (const iid of completedBuildings) {
-      const item = items.buildings[iid];
-      if (item?.effects?.research_speed_modifier > 0) {
-        itemResearchModifier += item.effects.research_speed_modifier;
-        html += `<div class="panel-row"><span class="label">+${(item.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  if (completedResearch && items?.knowledge) {
-    for (const iid of completedResearch) {
-      const item = items.knowledge[iid];
-      if (item?.effects?.research_speed_modifier > 0) {
-        itemResearchModifier += item.effects.research_speed_modifier;
-        html += `<div class="panel-row"><span class="label">+${(item.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-  }
-  for (const iid of ownedArtifacts || []) {
-    const art = items?.catalog?.[iid];
-    if (art?.effects?.research_speed_modifier > 0) {
-      itemResearchModifier += art.effects.research_speed_modifier;
-      html += `<div class="panel-row"><span class="label">+${(art.effects.research_speed_modifier * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-    }
-  }
-  const rulerResearchModifier = rulerEffects.research_speed_modifier || 0;
-  if (rulerResearchModifier > 0.0005 && rulerName)
-    html += `<div class="panel-row"><span class="label">+${(rulerResearchModifier * 100).toFixed(0)}%</span><span class="value">(👑 ${rulerName})</span></div>`;
-  const eraResearchModifier = researchModifier - rulerResearchModifier - itemResearchModifier;
-  if (eraResearchModifier > 0.0005)
-    html += `<div class="panel-row"><span class="label">+${(eraResearchModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
-  html +=
-    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  const items = st.items;
+  let html = `<div class="panel-row"><span class="label">+${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
+  html += _renderOffsetSourceRows(effectSources, 'research_speed_offset', (v) => `+${v.toFixed(2)}`, rulerName, items);
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  const bonusLabel = scientistCitizenBonus > 1
+    ? `(${scientistCount} 🔭 × ${citizenEffect} × <span style="color:#ffd54f">👑${scientistCitizenBonus.toFixed(1)}</span>)`
+    : `(${scientistCount} 🔭 × ${citizenEffect})`;
+  html += `<div class="panel-row"><span class="label">+${(scientistBonus * 100).toFixed(0)}%</span><span class="value">${bonusLabel}</span></div>`;
+  html += _renderModifierSourceRows(effectSources, 'research_speed_modifier', rulerName, ['citizens'], items);
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
   return html;
 }
 
-function renderRestoreLife(effects, completedBuildings, completedResearch, items, ownedArtifacts, baseRestore, rulerEffects = {}, rulerName = '') {
+function renderRestoreLife(effectSources, effects, baseRestore, rulerName) {
   const key = 'restore_life_after_loss_offset';
-  let html = '';
-  let bonus = 0;
+  const sources = effectSources[key] || {};
+  const hasAnySources = Object.values(sources).some((v) => {
+    if (typeof v === 'object') return Object.values(v).some((x) => x > 0.05);
+    return v > 0.05;
+  });
+  if (!hasAnySources && !(effects?.[key] > 0.05)) return '';
 
-  for (const iid of completedBuildings || []) {
-    const item = items?.buildings?.[iid];
-    if (item?.effects?.[key] > 0) {
-      bonus += item.effects[key];
-      html += `<div class="panel-row"><span class="label">+${Math.round(item.effects[key])}</span><span class="value">(${item.name || iid})</span></div>`;
-    }
-  }
-  for (const iid of completedResearch || []) {
-    const item = items?.knowledge?.[iid];
-    if (item?.effects?.[key] > 0) {
-      bonus += item.effects[key];
-      html += `<div class="panel-row"><span class="label">+${Math.round(item.effects[key])}</span><span class="value">(${item.name || iid})</span></div>`;
-    }
-  }
-  for (const iid of ownedArtifacts || []) {
-    const art = items?.catalog?.[iid];
-    if (art?.effects?.[key] > 0) {
-      bonus += art.effects[key];
-      html += `<div class="panel-row"><span class="label">+${Math.round(art.effects[key])}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-    }
-  }
-  if (!bonus) return '';
-
-  // Ruler contribution
-  const rulerContrib = rulerEffects[key] || 0;
-  if (rulerContrib > 0.05 && rulerName)
-    html += `<div class="panel-row"><span class="label">+${Math.round(rulerContrib)}</span><span class="value">(👑 ${rulerName})</span></div>`;
-
-  // Era contribution
-  const eraContrib = (effects?.[key] || 0) - rulerContrib - bonus;
-  if (eraContrib > 0.05)
-    html += `<div class="panel-row"><span class="label">+${Math.round(eraContrib)}</span><span class="value">(Era)</span></div>`;
-
-  const totalBonus = Math.round(effects?.[key] || bonus);
+  const html = _renderOffsetSourceRows(effectSources, key, (v) => `+${Math.round(v)}`, rulerName, st.items);
+  const totalBonus = Math.round(effects?.[key] || 0);
   const base = Math.round(baseRestore ?? 1);
-
-  html +=
-    '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row" style="color:#ef9a9a;font-weight:bold"><span class="label">= ${base + totalBonus} (${base} +${totalBonus})</span></div>`;
-  return html;
+  return html + '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>'
+    + `<div class="panel-row" style="color:#ef9a9a;font-weight:bold"><span class="label">= ${base + totalBonus} (${base} +${totalBonus})</span></div>`;
 }
 
 function fmtPerH(perSecond) {
@@ -1005,180 +1119,80 @@ function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) 
   if (resourceType === 'life') {
     return baseAmount + (effects?.life_regen_modifier || 0);
   }
+  const effCe = citizenEffect || 0; // backend already sends effective_citizen_effect (includes citizen_effect_modifier)
   if (resourceType === 'gold') {
     const offset = baseAmount + (effects?.gold_offset || 0);
     const modifier =
-      (citizens?.merchant || 0) * (citizenEffect || 0) + (effects?.gold_modifier || 0);
+      (citizens?.merchant || 0) * effCe
+      + ((citizens?.artist || 0) + (citizens?.scientist || 0)) * (effects?.other_citizen_gold_modifier || 0)
+      + (effects?.gold_modifier || 0);
     return offset * (1 + modifier);
   }
   // culture
   const offset = baseAmount + (effects?.culture_offset || 0);
   const modifier =
-    (citizens?.artist || 0) * (citizenEffect || 0) + (effects?.culture_modifier || 0);
+    (citizens?.artist || 0) * effCe + (effects?.culture_modifier || 0);
   return offset * (1 + modifier);
 }
 
-function renderResourceIncome(
-  resourceType,
-  effects,
-  citizens,
-  citizenEffect,
-  baseAmount,
-  completedBuildings,
-  items,
-  completedResearch,
-  ownedArtifacts,
-  rallyEffects = {},
-  rulerEffects = {},
-  rulerName = ''
-) {
-  completedResearch = completedResearch || [];
-  let html = '';
-
-  // Determine which citizen type and effect keys
-  let citizenType, effectOffsetKey, effectModifierKey, citizenCount;
+function renderResourceIncome(resourceType, effectSources, effects, citizens, citizenEffect, baseAmount, rulerName, rallyActive) {
+  let effectOffsetKey, effectModifierKey, citizenType, citizenCount;
   if (resourceType === 'gold') {
-    citizenType = 'merchant';
-    effectOffsetKey = 'gold_offset';
-    effectModifierKey = 'gold_modifier';
+    citizenType = 'merchant'; effectOffsetKey = 'gold_offset'; effectModifierKey = 'gold_modifier';
     citizenCount = citizens?.merchant || 0;
   } else if (resourceType === 'culture') {
-    citizenType = 'artist';
-    effectOffsetKey = 'culture_offset';
-    effectModifierKey = 'culture_modifier';
+    citizenType = 'artist'; effectOffsetKey = 'culture_offset'; effectModifierKey = 'culture_modifier';
     citizenCount = citizens?.artist || 0;
-  } else if (resourceType === 'life') {
-    citizenType = null; // No citizen effect for life
-    effectOffsetKey = 'life_regen_modifier';
-    effectModifierKey = null;
-    citizenCount = 0;
+  } else {
+    citizenType = null; effectOffsetKey = 'life_regen_modifier'; effectModifierKey = null; citizenCount = 0;
   }
 
-  // Base amount (only show if > 0)
   baseAmount = baseAmount ?? 0;
-  const toH = (v) => v * 3600;
   const fmtH = (v) => {
-    const h = toH(v);
+    const h = v * 3600;
     if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
     if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
     if (Math.abs(h) >= 10) return Math.round(h) + '';
     return h.toFixed(1);
   };
 
-  if (baseAmount > 0) {
+  let html = '';
+  if (baseAmount > 0)
     html += `<div class="panel-row"><span class="label">+${fmtH(baseAmount)}</span><span class="value">(base)</span></div>`;
-  }
 
-  // Building & Research effects (offsets)
-  let totalOffset = baseAmount;
-  function addOffsetSources(catalog) {
-    if (!catalog) return;
-    for (const iid of completedBuildings.concat(completedResearch)) {
-      const item = catalog.buildings?.[iid] || catalog.knowledge?.[iid];
-      if (item?.effects?.[effectOffsetKey] > 0) {
-        const offset = item.effects[effectOffsetKey];
-        totalOffset += offset;
-        html += `<div class="panel-row"><span class="label">+${fmtH(offset)}</span><span class="value">(${item.name || iid})</span></div>`;
-      }
-    }
-    // Artifact offsets
-    for (const iid of ownedArtifacts || []) {
-      const art = catalog.catalog?.[iid];
-      if (art?.effects?.[effectOffsetKey]) {
-        const offset = art.effects[effectOffsetKey];
-        totalOffset += offset;
-        html += `<div class="panel-row"><span class="label">${offset > 0 ? '+' : ''}${fmtH(offset)}</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-      }
-    }
-  }
-  addOffsetSources(items);
+  html += _renderOffsetSourceRows(effectSources, effectOffsetKey, (v) => `+${fmtH(v)}`, rulerName, st.items);
 
-  // Helper to add artifact modifiers (called after the buildings/research modifier loop)
-  function addArtifactModifiers() {
-    for (const iid of ownedArtifacts || []) {
-      const art = items?.catalog?.[iid];
-      if (art?.effects?.[effectModifierKey] > 0) {
-        const modifier = art.effects[effectModifierKey];
-        totalModifier += modifier;
-        html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">⚜ ${art.name || iid}</span></div>`;
-      }
-    }
-  }
+  const totalOffset = baseAmount + (effects[effectOffsetKey] || 0);
 
-  // Rally offset contribution (shown separately before Era)
-  const rallyOffset = rallyEffects[effectOffsetKey] || 0;
-  if (rallyOffset > 0.0005) {
-    html += `<div class="panel-row"><span class="label">+${fmtH(rallyOffset)}</span><span class="value">(⚔ End Rally)</span></div>`;
-  }
-
-  // Ruler offset contribution
-  const rulerOffset = rulerEffects[effectOffsetKey] || 0;
-  if (rulerOffset > 0.0005 && rulerName) {
-    html += `<div class="panel-row"><span class="label">+${fmtH(rulerOffset)}</span><span class="value">(👑 ${rulerName})</span></div>`;
-  }
-
-  // Era offset contribution (difference between aggregated backend value and item sum, minus rally and ruler)
-  const eraOffset = (effects[effectOffsetKey] || 0) - rallyOffset - rulerOffset - (totalOffset - baseAmount);
-  if (eraOffset > 0.0005) {
-    html += `<div class="panel-row"><span class="label">+${fmtH(eraOffset)}</span><span class="value">(Era)</span></div>`;
-    totalOffset += eraOffset;
-  }
-  totalOffset += rallyOffset + rulerOffset;
-
-  // For life, only show offset without multiplier
   if (resourceType === 'life') {
-    const color = '#90ee90';
-    html +=
-      '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
-    html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${fmtH(totalOffset)}/h</span></div>`;
+    html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+    html += `<div class="panel-row" style="color:#90ee90;font-weight:bold"><span class="label">= ${fmtH(totalOffset)}/h</span></div>`;
     return html;
   }
 
-  // Separator line
-  html +=
-    '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
-
-  // Citizen bonus percentage
-  const citizenBonus = citizenCount * citizenEffect;
-  html += `<div class="panel-row"><span class="label">+${(citizenBonus * 100).toFixed(0)}%</span><span class="value">(${citizenCount} ${citizenType}s × ${citizenEffect})</span></div>`;
-
-  // Effect modifiers from buildings/research
-  let totalModifier = citizenBonus;
-  for (const iid of completedBuildings.concat(completedResearch)) {
-    const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
-    if (item?.effects?.[effectModifierKey] > 0) {
-      const modifier = item.effects[effectModifierKey];
-      totalModifier += modifier;
-      html += `<div class="panel-row"><span class="label">+${(modifier * 100).toFixed()}%</span><span class="value">(${item.name || iid})</span></div>`;
-    }
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  const effCe = citizenEffect || 0; // backend already sends effective_citizen_effect (includes citizen_effect_modifier)
+  const citizenBonus = citizenCount * effCe;
+  const citizenIcon = resourceType === 'gold' ? '🫂' : '🎨';
+  html += `<div class="panel-row"><span class="label">+${(citizenBonus * 100).toFixed(0)}%</span><span class="value">(${citizenCount} ${citizenIcon} × ${effCe.toFixed ? Number(effCe.toFixed(4)) : effCe})</span></div>`;
+  if ((effects?.citizen_effect_modifier || 0) > 0)
+    html += `<div class="panel-row"><span class="label" style="color:#aaa">+${(effects.citizen_effect_modifier * 100).toFixed(0)}% efficiency</span><span class="value" style="color:#888">citizen bonus</span></div>`;
+  const otherMod = effects?.other_citizen_gold_modifier || 0;
+  if (resourceType === 'gold' && otherMod > 0) {
+    const otherCount = (citizens?.artist || 0) + (citizens?.scientist || 0);
+    html += `<div class="panel-row"><span class="label">+${(otherCount * otherMod * 100).toFixed(0)}%</span><span class="value">(${otherCount} 🎨/🔬 × ${(otherMod * 100).toFixed(1)}%)</span></div>`;
   }
-  addArtifactModifiers();
+  html += _renderModifierSourceRows(effectSources, effectModifierKey, rulerName, ['citizens'], st.items);
 
-  // Ruler modifier contribution
-  const rulerModifier = effectModifierKey ? (rulerEffects[effectModifierKey] || 0) : 0;
-  if (rulerModifier > 0.0005 && rulerName) {
-    totalModifier += rulerModifier;
-    html += `<div class="panel-row"><span class="label">+${(rulerModifier * 100).toFixed(0)}%</span><span class="value">(👑 ${rulerName})</span></div>`;
-  }
-
-  // Era modifier contribution
-  const eraModifier = effectModifierKey
-    ? (effects[effectModifierKey] || 0) - rulerModifier - (totalModifier - citizenBonus - rulerModifier)
+  const otherGoldBonus = resourceType === 'gold'
+    ? ((citizens?.artist || 0) + (citizens?.scientist || 0)) * otherMod
     : 0;
-  if (eraModifier > 0.0005) {
-    totalModifier += eraModifier;
-    html += `<div class="panel-row"><span class="label">+${(eraModifier * 100).toFixed(0)}%</span><span class="value">(Era)</span></div>`;
-  }
-
-  // Final calculation line
+  const totalModifier = citizenBonus + otherGoldBonus + (effects[effectModifierKey] || 0);
   const multiplier = 1 + totalModifier;
   const total = totalOffset * multiplier;
   const color = resourceType === 'gold' ? '#4fc3f7' : '#ffa726';
-
-  html +=
-    '<div class="panel-row" style="border-top: 1px solid #555; margin: 6px 0; padding-top: 6px;"></div>';
-  html += `<div class="panel-row" style="color: ${color}; font-weight: bold;"><span class="label">= ${fmtH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${fmtH(total)}/h</span></div>`;
-
+  html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+  html += `<div class="panel-row" style="color:${color};font-weight:bold"><span class="label">= ${fmtH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${fmtH(total)}/h</span></div>`;
   return html;
 }
 
@@ -1320,24 +1334,14 @@ function renderEffects(effects) {
     .join('');
 }
 
-function renderEmpiresSection(empires) {
-  if (!empires) {
-    return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">Loading…</span></div></div>`;
-  }
-  if (empires.length === 0) {
-    return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">—</span></div></div>`;
-  }
+const _EMPIRES_BATCH = 20; // rows rendered per lazy-load step
 
+function _empireRowHtml(e, i, selfEra) {
+  const canAttack = (targetEra) => targetEra >= selfEra - 1;
   const dot = (online) =>
     `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${online ? 'var(--success,#66bb6a)' : '#3a3a4a'};${online ? 'box-shadow:0 0 4px var(--success,#66bb6a)' : ''}"></span>`;
-
-  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
-  const canAttack = (targetEra) => targetEra >= selfEra - 1;
-
-  const rows = empires
-    .map(
-      (e, i) => `
-    <div class="panel-row" style="display:flex;flex-direction:row;align-items:stretch;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);">
+  return `
+    <div class="panel-row" style="display:flex;flex-direction:row;align-items:stretch;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);${e.is_self ? 'background:rgba(255,255,255,0.06);' : ''}">
       <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;">
         <span style="color:#888;font-size:0.8em;min-width:16px;">${i + 1}</span>
         ${dot(e.online)}
@@ -1349,29 +1353,109 @@ function renderEmpiresSection(empires) {
       <div style="display:flex;flex-direction:row;align-items:center;gap:4px;">
         ${
           !e.is_self && canAttack(e.era || 1)
-            ? `
-          <button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>
-        `
+            ? `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>`
             : ''
         }
       </div>
     </div>
-  `
-    )
-    .join('');
+  `;
+}
+
+function renderEmpiresSection(empires) {
+  if (!empires) {
+    return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">Loading…</span></div></div>`;
+  }
+  if (empires.length === 0) {
+    return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">—</span></div></div>`;
+  }
+
+  // Reset rendered count — will be populated by _initEmpiresLazyScroll after DOM insert
+  _empiresRenderedCount = 0;
+  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
+  const initialBatch = empires.slice(0, _EMPIRES_BATCH);
+  const rows = initialBatch.map((e, i) => _empireRowHtml(e, i, selfEra)).join('');
+  _empiresRenderedCount = initialBatch.length;
 
   return `
     <div class="panel">
-      <div class="panel-header">Known Empires</div>
-      ${rows}
+      <div class="panel-header">Known Empires <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
+      <div id="empires-scroll" style="max-height:320px;overflow-y:auto;">
+        <div id="empires-rows">${rows}</div>
+        <div id="empires-sentinel" style="height:1px"></div>
+      </div>
     </div>
   `;
+}
+
+function _appendEmpiresBatch() {
+  const empires = _empiresData;
+  if (!empires || _empiresRenderedCount >= empires.length) return;
+  const rowsEl = container.querySelector('#empires-rows');
+  if (!rowsEl) return;
+  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
+  const next = empires.slice(_empiresRenderedCount, _empiresRenderedCount + _EMPIRES_BATCH);
+  const frag = document.createDocumentFragment();
+  next.forEach((e, j) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _empireRowHtml(e, _empiresRenderedCount + j, selfEra).trim();
+    const node = tmp.firstElementChild;
+    node.querySelector('.attack-btn')?.addEventListener('click', (ev) => onAttackClick(ev.currentTarget));
+    node.querySelector('.art-info-trigger')?.addEventListener('click', (ev) => { ev.stopPropagation(); _showArtifactInfoOverlay(); });
+    frag.appendChild(node);
+  });
+  rowsEl.appendChild(frag);
+  _empiresRenderedCount += next.length;
+}
+
+function _initEmpiresLazyScroll() {
+  const empires = _empiresData;
+  if (!empires) return;
+  const scrollEl = container.querySelector('#empires-scroll');
+  if (!scrollEl) return;
+  if (_empiresObserver) { _empiresObserver.disconnect(); _empiresObserver = null; }
+
+  // Use scroll event — reliable across all browsers for a custom scroll root
+  const onScroll = () => {
+    if (_empiresRenderedCount >= empires.length) {
+      scrollEl.removeEventListener('scroll', onScroll);
+      return;
+    }
+    const nearBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 80;
+    if (nearBottom) _appendEmpiresBatch();
+  };
+  scrollEl.addEventListener('scroll', onScroll);
+  // Store cleanup ref on the element so leave() can remove it
+  scrollEl._lazyScrollCleanup = () => scrollEl.removeEventListener('scroll', onScroll);
+
+  // If initial batch already fills the container (or is short), load more immediately
+  if (scrollEl.scrollHeight <= scrollEl.clientHeight) _appendEmpiresBatch();
+
+  // Scroll to self row — only on first load, not on every refresh
+  if (!_empiresScrolledToSelf) {
+    const selfIdx = empires.findIndex((e) => e.is_self);
+    if (selfIdx >= 0 && selfIdx < _empiresRenderedCount) {
+      const rows = scrollEl.querySelectorAll('#empires-rows .panel-row');
+      rows[selfIdx]?.scrollIntoView({ block: 'nearest' });
+      _empiresScrolledToSelf = true;
+    }
+  }
+}
+
+function _refreshEmpiresSection() {
+  const empires = _empiresData;
+  if (!empires) return;
+  const sec = container.querySelector('#empires-section');
+  if (!sec) return;
+  sec.innerHTML = renderEmpiresSection(empires);
+  bindEmpiresEvents();
+  _initEmpiresLazyScroll();
 }
 
 function bindEmpiresEvents() {
   const sec = container.querySelector('#empires-section');
   if (!sec) return;
 
+  // Only bind events for the initially rendered batch; lazy-loaded rows bind inline
   sec.querySelectorAll('.attack-btn').forEach((btn) => {
     btn.onclick = () => onAttackClick(btn);
   });
@@ -1421,6 +1505,13 @@ async function onAttackClick(btn) {
 
 function fmt(n) {
   return fmtNumber(n);
+}
+
+export function onLeaderUpdated(cb) { _onLeaderUpdated = cb; }
+
+export function getCultureLeaderName() {
+  if (!_empiresData || _empiresData.length === 0) return null;
+  return _empiresData[0].name || null;
 }
 
 export default {

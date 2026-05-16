@@ -126,8 +126,9 @@ function _calcPrice(iid) {
   const baseCost = costs[eraIdx] ?? costs[costs.length - 1] ?? 0;
   const iidUpgrades = _itemUpgrades[iid] ?? {};
   const totalLevels = Object.values(iidUpgrades).reduce((a, b) => a + b, 0);
-  // Quadratic scaling: base * (totalLevels + 1)^2
-  return Math.round(baseCost * Math.pow(totalLevels + 1, 2) * 10) / 10;
+  const discount = state?.summary?.effects?.workshop_cost_modifier ?? 0;
+  const raw = baseCost * Math.pow(totalLevels + 1, 2);
+  return Math.round(raw * Math.max(0, 1 - discount) * 10) / 10;
 }
 
 // Maps calcKey → def key in upgradeDefs (when they differ)

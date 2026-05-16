@@ -24,14 +24,14 @@ export class ItemOverlay {
     this.onHide = null; // callback when overlay is closed
   }
 
-  /** Create overlay DOM inside container. */
-  mount(container) {
+  /** Create overlay DOM — always appended to document.body so it sits above any stacking context. */
+  mount(_container) {
     this._el = document.createElement('div');
     this._el.className = 'tt-overlay';
     this._panel = document.createElement('div');
     this._panel.className = 'tt-panel';
     this._el.appendChild(this._panel);
-    container.appendChild(this._el);
+    document.body.appendChild(this._el);
 
     this._el.addEventListener('click', (e) => {
       if (e.target === this._el) this.hide();
@@ -132,7 +132,7 @@ export class ItemOverlay {
       const effort = b?.effort ?? catInfo.effort;
       const effectsStr = this._fmtItemEffects(b?.effects || catInfo.effects);
       const reqs = this._reqLinks(b?.requirements || catInfo.requirements);
-      const costsStr = this._fmtCosts(b?.costs || catInfo.costs);
+      const costsStr = this._fmtCosts(b?.costs || catInfo.costs, 'building');
       const eraLabel = this._getEraLabel(iid);
 
       html += `
@@ -279,12 +279,18 @@ export class ItemOverlay {
     return fmtTowerEffects(effects);
   }
 
-  _fmtCosts(costs) {
+  _fmtCosts(costs, category) {
     if (!costs || Object.keys(costs).length === 0) return '';
+    const buildingDiscount = category === 'building'
+      ? (this._st.summary?.effects?.building_cost_modifier ?? 0)
+      : 0;
     return Object.entries(costs)
       .map(([r, v]) => {
         const icon = r === 'gold' ? '💰' : r === 'culture' ? '📚' : r === 'life' ? '❤️' : '';
-        return `${icon} ${Math.round(v)} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
+        const discounted = r === 'gold' && buildingDiscount > 0
+          ? Math.round(v * Math.max(0, 1 - buildingDiscount))
+          : Math.round(v);
+        return `${icon} ${discounted} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
       })
       .join(', ');
   }

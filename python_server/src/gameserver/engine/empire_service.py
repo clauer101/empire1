@@ -27,6 +27,26 @@ from gameserver.util.eras import ERA_ORDER
 
 log = logging.getLogger(__name__)
 
+RULER_MAX_LEVEL = 18
+
+
+def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int) -> "dict[str, Any]":
+    """Compute level-scaled critter stats for a ruler.
+
+    All numeric combat attributes are linearly interpolated between their
+    _min and _max values based on level / RULER_MAX_LEVEL.
+    """
+    t = max(0.0, min(1.0, (level - 1) / (RULER_MAX_LEVEL - 1)))
+    return {
+        "speed": ruler_cfg["speed_min"] + (ruler_cfg["speed_max"] - ruler_cfg["speed_min"]) * t,
+        "health": ruler_cfg["health_min"] + (ruler_cfg["health_max"] - ruler_cfg["health_min"]) * t,
+        "armour": ruler_cfg["armour_min"] + (ruler_cfg["armour_max"] - ruler_cfg["armour_min"]) * t,
+        "value": ruler_cfg["value_base"] * level,
+        "scale": ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
+        "base_damage": ruler_cfg["base_damage"],
+        "animation": ruler_cfg["animation"],
+    }
+
 
 class EmpireService:
     """Service for all empire state management.
@@ -154,16 +174,20 @@ class EmpireService:
 
     def _generate_resources(self, empire: Empire, dt: float) -> None:
         """Generate gold and culture based on citizens and effects."""
+        eff_citizen_effect = self.effective_citizen_effect(empire)
+
         # Gold: base * modifier + offset
         merchant_count = empire.citizens.get("merchant", 0)
-        gold_modifier = merchant_count * self._citizen_effect
+        artist_count = empire.citizens.get("artist", 0)
+        scientist_count_g = empire.citizens.get("scientist", 0)
+        gold_modifier = merchant_count * eff_citizen_effect
+        gold_modifier += (artist_count + scientist_count_g) * empire.get_effect("other_citizen_gold_modifier", 0.0)
         gold_modifier += empire.get_effect("gold_modifier", 0.0)
         gold_offset = empire.get_effect("gold_offset", 0.0)
-        empire.resources["gold"] += ((self._base_gold + gold_offset) * (1 + gold_modifier )) * dt
+        empire.resources["gold"] += ((self._base_gold + gold_offset) * (1 + gold_modifier)) * dt
 
         # Culture: base * modifier + offset
-        artist_count = empire.citizens.get("artist", 0)
-        culture_modifier = artist_count * self._citizen_effect
+        culture_modifier = artist_count * eff_citizen_effect
         culture_modifier += empire.get_effect("culture_modifier", 0.0)
         culture_offset = empire.get_effect("culture_offset", 0.0)
         empire.resources["culture"] += ((self._base_culture + culture_offset) * (1 + culture_modifier)) * dt
@@ -171,6 +195,11 @@ class EmpireService:
         life_regen_modifier = empire.get_effect("life_regen_modifier", 0.0)
         if life_regen_modifier > 0:
             regen = life_regen_modifier
+            battle_boost = empire.get_effect("restore_life_during_battle_modifier", 0.0)
+            if battle_boost > 0:
+                from gameserver.network.handlers._core import _active_battles
+                if empire.uid in _active_battles:
+                    regen += battle_boost
             empire.resources["life"] = min(
                 empire.resources.get("life", 0.0) + regen * dt,
                 empire.max_life,
@@ -214,15 +243,19 @@ class EmpireService:
             empire.research_queue = None
             return
 
-        # Research speed: (base + offset) * (1 + modifier + n_scientists * citizen_effect)
+        # Research speed: (base + offset) * (1 + modifier + n_scientists * citizen_effect * scientist_bonus)
         scientist_count = empire.citizens.get("scientist", 0)
-        speed = (self._base_research_speed + empire.get_effect("research_speed_offset", 0.0)) * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self._citizen_effect)
+        scientist_bonus = 1.0 + empire.get_effect("scientist_citizen_bonus", 0.0)
+        speed = (self._base_research_speed + empire.get_effect("research_speed_offset", 0.0)) * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self.effective_citizen_effect(empire) * scientist_bonus)
         remaining -= dt * speed
         if remaining <= 0:
             remaining = 0.0
             empire.research_queue = None
             empire.knowledge[iid] = remaining
             self._apply_effects(empire, iid)
+            lump = empire.get_effect("gold_lump_sum_after_research", 0.0)
+            if lump > 0:
+                empire.resources["gold"] = empire.resources.get("gold", 0.0) + lump
             log.info("Empire %d: knowledge %s completed", empire.uid, iid)
             from gameserver.util.events import ItemCompleted
             self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
@@ -292,8 +325,18 @@ class EmpireService:
         self._recalculate_max_life(empire)
         log.info("Empire %d: recalculated effects → %s", empire.uid, empire.effects)
 
+    # Keys that are one-shot payouts on skill-up — must not be stored in empire.effects
+    _RULER_LUMP_SUM_KEYS = frozenset({
+        "gold_lump_sum_on_skill_up",
+        "culture_lump_sum_on_skill_up",
+    })
+
     def get_ruler_effects(self, empire: Empire) -> dict[str, float]:
-        """Return the combined effects from the empire's ruler skills."""
+        """Return the combined effects from the empire's ruler skills.
+
+        One-shot lump-sum keys are excluded — they are paid out immediately
+        in the skill-up handler and must not accumulate in empire.effects.
+        """
         ruler_type = empire.ruler.type
         if not ruler_type or ruler_type not in self._rulers:
             return {}
@@ -307,6 +350,8 @@ class EmpireService:
             if level > len(levels):
                 continue
             for key, value in levels[level - 1].items():
+                if key in self._RULER_LUMP_SUM_KEYS:
+                    continue
                 result[key] = result.get(key, 0.0) + float(value)
         return result
 
@@ -351,12 +396,15 @@ class EmpireService:
             is_new_start = iid not in empire.buildings
             # Deduct costs only on first start
             if is_new_start:
+                gold_discount = empire.get_effect("building_cost_modifier", 0.0)
                 for res, cost in item.costs.items():
+                    actual_cost = cost * max(0.0, 1.0 - gold_discount) if res == "gold" else cost
                     current = empire.resources.get(res, 0.0)
-                    if current < cost:
-                        return f"Not enough {res} (need {cost}, have {current:.1f})"
+                    if current < actual_cost:
+                        return f"Not enough {res} (need {actual_cost:.1f}, have {current:.1f})"
                 for res, cost in item.costs.items():
-                    empire.resources[res] -= cost
+                    actual_cost = cost * max(0.0, 1.0 - gold_discount) if res == "gold" else cost
+                    empire.resources[res] -= actual_cost
             # Enqueue (replace current build queue item)
             # Only set effort if not already started (not in dict or already completed)
             if is_new_start:
@@ -381,7 +429,8 @@ class EmpireService:
             # Enqueue (replace current research queue item)
             # Only set effort if not already started (not in dict or already completed)
             if is_new_start:
-                empire.knowledge[iid] = float(item.effort)
+                cost_mod = max(0.0, 1.0 - empire.get_effect("research_cost_modifier", 0.0))
+                empire.knowledge[iid] = float(item.effort) * cost_mod
             if item.effort > 0:
                 empire.research_queue = iid
             log.info("Empire %d: started research %s (effort=%s)", empire.uid, iid, item.effort)
@@ -411,7 +460,7 @@ class EmpireService:
         if empire.citizens.get("free", 0) > 0:
             empire.citizens["artist"] = empire.citizens.get("artist", 0) + empire.citizens.pop("free")
         n = sum(empire.citizens.values())
-        price = self._citizen_price(n + 1)
+        price = self.citizen_price_for(empire, n + 1)
         if empire.resources.get("culture", 0.0) < price:
             return f"Not enough culture (need {price:.1f}, have {empire.resources.get('culture', 0.0):.1f})"
         _roles = ["artist", "merchant", "scientist"]
@@ -422,6 +471,30 @@ class EmpireService:
     def _citizen_price(self, i: int) -> float:
         p = self._gc.prices.citizen
         return float(p.u + (i * p.y) * (i + p.z) ** p.v)
+
+    def citizen_price_for(self, empire: Empire, i: int) -> float:
+        """Citizen price with empire's citizen_cost_modifier applied."""
+        discount = empire.get_effect("citizen_cost_modifier", 0.0)
+        return self._citizen_price(i) * max(0.0, 1.0 - discount)
+
+    def tile_price_for(self, empire: Empire, i: int) -> float:
+        """Tile price with empire's tile_cost_modifier and land_cost_modifier applied."""
+        discount = empire.get_effect("tile_cost_modifier", 0.0) + empire.get_effect("land_cost_modifier", 0.0)
+        return self._tile_price(i) * max(0.0, 1.0 - discount)
+
+    def wave_price_for(self, empire: Empire, i: int) -> float:
+        """Wave price with empire's wave_cost_modifier applied."""
+        discount = empire.get_effect("wave_cost_modifier", 0.0)
+        return self._wave_price(i) * max(0.0, 1.0 - discount)
+
+    def wave_era_price_for(self, empire: Empire, era_index: int) -> float:
+        """Wave era upgrade price with empire's wave_era_cost_modifier applied."""
+        discount = empire.get_effect("wave_era_cost_modifier", 0.0)
+        return self._wave_era_price(era_index) * max(0.0, 1.0 - discount)
+
+    def effective_citizen_effect(self, empire: Empire) -> float:
+        """citizen_effect scaled by empire's citizen_effect_modifier."""
+        return self._citizen_effect + empire.get_effect("citizen_effect_modifier", 0.0)
 
     @staticmethod
     def _sigmoid(i: int, maxv: float, minv: float, spread: float, steep: float) -> float:
@@ -440,9 +513,32 @@ class EmpireService:
         p = self._gc.prices.critter_slot
         return float(p.u + (i * p.y) * (i + p.z) ** p.v)
 
+    def critter_slot_price_for(self, empire: Empire, i: int) -> float:
+        """Critter slot price with empire's wave_slot_cost_modifier applied."""
+        discount = empire.get_effect("wave_slot_cost_modifier", 0.0)
+        return self._critter_slot_price(i) * max(0.0, 1.0 - discount)
+
     def _army_price(self, i: int) -> float:
         p = self._gc.prices.army
         return float(p.u + (i * p.y) * (i + p.z) ** p.v)
+
+    def ruler_xp_for_level(self, level: int) -> float:
+        """XP required to reach `level` from level-1. Uses powerDecay formula."""
+        if self._gc is None:
+            return float(level * 100)
+        p = self._gc.prices.ruler_xp
+        return float(p.u + (level * p.y) * (level + p.z) ** p.v)
+
+    def ruler_level_from_xp(self, xp: float, max_level: int = 18) -> int:
+        """Derive ruler level from total accumulated XP."""
+        level = 1
+        cumulative = 0.0
+        for lvl in range(2, max_level + 2):
+            cumulative += self.ruler_xp_for_level(lvl)
+            if xp < cumulative:
+                break
+            level = lvl
+        return min(level, max_level)
 
     def _wave_era_price(self, era_index: int) -> float:
         costs = self._gc.prices.wave_era_costs
@@ -463,7 +559,15 @@ class EmpireService:
         base_cost = costs_list[era_idx] if era_idx < len(costs_list) else (costs_list[-1] if costs_list else 0.0)
         iid_upgrades = empire.item_upgrades.get(iid, {})
         total_levels = sum(iid_upgrades.values())
-        return base_cost * (total_levels + 1) ** 2
+        cost = base_cost * (total_levels + 1) ** 2
+        # Exclude end-rally effects from workshop discount — end rally should not affect upgrade prices
+        rally_modifier = 0.0
+        if self._gc is not None:
+            from gameserver.engine.global_state import is_end_rally_active
+            if is_end_rally_active(self._gc):
+                rally_modifier = float(self._gc.end_rally_effects.get("workshop_cost_modifier", 0.0))
+        discount = max(0.0, 1.0 - (empire.get_effect("workshop_cost_modifier", 0.0) - rally_modifier))
+        return cost * discount
 
     def change_citizens(self, empire: Empire, distribution: dict[str, int]) -> Optional[str]:
         """Redistribute citizens among roles. Returns error message or None.
@@ -503,4 +607,40 @@ class EmpireService:
         
         # Apply new distribution (no free citizens)
         empire.citizens = {k: v for k, v in distribution.items()}
+        return None
+
+    # -- Global spawn positions ------------------------------------------
+
+    def assign_global_spawn_positions(
+        self,
+        users_by_creation: list[dict],
+        *,
+        grid_radius: int = 50,
+        min_separation: int = 10,
+    ) -> None:
+        """Assign global hex spawn positions to all registered empires.
+
+        Iterates over *users_by_creation* (sorted oldest-first, as returned by
+        ``Database.list_users()``) and assigns each empire the next available
+        hex tile in inside-out order, with at least *min_separation* hex steps
+        between any two spawn points.
+
+        Empires not currently loaded (uid not in self._empires) are skipped.
+        """
+        from gameserver.util.hex_spawn_placement import assign_spawn_positions
+
+        uids_in_order = [u["uid"] for u in users_by_creation if u["uid"] in self._empires]
+        positions = assign_spawn_positions(
+            uids_in_order,
+            grid_radius=grid_radius,
+            min_separation=min_separation,
+        )
+        for uid, coord in positions.items():
+            empire = self._empires[uid]
+            empire.global_q = coord.q
+            empire.global_r = coord.r
+            log.info(
+                "Spawn position assigned: uid=%d name=%r global_q=%d global_r=%d",
+                uid, empire.name, coord.q, coord.r,
+            )
         return None

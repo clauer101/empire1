@@ -76,7 +76,7 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
     if battle is not None and not battle.is_finished and attack.phase == AttackPhase.IN_BATTLE:
         from gameserver.engine.battle_service import BattleService
         items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-        battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None)
+        battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None, rulers=svc.empire_service._rulers if svc.empire_service else {})
 
         async def _send_fn(uid: int, data: dict[str, Any]) -> bool:
             if svc.server:
@@ -113,7 +113,7 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
 
     from gameserver.engine.battle_service import BattleService
     items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None)
+    battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None, rulers=svc.empire_service._rulers if svc.empire_service else {})
     # Build a fake armies dict with just this army so we can reuse build_upcoming_waves
     armies = {attacking_army.aid: attacking_army} if attacking_army else {}
     upcoming = battle_svc.build_upcoming_waves(armies)

@@ -57,7 +57,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         )
         if isinstance(result, int):
             from gameserver.network.handlers import _create_empire_for_new_user
-            _create_empire_for_new_user(result, body.username, body.empire_name)
+            await _create_empire_for_new_user(result, body.username, body.empire_name)
             return {"success": True, "uid": result, "reason": ""}
         return {"success": False, "uid": 0, "reason": result}
 

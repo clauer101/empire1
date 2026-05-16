@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hex Spawn Placement</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 13px;
+      height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+      flex-shrink: 0;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #idx-display {
+      font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 5px 10px;
+    }
+    #main { display: flex; flex: 1; overflow: hidden; }
+    #sidebar {
+      width: 280px; flex-shrink: 0; overflow-y: auto;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .card {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 12px;
+    }
+    .ctrl-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .ctrl-row:last-child { margin-bottom: 0; }
+    .ctrl-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--text-dim);
+    }
+    .ctrl-val { font-family: var(--mono); color: var(--text); font-size: 11px; }
+    input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .checkbox-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--text-dim); margin-bottom: 6px; cursor: pointer;
+    }
+    .checkbox-row input { accent-color: var(--accent); cursor: pointer; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      cursor: pointer; border: none; border-radius: var(--radius);
+      padding: 7px 16px; font-size: 12px; font-family: inherit; font-weight: 600;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    .btn-primary { background: var(--accent); color: #0d0d14; }
+    .btn-stop    { background: var(--danger); color: #fff; }
+    .btn-neutral { background: var(--border); color: var(--text); }
+    #spawn-log {
+      max-height: 180px; overflow-y: auto;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      display: flex; flex-direction: column-reverse; gap: 2px;
+    }
+    .log-entry { padding: 2px 4px; border-radius: 3px; }
+    #canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #statusbar {
+      position: absolute; bottom: 8px; left: 12px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      pointer-events: none;
+    }
+    #tooltip {
+      position: fixed; display: none; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-family: var(--mono); font-size: 11px; color: var(--text);
+      pointer-events: none; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>⬡ Hex Spawn Placement</h1>
+  <div id="idx-display">index: 0 / 0</div>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-play">▶ Play</button>
+    <button class="btn-neutral" id="btn-step">+1 Step</button>
+    <button class="btn-neutral" id="btn-reset">↺ Reset</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+
+    <div class="card">
+      <div class="section-title">Simulation</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Speed <span class="ctrl-val" id="val-speed">2/s</span></div>
+        <input type="range" id="sl-speed" min="0.2" max="20" step="0.2" value="2">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Hex Grid Configuration</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Grid radius (hexes) <span class="ctrl-val" id="val-gridR">20</span></div>
+        <input type="range" id="sl-gridR" min="5" max="50" step="1" value="20">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Min separation (hexes) <span class="ctrl-val" id="val-minSep">10</span></div>
+        <input type="range" id="sl-minSep" min="1" max="20" step="1" value="10">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Display</div>
+      <label class="checkbox-row"><input type="checkbox" id="chk-hexgrid" checked> Show hex grid</label>
+      <label class="checkbox-row"><input type="checkbox" id="chk-excl"> Show exclusion zones</label>
+      <label class="checkbox-row"><input type="checkbox" id="chk-labels" checked> Show index labels</label>
+      <div class="ctrl-row" style="margin-top:8px">
+        <div class="ctrl-label">Hex size (px) <span class="ctrl-val" id="val-hexSize">18px</span></div>
+        <input type="range" id="sl-hexSize" min="4" max="40" step="1" value="18">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Spawn Log</div>
+      <div id="spawn-log"></div>
+    </div>
+
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="hex-canvas"></canvas>
+    <div id="statusbar">placed: 0 | available: 0</div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Params ──
+const P = {
+  speed:   2,
+  gridR:   20,
+  minSep:  10,
+  hexSize: 18,   // pixel radius of each hex (flat-top)
+  showHexGrid:  true,
+  showExclusion: false,
+  showLabels:   true,
+};
+
+// ── Axial hex math ──
+// Axial coordinates (q, r); flat-top orientation.
+function hexDist(aq, ar, bq, br) {
+  return (Math.abs(aq - bq) + Math.abs(aq + ar - bq - br) + Math.abs(ar - br)) / 2;
+}
+
+// All hexes within radius R of origin, sorted inside-out (by hex distance, then angle).
+function buildHexOrder(R) {
+  const hexes = [];
+  for (let q = -R; q <= R; q++) {
+    for (let r = -R; r <= R; r++) {
+      const d = hexDist(0, 0, q, r);
+      if (d <= R) hexes.push({ q, r, dist: d });
+    }
+  }
+  hexes.sort((a, b) => {
+    if (a.dist !== b.dist) return a.dist - b.dist;
+    // Within ring: clockwise from top-right
+    const angA = Math.atan2(a.r + a.q / 2, a.q);
+    const angB = Math.atan2(b.r + b.q / 2, b.q);
+    return angA - angB;
+  });
+  return hexes;
+}
+
+// Axial → pixel (flat-top layout)
+function hexToPixel(q, r, size) {
+  const x = size * (3 / 2 * q);
+  const y = size * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r);
+  return [x, y];
+}
+
+// Pixel → nearest axial hex
+function pixelToHex(px, py, size) {
+  const q = (2 / 3 * px) / size;
+  const r = (-1 / 3 * px + Math.sqrt(3) / 3 * py) / size;
+  return hexRound(q, r);
+}
+
+function hexRound(q, r) {
+  const s = -q - r;
+  let rq = Math.round(q), rr = Math.round(r), rs = Math.round(s);
+  const dq = Math.abs(rq - q), dr = Math.abs(rr - r), ds = Math.abs(rs - s);
+  if (dq > dr && dq > ds) rq = -rr - rs;
+  else if (dr > ds)        rr = -rq - rs;
+  return [rq, rr];
+}
+
+// Flat-top hex corners
+function hexCorners(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i);
+    pts.push([cx + size * Math.cos(a), cy + size * Math.sin(a)]);
+  }
+  return pts;
+}
+
+// ── State ──
+const state = {
+  running:    false,
+  allHexes:   [],    // all hexes in order (rebuilt on config change)
+  candidates: [],    // hexes not yet placed or excluded
+  placed:     [],    // { q, r, dist, idx }
+  nextCandIdx: 0,    // index into candidates to try next
+  fracAcc:    0,
+  lastWall:   null,
+  scale:      1,     // additional zoom
+  panX:       0,
+  panY:       0,
+  dragging:   false,
+  dragStart:  null,
+  hoveredQ:   null,
+  hoveredR:   null,
+};
+
+function rebuild() {
+  state.allHexes    = buildHexOrder(P.gridR);
+  state.candidates  = state.allHexes.map(h => ({ ...h, available: true }));
+  state.placed      = [];
+  state.nextCandIdx = 0;
+  state.fracAcc     = 0;
+}
+rebuild();
+
+// ── Canvas ──
+const canvas = document.getElementById('hex-canvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width  = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+}
+new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+resizeCanvas();
+
+// ── Transform ──
+function w2c(wx, wy) {
+  return [
+    canvas.width  / 2 + (wx + state.panX) * state.scale,
+    canvas.height / 2 + (wy + state.panY) * state.scale,
+  ];
+}
+
+// ── Color by placement index ──
+function placedColor(idx, total, alpha = 1) {
+  const t = total > 1 ? idx / (total - 1) : 0;
+  const r = Math.round(0x4f + (0xff - 0x4f) * t);
+  const g = Math.round(0xc3 + (0xa7 - 0xc3) * t);
+  const b = Math.round(0xf7 + (0x26 - 0xf7) * t);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── Render ──
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const sz = P.hexSize * state.scale;
+  const total = state.placed.length;
+
+  // Build lookup for placed and excluded hexes
+  const placedSet   = new Map(); // "q,r" → placed entry
+  const excludedSet = new Set(); // "q,r"
+  for (const p of state.placed) {
+    placedSet.set(`${p.q},${p.r}`, p);
+    if (P.showExclusion) {
+      // Mark all hexes within minSep as excluded
+      for (const h of state.allHexes) {
+        if (hexDist(p.q, p.r, h.q, h.r) < P.minSep) {
+          excludedSet.add(`${h.q},${h.r}`);
+        }
+      }
+    }
+  }
+
+  // Draw all hexes in the grid
+  for (const h of state.allHexes) {
+    const [wx, wy] = hexToPixel(h.q, h.r, P.hexSize);
+    const [cx, cy] = w2c(wx, wy);
+    const key = `${h.q},${h.r}`;
+    const corners = hexCorners(cx, cy, Math.max(sz * 0.95, sz - 0.5));
+
+    const isPlaced   = placedSet.has(key);
+    const isExcluded = excludedSet.has(key);
+    const isHovered  = h.q === state.hoveredQ && h.r === state.hoveredR;
+
+    ctx.beginPath();
+    ctx.moveTo(...corners[0]);
+    for (let i = 1; i < 6; i++) ctx.lineTo(...corners[i]);
+    ctx.closePath();
+
+    // Fill
+    if (isPlaced) {
+      const p = placedSet.get(key);
+      ctx.fillStyle = placedColor(p.idx, total, 0.25);
+    } else if (isExcluded) {
+      ctx.fillStyle = 'rgba(239,83,80,0.06)';
+    } else {
+      ctx.fillStyle = isHovered ? 'rgba(79,195,247,0.08)' : 'transparent';
+    }
+    ctx.fill();
+
+    // Stroke
+    if (P.showHexGrid) {
+      ctx.strokeStyle = isPlaced
+        ? placedColor(placedSet.get(key).idx, total, 0.5)
+        : isExcluded
+          ? 'rgba(239,83,80,0.15)'
+          : 'rgba(42,42,58,0.7)';
+      ctx.lineWidth = isPlaced ? 1.2 : 0.5;
+      ctx.stroke();
+    }
+  }
+
+  // Draw spawn point markers and labels on top
+  for (const p of state.placed) {
+    const [wx, wy] = hexToPixel(p.q, p.r, P.hexSize);
+    const [cx, cy] = w2c(wx, wy);
+    const isHovered = p.q === state.hoveredQ && p.r === state.hoveredR;
+    const ptR = Math.max(2, sz * 0.28) + (isHovered ? 2 : 0);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, ptR, 0, Math.PI * 2);
+    ctx.fillStyle = placedColor(p.idx, total);
+    ctx.fill();
+
+    if (isHovered) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, ptR + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    if (P.showLabels && sz > 12) {
+      const fontSize = Math.max(7, Math.min(12, sz * 0.38));
+      ctx.font = `${fontSize}px monospace`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle    = `rgba(224,224,230,0.75)`;
+      ctx.fillText(p.idx, cx, cy + ptR + fontSize * 0.9);
+    }
+  }
+
+  // Origin marker
+  const [ox, oy] = w2c(0, 0);
+  ctx.strokeStyle = 'rgba(79,195,247,0.35)';
+  ctx.lineWidth   = 1.5;
+  ctx.beginPath(); ctx.moveTo(ox - 8, oy); ctx.lineTo(ox + 8, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, oy - 8); ctx.lineTo(ox, oy + 8); ctx.stroke();
+
+  const available = state.candidates.filter(h => h.available).length;
+  document.getElementById('statusbar').textContent =
+    `placed: ${state.placed.length} | available: ${available} | total hexes: ${state.allHexes.length}`;
+  document.getElementById('idx-display').textContent =
+    `index: ${state.placed.length} / ${state.placed.length + available}`;
+}
+
+// ── Spawn log ──
+const logEl = document.getElementById('spawn-log');
+function logEntry(p) {
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.textContent = `#${p.idx} → (q=${p.q}, r=${p.r})  ring=${p.dist}`;
+  logEl.prepend(div);
+  while (logEl.children.length > 80) logEl.lastChild.remove();
+}
+
+// ── Place one spawn ──
+// Finds next candidate (inside-out order) that satisfies minSep from all placed.
+function placeNext() {
+  while (state.nextCandIdx < state.candidates.length) {
+    const c = state.candidates[state.nextCandIdx];
+    state.nextCandIdx++;
+    if (!c.available) continue;
+
+    // Check min separation against all placed spawns
+    let ok = true;
+    for (const p of state.placed) {
+      if (hexDist(c.q, c.r, p.q, p.r) < P.minSep) { ok = false; break; }
+    }
+    if (!ok) { c.available = false; continue; }
+
+    // Place it
+    c.idx = state.placed.length;
+    state.placed.push(c);
+    c.available = false;
+
+    // Mark neighbors within minSep as unavailable
+    for (const h of state.candidates) {
+      if (h.available && hexDist(c.q, c.r, h.q, h.r) < P.minSep) {
+        h.available = false;
+      }
+    }
+
+    logEntry(c);
+    return true;
+  }
+  return false; // no more valid candidates
+}
+
+// ── Animation loop ──
+function tick(wall) {
+  if (!state.running) { state.lastWall = null; return; }
+  if (state.lastWall === null) state.lastWall = wall;
+  const dt = (wall - state.lastWall) / 1000;
+  state.lastWall = wall;
+
+  state.fracAcc += P.speed * dt;
+  while (state.fracAcc >= 1) {
+    if (!placeNext()) { state.running = false; stopAnim(); break; }
+    state.fracAcc -= 1;
+  }
+
+  render();
+  if (state.running) requestAnimationFrame(tick);
+}
+
+function stopAnim() {
+  btnPlay.textContent = '▶ Play';
+  btnPlay.className   = 'btn-primary';
+}
+
+// ── Controls ──
+const btnPlay = document.getElementById('btn-play');
+btnPlay.addEventListener('click', () => {
+  if (!state.candidates.some(h => h.available)) return;
+  state.running = !state.running;
+  btnPlay.textContent = state.running ? '⏸ Pause' : '▶ Play';
+  btnPlay.className   = state.running ? 'btn-stop' : 'btn-primary';
+  if (state.running) requestAnimationFrame(tick);
+});
+
+document.getElementById('btn-step').addEventListener('click', () => {
+  state.running = false; stopAnim();
+  placeNext();
+  render();
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  state.running = false; stopAnim();
+  state.lastWall = null;
+  rebuild();
+  logEl.innerHTML = '';
+  render();
+});
+
+function wireSlider(id, valId, param, fmt, needsRebuild = false) {
+  const sl = document.getElementById(id);
+  document.getElementById(valId).textContent = fmt(P[param]);
+  sl.addEventListener('input', () => {
+    P[param] = parseFloat(sl.value);
+    document.getElementById(valId).textContent = fmt(P[param]);
+    if (needsRebuild) { state.running = false; stopAnim(); rebuild(); }
+    render();
+  });
+}
+
+wireSlider('sl-speed',   'val-speed',   'speed',   v => v.toFixed(1) + '/s');
+wireSlider('sl-gridR',   'val-gridR',   'gridR',   v => Math.round(v), true);
+wireSlider('sl-minSep',  'val-minSep',  'minSep',  v => Math.round(v), true);
+wireSlider('sl-hexSize', 'val-hexSize', 'hexSize', v => Math.round(v) + 'px');
+
+document.getElementById('chk-hexgrid').addEventListener('change', function() { P.showHexGrid    = this.checked; render(); });
+document.getElementById('chk-excl').addEventListener('change',    function() { P.showExclusion  = this.checked; render(); });
+document.getElementById('chk-labels').addEventListener('change',  function() { P.showLabels     = this.checked; render(); });
+
+// ── Mouse ──
+const tooltip = document.getElementById('tooltip');
+
+canvas.addEventListener('mousedown', e => {
+  state.dragging  = true;
+  state.dragStart = { x: e.clientX, y: e.clientY, panX: state.panX, panY: state.panY };
+});
+canvas.addEventListener('mouseup',    () => { state.dragging = false; });
+canvas.addEventListener('mouseleave', () => {
+  state.dragging = false;
+  state.hoveredQ = state.hoveredR = null;
+  tooltip.style.display = 'none';
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (state.dragging) {
+    state.panX = state.dragStart.panX + (e.clientX - state.dragStart.x) / state.scale;
+    state.panY = state.dragStart.panY + (e.clientY - state.dragStart.y) / state.scale;
+    render();
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  // Convert screen → world → hex
+  const wx = (e.clientX - rect.left - canvas.width  / 2) / state.scale - state.panX;
+  const wy = (e.clientY - rect.top  - canvas.height / 2) / state.scale - state.panY;
+  const [hq, hr] = pixelToHex(wx, wy, P.hexSize);
+
+  if (hexDist(0, 0, hq, hr) <= P.gridR) {
+    state.hoveredQ = hq;
+    state.hoveredR = hr;
+    const placed = state.placed.find(p => p.q === hq && p.r === hr);
+    if (placed) {
+      tooltip.innerHTML =
+        `<b>spawn #${placed.idx}</b><br>` +
+        `(q=${placed.q}, r=${placed.r})<br>` +
+        `hex ring = ${placed.dist}`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
+    } else {
+      const d = hexDist(0, 0, hq, hr);
+      tooltip.innerHTML = `(q=${hq}, r=${hr})<br>ring = ${d}`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
+    }
+  } else {
+    state.hoveredQ = state.hoveredR = null;
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  state.scale *= e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  render();
+}, { passive: false });
+
+// ── Init ──
+resizeCanvas();
+render();
+</script>
+</body>
+</html>

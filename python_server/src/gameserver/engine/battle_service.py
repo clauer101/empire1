@@ -29,6 +29,7 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Callable, Awaitable
 
 from gameserver.models.critter import Critter
+from gameserver.engine.empire_service import ruler_critter_stats
 from gameserver.models.hex import HexCoord
 from gameserver.models.shot import Shot
 from gameserver.engine.hex_pathfinding import critter_hex_pos, hex_world_distance
@@ -101,12 +102,18 @@ class BattleService:
     decoupled from the WebSocket server.
     """
 
-    def __init__(self, items: list[Any] | dict[str, Any] | None = None, gc: Any = None) -> None:
+    def __init__(
+        self,
+        items: list[Any] | dict[str, Any] | None = None,
+        gc: Any = None,
+        rulers: "dict[str, Any] | None" = None,
+    ) -> None:
         """Initialize battle service.
 
         Args:
             items: List or dict of ItemDetails for looking up critter stats.
             gc: GameConfig instance for upgrade definitions.
+            rulers: Ruler config dict (from _load_rulers) for ruler critter spawning.
         """
         if items is None:
             self._items_by_iid = {}
@@ -115,9 +122,17 @@ class BattleService:
         else:
             self._items_by_iid = {item.iid: item for item in items}
         self._gc = gc
+        self._rulers: dict[str, Any] = rulers or {}
+        if self._rulers:
+            log.info("[BattleService] rulers loaded: %s", list(self._rulers.keys()))
+        else:
+            log.warning("[BattleService] no rulers loaded — ruler waves will fall back to generic critter stats")
 
     def _get_wave_critter_slot_cost(self, wave: Any) -> float:
         """Return the slot cost for the next critter of this wave."""
+        if wave.iid in self._rulers:
+            # Ruler occupies all remaining slots so exactly one spawns per wave.
+            return max(wave.slots, 999.0)
         item = self._items_by_iid.get(wave.iid)
         return max(0.1, float(getattr(item, "slots", 1.0) or 1.0))
 
@@ -256,9 +271,9 @@ class BattleService:
             log.debug("[SHOT] Shot %d->%d missed (target not found)", shot.source_sid, shot.target_cid)
             return
 
-        # Apply base damage (reduced by armour, minimum 0.5; zero if tower has 0 base damage)
+        # Apply base damage (reduced by armour, minimum 1; zero if tower has 0 base damage)
         has_burn = "burn_dps" in shot.effects or "burn_duration" in shot.effects
-        damage = max(0.5, shot.damage - critter.armour) if shot.damage > 0 else 0.0
+        damage = max(1.0, shot.damage - critter.armour) if shot.damage > 0 else 0.0
         if damage > 0:
             critter.health -= damage
         log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)",
@@ -292,7 +307,7 @@ class BattleService:
                 oq, or_ = critter_hex_pos(other.path, other.path_progress)
                 dist = hex_world_distance(impact_q, impact_r, oq, or_)
                 if dist <= splash_radius:
-                    splash_dmg = max(0.5, shot.damage - other.armour) if shot.damage > 0 else 0.0
+                    splash_dmg = max(1.0, shot.damage - other.armour) if shot.damage > 0 else 0.0
                     other.health -= splash_dmg
                     if has_splash_slow:
                         other.slow_remaining_ms = float(shot.effects.get("slow_duration", 2000.0))
@@ -520,10 +535,15 @@ class BattleService:
                     continue  # fully spent
                 if w.num_critters_spawned > 0:
                     continue  # active wave, currently spawning
-                item = self._items_by_iid.get(w.iid)
-                critter_name = item.name if item else w.iid
-                critter_slot_cost = self._get_wave_critter_slot_cost(w)
-                critter_count = max(1, round(w.slots / critter_slot_cost))
+                ruler_cfg = self._rulers.get(w.iid)
+                if ruler_cfg is not None:
+                    critter_name = ruler_cfg.get("name", w.iid)
+                    critter_count = 1
+                else:
+                    item = self._items_by_iid.get(w.iid)
+                    critter_name = item.name if item else w.iid
+                    critter_slot_cost = self._get_wave_critter_slot_cost(w)
+                    critter_count = max(1, round(w.slots / critter_slot_cost))
                 upcoming.append({
                     "army_uid": army.uid,
                     "wave_index": i + 1,
@@ -584,7 +604,40 @@ class BattleService:
             spawn_on_death=dict(getattr(item, 'spawn_on_death', None) or {}),
         )
 
-    def _step_wave(self, wave: Any, dt_ms: float) -> list[Critter]:
+    def _make_ruler_critter(
+        self,
+        ruler_iid: str,
+        ruler_level: int,
+        path: list[Any],
+        ruler_cfg: "dict[str, Any]",
+    ) -> Critter:
+        """Create a Critter from ruler config, scaling stats by ruler level."""
+        stats = ruler_critter_stats(ruler_cfg, ruler_level)
+        health = stats["health"]
+        anim_folder = (stats.get("animation") or "").rstrip("/").split("/")[-1]
+        sprite_iid = f"ruler_{anim_folder}" if anim_folder else f"RULER_{ruler_iid}"
+        return Critter(
+            cid=_new_cid(),
+            iid=sprite_iid,
+            path=path,
+            path_progress=0.0,
+            health=health,
+            max_health=health,
+            speed=stats["speed"],
+            armour=stats["armour"],
+            scale=stats["scale"],
+            value=stats["value"],
+            damage=stats["base_damage"],
+            spawn_on_death={},
+        )
+
+    def _step_wave(
+        self,
+        wave: Any,
+        dt_ms: float,
+        ruler_level: int = 1,
+        ruler_cfg: "dict[str, Any] | None" = None,
+    ) -> list[Critter]:
         """Step a wave: decrement spawn timer and spawn critters as needed.
 
         This function manages the spawn timing for a single wave, spawning
@@ -616,7 +669,10 @@ class BattleService:
 
             # Spawn if it fits, or if this is the very first critter of the wave
             if critters_spawned == 0 or critters_spawned + critter_slot_cost <= wave.slots:
-                critter = self._make_critter_from_item(wave.iid, path=[])
+                if ruler_cfg is not None:
+                    critter = self._make_ruler_critter(wave.iid, ruler_level, path=[], ruler_cfg=ruler_cfg)
+                else:
+                    critter = self._make_critter_from_item(wave.iid, path=[])
                 critters.append(critter)
                 critters_spawned += critter_slot_cost
                 next_spawn_ms = self._get_critter_spawn_interval(wave.iid)
@@ -643,6 +699,7 @@ class BattleService:
         for army in battle.armies.values():
             uid = army.uid  # owner uid from the Army object (not the dict key)
             attacker_item_upgrades: dict[str, Any] | None = None
+            emp = None
             from gameserver.network.handlers._core import _svc as _core_svc
             try:
                 svc = _core_svc()
@@ -651,12 +708,19 @@ class BattleService:
             except Exception:
                 pass
 
+            ruler_level = emp.ruler.level if emp else 1
+
             for wave in army.waves:
-                new_critters = self._step_wave(wave, dt_ms)
+                ruler_cfg: dict[str, Any] | None = self._rulers.get(wave.iid)
+                new_critters = self._step_wave(
+                    wave, dt_ms,
+                    ruler_level=ruler_level,
+                    ruler_cfg=ruler_cfg,
+                )
                 for critter in new_critters:
                     critter.path = battle.critter_path
                     critter.owner_uid = uid
-                    if cu and attacker_item_upgrades:
+                    if cu and attacker_item_upgrades and ruler_cfg is None:
                         iid_upgrades = attacker_item_upgrades.get(critter.iid, {})
                         critter.health *= 1.0 + (cu.health / 100.0) * iid_upgrades.get("health", 0)
                         critter.max_health = critter.health

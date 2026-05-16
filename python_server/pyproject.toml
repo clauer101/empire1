@@ -18,6 +18,7 @@ dependencies = [
     "prometheus-client>=0.19,<1.0",
     "alembic>=1.16,<2.0",
     "slowapi>=0.1.9,<1.0",
+    "pywebpush>=2.0,<3.0",
 ]
 
 [project.optional-dependencies]

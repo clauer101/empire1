@@ -216,6 +216,29 @@ async def handle_item_request(
             })
         catalog[item.iid] = entry
 
+    rulers_catalog: dict[str, Any] = {}
+    for ruler_id, ruler_def in (svc.empire_service._rulers if svc.empire_service else {}).items():
+        rulers_catalog[ruler_id] = {
+            "name": ruler_def.get("name", ruler_id),
+            "description": ruler_def.get("description", ""),
+            "splash": f"/{ruler_def.get('animation', '').rstrip('/')}/{ruler_def.get('animation', '').rstrip('/').split('/')[-1]}_splash.webp",
+            "skills": {
+                skill: {**ruler_def[f"{skill}_meta"], "levels": ruler_def.get(skill, [])}
+                for skill in ("q", "w", "e", "r")
+                if ruler_def.get(f"{skill}_meta")
+            },
+            "critter": {
+                "speed_min": ruler_def.get("speed_min", 0.8),
+                "speed_max": ruler_def.get("speed_max", 1.2),
+                "health_min": ruler_def.get("health_min", 20),
+                "health_max": ruler_def.get("health_max", 2000),
+                "armour_min": ruler_def.get("armour_min", 0),
+                "armour_max": ruler_def.get("armour_max", 19),
+                "value_base": ruler_def.get("value_base", 1000),
+                "animation": ruler_def.get("animation", ""),
+            },
+        }
+
     return {
         "type": "item_response",
         "buildings": buildings,
@@ -223,6 +246,7 @@ async def handle_item_request(
         "structures": structures,
         "critters": critters,
         "catalog": catalog,
+        "rulers": rulers_catalog,
     }
 
 
@@ -612,7 +636,7 @@ async def handle_map_save_request(
     cfg = svc.empire_service._gc if hasattr(svc.empire_service, '_gc') else None
     base_refund = getattr(cfg, 'tower_sell_refund', 0.3) if cfg else 0.3
     refund_modifier = empire.get_effect("tower_sell_refund_modifier", 0.0)
-    refund_rate = base_refund * (1.0 + refund_modifier)
+    refund_rate = base_refund + refund_modifier
     total_refund = 0.0
     for tile_key, old_val in old_tiles.items():
         old_type = _tile_type(old_val)
@@ -726,7 +750,7 @@ async def handle_buy_tile_request(
 
     # Calculate cost based on number of already purchased tiles
     purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
-    tile_price = svc.empire_service._tile_price(purchased_tile_count + 1)
+    tile_price = svc.empire_service.tile_price_for(empire, purchased_tile_count + 1)
 
     # Check if player has enough gold
     current_gold = empire.resources.get('gold', 0.0)

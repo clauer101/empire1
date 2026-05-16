@@ -51,9 +51,16 @@ effects: {splash_radius: 0.6}
 - `_VISUAL_SPLASH = 3` → Projektil-Typ für den Client.
 
 ### Armour-Verhalten
-- **Direktschaden**: `max(0.5, damage - critter.armour)`
+- **Direktschaden**: `max(1.0, damage - critter.armour)` — Mindestschaden 1 pro Schuss
 - **Burn-DoT**: ignoriert Armour vollständig
 - **Slow/Stun**: kein Schaden, Armour irrelevant
+
+### Binäre Effects (0/1-Flags)
+
+| Effect-Key | Beschreibung |
+|---|---|
+| `spy_workshop` | > 0 → Workshop-Sektion im Spionage-Bericht aktiviert |
+| `ruler_unlock` | > 0 → Ruler-Panel im Status-View angezeigt; Ruler kann einer Armee zugewiesen werden |
 
 ---
 
@@ -70,6 +77,39 @@ Empire-Effects werden durch abgeschlossene Knowledge-Items freigeschaltet und vi
 | `life_regen_modifier` | float | Life-Regen pro Sekunde (additiv) |
 | `life_modifier` | float (0.0–1.0+) | Multiplikator auf `life_regen_modifier`: `regen = life_regen_modifier × (1 + life_modifier)` |
 
+### Bürger & Bevölkerung
+
+| Effect-Key | Typ | Beschreibung |
+|---|---|---|
+| `citizen_cost_modifier` | float 0–1 | Bürgerpreis in Kultur reduziert: `preis × (1 − v)` |
+| `citizen_effect_modifier` | float ≥0 | Addiert auf `citizen_effect`: `base + v` — erhöht alle Bürger-Boni |
+| `other_citizen_gold_modifier` | float | Artists und Scientists tragen zusätzlich zu Gold bei: `gold_modifier += (artists + scientists) × v` |
+
+### Kosten-Reduktionen
+
+| Effect-Key | Typ | Beschreibung |
+|---|---|---|
+| `tile_cost_modifier` | float 0–1 | Goldkosten für neue Land-Tiles: `preis × (1 − v)` |
+| `building_cost_modifier` | float 0–1 | Goldkosten für Gebäude: `gold_cost × (1 − v)` (nur bei Gebäuden, nicht Knowledge) |
+| `wave_cost_modifier` | float 0–1 | Goldkosten für neue Wellen: `preis × (1 − v)` |
+| `wave_era_cost_modifier` | float 0–1 | Goldkosten für Wave-Era-Upgrades: `preis × (1 − v)` |
+
+### Einmalige Ruler-Skill-Boni (One-Shot)
+
+Diese Keys werden **nicht** in `empire.effects` gespeichert. Sie feuern einmalig beim Erreichen der entsprechenden Ruler-Skill-Stufe.
+
+| Effect-Key | Typ | Beschreibung |
+|---|---|---|
+| `gold_lump_sum_on_skill_up` | float | Einmaliger Gold-Bonus bei Skill-Up auf diese Stufe |
+| `culture_lump_sum_on_skill_up` | float | Einmaliger Kultur-Bonus bei Skill-Up auf diese Stufe |
+
+**Beispiel in `rulers.yaml`:**
+```yaml
+q:
+  - gold_lump_sum_on_skill_up: 500    # Stufe 1
+  - gold_lump_sum_on_skill_up: 2000   # Stufe 2
+```
+
 ### Baugeschwindigkeit & Forschung
 
 | Effect-Key | Typ | Beschreibung |
@@ -82,6 +122,15 @@ Empire-Effects werden durch abgeschlossene Knowledge-Items freigeschaltet und vi
 | Effect-Key | Typ | Beschreibung |
 |---|---|---|
 | `wave_delay_offset` | float (ms) | Verzögerung zwischen Wellen-Spawns (positiv = langsamer) |
+
+### Kampf & Belagerung
+
+| Effect-Key | Typ | Beschreibung |
+|---|---|---|
+| `restore_life_during_battle_modifier` | float ≥0 | Addiert Life-Regen während aktiver Verteidigung (Battle-Phase): `regen = life_regen_modifier + v` |
+| `enemy_siege_time_modifier` | float 0–1 | **Angreifer-Effekt**: reduziert die Belagerungszeit eigener Angriffe: `siege × (1 − v)` |
+
+**Hinweis zu `enemy_siege_time_modifier`**: Dieser Effect liegt beim **Angreifer** (nicht beim Verteidiger). Der bestehende `siege_time_modifier` liegt beim Verteidiger und reduziert die Zeit, die Angreifer in seiner Basis verbringen.
 
 ---
 
@@ -210,3 +259,8 @@ Falls eine schönere Darstellung gewünscht ist, dort eigene Labels eintragen.
 ### 8. Textbeschreibung für neue effects:
 
 Neue efeects bekommen eine textbeschreibung in web/js/i18n.js
+
+
+### 9. Testing
+
+Für jeden effect muss ein unit test geschrieben werden

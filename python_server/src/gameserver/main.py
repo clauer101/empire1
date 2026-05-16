@@ -154,13 +154,32 @@ def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
             if isinstance(val, list):
                 return [v if isinstance(v, dict) else {} for v in val]
             return []
+        def _skill_meta(val: Any) -> "dict[str, str]":
+            if isinstance(val, dict):
+                return {"name": val.get("name", ""), "description": val.get("description", "")}
+            return {"name": "", "description": ""}
         result[iid] = {
             "name": item.get("name", ""),
+            "description": item.get("description", ""),
             "type": item.get("type", ""),
             "q": _lvl(item.get("q", [])),
             "w": _lvl(item.get("w", [])),
             "e": _lvl(item.get("e", [])),
             "r": _lvl(item.get("r", [])),
+            "q_meta": _skill_meta(item.get("q")),
+            "w_meta": _skill_meta(item.get("w")),
+            "e_meta": _skill_meta(item.get("e")),
+            "r_meta": _skill_meta(item.get("r")),
+            "speed_min": float(item.get("speed_min", 0.8)),
+            "speed_max": float(item.get("speed_max", 1.2)),
+            "health_min": float(item.get("health_min", 20)),
+            "health_max": float(item.get("health_max", 2000)),
+            "armour_min": float(item.get("armour_min", 0)),
+            "armour_max": float(item.get("armour_max", 19)),
+            "value_base": float(item.get("value_base", 1000)),
+            "base_damage": float(item.get("base_damage", 1)),
+            "animation": item.get("animation", ""),
+            "scale_base": float(item.get("scale_base", 1.0)),
         }
     return result
 
@@ -303,7 +322,7 @@ def create_services(config: Configuration, database: Database, state_file: str =
                                    building_era_groups=config.building_era_groups,
                                    item_era_index=config.item_era_index,
                                    rulers=config.rulers)
-    battle_service = BattleService(items=upgrade_provider.items, gc=gc)
+    battle_service = BattleService(items=upgrade_provider.items, gc=gc, rulers=config.rulers)
     attack_service = AttackService(event_bus, gc, empire_service,
                                    knowledge_era_groups=config.knowledge_era_groups)
     army_service = ArmyService(upgrade_provider, event_bus)

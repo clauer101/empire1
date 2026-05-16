@@ -164,6 +164,8 @@ async def _run_battle_task(
         elif not _summary_sent:
             await battle_svc.send_summary(battle, send_fn, loot={})
 
+        _award_ruler_xp(battle, svc, attacker_won)
+
         from gameserver.models.attack import AttackPhase
         from gameserver.engine.ai_service import AI_UID
         for aid in battle.attack_ids:
@@ -189,6 +191,12 @@ async def _run_battle_task(
                 and battle.attacker.uid == AI_UID
                 and battle.attack_id is not None):
             svc.ai_service.on_battle_result(battle.attack_id, battle)
+
+        if AI_UID in battle.attacker_uids and svc.database is not None and svc.empire_service is not None:
+            from gameserver.util.ai_battle_log import log_ai_battle
+            _ai_army = next((a for a in battle.armies.values() if a.uid == AI_UID), None)
+            _ai_army_name = _ai_army.name if _ai_army else "AI"
+            asyncio.ensure_future(log_ai_battle(battle, svc.empire_service, svc.database, _ai_army_name))
 
         if svc.ai_service is not None:
             svc.ai_service.cleanup_inactive_armies(svc.empire_service, svc.attack_service)
@@ -315,6 +323,38 @@ async def _run_battle_task(
     finally:
         if battle.defender:
             _get_active_battles().pop(battle.defender.uid, None)
+
+
+def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> None:
+    """Award XP to the ruler of each human attacker empire based on battle outcome."""
+    from gameserver.engine.ai_service import AI_UID
+    if svc.empire_service is None:
+        return
+    for army in battle.armies.values():
+        uid = army.uid
+        if uid == AI_UID:
+            continue
+        emp = svc.empire_service.get(uid)
+        if emp is None:
+            continue
+        xp = 0.0
+        era_idx = 1
+        if battle.defender is not None:
+            era_key = svc.empire_service.get_current_era(battle.defender)
+            era_order = svc.empire_service._ERA_ORDER
+            era_idx = era_order.index(era_key) + 1 if era_key in era_order else 1
+        gc = svc.game_config
+        xp_per_kill = gc.ruler_xp_per_kill if gc else 1.0
+        xp_per_reached = gc.ruler_xp_per_reached_per_era if gc else 10.0
+        xp_victory = gc.ruler_xp_victory_per_era if gc else 50.0
+        xp += float(battle.critters_killed) * xp_per_kill
+        xp += float(battle.critters_reached) * xp_per_reached * era_idx
+        if attacker_won:
+            xp += xp_victory * era_idx
+        if xp > 0:
+            emp.ruler.xp += xp
+            svc.empire_service.recalculate_effects(emp)
+            log.info("[ruler_xp] uid=%d ruler='%s' +%.0f XP (total=%.0f)", uid, emp.ruler.name, xp, emp.ruler.xp)
 
 
 def _apply_artifact_steal(
@@ -913,7 +953,7 @@ def _create_battle_start_handler() -> Callable[..., Any]:
                 log.info("[battle:wave_timers] wave[%d] next_critter_ms=%.0f", _i, _wave.next_critter_ms)
 
             items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-            battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None)
+            battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None, rulers=svc.empire_service._rulers if svc.empire_service else {})
 
             broadcast_interval_ms = 250.0
             if svc.game_config and hasattr(svc.game_config, "broadcast_interval_ms"):

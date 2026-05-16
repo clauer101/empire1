@@ -215,10 +215,17 @@ class RestClient {
         }
       } catch (err) {
         console.warn('[RestClient] stored token validation failed:', err.message);
-        // Only clear the token on explicit 401 (invalid/expired token).
-        // Network errors or server-restart transients should not log the user out.
         if (err.message.includes('Unauthorized')) {
+          // Explicit 401: token invalid/expired — log out
           this.clearToken();
+        } else {
+          // Transient error (502, network, timeout): keep the token and stay logged in
+          // with the cached username so the router doesn't redirect to login.
+          const cachedUsername = localStorage.getItem('e3_username') || '';
+          if (cachedUsername) {
+            state.setAuth(0, cachedUsername);
+            return true;
+          }
         }
       }
     }
@@ -254,6 +261,11 @@ class RestClient {
     const resp = await this._get('/api/empire/items');
     state.setItems(resp);
     return resp;
+  }
+
+  /** @returns {Promise<object>} */
+  async getEffectSources() {
+    return this._get('/api/empire/effect-sources');
   }
 
   /** @returns {Promise<object>} */
@@ -512,6 +524,17 @@ class RestClient {
     return this._post('/api/army/buy-wave-era', { aid, wave_number: waveNumber });
   }
 
+  /**
+   * Assign or remove a ruler from a wave.
+   * @param {number} aid - army ID
+   * @param {number} waveNumber - wave index (0-based)
+   * @param {string} rulerIid - ruler type e.g. "SCIENCE", or "" to remove
+   * @returns {Promise<object>}
+   */
+  async setRulerWave(aid, waveNumber, rulerIid) {
+    return this._post('/api/army/set-ruler-wave', { aid, wave_number: waveNumber, ruler_iid: rulerIid });
+  }
+
   async buyItemUpgrade(iid, stat) {
     return this._post('/api/item/buy-upgrade', { iid, stat });
   }
@@ -530,6 +553,14 @@ class RestClient {
 
   async spyAttack(targetUid) {
     return this._post('/api/spy-attack', { target_uid: targetUid });
+  }
+
+  async rulerSkillUp(skill) {
+    return this._post('/api/empire/ruler/skill-up', { skill });
+  }
+
+  async chooseRuler(rulerIid) {
+    return this._post('/api/empire/ruler/choose', { ruler_iid: rulerIid });
   }
 
   // ── WebSocket URL helper ──────────────────────────────────

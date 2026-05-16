@@ -51,6 +51,26 @@ CREATE TABLE IF NOT EXISTS login_events (
 CREATE INDEX IF NOT EXISTS ix_login_events_uid ON login_events(uid);
 CREATE INDEX IF NOT EXISTS ix_login_events_ip  ON login_events(ip);
 CREATE INDEX IF NOT EXISTS ix_login_events_fp  ON login_events(fingerprint);
+CREATE TABLE IF NOT EXISTS ai_battle_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    bid INTEGER NOT NULL,
+    defender_name TEXT NOT NULL,
+    defender_era TEXT NOT NULL,
+    army_name TEXT NOT NULL,
+    result TEXT NOT NULL,
+    path_length INTEGER NOT NULL,
+    life_start REAL NOT NULL,
+    life_end REAL NOT NULL,
+    tower_count INTEGER NOT NULL,
+    tower_gold REAL NOT NULL,
+    towers_by_era TEXT NOT NULL,
+    critters_total INTEGER NOT NULL,
+    critters_reached INTEGER NOT NULL,
+    critters_killed INTEGER NOT NULL,
+    critters_by_era TEXT NOT NULL,
+    battle_duration_s REAL NOT NULL
+);
 """
 
 
@@ -176,7 +196,7 @@ class Database:
         """Return all user accounts (without password hashes)."""
         assert self._conn is not None
         async with self._conn.execute(
-            "SELECT uid, username, email, empire_name, created_at, last_seen FROM users ORDER BY uid",
+            "SELECT uid, username, email, empire_name, created_at, last_seen FROM users ORDER BY created_at ASC, uid ASC",
         ) as cursor:
             rows = await cursor.fetchall()
             return [
@@ -446,3 +466,41 @@ class Database:
         ) as cur:
             rows = await cur.fetchall()
         return [json.loads(r[0]) for r in rows]
+
+    async def insert_ai_battle_log(
+        self,
+        bid: int,
+        defender_name: str,
+        defender_era: str,
+        army_name: str,
+        result: str,
+        path_length: int,
+        life_start: float,
+        life_end: float,
+        tower_count: int,
+        tower_gold: float,
+        towers_by_era: str,
+        critters_total: int,
+        critters_reached: int,
+        critters_killed: int,
+        critters_by_era: str,
+        battle_duration_s: float,
+    ) -> None:
+        assert self._conn is not None
+        await self._conn.execute(
+            """INSERT INTO ai_battle_log (
+                bid, defender_name, defender_era, army_name, result,
+                path_length, life_start, life_end,
+                tower_count, tower_gold, towers_by_era,
+                critters_total, critters_reached, critters_killed, critters_by_era,
+                battle_duration_s
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                bid, defender_name, defender_era, army_name, result,
+                path_length, life_start, life_end,
+                tower_count, tower_gold, towers_by_era,
+                critters_total, critters_reached, critters_killed, critters_by_era,
+                battle_duration_s,
+            ),
+        )
+        await self._conn.commit()

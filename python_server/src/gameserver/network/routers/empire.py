@@ -1,6 +1,7 @@
 """Empire router — /api/empire/*, /api/empires, /api/map/*, /api/era-map."""
 from __future__ import annotations
 
+import logging
 from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends
@@ -11,6 +12,8 @@ from gameserver.network.rest_models import (
     BuyTileRequest,
     CitizenDistribution,
     MapSaveBody,
+    ChooseRulerRequest,
+    RulerSkillUpRequest,
 )
 from gameserver.network.rest_api import (
     _stub_message,
@@ -25,19 +28,32 @@ from gameserver.network.rest_api import (
 )
 import gameserver.network.rest_api as _rest_api
 
+log = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     from gameserver.main import Services
 
 
-def _build_end_rally_info_for_era_map(gc: Any) -> dict[str, Any]:
+def _build_end_rally_info_for_era_map(gc: Any, empire_service: Any = None) -> dict[str, Any]:
     from gameserver.engine.global_state import (
         get_end_criterion_activated, is_end_rally_active, end_rally_seconds_remaining,
+        get_end_criterion_empire_uid, get_end_criterion_empire_name,
     )
     from gameserver.network.rest_api import _item_names
     if gc is None:
         return {"active": False, "effects": {}, "duration": 0.0, "end_criterion": "", "end_criterion_name": ""}
     active = is_end_rally_active(gc)
     activated = get_end_criterion_activated()
+    culture_leader_name = ""
+    if empire_service is not None:
+        try:
+            from gameserver.engine.ai_service import AI_UID
+            empires = [e for e in empire_service.all_empires.values() if e.uid != AI_UID]
+            if empires:
+                top = max(empires, key=lambda e: e.resources.get("culture", 0.0))
+                culture_leader_name = top.name
+        except Exception as exc:
+            log.warning("culture_leader_name failed: %s", exc)
     return {
         "active": active,
         "effects": dict(gc.end_rally_effects),
@@ -46,6 +62,9 @@ def _build_end_rally_info_for_era_map(gc: Any) -> dict[str, Any]:
         "end_criterion_name": _item_names.get(gc.end_criterion, gc.end_criterion),
         "seconds_remaining": round(end_rally_seconds_remaining(gc), 0),
         "activated_at": activated.isoformat() if activated else None,
+        "triggered_by_uid": get_end_criterion_empire_uid(),
+        "triggered_by_name": get_end_criterion_empire_name(),
+        "culture_leader_name": culture_leader_name,
     }
 
 
@@ -69,6 +88,11 @@ def make_router(services: "Services") -> APIRouter:
         msg = _stub_message()
         resp = await handle_item_request(msg, uid)
         return resp or {"error": "No data"}
+
+    @router.get("/api/empire/effect-sources")
+    async def get_effect_sources(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        from gameserver.network.handlers.auth import handle_effect_sources_request
+        return handle_effect_sources_request(uid)
 
     @router.get("/api/empire/military")
     async def get_military(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
@@ -165,7 +189,7 @@ def make_router(services: "Services") -> APIRouter:
             "knowledge":  _knowledge_groups,
             "buildings":  _building_groups,
             "era_effects": _rest_api._era_effects_data,
-            "end_rally": _build_end_rally_info_for_era_map(gc),
+            "end_rally": _build_end_rally_info_for_era_map(gc, services.empire_service),
             "structure_upgrade_def": {
                 "damage": su.damage, "range": su.range, "reload": su.reload,
                 "effect_duration": su.effect_duration, "effect_value": su.effect_value,
@@ -177,5 +201,76 @@ def make_router(services: "Services") -> APIRouter:
             "wave_era_costs": gc.prices.wave_era_costs if gc else [],
             "critter_slot_params": {"u": gc.prices.critter_slot.u, "y": gc.prices.critter_slot.y, "z": gc.prices.critter_slot.z, "v": gc.prices.critter_slot.v} if gc else {},
         }
+
+    @router.post("/api/empire/ruler/skill-up")
+    async def ruler_skill_up(body: RulerSkillUpRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        skill = body.skill
+        if skill not in ("q", "w", "e", "r"):
+            return {"success": False, "error": "Invalid skill"}
+        empire = empire_service.get(uid)
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        ruler = empire.ruler
+        level = empire_service.ruler_level_from_xp(ruler.xp)
+        total_points = ruler.q + ruler.w + ruler.e + ruler.r
+        if total_points >= level:
+            return {"success": False, "error": "No skill points available"}
+        current = getattr(ruler, skill)
+        if skill in ("q", "w", "e"):
+            if current >= 5:
+                return {"success": False, "error": "Skill already at maximum level"}
+            if current + 1 == 5 and level < 9:
+                return {"success": False, "error": "Ruler level 9 required for skill level 5"}
+        else:  # r
+            unlock_levels = [6, 11, 16]
+            if current >= len(unlock_levels):
+                return {"success": False, "error": "Skill already at maximum level"}
+            if level < unlock_levels[current]:
+                return {"success": False, "error": f"Ruler level {unlock_levels[current]} required"}
+        setattr(ruler, skill, current + 1)
+        # Pay out one-shot lump sums from the newly reached skill level
+        ruler_def = empire_service._rulers.get(ruler.type, {})
+        new_level_list: list[dict] = ruler_def.get(skill, [])
+        if current < len(new_level_list):  # current = old level = index of new level
+            lvl_fx = new_level_list[current]
+            gold_lump = float(lvl_fx.get("gold_lump_sum_on_skill_up", 0.0))
+            culture_lump = float(lvl_fx.get("culture_lump_sum_on_skill_up", 0.0))
+            if gold_lump > 0:
+                empire.resources["gold"] = empire.resources.get("gold", 0.0) + gold_lump
+            if culture_lump > 0:
+                empire.resources["culture"] = empire.resources.get("culture", 0.0) + culture_lump
+        empire_service.recalculate_effects(empire)
+        return {"success": True}
+
+    @router.post("/api/empire/ruler/choose")
+    async def choose_ruler(body: ChooseRulerRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        empire = empire_service.get(uid)
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        if empire.ruler.type:
+            return {"success": False, "error": "Ruler already chosen"}
+        rulers = empire_service._rulers if empire_service else {}
+        if body.ruler_iid not in rulers:
+            return {"success": False, "error": "Unknown ruler"}
+        ruler_def = rulers[body.ruler_iid]
+        empire.ruler.type = body.ruler_iid
+        empire.ruler.name = ruler_def.get("name", body.ruler_iid)
+        return {"success": True}
+
+    @router.get("/api/global-map")
+    async def global_map() -> dict[str, Any]:
+        """Return all empires with their hex_map tiles for the global map view."""
+        result = []
+        for empire in empire_service.all_empires.values():
+            tiles = []
+            for key, tile_type in empire.hex_map.items():
+                try:
+                    q, r = (int(v) for v in key.split(","))
+                    tiles.append({"q": q, "r": r, "type": tile_type})
+                except (ValueError, AttributeError):
+                    continue
+            if tiles:
+                result.append({"uid": empire.uid, "name": empire.name, "tiles": tiles})
+        return {"empires": result}
 
     return router

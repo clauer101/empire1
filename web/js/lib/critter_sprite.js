@@ -129,9 +129,9 @@ async function loadGifImgs(urls) {
 
 export class CritterSprite {
   /**
-   * @param {'spritesheet'|'gifs'} type
+   * @param {'spritesheet'|'gifs'|'single'} type
    * @param {string|{forward:string,left:string,right:string,backward:string}} src
-   *        For 'spritesheet': URL to the PNG.
+   *        For 'spritesheet'/'single': URL to the image.
    *        For 'gifs': object mapping direction → GIF URL.
    * @param {number} [fps]  Only relevant for sprite sheets.
    */

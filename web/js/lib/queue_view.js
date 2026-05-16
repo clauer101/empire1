@@ -92,12 +92,15 @@ export function createQueueView(cfg) {
     return `<ul class="effects-list">${items}</ul>`;
   }
 
-  function _fmtCosts(costs, summary, wasStarted = false) {
+  function _fmtCosts(costs, summary, wasStarted = false, buildingDiscount = 0) {
     if (!costs || Object.keys(costs).length === 0) return '—';
     const res = summary?.resources || {};
     return Object.entries(costs)
       .map(([resource, cost]) => {
-        const canAfford = (res[resource] || 0) >= cost;
+        const discounted = resource === 'gold' && buildingDiscount > 0
+          ? cost * Math.max(0, 1 - buildingDiscount)
+          : cost;
+        const canAfford = (res[resource] || 0) >= discounted;
         const color = canAfford ? 'var(--text)' : 'var(--danger)';
         const strike = wasStarted && resource === 'gold';
         const icon =
@@ -110,7 +113,7 @@ export function createQueueView(cfg) {
                 : '';
         const name = resource.charAt(0).toUpperCase() + resource.slice(1);
         const extra = strike ? 'text-decoration:line-through;opacity:0.45;' : '';
-        return `<span style="color:${color};margin-right:12px;white-space:nowrap;${extra}">${icon} ${Math.round(cost)} ${name}</span>`;
+        return `<span style="color:${color};margin-right:12px;white-space:nowrap;${extra}">${icon} ${Math.round(discounted)} ${name}</span>`;
       })
       .join('');
   }
@@ -121,7 +124,7 @@ export function createQueueView(cfg) {
     const summary = st.summary;
     if (!items || !summary) return;
 
-    const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
+const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
     const activeQueue = summary[cfg.queueKey];
     const itemMap = items[cfg.categoryKey] || {};
 
@@ -197,7 +200,7 @@ export function createQueueView(cfg) {
         <td class="col-details" data-label="Details">
           <div class="detail-row"><span class="detail-label">Duration:</span> <span style="font-variant-numeric:tabular-nums"${status === 'in-progress' ? ` data-active-cd data-remain="${remainSecs.toFixed(2)}" data-full="${fullEffort}" data-mult="${multiplier.toFixed(6)}"` : ''}>${fmtSecs(remainSecs)}</span></div>
           <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px"><div class="queue-progress-bar" style="background:${cfg.progressColor};width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div></div>
-          ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${_fmtCosts(info.costs, summary, wasStarted)}</div>` : ''}
+          ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${_fmtCosts(info.costs, summary, wasStarted, cfg.categoryKey === 'buildings' ? (summary?.effects?.building_cost_modifier ?? 0) : 0)}</div>` : ''}
           ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${_fmtEffects(info.effects)}</div>` : ''}
           ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map((u) => _overlay.linkBadge(u.iid, u.name, u.category)).join('')}</div>` : ''}
         </td>

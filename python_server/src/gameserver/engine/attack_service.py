@@ -47,9 +47,7 @@ class AttackService:
         self._base_travel_offset = (
             game_config.base_travel_offset if game_config else 300.0
         )
-        self._base_siege_offset = (
-            game_config.base_siege_offset if game_config else 900.0
-        )
+
         # era key → set of knowledge IIDs that belong to that era
         self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
         self._next_attack_id: int = 1
@@ -411,13 +409,12 @@ class AttackService:
         Formula:
             result = max(1.0, (base + defender.SIEGE_TIME_OFFSET) * (1 - defender.SIEGE_TIME_MODIFIER))
 
-        where base is base_override (from ai_waves siege_time) if provided,
-        otherwise self._base_siege_offset from game config.
+        where base is base_override (from ai_waves siege_time) if provided, otherwise 0.
         Computed fresh each time so buildings completed during travel are reflected.
         """
         from gameserver.util import effects as fx
 
-        base = base_override if base_override is not None else self._base_siege_offset
+        base = base_override if base_override is not None else 0.0
 
         if not self._empire_service:
             return base
@@ -432,10 +429,14 @@ class AttackService:
 
         offset = defender.get_effect(fx.SIEGE_TIME_OFFSET, 0.0)
         modifier = defender.get_effect(fx.SIEGE_TIME_MODIFIER, 0.0)
-        result = max(1.0, (base + offset) * (1.0 - modifier))
+
+        attacker = self._empire_service.get(attacker_uid)
+        attacker_corruption = attacker.get_effect(fx.ENEMY_SIEGE_TIME_MODIFIER, 0.0) if attacker else 0.0
+
+        result = max(1.0, (base + offset) * (1.0 - modifier) * (1.0 - attacker_corruption))
         log.debug(
-            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f, defender_modifier=%.3f)",
+            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f, defender_modifier=%.3f, attacker_corruption=%.3f)",
             attacker_uid, defender_uid, result, base,
-            " [override]" if base_override is not None else "", offset, modifier,
+            " [override]" if base_override is not None else "", offset, modifier, attacker_corruption,
         )
         return result

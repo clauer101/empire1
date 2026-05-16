@@ -16,7 +16,7 @@ import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
 
 import loginView from './views/login.js';
-import dashView from './views/status.js?v=20260413a';
+import dashView, { getCultureLeaderName, onLeaderUpdated } from './views/status.js?v=20260514a';
 import buildView from './views/buildings.js';
 import resView from './views/research.js';
 import armyView from './views/army.js';
@@ -146,6 +146,11 @@ if (navDefense) {
 
 let _eraEffects = {}; // loaded from /api/era-map
 let _endRally = null; // { active, effects, seconds_remaining, end_criterion } from summary
+let _selfName = '';
+
+onLeaderUpdated(() => {
+  if (_endRally?.active) _updateRallyBanner(_endRally, _selfName);
+});
 
 function _fmtOffset(secs) {
   const h = Math.floor(secs / 3600);
@@ -251,8 +256,9 @@ eventBus.on('state:summary', (data) => {
   }
   if (data?.end_rally) {
     _endRally = data.end_rally;
+    _selfName = data.name || _selfName;
     setEndRally(data.end_rally);
-    _updateRallyBanner(data.end_rally, data.name || '');
+    _updateRallyBanner(data.end_rally, _selfName);
   }
   const incoming = data?.attacks_incoming || [];
   const hasIncoming = incoming.length > 0;
@@ -323,7 +329,8 @@ function _updateRallyBanner(rally, selfName) {
   const builderName = rally.triggered_by_name || '?';
   const builderUid = rally.triggered_by_uid;
   const criterion = rally.end_criterion_name || rally.end_criterion || 'the wonder';
-  const leadingLabel = selfName === builderName ? 'You are leading' : `${builderName} is leading`;
+  const leaderName = rally.culture_leader_name || getCultureLeaderName() || builderName;
+  const leadingLabel = leaderName === selfName ? 'You are leading' : `${leaderName} is leading`;
   const nameLink = builderUid != null && builderName !== selfName
     ? `<a href="#army" data-attack-uid="${builderUid}" data-attack-name="${builderName}" style="color:inherit;font-weight:700;text-decoration:underline;cursor:pointer">${builderName}</a>`
     : `<strong>${builderName}</strong>`;

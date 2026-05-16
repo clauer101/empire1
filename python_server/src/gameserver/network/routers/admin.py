@@ -914,4 +914,22 @@ def make_router(services: "Services") -> APIRouter:
             services.attack_service._game_config = services.empire_service._gc
         return {"success": True}
 
+    @router.get("/api/admin/ai-battle-log")
+    async def get_ai_battle_log(limit: int = 500, _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        assert services.database is not None
+        assert services.database._conn is not None
+        async with services.database._conn.execute(
+            "SELECT * FROM ai_battle_log ORDER BY logged_at DESC LIMIT ?", (limit,)
+        ) as cur:
+            rows = await cur.fetchall()
+        import json as _json
+        keys = [d[0] for d in cur.description]
+        result = []
+        for row in rows:
+            r = dict(zip(keys, row))
+            r["towers_by_era"] = _json.loads(r["towers_by_era"] or "{}")
+            r["critters_by_era"] = _json.loads(r["critters_by_era"] or "{}")
+            result.append(r)
+        return {"battles": result}
+
     return router

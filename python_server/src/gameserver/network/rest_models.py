@@ -149,6 +149,20 @@ class PushSubscribeRequest(BaseModel):
     subscription: dict[str, Any]  # Web Push subscription object from browser
 
 
+class RulerSkillUpRequest(BaseModel):
+    skill: str  # "q", "w", "e", or "r"
+
+
+class ChooseRulerRequest(BaseModel):
+    ruler_iid: str  # e.g. "MAJA", "NANDA", "LUCIEN"
+
+
 class BuyItemUpgradeRequest(BaseModel):
     iid: str   # e.g. "ARROW_TOWER" or "SOLDIER"
     stat: str  # e.g. "damage", "range", "health", "speed"
+
+
+class SetRulerWaveRequest(BaseModel):
+    aid: int
+    wave_number: int
+    ruler_iid: str  # ruler type e.g. "SCIENCE", or "" to remove

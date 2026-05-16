@@ -380,8 +380,8 @@ class TestArmourDamageReduction:
         # 10 - 5 = 5 actual damage
         assert c.health == pytest.approx(95.0)
 
-    def test_armour_clamps_minimum_damage_to_half(self):
-        """Even with high armour, a shot with damage > 0 deals at least 0.5."""
+    def test_armour_clamps_minimum_damage_to_one(self):
+        """Even with high armour, a shot with damage > 0 deals at least 1."""
         svc = BattleService()
         c = _critter(armour=100.0)
         shot = Shot(
@@ -391,7 +391,7 @@ class TestArmourDamageReduction:
         b = _battle(c, pending_shots=[shot])
         svc._step_shots(b, 10.0)
 
-        assert c.health == pytest.approx(99.5)  # 100 - 0.5
+        assert c.health == pytest.approx(99.0)  # 100 - 1
 
     def test_zero_base_damage_shot_deals_no_damage(self):
         """A shot with damage=0 (e.g. pure-effect tower) deals 0, not 0.5."""

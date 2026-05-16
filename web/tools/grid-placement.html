@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid Spawn Placement</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 13px;
+      height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+      flex-shrink: 0;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #idx-display {
+      font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 5px 10px;
+    }
+
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #sidebar {
+      width: 280px; flex-shrink: 0; overflow-y: auto;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .card {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 12px;
+    }
+    .ctrl-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .ctrl-row:last-child { margin-bottom: 0; }
+    .ctrl-label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--text-dim);
+    }
+    .ctrl-val { font-family: var(--mono); color: var(--text); font-size: 11px; }
+    input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .checkbox-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--text-dim); margin-bottom: 6px; cursor: pointer;
+    }
+    .checkbox-row input { accent-color: var(--accent); cursor: pointer; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      cursor: pointer; border: none; border-radius: var(--radius);
+      padding: 7px 16px; font-size: 12px; font-family: inherit; font-weight: 600;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    .btn-primary { background: var(--accent); color: #0d0d14; }
+    .btn-neutral { background: var(--border); color: var(--text); }
+
+    #spawn-log {
+      max-height: 180px; overflow-y: auto;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      display: flex; flex-direction: column-reverse; gap: 2px;
+    }
+    .log-entry { padding: 2px 4px; border-radius: 3px; color: var(--text-dim); }
+
+    #canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    #statusbar {
+      position: absolute; bottom: 8px; left: 12px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    #tooltip {
+      position: fixed; display: none; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-family: var(--mono); font-size: 11px; color: var(--text);
+      pointer-events: none; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>♟ Grid Spawn Placement</h1>
+  <div id="idx-display">index: 0 / 0</div>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-play">▶ Play</button>
+    <button class="btn-neutral" id="btn-step">+1 Step</button>
+    <button class="btn-neutral" id="btn-reset">↺ Reset</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+
+    <div class="card">
+      <div class="section-title">Simulation</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Speed <span class="ctrl-val" id="val-speed">2/s</span></div>
+        <input type="range" id="sl-speed" min="0.2" max="20" step="0.2" value="2">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Grid Configuration</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Cell size <span class="ctrl-val" id="val-cell">10</span></div>
+        <input type="range" id="sl-cell" min="2" max="40" step="1" value="10">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Grid radius (cells) <span class="ctrl-val" id="val-gridR">12</span></div>
+        <input type="range" id="sl-gridR" min="3" max="40" step="1" value="12">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">
+          Fill pattern
+          <span class="ctrl-val" id="val-pattern">ring</span>
+        </div>
+        <input type="range" id="sl-pattern" min="0" max="1" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Display</div>
+      <label class="checkbox-row"><input type="checkbox" id="chk-grid" checked> Show grid lines</label>
+      <label class="checkbox-row"><input type="checkbox" id="chk-labels" checked> Show index labels</label>
+      <label class="checkbox-row"><input type="checkbox" id="chk-rings"> Show distance rings</label>
+      <div class="ctrl-row" style="margin-top:8px">
+        <div class="ctrl-label">Point size <span class="ctrl-val" id="val-ptsize">6px</span></div>
+        <input type="range" id="sl-ptsize" min="2" max="16" step="1" value="6">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Spawn Log</div>
+      <div id="spawn-log"></div>
+    </div>
+
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="grid-canvas"></canvas>
+    <div id="statusbar">placed: 0 | cells total: 0</div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Params ──
+const P = {
+  speed:    2,      // spawns per second
+  cellSize: 10,     // world units per cell
+  gridR:    12,     // grid half-size in cells
+  pattern:  0,      // 0=ring (Chebyshev), 1=diagonal (Manhattan)
+  pointSize: 6,
+  showGrid:   true,
+  showLabels: true,
+  showRings:  false,
+};
+
+// ── Grid cell ordering: inside-out ──
+// Returns all integer (col, row) cells within gridR, sorted by distance from center.
+// distance metric: 0=Chebyshev (ring/square shells), 1=Manhattan (diamond shells)
+function buildCellOrder() {
+  const cells = [];
+  const R = P.gridR;
+  for (let row = -R; row <= R; row++) {
+    for (let col = -R; col <= R; col++) {
+      const dist = P.pattern === 0
+        ? Math.max(Math.abs(col), Math.abs(row))   // Chebyshev → square shells
+        : Math.abs(col) + Math.abs(row);            // Manhattan → diamond shells
+      cells.push({ col, row, dist });
+    }
+  }
+  // Sort by distance, then by angle for stable ordering within same shell
+  cells.sort((a, b) => {
+    if (a.dist !== b.dist) return a.dist - b.dist;
+    // Within same shell: clockwise from top
+    const angA = Math.atan2(a.col, -a.row);
+    const angB = Math.atan2(b.col, -b.row);
+    return angA - angB;
+  });
+  return cells;
+}
+
+// ── State ──
+const state = {
+  running:   false,
+  cells:     [],     // full ordered cell list (rebuilt on config change)
+  placed:    [],     // cells placed so far, in order
+  nextIdx:   0,
+  lastWall:  null,
+  fracAcc:   0,      // fractional accumulator for sub-integer speeds
+  displayScale: 1,
+  panX: 0,
+  panY: 0,
+  dragging:  false,
+  dragStart: null,
+  hoveredIdx: -1,
+};
+
+function rebuild() {
+  state.cells   = buildCellOrder();
+  state.placed  = [];
+  state.nextIdx = 0;
+  state.fracAcc = 0;
+}
+rebuild();
+
+// ── Canvas ──
+const canvas = document.getElementById('grid-canvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width  = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+  fitView();
+}
+new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+
+function fitView() {
+  // Scale so the full grid fits with ~10% margin
+  const worldSize = (P.gridR * 2 + 1) * P.cellSize;
+  state.displayScale = Math.min(canvas.width, canvas.height) * 0.88 / worldSize;
+  state.panX = 0;
+  state.panY = 0;
+}
+
+// ── Coordinate transform ──
+function w2c(wx, wy) {
+  return [
+    canvas.width  / 2 + (wx + state.panX) * state.displayScale,
+    canvas.height / 2 - (wy + state.panY) * state.displayScale,
+  ];
+}
+
+// Cell center in world coords
+function cellWorld(c) {
+  return { wx: c.col * P.cellSize, wy: c.row * P.cellSize };
+}
+
+// ── Color by order index ──
+function placedColor(idx, total, alpha = 1) {
+  // Innermost = accent blue, outermost = warm orange
+  const t = total > 1 ? idx / (total - 1) : 0;
+  const r = Math.round(0x4f + (0xff - 0x4f) * t);
+  const g = Math.round(0xc3 + (0xa7 - 0xc3) * t);
+  const b = Math.round(0xf7 + (0x26 - 0xf7) * t);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── Render ──
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const cs = P.cellSize * state.displayScale; // cell size in pixels
+  const R  = P.gridR;
+
+  // Grid lines
+  if (P.showGrid) {
+    ctx.strokeStyle = 'rgba(42,42,58,0.8)';
+    ctx.lineWidth   = 0.5;
+    for (let col = -R; col <= R + 1; col++) {
+      const [px] = w2c(col * P.cellSize - P.cellSize / 2, 0);
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+    }
+    for (let row = -R; row <= R + 1; row++) {
+      const [, py] = w2c(0, row * P.cellSize - P.cellSize / 2);
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(W, py); ctx.stroke();
+    }
+  }
+
+  // Distance rings (faint outlines of each shell)
+  if (P.showRings) {
+    const maxDist = P.pattern === 0 ? R : R * 2;
+    for (let d = 1; d <= maxDist; d++) {
+      ctx.strokeStyle = 'rgba(79,195,247,0.06)';
+      ctx.lineWidth   = 1;
+      if (P.pattern === 0) {
+        // Square ring at Chebyshev distance d
+        const hs = (d + 0.5) * P.cellSize;
+        const [x0, y0] = w2c(-hs, hs);
+        const [x1, y1] = w2c( hs,-hs);
+        ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+      } else {
+        // Diamond ring at Manhattan distance d
+        const pts = [
+          [0,  d], [d,  0], [0, -d], [-d, 0],
+        ].map(([c, r]) => w2c((c + 0.5) * P.cellSize, (r + 0.5) * P.cellSize));
+        ctx.beginPath();
+        ctx.moveTo(...pts[0]);
+        pts.forEach(p => ctx.lineTo(...p));
+        ctx.closePath(); ctx.stroke();
+      }
+    }
+  }
+
+  // Unplaced cells (dim outlines)
+  const total = state.placed.length;
+  for (let i = state.nextIdx; i < state.cells.length; i++) {
+    const c = state.cells[i];
+    const { wx, wy } = cellWorld(c);
+    const [px, py] = w2c(wx, wy);
+    ctx.beginPath();
+    ctx.arc(px, py, Math.max(1.5, cs * 0.08), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(42,42,58,0.6)';
+    ctx.fill();
+  }
+
+  // Placed cells
+  for (let i = 0; i < state.placed.length; i++) {
+    const c = state.placed[i];
+    const { wx, wy } = cellWorld(c);
+    const [px, py] = w2c(wx, wy);
+    const isHovered = c.idx === state.hoveredIdx;
+    const radius = (P.pointSize / 2) * (state.displayScale / Math.max(state.displayScale, 1))
+                   * Math.max(1, state.displayScale * 0.5);
+    const ptR = Math.max(2, P.pointSize * 0.5 + (isHovered ? 3 : 0));
+
+    // Cell fill (subtle)
+    ctx.fillStyle = placedColor(i, total, 0.12);
+    ctx.fillRect(
+      px - cs / 2, py - cs / 2, cs, cs,
+    );
+
+    // Point
+    ctx.beginPath();
+    ctx.arc(px, py, ptR, 0, Math.PI * 2);
+    ctx.fillStyle = placedColor(i, total, isHovered ? 1 : 0.85);
+    ctx.fill();
+
+    // Index label
+    if (P.showLabels && cs > 18) {
+      ctx.fillStyle = `rgba(224,224,230,${Math.min(1, cs / 30) * 0.7})`;
+      ctx.font = `${Math.max(8, Math.min(11, cs * 0.35))}px var(--mono, monospace)`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(i, px, py + ptR + Math.max(6, cs * 0.22));
+    }
+  }
+
+  // Origin cross
+  const [ox, oy] = w2c(0, 0);
+  ctx.strokeStyle = 'rgba(79,195,247,0.3)';
+  ctx.lineWidth   = 1;
+  ctx.beginPath(); ctx.moveTo(ox - 8, oy); ctx.lineTo(ox + 8, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, oy - 8); ctx.lineTo(ox, oy + 8); ctx.stroke();
+
+  // Statusbar
+  document.getElementById('statusbar').textContent =
+    `placed: ${state.placed.length} / ${state.cells.length} cells`;
+  document.getElementById('idx-display').textContent =
+    `index: ${state.placed.length} / ${state.cells.length}`;
+}
+
+// ── Spawn log ──
+const logEl = document.getElementById('spawn-log');
+function logEntry(c, idx) {
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.textContent = `#${idx} → (${c.col}, ${c.row})  dist=${c.dist}`;
+  logEl.prepend(div);
+  while (logEl.children.length > 80) logEl.lastChild.remove();
+}
+
+// ── Place one cell ──
+function placeNext() {
+  if (state.nextIdx >= state.cells.length) return false;
+  const c = state.cells[state.nextIdx];
+  c.idx = state.nextIdx;
+  state.placed.push(c);
+  logEntry(c, state.nextIdx);
+  state.nextIdx++;
+  return true;
+}
+
+// ── Animation loop ──
+function tick(wall) {
+  if (!state.running) { state.lastWall = null; return; }
+  if (state.lastWall === null) state.lastWall = wall;
+  const dt = (wall - state.lastWall) / 1000;
+  state.lastWall = wall;
+
+  state.fracAcc += P.speed * dt;
+  while (state.fracAcc >= 1) {
+    if (!placeNext()) { state.running = false; stopAnim(); break; }
+    state.fracAcc -= 1;
+  }
+
+  render();
+  if (state.running) requestAnimationFrame(tick);
+}
+
+function stopAnim() {
+  btnPlay.textContent = '▶ Play';
+  btnPlay.className   = 'btn-primary';
+}
+
+// ── Controls ──
+const btnPlay = document.getElementById('btn-play');
+btnPlay.addEventListener('click', () => {
+  if (state.nextIdx >= state.cells.length) return;
+  state.running = !state.running;
+  btnPlay.textContent = state.running ? '⏸ Pause' : '▶ Play';
+  btnPlay.className   = state.running ? 'btn-stop' : 'btn-primary';
+  if (state.running) requestAnimationFrame(tick);
+});
+
+document.getElementById('btn-step').addEventListener('click', () => {
+  state.running = false;
+  stopAnim();
+  placeNext();
+  render();
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  state.running = false;
+  stopAnim();
+  state.lastWall = null;
+  rebuild();
+  fitView();
+  logEl.innerHTML = '';
+  render();
+});
+
+function wireSlider(id, valId, param, fmt) {
+  const sl = document.getElementById(id);
+  document.getElementById(valId).textContent = fmt(P[param]);
+  sl.addEventListener('input', () => {
+    P[param] = parseFloat(sl.value);
+    document.getElementById(valId).textContent = fmt(P[param]);
+    if (['cellSize', 'gridR', 'pattern'].includes(param)) {
+      state.running = false; stopAnim();
+      rebuild(); fitView();
+    }
+    render();
+  });
+}
+
+wireSlider('sl-speed',   'val-speed',   'speed',    v => v.toFixed(1) + '/s');
+wireSlider('sl-cell',    'val-cell',    'cellSize', v => Math.round(v));
+wireSlider('sl-gridR',   'val-gridR',   'gridR',    v => Math.round(v));
+wireSlider('sl-ptsize',  'val-ptsize',  'pointSize',v => Math.round(v) + 'px');
+wireSlider('sl-pattern', 'val-pattern', 'pattern',  v => v === 0 ? 'ring' : 'diamond');
+
+document.getElementById('chk-grid').addEventListener('change',   function() { P.showGrid   = this.checked; render(); });
+document.getElementById('chk-labels').addEventListener('change', function() { P.showLabels = this.checked; render(); });
+document.getElementById('chk-rings').addEventListener('change',  function() { P.showRings  = this.checked; render(); });
+
+// ── Mouse: pan / zoom / hover / tooltip ──
+const tooltip = document.getElementById('tooltip');
+
+canvas.addEventListener('mousedown', e => {
+  state.dragging  = true;
+  state.dragStart = { x: e.clientX, y: e.clientY, panX: state.panX, panY: state.panY };
+});
+canvas.addEventListener('mouseup',    () => { state.dragging = false; });
+canvas.addEventListener('mouseleave', () => {
+  state.dragging = false;
+  tooltip.style.display = 'none';
+  state.hoveredIdx = -1;
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (state.dragging) {
+    const dx = e.clientX - state.dragStart.x;
+    const dy = e.clientY - state.dragStart.y;
+    state.panX = state.dragStart.panX + dx / state.displayScale;
+    state.panY = state.dragStart.panY - dy / state.displayScale;
+    render();
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const hitR = Math.max(P.pointSize, 8);
+  let found = null;
+  for (let i = state.placed.length - 1; i >= 0; i--) {
+    const c = state.placed[i];
+    const { wx, wy } = cellWorld(c);
+    const [px, py] = w2c(wx, wy);
+    if (Math.hypot(px - mx, py - my) <= hitR) { found = c; break; }
+  }
+  if (found) {
+    state.hoveredIdx = found.idx;
+    const metric = P.pattern === 0 ? 'Chebyshev' : 'Manhattan';
+    tooltip.innerHTML =
+      `<b>spawn #${found.idx}</b><br>` +
+      `grid (${found.col}, ${found.row})<br>` +
+      `${metric} dist = ${found.dist}`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+  } else {
+    state.hoveredIdx = -1;
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  state.displayScale *= factor;
+}, { passive: false });
+
+// ── Init ──
+resizeCanvas();
+render();
+</script>
+</body>
+</html>

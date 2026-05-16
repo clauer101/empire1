@@ -91,15 +91,17 @@ let _tickTs = null;
 function _calcRate(resourceType, summary) {
   const fx = summary.effects || {};
   const citizens = summary.citizens || {};
-  const ce = summary.citizen_effect || 0;
+  const effCe = summary.citizen_effect || 0; // backend already sends effective_citizen_effect
   if (resourceType === 'life') return (summary.base_life ?? 0) + (fx.life_regen_modifier || 0);
   if (resourceType === 'gold') {
     const offset = (summary.base_gold ?? 0) + (fx.gold_offset || 0);
-    const mod = (citizens.merchant || 0) * ce + (fx.gold_modifier || 0);
+    const mod = (citizens.merchant || 0) * effCe
+      + ((citizens.artist || 0) + (citizens.scientist || 0)) * (fx.other_citizen_gold_modifier || 0)
+      + (fx.gold_modifier || 0);
     return offset * (1 + mod);
   }
   const offset = (summary.base_culture ?? 0) + (fx.culture_offset || 0);
-  const mod = (citizens.artist || 0) * ce + (fx.culture_modifier || 0);
+  const mod = (citizens.artist || 0) * effCe + (fx.culture_modifier || 0);
   return offset * (1 + mod);
 }
 
@@ -125,7 +127,17 @@ function _tickResources() {
   const l = titleEl.querySelector('.title-life');
   if (g) g.textContent = '💰 ' + _fmtTitleResource(gold);
   if (c) c.textContent = '🎭 ' + _fmtTitleResource(culture);
-  if (l) l.textContent = '❤ ' + _fmtTitleResource(clampedLife);
+  if (l) {
+    const icon = l.querySelector('span');
+    if (icon) {
+      const textNode = l.childNodes[l.childNodes.length - 1];
+      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        textNode.textContent = ' ' + _fmtTitleResource(clampedLife);
+      }
+    } else {
+      l.textContent = '❤ ' + _fmtTitleResource(clampedLife);
+    }
+  }
 }
 
 function _buildStructureEraRoman() {
@@ -267,127 +279,90 @@ function _defEffectRows(effectKey, completedBuildings, completedResearch, items,
   return rows.join('');
 }
 
-function _showDefenseEffectsOverlay() {
+async function _showDefenseEffectsOverlay() {
   document.querySelector('.def-effects-overlay')?.remove();
   const summary = st.summary || {};
   const effects = summary.effects || {};
-  const completedBuildings = summary.completed_buildings || [];
-  const completedResearch = summary.completed_research || [];
-  const ownedArtifacts = summary.artifacts || [];
-  const items = st.items || {};
-  const rallyActive = summary.end_rally?.active;
-  const rallyEffects = (rallyActive && summary.end_rally?.effects) ? summary.end_rally.effects : {};
-  const rulerEffects = summary.ruler_effects || {};
+  const rulerName = summary.ruler?.name || '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'prod-overlay def-effects-overlay';
+  overlay.innerHTML = `<div class="prod-overlay-box"><button class="prod-overlay-close" title="Close">✕</button><div style="color:#888;padding:20px">Loading…</div></div>`;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+
+  let effectSources = {};
+  try { effectSources = await rest.getEffectSources(); } catch (_) {}
+
   const siegeTotal = effects.siege_offset || 0;
   const waveTotal = effects.wave_delay_offset || 0;
   const restoreTotal = effects.restore_life_after_loss_offset || 0;
   const siegeModifier = effects.siege_time_modifier || 0;
 
   function section(icon, title, color, totalStr, rowsHtml) {
-    return `
-      <div class="prod-overlay-section">
-        <div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>
-        ${rowsHtml}
-        <div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px">
-          <span class="label" style="color:#ddd;font-weight:bold">Total</span>
-          <span class="value" style="color:#fff;font-weight:bold">${totalStr}</span>
-        </div>
-      </div>`;
+    return `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>${rowsHtml}<div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px"><span class="label" style="color:#ddd;font-weight:bold">Total</span><span class="value" style="color:#fff;font-weight:bold">${totalStr}</span></div></div>`;
   }
 
   function sectionNoTotal(icon, title, color, rowsHtml) {
-    return `
-      <div class="prod-overlay-section">
-        <div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>
-        ${rowsHtml}
-      </div>`;
-  }
-
-  function rallyRow(value, fmt) {
-    return `<div class="panel-row"><span class="label">${fmt(value)}</span><span class="value" style="color:#FFD700">⚔ End Rally</span></div>`;
+    return `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>${rowsHtml}</div>`;
   }
 
   const fmtDur = (s) => s >= 3600 ? (s / 3600).toFixed(1) + 'h' : s >= 60 ? Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's' : s.toFixed(0) + 's';
 
-  // Build siege rows mirroring renderResourceIncome structure in status.js
-  let siegeRows = '';
-  let totalOffset = 0;
-  for (const iid of completedBuildings.concat(completedResearch)) {
-    const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
-    const v = item?.effects?.siege_offset;
-    if (v) { totalOffset += v; siegeRows += `<div class="panel-row"><span class="label">+${v.toFixed(0)}s</span><span class="value">${item.name || iid}</span></div>`; }
+  const _items = st.items;
+  function _name(iid) {
+    return _items?.buildings?.[iid]?.name || _items?.knowledge?.[iid]?.name || _items?.catalog?.[iid]?.name || iid;
   }
-  for (const iid of ownedArtifacts) {
-    const art = items?.catalog?.[iid];
-    const v = art?.effects?.siege_offset;
-    if (v) { totalOffset += v; siegeRows += `<div class="panel-row"><span class="label">${v > 0 ? '+' : ''}${v.toFixed(0)}s</span><span class="value">⚜ ${art.name || iid}</span></div>`; }
-  }
-  if (rulerEffects.siege_offset) {
-    totalOffset += rulerEffects.siege_offset;
-    siegeRows += `<div class="panel-row"><span class="label">+${rulerEffects.siege_offset.toFixed(0)}s</span><span class="value" style="color:#ffd54f">👑 Ruler</span></div>`;
-  }
-  if (rallyEffects.siege_offset) {
-    totalOffset += rallyEffects.siege_offset;
-    siegeRows += rallyRow(rallyEffects.siege_offset, (v) => `+${v.toFixed(0)}s`);
+  function sourceRows(key, fmt) {
+    const src = effectSources[key] || {};
+    let html = '';
+    for (const [iid, v] of Object.entries(src.buildings || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value">${_name(iid)}</span></div>`;
+    for (const [iid, v] of Object.entries(src.knowledge || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value">${_name(iid)}</span></div>`;
+    for (const [iid, v] of Object.entries(src.artifacts || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value" style="color:#FFD700">⚜ ${_name(iid)}</span></div>`;
+    if (src.ruler && rulerName)
+      html += `<div class="panel-row"><span class="label">${fmt(src.ruler)}</span><span class="value" style="color:#FFD700">👑 ${rulerName}</span></div>`;
+    if (src.end_rally)
+      html += `<div class="panel-row"><span class="label">${fmt(src.end_rally)}</span><span class="value" style="color:#87CEEB">⚔ End Rally</span></div>`;
+    if (src.era)
+      html += `<div class="panel-row"><span class="label">${fmt(src.era)}</span><span class="value" style="color:#87CEEB">Era</span></div>`;
+    return html || `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
   }
 
+  let siegeRows = sourceRows('siege_offset', (v) => `${v > 0 ? '+' : ''}${v.toFixed(0)}s`);
   siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-
-  let totalModifier = 0;
-  for (const iid of completedBuildings.concat(completedResearch)) {
-    const item = items?.buildings?.[iid] || items?.knowledge?.[iid];
-    const v = item?.effects?.siege_time_modifier;
-    if (v) { totalModifier += v; siegeRows += `<div class="panel-row"><span class="label">-${(v * 100).toFixed(0)}%</span><span class="value">${item.name || iid}</span></div>`; }
-  }
-  for (const iid of ownedArtifacts) {
-    const art = items?.catalog?.[iid];
-    const v = art?.effects?.siege_time_modifier;
-    if (v) { totalModifier += v; siegeRows += `<div class="panel-row"><span class="label">-${(v * 100).toFixed(0)}%</span><span class="value">⚜ ${art.name || iid}</span></div>`; }
-  }
-  if (rulerEffects.siege_time_modifier) {
-    totalModifier += rulerEffects.siege_time_modifier;
-    siegeRows += `<div class="panel-row"><span class="label">-${(rulerEffects.siege_time_modifier * 100).toFixed(0)}%</span><span class="value" style="color:#ffd54f">👑 Ruler</span></div>`;
-  }
-  if (rallyEffects.siege_time_modifier) {
-    totalModifier += rallyEffects.siege_time_modifier;
-    siegeRows += rallyRow(rallyEffects.siege_time_modifier, (v) => `-${(v * 100).toFixed(0)}%`);
-  }
-
-  const siegeFinal = totalOffset * (1 - totalModifier);
+  siegeRows += sourceRows('siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`);
+  const siegeFinal = siegeTotal * (1 - siegeModifier);
   siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  siegeRows += totalModifier > 0
-    ? `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(totalOffset)} × ${((1 - totalModifier) * 100).toFixed(0)}%</span><span class="value">${fmtDur(siegeFinal)}</span></div>`
-    : `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(totalOffset)}</span></div>`;
+  siegeRows += siegeModifier > 0
+    ? `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(siegeTotal)} × ${((1 - siegeModifier) * 100).toFixed(0)}%</span><span class="value">${fmtDur(siegeFinal)}</span></div>`
+    : `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(siegeTotal)}</span></div>`;
 
-  let waveRows = _defEffectRows('wave_delay_offset', completedBuildings, completedResearch, items, (v) => `+${(v / 1000).toFixed(1)}s`, ownedArtifacts, rulerEffects);
-  if (rallyEffects.wave_delay_offset) waveRows += rallyRow(rallyEffects.wave_delay_offset, (v) => `+${(v / 1000).toFixed(1)}s`);
-
-  let restoreRows = _defEffectRows('restore_life_after_loss_offset', completedBuildings, completedResearch, items, (v) => `+${v.toFixed(1)} ❤`, ownedArtifacts, rulerEffects);
-  if (rallyEffects.restore_life_after_loss_offset) restoreRows += rallyRow(rallyEffects.restore_life_after_loss_offset, (v) => `+${v.toFixed(1)} ❤`);
+  const waveRows = sourceRows('wave_delay_offset', (v) => `+${(v / 1000).toFixed(1)}s`);
+  const restoreRows = sourceRows('restore_life_after_loss_offset', (v) => `+${v.toFixed(1)} ❤`);
+  const battleRegenMod = effects.restore_life_during_battle_modifier || 0;
+  const battleRegenRows = sourceRows('restore_life_during_battle_modifier', (v) => `+${(v * 100).toFixed(0)}%`);
 
   const tiles = grid ? [...grid.tiles.values()] : [];
-  const eraStatsHTML = `
-    <div class="prod-overlay-section">
-      <div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>
-      ${_buildEraStatsHTML(tiles)}
-    </div>`;
+  const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles)}</div>`;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'prod-overlay def-effects-overlay';
-  overlay.innerHTML = `
-    <div class="prod-overlay-box">
-      <button class="prod-overlay-close" title="Close">✕</button>
-      <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
-      ${eraStatsHTML}
-      ${sectionNoTotal('⏳', 'Siege Delay', '#ffa726', siegeRows)}
-      ${section('🌊', 'Wave Delay', '#4fc3f7', `+${(waveTotal / 1000).toFixed(1)}s`, waveRows)}
-      ${section('❤', 'Restore Life on Loss', '#e05c5c', `+${restoreTotal.toFixed(1)}`, restoreRows)}
-    </div>`;
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
+  const box = overlay.querySelector('.prod-overlay-box');
+  box.innerHTML = `
+    <button class="prod-overlay-close" title="Close">✕</button>
+    <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
+    ${eraStatsHTML}
+    ${sectionNoTotal('⏳', 'Siege Delay', '#ffa726', siegeRows)}
+    ${section('🌊', 'Wave Delay', '#4fc3f7', `+${(waveTotal / 1000).toFixed(1)}s`, waveRows)}
+    ${section('❤', 'Restore Life after Defeat', '#e05c5c', `+${restoreTotal.toFixed(1)}`, restoreRows)}
+    ${section('❤️', 'Battle Life Regen', '#e05c5c', `+${battleRegenMod.toFixed(3)}/s extra while defending`, battleRegenRows)}
+  `;
+  box.addEventListener('click', (e) => {
+    if (e.target.classList.contains('prod-overlay-close')) overlay.remove();
   });
-  document.body.appendChild(overlay);
 }
 
 // ── Map error helpers ─────────────────────────────────────────
@@ -842,7 +817,7 @@ function _showTileDetails(q, r, tile) {
     !(_battleState.phase === 'in_battle' && (tile.type === 'castle' || tile.type === 'spawnpoint'))
       ? '<div class="props-divider"></div>' +
         '<button id="empty-tile-btn" class="btn btn-danger" style="width:100%;margin-top:4px;">🗑 Empty Tile' +
-        (_goldCost ? ' (💰 ' + Math.round(_goldCost * 0.3).toLocaleString() + ' refund)' : '') +
+        (_goldCost ? ' (💰 ' + Math.round(_goldCost * ((st.summary?.tower_sell_refund ?? 0.3) + (st.summary?.effects?.tower_sell_refund_modifier ?? 0))).toLocaleString() + ' refund)' : '') +
         '</button>'
       : '') +
     '</div>';
@@ -964,14 +939,14 @@ function init(el, _api, _state) {
         <div id="battle-status-info" style="display:none;grid-column:1/-1;display:none;">
         <div class="battle-status__item" style="grid-column: 1 / -1;">
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
-            <div><span class="label">Defender</span><span class="value" id="battle-defender" style="color:var(--accent)">-</span></div>
-            <div style="text-align:right"><span class="label">Attacker</span><span class="value" id="battle-attacker" style="color:var(--danger)">-</span></div>
+            <div><span class="label">Defender</span> <span class="value" id="battle-defender" style="color:var(--accent)">-</span></div>
+            <div style="text-align:right"><span class="label">Attacker</span> <span class="value" id="battle-attacker" style="color:var(--danger)">-</span></div>
           </div>
         </div>
         <div class="battle-status__item" style="grid-column: 1 / -1;">
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
-            <div><span class="label">Status</span><span class="value" id="battle-status-text">Waiting...</span></div>
-            <div style="text-align:right"><span class="label">Time</span><span class="value" id="battle-elapsed">00:00</span></div>
+            <div><span class="label">Status</span> <span class="value" id="battle-status-text">Waiting...</span></div>
+            <div style="text-align:right"><span class="label">Time</span> <span class="value" id="battle-elapsed">00:00</span></div>
           </div>
         </div>
         <div class="battle-status__item" style="grid-column: 1 / -1;">

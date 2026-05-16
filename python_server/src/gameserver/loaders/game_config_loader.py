@@ -66,6 +66,7 @@ class Prices:
     critter_slot: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
     army: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=1, z=2, v=2.0))
     wave_era_costs: list[int] = field(default_factory=lambda: [0, 200, 500, 1200, 2500, 5000, 9000, 15000, 25000])
+    ruler_xp: PriceParams = field(default_factory=lambda: PriceParams(u=0, y=10, z=1, v=2.0))
 
 
 @dataclass
@@ -122,7 +123,7 @@ class GameConfig:
     industrial_travel_offset: float = 300.0
     modern_travel_offset: float = 300.0
     future_travel_offset: float = 300.0
-    base_siege_offset: float = 900.0
+
 
     # Generic per-era effects dict: { "STEINZEIT": {"gold_offset": 5.0, ...}, ... }
     # Applied to empire.effects when era is determined.
@@ -158,6 +159,11 @@ class GameConfig:
     base_artifact_steal_victory: float = 0.5
     base_artifact_steal_defeat: float = 0.05
 
+    # -- Ruler XP rewards --------------------------------------------
+    ruler_xp_per_kill: float = 1.0
+    ruler_xp_per_reached_per_era: float = 10.0
+    ruler_xp_victory_per_era: float = 50.0
+
     # -- Prices ------------------------------------------------------
     prices: Prices = field(default_factory=Prices)
 
@@ -181,6 +187,9 @@ class GameConfig:
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower
     max_spy_armies: int = 1
 
+    # -- Artifact lottery --------------------------------------------
+    accounts_per_artifact: int = 12
+
     # -- Auth validation ---------------------------------------------
     min_username_length: int = 2
     max_username_length: int = 20
@@ -197,14 +206,26 @@ class GameConfig:
     uid_game_server: int = 0
     uid_game_engine: int = 1
     uid_ai: int = 2
-    uid_min_player: int = 1000
+
+
+def _require(d: dict, key: str, context: str = "game.yaml") -> object:
+    """Raise ValueError if key is missing from dict."""
+    if key not in d:
+        raise ValueError(f"Missing required config key '{key}' in {context}")
+    return d[key]
+
+
+def _require_price_params(prices_raw: dict, key: str) -> PriceParams:
+    if key not in prices_raw:
+        raise ValueError(f"Missing required prices.{key} in game.yaml")
+    return PriceParams(**prices_raw[key])
 
 
 def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
     """Load game configuration from a YAML file.
 
-    Missing keys fall back to dataclass defaults.  If the file does not
-    exist, a warning is logged and pure defaults are returned.
+    All keys are required — missing keys raise ValueError so the server
+    fails fast at startup rather than silently using wrong defaults.
     """
     p = Path(path)
     if not p.exists():
@@ -215,51 +236,68 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
 
     log.info("Loaded game config from %s (%d keys)", p, len(raw))
 
-    # Handle nested spy_costs
-    spy_raw = raw.pop("spy_costs", None)
-    spy = SpyCosts(**spy_raw) if isinstance(spy_raw, dict) else SpyCosts()
+    # -- spy_costs (required section) ------------------------------------
+    if "spy_costs" not in raw:
+        raise ValueError("Missing required section 'spy_costs' in game.yaml")
+    spy_raw = raw.pop("spy_costs")
+    spy = SpyCosts(**spy_raw)
 
-    # Handle nested prices
-    prices_raw = raw.pop("prices", None)
-    if isinstance(prices_raw, dict):
-        citizen_raw = prices_raw.get("citizen", {})
-        prices = Prices(
-            citizen=PriceParams(**citizen_raw) if isinstance(citizen_raw, dict) else PriceParams(),
-            tile=PriceParams(**prices_raw["tile"]) if "tile" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
-            wave=PriceParams(**prices_raw["wave"]) if "wave" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
-            critter_slot=PriceParams(**prices_raw["critter_slot"]) if "critter_slot" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
-            army=PriceParams(**prices_raw["army"]) if "army" in prices_raw else PriceParams(u=0, y=1, z=2, v=2.0),
-            wave_era_costs=list(prices_raw["wave_era_costs"]) if "wave_era_costs" in prices_raw else [0, 200, 500, 1200, 2500, 5000, 9000, 15000, 25000],
+    # -- prices (required section) ---------------------------------------
+    if "prices" not in raw:
+        raise ValueError("Missing required section 'prices' in game.yaml")
+    prices_raw = raw.pop("prices")
+    wave_era_costs = list(_require(prices_raw, "wave_era_costs", "prices"))  # type: ignore[call-overload]
+    if len(wave_era_costs) != 9:
+        raise ValueError(
+            f"prices.wave_era_costs must have exactly 9 entries (one per era), got {len(wave_era_costs)}"
         )
-    else:
-        prices = Prices()
+    item_upgrade_base_costs_raw = raw.get("item_upgrade_base_costs")
+    if item_upgrade_base_costs_raw is not None and len(item_upgrade_base_costs_raw) != 9:
+        raise ValueError(
+            f"item_upgrade_base_costs must have exactly 9 entries, got {len(item_upgrade_base_costs_raw)}"
+        )
+    prices = Prices(
+        citizen=_require_price_params(prices_raw, "citizen"),
+        tile=_require_price_params(prices_raw, "tile"),
+        wave=_require_price_params(prices_raw, "wave"),
+        critter_slot=_require_price_params(prices_raw, "critter_slot"),
+        army=_require_price_params(prices_raw, "army"),
+        wave_era_costs=wave_era_costs,
+        ruler_xp=_require_price_params(prices_raw, "ruler_xp"),
+    )
 
-    # Handle nested era_effects → flatten travel/siege to legacy fields
-    # AND build generic era_effects dict for empire effect system
+    # -- era_effects (required section) ----------------------------------
     from gameserver.util.eras import ERA_YAML_TO_FIELD, ERA_YAML_TO_KEY
-    _ERA_YAML_TO_FIELD = ERA_YAML_TO_FIELD
-    _ERA_YAML_TO_KEY = ERA_YAML_TO_KEY
-    era_raw = raw.pop("era_effects", None)
+    if "era_effects" not in raw:
+        raise ValueError("Missing required section 'era_effects' in game.yaml")
+    era_raw = raw.pop("era_effects")
     era_effects_dict: Dict[str, Dict[str, float]] = {}
-    if isinstance(era_raw, dict):
-        for yaml_key, vals in era_raw.items():
-            if not isinstance(vals, dict):
-                continue
-            field_prefix = _ERA_YAML_TO_FIELD.get(yaml_key, yaml_key)
-            era_key = _ERA_YAML_TO_KEY.get(yaml_key)
-            # Legacy flat fields for travel/siege
-            if "travel_offset" in vals:
-                raw[f"{field_prefix}_travel_offset"] = vals["travel_offset"]
-            if "siege_offset" in vals:
-                if "base_siege_offset" not in raw:
-                    raw["base_siege_offset"] = vals["siege_offset"]
-            # Generic era effects (everything except travel/siege)
-            if era_key:
-                generic = {k: v for k, v in vals.items()
-                           if k not in ("travel_offset", "siege_offset")}
-                era_effects_dict[era_key] = generic
+    for yaml_key, vals in era_raw.items():
+        if not isinstance(vals, dict):
+            continue
+        field_prefix = ERA_YAML_TO_FIELD.get(yaml_key, yaml_key)
+        era_key = ERA_YAML_TO_KEY.get(yaml_key)
+        if "travel_offset" in vals:
+            raw[f"{field_prefix}_travel_offset"] = vals["travel_offset"]
 
-    # Handle ai_generator: {era_yaml_key: {min_waves, max_waves, ...}}
+        if era_key:
+            era_effects_dict[era_key] = {
+                k: v for k, v in vals.items()
+                if k not in ("travel_offset", "siege_offset")
+            }
+
+    # -- structure_upgrades / critter_upgrades (required) ----------------
+    if "structure_upgrades" not in raw:
+        raise ValueError("Missing required section 'structure_upgrades' in game.yaml")
+    su_raw = raw.pop("structure_upgrades")
+    structure_upgrades = StructureUpgradeDef(**{k: float(v) for k, v in su_raw.items()})
+
+    if "critter_upgrades" not in raw:
+        raise ValueError("Missing required section 'critter_upgrades' in game.yaml")
+    cu_raw = raw.pop("critter_upgrades")
+    critter_upgrades = CritterUpgradeDef(**{k: float(v) for k, v in cu_raw.items()})
+
+    # -- ai_generator (optional, empty dict if absent) -------------------
     ai_generator_raw = raw.pop("ai_generator", None)
     ai_generator: Dict[str, Dict[str, int]] = (
         {k: {ik: int(iv) for ik, iv in v.items() if isinstance(iv, (int, float))}
@@ -267,32 +305,39 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         if isinstance(ai_generator_raw, dict) else {}
     )
 
-    # Handle structure_upgrades / critter_upgrades
-    su_raw = raw.pop("structure_upgrades", None)
-    structure_upgrades = StructureUpgradeDef(**{k: float(v) for k, v in su_raw.items()}) \
-        if isinstance(su_raw, dict) else StructureUpgradeDef()
-    cu_raw = raw.pop("critter_upgrades", None)
-    critter_upgrades = CritterUpgradeDef(**{k: float(v) for k, v in cu_raw.items()}) \
-        if isinstance(cu_raw, dict) else CritterUpgradeDef()
-
-    # Handle nested barbarians_aggressiveness (already a flat {era_key: float} dict)
+    # -- barbarians_aggressiveness (optional) ----------------------------
     barbarians_raw = raw.pop("barbarians_aggressiveness", None)
     barbarians_aggressiveness: Dict[str, float] = (
         {k: float(v) for k, v in barbarians_raw.items() if isinstance(v, (int, float))}
         if isinstance(barbarians_raw, dict) else {}
     )
 
-    # Handle end_ralley_effects (YAML key uses "ralley" spelling)
-    end_rally_effects_raw = raw.pop("end_ralley_effects", None)
-    end_rally_effects: Dict[str, float] = (
-        {k: float(v) for k, v in end_rally_effects_raw.items() if isinstance(v, (int, float))}
-        if isinstance(end_rally_effects_raw, dict) else {}
-    )
-    # end_ralley_duration uses "ralley" spelling in YAML too
+    # -- end_ralley_effects (required) -----------------------------------
+    if "end_ralley_effects" not in raw:
+        raise ValueError("Missing required key 'end_ralley_effects' in game.yaml")
+    end_rally_effects_raw = raw.pop("end_ralley_effects")
+    end_rally_effects: Dict[str, float] = {
+        k: float(v) for k, v in end_rally_effects_raw.items() if isinstance(v, (int, float))
+    }
     if "end_ralley_duration" in raw:
         raw["end_rally_duration"] = raw.pop("end_ralley_duration")
 
-    # Build config from flat keys + nested spy_costs + era_effects
+    # -- required flat scalar keys ---------------------------------------
+    _REQUIRED_SCALAR_KEYS = [
+        "base_gold_per_sec", "base_culture_per_sec", "citizen_effect",
+        "base_build_speed", "base_research_speed",
+        "starting_max_life", "restore_life_after_loss_offset",
+        "min_lose_knowledge", "max_lose_knowledge",
+        "min_lose_culture", "max_lose_culture",
+        "culture_era_advantage_ratio",
+        "base_artifact_steal_victory", "base_artifact_steal_defeat",
+        "ruler_xp_per_kill", "ruler_xp_per_reached_per_era", "ruler_xp_victory_per_era",
+        "item_upgrade_base_costs",
+        "end_criterion",
+    ]
+    for key in _REQUIRED_SCALAR_KEYS:
+        _require(raw, key)
+
     cfg = GameConfig(
         spy_costs=spy,
         prices=prices,

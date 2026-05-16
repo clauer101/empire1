@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Battle Log</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    #topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      flex-shrink: 0;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #topbar button {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    #topbar button:hover { border-color: var(--accent); color: var(--accent); }
+    #status { font-size: 11px; font-family: var(--mono); color: var(--text-dim); }
+
+    #plot-wrap {
+      padding: 16px 20px 40px;
+    }
+
+    svg#scatter {
+      display: block;
+      width: 100%;
+      height: 70vh;
+    }
+
+    .axis-label {
+      font-size: 11px;
+      fill: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+    }
+    .tick-label {
+      font-size: 10px;
+      fill: var(--text-dim);
+      font-family: var(--mono);
+    }
+    .grid-line { stroke: #1e1e2e; stroke-width: 1; }
+    .era-label {
+      font-size: 11px;
+      fill: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      text-anchor: middle;
+    }
+
+    #tooltip {
+      position: fixed;
+      z-index: 9999;
+      background: #1e1e2e;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-size: 11px;
+      line-height: 1.7;
+      pointer-events: none;
+      display: none;
+      max-width: 260px;
+      font-family: var(--mono);
+    }
+    .tt-row { display: flex; gap: 8px; justify-content: space-between; }
+    .tt-key { color: var(--text-dim); }
+    .tt-val { color: var(--text); }
+    .tt-win  { color: var(--success); font-weight: 600; }
+    .tt-loss { color: var(--danger);  font-weight: 600; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>⚔ AI Battle Log</h1>
+  <span id="status">loading…</span>
+  <button id="btn-reload">↻ Reload</button>
+</div>
+
+<div id="plot-wrap">
+  <svg id="scatter"></svg>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const GS_BASE = window.location.origin;
+
+const ERA_ORDER = [
+  'Stone Age','Neolithic','Bronze Age','Iron Age',
+  'Middle Ages','Renaissance','Industrial','Modern','Future',
+];
+
+async function fetchData() {
+  const token = localStorage.getItem('e3_jwt_token');
+  const r = await fetch(`${GS_BASE}/api/admin/ai-battle-log?limit=1000`, {
+    headers: token ? { Authorization: 'Bearer ' + token } : {},
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// Seeded jitter so repeated renders are stable per battle id
+function seededJitter(seed, range) {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return (x - Math.floor(x) - 0.5) * range;
+}
+
+function render(battles) {
+  const svg = document.getElementById('scatter');
+  svg.innerHTML = '';
+
+  const W = svg.clientWidth  || svg.parentElement.clientWidth;
+  const H = svg.clientHeight;
+
+  const PAD = { top: 20, right: 30, bottom: 72, left: 72 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top  - PAD.bottom;
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const g = document.createElementNS(ns, 'g');
+  g.setAttribute('transform', `translate(${PAD.left},${PAD.top})`);
+  svg.appendChild(g);
+
+  // ── Scales ──────────────────────────────────────────────────────────
+  const n = ERA_ORDER.length;
+  const xSlotW = plotW / n;
+
+  const maxGold = Math.max(...battles.map(b => b.tower_gold), 1000);
+  const minGold = Math.max(1, Math.min(...battles.map(b => b.tower_gold).filter(v => v > 0)));
+  const logMin = Math.log10(minGold);
+  const logMax = Math.log10(maxGold);
+  const yScale = v => v <= 0 ? plotH : plotH - ((Math.log10(v) - logMin) / (logMax - logMin)) * plotH;
+
+  // ── Y grid + ticks (powers of 10 + midpoints) ───────────────────────
+  const tickVals = [];
+  for (let exp = Math.floor(logMin); exp <= Math.ceil(logMax); exp++) {
+    tickVals.push(Math.pow(10, exp));
+    tickVals.push(Math.pow(10, exp) * 3);
+  }
+  for (const val of tickVals) {
+    if (val < minGold * 0.5 || val > maxGold * 1.5) continue;
+    const y = yScale(val);
+
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', 0); line.setAttribute('x2', plotW);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('class', 'grid-line');
+    g.appendChild(line);
+
+    const lbl = document.createElementNS(ns, 'text');
+    lbl.setAttribute('x', -8);
+    lbl.setAttribute('y', y + 3);
+    lbl.setAttribute('text-anchor', 'end');
+    lbl.setAttribute('class', 'tick-label');
+    lbl.textContent = val >= 1000 ? `${(val/1000).toLocaleString()}k` : val;
+    g.appendChild(lbl);
+  }
+
+  // ── Y axis label ────────────────────────────────────────────────────
+  const yLbl = document.createElementNS(ns, 'text');
+  yLbl.setAttribute('transform', `rotate(-90)`);
+  yLbl.setAttribute('x', -plotH / 2);
+  yLbl.setAttribute('y', -56);
+  yLbl.setAttribute('text-anchor', 'middle');
+  yLbl.setAttribute('class', 'axis-label');
+  yLbl.textContent = 'Total Tower Gold';
+  g.appendChild(yLbl);
+
+  // ── X era labels + dividers ─────────────────────────────────────────
+  ERA_ORDER.forEach((era, i) => {
+    const cx = (i + 0.5) * xSlotW;
+
+    if (i > 0) {
+      const div = document.createElementNS(ns, 'line');
+      div.setAttribute('x1', i * xSlotW); div.setAttribute('x2', i * xSlotW);
+      div.setAttribute('y1', 0);          div.setAttribute('y2', plotH);
+      div.setAttribute('stroke', '#1e1e2e');
+      div.setAttribute('stroke-width', '1');
+      g.appendChild(div);
+    }
+
+    const lbl = document.createElementNS(ns, 'text');
+    lbl.setAttribute('x', cx);
+    lbl.setAttribute('y', plotH + 18);
+    lbl.setAttribute('class', 'era-label');
+    lbl.textContent = era;
+    g.appendChild(lbl);
+  });
+
+  // ── Plot frame ──────────────────────────────────────────────────────
+  const frame = document.createElementNS(ns, 'rect');
+  frame.setAttribute('x', 0); frame.setAttribute('y', 0);
+  frame.setAttribute('width', plotW); frame.setAttribute('height', plotH);
+  frame.setAttribute('fill', 'none');
+  frame.setAttribute('stroke', '#2a2a3a');
+  g.appendChild(frame);
+
+  // ── Dots ────────────────────────────────────────────────────────────
+  const tooltip = document.getElementById('tooltip');
+  const JITTER = xSlotW * 0.38;
+  const R = 5;
+
+  battles.forEach(b => {
+    const eraIdx = ERA_ORDER.indexOf(b.defender_era);
+    if (eraIdx < 0) return;
+
+    const cx = (eraIdx + 0.5) * xSlotW + seededJitter(b.id, JITTER);
+    const cy = yScale(b.tower_gold);
+    const win = b.result === 'DEFENDER_WIN';
+    const color = win ? 'var(--success)' : 'var(--danger)';
+
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', cx);
+    circle.setAttribute('cy', cy);
+    circle.setAttribute('r', R);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('fill-opacity', '0.75');
+    circle.setAttribute('stroke', win ? '#43a047' : '#c62828');
+    circle.setAttribute('stroke-width', '1');
+    circle.style.cursor = 'crosshair';
+
+    circle.addEventListener('mouseenter', e => {
+      circle.setAttribute('r', R + 3);
+      circle.setAttribute('fill-opacity', '1');
+      const tw = Object.entries(b.towers_by_era).map(([k,v])=>`${k}: ${v}`).join(', ') || '—';
+      const cw = Object.entries(b.critters_by_era).map(([k,v])=>`${k}: ${v}`).join(', ') || '—';
+      tooltip.innerHTML = `
+        <div class="tt-row"><span class="tt-key">Result</span><span class="${win?'tt-win':'tt-loss'}">${win?'Defender wins':'AI wins'}</span></div>
+        <div class="tt-row"><span class="tt-key">Defender</span><span class="tt-val">${b.defender_name}</span></div>
+        <div class="tt-row"><span class="tt-key">Era</span><span class="tt-val">${b.defender_era}</span></div>
+        <div class="tt-row"><span class="tt-key">Army</span><span class="tt-val">${b.army_name}</span></div>
+        <div class="tt-row"><span class="tt-key">Tower gold</span><span class="tt-val">${b.tower_gold.toLocaleString()}</span></div>
+        <div class="tt-row"><span class="tt-key">Towers (${b.tower_count})</span><span class="tt-val">${tw}</span></div>
+        <div class="tt-row"><span class="tt-key">Path</span><span class="tt-val">${b.path_length} tiles</span></div>
+        <div class="tt-row"><span class="tt-key">Life</span><span class="tt-val">${b.life_start} → ${b.life_end.toFixed(1)}</span></div>
+        <div class="tt-row"><span class="tt-key">Critters</span><span class="tt-val">${b.critters_spawned} spawned / ${b.critters_reached} reached / ${b.critters_killed} killed</span></div>
+        <div class="tt-row"><span class="tt-key">Critter eras</span><span class="tt-val">${cw}</span></div>
+        <div class="tt-row"><span class="tt-key">Duration</span><span class="tt-val">${b.battle_duration_s}s</span></div>
+        <div class="tt-row"><span class="tt-key">Date</span><span class="tt-val">${b.logged_at?.slice(0,16) ?? '—'}</span></div>
+      `;
+      tooltip.style.display = 'block';
+    });
+    circle.addEventListener('mousemove', e => {
+      const tw = tooltip;
+      tw.style.left = (e.clientX + 14) + 'px';
+      tw.style.top  = (e.clientY - 10) + 'px';
+      if (e.clientX + 14 + 280 > window.innerWidth)
+        tw.style.left = (e.clientX - 280) + 'px';
+    });
+    circle.addEventListener('mouseleave', () => {
+      circle.setAttribute('r', R);
+      circle.setAttribute('fill-opacity', '0.75');
+      tooltip.style.display = 'none';
+    });
+
+    g.appendChild(circle);
+  });
+}
+
+async function load() {
+  const st = document.getElementById('status');
+  try {
+    st.textContent = 'loading…';
+    const data = await fetchData();
+    const battles = data.battles || [];
+    st.textContent = `${battles.length} battles`;
+    render(battles);
+  } catch (e) {
+    st.textContent = '✗ ' + e.message;
+  }
+}
+
+document.getElementById('btn-reload').addEventListener('click', load);
+window.addEventListener('resize', () => load());
+load();
+</script>
+</body>
+</html>

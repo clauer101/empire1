@@ -31,3 +31,24 @@ RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately
 
 # -- Battle / Defense ----------------------------------------------------
 WAVE_DELAY_OFFSET = "wave_delay_offset"
+
+# -- Cost modifiers ------------------------------------------------------
+CITIZEN_COST_MODIFIER = "citizen_cost_modifier"       # reduces citizen upgrade cost: price × (1 - v)
+TILE_COST_MODIFIER = "tile_cost_modifier"             # reduces new tile cost: price × (1 - v)
+LAND_COST_MODIFIER = "land_cost_modifier"             # reduces new tile cost (ruler variant): price × (1 - v), stacks with tile_cost_modifier
+BUILDING_COST_MODIFIER = "building_cost_modifier"     # reduces gold cost of buildings: gold × (1 - v)
+WAVE_COST_MODIFIER = "wave_cost_modifier"             # reduces new wave cost: price × (1 - v)
+WAVE_ERA_COST_MODIFIER = "wave_era_cost_modifier"     # reduces wave era upgrade cost: price × (1 - v)
+WAVE_SLOT_COST_MODIFIER = "wave_slot_cost_modifier"   # reduces critter slot purchase price: price × (1 - v)
+
+# -- Citizen modifiers ---------------------------------------------------
+CITIZEN_EFFECT_MODIFIER = "citizen_effect_modifier"       # scales citizen_effect: base × (1 + v)
+OTHER_CITIZEN_GOLD_MODIFIER = "other_citizen_gold_modifier"  # artists+scientists each add v to gold_modifier
+
+# -- One-time lump sums (fired on ruler skill-up, not stored in empire.effects) --
+GOLD_LUMP_SUM_ON_SKILL_UP = "gold_lump_sum_on_skill_up"
+CULTURE_LUMP_SUM_ON_SKILL_UP = "culture_lump_sum_on_skill_up"
+
+# -- Combat --------------------------------------------------------------
+RESTORE_LIFE_DURING_BATTLE_MODIFIER = "restore_life_during_battle_modifier"  # boosts life regen while under attack
+ENEMY_SIEGE_TIME_MODIFIER = "enemy_siege_time_modifier"  # attacker: reduces own siege duration × (1 - v)

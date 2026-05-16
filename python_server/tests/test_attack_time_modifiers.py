@@ -40,7 +40,7 @@ def svc():
     upgrade_provider = UpgradeProvider()
     gc = GameConfig()
     gc.base_travel_offset = BASE_TRAVEL
-    gc.base_siege_offset = BASE_SIEGE
+
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
     attack_service = AttackService(event_bus, gc, empire_service)
 
@@ -161,7 +161,7 @@ class TestSiegeTimeModifiers:
     def test_base_siege_time_no_effects(self, svc):
         """No effects → siege equals base siege time."""
         attack_service, _ = svc
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE_SIEGE)
         assert duration == pytest.approx(BASE_SIEGE)
 
     def test_defender_offset_increases_duration(self, svc):
@@ -169,7 +169,7 @@ class TestSiegeTimeModifiers:
         attack_service, empire_service = svc
         empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = 15.0
 
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE_SIEGE)
         # 30 + 15 = 45
         assert duration == pytest.approx(45.0)
 
@@ -178,7 +178,7 @@ class TestSiegeTimeModifiers:
         attack_service, empire_service = svc
         empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = -15.0
 
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE_SIEGE)
         # 30 - 15 = 15
         assert duration == pytest.approx(15.0)
 
@@ -187,7 +187,7 @@ class TestSiegeTimeModifiers:
         attack_service, empire_service = svc
         empire_service.get(DEFENDER_UID).effects[fx.SIEGE_TIME_OFFSET] = -500.0
 
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE_SIEGE)
         assert duration == pytest.approx(1.0)
 
     def test_attacker_offset_does_not_affect_siege(self, svc):
@@ -195,17 +195,17 @@ class TestSiegeTimeModifiers:
         attack_service, empire_service = svc
         empire_service.get(ATTACKER_UID).effects[fx.SIEGE_TIME_OFFSET] = 300.0
 
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE_SIEGE)
         assert duration == pytest.approx(BASE_SIEGE)
 
     def test_unknown_attacker_siege_uses_base(self, svc):
         """If attacker UID is unknown, base siege time is used."""
         attack_service, _ = svc
-        duration = attack_service._calculate_siege_duration(9999, DEFENDER_UID)
+        duration = attack_service._calculate_siege_duration(9999, DEFENDER_UID, base_override=BASE_SIEGE)
         assert duration == pytest.approx(BASE_SIEGE)
 
     def test_unknown_defender_siege_uses_base(self, svc):
         """If defender UID is unknown, base siege time is used."""
         attack_service, _ = svc
-        duration = attack_service._calculate_siege_duration(ATTACKER_UID, 9999)
+        duration = attack_service._calculate_siege_duration(ATTACKER_UID, 9999, base_override=BASE_SIEGE)
         assert duration == pytest.approx(BASE_SIEGE)

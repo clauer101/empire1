@@ -172,7 +172,7 @@ const ALL_EFFECT_IDS = [
   'spy_disguise_chance',
 ];
 
-// rulers: [{ iid, name, type, q: {name, description, levels: [{...}x5]}, w: ..., e: ..., r: {levels: x3} }]
+// rulers: [{ iid, name, type, q: {name, levels: [{...}x5]}, w: ..., e: ..., r: {levels: x3} }]
 let rulers = [];
 
 function markDirty() {
@@ -182,7 +182,7 @@ function markDirty() {
 }
 
 function emptyAbility(n) {
-  return { name: '', description: '', levels: Array.from({ length: n }, () => ({})) };
+  return { name: '', levels: Array.from({ length: n }, () => ({})) };
 }
 
 // ── Autocomplete ──────────────────────────────────────────────
@@ -268,13 +268,9 @@ function renderAbilityCol(parent, label, ability, onChange) {
     <div class="field-row" style="gap:4px">
       <input class="field-input" placeholder="Ability name" value="${_esc(ability.name || '')}" style="font-size:11px;padding:3px 6px" />
     </div>
-    <div class="field-row" style="gap:4px">
-      <input class="field-input" placeholder="Description" value="${_esc(ability.description || '')}" style="font-size:11px;padding:3px 6px;color:var(--text-dim)" />
-    </div>
   `;
-  const [nameInp, descInp] = col.querySelectorAll('.field-row input');
+  const [nameInp] = col.querySelectorAll('.field-row input');
   nameInp.addEventListener('input', () => { ability.name = nameInp.value; onChange(); });
-  descInp.addEventListener('input', () => { ability.description = descInp.value; onChange(); });
 
   const levels = ability.levels;
   levels.forEach((effects, li) => {
@@ -434,7 +430,7 @@ function _normAbility(val, n) {
   const base = Array.isArray(obj.levels) ? obj.levels : (Array.isArray(val) ? val : []);
   const levels = base.slice(0, n).map(v => (v && typeof v === 'object' ? v : {}));
   while (levels.length < n) levels.push({});
-  return { name: obj.name || '', description: obj.description || '', levels };
+  return { name: obj.name || '', levels };
 }
 
 function _esc(s) {

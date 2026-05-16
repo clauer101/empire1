@@ -13,6 +13,7 @@ from gameserver.network.rest_models import (
     BuyItemUpgradeRequest,
     BuyWaveEraRequest,
     BuyWaveRequest,
+    SetRulerWaveRequest,
     WaveChangeRequest,
 )
 from gameserver.network.rest_api import _stub_message
@@ -71,6 +72,13 @@ def make_router(services: "Services") -> APIRouter:
         from gameserver.network.handlers import handle_buy_wave_era_request
         msg = _stub_message(aid=body.aid, wave_number=body.wave_number)
         resp = await handle_buy_wave_era_request(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
+    @router.post("/api/army/set-ruler-wave")
+    async def set_ruler_wave(body: SetRulerWaveRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        from gameserver.network.handlers import handle_set_ruler_wave
+        msg = _stub_message(aid=body.aid, wave_number=body.wave_number, ruler_iid=body.ruler_iid)
+        resp = await handle_set_ruler_wave(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
     @router.post("/api/item/buy-upgrade")

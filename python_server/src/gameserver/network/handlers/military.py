@@ -50,8 +50,8 @@ async def handle_military_request(
                 "iid": wave.iid,
                 "slots": wave.slots,
                 "max_era": wave.max_era,
-                "next_slot_price": round(svc.empire_service._critter_slot_price(wave.slots + 1), 2),
-                "next_era_price": round(svc.empire_service._wave_era_price(wave.max_era + 1), 2),
+                "next_slot_price": round(svc.empire_service.critter_slot_price_for(empire, wave.slots + 1), 2),
+                "next_era_price": round(svc.empire_service.wave_era_price_for(empire, wave.max_era + 1), 2),
             })
 
         army_wave_count = len(army.waves)
@@ -59,7 +59,7 @@ async def handle_military_request(
             "aid": army.aid,
             "name": army.name,
             "waves": waves,
-            "next_wave_price": round(svc.empire_service._wave_price(army_wave_count + 1), 2),
+            "next_wave_price": round(svc.empire_service.wave_price_for(empire, army_wave_count + 1), 2),
         })
 
     # Get available critters based on completed research AND buildings
@@ -380,7 +380,8 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         "ARROW_TOWER": "Bronze", "BALLISTA_TOWER": "Bronze", "FIRE_TOWER": "Bronze",
         "CATAPULTS": "Iron Age", "ARBELESTE_TOWER": "Iron Age",
         "TAR_TOWER": "Medieval", "HEAVY_TOWER": "Medieval", "BOILING_OIL": "Medieval",
-        "CANNON_TOWER": "Renaissance", "RIFLE_TOWER": "Renaissance",
+        "CANNON_TOWER": "Medieval",
+        "RIFLE_TOWER": "Renaissance",
         "COLD_TOWER": "Renaissance", "ICE_TOWER": "Renaissance",
         "FLAME_THROWER": "Industrial", "SHOCK_TOWER": "Industrial",
         "PARALYZNG_TOWER": "Industrial", "GATLING_TOWER": "Industrial",
@@ -741,6 +742,75 @@ async def handle_change_wave(
     }
 
 
+async def handle_set_ruler_wave(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Handle ``set_ruler_wave`` — assign or remove the ruler from a wave.
+
+    Parameters:
+        aid: Army ID
+        wave_number: 0-indexed wave position
+        ruler_iid: Ruler type to assign (e.g. "MAJA"), or "" to remove
+
+    The ruler is stored as wave.iid — the backend recognises it as a ruler wave
+    because the iid matches a key in the rulers config dict.
+    Slots are not modified; the ruler spawns once because its slot cost (999)
+    exceeds the wave slots on the first-critter-always rule.
+    """
+    svc = _svc()
+    aid = getattr(message, "aid", 0)
+    wave_number = getattr(message, "wave_number", 0)
+    ruler_iid = getattr(message, "ruler_iid", "").strip()
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+
+    if empire is None:
+        return {"type": "set_ruler_wave_response", "success": False, "error": "No empire found"}
+
+    rulers = svc.empire_service._rulers if svc.empire_service else {}
+
+    # Validate ruler_iid against empire's ruler type and known rulers
+    if ruler_iid:
+        if ruler_iid not in rulers:
+            return {"type": "set_ruler_wave_response", "success": False, "error": f"Unknown ruler {ruler_iid!r}"}
+        if empire.ruler.type != ruler_iid:
+            return {
+                "type": "set_ruler_wave_response",
+                "success": False,
+                "error": f"Ruler type mismatch: empire ruler is {empire.ruler.type!r}, not {ruler_iid!r}",
+            }
+
+    # Find target army
+    army = next((a for a in empire.armies if a.aid == aid), None)
+    if army is None:
+        return {"type": "set_ruler_wave_response", "success": False, "error": f"Army {aid} not found"}
+
+    if wave_number < 0 or wave_number >= len(army.waves):
+        return {"type": "set_ruler_wave_response", "success": False, "error": f"Wave {wave_number} not found"}
+
+    wave = army.waves[wave_number]
+
+    if ruler_iid:
+        # Enforce one-ruler-per-wave: reset any other wave that already has this ruler as iid
+        for a in empire.armies:
+            for w in a.waves:
+                if w.iid == ruler_iid and not (a.aid == aid and w.wave_id == wave.wave_id):
+                    w.iid = "SLAVE"
+        wave.iid = ruler_iid
+    else:
+        # Remove: restore to SLAVE (default critter)
+        wave.iid = "SLAVE"
+
+    log.info("set_ruler_wave uid=%d aid=%d wave=%d iid=%r", target_uid, aid, wave_number, wave.iid)
+    return {
+        "type": "set_ruler_wave_response",
+        "success": True,
+        "aid": aid,
+        "wave_number": wave_number,
+        "iid": wave.iid,
+    }
+
+
 async def handle_end_siege(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
@@ -795,7 +865,7 @@ async def handle_buy_wave_request(
         }
 
     # Calculate cost based on waves in this specific army
-    wave_price = svc.empire_service._wave_price(len(army.waves) + 1)
+    wave_price = svc.empire_service.wave_price_for(empire, len(army.waves) + 1)
 
     # Check if player has enough gold
     current_gold = empire.resources.get('gold', 0.0)
@@ -886,7 +956,7 @@ async def handle_buy_critter_slot_request(
     wave = army.waves[wave_number]
 
     # Calculate cost based on slots in this specific wave only
-    slot_price = svc.empire_service._critter_slot_price(wave.slots + 1)
+    slot_price = svc.empire_service.critter_slot_price_for(empire, wave.slots + 1)
 
     # Check if player has enough gold
     current_gold = empire.resources.get('gold', 0.0)
@@ -946,7 +1016,7 @@ async def handle_buy_wave_era_request(
     if wave.max_era >= MAX_ERA_INDEX:
         return {"type": "buy_wave_era_response", "success": False, "error": "Wave already at maximum era"}
 
-    era_price = svc.empire_service._wave_era_price(wave.max_era + 1)
+    era_price = svc.empire_service.wave_era_price_for(empire, wave.max_era + 1)
     current_gold = empire.resources.get('gold', 0.0)
     if current_gold < era_price:
         return {"type": "buy_wave_era_response", "success": False, "error": f"Not enough gold (need {era_price:.1f}, have {current_gold:.1f})"}
@@ -955,7 +1025,7 @@ async def handle_buy_wave_era_request(
     old_era = wave.max_era
     wave.max_era += 1
 
-    next_price = svc.empire_service._wave_era_price(wave.max_era + 1) if wave.max_era < MAX_ERA_INDEX else None
+    next_price = svc.empire_service.wave_era_price_for(empire, wave.max_era + 1) if wave.max_era < MAX_ERA_INDEX else None
     log.info(f"Wave era upgraded for army {aid} wave {wave_number} by uid={target_uid}: era {old_era} → {wave.max_era} for {era_price:.1f} gold")
 
     return {

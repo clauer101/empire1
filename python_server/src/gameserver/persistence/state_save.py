@@ -162,7 +162,7 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
             "w": empire.ruler.w,
             "e": empire.ruler.e,
             "r": empire.ruler.r,
-        },
+        } if empire.ruler.type else {},
     }
 
 

@@ -12,6 +12,7 @@ from gameserver.util import effects
 
 ATTACKER_UID = 1
 DEFENDER_UID = 100
+BASE = 30.0
 
 
 @pytest.fixture
@@ -20,26 +21,22 @@ def services():
     event_bus = EventBus()
     upgrade_provider = UpgradeProvider()
     gc = GameConfig()
-    gc.base_siege_offset = 30.0
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
     attack_service = AttackService(event_bus, gc, empire_service)
-    # Register a plain attacker empire (no effects) used by all tests
     attacker = Empire(uid=ATTACKER_UID, name="Attacker")
     empire_service.register(attacker)
     return attack_service, empire_service
 
 
 def test_siege_duration_default_no_effects(services):
-    """Siege duration with no defender effects should use base value."""
+    """Siege duration with no defender effects and a base_override."""
     attack_service, empire_service = services
 
     defender = Empire(uid=DEFENDER_UID, name="Defender")
     empire_service.register(defender)
 
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-
-    # Should be base value (30.0 + 30.0 * 0.0 = 30.0)
-    assert duration == 30.0
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
+    assert duration == BASE
 
 
 def test_siege_duration_with_modifier_only(services):
@@ -51,7 +48,7 @@ def test_siege_duration_with_modifier_only(services):
     empire_service.register(defender)
 
     # 30 + 15 = 45
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
     assert duration == 45.0
 
 
@@ -60,11 +57,11 @@ def test_siege_duration_with_doubled_modifier(services):
     attack_service, empire_service = services
 
     defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = 30.0  # same as base
+    defender.effects[effects.SIEGE_TIME_OFFSET] = 30.0
     empire_service.register(defender)
 
     # 30 + 30 = 60
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
     assert duration == 60.0
 
 
@@ -77,14 +74,24 @@ def test_siege_duration_with_negative_modifier(services):
     empire_service.register(defender)
 
     # 30 - 9 = 21
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
     assert duration == 21.0
 
 
-def test_siege_duration_nonexistent_defender(services):
-    """Siege duration for nonexistent defender should fall back to base value."""
+def test_siege_duration_no_base_no_effects(services):
+    """Without base_override and no defender effects, siege duration is 1 (clamped)."""
     attack_service, empire_service = services
 
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, 999)
+    defender = Empire(uid=DEFENDER_UID, name="Defender")
+    empire_service.register(defender)
 
-    assert duration == 30.0
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+    assert duration == 1.0  # max(1.0, 0.0)
+
+
+def test_siege_duration_nonexistent_defender(services):
+    """Siege duration for nonexistent defender should fall back to base_override."""
+    attack_service, empire_service = services
+
+    duration = attack_service._calculate_siege_duration(ATTACKER_UID, 999, base_override=BASE)
+    assert duration == BASE
