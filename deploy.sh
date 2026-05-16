@@ -51,6 +51,11 @@ save_state_before_stop() {
     fi
 }
 
+build_assets() {
+    echo "  Building frontend..."
+    (export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && cd web && npm run build --silent)
+}
+
 deploy() {
     local env="$1"
     local compose_file="$2"
@@ -62,16 +67,11 @@ deploy() {
     echo " $(date '+%Y-%m-%d %H:%M:%S')"
     echo -e "========================================${NC}"
 
-    save_state_before_stop "$env" "$port"
+    docker compose -p "$project" -f "$compose_file" build
 
-    # Stop old container BEFORE building — prevents the periodic auto-save
-    # from overwriting the just-saved state while the new container starts up
+    save_state_before_stop "$env" "$port"
     docker compose -p "$project" -f "$compose_file" down
 
-    echo "  Building frontend..."
-    (export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && cd web && npm run build --silent)
-
-    docker compose -p "$project" -f "$compose_file" build
     docker compose -p "$project" -f "$compose_file" up -d
     docker compose -p "$project" -f "$compose_file" ps
 
@@ -102,14 +102,15 @@ case "$TARGET" in
     prod)
         [[ "$ACTION" == "stop" ]] \
             && stop_env "prod" "docker-compose.yml" "empire1-prod" "8080" \
-            || deploy   "prod" "docker-compose.yml" "empire1-prod" "8080"
+            || { build_assets; deploy "prod" "docker-compose.yml" "empire1-prod" "8080"; }
         ;;
     dev)
         [[ "$ACTION" == "stop" ]] \
             && stop_env "dev" "docker-compose.dev.yml" "empire1-dev" "8180" \
-            || deploy   "dev" "docker-compose.dev.yml" "empire1-dev" "8180"
+            || { build_assets; deploy "dev" "docker-compose.dev.yml" "empire1-dev" "8180"; }
         ;;
     both|"")
+        build_assets
         deploy "prod" "docker-compose.yml" "empire1-prod" "8080"
         deploy "dev"  "docker-compose.dev.yml" "empire1-dev" "8180"
         ;;

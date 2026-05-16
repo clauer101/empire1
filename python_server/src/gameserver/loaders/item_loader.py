@@ -43,6 +43,7 @@ def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
             effort=float(attrs.get("effort", 0)),
             costs=attrs.get("costs", {}),
             requirements=attrs.get("requirements", []),
+            excludes=attrs.get("excludes", []),
             effects=attrs.get("effects") or {},
             damage=float(attrs.get("damage", 0)),
             range=float(attrs.get("range", 0)),

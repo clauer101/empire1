@@ -64,3 +64,11 @@ line-length = 100
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[[tool.mypy.overrides]]
+module = "pywebpush"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "gameserver.util.push_service"
+warn_unused_ignores = false

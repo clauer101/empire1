@@ -104,6 +104,7 @@ export class ItemOverlay {
       const effort = avail?.effort ?? catInfo.effort;
       const effectsStr = this._fmtEffects(avail?.effects || catInfo.effects);
       const reqs = this._reqLinks(avail?.requirements || catInfo.requirements);
+      const excl = this._excludesLinks(avail?.excludes || catInfo.excludes);
       const eraLabel = this._getEraLabel(iid);
       const itemUnlocks = unlocks[iid] || [];
 
@@ -117,6 +118,7 @@ export class ItemOverlay {
         </div>
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
+        ${excl ? `<div class="tt-dp-section"><div class="tt-dp-section-title" style="color:var(--danger,#ef5350)">Excludes</div><div class="tt-dp-unlocks">${excl}</div></div>` : ''}
         ${
           itemUnlocks.length > 0
             ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Unlocks</div><div class="tt-dp-unlocks">${itemUnlocks
@@ -132,6 +134,7 @@ export class ItemOverlay {
       const effort = b?.effort ?? catInfo.effort;
       const effectsStr = this._fmtItemEffects(b?.effects || catInfo.effects);
       const reqs = this._reqLinks(b?.requirements || catInfo.requirements);
+      const excl = this._excludesLinks(b?.excludes || catInfo.excludes);
       const costsStr = this._fmtCosts(b?.costs || catInfo.costs, 'building');
       const eraLabel = this._getEraLabel(iid);
 
@@ -146,6 +149,7 @@ export class ItemOverlay {
         </div>
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
+        ${excl ? `<div class="tt-dp-section"><div class="tt-dp-section-title" style="color:var(--danger,#ef5350)">Excludes</div><div class="tt-dp-unlocks">${excl}</div></div>` : ''}
       `;
     } else if (category === 'structure') {
       const s = structures[iid] || catInfo;
@@ -293,6 +297,17 @@ export class ItemOverlay {
         return `${icon} ${discounted} ${r.charAt(0).toUpperCase() + r.slice(1)}`;
       })
       .join(', ');
+  }
+
+  _excludesLinks(excludes) {
+    const catalog = this._st.items?.catalog || {};
+    return (excludes || [])
+      .map((r) => {
+        const info = catalog[r];
+        if (info) return this.linkBadge(r, info.name || r, info.item_type || 'knowledge');
+        return `<span class="tt-ubadge">${r}</span>`;
+      })
+      .join(' ');
   }
 
   _reqLinks(requirements) {

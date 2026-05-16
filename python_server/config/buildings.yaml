@@ -17,6 +17,7 @@ BASE_CAMP:
   effort: 30  # was 30
   costs: {gold: 5}
   requirements: []
+  excludes: [TRIBAL_COUNCIL]
   effects:
     life_regen_modifier: 0.001
     siege_offset: 120.0
@@ -181,7 +182,7 @@ TRIBAL_COUNCIL:
   description: "A gathering place where the tribe elects a leader to guide and represent the people. Unlocks the ruler system."
   effort: 8000
   costs: {gold: 1500}
-  requirements: [ALPHABET_WRITING, AGRICULTURE, THE_WORLD_WONDER]
+  requirements: [ALPHABET_WRITING, AGRICULTURE]
   effects:
     ruler_unlock: 1
 

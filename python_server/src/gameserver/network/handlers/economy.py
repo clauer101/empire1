@@ -110,6 +110,7 @@ async def handle_item_request(
             "effort": item.effort,
             "costs": dict(item.costs),
             "requirements": list(item.requirements),
+            "excludes": list(item.excludes),
             "effects": dict(item.effects),
             "image": item.image,
             "era": item.era,
@@ -123,6 +124,7 @@ async def handle_item_request(
             "effort": item.effort,
             "costs": dict(item.costs),
             "requirements": list(item.requirements),
+            "excludes": list(item.excludes),
             "effects": dict(item.effects),
             "image": item.image,
             "era": item.era,
@@ -198,6 +200,7 @@ async def handle_item_request(
                 "effects": dict(item.effects),
                 "description": item.description,
                 "image": item.image,
+                "excludes": list(item.excludes),
             })
         elif item.item_type == ItemType.BUILDING:
             entry.update({
@@ -206,6 +209,7 @@ async def handle_item_request(
                 "effects": dict(item.effects),
                 "description": item.description,
                 "image": item.image,
+                "excludes": list(item.excludes),
             })
         elif item.item_type == ItemType.ARTIFACT:
             entry.update({

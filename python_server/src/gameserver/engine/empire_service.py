@@ -387,6 +387,15 @@ class EmpireService:
         if not self._upgrades.check_requirements(iid, completed):
             return f"Requirements not met for {iid}"
 
+        # Check excludes: block if this item or any completed item mutually excludes the other
+        for excl_iid in item.excludes:
+            if excl_iid in completed:
+                return f"Cannot build {iid}: excluded by completed item {excl_iid}"
+        for comp_iid in completed:
+            comp_item = self._upgrades.get(comp_iid)
+            if comp_item and iid in comp_item.excludes:
+                return f"Cannot build {iid}: excluded by completed item {comp_iid}"
+
         from gameserver.models.items import ItemType
 
         if item.item_type == ItemType.BUILDING:

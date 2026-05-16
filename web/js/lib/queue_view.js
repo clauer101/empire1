@@ -130,6 +130,19 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
 
     // Build reverse-requirement map from full catalog
     const catalog = items.catalog || {};
+
+    // Compute excluded set: items blocked by a completed item's excludes (both directions)
+    const excluded = new Set();
+    for (const compIid of completed) {
+      for (const excl of (catalog[compIid]?.excludes || [])) excluded.add(excl);
+    }
+    for (const [iid, info] of Object.entries(catalog)) {
+      if (!completed.has(iid)) {
+        for (const excl of (info.excludes || [])) {
+          if (completed.has(excl)) excluded.add(iid);
+        }
+      }
+    }
     const _allByIid = Object.assign(
       {},
       items.buildings || {},
@@ -153,7 +166,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
       entries.sort(([a], [b]) => (b === activeQueue) - (a === activeQueue));
     }
     if (hideCompleted) {
-      entries = entries.filter(([iid]) => !completed.has(iid));
+      entries = entries.filter(([iid]) => !completed.has(iid) && !excluded.has(iid));
     }
 
     if (entries.length === 0) {
@@ -165,6 +178,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
       .map(([iid, info]) => {
         let status = 'available';
         if (completed.has(iid)) status = 'completed';
+        else if (excluded.has(iid)) status = 'excluded';
         else if (iid === activeQueue) status = 'in-progress';
 
         const badgeText = status === 'in-progress' ? cfg.actionVerb : status;
@@ -192,7 +206,9 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
               ${
                 status === 'available'
                   ? `<button class="btn-sm ${cfg.btnClass}" data-iid="${iid}">${cfg.actionLabel}</button>`
-                  : `<span class="badge badge--${status}">${badgeText}</span>`
+                  : status === 'excluded'
+                    ? `<span class="badge badge--excluded">excluded</span>`
+                    : `<span class="badge badge--${status}">${badgeText}</span>`
               }
             </div>
           </div>
@@ -203,6 +219,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
           ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${_fmtCosts(info.costs, summary, wasStarted, cfg.categoryKey === 'buildings' ? (summary?.effects?.building_cost_modifier ?? 0) : 0)}</div>` : ''}
           ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${_fmtEffects(info.effects)}</div>` : ''}
           ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map((u) => _overlay.linkBadge(u.iid, u.name, u.category)).join('')}</div>` : ''}
+          ${(info.excludes || []).length > 0 ? `<div class="detail-row"><span class="detail-label" style="color:var(--danger,#ef5350)">Excludes:</span> ${(info.excludes).map((e) => { const ci = catalog[e]; return ci ? _overlay.linkBadge(e, ci.name || e, ci.item_type || 'building') : `<span class="tt-ubadge">${e}</span>`; }).join('')}</div>` : ''}
         </td>
       </tr>`;
       })
@@ -214,7 +231,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
           <input type="checkbox" id="${cfg.toggleId}" ${hideCompleted ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
-        <label for="${cfg.toggleId}" style="font-size: 13px; cursor: pointer;">Hide completed</label>
+        <label for="${cfg.toggleId}" style="font-size: 13px; cursor: pointer;">Hide completed &amp; excluded</label>
       </div>
       <table class="items-table">
         <thead><tr><th>Name</th><th>Details</th></tr></thead>

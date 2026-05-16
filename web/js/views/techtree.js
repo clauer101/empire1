@@ -292,6 +292,23 @@ function render() {
 
 /* ── Status update (lightweight — no DOM rebuild) ────────── */
 
+function _buildExcludedSet(completed, catalog) {
+  const excluded = new Set();
+  for (const compIid of completed) {
+    for (const excl of (catalog[compIid]?.excludes || [])) {
+      excluded.add(excl);
+    }
+  }
+  for (const [iid, info] of Object.entries(catalog)) {
+    if (!completed.has(iid)) {
+      for (const excl of (info.excludes || [])) {
+        if (completed.has(excl)) excluded.add(iid);
+      }
+    }
+  }
+  return excluded;
+}
+
 function _updateStatus() {
   if (!_rendered || !st.summary) return;
 
@@ -301,32 +318,30 @@ function _updateStatus() {
     ...(st.summary.completed_buildings || []),
   ]);
   const researchQueue = st.summary.research_queue;
-
   const catalog = st.items?.catalog || {};
+  const excluded = _buildExcludedSet(completed, catalog);
 
   container.querySelectorAll('.tt-node').forEach((node) => {
     const iid = node.dataset.iid;
     const avail = knowledge[iid];
     const isCompleted = completed.has(iid);
+    const isExcluded = !isCompleted && excluded.has(iid);
     const isResearching = iid === researchQueue;
-    const isAvailable = !!avail;
-    const isLocked = !isCompleted && !isResearching && !isAvailable;
+    const isAvailable = !!avail && !isExcluded;
+    const isLocked = !isCompleted && !isExcluded && !isResearching && !isAvailable;
 
-    // Update status class
     node.classList.toggle('tt-completed', isCompleted);
+    node.classList.toggle('tt-excluded', isExcluded);
     node.classList.toggle('tt-researching', isResearching);
     node.classList.toggle('tt-available', isAvailable && !isCompleted && !isResearching);
     node.classList.toggle('tt-locked', isLocked);
 
-    // Update status icon
     const icon = node.querySelector('.tt-status-icon');
-    if (icon) icon.textContent = isResearching ? '🔬 ' : isCompleted ? '✓ ' : '';
+    if (icon) icon.textContent = isResearching ? '🔬 ' : isCompleted ? '✓ ' : isExcluded ? '✕ ' : '';
 
-    // Update lock indicator
     const lock = node.querySelector('.tt-node-locked');
     if (lock) lock.style.display = isLocked ? '' : 'none';
 
-    // Update unlock badges: ready (all reqs met if this tech is researched) vs blocked
     const hypothetical = new Set([...completed, iid]);
     node.querySelectorAll('.tt-ubadge[data-unlock]').forEach((badge) => {
       const uInfo = catalog[badge.dataset.unlock];
@@ -335,7 +350,9 @@ function _updateStatus() {
       badge.classList.toggle('tt-ubadge-blocked', !allMet);
     });
   });
+
 }
+
 
 function _scrollToCurrentEra() {
   const era = st.summary?.current_era;
@@ -369,6 +386,7 @@ function _drawConnectors() {
   const nodePos = {};
 
   wrap.querySelectorAll('.tt-node').forEach((el) => {
+    if (el.style.display === 'none') return;
     const rect = el.getBoundingClientRect();
     nodePos[el.dataset.iid] = {
       cx: rect.left + rect.width / 2 - wrapRect.left + wrap.scrollLeft,

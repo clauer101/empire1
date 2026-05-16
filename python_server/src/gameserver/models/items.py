@@ -65,6 +65,7 @@ class ItemDetails:
     effort: float = 0.0
     costs: dict[str, float] = field(default_factory=dict)
     requirements: list[str] = field(default_factory=list)
+    excludes: list[str] = field(default_factory=list)
     effects: dict[str, float] = field(default_factory=dict)
     description: str = ""
 

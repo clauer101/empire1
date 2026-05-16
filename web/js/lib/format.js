@@ -36,7 +36,7 @@ const EFFECT_META = {
   artifact_steal_defeat_modifier: ['⚜',  'Artifact steal (defeat)',  (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases artifact steal chance on defeat'],
   tower_sell_refund_modifier:     ['💰', 'Tower refund',             (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases tower sell refund'],
   spy_workshop:                   ['🕵️', 'Workshop intel',           () => 'Unlocked',                                                                                  'Unlocks workshop intelligence in spy reports'],
-  ruler_unlock:                   ['👑', 'Ruler',                    () => 'Unlocked',                                                                                  'Unlocks the ruler system — assign a ruler to your empire'],
+  ruler_unlock:                   ['👑', 'Ruler',                    () => 'Unlocked',                                                                                  'Assign a powerful ruler to your empire'],
   // -- Cost modifiers
   citizen_cost_modifier:          ['🫂', 'Citizen discount',         (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the culture cost of acquiring new citizens'],
   tile_cost_modifier:             ['🗺️', 'Land discount',            (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the gold cost of acquiring new land tiles'],
