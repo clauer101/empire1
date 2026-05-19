@@ -29,26 +29,32 @@
   // ────────────────────────────────────────────────────────────────────────────
 
   const TOOLS = [
-    { name: '🏠 Index',    href: 'index.html' },
-    { name: '📊 Status',   href: 'status.html' },
-    { name: '🔁 Restart',  href: 'restart.html' },
-    { name: '🗄️ Database', href: 'database.html' },
-    // { name: '⚔ Sprite',   href: 'sprite.html' },
-    { name: '🌊 AI Waves', href: 'ai-waves.html' },
-    // { name: '⏱ Effort',   href: 'effort-tuner.html' },
-    
-    { name: '🎛️ Sigmoid', href: 'sigmoid_tuner.html' },
-    // { name: '⚡ Effects',  href: 'effects.html' },
-    { name: '⚖ Balance',  href: 'balance.html' },
-    { name: '⏱ Era FX',   href: 'era-effects.html' },
-    // { name: '📊 Scatter',  href: 'critter-scatter.html' },
-    { name: '⚔ AI Army',  href: 'send-ai-army.html' },
-    { name: '🗺 Maps',     href: 'map-overview.html' },
-    { name: '🐾 Critters', href: 'critters.html' },
-    { name: '✨ Artifacts', href: 'artifacts.html' },
-    { name: '👑 Rulers',   href: 'rulers.html' },
-    { name: '⚔ Sim Map',  href: 'sim-map.html' },
-    // { name: '🌳 Tree',    href: 'tech-tree.html' },
+    { name: '🏠 Index',        href: 'index.html' },
+    // Helpers
+    { name: '📊 Status',       href: 'status.html' },
+    { name: '🗄️ Database',    href: 'database.html' },
+    { name: '🔁 Restart',      href: 'restart.html' },
+    { name: '🌍 Global Map',   href: 'global-map.html' },
+    { name: '📈 Runtime Stats', href: 'runtime-stats.html' },
+    // Economy
+    { name: '⚡ Effects',      href: 'effects.html' },
+    { name: '⏱ Era FX',       href: 'era-effects.html' },
+    { name: '✨ Artifacts',    href: 'artifacts.html' },
+    { name: '👑 Rulers',       href: 'rulers.html' },
+    { name: '🎛️ Sigmoid',     href: 'sigmoid_tuner.html' },
+    { name: '⏱ Effort',       href: 'effort-tuner.html' },
+    { name: '🔧 Workshop',     href: 'workshop-config.html' },
+    { name: '🐾 Critters',     href: 'critters.html' },
+    // Battle/Balancing
+    { name: '⚖ Balance',      href: 'balance.html' },
+    { name: '🌊 AI Waves',     href: 'ai-waves.html' },
+    { name: '🤖 AI Generator', href: 'ai_generator.html' },
+    { name: '⚔ AI Army',      href: 'send-ai-army.html' },
+    { name: '📊 Battle Log',   href: 'ai-battle-log.html' },    
+    { name: '⚔ Sim Map',      href: 'sim-map.html' },
+    { name: '🗺 Maps',         href: 'map-overview.html' },
+    { name: '⚔ Sprite',       href: 'sprite.html' },
+    { name: '📊 Scatter',      href: 'critter-scatter.html' },
   ];
 
   const current = window.location.pathname.split('/').pop() || 'index.html';

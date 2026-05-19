@@ -4,21 +4,22 @@
 
 AWE_INSPIRING_GRAIL:
   name: Awe-Inspiring Grail
-  description: 'Forged in a forgotten age, those who behold it fall silent. No one remembers who drank from it last.'
+  description: Forged in a forgotten age, those who behold it fall silent. No one
+    remembers who drank from it last.
   type: ''
-  sprite: 'assets/sprites/artifacts/awe_inspiring_grail.webp'
+  sprite: assets/sprites/artifacts/awe_inspiring_grail.webp
   effects:
     gold_modifier: 0.2
     gold_offset: 1
     culture_modifier: 0.33
     culture_offset: 0.5
     max_life_modifier: 10
-
 LOST_ALMANAC:
   name: Lost Almanac
-  description: 'A water-stained tome filled with diagrams of machines that do not yet exist. The last page is always blank.'
+  description: A water-stained tome filled with diagrams of machines that do not yet
+    exist. The last page is always blank.
   type: ''
-  sprite: 'assets/sprites/artifacts/lost_almanac.webp'
+  sprite: assets/sprites/artifacts/lost_almanac.webp
   effects:
     research_speed_offset: 0.8
     research_speed_modifier: 0.8
@@ -26,76 +27,73 @@ LOST_ALMANAC:
     build_speed_offset: 0.6
     restore_life_after_loss_offset: 10
     life_regen_modifier: 0.003
-
 ANCIENT_RELIQUE:
   name: Ancient Relique
-  description: 'Excavated from beneath three civilisations. Scholars argue about its purpose; merchants argue about its price.'
+  description: Excavated from beneath three civilisations. Scholars argue about its
+    purpose; merchants argue about its price.
   type: ''
   effects:
-    gold_offset: 10.1
-
+    gold_offset: 2
+    gold_modifier: 0.5
 ASSASSINS_DAGGER:
   name: Assassin's Dagger
-  description: 'The blade is clean. It has always been clean. Nobody knows why.'
+  description: The blade is clean. It has always been clean. Nobody knows why.
   type: ''
-  effects: {}
-
+  effects:
+    enemy_siege_time_modifier: 0.1
+    travel_time_modifier: 0.33
+    build_speed_offset: 1
+    wave_slot_cost_modifier: 0.1
 BATTLE_DRUMS:
   name: Battle Drums
-  description: 'Said to have been beaten at the founding of the first empire. The leather is older than memory.'
+  description: Said to have been beaten at the founding of the first empire. The leather
+    is older than memory.
   type: ''
-  effects: {}
-
+  effects:
+    siege_offset: 3600
+    restore_life_during_battle_modifier: 0.02
+    wave_delay_offset: 0.5
+    tile_cost_modifier: 0.1
 BOOK_OF_HEROES:
   name: Book of Heroes
-  description: 'Every name written inside belongs to someone who died young. The last entry is smudged beyond reading.'
+  description: Every name written inside belongs to someone who died young. The last
+    entry is smudged beyond reading.
   type: ''
-  effects: {}
-
+  effects:
+    max_life_modifier: 20
+    research_speed_offset: 1
+    culture_modifier: 0.4
+    culture_offset: 0.8
 FINE_TROWEL:
   name: Fine Trowel
-  description: 'Unremarkable at first glance. Yet every wall built with it has outlasted the empire that raised it.'
+  description: Unremarkable at first glance. Yet every wall built with it has outlasted
+    the empire that raised it.
   type: ''
   effects: {}
-
 GOLDEN_ARC:
   name: Golden Arc
-  description: 'A curved fragment of something much larger. Whatever it once framed, no record survives.'
+  description: A curved fragment of something much larger. Whatever it once framed,
+    no record survives.
   type: ''
-  effects: {}
-
-HOLY_ARTIFACT:
-  name: Holy Artifact
-  description: 'Pilgrims walked for months to see it. Most wept. None could explain why.'
-  type: ''
-  effects: {}
-
+  effects:
+    wave_era_cost_modifier: 0.3
+    workshop_cost_modifier: 0.1
+    build_speed_modifier: 0.4
+    build_speed_offset: 0.4
+    life_regen_modifier: 0.001
 MERCIFUL_ARMOUR:
   name: Merciful Armour
-  description: 'Not a single dent. Whoever wore it never needed to be struck twice — or perhaps was never struck at all.'
+  description: Not a single dent. Whoever wore it never needed to be struck twice
+    — or perhaps was never struck at all.
   type: ''
-  effects: {}
-
-POTION_OF_HEALING:
-  name: Potion of Healing
-  description: 'The vial is always half full. It has been half full for three hundred years.'
-  type: ''
-  effects: {}
-
+  effects:
+    wave_delay_offset: 2
+    siege_offset: -3600
 SCROLLS_OF_WISDOM:
   name: Scrolls of Wisdom
-  description: 'Forty-seven scrolls, tightly bound. The forty-eighth is missing. Everyone who reads them goes looking for it.'
+  description: Forty-seven scrolls, tightly bound. The forty-eighth is missing. Everyone
+    who reads them goes looking for it.
   type: ''
-  effects: {}
-
-SIEGE_TRUMPET:
-  name: Siege Trumpet
-  description: 'Its note carries for miles. Walls have cracked at its sound — though no one admits to having blown it.'
-  type: ''
-  effects: {}
-
-TREASURE_CHEST:
-  name: Treasure Chest
-  description: 'Heavy when empty, light when full. The lock has no keyhole. It opens when it wants to.'
-  type: ''
-  effects: {}
+  effects:
+    research_speed_offset: 2
+    research_speed_modifier: 0.5

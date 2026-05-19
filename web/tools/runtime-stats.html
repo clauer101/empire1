@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runtime Stats</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 90;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #status-msg { font-size: 12px; font-family: var(--mono); }
+    #status-msg.ok  { color: var(--success); }
+    #status-msg.err { color: var(--danger); }
+    #last-update { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+    #content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 8px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 0.75rem;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-header .badge {
+      background: var(--bg); color: var(--text-dim);
+      border-radius: 10px; padding: 1px 8px;
+      font-size: 11px; font-weight: 400;
+    }
+
+    /* Sortable table */
+    .tbl-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    thead th {
+      background: var(--surface-alt);
+      padding: 7px 10px;
+      text-align: right;
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+    thead th:first-child { text-align: left; }
+    thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); }
+    thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
+    thead th:hover { color: var(--text); }
+
+    tbody tr { border-bottom: 1px solid #1e1e2e; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #18182a; }
+    tbody td {
+      padding: 6px 10px;
+      text-align: right;
+      color: var(--text);
+    }
+    tbody td:first-child { text-align: left; color: var(--accent); font-weight: 600; }
+    tbody td.zero { color: var(--text-dim); }
+    tbody td.highlight { color: var(--warning); font-weight: 600; }
+
+    /* Artifact holds table */
+    #holds-wrap table thead th:nth-child(2) { text-align: left; }
+    #holds-wrap table tbody td:nth-child(2) { text-align: left; color: var(--text); font-weight: 400; }
+
+    /* Search / filter bar */
+    .filter-row {
+      display: flex; gap: 10px; align-items: center;
+      padding: 8px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-row input {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: 12px;
+      padding: 4px 8px; border-radius: 4px; outline: none; flex: 1;
+    }
+    .filter-row input:focus { border-color: var(--accent); }
+    .filter-row label { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+
+    /* Top-N highlight selector */
+    .hl-row {
+      display: flex; gap: 10px; align-items: center;
+      padding: 6px 14px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .hl-row label { color: var(--text-dim); font-size: 11px; }
+    .hl-btn {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text-dim); font-size: 11px; border-radius: 4px;
+      padding: 3px 10px; cursor: pointer; font-family: var(--mono);
+    }
+    .hl-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+    .hl-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+    .empty-msg { padding: 24px; color: var(--text-dim); text-align: center; font-family: var(--mono); }
+
+    /* Summary cards row */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 14px;
+    }
+    .sum-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+    .sum-card .sum-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+    .sum-card .sum-val { font-size: 1.4rem; font-family: var(--mono); color: var(--accent); margin-top: 4px; }
+    .sum-card .sum-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>📈 Runtime Stats</h1>
+  <span id="status-msg">Loading…</span>
+  <span id="last-update"></span>
+</div>
+
+<div id="content">
+
+  <!-- Summary cards -->
+  <div class="card" id="summary-card">
+    <div class="card-header">Summary</div>
+    <div class="summary-grid" id="summary-grid">
+      <div class="empty-msg">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Empire stats table -->
+  <div class="card" id="empire-card">
+    <div class="card-header">Empire Stats <span class="badge" id="empire-count">—</span></div>
+    <div class="filter-row">
+      <label>Filter:</label>
+      <input id="empire-filter" type="text" placeholder="username…" />
+      <label>Highlight top</label>
+      <div id="hl-btns">
+        <button class="hl-btn" data-n="3">3</button>
+        <button class="hl-btn active" data-n="5">5</button>
+        <button class="hl-btn" data-n="10">10</button>
+        <button class="hl-btn" data-n="0">off</button>
+      </div>
+    </div>
+    <div class="tbl-wrap" id="empire-tbl-wrap">
+      <div class="empty-msg">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Artifact hold totals -->
+  <div class="card" id="holds-card">
+    <div class="card-header">Artifact Hold Totals <span class="badge" id="holds-count">—</span></div>
+    <div class="filter-row">
+      <label>Filter:</label>
+      <input id="holds-filter" type="text" placeholder="username or artifact…" />
+    </div>
+    <div class="tbl-wrap" id="holds-wrap">
+      <div class="empty-msg">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  const API = window.location.origin;
+  const token = () => localStorage.getItem('e3_jwt_token') || '';
+
+  // ── Column definitions for empire_stats ────────────────────────────────────
+  const EMPIRE_COLS = [
+    { key: 'username',           label: 'Player',          fmt: s => s,           align: 'left' },
+    { key: 'attacks_won_human',  label: 'Atk Won',         fmt: fmtInt },
+    { key: 'attacks_lost_human', label: 'Atk Lost',        fmt: fmtInt },
+    { key: 'defense_won_human',  label: 'Def Won (H)',      fmt: fmtInt },
+    { key: 'defense_lost_human', label: 'Def Lost (H)',     fmt: fmtInt },
+    { key: 'defense_won_ai',     label: 'Def Won (AI)',     fmt: fmtInt },
+    { key: 'defense_lost_ai',    label: 'Def Lost (AI)',    fmt: fmtInt },
+    { key: 'spies_sent',         label: 'Spies',           fmt: fmtInt },
+    { key: 'towers_placed',      label: 'Twrs Placed',     fmt: fmtInt },
+    { key: 'towers_sold',        label: 'Twrs Sold',       fmt: fmtInt },
+    { key: 'critters_killed',    label: 'Critters Killed', fmt: fmtInt },
+    { key: 'artifacts_stolen',   label: 'Arts Stolen',     fmt: fmtInt },
+    { key: 'culture_stolen',     label: 'Culture Lost',    fmt: fmtFloat },
+    { key: 'culture_won',        label: 'Culture Won',     fmt: fmtFloat },
+    { key: 'research_stolen',    label: 'Research Lost',   fmt: fmtFloat },
+    { key: 'research_won',       label: 'Research Won',    fmt: fmtFloat },
+    { key: 'defense_gold_earned',label: 'Gold Earned',     fmt: fmtFloat },
+    { key: 'longest_battle_ms',  label: 'Longest Battle',  fmt: fmtMs },
+    { key: 'first_era_reached',  label: '1st Era',         fmt: fmtInt },
+  ];
+
+  function fmtInt(v)   { return v == null ? '—' : Number(v).toLocaleString(); }
+  function fmtFloat(v) {
+    if (v == null) return '—';
+    const n = Number(v);
+    return n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toFixed(1);
+  }
+  function fmtMs(v) {
+    if (!v) return '—';
+    const s = Math.floor(v / 1000);
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
+  }
+  function fmtHeldSecs(v) {
+    if (!v) return '—';
+    const h = Math.floor(v / 3600);
+    const m = Math.floor((v % 3600) / 60);
+    const s = Math.floor(v % 60);
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let empireRows = [];
+  let holdsRows  = [];
+  let sortCol    = 'attacks_won_human';
+  let sortDir    = -1; // -1 = desc, 1 = asc
+  let hlN        = 5;
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  async function load() {
+    const res = await fetch(`${API}/api/admin/runtime-stats`, {
+      headers: { Authorization: `Bearer ${token()}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function refresh() {
+    const msg = document.getElementById('status-msg');
+    try {
+      const data = await load();
+      empireRows = data.empire_stats || [];
+      holdsRows  = data.artifact_holds || [];
+      msg.textContent = '● Live';
+      msg.className = 'ok';
+      document.getElementById('last-update').textContent =
+        'Updated ' + new Date().toLocaleTimeString();
+      renderSummary();
+      renderEmpireTable();
+      renderHoldsTable();
+    } catch (e) {
+      msg.textContent = '✕ ' + e.message;
+      msg.className = 'err';
+      document.getElementById('summary-grid').innerHTML = `<div class="empty-msg" style="color:var(--danger)">${e.message}</div>`;
+      document.getElementById('empire-tbl-wrap').innerHTML = '';
+      document.getElementById('holds-wrap').innerHTML = '';
+    }
+  }
+
+  // ── Summary ────────────────────────────────────────────────────────────────
+  function renderSummary() {
+    const totalPlayers   = empireRows.length;
+    const totalAtksWon   = empireRows.reduce((a,r) => a + (r.attacks_won_human||0), 0);
+    const totalCritters  = empireRows.reduce((a,r) => a + (r.critters_killed||0), 0);
+    const totalGold      = empireRows.reduce((a,r) => a + (r.defense_gold_earned||0), 0);
+    const totalArtifacts = empireRows.reduce((a,r) => a + (r.artifacts_stolen||0), 0);
+    const totalSpies     = empireRows.reduce((a,r) => a + (r.spies_sent||0), 0);
+    const longest        = empireRows.reduce((a,r) => Math.max(a, r.longest_battle_ms||0), 0);
+    const uniqueArtHeld  = new Set(holdsRows.map(r => r.artifact_iid)).size;
+
+    const cards = [
+      { label: 'Players Tracked', val: totalPlayers, sub: 'with stats rows' },
+      { label: 'Total Attacks Won', val: fmtInt(totalAtksWon), sub: 'vs humans' },
+      { label: 'Critters Killed', val: fmtInt(totalCritters), sub: 'across all defenses' },
+      { label: 'Gold from Defense', val: fmtFloat(totalGold), sub: 'earned total' },
+      { label: 'Artifacts Stolen', val: fmtInt(totalArtifacts), sub: 'all time' },
+      { label: 'Spies Sent', val: fmtInt(totalSpies), sub: 'all time' },
+      { label: 'Longest Battle', val: fmtMs(longest), sub: 'ever recorded' },
+      { label: 'Artifacts Held', val: uniqueArtHeld, sub: 'distinct (held or past)' },
+    ];
+
+    document.getElementById('summary-grid').innerHTML = cards.map(c => `
+      <div class="sum-card">
+        <div class="sum-label">${c.label}</div>
+        <div class="sum-val">${c.val}</div>
+        <div class="sum-sub">${c.sub}</div>
+      </div>`).join('');
+  }
+
+  // ── Empire Table ───────────────────────────────────────────────────────────
+  function renderEmpireTable() {
+    const filter = document.getElementById('empire-filter').value.toLowerCase();
+    let rows = empireRows.filter(r =>
+      !filter || (r.username || '').toLowerCase().includes(filter)
+    );
+
+    // sort
+    const colDef = EMPIRE_COLS.find(c => c.key === sortCol) || EMPIRE_COLS[1];
+    rows = [...rows].sort((a, b) => {
+      const av = a[colDef.key] ?? (typeof a[colDef.key] === 'number' ? 0 : '');
+      const bv = b[colDef.key] ?? (typeof b[colDef.key] === 'number' ? 0 : '');
+      if (av < bv) return sortDir;
+      if (av > bv) return -sortDir;
+      return 0;
+    });
+
+    // determine top-N set per current sort column (for highlighting)
+    let topSet = new Set();
+    if (hlN > 0 && sortCol !== 'username') {
+      const vals = rows.map(r => r[sortCol] ?? 0).filter(v => v > 0);
+      vals.sort((a,b) => b - a);
+      const threshold = vals[hlN - 1] ?? Infinity;
+      rows.forEach(r => {
+        if ((r[sortCol] ?? 0) >= threshold && topSet.size < hlN) topSet.add(r.uid ?? r.username);
+      });
+    }
+
+    document.getElementById('empire-count').textContent = rows.length;
+
+    if (!rows.length) {
+      document.getElementById('empire-tbl-wrap').innerHTML = '<div class="empty-msg">No data</div>';
+      return;
+    }
+
+    const ths = EMPIRE_COLS.map(c => {
+      const cls = c.key === sortCol ? (sortDir === -1 ? 'sort-desc' : 'sort-asc') : '';
+      return `<th class="${cls}" data-key="${c.key}">${c.label}</th>`;
+    }).join('');
+
+    const trs = rows.map(r => {
+      const isTop = topSet.has(r.uid ?? r.username);
+      const tds = EMPIRE_COLS.map(c => {
+        const raw = r[c.key];
+        const formatted = c.fmt(raw);
+        let cls = '';
+        if (c.key === 'username') cls = '';
+        else if (raw == null || raw === 0) cls = 'zero';
+        else if (isTop && c.key === sortCol) cls = 'highlight';
+        return `<td class="${cls}">${formatted}</td>`;
+      }).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+
+    document.getElementById('empire-tbl-wrap').innerHTML =
+      `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+
+    document.querySelectorAll('#empire-tbl-wrap thead th').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (sortCol === key) sortDir *= -1;
+        else { sortCol = key; sortDir = -1; }
+        renderEmpireTable();
+      });
+    });
+  }
+
+  // ── Artifact Holds Table ───────────────────────────────────────────────────
+  let holdsSortCol = 'held_secs';
+  let holdsSortDir = -1;
+
+  function renderHoldsTable() {
+    const filter = document.getElementById('holds-filter').value.toLowerCase();
+    let rows = holdsRows.filter(r =>
+      !filter ||
+      (r.username || '').toLowerCase().includes(filter) ||
+      (r.artifact_iid || '').toLowerCase().includes(filter)
+    );
+
+    rows = [...rows].sort((a, b) => {
+      const av = a[holdsSortCol] ?? 0;
+      const bv = b[holdsSortCol] ?? 0;
+      if (av < bv) return holdsSortDir;
+      if (av > bv) return -holdsSortDir;
+      return 0;
+    });
+
+    document.getElementById('holds-count').textContent = rows.length;
+
+    if (!rows.length) {
+      document.getElementById('holds-wrap').innerHTML = '<div class="empty-msg">No data</div>';
+      return;
+    }
+
+    const HOLD_COLS = [
+      { key: 'username',     label: 'Player',   fmt: s => s },
+      { key: 'artifact_iid', label: 'Artifact', fmt: s => s },
+      { key: 'held_secs',    label: 'Hold Time', fmt: fmtHeldSecs },
+    ];
+
+    const ths = HOLD_COLS.map(c => {
+      const cls = c.key === holdsSortCol ? (holdsSortDir === -1 ? 'sort-desc' : 'sort-asc') : '';
+      return `<th class="${cls}" data-key="${c.key}">${c.label}</th>`;
+    }).join('');
+
+    const trs = rows.map(r => {
+      const tds = HOLD_COLS.map(c => {
+        const raw = r[c.key];
+        const formatted = c.fmt(raw);
+        const cls = (raw == null || raw === 0) ? 'zero' : '';
+        return `<td class="${cls}">${formatted}</td>`;
+      }).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+
+    document.getElementById('holds-wrap').innerHTML =
+      `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+
+    document.querySelectorAll('#holds-wrap thead th').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (holdsSortCol === key) holdsSortDir *= -1;
+        else { holdsSortCol = key; holdsSortDir = -1; }
+        renderHoldsTable();
+      });
+    });
+  }
+
+  // ── Wiring ─────────────────────────────────────────────────────────────────
+  document.getElementById('empire-filter').addEventListener('input', renderEmpireTable);
+  document.getElementById('holds-filter').addEventListener('input', renderHoldsTable);
+
+  document.getElementById('hl-btns').addEventListener('click', e => {
+    const btn = e.target.closest('.hl-btn');
+    if (!btn) return;
+    hlN = parseInt(btn.dataset.n, 10);
+    document.querySelectorAll('.hl-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderEmpireTable();
+  });
+
+  refresh();
+  setInterval(refresh, 30_000);
+})();
+</script>
+</body>
+</html>

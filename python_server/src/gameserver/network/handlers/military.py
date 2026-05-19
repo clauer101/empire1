@@ -262,7 +262,7 @@ async def handle_new_attack(
         }
 
     # Era check: attacker cannot attack a defender in a lower era
-    from gameserver.util.eras import ERA_ORDER, ERA_LABELS_DE
+    from gameserver.util.eras import ERA_ORDER, ERA_LABELS_EN
     attacker_empire = svc.empire_service.get(target_uid)
     defender_empire = svc.empire_service.get(defender_uid)
     if attacker_empire is not None and defender_empire is not None:
@@ -271,15 +271,12 @@ async def handle_new_attack(
         attacker_era_idx = ERA_ORDER.index(attacker_era) if attacker_era in ERA_ORDER else 0
         defender_era_idx = ERA_ORDER.index(defender_era) if defender_era in ERA_ORDER else 0
         if defender_era_idx < attacker_era_idx - 1:
-            attacker_label = ERA_LABELS_DE.get(attacker_era, attacker_era)
-            defender_label = ERA_LABELS_DE.get(defender_era, defender_era)
+            min_era_key = ERA_ORDER[attacker_era_idx - 1]
+            min_era_label = ERA_LABELS_EN.get(min_era_key, min_era_key)
             return {
                 "type": "attack_response",
                 "success": False,
-                "error": (
-                    f"{defender_empire.name} is in the {defender_label} era — "
-                    f"you ({attacker_label}) can only attack empires in the same or a higher era."
-                ),
+                "error": f"Enemy Empire must be min {min_era_label}",
             }
 
     result = svc.attack_service.start_attack(
@@ -330,19 +327,18 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
     era_label = ERA_LABELS_EN.get(era_key, era_key)
 
     items = svc.upgrade_provider.items if svc.upgrade_provider else {}
-    item_era_index = svc.empire_service._item_era_index
     upgrades = defender.item_upgrades
 
     structures = []
     critters = []
     for iid, item in items.items():
-        if item_era_index.get(iid, -1) != era_idx:
+        lvls = upgrades.get(iid, {})
+        has_upgrades = any(v > 0 for v in lvls.values()) if lvls else False
+        if not has_upgrades:
             continue
         if item.item_type == ItemType.STRUCTURE:
-            lvls = upgrades.get(iid, {})
             structures.append((item.name, lvls))
         elif item.item_type == ItemType.CRITTER:
-            lvls = upgrades.get(iid, {})
             critters.append((item.name, lvls))
 
     def _fmt_upgrades(lvls: dict[str, Any]) -> str:
@@ -422,14 +418,14 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
     if has_workshop_intel:
         lines += [
             "─" * 32,
-            f"🔬 Workshop Intelligence — {era_label}",
-            "─── Towers (current era) ───",
+            "🔬 Workshop Intelligence",
+            "─── Towers (upgraded) ───",
         ]
         for name, lvls in sorted(structures):
             lines.append(f"  🗼 {name:<20} {_fmt_upgrades(lvls)}")
         if not structures:
             lines.append("  (none)")
-        lines.append("─── Units (current era) ───")
+        lines.append("─── Units (upgraded) ───")
         for name, lvls in sorted(critters):
             lines.append(f"  ⚔ {name:<20} {_fmt_upgrades(lvls)}")
         if not critters:
@@ -518,6 +514,9 @@ async def handle_spy_attack(
 
     log.info("[spy_attack] uid=%d → defender=%d army=%d attack_id=%d ETA=%.1fs",
              attacker_uid, defender_uid, first_army.aid, result.attack_id, result.eta_seconds)
+    if svc.database is not None:
+        import asyncio as _asyncio
+        _asyncio.ensure_future(svc.database.record_empire_stat(attacker_uid, spies_sent=1))
     return {
         "type": "spy_attack_response",
         "success": True,

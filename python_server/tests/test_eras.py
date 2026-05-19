@@ -2,7 +2,7 @@
 
 from gameserver.util.eras import (
     ERA_ORDER, ERA_TRAVEL_FIELD, ERA_YAML_TO_KEY,
-    ERA_YAML_TO_FIELD, ERA_LABELS_DE, ERA_LABELS_EN,
+    ERA_YAML_TO_FIELD, ERA_LABELS_EN,
 )
 
 
@@ -10,10 +10,10 @@ class TestEraOrder:
     def test_nine_eras(self):
         assert len(ERA_ORDER) == 9
 
-    def test_starts_with_steinzeit(self):
+    def test_starts_with_stone(self):
         assert ERA_ORDER[0] == "stone"
 
-    def test_ends_with_zukunft(self):
+    def test_ends_with_future(self):
         assert ERA_ORDER[-1] == "future"
 
     def test_no_duplicates(self):
@@ -36,13 +36,9 @@ class TestEraMaps:
 
 
 class TestEraLabels:
-    def test_de_covers_all_eras(self):
-        assert set(ERA_LABELS_DE.keys()) == set(ERA_ORDER)
-
     def test_en_covers_all_eras(self):
         assert set(ERA_LABELS_EN.keys()) == set(ERA_ORDER)
 
     def test_labels_are_nonempty_strings(self):
         for era in ERA_ORDER:
-            assert ERA_LABELS_DE[era].strip(), f"Empty DE label for {era}"
             assert ERA_LABELS_EN[era].strip(), f"Empty EN label for {era}"

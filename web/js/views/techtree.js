@@ -3,6 +3,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { pageTitle } from '../lib/page_title.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
 import { fmtEffort, fmtEffectsInline } from '../lib/format.js';
@@ -30,7 +31,6 @@ function init(el, _api, _state) {
   st = _state;
 
   container.innerHTML = `
-    <h2 class="battle-title">⬡ Tech Tree<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
     <div id="tt-wrap">
       <div class="empty-state"><div class="empty-icon">◉</div><p>Loading tech tree…</p></div>
     </div>
@@ -40,6 +40,7 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  pageTitle.set('⬡ Tech Tree');
   _unsub.push(eventBus.on('state:summary', _updateStatus));
   _unsub.push(eventBus.on('state:items', render));
 

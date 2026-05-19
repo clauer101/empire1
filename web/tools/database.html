@@ -190,11 +190,11 @@
       <table>
         <thead>
           <tr>
+            <th>Risk</th>
             <th>Account A</th>
             <th></th>
             <th>Account B</th>
-            <th>Shared IPs</th>
-            <th>Shared Fingerprints</th>
+            <th>Signals</th>
           </tr>
         </thead>
         <tbody id="clusters-body">
@@ -351,14 +351,28 @@
         tbody.innerHTML = clusters.map(c => {
           const nameA = uidToName[c.uid_a] ? `${uidToName[c.uid_a]} (${c.uid_a})` : `uid ${c.uid_a}`;
           const nameB = uidToName[c.uid_b] ? `${uidToName[c.uid_b]} (${c.uid_b})` : `uid ${c.uid_b}`;
-          const ips = c.shared_ips ? c.shared_ips.split(',').map(ip => `<span style="background:rgba(79,195,247,0.12);color:var(--accent);border-radius:3px;padding:1px 6px;font-size:11px;">📡 ${ip}</span>`).join(' ') : '—';
-          const fps = c.shared_fps ? c.shared_fps.split(',').map(fp => `<span style="background:rgba(102,187,106,0.12);color:var(--success);border-radius:3px;padding:1px 6px;font-size:11px;">🖥 ${fp}</span>`).join(' ') : '—';
+
+          // Score badge color: red ≥70, orange ≥40, yellow ≥15
+          const score = c.score || 0;
+          const scoreColor = score >= 70 ? '#ef5350' : score >= 40 ? '#ffa726' : '#ffee58';
+          const scoreBg   = score >= 70 ? 'rgba(239,83,80,0.15)' : score >= 40 ? 'rgba(255,167,38,0.15)' : 'rgba(255,238,88,0.10)';
+          const scoreBadge = `<span style="background:${scoreBg};color:${scoreColor};border:1px solid ${scoreColor};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;">${score}</span>`;
+
+          // Signal tags
+          const tag = (icon, text, color) =>
+            `<span style="background:rgba(${color},0.12);color:rgba(${color},1);border-radius:3px;padding:1px 6px;font-size:11px;white-space:nowrap;">${icon} ${text}</span>`;
+          const signals = [
+            ...( c.shared_dids ? c.shared_dids.split(',').map(d => tag('🔑', `device ${d.slice(0,8)}…`, '179,157,219')) : [] ),
+            ...( c.shared_fps  ? c.shared_fps.split(',').map(f  => tag('🖥', `fp ${f}`, '102,187,106')) : [] ),
+            ...( c.shared_ips  ? c.shared_ips.split(',').map(ip => tag('📡', ip, '79,195,247')) : [] ),
+          ].join(' ');
+
           return `<tr>
+            <td style="text-align:center;">${scoreBadge}</td>
             <td style="font-weight:600;">${nameA}</td>
             <td style="color:var(--text-dim);text-align:center;">↔</td>
             <td style="font-weight:600;">${nameB}</td>
-            <td>${ips}</td>
-            <td>${fps}</td>
+            <td style="line-height:2;">${signals || '—'}</td>
           </tr>`;
         }).join('');
       } catch (e) {

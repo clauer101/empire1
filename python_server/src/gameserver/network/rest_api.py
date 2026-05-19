@@ -32,7 +32,7 @@ from fastapi.responses import JSONResponse
 
 from gameserver.network.jwt_auth import verify_token
 from gameserver.models.messages import GameMessage
-from gameserver.util.eras import ERA_ORDER as _ERA_KEYS, ERA_LABELS_DE as _ERA_LABELS_DE, ERA_LABELS_EN as _ERA_LABELS_EN  # noqa: F401 — re-exported for routers
+from gameserver.util.eras import ERA_ORDER as _ERA_KEYS, ERA_LABELS_EN as _ERA_LABELS_EN  # noqa: F401 — re-exported for routers
 
 if TYPE_CHECKING:
     from gameserver.main import Services
@@ -200,7 +200,7 @@ def _write_saved_maps(maps: list[dict[str, Any]]) -> None:
 # Re-exports for routers (mypy strict requires explicit __all__ for underscore names)
 __all__ = [
     "create_app",
-    "_ERA_KEYS", "_ERA_LABELS_DE", "_ERA_LABELS_EN",
+    "_ERA_KEYS", "_ERA_LABELS_EN",
     "_STRUCTURE_ERAS", "_CRITTER_ERAS", "_TOWER_ERAS",
     "_CONFIG_DIR", "_SAVED_MAPS_PATH",
     "_load_saved_maps", "_write_saved_maps",

@@ -8,6 +8,7 @@
 import { HexGrid, registerTileType } from '../lib/hex_grid.js';
 import { hexKey } from '../lib/hex.js';
 import { rest } from '../rest.js';
+import { buildBattleSummaryHtml } from '../lib/battle_summary_html.js';
 
 /** @type {import('../state.js').StateStore} */
 let st;
@@ -29,6 +30,8 @@ let _totalMs = 0;
 let _bid = null;
 let _rafId = null;
 let _resizeHandler = null;
+let _defenderName = '';
+let _defenderUid = null;
 
 // Structure colors (same as defense.js)
 const STRUCTURE_COLORS = [
@@ -48,19 +51,13 @@ function init(el, _api, _state) {
 
   container.innerHTML = `
     <div class="battle-view">
-      <h2 class="battle-title" id="replay-title">📽 Replay</h2>
-
-      <!-- Status Panel -->
+      <!-- Status Panel (moved into canvas-wrap on init so it floats over the map) -->
       <div class="battle-status" id="replay-status">
         <div class="battle-status__item" style="grid-column:1/-1;">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
             <div>
               <span class="label">🛡 Defender</span>
               <span class="value" id="replay-defender" style="color:var(--accent)">-</span>
-            </div>
-            <div style="text-align:center">
-              <span class="label">⚔ Army</span>
-              <span class="value" id="replay-army">-</span>
             </div>
             <div style="text-align:right">
               <span class="label">⚔ Attacker</span>
@@ -80,31 +77,37 @@ function init(el, _api, _state) {
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Download Progress -->
-      <div class="battle-status__item" id="replay-progress-wrap" style="grid-column:1/-1;display:none;">
-        <div style="width:100%;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-            <span class="label">Loading replay…</span>
-            <span class="label" id="replay-progress-label"></span>
-          </div>
-          <div style="height:6px;background:var(--border,#333);border-radius:3px;overflow:hidden;">
-            <div id="replay-progress-bar" style="height:100%;width:0%;background:var(--accent,#4fc3f7);border-radius:3px;transition:width 0.1s linear;"></div>
+        <div class="battle-status__item" style="grid-column:1/-1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+            <span class="label">Next Wave</span>
+            <span class="value" id="replay-next-wave">-</span>
           </div>
         </div>
-      </div>
 
-      <!-- Playback Controls -->
-      <div class="battle-status__item" style="grid-column:1/-1;">
-        <div style="display:flex;gap:8px;align-items:center;justify-content:center;width:100%;">
-          <button id="replay-play" style="flex:1;background:var(--accent,#4fc3f7);border:none;color:#fff;padding:8px 16px;border-radius:var(--radius,4px);font-size:1em;font-weight:bold;cursor:pointer;letter-spacing:0.5px;">▶ Play</button>
-          <select id="replay-speed" style="width:56px;padding:6px 4px;border-radius:var(--radius,4px);border:1px solid var(--border,#333);background:var(--surface,#1e1e2e);color:var(--text,#eee);font-size:0.9em;">
-            <option value="0.5">0.5×</option>
-            <option value="1" selected>1×</option>
-            <option value="2">2×</option>
-            <option value="4">4×</option>
-          </select>
+        <!-- Download Progress -->
+        <div class="battle-status__item" id="replay-progress-wrap" style="grid-column:1/-1;display:none;">
+          <div style="width:100%;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span class="label">Loading replay…</span>
+              <span class="label" id="replay-progress-label"></span>
+            </div>
+            <div style="height:6px;background:var(--border,#333);border-radius:3px;overflow:hidden;">
+              <div id="replay-progress-bar" style="height:100%;width:0%;background:var(--accent,#4fc3f7);border-radius:3px;transition:width 0.1s linear;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="battle-status__item" style="grid-column:1/-1;">
+          <div style="display:flex;gap:8px;align-items:center;justify-content:center;width:100%;">
+            <button id="replay-play" style="flex:1;background:var(--accent,#4fc3f7);border:none;color:#fff;padding:8px 16px;border-radius:var(--radius,4px);font-size:1em;font-weight:bold;cursor:pointer;letter-spacing:0.5px;">▶ Play</button>
+            <select id="replay-speed" style="width:56px;padding:6px 4px;border-radius:var(--radius,4px);border:1px solid var(--border,#333);background:var(--surface,#1e1e2e);color:var(--text,#eee);font-size:0.9em;">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -147,9 +150,17 @@ function init(el, _api, _state) {
   container.querySelector('#replay-summary-close').addEventListener('click', () => {
     container.querySelector('#replay-summary').style.display = 'none';
   });
+
+  // Move status panel into canvas-wrap so it floats over the map (same as defense.js)
+  const statusEl = container.querySelector('#replay-status');
+  const canvasWrap = container.querySelector('#replay-canvas-wrap');
+  if (statusEl && canvasWrap) canvasWrap.appendChild(statusEl);
 }
 
 async function enter() {
+  document.getElementById('app')?.classList.add('full-bleed');
+  // Re-fit canvas after full-bleed CSS has applied
+  requestAnimationFrame(() => { if (_resizeHandler) _resizeHandler(); });
   // Get replay key from router param (e.g. '20260101_120000_42' or legacy numeric bid)
   const hash = window.location.hash.replace('#', '');
   const slashIdx = hash.indexOf('/');
@@ -203,6 +214,7 @@ async function enter() {
 }
 
 function leave() {
+  document.getElementById('app')?.classList.remove('full-bleed');
   _stopPlayback();
   if (_resizeHandler) {
     window.removeEventListener('resize', _resizeHandler);
@@ -242,9 +254,19 @@ function _initCanvas() {
   grid._dirty = true;
 
   const updateSize = () => {
-    const rect = wrap.getBoundingClientRect();
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
+    const appEl = document.getElementById('app');
+    const mainCol = document.getElementById('main-col');
+    const header = document.getElementById('page-header');
+    const w = wrap.clientWidth || wrap.getBoundingClientRect().width;
+    let h;
+    if (appEl && appEl.classList.contains('full-bleed') && header) {
+      const headerBottom = header.getBoundingClientRect().bottom;
+      h = (window.visualViewport?.height ?? window.innerHeight) - headerBottom;
+    } else {
+      h = wrap.getBoundingClientRect().height || appEl?.clientHeight || window.innerHeight;
+    }
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
     grid._resize();
   };
 
@@ -298,6 +320,8 @@ function _reset() {
   _finished = false;
   _totalMs = 0;
   _speed = 1;
+  _defenderName = '';
+  _defenderUid = null;
   const sel = container.querySelector('#replay-speed');
   if (sel) sel.value = '1';
   const btn = container.querySelector('#replay-play');
@@ -441,8 +465,12 @@ function _onSetup(msg) {
     _loadMapBackground();
   }
 
+  // Store for summary
+  _defenderName = msg.defender_name || 'Defender';
+  _defenderUid = msg.defender_uid ?? null;
+
   // Update header
-  const defName = msg.defender_name || 'Defender';
+  const defName = _defenderName;
   const atkName = msg.attacker_name || 'Attacker';
   const armyName = msg.attacker_army_name || '';
   const defEl = container.querySelector('#replay-defender');
@@ -508,17 +536,33 @@ function _onUpdate(msg) {
     grid.setDefenderLives(msg.defender_life, msg.defender_max_life);
   }
 
+  const nextWaveEl = container.querySelector('#replay-next-wave');
+  if (nextWaveEl) {
+    const wi = msg.wave_info;
+    if (wi) {
+      nextWaveEl.textContent = `(${wi.wave_index}/${wi.total_waves}) ${wi.critter_count}× ${wi.critter_name}`;
+    } else {
+      nextWaveEl.textContent = 'All waves done';
+    }
+  }
+
   grid._dirty = true;
 }
 
 function _onSummary(msg) {
-  const won = msg.defender_won || false;
   const title = container.querySelector('#replay-summary-title');
   const content = container.querySelector('#replay-summary-content');
 
-  title.textContent = won ? '🛡 Defender Victory' : '⚔ Attacker Victory';
-  title.style.color = won ? 'var(--green, #4caf50)' : 'var(--red, #d32f2f)';
-  content.innerHTML = '';
+  const catalog = st?.items?.catalog || {};
+  const { titleText, titleColor, bodyHtml } = buildBattleSummaryHtml(msg, catalog, {
+    defenderName: _defenderName,
+    defenderUid: _defenderUid,
+    // Replay is observer-only — no "Gold Earned" section for self
+  });
+
+  title.textContent = titleText;
+  title.style.color = titleColor;
+  content.innerHTML = bodyHtml;
 
   // Keep critters visible briefly, then clean up
   setTimeout(() => {
@@ -580,9 +624,8 @@ function _spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
 
 // ── UI helpers ──────────────────────────────────────────────
 
-function _setTitle(text) {
-  const el = container.querySelector('#replay-title');
-  if (el) el.textContent = text;
+function _setTitle(_text) {
+  // title removed — no-op
 }
 
 function _setStatus(text) {

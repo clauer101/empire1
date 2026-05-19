@@ -215,12 +215,6 @@ class TestMessages:
         count = await db.unread_count_battle(uid)
         assert count == 0  # auto-read
 
-    async def test_delete_old_messages_deletes_none_fresh(self, db: Database):
-        uid1 = await db.create_user("del1", "pw")
-        uid2 = await db.create_user("del2", "pw")
-        await db.send_message(uid1, uid2, "fresh")
-        deleted = await db.delete_old_messages(max_age_days=7)
-        assert deleted == 0
 
 
 # ---------------------------------------------------------------------------
@@ -334,3 +328,178 @@ class TestMigrateMessagesFromYaml:
         f.write_text(yaml.dump(data))
         count = await db.migrate_messages_from_yaml(str(f))
         assert count == 0
+
+
+# ---------------------------------------------------------------------------
+# Empire stats
+# ---------------------------------------------------------------------------
+
+class TestEmpireStats:
+    async def test_get_empire_stats_returns_none_for_unknown_uid(self, db: Database):
+        assert await db.get_empire_stats(9999) is None
+
+    async def test_get_all_empire_stats_empty(self, db: Database):
+        assert await db.get_all_empire_stats() == []
+
+    async def test_record_empire_stat_creates_row(self, db: Database):
+        await db.record_empire_stat(1, attacks_won_human=1)
+        row = await db.get_empire_stats(1)
+        assert row is not None
+        assert row["attacks_won_human"] == 1
+
+    async def test_record_empire_stat_increments(self, db: Database):
+        await db.record_empire_stat(1, attacks_won_human=1)
+        await db.record_empire_stat(1, attacks_won_human=1)
+        await db.record_empire_stat(1, attacks_won_human=1)
+        row = await db.get_empire_stats(1)
+        assert row["attacks_won_human"] == 3
+
+    async def test_record_empire_stat_multiple_columns(self, db: Database):
+        await db.record_empire_stat(1, attacks_won_human=2, spies_sent=5)
+        row = await db.get_empire_stats(1)
+        assert row["attacks_won_human"] == 2
+        assert row["spies_sent"] == 5
+
+    async def test_record_empire_stat_independent_uids(self, db: Database):
+        await db.record_empire_stat(10, critters_killed=100)
+        await db.record_empire_stat(20, critters_killed=50)
+        r10 = await db.get_empire_stats(10)
+        r20 = await db.get_empire_stats(20)
+        assert r10["critters_killed"] == 100
+        assert r20["critters_killed"] == 50
+
+    async def test_record_empire_stat_float_creates_row(self, db: Database):
+        await db.record_empire_stat_float(1, "culture_stolen", 123.5)
+        row = await db.get_empire_stats(1)
+        assert row is not None
+        assert abs(row["culture_stolen"] - 123.5) < 0.001
+
+    async def test_record_empire_stat_float_accumulates(self, db: Database):
+        await db.record_empire_stat_float(1, "culture_won", 100.0)
+        await db.record_empire_stat_float(1, "culture_won", 50.5)
+        row = await db.get_empire_stats(1)
+        assert abs(row["culture_won"] - 150.5) < 0.001
+
+    async def test_record_empire_stat_float_research(self, db: Database):
+        await db.record_empire_stat_float(1, "research_stolen", 200.0)
+        await db.record_empire_stat_float(1, "research_won", 75.0)
+        row = await db.get_empire_stats(1)
+        assert abs(row["research_stolen"] - 200.0) < 0.001
+        assert abs(row["research_won"] - 75.0) < 0.001
+
+    async def test_record_empire_stat_max_creates_row(self, db: Database):
+        await db.record_empire_stat_max(1, "longest_battle_ms", 30_000)
+        row = await db.get_empire_stats(1)
+        assert row["longest_battle_ms"] == 30_000
+
+    async def test_record_empire_stat_max_keeps_higher(self, db: Database):
+        await db.record_empire_stat_max(1, "longest_battle_ms", 30_000)
+        await db.record_empire_stat_max(1, "longest_battle_ms", 60_000)
+        row = await db.get_empire_stats(1)
+        assert row["longest_battle_ms"] == 60_000
+
+    async def test_record_empire_stat_max_does_not_lower(self, db: Database):
+        await db.record_empire_stat_max(1, "longest_battle_ms", 60_000)
+        await db.record_empire_stat_max(1, "longest_battle_ms", 10_000)
+        row = await db.get_empire_stats(1)
+        assert row["longest_battle_ms"] == 60_000
+
+    async def test_get_all_empire_stats_returns_all_rows(self, db: Database):
+        await db.record_empire_stat(1, attacks_won_human=1)
+        await db.record_empire_stat(2, defense_won_ai=3)
+        await db.record_empire_stat(3, spies_sent=2)
+        rows = await db.get_all_empire_stats()
+        uids = {r["uid"] for r in rows}
+        assert {1, 2, 3} == uids
+
+    async def test_unset_columns_default_to_zero(self, db: Database):
+        await db.record_empire_stat(1, attacks_won_human=1)
+        row = await db.get_empire_stats(1)
+        assert row["attacks_lost_human"] == 0
+        assert row["critters_killed"] == 0
+        assert row["spies_sent"] == 0
+        assert row["defense_gold_earned"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Artifact hold tracking
+# ---------------------------------------------------------------------------
+
+class TestArtifactHolds:
+    async def test_acquired_sets_timestamp(self, db: Database):
+        await db.record_artifact_acquired(1, "goblet", 1_000_000.0)
+        rows = await db.get_artifact_hold_totals()
+        assert len(rows) == 1
+        # held_secs includes ongoing hold: unixepoch() - 1_000_000 (a past time)
+        # We only verify the row exists and held_secs is positive
+        assert rows[0]["uid"] == 1
+        assert rows[0]["artifact_iid"] == "goblet"
+        assert rows[0]["held_secs"] >= 0
+
+    async def test_lost_accumulates_duration(self, db: Database):
+        t0 = 1_000_000.0
+        t1 = t0 + 3600.0  # held for 1 hour
+        await db.record_artifact_acquired(1, "goblet", t0)
+        await db.record_artifact_lost(1, "goblet", t1)
+        rows = await db.get_artifact_hold_totals()
+        assert len(rows) == 1
+        assert abs(rows[0]["held_secs"] - 3600.0) < 1.0
+
+    async def test_lost_clears_acquired_at(self, db: Database):
+        await db.record_artifact_acquired(1, "goblet", 1_000_000.0)
+        await db.record_artifact_lost(1, "goblet", 1_003_600.0)
+        # After losing, held_secs should be stable (no ongoing hold)
+        r1 = await db.get_artifact_hold_totals()
+        r2 = await db.get_artifact_hold_totals()
+        assert abs(r1[0]["held_secs"] - r2[0]["held_secs"]) < 0.1
+
+    async def test_multiple_acquire_lose_cycles_accumulate(self, db: Database):
+        await db.record_artifact_acquired(1, "goblet", 0.0)
+        await db.record_artifact_lost(1, "goblet", 1000.0)       # +1000s
+        await db.record_artifact_acquired(1, "goblet", 5000.0)
+        await db.record_artifact_lost(1, "goblet", 5500.0)       # +500s
+        rows = await db.get_artifact_hold_totals()
+        assert abs(rows[0]["held_secs"] - 1500.0) < 1.0
+
+    async def test_lost_without_acquired_is_noop(self, db: Database):
+        # record_artifact_lost on a row with acquired_at=NULL should not crash
+        await db.record_artifact_acquired(1, "goblet", 0.0)
+        await db.record_artifact_lost(1, "goblet", 100.0)
+        # call lost again without a new acquired — should be silent no-op
+        await db.record_artifact_lost(1, "goblet", 200.0)
+        rows = await db.get_artifact_hold_totals()
+        assert abs(rows[0]["held_secs"] - 100.0) < 1.0
+
+    async def test_lost_on_nonexistent_row_is_noop(self, db: Database):
+        await db.record_artifact_lost(99, "ghost", 1_000_000.0)  # must not raise
+        rows = await db.get_artifact_hold_totals()
+        assert rows == []
+
+    async def test_multiple_empires_same_artifact(self, db: Database):
+        await db.record_artifact_acquired(1, "crown", 0.0)
+        await db.record_artifact_lost(1, "crown", 500.0)
+        await db.record_artifact_acquired(2, "crown", 600.0)
+        await db.record_artifact_lost(2, "crown", 700.0)
+        rows = await db.get_artifact_hold_totals()
+        by_uid = {r["uid"]: r["held_secs"] for r in rows}
+        assert abs(by_uid[1] - 500.0) < 1.0
+        assert abs(by_uid[2] - 100.0) < 1.0
+
+    async def test_same_empire_multiple_artifacts(self, db: Database):
+        await db.record_artifact_acquired(1, "crown", 0.0)
+        await db.record_artifact_lost(1, "crown", 200.0)
+        await db.record_artifact_acquired(1, "goblet", 0.0)
+        await db.record_artifact_lost(1, "goblet", 300.0)
+        rows = await db.get_artifact_hold_totals()
+        by_iid = {r["artifact_iid"]: r["held_secs"] for r in rows}
+        assert abs(by_iid["crown"] - 200.0) < 1.0
+        assert abs(by_iid["goblet"] - 300.0) < 1.0
+
+    async def test_reacquire_overwrites_timestamp(self, db: Database):
+        # Empire steals artifact again after losing it
+        await db.record_artifact_acquired(1, "goblet", 1000.0)
+        await db.record_artifact_lost(1, "goblet", 1100.0)   # 100s accrued
+        await db.record_artifact_acquired(1, "goblet", 2000.0)
+        # Still holding — total_held_secs=100, plus ongoing from ts=2000
+        rows = await db.get_artifact_hold_totals()
+        assert rows[0]["held_secs"] >= 100.0

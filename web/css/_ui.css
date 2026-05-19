@@ -256,7 +256,11 @@
 
 /* ── Army Group ──────────────────────────────────────────── */
 .army-group {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
+  background: var(--surface-hover, rgba(255,255,255,0.04));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius, 8px);
+  padding: 12px 14px;
 }
 
 .army-name-header {
@@ -264,6 +268,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
+  max-width: 600px;
 }
 
 .army-attack-row {
@@ -387,13 +392,15 @@
   background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
   border: 1px solid #c62828;
   color: #fff;
-  padding: 6px 14px;
+  padding: 4px 8px;
   border-radius: var(--radius);
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  width: 72px;
+  text-align: center;
   box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
 }
 

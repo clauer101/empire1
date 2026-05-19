@@ -6,6 +6,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { pageTitle } from '../lib/page_title.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
 import { fmtEffectRow, fmtEffectValue, fmtEffectLabel } from '../lib/format.js';
 import { rest } from '../rest.js';
@@ -20,9 +21,6 @@ let container;
 let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
-let _empiresRenderedCount = 0; // how many rows are currently in the DOM
-let _empiresObserver = null;   // IntersectionObserver for lazy rendering
-let _empiresScrolledToSelf = false; // only auto-scroll to self on first load
 let _onLeaderUpdated = null;
 let _empiresTimer = null;
 let _tickTimer = null;
@@ -46,32 +44,18 @@ function init(el, _api, _state) {
   st = _state;
 
   container.innerHTML = `
-    <h2 class="battle-title">🏰 Empire Status<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
     <div id="dashboard-content">
       <div class="empty-state"><div class="empty-icon">◈</div><p>Loading empire data…</p></div>
     </div>
     <div id="empires-section" style="margin-top:8px"></div>
   `;
-
-  const _titleEl = container.querySelector('.battle-title');
-  if (_titleEl) {
-    const _resourceWrap = _titleEl.querySelector('.title-resources');
-    _titleEl.textContent = '';
-    const _labelSpan = document.createElement('span');
-    _labelSpan.textContent = '🏰 Empire Status ';
-    const _efxBtn = document.createElement('button');
-    _efxBtn.id = 'status-effects-btn';
-    _efxBtn.className = 'prod-info-btn';
-    _efxBtn.title = 'Show production details';
-    _efxBtn.textContent = '🔍';
-    _efxBtn.addEventListener('click', () => { if (st.summary) _showProductionOverlay(st.summary); });
-    _labelSpan.appendChild(_efxBtn);
-    _titleEl.appendChild(_labelSpan);
-    if (_resourceWrap) _titleEl.appendChild(_resourceWrap);
-  }
 }
 
 function enter() {
+  pageTitle.set('🏰 Empire Status', {
+    id: 'status-effects-btn', title: 'Show production details',
+    onClick: () => { if (st.summary) _showProductionOverlay(st.summary); },
+  });
   // Register listeners first
   _unsub.push(eventBus.on('state:summary', render));
   _unsub.push(
@@ -103,10 +87,6 @@ function leave() {
   _unsub.forEach((fn) => fn());
   _unsub = [];
   _empiresData = null;
-  _empiresRenderedCount = 0;
-  _empiresScrolledToSelf = false;
-  if (_empiresObserver) { _empiresObserver.disconnect(); _empiresObserver = null; }
-  container.querySelector('#empires-scroll')?._lazyScrollCleanup?.();
   if (_empiresTimer) {
     clearInterval(_empiresTimer);
     _empiresTimer = null;
@@ -156,7 +136,6 @@ async function refreshEmpires() {
       if (newScrollEl && scrollTop > 0) newScrollEl.scrollTop = scrollTop;
     }
     bindEmpiresEvents();
-    _initEmpiresLazyScroll();
 
     // Re-render attack lists now that empire names are known
     const summary = st.summary;
@@ -164,13 +143,13 @@ async function refreshEmpires() {
       const incEl = container.querySelector('#attacks-incoming-list');
       const outEl = container.querySelector('#attacks-outgoing-list');
       if (incEl) {
-        const inc = summary.attacks_incoming || [];
+        const inc = _sortIncoming(summary.attacks_incoming || []);
         incEl.innerHTML = inc.length
           ? inc.map((a) => _attackEntry(a, 'in')).join('')
           : `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
       }
       if (outEl) {
-        const out = summary.attacks_outgoing || [];
+        const out = _sortIncoming(summary.attacks_outgoing || []);
         outEl.innerHTML = out.length
           ? out.map((a) => _attackEntry(a, 'out')).join('')
           : `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
@@ -227,7 +206,7 @@ function render(data) {
         })()}
         <div class="panel-header">Incoming</div>
         <div id="attacks-incoming-list">${(() => {
-          const inc = data.attacks_incoming || [];
+          const inc = _sortIncoming(data.attacks_incoming || []);
           if (!inc.length)
             return `<div style="color:#666;font-size:0.85em;padding:2px 0">No incoming attacks</div>`;
           return inc.map((a) => _attackEntry(a, 'in')).join('');
@@ -235,7 +214,7 @@ function render(data) {
 
         <div class="panel-header" style="margin-top:8px">Outgoing</div>
         <div id="attacks-outgoing-list">${(() => {
-          const out = data.attacks_outgoing || [];
+          const out = _sortIncoming(data.attacks_outgoing || []);
           if (!out.length)
             return `<div style="color:#666;font-size:0.85em;padding:2px 0">No outgoing attacks</div>`;
           return out.map((a) => _attackEntry(a, 'out')).join('');
@@ -279,7 +258,7 @@ function render(data) {
         })()}
       </div>
 
-      ${renderRulerPanel(data.ruler, st?.items?.rulers, data.ruler_effects, data.effects)}
+      ${renderRulerTile(data.ruler, st?.items?.rulers, data.effects)}
 
     </div>
   `;
@@ -318,11 +297,16 @@ function render(data) {
 
   // citizenPrice entfernt, Preis kommt vom Backend
 
-  // Bind choose-ruler button (shown when ruler_unlock active but no ruler chosen)
-  const chooseRulerBtn = el.querySelector('#choose-ruler-btn');
-  if (chooseRulerBtn) {
-    chooseRulerBtn.addEventListener('click', () => _showChooseRulerOverlay(st?.items?.rulers));
-  }
+  // Ruler tile (has ruler) — click to open detail view
+  el.querySelector('.ruler-panel-clickable')?.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    window.location.hash = '#ruler';
+  });
+
+  // Ruler tile (no ruler chosen) — whole tile + button opens overlay
+  el.querySelector('.ruler-panel-choose')?.addEventListener('click', () =>
+    showChooseRulerOverlay(st?.items?.rulers)
+  );
 
   // Bind ruler skill-up buttons
   el.querySelectorAll('.ruler-skill-up-btn').forEach((btn) => {
@@ -476,7 +460,8 @@ async function _showProductionOverlay(data) {
   const goldHtml = renderResourceIncome('gold', effectSources, effects, citizens, citizenEffect, data.base_gold, rulerName, rallyActive);
   const cultureHtml = renderResourceIncome('culture', effectSources, effects, citizens, citizenEffect, data.base_culture, rulerName, rallyActive);
   const lifeHtml = renderResourceIncome('life', effectSources, effects, citizens, citizenEffect, 0, rulerName, rallyActive);
-  const buildHtml = renderBuildSpeed(effectSources, effects, data.base_build_speed, rulerName);
+  const siegeArmyCount = (data.attacks_incoming || []).filter(a => a.phase === 'in_siege').length;
+  const buildHtml = renderBuildSpeed(effectSources, effects, data.base_build_speed, rulerName, siegeArmyCount, data.base_siege_construction_speed_per_army_modifier);
   const researchHtml = renderResearchSpeed(effectSources, effects, citizens, citizenEffect, data.base_research_speed, rulerName);
   const restoreHtml = renderRestoreLife(effectSources, effects, data.base_restore_life ?? 1, rulerName);
 
@@ -495,7 +480,7 @@ async function _showProductionOverlay(data) {
   });
 }
 
-function _showChooseRulerOverlay(rulersCatalog) {
+export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
   document.querySelector('.choose-ruler-overlay')?.remove();
   if (!rulersCatalog) return;
 
@@ -617,7 +602,7 @@ function _showChooseRulerOverlay(rulersCatalog) {
       errEl.textContent = '';
       try {
         const resp = await rest.chooseRuler(selectedIid);
-        if (resp?.success) { overlay.remove(); await refresh(); }
+        if (resp?.success) { overlay.remove(); await (onSuccess ? onSuccess() : refresh()); }
         else { errEl.textContent = resp?.error || 'Could not choose ruler'; btn.disabled = false; }
       } catch (err) { errEl.textContent = err.message; btn.disabled = false; }
     });
@@ -691,7 +676,7 @@ function _showArtifactOverlay(iid) {
 
 // Returns { can: bool, muted: bool, hint: string|null }
 // can=true: button active; muted=true: point available but level requirement not met
-function _rulerSkillUpState(ruler, skill) {
+export function rulerSkillUpState(ruler, skill) {
   const level = ruler.level || 1;
   const totalPoints = (ruler.q || 0) + (ruler.w || 0) + (ruler.e || 0) + (ruler.r || 0);
   const hasPoint = totalPoints < level;
@@ -713,10 +698,81 @@ function _rulerSkillUpState(ruler, skill) {
 }
 
 function _rulerCanSkillUp(ruler, skill) {
-  return _rulerSkillUpState(ruler, skill).can;
+  return rulerSkillUpState(ruler, skill).can;
 }
 
-function renderRulerPanel(ruler, rulersCatalog, rulerEffects, empireEffects) {
+function renderRulerTile(ruler, rulersCatalog, empireEffects) {
+  const rulerUnlocked = (empireEffects?.ruler_unlock ?? 0) > 0;
+  if (!rulerUnlocked && (!ruler || !ruler.type)) return '';
+  if (!ruler || !ruler.type) {
+    return `
+    <div class="panel ruler-panel-choose" style="cursor:pointer;">
+      <div class="panel-header">👑 Ruler</div>
+      <div style="color:#aaa;font-size:0.9em;line-height:1.6;padding:6px 0">
+        <p style="margin:0 0 8px">Your empire has unlocked the ruler system.</p>
+        <p style="margin:0 0 12px">Rulers are powerful heroes that can lead your armies into battle, granting unique combat bonuses scaled with their level.</p>
+        <button id="choose-ruler-btn" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:6px 18px;font-weight:700;cursor:pointer;font-size:0.95em">Select a ruler</button>
+      </div>
+    </div>`;
+  }
+  try {
+    const def = rulersCatalog?.[ruler.type];
+    const rulerDisplayName = def?.name || ruler.name || ruler.type;
+    const totalPoints = (ruler.q || 0) + (ruler.w || 0) + (ruler.e || 0) + (ruler.r || 0);
+    const hasUnspentPoints = totalPoints < (ruler.level || 1);
+    const levelUpBadge = hasUnspentPoints
+      ? `<span class="badge" style="background:rgba(255,167,38,0.18);color:#ffa726;border:1px solid rgba(255,167,38,0.45);border-radius:10px;font-size:0.72em;padding:1px 7px;margin-left:6px;font-weight:700;">level up</span>`
+      : '';
+
+    const xpStart = ruler.level_xp_start || 0;
+    const stepCost = ruler.next_level_xp || 1;
+    const xpTarget = xpStart + stepCost;
+    const xpInLevel = ruler.xp - xpStart;
+    const pct = Math.min(100, (xpInLevel / stepCost) * 100).toFixed(1);
+    const atMax = ruler.level >= 18;
+
+    const skills = [
+      { key: 'q', label: 'Q' },
+      { key: 'w', label: 'W' },
+      { key: 'e', label: 'E' },
+      { key: 'r', label: 'R' },
+    ];
+    const skillRows = skills.map(({ key, label }) => {
+      const level = ruler[key] || 0;
+      const skillDef = def?.skills?.[key];
+      const name = skillDef?.name || label;
+      const maxLvl = key === 'r' ? 3 : 5;
+      const dots = Array.from({length: maxLvl}, (_, i) =>
+        `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1.5px solid #66bb6a;background:${i < level ? '#66bb6a' : 'transparent'}"></span>`
+      ).join('');
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;">
+        <span style="font-size:0.85em;color:#ccc;">${name}</span>
+        <div style="display:flex;gap:3px;">${dots}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="panel ruler-panel-clickable" style="cursor:pointer;">
+        <div class="panel-header">👑 Ruler</div>
+        <div class="panel-row">
+          <span class="label" style="font-weight:700;font-size:1.05em">${rulerDisplayName}${levelUpBadge}</span>
+          <span class="value" style="color:#aaa">Lv ${ruler.level}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82em;color:#888;padding:2px 0 3px">
+          <span>${Math.floor(ruler.xp)} XP</span>
+          <span>${atMax ? 'max level' : `${Math.ceil(xpTarget)} XP`}</span>
+        </div>
+        <div class="atk-progress-wrap">
+          <div class="atk-progress-bar" style="width:${pct}%;background:#66bb6a"></div>
+        </div>
+        <div style="margin-top:6px;">${skillRows}</div>
+      </div>`;
+  } catch (err) {
+    return `<div class="panel"><div class="panel-header">👑 Ruler</div><div style="color:#e57373;font-size:0.85em">Render error: ${err.message}</div></div>`;
+  }
+}
+
+export function renderRulerPanel(ruler, rulersCatalog, rulerEffects, empireEffects) {
   const rulerUnlocked = (empireEffects?.ruler_unlock ?? 0) > 0;
   if (!rulerUnlocked && (!ruler || !ruler.type)) return '';
   if (!ruler || !ruler.type) {
@@ -745,7 +801,7 @@ function renderRulerPanel(ruler, rulersCatalog, rulerEffects, empireEffects) {
       const level = ruler[key] || 0;
       const skillDef = def?.skills?.[key];
       const name = skillDef?.name || label;
-      const upState = _rulerSkillUpState(ruler, key);
+      const upState = rulerSkillUpState(ruler, key);
       const upBtn = (upState.can || upState.muted)
         ? `<button class="ruler-skill-up-btn" data-skill="${key}" style="padding:2px 10px;font-size:0.82em;border-radius:3px;font-weight:700;border:none;${upState.can ? 'cursor:pointer;background:#ffa726;color:#111' : 'cursor:default;background:#444;color:#666'}" ${upState.can ? '' : 'disabled'} title="${upState.hint || 'Spend skill point'}">${upState.muted ? '🔒' : '+'}</button>`
         : '';
@@ -795,7 +851,7 @@ function renderRulerPanel(ruler, rulersCatalog, rulerEffects, empireEffects) {
 
   return `
     <div class="panel">
-      <div class="panel-header">Ruler</div>
+      <div class="panel-header">👑 Ruler</div>
       ${(() => {
         const xpStart = ruler.level_xp_start || 0;
         const stepCost = ruler.next_level_xp || 1;
@@ -1044,7 +1100,7 @@ function _renderModifierSourceRows(effectSources, key, rulerName, skipCategories
   return html;
 }
 
-function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName) {
+function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName, siegeArmyCount, baseSiegePerArmy) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
   const buildOffset = effects?.build_speed_offset || 0;
   const buildModifier = effects?.build_speed_modifier || 0;
@@ -1058,7 +1114,39 @@ function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName) {
   const totalOffset = baseBuildSpeed + buildOffset;
   const multiplier = 1 + buildModifier;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
+  const effectiveStr = siegeArmyCount > 0
+    ? `<s style="color:#555">${effective.toFixed(3)}/s</s>`
+    : `${effective.toFixed(3)}/s`;
+  html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effectiveStr}</span></div>`;
+
+  // ── Siege penalty (shown when under siege) ──
+  if (siegeArmyCount > 0) {
+    const resilienceModifier = effects?.siege_construction_speed_per_army_modifier || 0;
+    const effectivePerArmy = Math.max(0, (baseSiegePerArmy ?? 0.05) - resilienceModifier);
+    const maxCap = effects?.max_siege_construction_speed_modifier || 0;
+    const rawPenalty = siegeArmyCount * effectivePerArmy;
+    const isCapped = maxCap > 0 && rawPenalty > maxCap;
+    const penalty = isCapped ? maxCap : rawPenalty;
+    const penaltySpeed = effective * (1 - penalty);
+    const armyLabel = `${siegeArmyCount} arm${siegeArmyCount > 1 ? 'ies' : 'y'}`;
+    html += `<div class="panel-row" style="border-top:1px solid #c62828;margin:6px 0 0;padding-top:6px">`;
+    html += `<span class="label" style="color:#ef5350;font-weight:bold">⚔ Siege (${armyLabel})</span>`;
+    html += `<span class="value" style="color:#ef5350"></span></div>`;
+    // per-army penalty row
+    const resLabel = resilienceModifier > 0
+      ? ` − ${(resilienceModifier * 100).toFixed(0)}% resilience`
+      : '';
+    html += `<div class="panel-row"><span class="label" style="color:#ef9a9a">−${(effectivePerArmy * 100).toFixed(0)}%/army</span><span class="value" style="color:#888;font-size:10px">(base${resLabel})</span></div>`;
+    // total raw penalty
+    if (isCapped) {
+      html += `<div class="panel-row"><span class="label" style="color:#ef9a9a">−${(rawPenalty * 100).toFixed(0)}% raw</span><span class="value" style="color:#888;font-size:10px">${siegeArmyCount} × ${(effectivePerArmy * 100).toFixed(0)}%</span></div>`;
+      html += `<div class="panel-row"><span class="label" style="color:#ef5350">−${(maxCap * 100).toFixed(0)}% (capped)</span><span class="value" style="color:#888;font-size:10px">max cap</span></div>`;
+    } else {
+      html += `<div class="panel-row"><span class="label" style="color:#ef5350">−${(penalty * 100).toFixed(0)}%</span><span class="value" style="color:#888;font-size:10px">${siegeArmyCount} × ${(effectivePerArmy * 100).toFixed(0)}%</span></div>`;
+    }
+    html += `<div class="panel-row" style="border-top:1px solid #c62828;margin:4px 0 0;padding-top:4px"><span class="label" style="color:#ef5350;font-weight:bold">= ${penaltySpeed.toFixed(3)}/s</span><span class="value" style="color:#ef5350;font-weight:bold">effective</span></div>`;
+  }
+
   return html;
 }
 
@@ -1220,9 +1308,10 @@ function _fmtSecs(s) {
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = Math.floor(s % 60);
-  if (h > 0) return `${h}h ${m}m ${sec}s`;
-  if (m > 0) return `${m}m ${sec}s`;
-  return `${sec}s`;
+  const mm = String(m).padStart(2, '0');
+  const ss = String(sec).padStart(2, '0');
+  if (h > 0) return `${h}:${mm}:${ss}`;
+  return `${mm}:${ss}`;
 }
 
 const PHASE_LABEL = {
@@ -1230,6 +1319,20 @@ const PHASE_LABEL = {
   in_siege: { text: 'siege', cls: 'phase-siege' },
   in_battle: { text: 'battle', cls: 'phase-battle' },
 };
+
+// Sort incoming attacks: travelling (longest ETA first) → siege (longest remaining first) → battle (longest elapsed first)
+function _sortIncoming(attacks) {
+  const order = { travelling: 0, in_siege: 1, in_battle: 2 };
+  return [...attacks].sort((a, b) => {
+    const pa = order[a.phase] ?? 3;
+    const pb = order[b.phase] ?? 3;
+    if (pa !== pb) return pa - pb;
+    if (a.phase === 'travelling')  return (b.eta_seconds ?? 0) - (a.eta_seconds ?? 0);
+    if (a.phase === 'in_siege')    return (b.siege_remaining_seconds ?? 0) - (a.siege_remaining_seconds ?? 0);
+    if (a.phase === 'in_battle')   return (b.battle_elapsed_seconds ?? 0) - (a.battle_elapsed_seconds ?? 0);
+    return 0;
+  });
+}
 
 function _attackEntry(a, direction) {
   const pInfo = PHASE_LABEL[a.phase] || { text: a.phase, cls: '' };
@@ -1298,10 +1401,10 @@ function renderAttacksBar(data) {
   const outgoing = data.attacks_outgoing || [];
 
   const inRows = incoming.length
-    ? incoming.map((a) => _attackEntry(a, 'in')).join('')
+    ? _sortIncoming(incoming).map((a) => _attackEntry(a, 'in')).join('')
     : '<div class="atk-empty">No active attacks</div>';
   const outRows = outgoing.length
-    ? outgoing.map((a) => _attackEntry(a, 'out')).join('')
+    ? _sortIncoming(outgoing).map((a) => _attackEntry(a, 'out')).join('')
     : '<div class="atk-empty">No active attacks</div>';
 
   const inHeader = `Incoming${incoming.length ? ` <span class="atk-badge atk-badge-in">${incoming.length}</span>` : ''}`;
@@ -1333,8 +1436,6 @@ function renderEffects(effects) {
     )
     .join('');
 }
-
-const _EMPIRES_BATCH = 20; // rows rendered per lazy-load step
 
 function _empireRowHtml(e, i, selfEra) {
   const canAttack = (targetEra) => targetEra >= selfEra - 1;
@@ -1369,77 +1470,27 @@ function renderEmpiresSection(empires) {
     return `<div class="panel"><div class="panel-header">Known Empires</div><div class="panel-row"><span class="value">—</span></div></div>`;
   }
 
-  // Reset rendered count — will be populated by _initEmpiresLazyScroll after DOM insert
-  _empiresRenderedCount = 0;
-  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
-  const initialBatch = empires.slice(0, _EMPIRES_BATCH);
-  const rows = initialBatch.map((e, i) => _empireRowHtml(e, i, selfEra)).join('');
-  _empiresRenderedCount = initialBatch.length;
+  const selfIdx = empires.findIndex((e) => e.is_self);
+  const selfEra = selfIdx >= 0 ? (empires[selfIdx].era || 1) : 1;
+
+  // Show 5 above and below self in the status tile
+  const TILE_WINDOW = 5;
+  const start = Math.max(0, selfIdx - TILE_WINDOW);
+  const end = Math.min(empires.length, selfIdx + TILE_WINDOW + 1);
+  const slice = empires.slice(start, end);
+
+  const rows = slice.map((e, i) => _empireRowHtml(e, start + i, selfEra)).join('');
 
   return `
     <div class="panel">
-      <div class="panel-header">Known Empires <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
-      <div id="empires-scroll" style="max-height:320px;overflow-y:auto;">
+      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a><span class="badge badge--available" style="margin-left:4px;opacity:0.45;cursor:default;">🌍</span> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
+      <div id="empires-scroll">
         <div id="empires-rows">${rows}</div>
-        <div id="empires-sentinel" style="height:1px"></div>
       </div>
     </div>
   `;
 }
 
-function _appendEmpiresBatch() {
-  const empires = _empiresData;
-  if (!empires || _empiresRenderedCount >= empires.length) return;
-  const rowsEl = container.querySelector('#empires-rows');
-  if (!rowsEl) return;
-  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
-  const next = empires.slice(_empiresRenderedCount, _empiresRenderedCount + _EMPIRES_BATCH);
-  const frag = document.createDocumentFragment();
-  next.forEach((e, j) => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = _empireRowHtml(e, _empiresRenderedCount + j, selfEra).trim();
-    const node = tmp.firstElementChild;
-    node.querySelector('.attack-btn')?.addEventListener('click', (ev) => onAttackClick(ev.currentTarget));
-    node.querySelector('.art-info-trigger')?.addEventListener('click', (ev) => { ev.stopPropagation(); _showArtifactInfoOverlay(); });
-    frag.appendChild(node);
-  });
-  rowsEl.appendChild(frag);
-  _empiresRenderedCount += next.length;
-}
-
-function _initEmpiresLazyScroll() {
-  const empires = _empiresData;
-  if (!empires) return;
-  const scrollEl = container.querySelector('#empires-scroll');
-  if (!scrollEl) return;
-  if (_empiresObserver) { _empiresObserver.disconnect(); _empiresObserver = null; }
-
-  // Use scroll event — reliable across all browsers for a custom scroll root
-  const onScroll = () => {
-    if (_empiresRenderedCount >= empires.length) {
-      scrollEl.removeEventListener('scroll', onScroll);
-      return;
-    }
-    const nearBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 80;
-    if (nearBottom) _appendEmpiresBatch();
-  };
-  scrollEl.addEventListener('scroll', onScroll);
-  // Store cleanup ref on the element so leave() can remove it
-  scrollEl._lazyScrollCleanup = () => scrollEl.removeEventListener('scroll', onScroll);
-
-  // If initial batch already fills the container (or is short), load more immediately
-  if (scrollEl.scrollHeight <= scrollEl.clientHeight) _appendEmpiresBatch();
-
-  // Scroll to self row — only on first load, not on every refresh
-  if (!_empiresScrolledToSelf) {
-    const selfIdx = empires.findIndex((e) => e.is_self);
-    if (selfIdx >= 0 && selfIdx < _empiresRenderedCount) {
-      const rows = scrollEl.querySelectorAll('#empires-rows .panel-row');
-      rows[selfIdx]?.scrollIntoView({ block: 'nearest' });
-      _empiresScrolledToSelf = true;
-    }
-  }
-}
 
 function _refreshEmpiresSection() {
   const empires = _empiresData;
@@ -1448,7 +1499,6 @@ function _refreshEmpiresSection() {
   if (!sec) return;
   sec.innerHTML = renderEmpiresSection(empires);
   bindEmpiresEvents();
-  _initEmpiresLazyScroll();
 }
 
 function bindEmpiresEvents() {

@@ -45,10 +45,10 @@ class TestAttackerWin:
         defender.artifacts = ["SWORD_OF_POWER"]
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
 
-        assert iid == "SWORD_OF_POWER"
-        assert winner_uid == ATTACKER_UID
+        assert len(stolen) == 1
+        assert stolen[0] == ("SWORD_OF_POWER", ATTACKER_UID)
         assert "SWORD_OF_POWER" not in defender.artifacts
         assert "SWORD_OF_POWER" in attacker.artifacts
 
@@ -57,10 +57,9 @@ class TestAttackerWin:
         defender.artifacts = ["SWORD_OF_POWER"]
         svc = _make_svc(attacker, victory_chance=0.0)
 
-        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
 
-        assert iid is None
-        assert winner_uid is None
+        assert stolen == []
         assert defender.artifacts == ["SWORD_OF_POWER"]
         assert attacker.artifacts == []
 
@@ -68,19 +67,18 @@ class TestAttackerWin:
         battle, attacker, defender = _make_battle()
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
 
-        assert iid is None
-        assert winner_uid is None
+        assert stolen == []
 
     def test_all_artifacts_stolen_when_chance_is_one(self):
         battle, attacker, defender = _make_battle()
         defender.artifacts = ["ART_A", "ART_B", "ART_C"]
         svc = _make_svc(attacker, victory_chance=1.0)
 
-        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
 
-        assert iid is not None
+        assert len(stolen) == 3
         assert len(attacker.artifacts) == 3
         assert len(defender.artifacts) == 0
 
@@ -100,9 +98,9 @@ class TestAttackerWin:
         defender.artifacts = ["ART"]
         svc = _make_svc(attacker, victory_chance=0.0, defeat_chance=1.0)
 
-        iid, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
 
-        assert iid is None  # victory_chance=0 → no steal despite defeat_chance=1
+        assert stolen == []  # victory_chance=0 → no steal despite defeat_chance=1
 
 
 # ── Defender-win (attacker defeated) ─────────────────────────────────────────
@@ -114,10 +112,9 @@ class TestDefenderWin:
         defender.artifacts = ["CROWN"]
         svc = _make_svc(attacker, defeat_chance=1.0)
 
-        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=False)
 
-        assert iid == "CROWN"
-        assert winner_uid == ATTACKER_UID
+        assert stolen == [("CROWN", ATTACKER_UID)]
         assert "CROWN" not in defender.artifacts
         assert "CROWN" in attacker.artifacts
 
@@ -136,8 +133,7 @@ class TestDefenderWin:
         defender.artifacts = ["CROWN"]
         svc = _make_svc(attacker, defeat_chance=0.0)
 
-        iid, winner_uid = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen = _apply_artifact_steal(battle, svc, attacker_won=False)
 
-        assert iid is None
-        assert winner_uid is None
+        assert stolen == []
         assert defender.artifacts == ["CROWN"]

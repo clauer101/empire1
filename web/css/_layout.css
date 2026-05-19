@@ -174,14 +174,58 @@
   min-height: 0;
 }
 
+#page-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  min-height: 42px;
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+#page-header-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 0.3px;
+}
+
+.title-resources {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #8b949e);
+  white-space: nowrap;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-left: auto;
+}
+
 #app {
   background: var(--surface);
-  border-radius: var(--radius);
+  border-radius: 0 0 var(--radius) var(--radius);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 28px;
+  padding: 16px 20px;
   min-height: 0;
   flex: 1;
+}
+
+/* Strip #app padding for full-bleed views */
+#app.full-bleed {
+  padding: 0;
+  overflow: clip; /* clip prevents scroll but does not create a stacking context that clips position:absolute children */
+}
+#app.full-bleed > .view {
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 0;
 }
 
 /* individual view wrappers */

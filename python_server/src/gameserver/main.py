@@ -322,15 +322,18 @@ def create_services(config: Configuration, database: Database, state_file: str =
                                    building_era_groups=config.building_era_groups,
                                    item_era_index=config.item_era_index,
                                    rulers=config.rulers)
+    empire_service._database = database
     battle_service = BattleService(items=upgrade_provider.items, gc=gc, rulers=config.rulers)
     attack_service = AttackService(event_bus, gc, empire_service,
                                    knowledge_era_groups=config.knowledge_era_groups)
+    empire_service._attack_service = attack_service
     army_service = ArmyService(upgrade_provider, event_bus)
     ai_service = AIService(upgrade_provider,
                            game_config=gc, hardcoded_waves=config.ai_waves)
     statistics = StatisticsService()
 
     game_loop = GameLoop(event_bus, empire_service, attack_service, statistics, gc, ai_service=ai_service, state_file=state_file)
+    game_loop._database = database
 
     auth_service = AuthService(database, gc)
     router = Router()
@@ -455,13 +458,6 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
     services._rest_task = asyncio.create_task(rest_server.serve())
     log.info("  REST API listening on http://0.0.0.0:%d", rest_port)
 
-    async def _message_cleanup_loop() -> None:
-        while True:
-            await asyncio.sleep(24 * 3600)  # run once per day
-            if services.database is not None:
-                await services.database.delete_old_messages(max_age_days=7)
-
-    services._cleanup_task = asyncio.create_task(_message_cleanup_loop())
 
     async def _backup_loop(_state_file: str = state_file) -> None:
         """Rolling backups: 24 hourly slots + 7 daily slots for state.yaml and gameserver.db."""

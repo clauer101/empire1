@@ -3,6 +3,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { pageTitle } from '../lib/page_title.js';
 import { rest } from '../rest.js';
 import { escHtml, hilite } from '../lib/html.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY, ERA_ROMAN, ERA_LABEL_EN } from '../lib/eras.js';
@@ -25,6 +26,7 @@ let _critUpgDef = null; // critter_upgrade_def from era-map
 let _waveEraCosts = []; // wave_era_costs from era-map
 let _critterSlotParams = null; // {u, y, z, v}
 let _etaTicker = null; // interval for live ETA countdown
+let _resetScroll = false; // set when navigating here from external context (e.g. attack button)
 
 function _waveEraPrice(eraIndex) {
   if (!_waveEraCosts.length) return 0;
@@ -182,16 +184,18 @@ function init(el, _api, _state) {
   st = _state;
 
   container.innerHTML = `
-    <h2 class="battle-title">🗡 Army Composer<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
-
     <div id="attack-target-banner" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(229,57,53,0.15);border:1px solid var(--danger,#e53935);border-radius:var(--radius);color:var(--danger,#e53935);font-weight:bold;"></div>
-    
-    <!-- ── Create Army Button ──────────────────────────── -->
-    <div style="margin-bottom:16px;">
-      <button id="create-army-btn" style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2;">
-        <span>+ New Army</span>
-        <span id="army-price-display" style="font-size:10px;opacity:0.7;"></span>
-      </button>
+
+    <!-- ── Global Target Input (always visible, top) ──── -->
+    <div id="global-target-wrap" style="margin-bottom:12px;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div class="empire-ac-wrap" style="position:relative;flex:1;">
+          <input type="text" id="global-target-input" class="target-uid-input" placeholder="Target empire…" autocomplete="off" style="width:100%;box-sizing:border-box;padding-right:28px;" />
+          <button id="global-target-clear" title="Clear" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;">✕</button>
+          <div class="empire-ac-dropdown"></div>
+        </div>
+        <button id="global-map-btn" title="Open Global Map" style="flex-shrink:0;padding:0 10px;height:32px;border-radius:var(--radius,8px);background:rgba(46,125,50,0.18);border:1px solid rgba(56,142,60,0.3);color:#66bb6a;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0.7;">🌐</button>
+      </div>
     </div>
 
     <!-- ── New Army Name Overlay ─────────────────────────── -->
@@ -205,23 +209,6 @@ function init(el, _api, _state) {
       </div>
     </div>
 
-    <!-- ── Spy Attack ─────────────────────────────────── -->
-    <div id="spy-attack-panel" style="margin-bottom:18px;padding:10px 12px;background:rgba(100,60,180,0.12);border:1px solid rgba(150,100,220,0.35);border-radius:var(--radius,8px);">
-      <div id="spy-panel-title" style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-dim);">🕵 Spy Attack <span style="font-size:11px;font-weight:400;">(disguises as first army, half travel time)</span></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <div class="empire-ac-wrap" style="position:relative;flex:1;min-width:140px;">
-          <input type="text" id="spy-target-input" class="target-uid-input" placeholder="Target empire" autocomplete="off" style="width:100%;box-sizing:border-box;padding-right:24px;" />
-          <button id="spy-target-clear" title="Clear" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;">✕</button>
-          <div class="empire-ac-dropdown"></div>
-        </div>
-        <button id="spy-attack-btn" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;white-space:nowrap;">
-          <span>🕵 Send Spy</span>
-          <span id="spy-eta-label" style="font-size:10px;opacity:0.7;"></span>
-        </button>
-      </div>
-      <div id="spy-status-msg" style="font-size:12px;margin-top:6px;min-height:14px;"></div>
-    </div>
-
     <!-- ── Spy Report Overlay ─────────────────────────── -->
     <div id="spy-report-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);align-items:center;justify-content:center;">
       <div style="background:var(--panel-bg,#1e1e2e);border:1px solid rgba(150,100,220,0.5);border-radius:var(--radius,8px);padding:20px;min-width:280px;max-width:min(520px,92vw);max-height:80vh;overflow-y:auto;position:relative;">
@@ -231,10 +218,15 @@ function init(el, _api, _state) {
     </div>
 
     <!-- ── Armies Overview ────────────────────────────── -->
-    <h3>Your Armies <span style="font-size:11px;font-weight:400;color:var(--text-dim)">— regenerated after each battle</span></h3>
     <div id="army-list" class="army-tiles">
       <div class="empty-state"><div class="empty-icon">⚔</div><p>Loading armies…</p></div>
     </div>
+
+    <!-- ── New Army Tile (bottom) ─────────────────────── -->
+    <button id="create-army-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px;margin-top:12px;border-radius:var(--radius,8px);font-size:13px;font-weight:600;">
+      <span>⚔ + New Army</span>
+      <span id="army-price-display" style="font-size:10px;opacity:0.7;"></span>
+    </button>
 
     <!-- ── Critter Picker Overlay ──────────────────────── -->
     <div class="tile-overlay" id="critter-overlay" style="display:none;">
@@ -257,27 +249,8 @@ function init(el, _api, _state) {
       .prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
       .prod-overlay-section{margin-bottom:14px}
       .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
-      .prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
-      .prod-info-btn:hover{opacity:1}
     `;
     document.head.appendChild(s);
-  }
-
-  const _titleEl = container.querySelector('.battle-title');
-  if (_titleEl) {
-    const _resourceWrap = _titleEl.querySelector('.title-resources');
-    _titleEl.textContent = '';
-    const _labelSpan = document.createElement('span');
-    _labelSpan.textContent = '🗡 Army Composer ';
-    const _efxBtn = document.createElement('button');
-    _efxBtn.id = 'army-effects-btn';
-    _efxBtn.className = 'prod-info-btn';
-    _efxBtn.title = 'Show army effects';
-    _efxBtn.textContent = '🔍';
-    _efxBtn.addEventListener('click', _showArmyEffectsOverlay);
-    _labelSpan.appendChild(_efxBtn);
-    _titleEl.appendChild(_labelSpan);
-    if (_resourceWrap) _titleEl.appendChild(_resourceWrap);
   }
 
   const newArmyOverlay = document.getElementById('new-army-overlay');
@@ -305,13 +278,44 @@ function init(el, _api, _state) {
   document.body.appendChild(container.querySelector('#spy-report-overlay'));
   document.body.appendChild(container.querySelector('#critter-overlay'));
 
-  // Bind spy attack panel
-  const spyInput = container.querySelector('#spy-target-input');
-  container.querySelector('#spy-target-clear').addEventListener('click', () => {
-    spyInput.value = '';
+  // ── Global target input ─────────────────────────────────────
+  const globalTargetInput = container.querySelector('#global-target-input');
+
+  function _syncGlobalTarget(_name) {
+    // no-op: per-army inputs removed; global input is the single source
+  }
+
+  const globalMapBtn = container.querySelector('#global-map-btn');
+
+  function _updateMapBtn() {
+    const hasTarget = !!globalTargetInput.value.trim();
+    globalMapBtn.disabled = !hasTarget;
+    globalMapBtn.style.opacity = hasTarget ? '1' : '0.7';
+    globalMapBtn.style.cursor = hasTarget ? 'pointer' : 'default';
+    globalMapBtn.style.pointerEvents = hasTarget ? '' : 'none';
+  }
+
+  container.querySelector('#global-target-clear').addEventListener('click', () => {
+    globalTargetInput.value = '';
+    _syncGlobalTarget('');
+    _updateMapBtn();
   });
-  _bindAutocomplete(spyInput);
-  container.querySelector('#spy-attack-btn').addEventListener('click', onSpyAttack);
+
+  globalMapBtn.addEventListener('click', () => {
+    window.location.hash = '#globalmap';
+  });
+
+  _updateMapBtn();
+
+  _bindAutocomplete(globalTargetInput);
+  globalTargetInput.addEventListener('input', () => {
+    _syncGlobalTarget(globalTargetInput.value);
+    _updateMapBtn();
+  });
+  globalTargetInput.addEventListener('change', () => _syncGlobalTarget(globalTargetInput.value));
+  globalTargetInput.addEventListener('blur', () => setTimeout(() => _syncGlobalTarget(globalTargetInput.value), 100));
+
+  // Spy attack button is rendered inside #army-list by renderArmies; listener attached there.
 
   // Bind spy report overlay close
   const spyOverlay = document.getElementById('spy-report-overlay');
@@ -338,6 +342,9 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  pageTitle.set('🗡 Army Composer', {
+    id: 'army-effects-btn', title: 'Show army effects', onClick: _showArmyEffectsOverlay,
+  });
   // Listen to military data updates (but only for this view)
   _unsub.push(eventBus.on('state:military', renderArmies));
   _unsub.push(eventBus.on('state:military', () => _startEtaTicker()));
@@ -367,13 +374,12 @@ async function enter() {
   if (st.pendingAttackTarget) {
     const { uid, name } = st.pendingAttackTarget;
     st.pendingAttackTarget = null;
-    // Fill all target-uid inputs with the empire name and scroll to first one
-    const inputs = container.querySelectorAll('.target-uid-input');
-    inputs.forEach((inp) => {
-      inp.value = name || uid;
-    });
-    if (inputs.length > 0) {
-      inputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    _resetScroll = true;
+    const val = name || String(uid);
+    const globalInput = container.querySelector('#global-target-input');
+    if (globalInput) {
+      globalInput.value = val;
+      _updateMapBtn();
     }
     const banner = container.querySelector('#attack-target-banner');
     if (banner) banner.style.display = 'none';
@@ -1008,28 +1014,24 @@ async function onDecreaseSlots(e) {
 }
 
 function _setAttackBtnState(btn, state, label2 = '') {
-  btn.disabled = state !== 'ready';
-  btn.style.opacity = state === 'ready' ? '' : '0.5';
-  btn.style.cursor = state === 'ready' ? '' : 'default';
-  if (state === 'ready') {
-    btn.innerHTML = `<span>⚔ Attack</span>`;
+  const errorEl = btn.closest('.army-group')?.querySelector('.army-attack-error');
+  btn.disabled = state === 'loading';
+  btn.style.opacity = state === 'loading' ? '0.5' : '';
+  btn.style.cursor = state === 'loading' ? 'default' : '';
+  if (state === 'loading') {
+    btn.innerHTML = `<span>⚔ ${label2}</span>`;
   } else {
-    const color = state === 'error' ? 'var(--danger)' : 'inherit';
-    btn.innerHTML = `<span style="color:${color}">${state === 'error' ? '✗' : '⚔'} ${label2 || ''}</span>`;
+    btn.innerHTML = `<span>⚔ Attack</span>`;
   }
+  if (errorEl) errorEl.textContent = state === 'error' ? label2 : '';
 }
 
 function _updateSpyButton() {
+  // Button lives inside #army-list (re-rendered each time), so this is a no-op;
+  // state is baked in during renderArmies. Only called after manual spy dispatch.
   const btn = container.querySelector('#spy-attack-btn');
-  const statusEl = container.querySelector('#spy-status-msg');
-  const titleEl = container.querySelector('#spy-panel-title');
   if (!btn) return;
-
-  const armies = st.military?.armies || [];
-  const firstArmy = armies.length ? armies.reduce((a, b) => (a.aid < b.aid ? a : b)) : null;
-  if (titleEl && firstArmy) {
-    titleEl.innerHTML = `🕵 Spy Attack <span style="font-size:11px;font-weight:400;">(disguises as "${escHtml(firstArmy.name)}", half travel time)</span>`;
-  }
+  const statusEl = container.querySelector('#spy-status-msg');
 
   const activeSpies = (st.military?.attacks_outgoing || []).filter((a) => a.is_spy);
   if (activeSpies.length > 0) {
@@ -1037,13 +1039,13 @@ function _updateSpyButton() {
     btn.disabled = true;
     btn.style.opacity = '0.5';
     btn.style.cursor = 'default';
-    btn.innerHTML = `<span>🕵 Dispatched</span><span style="font-size:10px;opacity:0.7;">ETA: ${eta}</span>`;
+    btn.innerHTML = `<span>🕵 Dispatched</span><span style="font-size:0.75em;opacity:0.7;">ETA: ${eta}</span>`;
     if (statusEl) statusEl.textContent = '';
   } else {
     btn.disabled = false;
     btn.style.opacity = '';
     btn.style.cursor = '';
-    btn.innerHTML = `<span>🕵 Send Spy</span><span id="spy-eta-label" style="font-size:10px;opacity:0.7;"></span>`;
+    btn.innerHTML = `<span>🕵 Send Spy</span><span id="spy-eta-label" style="font-size:0.75em;opacity:0.7;"></span>`;
     _updateSpyEta();
   }
 }
@@ -1058,7 +1060,7 @@ function _updateSpyEta() {
 }
 
 async function onSpyAttack() {
-  const spyInput = container.querySelector('#spy-target-input');
+  const spyInput = container.querySelector('#global-target-input');
   const spyBtn = container.querySelector('#spy-attack-btn');
   const statusEl = container.querySelector('#spy-status-msg');
   const etaLabel = container.querySelector('#spy-eta-label');
@@ -1191,27 +1193,25 @@ async function onAttackOpponent(e) {
   const btn = e.currentTarget;
   const aid = parseInt(btn.getAttribute('data-aid'), 10);
 
-  const inputId = `target-uid-${aid}`;
-  const input = container.querySelector(`#${inputId}`);
-  const query = input.value.trim();
+  const query = (container.querySelector('#global-target-input')?.value.trim()) || '';
 
   if (!query) {
-    _setAttackBtnState(btn, 'error', 'Ziel eingeben');
+    _setAttackBtnState(btn, 'error', 'Enter a target empire');
     setTimeout(() => _setAttackBtnState(btn, 'ready'), 2000);
     return;
   }
 
-  _setAttackBtnState(btn, 'loading', 'Wird gesucht…');
+  _setAttackBtnState(btn, 'loading', 'Searching…');
   let targetUid, targetName;
   try {
     ({ uid: targetUid, name: targetName } = await rest.resolveEmpire(query));
   } catch (err) {
-    _setAttackBtnState(btn, 'error', err.message.slice(0, 20));
+    _setAttackBtnState(btn, 'error', err.message);
     setTimeout(() => _setAttackBtnState(btn, 'ready'), 2500);
     return;
   }
 
-  _setAttackBtnState(btn, 'loading', 'Startet…');
+  _setAttackBtnState(btn, 'loading', 'Launching…');
   try {
     const resp = await rest.attackOpponent(targetUid, aid);
     if (resp.success) {
@@ -1222,12 +1222,12 @@ async function onAttackOpponent(e) {
       btn.style.cursor = 'default';
       await rest.getMilitary();
     } else {
-      _setAttackBtnState(btn, 'error', (resp.error || 'Fehler').slice(0, 22));
+      _setAttackBtnState(btn, 'error', resp.error || 'Attack failed');
       setTimeout(() => _setAttackBtnState(btn, 'ready'), 3000);
     }
   } catch (err) {
     console.error('Failed to launch attack:', err);
-    _setAttackBtnState(btn, 'error', 'Netzwerkfehler');
+    _setAttackBtnState(btn, 'error', 'Network error');
     setTimeout(() => _setAttackBtnState(btn, 'ready'), 2500);
   }
 }
@@ -1306,6 +1306,7 @@ function _bindAutocomplete(input) {
     const empire = _filtered[idx];
     if (!empire) return;
     input.value = empire.name;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     dropdown.style.display = 'none';
   }
 
@@ -1367,22 +1368,37 @@ function renderArmies(data) {
     return;
   }
 
-  // Preserve scroll position and target-uid input values before re-render
+  // Preserve scroll position before re-render
   const scrollY = window.scrollY;
-
-  const savedTargets = {};
-  el.querySelectorAll('.target-uid-input').forEach((inp) => {
-    if (inp.value) savedTargets[inp.dataset.aid] = inp.value;
-  });
 
   // Store available critters and sprite lookup for all critters (incl. locked)
   _availableCritters = data.available_critters || [];
   _critterSprites = data.critter_sprites || {};
 
   const armies = data.armies || [];
+
   if (armies.length === 0) {
-    el.innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚔</div><p>No armies yet. Create one above to get started.</p></div>';
+    const activeSpies0 = (st.military?.attacks_outgoing || []).filter((a) => a.is_spy);
+    const spyDisabled0 = activeSpies0.length > 0;
+    const spyEta0 = spyDisabled0 ? fmtTravelTime(activeSpies0[0].eta_seconds) : '';
+    const spyTravelTime0 = st.summary?.travel_time_seconds;
+    const spyTravelLabel0 = spyTravelTime0 ? `✈ ${fmtTravelTime(Math.round(spyTravelTime0 / 2))}` : '';
+    el.innerHTML = `
+      <div class="army-group" style="margin-bottom:12px;">
+        <div class="army-name-header">
+          <div class="army-name">🕵 Spy Army</div>
+          <button id="spy-attack-btn" class="army-attack-btn" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.2;${spyDisabled0 ? 'opacity:0.5;cursor:default;' : ''}" ${spyDisabled0 ? 'disabled' : ''}>
+            ${spyDisabled0
+              ? `<span>🕵 Dispatched</span><span style="font-size:0.75em;opacity:0.7;">ETA: ${spyEta0}</span>`
+              : `<span>🕵 Send Spy</span><span id="spy-eta-label" style="font-size:0.75em;opacity:0.7;">${spyTravelLabel0}</span>`}
+          </button>
+        </div>
+        <p id="spy-army-desc" style="font-size:11px;color:var(--text-dim);margin:0 0 10px;">Sends a spy to the target empire. The spy reveals enemy defense information.</p>
+        <div id="spy-status-msg" style="font-size:11px;color:var(--text-dim);min-height:14px;"></div>
+      </div>
+      <div class="army-separator"></div>
+      <div class="empty-state"><div class="empty-icon">⚔</div><p>No armies yet. Create one below to get started.</p></div>`;
+    el.querySelector('#spy-attack-btn')?.addEventListener('click', onSpyAttack);
     return;
   }
 
@@ -1392,7 +1408,31 @@ function renderArmies(data) {
   const travelLabel = travelTime ? fmtTravelTime(travelTime) : '';
 
   el.classList.add('armies-container');
-  el.innerHTML = armies
+
+  // Build spy tile HTML
+  const activeSpies = (st.military?.attacks_outgoing || []).filter((a) => a.is_spy);
+  const spyDisabled = activeSpies.length > 0;
+  const spyEta = spyDisabled ? fmtTravelTime(activeSpies[0].eta_seconds) : '';
+  const spyTravelTime = st.summary?.travel_time_seconds;
+  const spyTravelLabel = spyTravelTime ? `✈ ${fmtTravelTime(Math.round(spyTravelTime / 2))}` : '';
+  const firstName = armies.length > 0 ? `"${escHtml(armies[0].name)}"` : 'your first army';
+  const spyTileHtml = `
+    <div class="army-group" style="margin-bottom:12px;">
+      <div class="army-name-header">
+        <div class="army-name">🕵 Spy Army</div>
+        <button id="spy-attack-btn" class="army-attack-btn" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.2;${spyDisabled ? 'opacity:0.5;cursor:default;' : ''}" ${spyDisabled ? 'disabled' : ''}>
+          ${spyDisabled
+            ? `<span>🕵 Dispatched</span><span style="font-size:0.75em;opacity:0.7;">ETA: ${spyEta}</span>`
+            : `<span>🕵 Send Spy</span><span id="spy-eta-label" style="font-size:0.75em;opacity:0.7;">${spyTravelLabel}</span>`}
+        </button>
+      </div>
+      <p id="spy-army-desc" style="font-size:11px;color:var(--text-dim);margin:0 0 10px;">Sends a spy to the target empire. Your spy disguises as ${firstName}. The spy reveals enemy defense information.</p>
+      <div id="spy-status-msg" style="font-size:11px;color:var(--text-dim);min-height:14px;"></div>
+    </div>
+    <div class="army-separator"></div>
+  `;
+
+  el.innerHTML = spyTileHtml + armies
     .map((a, idx) => {
       const realAtk = (st.military?.attacks_outgoing || []).find(
         (atk) => !atk.is_spy && atk.army_aid === a.aid
@@ -1407,14 +1447,14 @@ function renderArmies(data) {
         if (atk.phase === 'in_battle') return '⚔ In Battle';
         return '⚔ Attacking';
       };
-      const _atkEtaSpan = (atk) => {
+      const _atkEtaLine = (atk) => {
         if (atk.phase === 'in_siege') {
           const endTs = Date.now() + atk.siege_remaining_seconds * 1000;
-          return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:10px;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
+          return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:0.75em;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
         }
         if (atk.phase === 'travelling' || atk.phase === 'traveling') {
           const endTs = Date.now() + atk.eta_seconds * 1000;
-          return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:10px;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
+          return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:0.75em;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
         }
         return '';
       };
@@ -1422,36 +1462,34 @@ function renderArmies(data) {
         const emp = _empiresCache.find((e) => e.uid === atk.defender_uid);
         return emp ? emp.name : `#${atk.defender_uid}`;
       };
-      const _targetSpan = (atk) =>
-        `<span style="font-size:10px;opacity:0.7;">→ ${escHtml(_targetName(atk))}</span>`;
+      const _twoLine = (line1, line2) =>
+        `<span style="display:flex;flex-direction:column;align-items:center;gap:1px;"><span>${line1}</span>${line2}</span>`;
       if (spyAtk && realAtk) {
-        btnContent = `<span>${_atkPhaseLabel(realAtk)} · 🕵 "${a.name}"</span>${_targetSpan(realAtk)}${_atkEtaSpan(realAtk)}`;
+        btnContent = _twoLine(`${_atkPhaseLabel(realAtk)} · 🕵`, `<span style="font-size:0.75em;opacity:0.7;">→ ${escHtml(_targetName(realAtk))}</span>${_atkEtaLine(realAtk)}`);
       } else if (spyAtk) {
-        btnContent = `<span>🕵 "${a.name}"</span>${_targetSpan(spyAtk)}${_atkEtaSpan(spyAtk)}`;
+        btnContent = _twoLine(`🕵 Spy`, `<span style="font-size:0.75em;opacity:0.7;">→ ${escHtml(_targetName(spyAtk))}</span>${_atkEtaLine(spyAtk)}`);
       } else if (realAtk) {
-        btnContent = `<span>${_atkPhaseLabel(realAtk)}</span>${_targetSpan(realAtk)}${_atkEtaSpan(realAtk)}`;
+        btnContent = _twoLine(_atkPhaseLabel(realAtk), `<span style="font-size:0.75em;opacity:0.7;">→ ${escHtml(_targetName(realAtk))}</span>${_atkEtaLine(realAtk)}`);
       } else {
-        btnContent = `<span>⚔ Attack</span>${travelLabel ? `<span style="font-size:10px;opacity:0.7;">✈ ${travelLabel}</span>` : ''}`;
+        btnContent = travelLabel
+          ? _twoLine('⚔ Attack', `<span style="font-size:0.75em;opacity:0.7;">✈ ${travelLabel}</span>`)
+          : `<span>⚔ Attack</span>`;
       }
       return `
     <div class="army-group" data-aid="${a.aid}">
       <div class="army-name-header">
-        <div class="army-name">${a.name} <span class="army-id"></span></div>(ID: ${a.aid})
+        <div class="army-name">${a.name} <span class="army-id"></span></div>
         <button class="army-edit-btn" title="Edit army name" data-aid="${a.aid}">
           <span class="edit-icon">✎</span>
         </button>
-      </div>
-      <div class="army-attack-row">
-        <div class="empire-ac-wrap" style="position:relative;">
-          <input type="text" id="target-uid-${a.aid}" class="target-uid-input" placeholder="Ziel-Empire (Name oder ID)" data-aid="${a.aid}" autocomplete="off" style="padding-right:24px;" />
-          <button class="target-uid-clear" data-aid="${a.aid}" title="Löschen" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;">✕</button>
-          <div class="empire-ac-dropdown"></div>
-        </div>
         <button class="army-attack-btn" data-aid="${a.aid}" title="Launch attack"
-          style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;${btnDisabled ? 'opacity:0.5;cursor:default;' : ''}"
+          style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.2;${btnDisabled ? 'opacity:0.5;cursor:default;' : ''}"
           ${btnDisabled ? 'disabled' : ''}>
           ${btnContent}
         </button>
+      </div>
+      <div class="army-attack-row">
+        <div class="army-attack-error" style="font-size:11px;color:var(--danger);min-height:14px;"></div>
       </div>
       <div class="waves-container">
         ${
@@ -1556,34 +1594,25 @@ function renderArmies(data) {
     });
   });
 
-  // Attach attack button listeners
-  el.querySelectorAll('.army-attack-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => onAttackOpponent(e));
-  });
+  // Attach spy attack button (rendered inside #army-list now)
+  const spyBtn = el.querySelector('#spy-attack-btn');
+  if (spyBtn) spyBtn.addEventListener('click', onSpyAttack);
 
-  // Restore target-uid values that were present before re-render
-  Object.entries(savedTargets).forEach(([aid, val]) => {
-    const inp = el.querySelector(`.target-uid-input[data-aid="${aid}"]`);
-    if (inp) inp.value = val;
+  // Attach attack button listeners
+  el.querySelectorAll('.army-attack-btn:not(#spy-attack-btn)').forEach((btn) => {
+    btn.addEventListener('click', (e) => onAttackOpponent(e));
   });
 
   // Initialize critter sprite canvases (wave buttons)
   _initCritterCanvases(el);
 
-  // Bind autocomplete on all target-empire inputs
-  el.querySelectorAll('.target-uid-input').forEach(_bindAutocomplete);
-
-  // Bind clear buttons
-  el.querySelectorAll('.target-uid-clear').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const aid = btn.getAttribute('data-aid');
-      const inp = el.querySelector(`#target-uid-${aid}`);
-      if (inp) inp.value = '';
-    });
-  });
-
-  // Restore scroll position after re-render
-  requestAnimationFrame(() => window.scrollTo(0, scrollY));
+  // Restore scroll position after re-render (skip if we just navigated here externally)
+  if (_resetScroll) {
+    _resetScroll = false;
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+  } else {
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
+  }
 
   _updateSpyButton();
 }

@@ -11,6 +11,7 @@
 import { HexGrid, getTileType, registerTileType } from '../lib/hex_grid.js';
 import { hexKey } from '../lib/hex.js';
 import { eventBus } from '../events.js';
+import { pageTitle } from '../lib/page_title.js';
 import { rest } from '../rest.js';
 import { debug } from '../debug.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY } from '../lib/eras.js';
@@ -80,65 +81,10 @@ let grid = null;
 
 let _pendingAttackId = null;
 let _spectateDefenderUid = null;
+/** uid → empire name, populated once on init */
+let _uidToEmpireName = {};
 let _lastCastleEra = null;
 let _structureEraRoman = {};
-
-// ── Client-side resource tick ────────────────────────────────
-let _tickTimer = null;
-let _tickSummary = null;
-let _tickTs = null;
-
-function _calcRate(resourceType, summary) {
-  const fx = summary.effects || {};
-  const citizens = summary.citizens || {};
-  const effCe = summary.citizen_effect || 0; // backend already sends effective_citizen_effect
-  if (resourceType === 'life') return (summary.base_life ?? 0) + (fx.life_regen_modifier || 0);
-  if (resourceType === 'gold') {
-    const offset = (summary.base_gold ?? 0) + (fx.gold_offset || 0);
-    const mod = (citizens.merchant || 0) * effCe
-      + ((citizens.artist || 0) + (citizens.scientist || 0)) * (fx.other_citizen_gold_modifier || 0)
-      + (fx.gold_modifier || 0);
-    return offset * (1 + mod);
-  }
-  const offset = (summary.base_culture ?? 0) + (fx.culture_offset || 0);
-  const mod = (citizens.artist || 0) * effCe + (fx.culture_modifier || 0);
-  return offset * (1 + mod);
-}
-
-function _fmtTitleResource(value, digits = 0) {
-  const normalized = value ?? 0;
-  if (normalized >= 1000) return Math.floor(normalized / 1000) + 'k';
-  return Math.floor(normalized * Math.pow(10, digits)) / Math.pow(10, digits);
-}
-
-function _tickResources() {
-  if (!_tickSummary || !_tickTs) return;
-  const elapsedS = isGameFrozen() ? 0 : (Date.now() - _tickTs) / 1000;
-  const res = _tickSummary.resources || {};
-  const gold = (res.gold || 0) + _calcRate('gold', _tickSummary) * elapsedS;
-  const culture = (res.culture || 0) + _calcRate('culture', _tickSummary) * elapsedS;
-  const life = (res.life || 0) + _calcRate('life', _tickSummary) * elapsedS;
-  const maxLife = _tickSummary.max_life ?? life;
-  const clampedLife = Math.min(life, maxLife);
-  const titleEl = container?.querySelector('.battle-title');
-  if (!titleEl) return;
-  const g = titleEl.querySelector('.title-gold');
-  const c = titleEl.querySelector('.title-culture');
-  const l = titleEl.querySelector('.title-life');
-  if (g) g.textContent = '💰 ' + _fmtTitleResource(gold);
-  if (c) c.textContent = '🎭 ' + _fmtTitleResource(culture);
-  if (l) {
-    const icon = l.querySelector('span');
-    if (icon) {
-      const textNode = l.childNodes[l.childNodes.length - 1];
-      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-        textNode.textContent = ' ' + _fmtTitleResource(clampedLife);
-      }
-    } else {
-      l.textContent = '❤ ' + _fmtTitleResource(clampedLife);
-    }
-  }
-}
 
 function _buildStructureEraRoman() {
   _structureEraRoman = {};
@@ -214,40 +160,11 @@ function _updateCastleSprite(eraKey) {
 
 // ── Battle title ──────────────────────────────────────────────
 function _setBattleTitle(label) {
-  const titleEl = container?.querySelector('.battle-title');
-  if (!titleEl) return;
-  if (st?.summary) {
-    _tickSummary = st.summary;
-    _tickTs = Date.now();
-    if (!_tickTimer) _tickTimer = setInterval(_tickResources, 1000);
-  }
-  const resources = st?.summary?.resources || {};
-  titleEl.textContent = '';
-  const labelSpan = document.createElement('span');
-  labelSpan.textContent = label + ' ';
-  const efxBtn = document.createElement('button');
-  efxBtn.id = 'defense-effects-btn';
-  efxBtn.className = 'prod-info-btn';
-  efxBtn.title = 'Show defense effects';
-  efxBtn.textContent = '🔍';
-  labelSpan.appendChild(efxBtn);
-  titleEl.appendChild(labelSpan);
-  const resourceWrap = document.createElement('span');
-  resourceWrap.className = 'title-resources';
-  const goldEl = document.createElement('span');
-  goldEl.className = 'title-gold';
-  goldEl.textContent = '💰 ' + _fmtTitleResource(resources.gold);
-  const cultureEl = document.createElement('span');
-  cultureEl.className = 'title-culture';
-  cultureEl.textContent = '🎭 ' + _fmtTitleResource(resources.culture);
-  const lifeEl = document.createElement('span');
-  lifeEl.className = 'title-life';
-  const lifeIcon = document.createElement('span');
-  lifeIcon.style.color = '#e05c5c';
-  lifeIcon.textContent = '❤';
-  lifeEl.append(lifeIcon, document.createTextNode(' ' + _fmtTitleResource(resources.life)));
-  resourceWrap.append(goldEl, cultureEl, lifeEl);
-  titleEl.append(resourceWrap);
+  pageTitle.set(label, {
+    id: 'defense-effects-btn',
+    title: 'Show defense effects',
+    onClick: () => _showDefenseEffectsOverlay(),
+  });
 }
 
 // ── Defense Effects Overlay ─────────────────────────────────
@@ -300,6 +217,10 @@ async function _showDefenseEffectsOverlay() {
   const waveTotal = effects.wave_delay_offset || 0;
   const restoreTotal = effects.restore_life_after_loss_offset || 0;
   const siegeModifier = effects.siege_time_modifier || 0;
+  const basePerArmy = summary.base_siege_construction_speed_per_army_modifier ?? 0.05;
+  const resilienceModifier = effects.siege_construction_speed_per_army_modifier || 0;
+  const effectivePerArmy = Math.max(0, basePerArmy - resilienceModifier);
+  const maxSiegePenalty = effects.max_siege_construction_speed_modifier || 0;
 
   function section(icon, title, color, totalStr, rowsHtml) {
     return `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>${rowsHtml}<div class="panel-row" style="border-top:1px solid #444;margin-top:6px;padding-top:6px"><span class="label" style="color:#ddd;font-weight:bold">Total</span><span class="value" style="color:#fff;font-weight:bold">${totalStr}</span></div></div>`;
@@ -350,12 +271,41 @@ async function _showDefenseEffectsOverlay() {
   const tiles = grid ? [...grid.tiles.values()] : [];
   const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles)}</div>`;
 
+  // ── Siege Construction Disruption section ──────────────────
+  let siegeConstrRows = '';
+  // Base per-army penalty row
+  siegeConstrRows += `<div class="panel-row"><span class="label">+${(basePerArmy * 100).toFixed(0)}% per army</span><span class="value" style="color:#888">Base disruption</span></div>`;
+  // Resilience contributions (reduce the per-army penalty)
+  const resilienceSrc = effectSources['siege_construction_speed_per_army_modifier'] || {};
+  for (const [iid, v] of Object.entries(resilienceSrc.buildings || {}))
+    if (v) siegeConstrRows += `<div class="panel-row"><span class="label">−${(v * 100).toFixed(0)}% per army</span><span class="value" style="color:#ccc">${_name(iid)}</span></div>`;
+  for (const [iid, v] of Object.entries(resilienceSrc.knowledge || {}))
+    if (v) siegeConstrRows += `<div class="panel-row"><span class="label">−${(v * 100).toFixed(0)}% per army</span><span class="value" style="color:#ccc">${_name(iid)}</span></div>`;
+  for (const [iid, v] of Object.entries(resilienceSrc.artifacts || {}))
+    if (v) siegeConstrRows += `<div class="panel-row"><span class="label">−${(v * 100).toFixed(0)}% per army</span><span class="value" style="color:#FFD700">⚜ ${_name(iid)}</span></div>`;
+  if (resilienceSrc.ruler && rulerName)
+    siegeConstrRows += `<div class="panel-row"><span class="label">−${(resilienceSrc.ruler * 100).toFixed(0)}% per army</span><span class="value" style="color:#FFD700">👑 ${rulerName}</span></div>`;
+  // Effective per-army result
+  siegeConstrRows += `<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"><span class="label" style="font-weight:bold">= +${(effectivePerArmy * 100).toFixed(0)}% per army</span><span class="value" style="color:#888">Effective disruption</span></div>`;
+  // Max cap contributions
+  siegeConstrRows += `<div class="panel-row" style="margin-top:10px;border-top:1px solid #333;padding-top:8px"><span class="label" style="color:#888;font-size:0.85em">Cap (max disruption)</span></div>`;
+  const maxSrc = effectSources['max_siege_construction_speed_modifier'] || {};
+  for (const [iid, v] of Object.entries(maxSrc.buildings || {}))
+    if (v) siegeConstrRows += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value" style="color:#ccc">${_name(iid)}</span></div>`;
+  for (const [iid, v] of Object.entries(maxSrc.knowledge || {}))
+    if (v) siegeConstrRows += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value" style="color:#ccc">${_name(iid)}</span></div>`;
+  if (maxSrc.era)
+    siegeConstrRows += `<div class="panel-row"><span class="label">+${(maxSrc.era * 100).toFixed(0)}%</span><span class="value" style="color:#87CEEB">Era</span></div>`;
+  if (maxSiegePenalty > 0)
+    siegeConstrRows += `<div class="panel-row" style="border-top:1px solid #555;margin:4px 0;padding-top:4px"><span class="label" style="font-weight:bold">= +${(maxSiegePenalty * 100).toFixed(0)}% max disruption</span></div>`;
+
   const box = overlay.querySelector('.prod-overlay-box');
   box.innerHTML = `
     <button class="prod-overlay-close" title="Close">✕</button>
     <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">🛡 Defense Effects</div>
     ${eraStatsHTML}
     ${sectionNoTotal('⏳', 'Siege Delay', '#ffa726', siegeRows)}
+    ${sectionNoTotal('🏗', 'Siege Construction Disruption', '#ffa726', siegeConstrRows)}
     ${section('🌊', 'Wave Delay', '#4fc3f7', `+${(waveTotal / 1000).toFixed(1)}s`, waveRows)}
     ${section('❤', 'Restore Life after Defeat', '#e05c5c', `+${restoreTotal.toFixed(1)}`, restoreRows)}
     ${section('❤️', 'Battle Life Regen', '#e05c5c', `+${battleRegenMod.toFixed(3)}/s extra while defending`, battleRegenRows)}
@@ -452,6 +402,7 @@ function _makeBattleUiCtx() {
     rest,
     hexKey,
     placement: null, // set after _placement is created
+    getWs: () => _ws,
   };
 }
 
@@ -560,7 +511,7 @@ function _initCanvas() {
 
       const isTower =
         tileData &&
-        !['void', 'empty', 'path', 'castle', 'spawnpoint'].includes(tileData.type) &&
+        !['void', 'empty', 'path', 'castle', 'spawnpoint', 'neighbor'].includes(tileData.type) &&
         !isOnPath;
       if (isTower) {
         const isMobile = window.innerWidth <= 1100;
@@ -585,6 +536,13 @@ function _initCanvas() {
         } else if (tileData?.type === 'empty' && _spectateDefenderUid == null) {
           _placement?.openPlacementMenu(q, r);
         }
+        return;
+      }
+
+      if (tileData?.type === 'neighbor') {
+        grid.rangeOverlay = null;
+        grid._dirty = true;
+        _showTileDetails(q, r, tileData);
         return;
       }
 
@@ -628,12 +586,35 @@ function _initCanvas() {
 function _showTileDetails(q, r, tile) {
   const overlayBody = container.querySelector('#tower-overlay-body');
   const overlay = container.querySelector('#tower-overlay');
+  const overlayTitle = overlay?.querySelector('.tile-overlay__header h3');
   const propsContent = container.querySelector('#tower-props-content');
+  const propsHeader = container.querySelector('#tower-props .panel-header');
 
   if (!tile) return;
 
   const t = getTileType(tile.type);
   const _isDefender = _spectateDefenderUid == null;
+
+  // neighbor tile (fog of war area — belongs to another empire)
+  if (tile.type === 'neighbor') {
+    const ownerName = tile.uid != null ? (_uidToEmpireName[tile.uid] || `Empire #${tile.uid}`) : 'Unclaimed';
+    const ownerColor = tile.uid != null ? 'var(--danger)' : 'var(--text-dim)';
+    const ownerIcon = tile.uid != null ? '⚔ ' : '';
+    const title = tile.uid != null ? 'Enemy Territory' : 'Fog of War';
+    const html =
+      '<div class="props-tile">' +
+      '<div class="props-row"><span class="label">Owner</span>' +
+      '<span class="value" style="color:' + ownerColor + ';">' + ownerIcon + ownerName + '</span></div>' +
+      '</div>';
+    if (overlayTitle) overlayTitle.textContent = title;
+    if (propsHeader) propsHeader.textContent = title;
+    if (propsContent) propsContent.innerHTML = html;
+    if (overlayBody) {
+      overlayBody.innerHTML = html;
+      if (window.innerWidth <= 1100) overlay.style.display = 'flex';
+    }
+    return;
+  }
 
   // void tile — buy option
   if (tile.type === 'void') {
@@ -676,6 +657,7 @@ function _showTileDetails(q, r, tile) {
           if (response && response.tiles) {
             grid.fromJSON({ tiles: response.tiles });
             grid.addVoidNeighbors();
+            _refetchNeighbors();
             const path = response.path ? response.path.map(([q, r]) => ({ q, r })) : null;
             grid.setDisplayPath(path);
             grid._dirty = true;
@@ -893,13 +875,24 @@ function _setRangeOverlay(q, r, tileData) {
 
 async function _loadMapBackground() {
   try {
-    const res = await fetch('/api/maps');
-    if (!res.ok) return;
-    const { maps } = await res.json();
-    if (maps && maps.length > 0 && grid) await grid.setMapBackground(maps[0].url);
+    if (grid) await grid.setMapBackground('/assets/sprites/maps/grass4.webp');
   } catch (e) {
     console.warn('[Battle] map background not loaded:', e.message);
   }
+}
+
+/** Refetch viewport-bounded fog/enemy tiles for the current pan/zoom. */
+function _refetchNeighbors() {
+  if (!grid) return;
+  rest.getMapNeighbors(grid.getVisibleHexBounds())
+    .then(d => {
+      if (d?.vision_radius != null) grid.visionRadius = d.vision_radius;
+      grid.setNeighborTiles(d?.neighbor_tiles || []);
+      grid._enemyPaths.clear();
+      for (const [uid, path] of Object.entries(d?.enemy_paths || {}))
+        grid.setEnemyPath(Number(uid), path);
+    })
+    .catch(() => {});
 }
 
 // ── View lifecycle ──────────────────────────────────────────
@@ -925,15 +918,12 @@ function init(el, _api, _state) {
       .prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
       .prod-overlay-section{margin-bottom:14px}
       .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
-      .prod-info-btn{background:none;border:none;color:#4fc3f7;font-size:0.95em;cursor:pointer;padding:0 0 0 5px;line-height:1;vertical-align:middle;opacity:.8}
-      .prod-info-btn:hover{opacity:1}
     `;
     document.head.appendChild(s);
   }
 
   container.innerHTML = `
     <div class="battle-view">
-      <h2 class="battle-title">⚔ Defense<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
 
       <div class="battle-status" id="battle-status">
         <div id="battle-status-info" style="display:none;grid-column:1/-1;display:none;">
@@ -1080,9 +1070,15 @@ function init(el, _api, _state) {
   };
   document.addEventListener('keydown', _onKeyDown);
   _unsub.push(() => document.removeEventListener('keydown', _onKeyDown));
+
+  // On mobile: move battle-status into canvas-wrap so it floats at top: 0 of the map
+  const _statusEl = container.querySelector('#battle-status');
+  const _canvasWrap = container.querySelector('#canvas-wrap');
+  if (_statusEl && _canvasWrap) _canvasWrap.appendChild(_statusEl);
 }
 
 async function enter() {
+  document.getElementById('app')?.classList.add('full-bleed');
   _debugLogs = [];
   _updateDebugPanel();
   _initCanvas();
@@ -1147,10 +1143,7 @@ async function enter() {
     eventBus.on('state:summary', (data) => {
       if (!_ws?.isConnected()) _ws?.connectIfNeeded();
       if (_spectateDefenderUid == null && data?.current_era) _updateCastleSprite(data.current_era);
-      if (data && st?.summary) {
-        _tickSummary = st.summary;
-        _tickTs = Date.now();
-      }
+      if (data && st?.summary) { /* resource tick handled by page_title.js */ }
     })
   );
 
@@ -1182,9 +1175,11 @@ async function enter() {
     try {
       const response = await rest.loadMap();
       if (response && response.tiles) {
+        grid._hasUserInteracted = false; // force center on initial map load
         grid.fromJSON({ tiles: response.tiles });
         grid.addVoidNeighbors();
-        grid._centerGrid();
+        grid.onViewportChange = _refetchNeighbors;
+        _refetchNeighbors();
         const path = response.path ? response.path.map(([q, r]) => ({ q, r })) : null;
         grid.setDisplayPath(path);
         if (!path) {
@@ -1216,9 +1211,14 @@ async function enter() {
 
   _battleUi.startStatusLoop();
   _loadMapBackground();
+  rest.getEmpires().then(d => {
+    _uidToEmpireName = {};
+    for (const e of (d?.empires || [])) _uidToEmpireName[e.uid] = e.name;
+  }).catch(() => {});
 }
 
 function leave() {
+  document.getElementById('app')?.classList.remove('full-bleed');
   _releaseWakeLock();
   const wrap = container.querySelector('#canvas-wrap');
   if (wrap) wrap.style.height = '';
@@ -1235,12 +1235,6 @@ function leave() {
     grid = null;
   }
   _battleUi.stopStatusLoop();
-  if (_tickTimer) {
-    clearInterval(_tickTimer);
-    _tickTimer = null;
-  }
-  _tickSummary = null;
-  _tickTs = null;
   _ws?.disconnect();
 }
 

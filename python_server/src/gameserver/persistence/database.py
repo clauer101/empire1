@@ -17,6 +17,37 @@ import aiosqlite
 log = logging.getLogger(__name__)
 
 _SCHEMA = """\
+CREATE TABLE IF NOT EXISTS empire_stats (
+    uid              INTEGER PRIMARY KEY,
+    attacks_won_human   INTEGER DEFAULT 0,
+    attacks_lost_human  INTEGER DEFAULT 0,
+    attacks_won_ai      INTEGER DEFAULT 0,
+    attacks_lost_ai     INTEGER DEFAULT 0,
+    defense_won_human   INTEGER DEFAULT 0,
+    defense_lost_human  INTEGER DEFAULT 0,
+    defense_won_ai      INTEGER DEFAULT 0,
+    defense_lost_ai     INTEGER DEFAULT 0,
+    spies_sent          INTEGER DEFAULT 0,
+    towers_sold         INTEGER DEFAULT 0,
+    towers_placed       INTEGER DEFAULT 0,
+    artifacts_stolen         INTEGER DEFAULT 0,
+    longest_battle_ms        INTEGER DEFAULT 0,
+    critters_killed          INTEGER DEFAULT 0,
+    culture_stolen           REAL    DEFAULT 0,
+    research_stolen          REAL    DEFAULT 0,
+    culture_won              REAL    DEFAULT 0,
+    research_won             REAL    DEFAULT 0,
+    defense_gold_earned      REAL    DEFAULT 0,
+    first_era_reached        INTEGER DEFAULT 0,
+    peak_artifacts_held      INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS artifact_holds (
+    uid               INTEGER NOT NULL,
+    artifact_iid      TEXT NOT NULL,
+    acquired_at       REAL,
+    total_held_secs   REAL DEFAULT 0,
+    PRIMARY KEY (uid, artifact_iid)
+);
 CREATE TABLE IF NOT EXISTS users (
     uid INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
@@ -46,6 +77,7 @@ CREATE TABLE IF NOT EXISTS login_events (
     uid INTEGER NOT NULL,
     ip TEXT NOT NULL DEFAULT '',
     fingerprint TEXT NOT NULL DEFAULT '',
+    device_id TEXT NOT NULL DEFAULT '',
     logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS ix_login_events_uid ON login_events(uid);
@@ -90,11 +122,28 @@ class Database:
         self._conn = await aiosqlite.connect(self._db_path)
         self._conn.row_factory = aiosqlite.Row
         await self._conn.executescript(_SCHEMA)
+        # Migrate: add peak_artifacts_held column to empire_stats if missing
+        try:
+            await self._conn.execute("SELECT peak_artifacts_held FROM empire_stats LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute(
+                "ALTER TABLE empire_stats ADD COLUMN peak_artifacts_held INTEGER DEFAULT 0"
+            )
         # Migrate: add last_seen column if missing
         try:
             await self._conn.execute("SELECT last_seen FROM users LIMIT 1")
         except aiosqlite.OperationalError:
             await self._conn.execute("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP")
+        # Migrate: add device_id column to login_events if missing
+        try:
+            await self._conn.execute("SELECT device_id FROM login_events LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute("ALTER TABLE login_events ADD COLUMN device_id TEXT NOT NULL DEFAULT ''")
+        # Index on device_id is created here (not in _SCHEMA) so it runs *after*
+        # the migration above adds the column to pre-existing tables.
+        await self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS ix_login_events_did ON login_events(device_id)"
+        )
         await self._conn.commit()
         log.info("Database connected: %s", self._db_path)
 
@@ -211,52 +260,78 @@ class Database:
                 for r in rows
             ]
 
-    async def record_login(self, uid: int, ip: str, fingerprint: str) -> None:
-        """Record a login event with IP and browser fingerprint."""
+    async def record_login(self, uid: int, ip: str, fingerprint: str, device_id: str = "") -> None:
+        """Record a login event with IP, browser fingerprint, and persistent device UUID."""
         assert self._conn is not None
         await self._conn.execute(
-            "INSERT INTO login_events (uid, ip, fingerprint) VALUES (?, ?, ?)",
-            (uid, ip or '', fingerprint or ''),
+            "INSERT INTO login_events (uid, ip, fingerprint, device_id) VALUES (?, ?, ?, ?)",
+            (uid, ip or '', fingerprint or '', device_id or ''),
         )
         await self._conn.commit()
 
     async def get_device_clusters(self) -> list[dict[str, Any]]:
-        """Return pairs of UIDs that share an IP or browser fingerprint."""
+        """Return pairs of UIDs that share device signals, with a risk score.
+
+        Score weights:
+          +70  shared device_id (localStorage UUID — strong signal)
+          +55  shared fingerprint (canvas+hardware hash — strong signal)
+          +30  shared IP, recent (within 30 days)
+          +15  shared IP, older
+        Max score is capped at 100. Pairs with score < 15 are excluded.
+        """
         assert self._conn is not None
         sql = """
-        SELECT a.uid AS uid_a, b.uid AS uid_b,
-               GROUP_CONCAT(DISTINCT CASE WHEN a.ip != '' AND a.ip = b.ip THEN a.ip END) AS shared_ips,
-               GROUP_CONCAT(DISTINCT CASE WHEN a.fingerprint != '' AND a.fingerprint = b.fingerprint THEN a.fingerprint END) AS shared_fps
+        SELECT
+            a.uid AS uid_a,
+            b.uid AS uid_b,
+            GROUP_CONCAT(DISTINCT CASE WHEN a.ip != '' AND a.ip = b.ip THEN a.ip END)
+                AS shared_ips,
+            GROUP_CONCAT(DISTINCT CASE WHEN a.fingerprint != '' AND a.fingerprint = b.fingerprint THEN a.fingerprint END)
+                AS shared_fps,
+            GROUP_CONCAT(DISTINCT CASE WHEN a.device_id != '' AND a.device_id = b.device_id THEN a.device_id END)
+                AS shared_dids,
+            MAX(CASE WHEN a.device_id != '' AND a.device_id = b.device_id THEN 1 ELSE 0 END)
+                AS has_did,
+            MAX(CASE WHEN a.fingerprint != '' AND a.fingerprint = b.fingerprint THEN 1 ELSE 0 END)
+                AS has_fp,
+            MAX(CASE WHEN a.ip != '' AND a.ip = b.ip
+                          AND a.logged_in_at >= datetime('now', '-30 days')
+                          AND b.logged_in_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END)
+                AS has_recent_ip,
+            MAX(CASE WHEN a.ip != '' AND a.ip = b.ip
+                          AND NOT (a.logged_in_at >= datetime('now', '-30 days')
+                               AND b.logged_in_at >= datetime('now', '-30 days')) THEN 1 ELSE 0 END)
+                AS has_old_ip
         FROM login_events a
-        JOIN login_events b ON (a.ip = b.ip OR a.fingerprint = b.fingerprint)
-                            AND a.uid < b.uid
-        WHERE a.ip != '' OR a.fingerprint != ''
+        JOIN login_events b
+            ON (a.ip = b.ip OR a.fingerprint = b.fingerprint OR a.device_id = b.device_id)
+            AND a.uid < b.uid
+        WHERE a.device_id != '' OR a.fingerprint != '' OR a.ip != ''
         GROUP BY a.uid, b.uid
         """
         async with self._conn.execute(sql) as cursor:
             rows = await cursor.fetchall()
-            return [
-                {
-                    "uid_a": r[0],
-                    "uid_b": r[1],
-                    "shared_ips": r[2] or "",
-                    "shared_fps": r[3] or "",
-                }
-                for r in rows
-            ]
+        results = []
+        for r in rows:
+            score = min(100,
+                int(r[5]) * 70 +   # shared device_id
+                int(r[6]) * 55 +   # shared fingerprint
+                int(r[7]) * 30 +   # shared recent IP
+                int(r[8]) * 15     # shared old IP
+            )
+            if score < 15:
+                continue
+            results.append({
+                "uid_a": r[0],
+                "uid_b": r[1],
+                "shared_ips": r[2] or "",
+                "shared_fps": r[3] or "",
+                "shared_dids": r[4] or "",
+                "score": score,
+            })
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results
 
-    async def delete_old_messages(self, max_age_days: int = 7) -> int:
-        """Delete messages older than max_age_days. Returns number of deleted rows."""
-        assert self._conn is not None
-        async with self._conn.execute(
-            "DELETE FROM messages WHERE sent_at < datetime('now', ?)",
-            (f"-{max_age_days} days",),
-        ) as cursor:
-            deleted = cursor.rowcount
-        await self._conn.commit()
-        if deleted:
-            log.info("MessageStore: deleted %d messages older than %d days", deleted, max_age_days)
-        return deleted
 
     # -- Message operations ----------------------------------------------
 
@@ -504,3 +579,120 @@ class Database:
             ),
         )
         await self._conn.commit()
+
+    # -- Empire stats --------------------------------------------------------
+
+    async def record_empire_stat(self, uid: int, **increments: int) -> None:
+        """Upsert empire_stats row, incrementing the given counters."""
+        assert self._conn is not None
+        try:
+            cols = ", ".join(increments.keys())
+            placeholders = ", ".join("?" for _ in increments)
+            updates = ", ".join(f"{k} = {k} + ?" for k in increments)
+            await self._conn.execute(
+                f"INSERT INTO empire_stats (uid, {cols}) VALUES (?, {placeholders})"
+                f" ON CONFLICT(uid) DO UPDATE SET {updates}",
+                (uid, *increments.values(), *increments.values()),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_empire_stat failed uid=%d", uid, exc_info=True)
+
+    async def record_empire_stat_float(self, uid: int, field: str, value: float) -> None:
+        """Upsert empire_stats row, adding a float value to the given field."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                f"INSERT INTO empire_stats (uid, {field}) VALUES (?, ?)"
+                f" ON CONFLICT(uid) DO UPDATE SET {field} = {field} + excluded.{field}",
+                (uid, value),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_empire_stat_float failed uid=%d field=%s", uid, field, exc_info=True)
+
+    async def record_empire_stat_max(self, uid: int, field: str, value: int) -> None:
+        """Update field only if value > current."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                f"INSERT INTO empire_stats (uid, {field}) VALUES (?, ?)"
+                f" ON CONFLICT(uid) DO UPDATE SET {field} = MAX({field}, excluded.{field})",
+                (uid, value),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_empire_stat_max failed uid=%d field=%s", uid, field, exc_info=True)
+
+    async def record_artifact_acquired(self, uid: int, artifact_iid: str, ts: float) -> None:
+        """Upsert artifact_holds row, setting acquired_at = ts, and update peak_artifacts_held."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                "INSERT INTO artifact_holds (uid, artifact_iid, acquired_at) VALUES (?, ?, ?)"
+                " ON CONFLICT(uid, artifact_iid) DO UPDATE SET acquired_at = excluded.acquired_at",
+                (uid, artifact_iid, ts),
+            )
+            # Count how many artifacts this empire currently holds (acquired_at IS NOT NULL)
+            async with self._conn.execute(
+                "SELECT COUNT(*) FROM artifact_holds WHERE uid = ? AND acquired_at IS NOT NULL",
+                (uid,),
+            ) as cur:
+                row = await cur.fetchone()
+            current_count = row[0] if row else 1
+            # Update peak if current count exceeds previous peak
+            await self._conn.execute(
+                "INSERT INTO empire_stats (uid, peak_artifacts_held) VALUES (?, ?)"
+                " ON CONFLICT(uid) DO UPDATE SET"
+                " peak_artifacts_held = MAX(peak_artifacts_held, excluded.peak_artifacts_held)",
+                (uid, current_count),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_artifact_acquired failed uid=%d iid=%s", uid, artifact_iid, exc_info=True)
+
+    async def record_artifact_lost(self, uid: int, artifact_iid: str, ts: float) -> None:
+        """Accumulate hold duration into total_held_secs and clear acquired_at."""
+        assert self._conn is not None
+        try:
+            async with self._conn.execute(
+                "SELECT acquired_at FROM artifact_holds WHERE uid = ? AND artifact_iid = ?",
+                (uid, artifact_iid),
+            ) as cur:
+                row = await cur.fetchone()
+            if row and row[0] is not None:
+                delta = max(0.0, ts - row[0])
+                await self._conn.execute(
+                    "UPDATE artifact_holds SET total_held_secs = total_held_secs + ?, acquired_at = NULL"
+                    " WHERE uid = ? AND artifact_iid = ?",
+                    (delta, uid, artifact_iid),
+                )
+                await self._conn.commit()
+        except Exception:
+            log.warning("record_artifact_lost failed uid=%d iid=%s", uid, artifact_iid, exc_info=True)
+
+    async def get_empire_stats(self, uid: int) -> dict[str, Any] | None:
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT * FROM empire_stats WHERE uid = ?", (uid,)
+        ) as cur:
+            row = await cur.fetchone()
+            return dict(row) if row else None
+
+    async def get_all_empire_stats(self) -> list[dict[str, Any]]:
+        assert self._conn is not None
+        async with self._conn.execute("SELECT * FROM empire_stats") as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def get_artifact_hold_totals(self) -> list[dict[str, Any]]:
+        """Return (uid, artifact_iid, held_secs) including ongoing holds."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, artifact_iid,"
+            " total_held_secs + CASE WHEN acquired_at IS NOT NULL"
+            " THEN (unixepoch() - acquired_at) ELSE 0 END AS held_secs"
+            " FROM artifact_holds"
+        ) as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]

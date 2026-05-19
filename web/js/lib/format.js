@@ -51,8 +51,10 @@ const EFFECT_META = {
   gold_lump_sum_on_skill_up:      ['💰', 'Skill-up gold reward',     (v) => `+${v.toLocaleString('de-DE')} gold`,                                                     'Grants a one-time gold bonus when this skill level is reached'],
   culture_lump_sum_on_skill_up:   ['🎭', 'Skill-up culture reward',  (v) => `+${v.toLocaleString('de-DE')} culture`,                                                  'Grants a one-time culture bonus when this skill level is reached'],
   // -- Combat
-  restore_life_during_battle_modifier: ['❤️', 'Battle life regen',   (v) => `+${v}/s`,                                                                              'Adds to life regeneration while actively defending against an attack'],
+  restore_life_during_battle_modifier: ['❤️', 'Battle life regen',   (v) => `+${v}/s`,                                                                              'Adds to life regeneration while in battle'],
   enemy_siege_time_modifier:      ['⚔️', 'Siege corruption',         (v) => `-${(v * 100).toFixed(0)}% enemy siege`,                                                  'Reduces the siege duration of your own attacks'],
+  max_siege_construction_speed_modifier:      ['🏗', 'Max siege disruption', (v) => `-${(v * 100).toFixed(0)}% build speed`,   'Maximum construction speed reduction during siege'],
+  siege_construction_speed_per_army_modifier: ['🏗', 'Siege resilience',    (v) => `-${(v * 100).toFixed(0)}% per army`,        'Reduces the construction speed penalty per besieging army'],
 };
 
 function _fmtDuration(secs) {
@@ -146,6 +148,20 @@ export function fmtTowerEffects(effects) {
       return Math.abs(v) < 1 ? `${name}: ${sign}${(v * 100).toFixed(0)}%` : `${name}: ${sign}${v}`;
     })
     .join(', ');
+}
+
+/** Format a resource value: 3–4 significant digits, floor, integer life. */
+export function fmtRes(value) {
+  const v = Math.floor(value ?? 0);
+  if (v >= 1_000_000) {
+    const d = v / 1_000_000;
+    return (d >= 100 ? Math.floor(d) : d >= 10 ? d.toFixed(1) : d.toFixed(2)) + 'M';
+  }
+  if (v >= 1_000) {
+    const d = v / 1_000;
+    return (d >= 100 ? Math.floor(d) : d >= 10 ? d.toFixed(1) : d.toFixed(2)) + 'k';
+  }
+  return String(v);
 }
 
 export function fmtEffort(n) {

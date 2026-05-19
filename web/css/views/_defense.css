@@ -142,9 +142,7 @@
   width: 100%;
   height: 100%;
   cursor: crosshair;
-  /* See .battle-canvas-wrap canvas comment — same crisp-edges/Windows fix */
   image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges; /* Firefox fallback */
 }
 
 /* ── Properties panel ────────────────────────────────────── */
@@ -386,10 +384,6 @@
   gap: 8px;
 }
 
-.battle-view > .battle-title {
-  margin-bottom: 0;
-}
-
 .battle-header {
   display: flex;
   justify-content: space-between;
@@ -399,39 +393,6 @@
   flex-shrink: 0;
 }
 
-.battle-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-bright);
-  margin: 0 0 20px;
-  letter-spacing: 0.3px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  position: sticky;
-  top: -24px;
-  z-index: 10;
-  background: var(--surface);
-  margin-top: -24px;
-  padding-top: 32px;
-  padding-bottom: 8px;
-  margin-left: -28px;
-  margin-right: -28px;
-  padding-left: 28px;
-  padding-right: 28px;
-}
-
-.title-resources {
-  display: flex;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted, #8b949e);
-  white-space: nowrap;
-  background: var(--surface2, rgba(255, 255, 255, 0.06));
-  border-radius: 999px;
-  padding: 4px 14px;
-}
 
 .battle-actions {
   display: flex;
@@ -443,9 +404,19 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 8px;
-  background: var(--surface);
   border-radius: var(--radius);
   flex-shrink: 0;
+  /* Always floats over the canvas — JS moves this element into canvas-wrap */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: rgba(13, 13, 20, 0.80);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.07);
+  font-size: 12px;
 }
 
 .battle-status__item {
@@ -673,7 +644,7 @@
 
 .battle-canvas-wrap {
   position: relative;
-  background: var(--bg);
+  background: #000;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -687,13 +658,7 @@
   height: 100%;
   cursor: grab;
   touch-action: none;
-  /* 'crisp-edges' is not supported by Chrome and causes the GPU compositor to
-     stop updating the canvas after the first frame on Windows with a fractional
-     devicePixelRatio (1.25, 1.5, 1.75 — very common with Windows display scaling).
-     Use 'pixelated' for Chrome/Edge and let '-moz-crisp-edges' handle Firefox.
-     The canvas already handles sharpness via DPR-aware sizing in JS. */
   image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges; /* Firefox fallback */
 }
 
 .battle-canvas-wrap canvas:active {
@@ -806,6 +771,43 @@
   max-width: 200px;
 }
 
+/* ── Defense: full-screen on mobile ─────────────────────────── */
+@media (max-width: 900px) {
+  .battle-view {
+    height: 100%;
+    gap: 0;
+  }
+
+  /* Stats table: compact on mobile */
+  .battle-status {
+    padding: 4px;
+    font-size: 10px;
+  }
+
+  .battle-status .label,
+  .battle-status .value {
+    font-size: 10px;
+  }
+
+  /* Canvas fills remaining height */
+  .battle-view__body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  .battle-canvas-wrap {
+    height: 100%;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  #map-error-banner {
+    display: none !important;
+  }
+}
+
 /* Battle View: On mobile stack canvas + props panel vertically */
 @media (max-width: 1100px) {
   .battle-view__body {
@@ -904,12 +906,6 @@
     flex: 1;
   }
 
-  .battle-status {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    padding: 6px;
-  }
-
   .battle-status__item {
     padding: 6px 8px;
   }
@@ -929,10 +925,6 @@
   .battle-status__item {
     padding: 4px 6px;
     border-left-width: 2px;
-  }
-
-  .battle-title {
-    font-size: 16px;
   }
 
   .battle-canvas-wrap {

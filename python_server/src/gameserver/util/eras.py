@@ -33,20 +33,7 @@ ERA_ITEM_TO_INDEX: dict[str, int] = {
     "MEDIEVAL": 4, "RENAISSANCE": 5, "INDUSTRIAL": 6, "MODERN": 7, "FUTURE": 8,
 }
 
-# Display labels (German).
-ERA_LABELS_DE: dict[str, str] = {
-    "stone":       "Steinzeit",
-    "neolithic":   "Neolithikum",
-    "bronze":      "Bronzezeit",
-    "iron":        "Eisenzeit",
-    "middle_ages": "Mittelalter",
-    "renaissance": "Renaissance",
-    "industrial":  "Industrialisierung",
-    "modern":      "Moderne",
-    "future":      "Zukunft",
-}
-
-# Display labels (English).
+# Display labels.
 ERA_LABELS_EN: dict[str, str] = {
     "stone":       "Stone Age",
     "neolithic":   "Neolithic",

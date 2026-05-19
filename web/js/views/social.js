@@ -3,6 +3,7 @@
  */
 
 import { rest } from '../rest.js';
+import { pageTitle } from '../lib/page_title.js';
 import { escHtml, escAttr, hilite } from '../lib/html.js';
 
 /** @type {import('../state.js').StateStore} */
@@ -28,8 +29,6 @@ function init(el, _api, _state) {
 function _renderShell() {
   container.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow-x:hidden;';
   container.innerHTML = `
-    <h2 class="battle-title">⚔ Battle Reports<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
-
     <a href="https://discord.gg/U4SEZB5BT" target="_blank" rel="noopener" style="
       display:flex;align-items:center;gap:8px;
       background:#5865F2;color:#fff;
@@ -59,6 +58,7 @@ function _renderShell() {
 // ── Lifecycle ────────────────────────────────────────────────────────
 
 async function enter() {
+  pageTitle.set('⚔ Battle Reports');
   await _refresh();
   _pollInterval = setInterval(_refresh, 8000);
 }

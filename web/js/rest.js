@@ -22,16 +22,63 @@ import { eventBus } from './events.js';
 
 const TOKEN_KEY = 'e3_jwt_token';
 
+/** Build a `?q0=&r0=&q1=&r1=` query string from viewport bounds, or '' if absent. */
+function _boundsQuery(bounds) {
+  if (!bounds) return '';
+  const { q0, r0, q1, r1 } = bounds;
+  if ([q0, r0, q1, r1].some(v => v == null || !Number.isFinite(v))) return '';
+  return `?q0=${q0 | 0}&r0=${r0 | 0}&q1=${q1 | 0}&r1=${r1 | 0}`;
+}
+
+/** Stable per-install UUID stored in localStorage. Survives tab/session changes,
+ *  lost on localStorage clear but not on VPN switch. */
+function _getDeviceId() {
+  const KEY = 'e3_device_id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+/** Canvas fingerprint: GPU/font rendering differences produce unique pixel patterns. */
+function _canvasFingerprint() {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 200; c.height = 40;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f60'; ctx.fillRect(0, 0, 200, 40);
+    ctx.fillStyle = '#069';
+    ctx.font = '14px Arial';
+    ctx.fillText('relics★rockets♫', 4, 28);
+    ctx.strokeStyle = 'rgba(100,200,50,0.8)';
+    ctx.arc(100, 20, 15, 0, Math.PI * 2);
+    ctx.stroke();
+    return c.toDataURL().slice(-32); // last 32 chars encode GPU-specific pixel data
+  } catch { return ''; }
+}
+
 function _deviceFingerprint() {
   const raw = [
     navigator.userAgent,
-    screen.width, screen.height, screen.colorDepth,
+    screen.width, screen.height, screen.colorDepth, screen.pixelDepth,
     Intl.DateTimeFormat().resolvedOptions().timeZone,
     navigator.language,
+    navigator.hardwareConcurrency || 0,
+    navigator.deviceMemory || 0,
+    navigator.platform || '',
+    _canvasFingerprint(),
   ].join('|');
-  let h = 0;
-  for (let i = 0; i < raw.length; i++) h = (Math.imul(31, h) + raw.charCodeAt(i)) | 0;
-  return (h >>> 0).toString(16).padStart(8, '0');
+  // Two independent hash passes → 64-bit hex for lower collision rate
+  let h1 = 0x9e3779b9, h2 = 0x6c62272e;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw.charCodeAt(i);
+    h1 = (Math.imul(31, h1) + c) | 0;
+    h2 = (Math.imul(37, h2) ^ c) | 0;
+  }
+  return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
 }
 
 class RestClient {
@@ -147,7 +194,8 @@ class RestClient {
    */
   async login(username, password) {
     const fp = _deviceFingerprint();
-    const resp = await this._post('/api/auth/login', { username, password, fingerprint: fp });
+    const device_id = _getDeviceId();
+    const resp = await this._post('/api/auth/login', { username, password, fingerprint: fp, device_id });
     if (resp.success && resp.token) {
       this.setToken(resp.token);
       localStorage.setItem('e3_username', username);
@@ -284,6 +332,25 @@ class RestClient {
   }
 
   /**
+   * Fetch empires with their world-positioned tiles for the global map.
+   * @param {{q0:number,r0:number,q1:number,r1:number}} [bounds] World-space
+   *   viewport bounds; when given the response is clipped to that rectangle.
+   * @returns {Promise<{empires: Array}>}
+   */
+  async getGlobalMap(bounds) {
+    return this._get('/api/global-map' + _boundsQuery(bounds));
+  }
+
+  /**
+   * Fetch non-owned fog/enemy tiles near the empire border.
+   * @param {{q0:number,r0:number,q1:number,r1:number}} [bounds] Defender-local
+   *   viewport bounds; when given only tiles inside that rectangle are returned.
+   */
+  async getMapNeighbors(bounds) {
+    return this._get('/api/map/neighbors' + _boundsQuery(bounds));
+  }
+
+  /**
    * Resolve an empire name or UID string to a numeric UID.
    * Accepts:
    *   - a numeric string  → parsed directly as UID
@@ -395,10 +462,14 @@ class RestClient {
 
   /**
    * Fetch era groupings for all item categories.
-   * @returns {Promise<{eras: string[], labels_de: object, labels_en: object, knowledge: object, buildings: object, structures: object, critters: object}>}
+   * @returns {Promise<{eras: string[], labels_en: object, knowledge: object, buildings: object, structures: object, critters: object}>}
    */
   async getEraMap() {
     return this._get('/api/era-map');
+  }
+
+  async getSeasonResults() {
+    return this._get('/api/season-results');
   }
 
   // ── Building / Research ───────────────────────────────────

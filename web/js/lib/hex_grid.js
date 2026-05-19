@@ -26,7 +26,7 @@ export const TILE_TYPES = {
     color: '#5c4a32',
     stroke: '#7a6545',
     icon: null,
-    spriteUrl: '/assets/sprites/bases/path.webp',
+    spriteUrl: '/assets/sprites/maps/path2.webp',
   },
   spawnpoint: {
     id: 'spawnpoint',
@@ -104,6 +104,7 @@ export class HexGrid {
     // battleCritters: cid → { iid, path_progress, health, max_health, slow_remaining_ms, burn_remaining_ms }
     // battleShots: shot_id → { source_sid, target_cid, shot_type, path_progress, origin_q, origin_r }
     this.battlePath = null;
+    this._enemyPaths = new Map(); // uid → [{q,r},...] server-provided enemy paths
     this._partialReachable = null;
     this.battleCritters = new Map();
     this.battleShots = new Map();
@@ -145,7 +146,20 @@ export class HexGrid {
     /** Overall opacity of the map image (0–1). */
     this.mapAlpha = 1.0;
     /** Alpha of the tile-type color overlay on top of the map image (0–1). */
-    this.tileOverlayAlpha = 0.28;
+    this.tileOverlayAlpha = 0;
+    /** Neighbor tiles outside own empire: Map<"q,r", {uid: number|null}> */
+    this._neighborTiles = new Map();
+    /** Vision radius for fog of war — tiles within this many steps of the own border are fog-free. */
+    this.visionRadius = 1;
+    /** Seamless repeating background pattern (built once from _mapBitmap). */
+    this._tilePattern = null;
+    /**
+     * Called (debounced) after pan/zoom with the visible hex bounds, so the
+     * view can lazily refetch viewport-bounded neighbor/fog tiles.
+     * @type {((bounds:{q0:number,r0:number,q1:number,r1:number}) => void)|null}
+     */
+    this.onViewportChange = null;
+    this._viewportDebounceId = null;
 
     // Map bounds (in world coordinates)
     this._mapMinX = 0;
@@ -443,8 +457,46 @@ export class HexGrid {
     const wy = (my - this.offsetY) / this.zoom;
     const hex = pixelToHex(wx, wy, this.hexSize);
     const key = hexKey(hex.q, hex.r);
-    if (this.tiles.has(key)) return hex;
+    if (this.tiles.has(key) || this._neighborTiles.has(key)) return hex;
     return null;
+  }
+
+  /**
+   * Visible hex bounds for the current pan/zoom, padded by `margin` tiles.
+   * Converts the four screen corners to world space then to axial coords.
+   * @returns {{q0:number,r0:number,q1:number,r1:number}}
+   */
+  getVisibleHexBounds(margin = 2) {
+    const w = this._logicalWidth || this.canvas.width;
+    const h = this._logicalHeight || this.canvas.height;
+    let q0 = Infinity, r0 = Infinity, q1 = -Infinity, r1 = -Infinity;
+    for (const [sx, sy] of [[0, 0], [w, 0], [0, h], [w, h]]) {
+      const { q, r } = pixelToHex(
+        (sx - this.offsetX) / this.zoom,
+        (sy - this.offsetY) / this.zoom,
+        this.hexSize
+      );
+      q0 = Math.min(q0, q); q1 = Math.max(q1, q);
+      r0 = Math.min(r0, r); r1 = Math.max(r1, r);
+    }
+    return {
+      q0: Math.floor(q0) - margin,
+      r0: Math.floor(r0) - margin,
+      q1: Math.ceil(q1) + margin,
+      r1: Math.ceil(r1) + margin,
+    };
+  }
+
+  /** Notify `onViewportChange` after pan/zoom settles (debounced ~250ms). */
+  _emitViewportChange() {
+    if (!this.onViewportChange) return;
+    if (this._viewportDebounceId) clearTimeout(this._viewportDebounceId);
+    this._viewportDebounceId = setTimeout(() => {
+      this._viewportDebounceId = null;
+      try {
+        this.onViewportChange(this.getVisibleHexBounds());
+      } catch { /* view may have been torn down */ }
+    }, 250);
   }
 
   // ── Mouse handlers ─────────────────────────────────────────
@@ -465,6 +517,7 @@ export class HexGrid {
       this.offsetY = this._panOffsetY + dy;
       this._clampPanOffset();
       this._dirty = true;
+      this._emitViewportChange();
       return;
     }
     const hex = this._eventToHex(e);
@@ -520,6 +573,7 @@ export class HexGrid {
     this.offsetY = my - (my - this.offsetY) * (this.zoom / oldZoom);
     this._clampPanOffset();
     this._dirty = true;
+    this._emitViewportChange();
   }
 
   _fireTileClick(q, r, tile) {
@@ -544,7 +598,13 @@ export class HexGrid {
     const key = hexKey(hex.q, hex.r);
     this.selectedKey = key;
     this._dirty = true;
-    this._fireTileClick(hex.q, hex.r, this.tiles.get(key));
+    // Enemy neighbor tiles take priority over synthetic void entries from addVoidNeighbors().
+    // Unclaimed neighbor tiles (uid == null) fall through to the normal void handler (buy option).
+    const neighborData = this._neighborTiles.get(key);
+    const tileData = (neighborData?.uid != null)
+      ? { type: 'neighbor', ...neighborData }
+      : this.tiles.get(key);
+    this._fireTileClick(hex.q, hex.r, tileData);
   }
 
   // ── Touch handlers (mobile support) ────────────────────────
@@ -584,7 +644,7 @@ export class HexGrid {
       const dy = this._touches[0].clientY - this._panStartY;
 
       // Check if touch has moved beyond tap threshold
-      const tapThreshold = 10; // pixels
+      const tapThreshold = 15; // pixels
       if (Math.abs(dx) > tapThreshold || Math.abs(dy) > tapThreshold) {
         this._hasMoved = true;
         this._hasUserInteracted = true;
@@ -594,6 +654,7 @@ export class HexGrid {
       this.offsetY = this._panOffsetY + dy;
       this._clampPanOffset();
       this._dirty = true;
+      this._emitViewportChange();
     } else if (this._touches.length === 2) {
       // Pinch-to-zoom
       this._hasUserInteracted = true;
@@ -613,6 +674,7 @@ export class HexGrid {
         this.offsetY = my - (my - this.offsetY) * (this.zoom / oldZoom);
         this._clampPanOffset();
         this._dirty = true;
+        this._emitViewportChange();
       }
       this._lastPinchDistance = currentDistance;
     }
@@ -638,7 +700,11 @@ export class HexGrid {
           const key = hexKey(hex.q, hex.r);
           this.selectedKey = key;
           this._dirty = true;
-          this._fireTileClick(hex.q, hex.r, this.tiles.get(key));
+          const neighborData = this._neighborTiles.get(key);
+          const tileData = (neighborData?.uid != null)
+            ? { type: 'neighbor', ...neighborData }
+            : this.tiles.get(key);
+          this._fireTileClick(hex.q, hex.r, tileData);
           // Block any subsequent synthetic click from the browser
           this._hasPanned = true;
           setTimeout(() => {
@@ -721,7 +787,18 @@ export class HexGrid {
     };
   }
 
-  /** Load map from JSON object. */
+  /**
+   * Replace the viewport-bounded set of non-owned (fog/enemy) tiles.
+   * Rendered per-frame in `_render()`, so it never invalidates the base
+   * cache nor enlarges the base canvas.
+   */
+  setNeighborTiles(neighborTiles) {
+    this._neighborTiles = new Map(
+      neighborTiles.map(t => [`${t.q},${t.r}`, { uid: t.uid ?? null, iid: t.iid ?? null, tile_type: t.tile_type ?? null }])
+    );
+    this._dirty = true;
+  }
+
   fromJSON(data) {
     if (!data || !data.tiles) return;
     // Reset
@@ -743,7 +820,11 @@ export class HexGrid {
     // Add void border tiles around real tiles
     this.addVoidNeighbors();
     this.selectedKey = null;
-    this._centerGrid();
+    if (!this._hasUserInteracted) {
+      this._centerGrid();
+    } else {
+      this._updateMapBounds();
+    }
     this._dirty = true;
   }
 
@@ -862,16 +943,31 @@ export class HexGrid {
    * Does NOT change battleActive.
    */
   setDisplayPath(path) {
-    // During battle the path is owned by the server — don't overwrite it
-    if (this.battleActive) {
-      console.log('[HexGrid] setDisplayPath blocked (battle active)');
+    // During an active battle with critters moving, the path is owned by the
+    // server via setBattlePath() — don't overwrite it.  But if no critters are
+    // present yet (e.g. the view just re-entered and loadMap() resolved after a
+    // BATTLE_STATUS message already set battleActive), we still need to draw the
+    // path so it is visible before the first wave starts.
+    if (this.battleActive && this.battleCritters.size > 0) {
+      console.log('[HexGrid] setDisplayPath blocked (battle active with critters)');
       return;
     }
     console.log('[HexGrid] setDisplayPath', path ? `${path.length} nodes` : 'null');
     this.battlePath = path; // [{q,r}, ...] or null
     this._partialReachable = null;
-    if (path) this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
+    if (path) this._ensureSpriteLoaded('/assets/sprites/maps/path2.webp');
     this._invalidateBase();
+    this._dirty = true;
+  }
+
+  /** Store server-provided path for a specific enemy uid. */
+  setEnemyPath(uid, path) {
+    if (path && path.length > 1) {
+      this._enemyPaths.set(uid, path);
+      this._ensureSpriteLoaded('/assets/sprites/maps/path2.webp');
+    } else {
+      this._enemyPaths.delete(uid);
+    }
     this._dirty = true;
   }
 
@@ -880,7 +976,7 @@ export class HexGrid {
     console.log('[HexGrid] setBattlePath', path ? `${path.length} nodes` : 'null');
     this.battlePath = path; // [{q,r}, ...]
     this.battleActive = true;
-    this._ensureSpriteLoaded('/assets/sprites/bases/path.webp');
+    this._ensureSpriteLoaded('/assets/sprites/maps/path2.webp');
     this._invalidateBase();
     this._dirty = true;
   }
@@ -1016,10 +1112,11 @@ export class HexGrid {
   }
 
   /**
-   * Load a map PNG and use it as a shared background texture for all hex tiles.
-   * Each tile reveals only the portion of the image that falls under it.
+   * Load a seamless texture and use it as a repeating background pattern for
+   * all hex tiles (own + fog + enemy). The texture must tile cleanly; cost is
+   * independent of map size since it is a single repeating pattern fill.
    *
-   * @param {string|null} url  Absolute or root-relative URL to the PNG, or null to clear.
+   * @param {string|null} url  Root-relative URL to a seamless WebP/PNG, or null to clear.
    * @returns {Promise<void>}
    */
   async setMapBackground(url) {
@@ -1027,6 +1124,7 @@ export class HexGrid {
       this._mapBitmap.close();
       this._mapBitmap = null;
     }
+    this._tilePattern = null;
     if (!url) {
       this._invalidateBase();
       this._dirty = true;
@@ -1037,6 +1135,8 @@ export class HexGrid {
       return r.blob();
     });
     this._mapBitmap = await createImageBitmap(blob);
+    this._tilePattern = this.ctx.createPattern(this._mapBitmap, 'repeat');
+    this._tilePattern.setTransform(new DOMMatrix().scale(0.5));
     this._invalidateBase();
     this._dirty = true;
   }
@@ -1051,7 +1151,9 @@ export class HexGrid {
       this._baseCanvas = document.createElement('canvas');
     }
 
-    // Calculate world bounds
+    // Calculate world bounds from OWNED tiles only. Neighbor/fog tiles are
+    // viewport-bounded and drawn per-frame in _render(), so they no longer
+    // grow this cached canvas (which would explode at large fog radius).
     let minX = Infinity,
       maxX = -Infinity,
       minY = Infinity,
@@ -1069,123 +1171,95 @@ export class HexGrid {
     const worldH = maxY - minY;
     const dpr = window.devicePixelRatio || 1;
 
-    // Size cache canvas to hold entire world at current zoom level
-    this._baseCanvas.width = worldW * this.zoom * dpr;
-    this._baseCanvas.height = worldH * this.zoom * dpr;
+    // Size cache canvas at zoom=1 (scaling applied at draw time, not here).
+    // This means _renderBase() only re-runs when tiles change, not on every zoom step.
+    this._baseCanvas.width = worldW * dpr;
+    this._baseCanvas.height = worldH * dpr;
     this._baseWorldOffsetX = minX;
     this._baseWorldOffsetY = minY;
-    this._baseCachedZoom = this.zoom;
 
     const ctx = this._baseCanvas.getContext('2d');
 
-    // Clear
+    // Clear — reset filter explicitly to avoid bleed from previous render
     ctx.save();
+    ctx.filter = 'none';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, worldW * this.zoom, worldH * this.zoom);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, worldW, worldH);
 
-    // Apply zoom, then translate so tiles start at (0,0)
-    ctx.scale(this.zoom, this.zoom);
+    // Translate so tiles start at (0,0) — zoom applied at draw time in _render()
     ctx.translate(-minX, -minY);
 
     const sz = this.hexSize;
 
-    // ── Pass 1: Tile fills + strokes ─────────────────────────
-    for (const [key, data] of this.tiles) {
-      const { q, r } = parseKey(key);
-      const tileType = getTileType(data.type);
-
-      const { x, y } = hexToPixel(q, r, sz);
-      const corners = hexCorners(x, y, sz);
-
-      const isHovered = key === this.hoveredKey;
-
-      // Build hex path
-      ctx.beginPath();
-      ctx.moveTo(corners[0].x, corners[0].y);
-      for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
-      ctx.closePath();
-
-      ctx.save();
-      ctx.clip();
-
-      if (this._mapBitmap && data.type !== 'void') {
-        const halfW = Math.max(Math.abs(minX), Math.abs(maxX));
-        const halfH = Math.max(Math.abs(minY), Math.abs(maxY));
-        ctx.globalAlpha = this.mapAlpha;
-        ctx.drawImage(this._mapBitmap, -halfW, -halfH, halfW * 2, halfH * 2);
-        ctx.globalAlpha = 1;
-
-        if (this.tileOverlayAlpha > 0) {
-          ctx.fillStyle = tileType.color;
-          ctx.globalAlpha = this.tileOverlayAlpha;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
-
-        if (isHovered) {
-          ctx.fillStyle = 'rgba(255,255,255,0.12)';
-          ctx.fill();
-        }
-      } else {
-        if (isHovered) {
-          ctx.fillStyle = tileType.color;
-          ctx.fill();
-          ctx.fillStyle = 'rgba(255,255,255,0.08)';
-          ctx.fill();
-        } else {
-          ctx.fillStyle = tileType.color;
-          ctx.fill();
-        }
-      }
-
-      ctx.restore();
-
-      ctx.strokeStyle = isHovered ? '#6a6a8a' : tileType.stroke;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    // Grass texture is drawn per-frame in _render() to avoid double-scaling blur.
+    let tilePattern = null;
+    if (this._mapBitmap) {
+      tilePattern = ctx.createPattern(this._mapBitmap, 'repeat');
+      tilePattern.setTransform(new DOMMatrix().scale(0.5));
     }
 
-    // ── Pass 2: Battle path (behind structures) ───────────────
-    // Pass 2a: Partial reachable overlay (when no full path exists)
-    if (!this.battlePath && this._partialReachable && this._partialReachable.size > 1) {
-      const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
-      const pathW = sz * 0.38;
-      const visitedEdges = new Set();
 
-      // Soft edge: collect all edges first, draw blurred shadow in one pass
+    // Neighbor fog / enemy tiles are no longer baked into the base canvas —
+    // they are viewport-bounded and drawn per-frame by _renderNeighborTiles().
+
+    // ── Pass 2: Battle path (behind structures) ───────────────
+    ctx.restore();
+    this._baseCached = true;
+  }
+
+  _renderPath(ctx) {
+    const sz = this.hexSize;
+    const pathBmp = this._spriteCache.get('/assets/sprites/maps/path2.webp');
+    const pathW = sz * 0.38;
+
+    const _drawSegments = (points, alpha = 1) => {
       if (pathBmp && pathBmp !== 'loading') {
-        const edgePairs = [];
-        for (const key of this._partialReachable) {
-          const { q, r } = parseKey(key);
-          const p1 = hexToPixel(q, r, sz);
-          for (const nb of hexNeighbors(q, r)) {
-            const nKey = hexKey(nb.q, nb.r);
-            if (!this._partialReachable.has(nKey)) continue;
-            const edgeKey = key < nKey ? key + '|' + nKey : nKey + '|' + key;
-            if (visitedEdges.has(edgeKey)) continue;
-            visitedEdges.add(edgeKey);
-            edgePairs.push([p1, hexToPixel(nb.q, nb.r, sz)]);
-          }
-        }
+        const pathPattern = ctx.createPattern(pathBmp, 'repeat');
+        const scaleY = pathW / pathBmp.height;
+        pathPattern.setTransform(new DOMMatrix().scale(0.5, scaleY * 0.5));
         ctx.save();
-        ctx.filter = 'blur(6px)';
-        ctx.strokeStyle = 'rgba(70, 48, 20, 0.5)';
-        ctx.lineWidth = pathW * 2.2;
+        ctx.globalAlpha = alpha;
+        for (let i = 0; i < points.length - 1; i++) {
+          const p1 = points[i], p2 = points[i + 1];
+          const dx = p2.x - p1.x, dy = p2.y - p1.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          ctx.save();
+          ctx.translate(p1.x, p1.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = pathPattern;
+          ctx.fillRect(-pathW * 0.1, -pathW / 2, dist + pathW * 0.2, pathW);
+          ctx.restore();
+        }
+        for (const p of points) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pathW / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.fillStyle = pathPattern;
+          ctx.fillRect(p.x - pathW / 2, p.y - pathW / 2, pathW, pathW);
+          ctx.restore();
+        }
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)';
+        ctx.lineWidth = pathW;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        for (const [p1, p2] of edgePairs) {
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.stroke();
-        }
-        ctx.filter = 'none';
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
         ctx.restore();
-        visitedEdges.clear();
       }
+    };
 
-      ctx.save();
-      ctx.globalAlpha = 0.75;
+    if (!this.battlePath && this._partialReachable && this._partialReachable.size > 1) {
+      const visitedEdges = new Set();
+      const points = [];
       for (const key of this._partialReachable) {
         const { q, r } = parseKey(key);
         const p1 = hexToPixel(q, r, sz);
@@ -1195,107 +1269,77 @@ export class HexGrid {
           const edgeKey = key < nKey ? key + '|' + nKey : nKey + '|' + key;
           if (visitedEdges.has(edgeKey)) continue;
           visitedEdges.add(edgeKey);
-          const p2 = hexToPixel(nb.q, nb.r, sz);
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const dist = Math.hypot(dx, dy);
-          const angle = Math.atan2(dy, dx);
-          if (pathBmp && pathBmp !== 'loading') {
-            ctx.save();
-            ctx.translate(p1.x, p1.y);
-            ctx.rotate(angle);
-            ctx.drawImage(pathBmp, -pathW * 0.1, -pathW / 2, dist + pathW * 0.2, pathW);
-            ctx.restore();
+          points.push(p1, hexToPixel(nb.q, nb.r, sz));
+        }
+      }
+      if (points.length > 1) _drawSegments(points, 0.75);
+    }
+
+    // Own path
+    if (this.battlePath && this.battlePath.length > 1) {
+      const points = this.battlePath.map((p) => hexToPixel(p.q, p.r, sz));
+      _drawSegments(points, 1);
+    } else {
+      // Fallback from own tiles when no battlePath set
+      const pathTiles = new Set();
+      let castleKey = null;
+      for (const [key, data] of this.tiles) {
+        if (data.type === 'path') pathTiles.add(key);
+        if (data.type === 'castle') castleKey = key;
+      }
+      if (castleKey && pathTiles.size > 0) {
+        const chain = [parseKey(castleKey)];
+        const visited = new Set([castleKey]);
+        let current = castleKey;
+        while (true) {
+          const { q, r } = parseKey(current);
+          let found = null;
+          for (const nb of hexNeighbors(q, r)) {
+            const nk = `${nb.q},${nb.r}`;
+            if (pathTiles.has(nk) && !visited.has(nk)) { found = nk; break; }
+          }
+          if (!found) break;
+          visited.add(found);
+          chain.push(parseKey(found));
+          current = found;
+        }
+        if (chain.length > 1) _drawSegments(chain.map(({ q, r }) => hexToPixel(q, r, sz)), 1);
+      }
+    }
+
+    // Enemy paths — clipped to visible area (own tiles + inner vision radius, no fog ring)
+    if (this._enemyPaths.size > 0) {
+      const visibleKeys = new Set([...this.tiles.keys(), ...(this._lastInnerKeys ?? new Set())]);
+      for (const [, path] of this._enemyPaths) {
+        // Split path into segments of consecutive visible points
+        let segment = [];
+        for (const p of path) {
+          const key = `${p.q},${p.r}`;
+          if (visibleKeys.has(key)) {
+            segment.push(hexToPixel(p.q, p.r, sz));
           } else {
-            ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)';
-            ctx.lineWidth = pathW;
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
+            if (segment.length > 1) _drawSegments(segment, 0.75);
+            segment = [];
           }
         }
-      }
-      // Joints
-      for (const key of this._partialReachable) {
-        const { q, r } = parseKey(key);
-        const p = hexToPixel(q, r, sz);
-        if (pathBmp && pathBmp !== 'loading') {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, pathW / 2, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(pathBmp, p.x - pathW / 2, p.y - pathW / 2, pathW, pathW);
-          ctx.restore();
-        }
-      }
-      ctx.restore();
-    }
-
-    if (this.battlePath && this.battlePath.length > 1) {
-      const pathBmp = this._spriteCache.get('/assets/sprites/bases/path.webp');
-      const pathW = sz * 0.38; // narrower than hex width
-      const points = this.battlePath.map((p) => hexToPixel(p.q, p.r, sz));
-
-      if (pathBmp && pathBmp !== 'loading') {
-        // Soft edge: blurred shadow pass blends path into the green map
-        ctx.save();
-        ctx.filter = 'blur(6px)';
-        ctx.strokeStyle = 'rgba(70, 48, 20, 0.5)';
-        ctx.lineWidth = pathW * 2.2;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-        ctx.stroke();
-        ctx.filter = 'none';
-        ctx.restore();
-
-        for (let i = 0; i < points.length - 1; i++) {
-          const p1 = points[i];
-          const p2 = points[i + 1];
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const dist = Math.hypot(dx, dy);
-          const angle = Math.atan2(dy, dx);
-          ctx.save();
-          ctx.translate(p1.x, p1.y);
-          ctx.rotate(angle);
-          ctx.drawImage(pathBmp, -pathW * 0.1, -pathW / 2, dist + pathW * 0.2, pathW);
-          ctx.restore();
-        }
-        // Circle joints for smooth corners
-        for (const p of points) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, pathW / 2, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(pathBmp, p.x - pathW / 2, p.y - pathW / 2, pathW, pathW);
-          ctx.restore();
-        }
-      } else {
-        // Fallback line while texture loads
-        ctx.strokeStyle = 'rgba(255, 200, 100, 0.45)';
-        ctx.lineWidth = pathW;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-        ctx.stroke();
+        if (segment.length > 1) _drawSegments(segment, 0.75);
       }
     }
+  }
 
-    // ── Pass 3: Structure sprites + icons + coord labels ──────
+  /** Draw structure sprites + icon/label overlays at full zoom resolution.
+   *  Called from _render() after the base canvas is composited, so sprites
+   *  are always rasterised at display resolution (no upscale blur).
+   *  Uses painter's algorithm (sort by pixel Y) for correct z-ordering. */
+  _renderStructures(ctx) {
+    const sz = this.hexSize;
+
+    // Icons + coord labels (zoom-dependent, so must be here not in base cache)
     for (const [key, data] of this.tiles) {
       const { q, r } = parseKey(key);
       const tileType = getTileType(data.type);
       const { x, y } = hexToPixel(q, r, sz);
 
-      // Icon fallback text
       if (tileType.icon && !tileType.spriteUrl && sz * this.zoom > 12) {
         ctx.fillStyle = '#ccccdd';
         ctx.font = `${Math.max(10, sz * 0.45)}px sans-serif`;
@@ -1304,7 +1348,6 @@ export class HexGrid {
         ctx.fillText(tileType.icon, x, y);
       }
 
-      // Coordinate labels
       if (sz * this.zoom > 22) {
         ctx.fillStyle = 'rgba(255,255,255,0.2)';
         ctx.font = `${Math.max(7, sz * 0.25)}px monospace`;
@@ -1314,35 +1357,35 @@ export class HexGrid {
       }
     }
 
-    // ── Pass 4: Structure sprites (unclipped — may overlap tile above) ───
-    for (const [key, data] of this.tiles) {
+    // Sprites sorted by pixel Y (painter's algorithm) so lower hexes render on top
+    const spriteTiles = [...this.tiles.entries()]
+      .filter(([, data]) => {
+        const tt = getTileType(data.type);
+        return tt.spriteUrl && data.type !== 'void' && data.type !== 'path';
+      })
+      .map(([key, data]) => {
+        const { q, r } = parseKey(key);
+        const { x, y } = hexToPixel(q, r, sz);
+        return { data, x, y };
+      })
+      .sort((a, b) => a.y - b.y);
+
+    for (const { data, x, y } of spriteTiles) {
       const tileType = getTileType(data.type);
-      if (!tileType.spriteUrl || data.type === 'void' || data.type === 'path') continue;
       const bitmap = this._spriteCache.get(tileType.spriteUrl);
       if (!bitmap) {
         this._ensureSpriteLoaded(tileType.spriteUrl);
         continue;
       }
       if (bitmap === 'loading') continue;
-      const { q, r } = parseKey(key);
-      const { x, y } = hexToPixel(q, r, sz);
       const spriteSize = sz * 2.1;
       const yOffset =
         data.type === 'castle' || data.type === 'spawnpoint' ? spriteSize * 0.1 : spriteSize * 0.15;
       const aspect = bitmap.width / bitmap.height;
       const drawW = aspect >= 1 ? spriteSize : spriteSize * aspect;
       const drawH = aspect >= 1 ? spriteSize / aspect : spriteSize;
-      ctx.drawImage(
-        bitmap,
-        x - drawW / 2,
-        y - drawH / 2 - yOffset,
-        drawW,
-        drawH
-      );
+      ctx.drawImage(bitmap, x - drawW / 2, y - drawH / 2 - yOffset, drawW, drawH);
     }
-
-    ctx.restore();
-    this._baseCached = true;
   }
 
   /** Render critters on top of current canvas state (assumes transform already applied). */
@@ -1538,6 +1581,221 @@ export class HexGrid {
     }
   }
 
+  /**
+   * Draw the viewport-bounded fog / enemy tiles. Runs every frame on the
+   * main context (already translated + zoom-scaled by the caller), so the
+   * set stays small and never bloats the cached base canvas.
+   */
+  _renderNeighborTiles(ctx) {
+    if (this._neighborTiles.size === 0 && this.tiles.size === 0) return;
+    const sz = this.hexSize;
+
+    // BFS: innerKeys = (visionRadius-1) steps outside own tiles, no fog.
+    //      ring1Keys  = the visionRadius-th ring, rendered with fog overlay.
+    const innerKeys = new Set();
+    let frontier = new Set(this.tiles.keys());
+    for (let step = 0; step < this.visionRadius - 1; step++) {
+      const next = new Set();
+      for (const key of frontier) {
+        const { q, r } = parseKey(key);
+        for (const { q: nq, r: nr } of hexNeighbors(q, r)) {
+          const nk = `${nq},${nr}`;
+          if (!this.tiles.has(nk) && !innerKeys.has(nk)) { innerKeys.add(nk); next.add(nk); }
+        }
+      }
+      frontier = next;
+    }
+    const ring1Keys = new Set();
+    for (const key of frontier) {
+      const { q, r } = parseKey(key);
+      for (const { q: nq, r: nr } of hexNeighbors(q, r)) {
+        const nk = `${nq},${nr}`;
+        if (!this.tiles.has(nk) && !innerKeys.has(nk)) ring1Keys.add(nk);
+      }
+    }
+
+    const _buildPath = (keys) => {
+      const p = new Path2D();
+      for (const key of keys) {
+        const { q, r } = parseKey(key);
+        const { x, y } = hexToPixel(q, r, sz);
+        const c = hexCorners(x, y, sz);
+        p.moveTo(c[0].x, c[0].y);
+        for (let i = 1; i < 6; i++) p.lineTo(c[i].x, c[i].y);
+        p.closePath();
+      }
+      return p;
+    };
+
+    // Inner tiles (within vision radius): grass, no fog, no outline
+    if (this._tilePattern && innerKeys.size > 0) {
+      const innerPath = _buildPath(innerKeys);
+      ctx.save();
+      ctx.clip(innerPath);
+      ctx.globalAlpha = this.mapAlpha;
+      ctx.fillStyle = this._tilePattern;
+      ctx.fill(innerPath);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Outer fog ring: grass + dark fog overlay
+    if (this._tilePattern && ring1Keys.size > 0) {
+      const ringPath = _buildPath(ring1Keys);
+      ctx.save();
+      ctx.clip(ringPath);
+      ctx.globalAlpha = this.mapAlpha;
+      ctx.fillStyle = this._tilePattern;
+      ctx.fill(ringPath);
+      ctx.globalAlpha = 0.72;
+      ctx.fillStyle = 'rgba(15, 15, 25, 1)';
+      ctx.fill(ringPath);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Border edges: draw a colored line segment for each edge where the two
+    // adjacent tiles have different owners (void/fog count as "no owner",
+    // which differs from "self"). Green = own-empire boundary, red =
+    // enemy-empire boundary.
+    //
+    // Edge-index mapping: neighbor i (= DIRS[i]) does NOT face the edge
+    // corner[i]→corner[i+1]. With flat-top hexes and y-down screen coords
+    // the correct edge start is (6 - i) % 6 (see plan / hex.js geometry).
+    const edgeStart = i => (6 - i) % 6;
+    const ownerKey = (q, r) => {
+      const k = hexKey(q, r);
+      const own = this.tiles.get(k);
+      if (own && own.type !== 'void') return 'self';
+      const nb = this._neighborTiles.get(k);
+      if (nb && nb.uid != null) return 'e:' + nb.uid;
+      return 'none';
+    };
+
+    const greenEdges = new Path2D();
+    const greenClip = new Path2D();
+    const redEdges = new Path2D();
+    const redClip = new Path2D();
+
+    const addHexToPath = (path, x, y) => {
+      const c = hexCorners(x, y, sz);
+      path.moveTo(c[0].x, c[0].y);
+      for (let i = 1; i < 6; i++) path.lineTo(c[i].x, c[i].y);
+      path.closePath();
+    };
+
+    // Green pass — own empire boundary, not against fog ring.
+    for (const [key, data] of this.tiles) {
+      if (data.type === 'void') continue;
+      const { q, r } = parseKey(key);
+      const { x, y } = hexToPixel(q, r, sz);
+      const corners = hexCorners(x, y, sz);
+      addHexToPath(greenClip, x, y);
+      const neighbors = hexNeighbors(q, r);
+      for (let i = 0; i < 6; i++) {
+        const nb = neighbors[i];
+        const nk = `${nb.q},${nb.r}`;
+        if (ownerKey(nb.q, nb.r) === 'self') continue;
+        if (ring1Keys.has(nk)) continue;
+        const j = edgeStart(i);
+        greenEdges.moveTo(corners[j].x, corners[j].y);
+        greenEdges.lineTo(corners[(j + 1) % 6].x, corners[(j + 1) % 6].y);
+      }
+    }
+    // Green pass for visible (innerKeys) non-enemy tiles — draw outline on all sides except fog ring.
+    for (const key of innerKeys) {
+      if (this._neighborTiles.get(key)?.uid != null) continue; // enemy tiles handled in red pass
+      const { q, r } = parseKey(key);
+      const { x, y } = hexToPixel(q, r, sz);
+      const corners = hexCorners(x, y, sz);
+      addHexToPath(greenClip, x, y);
+      const neighbors = hexNeighbors(q, r);
+      for (let i = 0; i < 6; i++) {
+        const nb = neighbors[i];
+        const nk = `${nb.q},${nb.r}`;
+        if (this.tiles.has(nk) || innerKeys.has(nk)) continue; // shared interior
+        if (ring1Keys.has(nk)) continue;
+        const j = edgeStart(i);
+        greenEdges.moveTo(corners[j].x, corners[j].y);
+        greenEdges.lineTo(corners[(j + 1) % 6].x, corners[(j + 1) % 6].y);
+      }
+    }
+
+    // Red pass — enemy cluster boundary, not against fog ring.
+    for (const [key, ndata] of this._neighborTiles) {
+      if (ndata.uid == null) continue;
+      const selfKey = 'e:' + ndata.uid;
+      const { q, r } = parseKey(key);
+      const { x, y } = hexToPixel(q, r, sz);
+      const corners = hexCorners(x, y, sz);
+      addHexToPath(redClip, x, y);
+      const neighbors = hexNeighbors(q, r);
+      for (let i = 0; i < 6; i++) {
+        const nb = neighbors[i];
+        const nk = `${nb.q},${nb.r}`;
+        if (ownerKey(nb.q, nb.r) === selfKey) continue;
+        if (ring1Keys.has(nk)) continue;
+        const j = edgeStart(i);
+        redEdges.moveTo(corners[j].x, corners[j].y);
+        redEdges.lineTo(corners[(j + 1) % 6].x, corners[(j + 1) % 6].y);
+      }
+    }
+
+    const lw = 8 / this.zoom;
+    ctx.save();
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.save();
+    ctx.clip(greenClip);
+    ctx.strokeStyle = 'rgba(50,170,70,0.75)';
+    ctx.stroke(greenEdges);
+    ctx.restore();
+    ctx.save();
+    ctx.clip(redClip);
+    ctx.strokeStyle = 'rgba(190,45,45,0.75)';
+    ctx.stroke(redEdges);
+    ctx.restore();
+    ctx.restore();
+    ctx.filter = 'none';
+
+    this._lastInnerKeys = innerKeys;
+  }
+
+  _renderEnemySprites(ctx) {
+    const sz = this.hexSize;
+    const NON_STRUCTURE_TILE = new Set(['empty', 'void', 'blocked', 'land']);
+    const enemySprites = [];
+    for (const [key, data] of this._neighborTiles) {
+      if (data.uid == null) continue;
+      // tile_type tells us the hex type (path/castle/spawnpoint/empty)
+      // iid tells us what structure is on top (tower iid or same as tile_type)
+      const tt = (data.tile_type ?? data.iid)?.toLowerCase();
+      const spriteIid = data.iid;
+      if (!spriteIid || NON_STRUCTURE_TILE.has(tt)) continue;
+      const { q, r } = parseKey(key);
+      const { x, y } = hexToPixel(q, r, sz);
+      enemySprites.push({ iid: spriteIid, x, y });
+    }
+    enemySprites.sort((a, b) => a.y - b.y);
+    for (const { iid, x, y } of enemySprites) {
+      const tileType = getTileType(iid);
+      if (!tileType?.spriteUrl) continue;
+      let bmp = this._spriteCache.get(tileType.spriteUrl);
+      if (!bmp) { this._ensureSpriteLoaded(tileType.spriteUrl); continue; }
+      if (bmp === 'loading') continue;
+      const spriteSize = sz * 2.1;
+      const aspect = bmp.width / bmp.height;
+      const drawW = aspect >= 1 ? spriteSize : spriteSize * aspect;
+      const drawH = aspect >= 1 ? spriteSize / aspect : spriteSize;
+      const yOffset = spriteSize * 0.15;
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      ctx.drawImage(bmp, x - drawW / 2, y - drawH / 2 - yOffset, drawW, drawH);
+      ctx.restore();
+    }
+  }
+
   _render() {
     const ctx = this.ctx;
     const w = this._logicalWidth || this.canvas.width;
@@ -1547,10 +1805,12 @@ export class HexGrid {
     // Clear entire canvas
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.clearRect(0, 0, w, h);
 
-    // Render base layer to cache if needed, or if zoom changed
-    if (!this._baseCached || this._baseCachedZoom !== this.zoom) {
+    // Render base layer to cache only when tiles change (not on zoom)
+    if (!this._baseCached) {
       this._renderBase();
     }
 
@@ -1561,7 +1821,7 @@ export class HexGrid {
     // Guard: a 0-sized canvas (e.g. when tiles map is empty) would throw a
     // DOMException on Chrome — skip drawing until dimensions are valid.
     if (this._baseCanvas && this._baseCanvas.width > 0 && this._baseCanvas.height > 0) {
-      const scale = 1 / dpr;
+      const scale = this.zoom / dpr;
       ctx.drawImage(
         this._baseCanvas,
         this._baseWorldOffsetX * this.zoom,
@@ -1571,8 +1831,104 @@ export class HexGrid {
       );
     }
 
-    // Apply zoom for critters and shots (they are not in the cache)
+    // Apply zoom for per-frame layers (not in the base cache)
     ctx.scale(this.zoom, this.zoom);
+
+    // Grass texture drawn per-frame at final resolution (no double-scale blur)
+    if (this._mapBitmap && this.tiles.size > 0) {
+      const sz = this.hexSize;
+      const pattern = ctx.createPattern(this._mapBitmap, 'repeat');
+      pattern.setTransform(new DOMMatrix().scale(0.5));
+      const allTilesPath = new Path2D();
+      const ownedTilesPath = new Path2D();
+      const enemyTilesPath = new Path2D();
+      for (const [key, data] of this.tiles) {
+        const { q, r } = parseKey(key);
+        const { x, y } = hexToPixel(q, r, sz);
+        const c = hexCorners(x, y, sz);
+        const addTo = (p) => {
+          p.moveTo(c[0].x, c[0].y);
+          for (let i = 1; i < 6; i++) p.lineTo(c[i].x, c[i].y);
+          p.closePath();
+        };
+        addTo(allTilesPath);
+        if (data.type !== 'void') addTo(ownedTilesPath);
+      }
+      for (const [key, data] of this._neighborTiles) {
+        if (data.uid == null) continue;
+        const { q, r } = parseKey(key);
+        const { x, y } = hexToPixel(q, r, sz);
+        const c = hexCorners(x, y, sz);
+        const addEnemy = (p) => {
+          p.moveTo(c[0].x, c[0].y);
+          for (let i = 1; i < 6; i++) p.lineTo(c[i].x, c[i].y);
+          p.closePath();
+        };
+        addEnemy(enemyTilesPath);
+        addEnemy(allTilesPath);
+      }
+      ctx.save();
+      ctx.clip(allTilesPath);
+      ctx.fillStyle = pattern;
+      ctx.fill(allTilesPath);
+      ctx.restore();
+      // Store paths for tint pass after neighbor tiles are drawn
+      this._ownedTilesPath = ownedTilesPath;
+      this._enemyTilesPath = enemyTilesPath;
+    }
+
+    // Tile outlines (own + enemy)
+    if (this.tiles.size > 0 || this._neighborTiles.size > 0) {
+      const sz = this.hexSize;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(120,120,120,0.5)';
+      ctx.lineWidth = 1 / this.zoom;
+      const drawOutline = (q, r) => {
+        const { x, y } = hexToPixel(q, r, sz);
+        const c = hexCorners(x, y, sz);
+        ctx.beginPath();
+        ctx.moveTo(c[0].x, c[0].y);
+        for (let i = 1; i < 6; i++) ctx.lineTo(c[i].x, c[i].y);
+        ctx.closePath();
+        ctx.stroke();
+      };
+      for (const [key] of this.tiles) {
+        const { q, r } = parseKey(key);
+        drawOutline(q, r);
+      }
+      for (const [key, data] of this._neighborTiles) {
+        if (data.uid == null) continue;
+        const { q, r } = parseKey(key);
+        drawOutline(q, r);
+      }
+      ctx.restore();
+    }
+
+    // Viewport-bounded fog / enemy tiles, above base tiles, below structures.
+    this._renderNeighborTiles(ctx);
+
+    // Color tints drawn after neighbor tiles so they appear on top of fog/grass
+    if (this._ownedTilesPath) {
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = 'rgba(60, 180, 80, 1)';
+      ctx.fill(this._ownedTilesPath);
+      ctx.restore();
+    }
+    if (this._enemyTilesPath) {
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = 'rgba(200, 60, 60, 1)';
+      ctx.fill(this._enemyTilesPath);
+      ctx.restore();
+    }
+
+    // Battle path drawn per-frame at final resolution (no double-scale blur).
+    this._renderPath(ctx);
+
+    // All sprites drawn after tints so buildings always appear on top.
+    this._renderEnemySprites(ctx);
+    this._renderStructures(ctx);
 
     // Draw range circle overlay if set
     if (this.rangeOverlay) {

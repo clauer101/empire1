@@ -124,21 +124,53 @@
     border-radius: 0;
   }
 
-  /* App: fixed beneath nav (+ optional rally banner), full remaining height, OWN scroll */
-  #app {
+  /* Main column: fixed below nav, flex column — header + app stack vertically */
+  #main-col {
     position: fixed;
     top: calc(var(--mobile-nav-h) + var(--rally-banner-h));
     left: 0;
     right: 0;
     bottom: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  #page-header {
+    border-radius: 0;
+    padding: 6px 16px;
+    flex-shrink: 0;
+  }
+
+  #page-header-text {
+    font-size: 15px;
+  }
+
+  .title-resources {
+    font-size: 12px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    gap: 6px;
+  }
+
+  #app {
+    flex: 1;
+    min-height: 0;
     border-radius: 0;
     padding: 16px;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
-    overflow-y: scroll; /* scroll, not auto — iOS needs explicit scroll */
-    -webkit-overflow-scrolling: touch; /* momentum scrolling */
-    overscroll-behavior-y: contain; /* bounce inside #app, but not body */
-    min-height: 0;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
     box-sizing: border-box;
+    position: static;
+    top: auto;
+  }
+
+  #app.full-bleed {
+    overflow: hidden;
+    padding: 0;
   }
 
   .view {

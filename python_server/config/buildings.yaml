@@ -20,7 +20,7 @@ BASE_CAMP:
   excludes: [TRIBAL_COUNCIL]
   effects:
     life_regen_modifier: 0.001
-    siege_offset: 120.0
+    siege_offset: 120.0       
 
 FIRE_PLACE:
   era: stone
@@ -199,9 +199,10 @@ WATCH_TOWER:
   effort: 5513
   costs: {gold: 1000}
   requirements: [COPPER_BRONZE]
-  effects: 
+  effects:
     siege_offset: 1800
     wave_delay_offset: 1000
+    map_vision_radius_offset: 2
 
 HARBOR:
   era: bronze
@@ -270,6 +271,7 @@ TOWN_GUARD:
   effects: 
     siege_offset: 1800
     spy_workshop: 1  # only true or false
+    max_siege_construction_speed_modifier: -0.02 
 
 
 CHURCH:
@@ -343,7 +345,8 @@ CARTOGRAPHER:
   costs: {gold: 6000}
   requirements: [CARTOGRAPHY]
   effects:
-    travel_offset: -3600
+    travel_offset: -1800
+    map_vision_radius_offset: 3
 
 STABLES:
   era: iron
@@ -375,6 +378,7 @@ WORK_SHOP:
   requirements: [MECHANICS]
   effects:
     build_speed_offset: 0.15
+    max_siege_construction_speed_modifier: -0.02
 
 THEATER:
   era: iron
@@ -435,6 +439,7 @@ GUILD:
   requirements: [ECONOMY]
   effects:
     build_speed_modifier: 0.3
+    max_siege_construction_speed_modifier: -0.02 
 
 SOVEREIGN_GUARD:
   era: middle_ages
@@ -446,6 +451,7 @@ SOVEREIGN_GUARD:
   requirements: [COMMAND_CHAIN]
   effects: 
     siege_offset: 1800
+    siege_construction_speed_per_army_modifier: 0.01
 
 MONASTERY:
   era: middle_ages
@@ -574,7 +580,7 @@ COURTHOUSE:
   effects: 
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-
+    siege_construction_speed_per_army_modifier: 0.01
 
 PARADE_GROUND:
   era: middle_ages
@@ -586,6 +592,7 @@ PARADE_GROUND:
   requirements: [COMMAND_CHAIN]
   effects: 
     tower_sell_refund_modifier: 0.1
+    max_siege_construction_speed_modifier: -0.01 
 
 GUNSMITH:
   era: middle_ages
@@ -677,6 +684,7 @@ HIGH_COURT:
   requirements: [CONSTITUTION]
   effects: 
     max_life_modifier: 5
+    max_siege_construction_speed_modifier: -0.03
 
 PARLIAMENT:
   era: renaissance
@@ -689,6 +697,7 @@ PARLIAMENT:
   effects:
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
+    siege_construction_speed_per_army_modifier: 0.01
 
 EMPERORS_PALACE:
   era: renaissance
@@ -739,6 +748,7 @@ RAIL_ROADS:
   requirements: [STEAM_ENGINE]
   effects:
     travel_offset: -3600
+    map_vision_radius_offset: 3
 
 VEHICLE_WORKSHOP:
   era: industrial
@@ -760,7 +770,8 @@ DEFENSE_DEPARTMENT:
   requirements: [STRATEGIC_WARFARE, CIVIL_ENGINEERING]
   effects: 
     siege_offset: 3600
-    wave_delay_offset: 2000    
+    wave_delay_offset: 1000
+    max_siege_construction_speed_modifier: -0.03
 
 ELECTRIC_FENCE:
   era: industrial
@@ -945,7 +956,10 @@ SOCIAL_SECURITY_SYSTEM:
   effort: 659388
   costs: {gold: 2094294}
   requirements: [CONSTITUTION, SANITATION]
-  effects: {max_life_modifier: 10}
+  effects: 
+    max_life_modifier: 10
+    siege_construction_speed_per_army_modifier: 0.01
+    max_siege_construction_speed_modifier: -0.05
 
 EXECUTIVE_CARPOOL:
   era: modern
@@ -968,6 +982,7 @@ NAVIGATION_SYSTEM:
   requirements: [ELECTRICITY]
   effects:
     travel_offset: -3600
+    map_vision_radius_offset: 4
 
 DERIVATIVE_MARKET:
   era: modern
@@ -1095,7 +1110,8 @@ CYBER_COMMAND:
   effort: 1612008
   costs: {gold: 4292239}
   requirements: [COMPUTER_TECHNOLOGY, BIONICS]
-  effects: []
+  effects: 
+    max_siege_construction_speed_modifier: -0.05
 
 FUSION_REACTOR:
   era: future

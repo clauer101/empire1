@@ -239,6 +239,7 @@ async def handle_item_request(
                 "armour_min": ruler_def.get("armour_min", 0),
                 "armour_max": ruler_def.get("armour_max", 19),
                 "value_base": ruler_def.get("value_base", 1000),
+                "base_damage": ruler_def.get("base_damage", 1),
                 "animation": ruler_def.get("animation", ""),
             },
         }
@@ -631,6 +632,14 @@ async def handle_map_save_request(
                 "error": f"Not enough gold (need {total_gold_cost:.0f}, have {current_gold:.0f})",
             }
         empire.resources["gold"] -= total_gold_cost
+        _towers_placed = sum(
+            1 for tile_key, tile_val in tiles.items()
+            if _tile_type(tile_val) in structure_iids
+            and _tile_type(old_tiles.get(tile_key, '')) != _tile_type(tile_val)
+        )
+        if _towers_placed > 0 and svc.database is not None:
+            import asyncio as _asyncio
+            _asyncio.ensure_future(svc.database.record_empire_stat(target_uid, towers_placed=_towers_placed))
         log.info(
             "Empire %d: deducted %.0f gold for new structure placement",
             target_uid, total_gold_cost,
@@ -653,6 +662,14 @@ async def handle_map_save_request(
                     total_refund += item.costs.get("gold", 0.0) * refund_rate
     if total_refund > 0:
         empire.resources["gold"] = empire.resources.get("gold", 0.0) + total_refund
+        _towers_sold = sum(
+            1 for tile_key, old_val in old_tiles.items()
+            if _tile_type(old_val) in structure_iids
+            and _tile_type(tiles.get(tile_key, 'empty')) != _tile_type(old_val)
+        )
+        if _towers_sold > 0 and svc.database is not None:
+            import asyncio as _asyncio
+            _asyncio.ensure_future(svc.database.record_empire_stat(target_uid, towers_sold=_towers_sold))
         log.info(
             "Empire %d: refunded %.0f gold for sold structures (rate=%.0f%%)",
             target_uid, total_refund, refund_rate * 100,
@@ -661,6 +678,7 @@ async def handle_map_save_request(
     # -- Persist -----------------------------------------------------
     tile_count = len(tiles)
     empire.hex_map = tiles
+    svc.empire_service.invalidate_tile_index()
     log.info(f"Map saved for empire {empire.name} (uid={target_uid}): {tile_count} tiles")
 
     # ── Sync structures into active battle (if one is running) ──────
@@ -752,6 +770,19 @@ async def handle_buy_tile_request(
             "error": f"Tile {tile_key} is not a void tile (current type: {current_type})",
         }
 
+    # Check if the tile is already owned by another empire in world coordinates
+    own_gq = empire.global_q or 0
+    own_gr = empire.global_r or 0
+    world_key = (q + own_gq, r + own_gr)
+    tile_owner = svc.empire_service.world_tile_owner()
+    existing_owner = tile_owner.get(world_key)
+    if existing_owner is not None and existing_owner != target_uid:
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": "This tile belongs to another empire",
+        }
+
     # Calculate cost based on number of already purchased tiles
     purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
     tile_price = svc.empire_service.tile_price_for(empire, purchased_tile_count + 1)
@@ -771,6 +802,7 @@ async def handle_buy_tile_request(
     # Convert void tile to empty land
     hex_map[tile_key] = 'empty'
     empire.hex_map = hex_map
+    svc.empire_service.invalidate_tile_index()
 
     log.info(f"Tile {tile_key} purchased by empire {empire.name} (uid={target_uid}) for {tile_price:.1f} gold")
 

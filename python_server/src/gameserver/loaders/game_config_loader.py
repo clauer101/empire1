@@ -102,6 +102,7 @@ class GameConfig:
     citizen_effect: float = 0.03
     base_build_speed: float = 1.0
     base_research_speed: float = 1.0
+    base_siege_construction_speed_per_army_modifier: float = 0.05
 
     # -- New empire defaults -----------------------------------------
     starting_resources: Dict[str, float] = field(default_factory=lambda: {
@@ -175,6 +176,11 @@ class GameConfig:
     critter_upgrades: CritterUpgradeDef = field(default_factory=CritterUpgradeDef)
     item_upgrade_base_costs: list[int] = field(default_factory=lambda: [1, 15, 100, 300, 600, 1200, 2500, 5000, 10000])
 
+    # -- Season metadata ---------------------------------------------
+    season_number: int = 1
+    season_title: str = ""
+    next_season_start: str = ""
+
     # -- End-game rally ----------------------------------------------
     # iid of the item whose completion triggers the end rally
     end_criterion: str = ""
@@ -189,6 +195,9 @@ class GameConfig:
 
     # -- Artifact lottery --------------------------------------------
     accounts_per_artifact: int = 12
+
+    # -- Map visibility ----------------------------------------------
+    base_map_vision_radius: int = 1  # BFS steps outward from empire border shown as fog
 
     # -- Auth validation ---------------------------------------------
     min_username_length: int = 2

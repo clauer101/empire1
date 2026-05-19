@@ -206,6 +206,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "base_culture": svc.empire_service._base_culture,
         "base_build_speed": svc.empire_service._base_build_speed,
         "base_research_speed": svc.empire_service._base_research_speed,
+        "base_siege_construction_speed_per_army_modifier": svc.empire_service._siege_construction_per_army,
         "base_restore_life": svc.empire_service._base_restore_life,
         "tower_sell_refund": getattr(svc.game_config, 'tower_sell_refund', 0.3) if svc.game_config else 0.3,
         "max_life": empire.max_life,

@@ -914,6 +914,20 @@ def make_router(services: "Services") -> APIRouter:
             services.attack_service._game_config = services.empire_service._gc
         return {"success": True}
 
+    @router.get("/api/admin/runtime-stats")
+    async def get_runtime_stats(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        assert services.database is not None
+        empire_stats = await services.database.get_all_empire_stats()
+        artifact_holds = await services.database.get_artifact_hold_totals()
+        uid_to_name: dict[int, str] = {}
+        for row in await services.database.list_users():
+            uid_to_name[row["uid"]] = row["username"]
+        for row in empire_stats:
+            row["username"] = uid_to_name.get(row["uid"], f"uid:{row['uid']}")
+        for row in artifact_holds:
+            row["username"] = uid_to_name.get(row["uid"], f"uid:{row['uid']}")
+        return {"empire_stats": empire_stats, "artifact_holds": artifact_holds}
+
     @router.get("/api/admin/ai-battle-log")
     async def get_ai_battle_log(limit: int = 500, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         assert services.database is not None

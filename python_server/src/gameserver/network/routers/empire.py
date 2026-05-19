@@ -7,6 +7,7 @@ from typing import Any, TYPE_CHECKING
 from fastapi import APIRouter, Depends
 
 from gameserver.network.jwt_auth import get_current_uid
+from gameserver.models.hex import HexCoord
 from gameserver.network.rest_models import (
     BuildRequest,
     BuyTileRequest,
@@ -19,7 +20,6 @@ from gameserver.network.rest_api import (
     _stub_message,
     _is_recently_active,
     _ERA_KEYS,
-    _ERA_LABELS_DE,
     _ERA_LABELS_EN,
     _critter_groups,
     _structure_groups,
@@ -182,7 +182,6 @@ def make_router(services: "Services") -> APIRouter:
         cu = gc.critter_upgrades if gc else None
         return {
             "eras": _ERA_KEYS,
-            "labels_de": _ERA_LABELS_DE,
             "labels_en": _ERA_LABELS_EN,
             "critters":   _critter_groups,
             "structures": _structure_groups,
@@ -257,20 +256,259 @@ def make_router(services: "Services") -> APIRouter:
         empire.ruler.name = ruler_def.get("name", body.ruler_iid)
         return {"success": True}
 
+    @router.get("/api/map/neighbors")
+    async def map_neighbors(
+        uid: int = Depends(get_current_uid),
+        q0: int | None = None,
+        r0: int | None = None,
+        q1: int | None = None,
+        r1: int | None = None,
+    ) -> dict[str, Any]:
+        """Return non-owned tiles within the fog radius of the empire border.
+
+        When viewport bounds ``(q0,r0)-(q1,r1)`` (defender-local axial coords)
+        are supplied, only tiles inside that rectangle are returned, so the
+        payload stays bounded regardless of territory size or fog radius.
+        Owner lookup uses the shared world tile index (O(1) per tile) instead
+        of rescanning every empire.
+        """
+        empire = empire_service.get(uid)
+        if not empire or not empire.hex_map:
+            return {"neighbor_tiles": []}
+
+        own_keys: set[str] = set(empire.hex_map.keys())
+        own_coords = {HexCoord(*map(int, k.split(","))) for k in own_keys}
+
+        # Border = own tiles that have ≥1 non-own neighbor
+        border: set[HexCoord] = set()
+        for c in own_coords:
+            for nb in c.neighbors():
+                if f"{nb.q},{nb.r}" not in own_keys:
+                    border.add(c)
+                    break
+
+        gc = services.empire_service._gc if services.empire_service else None
+        from gameserver.util.effects import MAP_VISION_RADIUS_OFFSET
+        base_radius = gc.base_map_vision_radius if gc else 1
+        vision_offset = int(empire.effects.get(MAP_VISION_RADIUS_OFFSET, 0))
+        radius = base_radius + vision_offset
+
+        # Strict viewport rect (defender-local). Missing → fall back to the
+        # territory bounding box padded by the fog radius.
+        if q0 is not None and r0 is not None and q1 is not None and r1 is not None:
+            lo_q, hi_q = min(q0, q1), max(q0, q1)
+            lo_r, hi_r = min(r0, r1), max(r0, r1)
+        else:
+            qs = [c.q for c in own_coords]
+            rs = [c.r for c in own_coords]
+            lo_q, hi_q = min(qs) - radius, max(qs) + radius
+            lo_r, hi_r = min(rs) - radius, max(rs) + radius
+
+        # BFS is clipped to the viewport padded by `radius`. Any tile within
+        # `radius` of the border that lands in the viewport stays reachable
+        # via a shortest path inside this region, so cost is O((vp+radius)²)
+        # rather than O(radius² · territory).
+        blo_q, bhi_q = lo_q - radius, hi_q + radius
+        blo_r, bhi_r = lo_r - radius, hi_r + radius
+
+        def _in_bfs(c: HexCoord) -> bool:
+            return blo_q <= c.q <= bhi_q and blo_r <= c.r <= bhi_r
+
+        visible: set[HexCoord] = set()
+        frontier = {c for c in border if _in_bfs(c)}
+        for _ in range(radius):
+            next_frontier: set[HexCoord] = set()
+            for c in frontier:
+                for nb in c.neighbors():
+                    if nb in visible or not _in_bfs(nb):
+                        continue
+                    if f"{nb.q},{nb.r}" in own_keys:
+                        continue
+                    visible.add(nb)
+                    next_frontier.add(nb)
+            frontier = next_frontier
+
+        own_gq = empire.global_q or 0
+        own_gr = empire.global_r or 0
+        world_owner = empire_service.world_tile_owner()
+
+        # Build a lookup: owner_uid → hex_map for structure rendering
+        uid_to_empire = {e.uid: e for e in empire_service.all_empires.values()}
+
+        result = []
+        for c in visible:
+            if not (lo_q <= c.q <= hi_q and lo_r <= c.r <= hi_r):
+                continue
+            owner_uid = world_owner.get((c.q + own_gq, c.r + own_gr))
+            if owner_uid == uid:
+                owner_uid = None
+            # Include tile type if we can look it up from the owner's hex_map
+            iid = None
+            tile_type = None
+            if owner_uid is not None:
+                owner_emp = uid_to_empire.get(owner_uid)
+                if owner_emp:
+                    tile_val = owner_emp.hex_map.get(f"{c.q},{c.r}")
+                    if isinstance(tile_val, dict):
+                        tile_type = tile_val.get("type")
+                        iid = tile_val.get("iid") or tile_type
+                    elif isinstance(tile_val, str):
+                        tile_type = tile_val
+                        iid = tile_val
+            result.append({"q": c.q, "r": c.r, "uid": owner_uid, "iid": iid, "tile_type": tile_type})
+
+        # Compute paths for all visible enemy empires
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+        visible_uids = {r["uid"] for r in result if r["uid"] is not None}
+        enemy_paths = {}
+        for euid in visible_uids:
+            owner_emp = uid_to_empire.get(euid)
+            if not owner_emp:
+                continue
+            normalized: dict[str, str] = {}
+            for k, v in owner_emp.hex_map.items():
+                if isinstance(v, dict):
+                    tile_type = v.get("type")
+                    normalized[k] = tile_type if isinstance(tile_type, str) else ""
+                else:
+                    normalized[k] = v
+            path = find_path_from_spawn_to_castle(normalized)
+            if path:
+                enemy_paths[euid] = [{"q": c.q, "r": c.r} for c in path]
+
+        return {"neighbor_tiles": result, "vision_radius": radius, "enemy_paths": enemy_paths}
+
     @router.get("/api/global-map")
-    async def global_map() -> dict[str, Any]:
-        """Return all empires with their hex_map tiles for the global map view."""
+    async def global_map(
+        q0: int | None = None,
+        r0: int | None = None,
+        q1: int | None = None,
+        r1: int | None = None,
+    ) -> dict[str, Any]:
+        """Return empires with their hex_map tiles, offset to world spawn pos.
+
+        When world-space bounds ``(q0,r0)-(q1,r1)`` are supplied only tiles
+        inside that rectangle are returned, keeping the payload bounded for
+        large worlds; empires with no tile in view are omitted.
+        """
+        clip = (
+            q0 is not None and r0 is not None
+            and q1 is not None and r1 is not None
+        )
+        if clip:
+            assert q0 is not None and r0 is not None
+            assert q1 is not None and r1 is not None
+            lo_q, hi_q = min(q0, q1), max(q0, q1)
+            lo_r, hi_r = min(r0, r1), max(r0, r1)
+
         result = []
         for empire in empire_service.all_empires.values():
+            gq = empire.global_q or 0
+            gr = empire.global_r or 0
             tiles = []
             for key, tile_type in empire.hex_map.items():
                 try:
-                    q, r = (int(v) for v in key.split(","))
-                    tiles.append({"q": q, "r": r, "type": tile_type})
+                    lq, lr = (int(v) for v in key.split(","))
                 except (ValueError, AttributeError):
                     continue
+                wq, wr = lq + gq, lr + gr
+                if clip and not (lo_q <= wq <= hi_q and lo_r <= wr <= hi_r):
+                    continue
+                tiles.append({"q": wq, "r": wr, "type": tile_type})
             if tiles:
-                result.append({"uid": empire.uid, "name": empire.name, "tiles": tiles})
+                result.append({
+                    "uid": empire.uid,
+                    "name": empire.name,
+                    "origin": {"q": gq, "r": gr},
+                    "tiles": tiles,
+                })
         return {"empires": result}
+
+    @router.get("/api/season-results")
+    async def get_season_results(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Return end-of-season leaderboard stats for all player empires."""
+        from gameserver.engine.ai_service import AI_UID
+        import math
+
+        upgrades = empire_service._upgrades.items  # iid → ItemDetails
+
+        results = []
+        for e in empire_service.all_empires.values():
+            if e.uid == AI_UID:
+                continue
+
+            # Tower gold: sum gold costs of all structures placed on the hex map
+            # hex_map values are plain strings (the IID / tile type)
+            NON_STRUCTURE = {"path", "castle", "spawnpoint", "empty", "void", "blocked", ""}
+            tower_gold = 0.0
+            for tile_val in e.hex_map.values():
+                iid = tile_val.get("type") if isinstance(tile_val, dict) else tile_val
+                if iid and iid not in NON_STRUCTURE and iid in upgrades:
+                    tower_gold += upgrades[iid].costs.get("gold", 0.0)
+
+            # Army gold: sum critter value × estimated critter count per wave
+            army_gold = 0.0
+            for army in e.armies:
+                for wave in army.waves:
+                    item = upgrades.get(wave.iid)
+                    if item:
+                        slot_cost = item.slots if item.slots > 0 else 1.0
+                        count = math.floor(wave.slots / slot_cost)
+                        army_gold += item.value * count
+
+            # Workshop: total gold invested (base_cost × Σn² for n=1..N per item)
+            costs_list = empire_service._gc.item_upgrade_base_costs if empire_service._gc else []
+            workshop_gold = 0.0
+            for iid, stats in e.item_upgrades.items():
+                n = sum(stats.values())
+                if n <= 0:
+                    continue
+                era_idx = empire_service._item_era_index.get(iid, 0)
+                base_cost = costs_list[era_idx] if era_idx < len(costs_list) else (costs_list[-1] if costs_list else 0.0)
+                workshop_gold += base_cost * n * (n + 1) * (2 * n + 1) / 6
+
+
+            # Research: total effort and count of completed knowledge items
+            completed_knowledge = [iid for iid, v in e.knowledge.items() if v == 0.0 and iid in upgrades]
+            research_effort = sum(upgrades[iid].effort for iid in completed_knowledge)
+            research_count = len(completed_knowledge)
+
+            # Buildings: total effort and count of completed buildings
+            completed_buildings = [iid for iid, v in e.buildings.items() if v == 0.0 and iid in upgrades]
+            buildings_effort = sum(upgrades[iid].effort for iid in completed_buildings)
+            buildings_count = len(completed_buildings)
+
+            # Tile count: non-void, non-empty tiles (actual owned territory)
+            tile_count = sum(
+                1 for v in e.hex_map.values()
+                if (v.get("type") if isinstance(v, dict) else v) not in ("void", "empty", None, "")
+            )
+
+            results.append({
+                "uid": e.uid,
+                "name": e.name,
+                "culture": round(e.resources.get("culture", 0.0), 1),
+                "artifacts": len(e.artifacts),
+                "tower_gold": round(tower_gold, 1),
+                "army_gold": round(army_gold, 1),
+                "tile_count": tile_count,
+                "workshop_gold": round(workshop_gold),
+                "research_effort": round(research_effort),
+                "research_count": research_count,
+                "buildings_effort": round(buildings_effort),
+                "buildings_count": buildings_count,
+            })
+
+        results.sort(
+            key=lambda x: x["culture"] if isinstance(x["culture"], (int, float)) else 0.0,
+            reverse=True,
+        )
+        gc = empire_service._gc
+        return {
+            "season_number": gc.season_number if gc else 1,
+            "season_title": gc.season_title if gc else "",
+            "next_season_start": gc.next_season_start if gc else "",
+            "empires": results,
+        }
 
     return router

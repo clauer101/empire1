@@ -4,10 +4,11 @@
  * Data sources:
  *   state.summary  → resources.gold, completed_buildings, completed_research, item_upgrades
  *   state.items    → catalog (ItemDetails per IID)
- *   rest.getEraMap()  → structure_upgrade_def, critter_upgrade_def, labels_de
+ *   rest.getEraMap()  → structure_upgrade_def, critter_upgrade_def, labels_en
  */
 
 import { rest } from '../rest.js';
+import { pageTitle } from '../lib/page_title.js';
 import { state } from '../state.js';
 import { eventBus } from '../events.js';
 
@@ -17,7 +18,7 @@ let _selectedIid = null;
 let _tab = 'structures'; // 'structures' | 'critters'
 let _itemUpgrades = {}; // iid → { stat → level }
 let _upgradeDefs = null; // { structure_upgrade_def, critter_upgrade_def }
-let _eraLabels = {}; // era_key → German label
+let _eraLabels = {}; // era_key → English label
 let _iidEraIndex = {}; // iid → era index 0–8
 let _unsubSummary = null;
 let _unsubItems = null;
@@ -51,20 +52,6 @@ function _fmtRes(val, digits = 0) {
     : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
-function _fillTitleResources() {
-  if (!_container) return;
-  const r = state.summary?.resources;
-  if (!r) return;
-  _container.querySelectorAll('.title-gold').forEach((el) => {
-    el.textContent = '💰 ' + _fmtRes(r.gold);
-  });
-  _container.querySelectorAll('.title-culture').forEach((el) => {
-    el.textContent = '🎭 ' + _fmtRes(r.culture);
-  });
-  _container.querySelectorAll('.title-life').forEach((el) => {
-    el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0);
-  });
-}
 
 function _catalog() {
   return state.items?.catalog ?? {};
@@ -224,21 +211,30 @@ function _statRows(iid, statDefs, upgradeDefs) {
       opacity:${isMaxed ? '0.5' : canAfford ? '1' : '0.6'};white-space:nowrap;flex-shrink:0;
     `.replace(/\s+/g, ' ');
 
+      const nextVal = hasBase && !isMaxed ? _fmtVal(_currentValue(displayBase, calcKey, level + 1, upgradeDefs)) + ' ' + displayUnit : null;
+      const btn = isMaxed
+        ? `<span style="font-size:11px;color:var(--text-dim,#888);padding:2px 8px;">maxed</span>`
+        : price > 0
+          ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}"
+               style="background:transparent;color:${btnColor};border:1px solid ${btnColor};
+                      border-radius:var(--radius,4px);padding:2px 10px;font-size:12px;
+                      cursor:${canAfford ? 'pointer' : 'not-allowed'};
+                      opacity:${canAfford ? '1' : '0.6'};white-space:nowrap;"
+               ${canAfford ? '' : 'disabled'}>💰${price.toFixed(2)}</button>`
+          : '';
+
       return `
-      <tr class="ws-stat-row" data-stat="${key}" data-iid="${iid}">
-        <td style="padding:6px 8px;color:var(--text-dim,#888);font-size:13px;">${displayLabel}</td>
-        <td style="padding:6px 8px;font-size:13px;text-align:right;">${hasBase ? _fmtVal(curVal) + ' ' + displayUnit : '—'}</td>
-        <td style="padding:6px 8px;font-size:13px;text-align:center;color:#c9a84c;font-weight:bold;">${level}</td>
-        <td style="padding:6px 8px;font-size:13px;text-align:right;color:#7ec8a4;">${hasBase && !isMaxed ? _fmtVal(_currentValue(displayBase, calcKey, level + 1, upgradeDefs)) + ' ' + displayUnit : '—'}</td>
-        <td style="padding:6px 8px;text-align:right;">
-          ${isMaxed
-            ? `<button disabled style="${btnStyle}">maxed out</button>`
-            : price > 0
-              ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}" style="${btnStyle.replace('cursor:not-allowed', `cursor:${canAfford ? 'pointer' : 'not-allowed'}`)}" ${canAfford ? '' : 'disabled'}>💰${price.toFixed(2)}</button>`
-              : `<span style="font-size:11px;color:var(--text-dim,#888);">—</span>`
-          }
-        </td>
-      </tr>`;
+      <div class="ws-stat-row" data-stat="${key}" data-iid="${iid}"
+           style="display:flex;align-items:center;gap:8px;padding:6px 0;
+                  border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="flex:1;font-size:13px;color:var(--text-dim,#888);">${displayLabel}</div>
+        <div style="font-size:13px;min-width:60px;text-align:right;">
+          ${hasBase ? _fmtVal(curVal) + ' <span style="font-size:11px;color:var(--text-dim,#888);">' + displayUnit + '</span>' : '—'}
+        </div>
+        ${nextVal ? `<div style="font-size:11px;color:#7ec8a4;white-space:nowrap;">→ ${nextVal}</div>` : '<div></div>'}
+        ${level > 0 ? `<div style="font-size:10px;background:rgba(201,168,76,0.2);color:#c9a84c;padding:1px 6px;border-radius:8px;white-space:nowrap;">Lv ${level}</div>` : '<div style="width:32px;"></div>'}
+        <div>${btn}</div>
+      </div>`;
     })
     .filter(Boolean)
     .join('');
@@ -286,20 +282,9 @@ function _renderDetail_html(iid) {
         </div>
       </div>
 
-      <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
-            <th style="padding:4px 8px;text-align:left;font-size:11px;color:var(--text-dim,#888);font-weight:normal;">Stat</th>
-            <th style="padding:4px 8px;text-align:right;font-size:11px;color:var(--text-dim,#888);font-weight:normal;">Current</th>
-            <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim,#888);font-weight:normal;">Lvl</th>
-            <th style="padding:4px 8px;text-align:right;font-size:11px;color:var(--text-dim,#888);font-weight:normal;">Next</th>
-            <th style="padding:4px 8px;text-align:right;font-size:11px;color:var(--text-dim,#888);font-weight:normal;">Upgrade</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${_statRows(iid, statDefs, upgradeDefs)}
-        </tbody>
-      </table>
+      <div style="display:flex;flex-direction:column;">
+        ${_statRows(iid, statDefs, upgradeDefs)}
+      </div>
 
     </div>`;
 }
@@ -424,22 +409,19 @@ function _render() {
     </button>`;
 
   _container.innerHTML = `
-    <h2 class="battle-title">⚙ Workshop
-      <span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span>
-    </h2>
     <div style="padding:8px 16px 4px;display:flex;gap:8px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.08);">
       ${tabBtn('structures', '🛡 Towers', _tab === 'structures')}
       ${tabBtn('critters', '⚔ Critters', _tab === 'critters')}
     </div>
-    <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+    <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;width:0;min-width:100%;">
       <!-- Item grid (top, horizontal scroll) -->
       <div class="ws-grid-scroller" style="flex-shrink:0;overflow-x:auto;overflow-y:hidden;
                   border-bottom:1px solid rgba(255,255,255,0.08);">
         ${_itemGridHtml(iids, _tab === 'structures')}
       </div>
 
-      <!-- Detail panel (below, fills remaining space) -->
-      <div id="ws-detail" style="flex:1;overflow-y:auto;">
+      <!-- Detail panel (below, fills remaining space, never wider than viewport) -->
+      <div id="ws-detail" style="flex:1;overflow-y:auto;overflow-x:hidden;">
         ${
           _selectedIid
             ? _renderDetail_html(_selectedIid)
@@ -455,7 +437,6 @@ function _render() {
   const newScroller = _container.querySelector('.ws-grid-scroller');
   if (newScroller) newScroller.scrollLeft = _gridScroll[_tab] ?? 0;
 
-  _fillTitleResources();
   _bindEvents();
   requestAnimationFrame(() => _initCanvases(_container));
 }
@@ -532,11 +513,12 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  pageTitle.set('⚙ Workshop');
   _unsubSummary = eventBus.on('state:summary', () => {
     _itemUpgrades = state.summary?.item_upgrades ?? _itemUpgrades;
-    _renderDetail();
+    if (_upgradeDefs) _renderDetail();
   });
-  _unsubItems = eventBus.on('state:items', () => _render());
+  _unsubItems = eventBus.on('state:items', () => { if (_upgradeDefs) _render(); });
 
   // Load data in parallel
   let eraMap;
@@ -550,7 +532,7 @@ async function enter() {
   // Pick up item_upgrades from summary
   _itemUpgrades = state.summary?.item_upgrades ?? {};
   _upgradeDefs = eraMap ?? null;
-  _eraLabels = eraMap?.labels_de ?? {};
+  _eraLabels = eraMap?.labels_en ?? {};
 
   // Build iid → era index from era-map groups
   _iidEraIndex = {};

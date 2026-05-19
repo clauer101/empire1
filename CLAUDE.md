@@ -75,6 +75,17 @@ npm run build        # hashed assets in web/dist/
 Set `BUILD_MODE=production` to make the web server (`web/fastapi_server.py`) serve
 `web/dist/` instead of raw source. Default is `dev` (raw files, no build needed).
 
+> **IMPORTANT — both dev and prod environments use `BUILD_MODE=production`** (set in
+> `docker-compose.dev.yml` and `docker-compose.prod.yml`). This means the server always
+> serves `web/dist/`, **not** raw source files. Any JS/CSS change that "doesn't appear"
+> after deploy is almost certainly because the Vite build was not re-run first.
+> **Always run build + deploy together:**
+> ```bash
+> export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"
+> cd web && npm run build && cd .. && ./deploy.sh dev
+> ```
+> Never assume raw file edits are visible in the browser without rebuilding.
+
 After changing JS/CSS files: re-run `npm run build` before deploying.
 
 When adding new image assets (JPG/PNG sprites): run `npm run assets:optimize` to
@@ -92,6 +103,24 @@ All formatting logic lives in `web/js/lib/format.js`. Do not inline formatting e
 | `fmtEffectRow(key, value)` | Two-column HTML row: `<span>icon label:</span><span>+value</span>` — for overlays/detail panels |
 | `fmtEffectsInline(effects)` | Compact comma string: `"💰 +3.6/h, 🎭 +5%"` — for card previews |
 | `fmtTowerEffects(effects)` | Tower combat effects: burn / slow / splash |
+
+## nginx API Routing
+
+nginx uses a regex whitelist to proxy `/api/*` paths to the gameserver. When adding
+a **new REST endpoint**, always add its prefix to the whitelist in `nginx.conf.example`
+(both the dev and prod server blocks) and reload nginx:
+
+```
+location ~ ^/api/(auth|empire|...|YOUR_NEW_PREFIX)(/|$)
+```
+
+After editing `nginx.conf.example`:
+```bash
+sudo cp nginx.conf.example /etc/nginx/sites-available/empire1 && sudo nginx -t && sudo systemctl reload nginx
+```
+
+Symptom if forgotten: endpoint returns 404 from the webserver instead of the gameserver,
+even though `curl localhost:8180/api/your-endpoint` works fine.
 
 ## Adding Python Packages
 

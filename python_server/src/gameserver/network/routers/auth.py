@@ -33,7 +33,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             if services.database is not None:
                 forwarded = request.headers.get("X-Forwarded-For", "")
                 ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "")
-                await services.database.record_login(uid, ip, body.fingerprint)
+                await services.database.record_login(uid, ip, body.fingerprint, body.device_id)
             return {
                 "success": True,
                 "uid": uid,

@@ -29,6 +29,7 @@
  */
 
 import { eventBus } from '../events.js';
+import { pageTitle } from './page_title.js';
 import { formatEffect } from '../i18n.js';
 import { rest } from '../rest.js';
 import { ItemOverlay } from './item_overlay.js';
@@ -50,7 +51,6 @@ export function createQueueView(cfg) {
     st = _state;
 
     container.innerHTML = `
-      <h2 class="battle-title">${cfg.heading || cfg.title}<span class="title-resources"><span class="title-gold"></span><span class="title-culture"></span><span class="title-life"></span></span></h2>
       <div id="${cfg.contentId}">
         <div class="empty-state"><div class="empty-icon">${cfg.loadingIcon}</div><p>${cfg.loadingText}</p></div>
       </div>
@@ -60,6 +60,7 @@ export function createQueueView(cfg) {
   }
 
   async function enter() {
+    pageTitle.set(cfg.heading || cfg.title);
     _unsub.push(eventBus.on('state:summary', render));
     _unsub.push(eventBus.on('state:items', render));
     try {

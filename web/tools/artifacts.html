@@ -108,10 +108,10 @@
 
     /* autocomplete */
     .ac-list {
-      position: absolute; top: 100%; left: 0; z-index: 50;
+      position: absolute; z-index: 9999;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); min-width: 220px; max-height: 180px;
-      overflow-y: auto; display: none; margin-top: 2px;
+      border-radius: var(--radius); max-height: 180px;
+      overflow-y: auto; display: none;
     }
     .ac-item { padding: 5px 10px; cursor: pointer; font-size: 11px; font-family: var(--mono); }
     .ac-item:hover, .ac-item.active { background: var(--surface-hover); color: var(--accent); }
@@ -133,18 +133,32 @@
 
 <script>
 const ALL_EFFECT_IDS = [
-  'gold_modifier','gold_offset','culture_modifier','culture_offset',
-  'life_modifier','life_regen_modifier','restore_life','max_life_modifier',
-  'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
-  'damage_modifier','range_modifier','reload_modifier',
-  'slow_target','slow_target_duration','burn_target','burn_target_duration',
-  'splash_damage','splash_radius',
-  'speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level',
-  'travel_offset','siege_offset','restore_life_after_loss_offset',
-  'wave_delay_offset','wave_delay_modifier',
-  'capture_gold','capture_culture','lose_knowledge','lose_artifact','destroy_wonder_percent',
-  'culture_steal_modifier','artifact_steal_chance_modifier','knowledge_steal_modifier',
-  'spy_disguise_chance',
+  // Resources
+  'gold_modifier', 'gold_offset', 'culture_modifier', 'culture_offset',
+  'life_regen_modifier', 'max_life_modifier',
+  // Building & Research
+  'build_speed_modifier', 'build_speed_offset',
+  'research_speed_modifier', 'research_speed_offset',
+  'building_cost_modifier', 'tower_sell_refund_modifier',
+  // Workshop
+  'workshop_cost_modifier',
+  // Travel & Siege
+  'travel_offset', 'travel_time_modifier',
+  'siege_offset', 'siege_time_modifier',
+  'enemy_siege_time_modifier',
+  // Battle / Defense
+  'restore_life_after_loss_offset', 'restore_life_during_battle_modifier',
+  'wave_delay_offset',
+  // Army costs
+  'wave_cost_modifier', 'wave_era_cost_modifier', 'wave_slot_cost_modifier',
+  // Other costs
+  'citizen_cost_modifier', 'tile_cost_modifier', 'land_cost_modifier',
+  // Citizens
+  'citizen_effect_modifier', 'other_citizen_gold_modifier',
+  // Steal / Spy
+  'artifact_steal_victory_modifier', 'artifact_steal_defeat_modifier',
+  'culture_steal_modifier', 'knowledge_steal_modifier',
+  'spy_workshop',
 ];
 
 const ARTIFACT_TYPES = ['normal', 'legendary'];
@@ -161,6 +175,12 @@ function markDirty() {
 
 // ── Autocomplete ──────────────────────────────────────────────
 function attachEffectAc(input, listEl) {
+  function reposition() {
+    const r = input.getBoundingClientRect();
+    listEl.style.top = (r.bottom + window.scrollY) + 'px';
+    listEl.style.left = (r.left + window.scrollX) + 'px';
+    listEl.style.width = r.width + 'px';
+  }
   function show() {
     const q = input.value.toLowerCase();
     const matches = ALL_EFFECT_IDS.filter(id => !q || id.includes(q));
@@ -168,6 +188,7 @@ function attachEffectAc(input, listEl) {
     listEl.innerHTML = matches.slice(0, 20).map((id, i) =>
       `<div class="ac-item" data-idx="${i}">${id}</div>`
     ).join('');
+    reposition();
     listEl.style.display = 'block';
     listEl.querySelectorAll('.ac-item').forEach(el => {
       el.addEventListener('mousedown', ev => {
@@ -260,9 +281,10 @@ function renderAll() {
       Object.entries(art.effects || {}).forEach(([key, val]) => {
         const row = document.createElement('div');
         row.className = 'effect-row';
+        const isSentinel = key.startsWith('\x00');
         row.innerHTML = `
           <div class="effect-key-wrap">
-            <input class="effect-key" value="${key}" placeholder="effect_id" />
+            <input class="effect-key" value="${isSentinel ? '' : key}" placeholder="effect_id" />
             <div class="ac-list"></div>
           </div>
           <input class="effect-val" type="number" step="0.01" value="${val}" />
@@ -271,6 +293,7 @@ function renderAll() {
         const keyInput = row.querySelector('.effect-key');
         const valInput = row.querySelector('.effect-val');
         const acList   = row.querySelector('.ac-list');
+        document.body.appendChild(acList);
 
         attachEffectAc(keyInput, acList);
 
@@ -302,11 +325,11 @@ function renderAll() {
 
     card.querySelector('.add-effect-btn').addEventListener('click', () => {
       if (!art.effects) art.effects = {};
-      // Find unused key slot
-      let newKey = 'effect_id';
+      // Add a pending row with empty key — stored under a unique sentinel
+      let sentinel = '\x00';
       let n = 1;
-      while (art.effects[newKey] !== undefined) newKey = `effect_id_${n++}`;
-      art.effects[newKey] = 0;
+      while (art.effects[sentinel] !== undefined) sentinel = `\x00${n++}`;
+      art.effects[sentinel] = 0;
       markDirty();
       renderEffects();
       // Focus last key input

@@ -14,6 +14,8 @@ import { setEndRally, isGameFrozen } from './lib/game_state.js';
 import { debug } from './debug.js';
 import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
+import { pageTitle } from './lib/page_title.js';
+import { fmtRes } from './lib/format.js';
 
 import loginView from './views/login.js';
 import dashView, { getCultureLeaderName, onLeaderUpdated } from './views/status.js?v=20260514a';
@@ -27,6 +29,10 @@ import signupView from './views/signup.js';
 import replayView from './views/replay.js';
 import workshopView from './views/workshop.js';
 import logoutView from './views/logout.js';
+import globalmapView from './views/globalmap.js';
+import globalempiresView from './views/globalempires.js';
+import rulerView from './views/ruler.js';
+import seasonResultsView from './views/seasonresults.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
@@ -34,6 +40,7 @@ const restUrl = params.get('rest') || window.location.origin;
 
 // ── Instantiate core objects ───────────────────────────────
 rest.init(restUrl);
+pageTitle.init();
 const appEl = document.getElementById('app');
 const router = new Router(appEl, null, state);
 
@@ -56,6 +63,10 @@ eventBus.on('rest:unauthorized', () => {
   socialView,
   replayView,
   workshopView,
+  globalmapView,
+  globalempiresView,
+  rulerView,
+  seasonResultsView,
   logoutView,
 ].forEach((v) => router.register(v));
 
@@ -92,22 +103,16 @@ let _rateCulture = 0; // per hour
 let _liveTs = 0;
 let _liveTicker = null;
 
-function _fmtRes(val, digits = 0) {
-  const v = val ?? 0;
-  return v >= 1000
-    ? Math.floor(v / 1000) + 'k'
-    : Math.floor(v * Math.pow(10, digits)) / Math.pow(10, digits);
-}
 
 function _tickTitleResources() {
   const elapsed = isGameFrozen() ? 0 : (Date.now() - _liveTs) / 3600000; // hours
   const gold = _liveGold + _rateGold * elapsed;
   const culture = _liveCulture + _rateCulture * elapsed;
   appEl.querySelectorAll('.title-gold').forEach((el) => {
-    el.textContent = '💰 ' + _fmtRes(gold);
+    el.textContent = '💰 ' + fmtRes(gold);
   });
   appEl.querySelectorAll('.title-culture').forEach((el) => {
-    el.textContent = '🎭 ' + _fmtRes(culture);
+    el.textContent = '🎭 ' + fmtRes(culture);
   });
 }
 
@@ -118,7 +123,7 @@ function _updateTitleResources(r, rates) {
   _rateCulture = rates?.culture ?? 0;
   _liveTs = Date.now();
   appEl.querySelectorAll('.title-life').forEach((el) => {
-    el.innerHTML = '<span style="color:#e05c5c">❤</span> ' + _fmtRes(r.life, 0);
+    el.innerHTML = '<span style="color:#e05c5c">❤︎</span> ' + fmtRes(r.life, 0);
   });
   if (!_liveTicker) _liveTicker = setInterval(_tickTitleResources, 100);
   _tickTitleResources();
@@ -236,6 +241,13 @@ function _hideEraOverlay() {
 const navBrand = document.getElementById('nav-brand');
 if (navBrand) navBrand.addEventListener('click', _showEraOverlay);
 
+window.addEventListener('empire:attack', (e) => {
+  const { uid, name } = e.detail || {};
+  if (!uid) return;
+  state.pendingAttackTarget = { uid: parseInt(uid, 10), name: name || '' };
+  window.location.hash = '#army';
+});
+
 eventBus.on('state:summary', (data) => {
   if (data?.resources) {
     _lastResources = data.resources;
@@ -309,7 +321,8 @@ function _updateGameOverBanner(rally) {
   const frozen = rally?.activated_at && !rally?.active;
   if (!frozen) { banner.style.display = 'none'; return; }
   const winner = rally.triggered_by_name || '?';
-  banner.textContent = `🏆 ${winner} has won the season — Congratulations!`;
+  const winnerSafe = winner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  banner.innerHTML = `🏆 <strong>${winnerSafe}</strong> has won the season — Congratulations! <a href="#season-results" style="color:#ffd700;font-weight:bold;margin-left:10px;text-decoration:underline;">(view results)</a>`;
   banner.style.display = 'block';
   requestAnimationFrame(() => {
     document.documentElement.style.setProperty('--rally-banner-h', banner.offsetHeight + 'px');

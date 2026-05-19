@@ -252,38 +252,47 @@ _SERVE_DIR = WEB_DIR / "dist" if _BUILD_MODE == "production" else WEB_DIR
 NO_CACHE = False
 
 
-class NoCacheASGIMiddleware:
-    """ASGI middleware that removes cache headers at the response level."""
-    
+_IMAGE_EXTS = frozenset({".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".avif"})
+
+
+class SmartCacheASGIMiddleware:
+    """Images get long-lived caching; HTML/JS/CSS are always revalidated."""
+
     def __init__(self, app):
         self.app = app
-    
+
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        
+
+        path = scope.get("path", "")
+        ext = os.path.splitext(path)[1].lower()
+        is_image = ext in _IMAGE_EXTS
+
         async def send_wrapper(message):
-            if message["type"] == "http.response.start" and NO_CACHE:
-                # Intercept the response headers before they're sent
+            if message["type"] == "http.response.start":
                 headers = MutableHeaders(scope=message)
-                # Remove conditional caching headers
-                if "etag" in headers:
-                    del headers["etag"]
-                if "last-modified" in headers:
-                    del headers["last-modified"]
-                # Set no-cache headers
-                headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
-                headers["Pragma"] = "no-cache"
-                headers["Expires"] = "0"
-            
+                if is_image:
+                    # Images rarely change — cache for one week.
+                    headers["Cache-Control"] = "public, max-age=604800"
+                else:
+                    # HTML / JS / CSS: always revalidate.  ETag/Last-Modified from
+                    # StaticFiles still work, so the browser only re-downloads when
+                    # content actually changed (304 otherwise).
+                    headers["Cache-Control"] = "no-cache"
+                    # Remove stale Pragma/Expires that some middleware might add
+                    for h in ("pragma", "expires"):
+                        if h in headers:
+                            del headers[h]
+
             await send(message)
-        
+
         await self.app(scope, receive, send_wrapper)
 
 
 class NoCacheStaticFiles(StaticFiles):
-    """StaticFiles class (now middleware handles caching)."""
+    """StaticFiles subclass — caching is handled by SmartCacheASGIMiddleware."""
     pass
 
 
@@ -1549,11 +1558,9 @@ def main():
     log.info("=" * 60)
     log.info("ℹ️  Press Ctrl+C to stop")
     log.info("=" * 60)
-    
-    # Wrap app with no-cache middleware if needed
-    asgi_app = app
-    if NO_CACHE:
-        asgi_app = NoCacheASGIMiddleware(app)
+
+    # Smart cache middleware: always active (images=immutable, JS/CSS/HTML=no-cache)
+    asgi_app = SmartCacheASGIMiddleware(app)
     
     uvicorn.run(
         asgi_app,

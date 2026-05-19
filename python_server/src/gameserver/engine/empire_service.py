@@ -77,12 +77,21 @@ class EmpireService:
         self._citizen_effect = _gc.citizen_effect
         self._base_build_speed = _gc.base_build_speed
         self._base_research_speed = _gc.base_research_speed
+        self._siege_construction_per_army = _gc.base_siege_construction_speed_per_army_modifier
         self._base_restore_life = _gc.restore_life_after_loss_offset
         self._knowledge_era_groups: dict[str, list[str]] = knowledge_era_groups or {}
         self._building_era_groups: dict[str, list[str]] = building_era_groups or {}
         self._item_era_index: dict[str, int] = item_era_index or {}
         self._rulers: dict[str, Any] = rulers or {}
         self._next_aid: int = 1  # global army ID counter
+        self._database: Any | None = None
+        self._attack_service: Any | None = None
+
+        # World-space tile ownership index: (world_q, world_r) -> owner uid.
+        # Rebuilt lazily from all empires; avoids the O(empires*tiles) scan
+        # that /api/map/neighbors and /api/global-map used to do per request.
+        self._world_tile_owner: dict[tuple[int, int], int] | None = None
+        self._tile_index_dirty: bool = True
 
     # -- Army ID allocation ----------------------------------------------
 
@@ -110,11 +119,45 @@ class EmpireService:
     def register(self, empire: Empire) -> None:
         """Add an empire to the managed set."""
         self._empires[empire.uid] = empire
+        self.invalidate_tile_index()
         log.info("Empire registered: uid=%d name=%r", empire.uid, empire.name)
 
     def unregister(self, uid: int) -> Optional[Empire]:
         """Remove and return an empire from the managed set."""
+        self.invalidate_tile_index()
         return self._empires.pop(uid, None)
+
+    # -- World tile ownership index --------------------------------------
+
+    def invalidate_tile_index(self) -> None:
+        """Mark the world tile-ownership index stale (rebuilt on next use).
+
+        Call after any mutation that changes which empire owns which tile:
+        registering/unregistering an empire or saving/buying a hex tile.
+        """
+        self._tile_index_dirty = True
+
+    def world_tile_owner(self) -> dict[tuple[int, int], int]:
+        """Return ``(world_q, world_r) -> owner uid`` for every owned tile.
+
+        Rebuilt from scratch only when stale (mirrors the full-recompute
+        pattern of :meth:`recalculate_effects`). World coords are the empire's
+        local hex coords offset by its global spawn position.
+        """
+        if self._tile_index_dirty or self._world_tile_owner is None:
+            index: dict[tuple[int, int], int] = {}
+            for emp in self._empires.values():
+                gq = emp.global_q or 0
+                gr = emp.global_r or 0
+                for key in emp.hex_map:
+                    try:
+                        eq, er = (int(v) for v in key.split(","))
+                    except (ValueError, AttributeError):
+                        continue
+                    index[(eq + gq, er + gr)] = emp.uid
+            self._world_tile_owner = index
+            self._tile_index_dirty = False
+        return self._world_tile_owner
 
     def get(self, uid: int) -> Optional[Empire]:
         """Look up an empire by UID."""
@@ -218,8 +261,11 @@ class EmpireService:
             empire.build_queue = None
             return
 
-        # Build speed: (base + offset) * (1 + modifier)
+        # Build speed: (base + offset) * (1 + modifier) * (1 - siege_penalty)
         speed = (self._base_build_speed + empire.get_effect("build_speed_offset", 0.0)) * (1.0 + empire.get_effect("build_speed_modifier", 0.0))
+        siege_penalty = self._siege_construction_speed_penalty(empire)
+        if siege_penalty > 0:
+            speed *= (1.0 - siege_penalty)
         remaining -= dt * speed
         if remaining <= 0:
             remaining = 0.0
@@ -231,6 +277,28 @@ class EmpireService:
             self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
             return
         empire.buildings[iid] = remaining
+
+    def _siege_construction_speed_penalty(self, empire: Empire) -> float:
+        """Return the fractional build speed reduction caused by in-siege attackers.
+
+        Each army currently in siege against this empire reduces construction speed
+        by base_siege_construction_speed_per_army_modifier, capped at
+        max_siege_construction_speed_modifier from the empire's current era_effects.
+        """
+        if self._attack_service is None:
+            return 0.0
+        from gameserver.models.attack import AttackPhase
+        siege_count = sum(
+            1 for a in self._attack_service.get_incoming(empire.uid)
+            if a.phase == AttackPhase.IN_SIEGE
+        )
+        if siege_count == 0:
+            return 0.0
+        per_army = self._siege_construction_per_army - empire.get_effect("siege_construction_speed_per_army_modifier", 0.0)
+        per_army = max(0.0, per_army)
+        raw = siege_count * per_army
+        max_penalty = empire.get_effect("max_siege_construction_speed_modifier", 0.0)
+        return min(raw, max_penalty) if max_penalty > 0 else raw
 
     def _progress_knowledge(self, empire: Empire, dt: float) -> None:
         """Tick research progress for the single active research item."""
@@ -271,7 +339,17 @@ class EmpireService:
         the era, which has its own set of effects. Also triggers the end
         rally if this item matches the configured end_criterion.
         """
+        _era_before = self.get_current_era(empire)
         self.recalculate_effects(empire)
+        _era_after = self.get_current_era(empire)
+        if _era_after != _era_before:
+            from gameserver.engine.global_state import try_claim_first_era
+            if try_claim_first_era(_era_after):
+                import asyncio as _asyncio
+                if self._database is not None:
+                    _asyncio.ensure_future(
+                        self._database.record_empire_stat(empire.uid, first_era_reached=1)
+                    )
         if self._gc is not None and self._gc.end_criterion and iid == self._gc.end_criterion:
             from gameserver.engine.global_state import try_set_end_criterion_activated
             if try_set_end_criterion_activated(

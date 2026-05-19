@@ -29,6 +29,8 @@ export function createBattleWs(ctx) {
   let _wsReconnectTimer = null;
   let _wsIntentionalClose = false;
   let _wsConnectTimeout = null;
+  let _setupReceivedTimer = null;
+  let _setupReceived = false;
 
   function _updateWsIndicator(online) {
     const el = document.getElementById('ws-status-indicator');
@@ -87,17 +89,28 @@ export function createBattleWs(ctx) {
     ws.addEventListener('open', () => {
       clearTimeout(_wsConnectTimeout);
       _wsConnected = true;
+      _setupReceived = false;
       ctx.addDebugLog('🟢 WS connected');
       _updateWsIndicator(true);
 
       const st = ctx.getSt();
       const pendingId = ctx.getPendingAttackId();
       const spectateUid = ctx.getSpectateUid();
-      send({
+      const registerMsg = {
         type: 'battle_register',
         target_uid: spectateUid ?? st?.summary?.uid,
         ...(pendingId != null ? { attack_id: pendingId } : {}),
-      });
+      };
+      send(registerMsg);
+
+      // If no battle_setup arrives within 3s, re-register to request it again
+      clearTimeout(_setupReceivedTimer);
+      _setupReceivedTimer = setTimeout(() => {
+        if (!_setupReceived && _wsConnected) {
+          ctx.addDebugLog('⚠ No battle_setup received — re-registering');
+          send(registerMsg);
+        }
+      }, 3000);
     });
 
     ws.addEventListener('message', (ev) => {
@@ -140,6 +153,8 @@ export function createBattleWs(ctx) {
         break;
       case 'battle_setup':
         if (msg.defender_uid !== relevantDefender) break;
+        _setupReceived = true;
+        clearTimeout(_setupReceivedTimer);
         ctx.onMessage(msg);
         break;
       case 'battle_update':
@@ -179,6 +194,8 @@ export function createBattleWs(ctx) {
       clearTimeout(_wsConnectTimeout);
       _wsConnectTimeout = null;
     }
+    clearTimeout(_setupReceivedTimer);
+    _setupReceivedTimer = null;
     if (_wsReconnectTimer) {
       clearTimeout(_wsReconnectTimer);
       _wsReconnectTimer = null;
@@ -218,5 +235,20 @@ export function createBattleWs(ctx) {
     return _wsConnected;
   }
 
-  return { connect, disconnect, send, connectIfNeeded, isConnected };
+  function requestResetup() {
+    if (!_wsConnected) return;
+    const st = ctx.getSt();
+    const pendingId = ctx.getPendingAttackId();
+    const spectateUid = ctx.getSpectateUid();
+    const registerMsg = {
+      type: 'battle_register',
+      target_uid: spectateUid ?? st?.summary?.uid,
+      ...(pendingId != null ? { attack_id: pendingId } : {}),
+    };
+    _setupReceived = false;
+    ctx.addDebugLog('🔄 Re-requesting battle_setup (incomplete grid detected)');
+    send(registerMsg);
+  }
+
+  return { connect, disconnect, send, connectIfNeeded, isConnected, requestResetup };
 }

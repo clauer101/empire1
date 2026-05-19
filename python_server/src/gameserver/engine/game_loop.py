@@ -15,8 +15,10 @@ asyncio tasks managed by battle_service.
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gameserver.engine.ai_service import AIService
@@ -25,6 +27,8 @@ if TYPE_CHECKING:
     from gameserver.engine.statistics import StatisticsService
     from gameserver.loaders.game_config_loader import GameConfig
     from gameserver.util.events import EventBus
+
+_log = logging.getLogger(__name__)
 
 
 
@@ -60,6 +64,9 @@ class GameLoop:
         self._gc = game_config
         self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
         self._save_every_n_ticks = max(1, int(self.STATE_SAVE_INTERVAL_S / self._step_interval))
+
+        self._database: Any | None = None
+        self._season_snapshot_done: bool = False
 
         # --- Debug / monitoring counters ---
         self.tick_count: int = 0
@@ -108,6 +115,71 @@ class GameLoop:
         """Signal the game loop to stop."""
         self._running = False
 
+    async def _take_season_snapshot(self) -> None:
+        """Copy state.yaml + gameserver.db + runtime stats CSV to the season results folder.
+
+        Target: <data_dir>/results/season1/
+        Does nothing if the folder already contains files.
+        """
+        import csv
+        import shutil
+
+        results_dir = Path(self._state_file).parent / "results" / "season1"
+        try:
+            results_dir.mkdir(parents=True, exist_ok=True)
+            if (results_dir / "gameserver.db").exists() and (results_dir / "state.yaml").exists():
+                _log.info("Season snapshot: gameserver.db + state.yaml already present — skipping")
+                return
+
+            # 1. state.yaml
+            state_src = Path(self._state_file)
+            if state_src.exists():
+                shutil.copy2(state_src, results_dir / "state.yaml")
+                _log.info("Season snapshot: copied state.yaml")
+
+            # 2. gameserver.db
+            if self._database is not None:
+                db_src = Path(self._database._db_path)
+                if db_src.exists():
+                    dest_db = results_dir / "gameserver.db"
+                    await self._database._conn.execute(f"VACUUM INTO '{dest_db}'")  # type: ignore[union-attr]
+                    _log.info("Season snapshot: copied gameserver.db via VACUUM INTO")
+
+            # 3. empire_stats CSV
+            if self._database is not None:
+                stats_rows = await self._database.get_all_empire_stats()
+                _EMPIRE_STATS_COLS = [
+                    "uid", "attacks_won_human", "attacks_lost_human", "attacks_won_ai",
+                    "attacks_lost_ai", "defense_won_human", "defense_lost_human",
+                    "defense_won_ai", "defense_lost_ai", "spies_sent", "towers_sold",
+                    "towers_placed", "artifacts_stolen", "longest_battle_ms",
+                    "critters_killed", "culture_stolen", "research_stolen",
+                    "culture_won", "research_won", "defense_gold_earned", "first_era_reached",
+                ]
+                fieldnames = list(stats_rows[0].keys()) if stats_rows else _EMPIRE_STATS_COLS
+                csv_path = results_dir / "empire_stats.csv"
+                with csv_path.open("w", newline="", encoding="utf-8") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(stats_rows)
+                _log.info("Season snapshot: wrote empire_stats.csv (%d rows)", len(stats_rows))
+
+            # 4. artifact_holds CSV
+            if self._database is not None:
+                holds_rows = await self._database.get_artifact_hold_totals()
+                _ARTIFACT_HOLDS_COLS = ["uid", "artifact_iid", "held_secs"]
+                fieldnames = list(holds_rows[0].keys()) if holds_rows else _ARTIFACT_HOLDS_COLS
+                csv_path = results_dir / "artifact_holds.csv"
+                with csv_path.open("w", newline="", encoding="utf-8") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(holds_rows)
+                _log.info("Season snapshot: wrote artifact_holds.csv (%d rows)", len(holds_rows))
+
+            _log.info("Season snapshot complete → %s", results_dir)
+        except Exception:
+            _log.exception("Season snapshot failed — will not retry")
+
     async def _save_state(self) -> None:
         """Persist game state to YAML (called periodically from the loop)."""
         from gameserver.persistence.state_save import save_state
@@ -127,6 +199,12 @@ class GameLoop:
         """One tick of the game loop."""
         from gameserver.engine.global_state import get_end_criterion_activated, is_end_rally_active
         if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
+            if not self._season_snapshot_done:
+                self._season_snapshot_done = True
+                try:
+                    asyncio.ensure_future(self._take_season_snapshot())
+                except RuntimeError:
+                    pass  # no running event loop in tests
             return
 
         # 1. Advance all empires (resources, build progress, research)

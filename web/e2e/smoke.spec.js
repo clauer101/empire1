@@ -47,8 +47,8 @@ test('login — existing user can authenticate', async ({ page, request }) => {
   await ensureTestUser(request);
   await loginAs(page);
 
-  // Dashboard panel visible
-  await expect(page.locator('h2').filter({ hasText: /Empire Status/i })).toBeVisible();
+  // Status view visible after login
+  await expect(page.locator('#empires-section')).toBeVisible();
 
   // JWT stored in localStorage
   const token = await page.evaluate(() => localStorage.getItem('e3_jwt_token'));

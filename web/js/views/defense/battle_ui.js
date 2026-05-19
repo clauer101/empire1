@@ -21,11 +21,14 @@
  * }
  */
 
+import { buildBattleSummaryHtml } from '../../lib/battle_summary_html.js';
+
 export function createBattleUi(ctx) {
   let _statusLoopId = null;
   // Snapshot of the last wave_info received from the server + the wall-clock time it arrived.
   // Used to compute a smooth client-side countdown independent of broadcast interval.
   let _waveInfoSnapshot = null;   // { wave_info, receivedAt: DOMHighResTimeStamp }
+  let _setupValidTimer = null;    // fires if setup produced an incomplete grid
 
 
   function spawnFlyingIcon(imgSrc, cx, cy, label, labelColor) {
@@ -134,6 +137,19 @@ export function createBattleUi(ctx) {
         grid.fromJSON({ tiles: msg.tiles });
         grid.addVoidNeighbors();
         grid._centerGrid();
+        const refetchNeighbors = () => {
+          ctx.rest.getMapNeighbors(grid.getVisibleHexBounds())
+            .then(data => {
+              if (data?.vision_radius != null) grid.visionRadius = data.vision_radius;
+              grid.setNeighborTiles(data?.neighbor_tiles || []);
+              grid._enemyPaths.clear();
+              for (const [uid, path] of Object.entries(data?.enemy_paths || {}))
+                grid.setEnemyPath(Number(uid), path);
+            })
+            .catch(() => {});
+        };
+        grid.onViewportChange = refetchNeighbors;
+        refetchNeighbors();
       }
     }
 
@@ -165,6 +181,18 @@ export function createBattleUi(ctx) {
     if (ctx.getSpectateUid() != null && msg.defender_name) {
       ctx.setBattleTitle(`👁 ${msg.defender_name}`);
     }
+
+    // Validate grid: if no battle path was set the setup message was incomplete
+    // (missing tiles/path). Schedule a re-request so the server resends a full setup.
+    clearTimeout(_setupValidTimer);
+    _setupValidTimer = setTimeout(() => {
+      const g = ctx.getGrid();
+      if (!g.battlePath || g.battlePath.length < 2) {
+        ctx.addDebugLog('⚠ Setup produced empty grid — requesting resync');
+        g.battleActive = false; // allow the next setup to initialize fully
+        ctx.getWs?.()?.requestResetup();
+      }
+    }, 1500);
 
     updateStatusFromBattleMsg();
   }
@@ -201,6 +229,10 @@ export function createBattleUi(ctx) {
   function onBattleUpdate(msg) {
     if (!msg) return;
     const grid = ctx.getGrid();
+
+    // First valid update confirms the grid is rendering correctly — cancel any pending resync.
+    clearTimeout(_setupValidTimer);
+    _setupValidTimer = null;
 
     if (grid && !grid.battleActive) grid.battleActive = true;
 
@@ -423,139 +455,13 @@ export function createBattleUi(ctx) {
 
     const st = ctx.getSt();
     const bs = ctx.getBattleState();
-    const myUid = st?.auth?.uid;
-    const isDefender = myUid != null && myUid == bs.defender_uid;
-
-    const defenderName = bs.defender_name || 'Defender';
-
-    // Build attacker label: list all participating empires / armies
-    const attackerUids = msg.attacker_uids || (msg.attacker_uid != null ? [msg.attacker_uid] : []);
-    const empireNames = msg.attacker_empire_names || {};
-    const armyNamesByUid = msg.army_names || {};  // uid → [armyName, ...]
-    const multiAttacker = attackerUids.length > 1;
-
-    // Single-attacker fallback label (for title sentence)
-    const firstUid = attackerUids[0];
-    const firstEmpire = empireNames[firstUid] || bs.attacker_username || bs.attacker_name || 'the attacker';
-    const firstArmy = (armyNamesByUid[firstUid] || [])[0] || msg.army_name || bs.attacker_army_name || '';
-    const singleLabel = firstArmy ? `${firstArmy} (${firstEmpire})` : firstEmpire;
-    const attackLabel = multiAttacker ? `${attackerUids.length} empires` : singleLabel;
-
-    let html = '<div style="margin-top:8px">';
-
-    if (won) {
-      html += `<p style="text-align:center">${defenderName} successfully defeated ${attackLabel}.</p>`;
-    } else {
-      html += `<p style="text-align:center">${attackLabel} broke through ${defenderName}'s defenses.</p>`;
-    }
-
-    // ── Attacking armies list ──────────────────────────────────────
-    {
-      const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
-      const liSt = `style="padding:3px 0"`;
-      html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">⚔ Attacking Armies</strong>`;
-      html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
-      if (attackerUids.length === 0) {
-        html += `<li ${liSt}>${msg.army_name || 'Unknown'}</li>`;
-      } else {
-        for (const uid of attackerUids) {
-          const eName = empireNames[uid] || `uid ${uid}`;
-          const aNames = armyNamesByUid[uid] || [];
-          const gains = (msg.attacker_gains || {})[uid] || {};
-          const gainParts = Object.entries(gains)
-            .filter(([, v]) => v > 0)
-            .map(([k, v]) => `+${Math.round(v)} ${k}`)
-            .join(', ');
-          const armyStr = aNames.length > 0 ? aNames.join(', ') : '–';
-          html += `<li ${liSt}><strong>${eName}</strong>: ${armyStr}`;
-          if (gainParts) html += ` <span style="color:var(--gold,#f9a825)">${gainParts}</span>`;
-          html += `</li>`;
-        }
-      }
-      html += '</ul></div>';
-    }
-
-    // ── Battle statistics ──────────────────────────────────────────
-    {
-      const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
-      const liSt = `style="padding:3px 0"`;
-      html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">📊 Battle Statistics</strong>`;
-      html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
-      const spawned = msg.critters_spawned ?? 0;
-      const reached = msg.critters_reached ?? 0;
-      const killed = msg.critters_killed ?? 0;
-      const waves = msg.num_waves ?? 0;
-      html += `<li ${liSt}>🐛 Critters: ${spawned} in ${waves} waves — ${reached} reached goal, ${killed} killed</li>`;
-      const towers = msg.num_towers ?? 0;
-      const goldEarned = Math.round(msg.defender_gold_earned ?? 0);
-      html += `<li ${liSt}>🗼 Towers: ${towers} — ${goldEarned} gold earned</li>`;
-      if (msg.duration_s > 0) {
-        const dur = msg.duration_s;
-        const dm = Math.floor(dur / 60);
-        const ds = Math.floor(dur % 60);
-        html += `<li ${liSt}>⏱ Duration: ${dm > 0 ? dm + 'm ' : ''}${ds}s</li>`;
-      }
-      html += '</ul></div>';
-    }
-
-    if (isDefender && msg.defender_gold_earned > 0) {
-      const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
-      html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">💰 Gold Earned</strong>`;
-      html += `<p style="margin:5px 0 0 0">+${Math.round(msg.defender_gold_earned).toLocaleString()} Gold from defeated attackers</p>`;
-      html += `</div>`;
-    }
-
-    const loot = msg.loot || {};
-
-    if (!won) {
-      const items = st?.items || {};
-      const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
-      const liSt = `style="padding:3px 0"`;
-      const mutedSt = `style="padding:3px 0;color:var(--muted,#888)"`;
-
-      html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🗡 Stolen from you</strong>`;
-      html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
-      if (loot.culture > 0) {
-        html += `<li ${liSt}>🎭 Culture: <strong>-${Math.round(loot.culture)}</strong></li>`;
-      } else {
-        html += `<li ${mutedSt}>🎭 Culture: –</li>`;
-      }
-      if (loot.artifact) {
-        const artifactName = items?.artifacts?.[loot.artifact]?.name || loot.artifact;
-        html += `<li ${liSt}>⚗️ Artifact: <strong>${artifactName}</strong></li>`;
-      } else {
-        html += `<li ${mutedSt}>⚗️ Artifact: –</li>`;
-      }
-      html += '</ul></div>';
-
-      const attackersLabel = multiAttacker ? 'Attackers get' : 'The Attacker gets';
-      html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🎓 ${attackersLabel}</strong>`;
-      html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
-      if (loot.knowledge) {
-        const kn = loot.knowledge;
-        const perW = kn.per_winner != null && multiAttacker ? ` (${kn.per_winner} each)` : '';
-        html += `<li ${liSt}>📖 ${kn.pct}% of <strong>${kn.name}</strong> → +${kn.amount} 🧪${perW}</li>`;
-      } else {
-        html += `<li ${mutedSt}>📖 Knowledge: –</li>`;
-      }
-      html += '</ul></div>';
-    }
-
-    if (!won && loot.life_restored > 0) {
-      const sep = `style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px"`;
-      html += `<div ${sep}>`;
-      html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">❤️ Life Restored after Battle</strong>`;
-      html += `<p style="margin:5px 0 0 0">+${loot.life_restored}</p>`;
-      html += `</div>`;
-    }
-
-    html += '</div>';
-    content.innerHTML = html;
+    const catalog = st?.items?.catalog || {};
+    const { bodyHtml } = buildBattleSummaryHtml(msg, catalog, {
+      myUid: st?.auth?.uid,
+      defenderUid: bs.defender_uid,
+      defenderName: bs.defender_name,
+    });
+    content.innerHTML = bodyHtml;
 
     const feedbackRow = container.querySelector('#summary-feedback-row');
     if (feedbackRow) feedbackRow.remove();

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from gameserver.loaders.game_config_loader import GameConfig
 
 _end_criterion_activated: Optional[datetime] = None
+_eras_first_reached: set[str] = set()  # era keys already claimed by some empire
 _end_criterion_empire_uid: Optional[int] = None
 _end_criterion_empire_name: str = ""
 
@@ -63,6 +64,21 @@ def restore_end_criterion_activated(
     _end_criterion_activated = dt
     _end_criterion_empire_uid = empire_uid
     _end_criterion_empire_name = empire_name
+
+
+def try_claim_first_era(era_key: str) -> bool:
+    """Return True (and record it) if this era has not been reached by anyone yet."""
+    global _eras_first_reached
+    if era_key in _eras_first_reached:
+        return False
+    _eras_first_reached.add(era_key)
+    return True
+
+
+def restore_first_eras(era_keys: set[str]) -> None:
+    """Called on startup to restore persisted first-era claims."""
+    global _eras_first_reached
+    _eras_first_reached = set(era_keys)
 
 
 def is_end_rally_active(cfg: GameConfig) -> bool:

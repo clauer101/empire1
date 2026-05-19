@@ -21,6 +21,7 @@ class LoginRequest(BaseModel):
     username: str
     password: str
     fingerprint: str = ""
+    device_id: str = ""
 
 
 class LoginResponse(BaseModel):

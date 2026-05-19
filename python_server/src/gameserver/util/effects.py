@@ -52,3 +52,6 @@ CULTURE_LUMP_SUM_ON_SKILL_UP = "culture_lump_sum_on_skill_up"
 # -- Combat --------------------------------------------------------------
 RESTORE_LIFE_DURING_BATTLE_MODIFIER = "restore_life_during_battle_modifier"  # boosts life regen while under attack
 ENEMY_SIEGE_TIME_MODIFIER = "enemy_siege_time_modifier"  # attacker: reduces own siege duration × (1 - v)
+
+# -- Map vision ----------------------------------------------------------
+MAP_VISION_RADIUS_OFFSET = "map_vision_radius_offset"  # adds to base_map_vision_radius for this empire

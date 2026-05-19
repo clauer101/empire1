@@ -124,9 +124,9 @@ class BattleService:
         self._gc = gc
         self._rulers: dict[str, Any] = rulers or {}
         if self._rulers:
-            log.info("[BattleService] rulers loaded: %s", list(self._rulers.keys()))
+            log.debug("[BattleService] rulers loaded: %s", list(self._rulers.keys()))
         else:
-            log.warning("[BattleService] no rulers loaded — ruler waves will fall back to generic critter stats")
+            log.debug("[BattleService] no rulers loaded — ruler waves will fall back to generic critter stats")
 
     def _get_wave_critter_slot_cost(self, wave: Any) -> float:
         """Return the slot cost for the next critter of this wave."""

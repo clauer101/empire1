@@ -302,3 +302,112 @@ class TestReplaysRouter:
         assert resp.status_code in (401, 403, 422)
 
 
+# ---------------------------------------------------------------------------
+# Global map router
+# ---------------------------------------------------------------------------
+
+class TestGlobalMapRouter:
+    async def test_global_map_offsets_tiles_by_spawn(self, client, svc):
+        emp = svc.empire_service.all_empires[TEST_UID]
+        emp.hex_map = {"0,0": "castle", "1,0": "barracks"}
+        emp.global_q = 100
+        emp.global_r = -50
+
+        resp = await client.get("/api/global-map")
+        assert resp.status_code == 200
+        data = resp.json()
+        e = next(x for x in data["empires"] if x["uid"] == TEST_UID)
+        assert e["origin"] == {"q": 100, "r": -50}
+        coords = {(t["q"], t["r"], t["type"]) for t in e["tiles"]}
+        assert (100, -50, "castle") in coords
+        assert (101, -50, "barracks") in coords
+
+    async def test_global_map_none_spawn_treated_as_origin(self, client, svc):
+        emp = svc.empire_service.all_empires[TEST_UID]
+        emp.hex_map = {"2,3": "castle"}
+        emp.global_q = None
+        emp.global_r = None
+
+        resp = await client.get("/api/global-map")
+        data = resp.json()
+        e = next(x for x in data["empires"] if x["uid"] == TEST_UID)
+        assert e["origin"] == {"q": 0, "r": 0}
+        coords = {(t["q"], t["r"], t["type"]) for t in e["tiles"]}
+        assert (2, 3, "castle") in coords
+
+    async def test_global_map_viewport_clips_tiles(self, client, svc):
+        emp = svc.empire_service.all_empires[TEST_UID]
+        emp.hex_map = {"0,0": "castle", "5,5": "barracks"}
+        emp.global_q = 0
+        emp.global_r = 0
+
+        resp = await client.get("/api/global-map?q0=-1&r0=-1&q1=1&r1=1")
+        assert resp.status_code == 200
+        data = resp.json()
+        e = next(x for x in data["empires"] if x["uid"] == TEST_UID)
+        coords = {(t["q"], t["r"], t["type"]) for t in e["tiles"]}
+        assert (0, 0, "castle") in coords
+        assert (5, 5, "barracks") not in coords
+
+
+# ---------------------------------------------------------------------------
+# Map neighbors router (fog of war)
+# ---------------------------------------------------------------------------
+
+class TestMapNeighborsRouter:
+    async def test_neighbors_clipped_to_viewport(self, client, svc):
+        emp = svc.empire_service.all_empires[TEST_UID]
+        emp.hex_map = {"0,0": "castle"}
+        emp.global_q = 0
+        emp.global_r = 0
+
+        resp = await client.get(
+            "/api/map/neighbors?q0=0&r0=0&q1=0&r1=1", headers=_auth()
+        )
+        assert resp.status_code == 200
+        tiles = resp.json()["neighbor_tiles"]
+        # Only the (0,1) fog tile falls inside the strict viewport rect.
+        assert tiles == [{"q": 0, "r": 1, "uid": None, "iid": None}]
+
+    async def test_neighbors_owner_via_world_index(self, client, svc):
+        emp = svc.empire_service.all_empires[TEST_UID]
+        emp.hex_map = {"0,0": "castle"}
+        emp.global_q = 0
+        emp.global_r = 0
+
+        enemy = _make_empire(uid=99, name="Enemy")
+        enemy.hex_map = {"0,0": "barracks"}
+        enemy.global_q = 1  # enemy world tile = (1, 0)
+        enemy.global_r = 0
+        svc.empire_service.register(enemy)
+
+        resp = await client.get("/api/map/neighbors", headers=_auth())
+        tiles = {(t["q"], t["r"]): t["uid"] for t in resp.json()["neighbor_tiles"]}
+        # Defender-local (1,0) maps to world (1,0), owned by the enemy.
+        assert tiles[(1, 0)] == 99
+
+    async def test_neighbors_index_refreshes_after_invalidate(self, client, svc):
+        emp = svc.empire_service.all_empires[TEST_UID]
+        emp.hex_map = {"0,0": "castle"}
+        emp.global_q = 0
+        emp.global_r = 0
+
+        enemy = _make_empire(uid=99, name="Enemy")
+        enemy.hex_map = {"0,0": "barracks"}
+        enemy.global_q = 1
+        enemy.global_r = 0
+        svc.empire_service.register(enemy)
+
+        r1 = await client.get("/api/map/neighbors", headers=_auth())
+        owners1 = {(t["q"], t["r"]): t["uid"] for t in r1.json()["neighbor_tiles"]}
+        assert owners1[(1, 0)] == 99
+
+        # Enemy abandons the tile; index must reflect it after invalidation.
+        enemy.hex_map = {}
+        svc.empire_service.invalidate_tile_index()
+
+        r2 = await client.get("/api/map/neighbors", headers=_auth())
+        owners2 = {(t["q"], t["r"]): t["uid"] for t in r2.json()["neighbor_tiles"]}
+        assert owners2[(1, 0)] is None
+
+

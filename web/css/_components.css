@@ -495,3 +495,274 @@ button.ws-upgrade-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ── Global Map view ─────────────────────────────────────── */
+#gm-wrap {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+#gm-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+#gm-canvas.dragging { cursor: grabbing; }
+#gm-status {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  font-family: monospace;
+  font-size: 10px;
+  color: var(--text-dim, #888);
+  pointer-events: none;
+}
+#gm-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--danger, #e53935);
+}
+.gm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gm-overlay-card {
+  background: var(--panel-bg, #1e1e2e);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 8px;
+  padding: 16px 20px;
+  min-width: 240px;
+  position: relative;
+}
+.gm-overlay-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 1.3em;
+  cursor: pointer;
+  line-height: 1;
+}
+.gm-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.gm-row span { color: var(--text-dim, #888); }
+
+/* ── Season Results view ─────────────────────────────────── */
+.sr-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.sr-bg-mobile {
+  display: none;
+}
+
+.sr-banner-picture {
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.sr-banner-img {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+@media (max-width: 900px) {
+  #app.sr-fullbleed {
+    padding: 0;
+    background: transparent;
+  }
+
+  .sr-bg-mobile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: url('/assets/sprites/images/season1_end_portrait.webp') center top / cover no-repeat;
+  }
+
+  .sr-banner-picture {
+    display: none;
+  }
+
+  .sr-content {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.sr-content {
+  padding: 24px 20px 40px;
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.sr-next-season {
+  margin-top: 32px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--text-dim, #888);
+}
+.sr-next-season strong {
+  color: var(--text-bright);
+}
+.sr-season-label {
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent, #c8a84b);
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+.sr-title {
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+}
+
+/* Podium */
+.sr-podium {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px 12px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sr-podium-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.sr-medal {
+  font-size: 1.4em;
+  flex-shrink: 0;
+}
+
+.sr-empire-name {
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.sr-gold .sr-empire-name   { font-size: 1.35em; color: #ffd700; }
+.sr-silver .sr-empire-name { font-size: 1.15em; color: #c0c0c0; }
+.sr-bronze .sr-empire-name { font-size: 1.0em;  color: #cd7f32; }
+
+.sr-culture {
+  font-size: 0.82em;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.sr-culture-line {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 0.88em;
+  color: var(--text-dim);
+}
+
+.sr-culture-line strong { color: var(--text); }
+
+/* Awards */
+.sr-awards-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+
+.sr-awards-title {
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.sr-awards {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sr-award-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9em;
+}
+
+.sr-award-row:last-child { border-bottom: none; }
+
+.sr-award-icon {
+  font-size: 1.1em;
+  text-align: center;
+}
+
+.sr-award-label {
+  color: var(--text-dim);
+}
+
+.sr-award-winner {
+  text-align: right;
+  color: var(--text);
+}
+
+.sr-award-winner strong { color: var(--text-bright); }
+
+.sr-value {
+  color: var(--text-dim);
+  font-size: 0.85em;
+  margin-left: 4px;
+}
+
+.sr-none { color: var(--text-dim); }
+
+.sr-loading, .sr-error {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 1em;
+}
+
+@media (max-width: 600px) {
+  .sr-content { padding: 16px 14px 32px; }
+  .sr-award-row { grid-template-columns: 24px 1fr; }
+  .sr-award-winner { grid-column: 2; text-align: left; }
+}
