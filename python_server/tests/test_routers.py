@@ -367,7 +367,7 @@ class TestMapNeighborsRouter:
         assert resp.status_code == 200
         tiles = resp.json()["neighbor_tiles"]
         # Only the (0,1) fog tile falls inside the strict viewport rect.
-        assert tiles == [{"q": 0, "r": 1, "uid": None, "iid": None}]
+        assert tiles == [{"q": 0, "r": 1, "uid": None, "iid": None, "tile_type": None}]
 
     async def test_neighbors_owner_via_world_index(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
