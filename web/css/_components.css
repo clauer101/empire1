@@ -721,7 +721,7 @@ button.ws-upgrade-btn:disabled {
 .sr-award-row {
   display: grid;
   grid-template-columns: 28px 1fr auto;
-  align-items: baseline;
+  align-items: start;
   gap: 8px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
@@ -733,18 +733,33 @@ button.ws-upgrade-btn:disabled {
 .sr-award-icon {
   font-size: 1.1em;
   text-align: center;
+  padding-top: 2px;
 }
 
 .sr-award-label {
   color: var(--text-dim);
+  padding-top: 3px;
 }
 
 .sr-award-winner {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   color: var(--text);
 }
 
+.sr-award-top {
+  font-size: 1.15em;
+  color: var(--text-bright);
+}
+
 .sr-award-winner strong { color: var(--text-bright); }
+
+.sr-award-top .sr-value {
+  color: var(--text-bright);
+  font-size: 1em;
+}
 
 .sr-value {
   color: var(--text-dim);
@@ -753,6 +768,27 @@ button.ws-upgrade-btn:disabled {
 }
 
 .sr-none { color: var(--text-dim); }
+
+.sr-my-value {
+  color: var(--text-dim);
+  font-size: 0.78em;
+  opacity: 0.7;
+}
+
+.sr-era-firsts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.sr-era-firsts-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: var(--text-dim);
+}
+.sr-era-name { width: 50%; color: var(--text-muted); font-size: 0.85em; }
+.sr-era-empire { color: var(--text); }
+.sr-era-first-me td { background: rgba(255,255,255,0.04); }
+.sr-era-first-me .sr-era-empire { color: var(--text-bright); }
 
 .sr-loading, .sr-error {
   padding: 48px 24px;

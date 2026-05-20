@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS empire_stats (
     first_era_reached        INTEGER DEFAULT 0,
     peak_artifacts_held      INTEGER DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS era_firsts (
+    era_key     TEXT PRIMARY KEY,
+    uid         INTEGER NOT NULL,
+    empire_name TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE IF NOT EXISTS artifact_holds (
     uid               INTEGER NOT NULL,
     artifact_iid      TEXT NOT NULL,
@@ -696,3 +701,45 @@ class Database:
         ) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
+
+    async def get_longest_artifact_hold_per_uid(self) -> list[dict[str, Any]]:
+        """Return the longest single-artifact hold duration per uid."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, MAX("
+            "  total_held_secs + CASE WHEN acquired_at IS NOT NULL"
+            "  THEN (unixepoch() - acquired_at) ELSE 0 END"
+            ") AS longest_hold_secs"
+            " FROM artifact_holds GROUP BY uid"
+        ) as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def record_era_first(self, era_key: str, uid: int, empire_name: str) -> None:
+        """Record which empire was the first to reach a given era."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                "INSERT OR IGNORE INTO era_firsts (era_key, uid, empire_name) VALUES (?, ?, ?)",
+                (era_key, uid, empire_name),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_era_first failed era=%s uid=%d", era_key, uid, exc_info=True)
+
+    async def get_era_firsts(self) -> list[dict[str, Any]]:
+        """Return all era_firsts rows ordered by ERA_ORDER."""
+        assert self._conn is not None
+        async with self._conn.execute("SELECT era_key, uid, empire_name FROM era_firsts") as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def wipe_season_stats(self) -> None:
+        """Delete all per-season runtime stats (empire_stats, era_firsts, artifact_holds).
+        User accounts are preserved."""
+        assert self._conn is not None
+        await self._conn.execute("DELETE FROM empire_stats")
+        await self._conn.execute("DELETE FROM era_firsts")
+        await self._conn.execute("DELETE FROM artifact_holds")
+        await self._conn.commit()
+        log.info("Season stats wiped (empire_stats, era_firsts, artifact_holds)")

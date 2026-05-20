@@ -96,6 +96,15 @@ export function createPlacement(ctx) {
         towerGrid.appendChild(createTpmItem(iid, q, r, menu));
       }
       itemsEl.appendChild(towerGrid);
+    } else {
+      const hint = document.createElement('div');
+      hint.className = 'tpm-no-towers';
+      hint.innerHTML = 'No towers available — research <span class="tpm-no-towers__link">Hunting</span> first.';
+      hint.querySelector('.tpm-no-towers__link').addEventListener('click', () => {
+        menu.style.display = 'none';
+        window.location.hash = '#research';
+      });
+      itemsEl.appendChild(hint);
     }
 
     menu.style.display = 'flex';

@@ -1,14 +1,15 @@
 """Hex spawn placement — assigns global map positions to empires.
 
 Placement algorithm:
-  All hex tiles within `grid_radius` of the origin are ordered inside-out
-  (ascending hex distance from origin, then clockwise within each ring).
-  Each empire is assigned the next tile in this sequence that satisfies the
-  minimum separation constraint (>= `min_separation` hex steps from every
-  previously assigned tile).
+  Hex tiles are enumerated ring by ring outward from the origin (ring 0 = origin,
+  ring 1 = the 6 immediate neighbours, etc.).  Each empire is assigned the next
+  tile in this inside-out, clockwise sequence that satisfies the minimum
+  separation constraint (>= `min_separation` hex steps from every previously
+  assigned tile).  The grid is unbounded — rings are generated on demand so any
+  number of empires can be placed.
 
 Empire ordering: sorted by account `created_at` ascending (first registered
-  empire gets index 0, i.e. the innermost available tile).
+  empire gets index 0, i.e. the origin tile).
 
 Coordinate system: axial (q, r), identical to the in-game hex system.
 """
@@ -16,7 +17,7 @@ Coordinate system: axial (q, r), identical to the in-game hex system.
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from typing import Generator, Sequence
 
 from gameserver.models.hex import HexCoord
 
@@ -29,25 +30,44 @@ def _hex_distance(aq: int, ar: int, bq: int, br: int) -> int:
     return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
 
 
-def _sort_key(q: int, r: int) -> tuple[int, float]:
-    """Sort key: (ring_distance, clockwise_angle_from_top)."""
-    dist = _hex_distance(0, 0, q, r)
-    # Flat-top pixel coords for angle; top = angle 0, clockwise positive.
-    px = 1.5 * q
-    py = math.sqrt(3) / 2 * q + math.sqrt(3) * r
-    angle = math.atan2(px, -py)  # clockwise from top
-    return (dist, angle)
+def _ring(radius: int) -> list[tuple[int, int]]:
+    """Return all hex tiles at exactly *radius* steps from origin, clockwise."""
+    if radius == 0:
+        return [(0, 0)]
+    # Standard hex ring: start at (radius, -radius) [top-right], walk 6 sides.
+    # Each side moves radius steps in one of the 6 cube directions.
+    cube_directions = [(-1, 0), (-1, 1), (0, 1), (1, 0), (1, -1), (0, -1)]
+    q, r = radius, -radius
+    tiles: list[tuple[int, int]] = []
+    for dq, dr in cube_directions:
+        for _ in range(radius):
+            tiles.append((q, r))
+            q += dq
+            r += dr
+    # Sort clockwise from top using angle
+    def _angle(qr: tuple[int, int]) -> float:
+        px = 1.5 * qr[0]
+        py = math.sqrt(3) / 2 * qr[0] + math.sqrt(3) * qr[1]
+        return math.atan2(px, -py)
+    tiles.sort(key=_angle)
+    return tiles
+
+
+def _hex_candidates() -> Generator[HexCoord, None, None]:
+    """Yield hex tiles ring by ring, inside-out, clockwise — unbounded."""
+    ring = 0
+    while True:
+        for q, r in _ring(ring):
+            yield HexCoord(q, r)
+        ring += 1
 
 
 def build_candidate_list(grid_radius: int) -> list[HexCoord]:
     """Return all hexes within *grid_radius* sorted inside-out, clockwise."""
-    hexes: list[tuple[int, int]] = []
-    for q in range(-grid_radius, grid_radius + 1):
-        for r in range(-grid_radius, grid_radius + 1):
-            if _hex_distance(0, 0, q, r) <= grid_radius:
-                hexes.append((q, r))
-    hexes.sort(key=lambda h: _sort_key(h[0], h[1]))
-    return [HexCoord(q, r) for q, r in hexes]
+    tiles: list[HexCoord] = []
+    for ring in range(grid_radius + 1):
+        tiles.extend(HexCoord(q, r) for q, r in _ring(ring))
+    return tiles
 
 
 # ---------------------------------------------------------------------------
@@ -57,52 +77,32 @@ def build_candidate_list(grid_radius: int) -> list[HexCoord]:
 def spawn_position_for_index(
     empire_index: int,
     *,
-    grid_radius: int = 50,
     min_separation: int = 13,
 ) -> HexCoord:
     """Return the global hex spawn position for the empire at *empire_index*.
 
-    Iterates from index 0 up to *empire_index*, placing each empire on the
-    next valid candidate tile.  O(n * candidates) but n is small in practice.
-
     Args:
         empire_index: 0-based position in the creation-time-sorted empire list.
-        grid_radius:  Radius of the global hex map in tiles.
         min_separation: Minimum hex distance between any two spawn points.
 
     Returns:
         HexCoord (axial) for the requested empire index.
-
-    Raises:
-        ValueError: If the grid cannot accommodate *empire_index + 1* empires.
     """
-    candidates = build_candidate_list(grid_radius)
     placed: list[HexCoord] = []
-    # Track which candidates are still available (parallel bool list)
-    available = [True] * len(candidates)
+    placed_count = 0
 
-    for _ in range(empire_index + 1):
-        assigned: HexCoord | None = None
-        for i, (cand, avail) in enumerate(zip(candidates, available)):
-            if not avail:
-                continue
-            placed_here = cand
-            available[i] = False
-            # Mark neighbours within min_separation as taken
-            for j, other in enumerate(candidates):
-                if available[j] and _hex_distance(cand.q, cand.r, other.q, other.r) < min_separation:
-                    available[j] = False
-            assigned = placed_here
-            placed.append(placed_here)
-            break
+    for cand in _hex_candidates():
+        ok = all(
+            _hex_distance(cand.q, cand.r, p.q, p.r) >= min_separation
+            for p in placed
+        )
+        if ok:
+            if placed_count == empire_index:
+                return cand
+            placed.append(cand)
+            placed_count += 1
 
-        if assigned is None:
-            raise ValueError(
-                f"Grid (radius={grid_radius}, min_sep={min_separation}) "
-                f"cannot place empire index {empire_index}: grid is full."
-            )
-
-    return placed[-1]
+    raise RuntimeError("unreachable")  # generator is infinite
 
 
 # ---------------------------------------------------------------------------
@@ -112,15 +112,15 @@ def spawn_position_for_index(
 def assign_spawn_positions(
     empire_uids_by_creation: Sequence[int],
     *,
-    grid_radius: int = 50,
     min_separation: int = 13,
     empire_footprints: dict[int, int] | None = None,
 ) -> dict[int, HexCoord]:
     """Assign spawn positions to all empires in creation order.
 
+    The grid grows outward without bound — any number of empires can be placed.
+
     Args:
         empire_uids_by_creation: UIDs sorted oldest-first by account creation.
-        grid_radius:  Radius of the global hex map.
         min_separation: Minimum hex distance between castle positions when no
             footprint data is available.
         empire_footprints: Optional dict uid → max tile radius from castle.
@@ -132,36 +132,25 @@ def assign_spawn_positions(
     Returns:
         Dict mapping uid → HexCoord.
     """
-    candidates = build_candidate_list(grid_radius)
     result: dict[int, HexCoord] = {}
-    placed_footprints: list[tuple[HexCoord, int]] = []  # (coord, footprint_radius)
+    placed_footprints: list[tuple[HexCoord, int]] = []
 
     fp = empire_footprints or {}
 
     for uid in empire_uids_by_creation:
         my_fp = fp.get(uid, 0)
+        placed_coords = {c for c, _ in placed_footprints}
 
-        placed = False
-        for cand in candidates:
-            if cand in result.values():
+        for cand in _hex_candidates():
+            if cand in placed_coords:
                 continue
-            # Check against every placed empire: tiles must not overlap
-            ok = True
-            for placed_coord, placed_fp in placed_footprints:
-                needed = max(my_fp + placed_fp + 1, min_separation)
-                if _hex_distance(cand.q, cand.r, placed_coord.q, placed_coord.r) < needed:
-                    ok = False
-                    break
+            ok = all(
+                _hex_distance(cand.q, cand.r, coord.q, coord.r) >= max(my_fp + pfp + 1, min_separation)
+                for coord, pfp in placed_footprints
+            )
             if ok:
                 result[uid] = cand
                 placed_footprints.append((cand, my_fp))
-                placed = True
                 break
-
-        if not placed:
-            import logging
-            logging.getLogger(__name__).warning(
-                "Hex grid full: could not assign spawn position for uid=%d", uid
-            )
 
     return result

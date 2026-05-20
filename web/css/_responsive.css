@@ -115,7 +115,7 @@
   }
 
   /* Banners: fixed beneath nav */
-  #rally-banner, #game-over-banner {
+  #rally-banner, #game-over-banner, #season-reset-banner {
     position: fixed;
     top: var(--mobile-nav-h);
     left: 0;

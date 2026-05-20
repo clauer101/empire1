@@ -1,3 +1,5 @@
+import { isGameFrozen } from './game_state.js';
+
 /**
  * Generic item queue view factory.
  *
@@ -303,6 +305,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
   }
 
   function _tick() {
+    if (isGameFrozen()) return;
     if (_tickRemainSecs == null || _tickTs == null) return;
     const el = container.querySelector(`#${cfg.contentId}`);
     if (!el) return;

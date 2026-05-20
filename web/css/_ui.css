@@ -36,6 +36,21 @@
   50% { opacity: 0.85; }
 }
 
+/* ── Season Reset Banner ─────────────────────────────────── */
+#season-reset-banner {
+  display: none;
+  background: linear-gradient(90deg, #7b2d00, #b34700, #7b2d00);
+  color: #ffe0b2;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 16px;
+  letter-spacing: 0.3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 2px solid #ff6d00;
+  animation: rally-pulse 3s ease-in-out infinite;
+}
+
 /* ── Era Overlay ─────────────────────────────────────────── */
 #era-overlay {
   display: none;
@@ -56,8 +71,8 @@
   background: rgba(18, 18, 30, 0.92);
   border: 1px solid rgba(201, 168, 76, 0.3);
   border-radius: 16px;
-  padding: 36px 40px 32px;
-  max-width: 500px;
+  padding: 24px 32px 22px;
+  max-width: 420px;
   width: 90%;
   text-align: center;
   box-shadow:
@@ -79,9 +94,27 @@
 .era-close:hover {
   color: rgba(255, 255, 255, 0.8);
 }
+.era-season {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.era-season-num {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(201, 168, 76, 0.5);
+}
+.era-season-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
 .era-numeral {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 56px;
+  font-size: 44px;
   font-weight: 900;
   line-height: 1;
   background: linear-gradient(
@@ -106,36 +139,36 @@
   letter-spacing: 2px;
   text-transform: uppercase;
   color: rgba(201, 168, 76, 0.8);
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 .era-base-img {
-  width: 100%;
-  max-width: 420px;
+  width: 60%;
+  max-width: 220px;
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
   image-rendering: pixelated;
   display: block;
-  margin: 0 auto 24px;
+  margin: 0 auto 14px;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
 }
 .era-effects {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 16px;
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 .era-effect-row {
   font-size: 12px;
-  padding: 4px 0;
+  padding: 2px 0;
   color: rgba(255, 255, 255, 0.7);
   text-align: left;
 }
 .era-rally {
-  margin-top: 16px;
+  margin-top: 10px;
   border-top: 1px solid rgba(255, 180, 0, 0.3);
-  padding-top: 14px;
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;

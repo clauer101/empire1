@@ -29,6 +29,15 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             token = create_token(uid)
             session_state = _build_session_state(uid)
             empire = empire_service.get(uid)
+            if empire is None and services.database is not None:
+                # Empire was wiped (season reset) — recreate fresh empire for this account
+                from gameserver.network.handlers import _create_empire_for_new_user
+                user_row = await services.database.get_user_by_uid(uid)
+                if user_row is not None:
+                    await _create_empire_for_new_user(
+                        uid, user_row["username"], user_row["empire_name"] or user_row["username"]
+                    )
+                    empire = empire_service.get(uid)
             summary = _build_empire_summary(empire, uid) if empire else None
             if services.database is not None:
                 forwarded = request.headers.get("X-Forwarded-For", "")

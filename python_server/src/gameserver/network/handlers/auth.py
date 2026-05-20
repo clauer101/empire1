@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from gameserver.main import Services
 
 from gameserver.models.messages import GameMessage
+import gameserver.engine.global_state as _gs
 
 log = logging.getLogger(__name__)
 
@@ -245,6 +246,12 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
             "r": empire.ruler.r,
         },
         "ruler_effects": svc.empire_service.get_ruler_effects(empire),
+        "season_number": _gs.get_season_number(),
+        "season_title": _gs.get_season_title(),
+        "next_season_start": _gs.get_next_season_start(),
+        "next_season_leadtime": _gs.get_next_season_leadtime(),
+        "next_season_title": _gs.get_next_season_title(),
+        "season_reset_triggered": _gs.is_season_reset_triggered(),
     }
 
 

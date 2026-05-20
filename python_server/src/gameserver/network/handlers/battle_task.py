@@ -581,6 +581,12 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                         defender.research_queue, defender.uid,
                     )
                     defender.research_queue = None
+                if defender.build_queue is not None and not upgrades.check_requirements(defender.build_queue, completed):
+                    log.info(
+                        "[LOOT] Cancelling build %s for uid=%d: requirements no longer met after knowledge steal",
+                        defender.build_queue, defender.uid,
+                    )
+                    defender.build_queue = None
 
     # --- Culture steal (per attacker; reduced 50% if attacker era > defender era) ---
     from gameserver.util.eras import ERA_ORDER as _ERA_ORDER

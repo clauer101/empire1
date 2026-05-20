@@ -37,6 +37,10 @@ const EFFECT_META = {
   tower_sell_refund_modifier:     ['💰', 'Tower refund',             (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases tower sell refund'],
   spy_workshop:                   ['🕵️', 'Workshop intel',           () => 'Unlocked',                                                                                  'Unlocks workshop intelligence in spy reports'],
   ruler_unlock:                   ['👑', 'Ruler',                    () => 'Unlocked',                                                                                  'Assign a powerful ruler to your empire'],
+  enable_army:                    ['⚔',  'Army',                     () => 'Unlocked',                                                                                  'Unlocks the Army view to compose and send attack waves'],
+  enable_techtree:                ['⬡',  'Tech Tree',                () => 'Unlocked',                                                                                  'Unlocks the Tech Tree view for advanced research'],
+  enable_workshop:                ['⚙',  'Workshop',                 () => 'Unlocked',                                                                                  'Unlocks the Workshop view for item upgrades'],
+  enable_messages:                ['✉',  'Messages',                 () => 'Unlocked',                                                                                  'Unlocks the Messages view for diplomacy and social features'],
   // -- Cost modifiers
   citizen_cost_modifier:          ['🫂', 'Citizen discount',         (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the culture cost of acquiring new citizens'],
   tile_cost_modifier:             ['🗺️', 'Land discount',            (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the gold cost of acquiring new land tiles'],
@@ -121,12 +125,12 @@ export function fmtEffectRow(key, value) {
 }
 
 /** Compact inline string for an effects dict, e.g. "💰 +3.6/h, 🎭 +5%" */
-export function fmtEffectsInline(effects) {
+export function fmtEffectsInline(effects, { labeled = false } = {}) {
   if (!effects || Object.keys(effects).length === 0) return '';
   return Object.entries(effects)
     .map(([k, v]) => {
       const meta = EFFECT_META[k];
-      if (meta) return `${meta[0]} ${meta[2](v)}`;
+      if (meta) return labeled ? `${meta[0]} ${meta[1]}: ${meta[2](v)}` : `${meta[0]} ${meta[2](v)}`;
       const [, label, val] = _fallback(k, v);
       return `${label}: ${val}`;
     })

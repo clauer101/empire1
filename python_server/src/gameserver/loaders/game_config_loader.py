@@ -176,11 +176,6 @@ class GameConfig:
     critter_upgrades: CritterUpgradeDef = field(default_factory=CritterUpgradeDef)
     item_upgrade_base_costs: list[int] = field(default_factory=lambda: [1, 15, 100, 300, 600, 1200, 2500, 5000, 10000])
 
-    # -- Season metadata ---------------------------------------------
-    season_number: int = 1
-    season_title: str = ""
-    next_season_start: str = ""
-
     # -- End-game rally ----------------------------------------------
     # iid of the item whose completion triggers the end rally
     end_criterion: str = ""

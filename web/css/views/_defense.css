@@ -499,6 +499,27 @@
   color: var(--text-dim);
   padding: 10px 14px 4px;
 }
+.tpm-no-towers {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  padding: 24px 20px 20px;
+  line-height: 1.6;
+}
+.tpm-no-towers__link {
+  color: #c9a84c;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 17px;
+  display: inline-block;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.tpm-no-towers__link:hover {
+  color: #faf0d7;
+}
 
 /* Path items: horizontal row */
 .tpm-row {

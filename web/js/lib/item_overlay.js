@@ -154,7 +154,7 @@ export class ItemOverlay {
     } else if (category === 'structure') {
       const s = structures[iid] || catInfo;
       const name = s?.name || catInfo.name || iid;
-      const effectsStr = this._fmtItemEffects(s?.effects || catInfo.effects);
+      const effectsStr = this._fmtTowerEffects(s?.effects || catInfo.effects);
       const reqs = this._reqLinks(s?.requirements || catInfo.requirements);
       const costsStr = this._fmtCosts(s?.costs || catInfo.costs);
       const eraLabel = this._getEraLabel(iid);
@@ -280,6 +280,10 @@ export class ItemOverlay {
   }
 
   _fmtItemEffects(effects) {
+    return fmtEffectsInline(effects, { labeled: true });
+  }
+
+  _fmtTowerEffects(effects) {
     return fmtTowerEffects(effects);
   }
 

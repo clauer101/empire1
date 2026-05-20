@@ -16,6 +16,12 @@ _end_criterion_activated: Optional[datetime] = None
 _eras_first_reached: set[str] = set()  # era keys already claimed by some empire
 _end_criterion_empire_uid: Optional[int] = None
 _end_criterion_empire_name: str = ""
+_season_number: int = 1
+_season_title: str = ""
+_next_season_start: str = ""
+_next_season_leadtime: str = ""
+_next_season_title: str = ""
+_season_reset_triggered: bool = False
 
 
 def get_end_criterion_activated() -> Optional[datetime]:
@@ -54,6 +60,14 @@ def try_set_end_criterion_activated(
     return True
 
 
+def clear_end_criterion() -> None:
+    """Reset end criterion state after a season wipe."""
+    global _end_criterion_activated, _end_criterion_empire_uid, _end_criterion_empire_name
+    _end_criterion_activated = None
+    _end_criterion_empire_uid = None
+    _end_criterion_empire_name = ""
+
+
 def restore_end_criterion_activated(
     dt: Optional[datetime],
     empire_uid: Optional[int] = None,
@@ -64,6 +78,50 @@ def restore_end_criterion_activated(
     _end_criterion_activated = dt
     _end_criterion_empire_uid = empire_uid
     _end_criterion_empire_name = empire_name
+
+
+def get_season_number() -> int:
+    return _season_number
+
+
+def get_season_title() -> str:
+    return _season_title
+
+
+def get_next_season_start() -> str:
+    return _next_season_start
+
+
+def get_next_season_leadtime() -> str:
+    return _next_season_leadtime
+
+
+def get_next_season_title() -> str:
+    return _next_season_title
+
+
+def set_season(
+    _number: int,
+    _title: str,
+    _next_start: str = "",
+    _next_leadtime: str = "",
+    _next_title: str = "",
+) -> None:
+    global _season_number, _season_title, _next_season_start, _next_season_leadtime, _next_season_title
+    _season_number = _number
+    _season_title = _title
+    _next_season_start = _next_start
+    _next_season_leadtime = _next_leadtime
+    _next_season_title = _next_title
+
+
+def is_season_reset_triggered() -> bool:
+    return _season_reset_triggered
+
+
+def set_season_reset_triggered(value: bool) -> None:
+    global _season_reset_triggered
+    _season_reset_triggered = value
 
 
 def try_claim_first_era(era_key: str) -> bool:

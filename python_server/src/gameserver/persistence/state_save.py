@@ -18,6 +18,12 @@ from gameserver.engine.global_state import (
     get_end_criterion_activated,
     get_end_criterion_empire_uid,
     get_end_criterion_empire_name,
+    get_season_number,
+    get_season_title,
+    get_next_season_start,
+    get_next_season_leadtime,
+    get_next_season_title,
+    is_season_reset_triggered,
 )
 from gameserver.models.army import Army, CritterWave, SpyArmy
 from gameserver.models.attack import Attack
@@ -102,6 +108,12 @@ def _serialize_meta() -> dict[str, Any]:
 def _serialize_global() -> dict[str, Any]:
     eca = get_end_criterion_activated()
     return {
+        "season_number": get_season_number(),
+        "season_title": get_season_title(),
+        "next_season_start": get_next_season_start(),
+        "next_season_leadtime": get_next_season_leadtime(),
+        "next_season_title": get_next_season_title(),
+        "season_reset_triggered": is_season_reset_triggered(),
         "end_criterion_activated": eca.isoformat() if eca is not None else None,
         "end_criterion_empire_uid": get_end_criterion_empire_uid(),
         "end_criterion_empire_name": get_end_criterion_empire_name(),

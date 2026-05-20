@@ -127,6 +127,14 @@ class EmpireService:
         self.invalidate_tile_index()
         return self._empires.pop(uid, None)
 
+    def wipe_all_empires(self) -> list[int]:
+        """Remove all empires from the in-memory registry. Returns list of removed UIDs."""
+        uids = list(self._empires.keys())
+        self._empires.clear()
+        self.invalidate_tile_index()
+        log.info("All empires wiped (%d total)", len(uids))
+        return uids
+
     # -- World tile ownership index --------------------------------------
 
     def invalidate_tile_index(self) -> None:
@@ -349,6 +357,9 @@ class EmpireService:
                 if self._database is not None:
                     _asyncio.ensure_future(
                         self._database.record_empire_stat(empire.uid, first_era_reached=1)
+                    )
+                    _asyncio.ensure_future(
+                        self._database.record_era_first(_era_after, empire.uid, empire.name)
                     )
         if self._gc is not None and self._gc.end_criterion and iid == self._gc.end_criterion:
             from gameserver.engine.global_state import try_set_end_criterion_activated
@@ -702,7 +713,6 @@ class EmpireService:
         self,
         users_by_creation: list[dict[str, Any]],
         *,
-        grid_radius: int = 50,
         min_separation: int = 10,
     ) -> None:
         """Assign global hex spawn positions to all registered empires.
@@ -710,7 +720,7 @@ class EmpireService:
         Iterates over *users_by_creation* (sorted oldest-first, as returned by
         ``Database.list_users()``) and assigns each empire the next available
         hex tile in inside-out order, with at least *min_separation* hex steps
-        between any two spawn points.
+        between any two spawn points.  The grid grows outward without bound.
 
         Empires not currently loaded (uid not in self._empires) are skipped.
         """
@@ -719,7 +729,6 @@ class EmpireService:
         uids_in_order = [u["uid"] for u in users_by_creation if u["uid"] in self._empires]
         positions = assign_spawn_positions(
             uids_in_order,
-            grid_radius=grid_radius,
             min_separation=min_separation,
         )
         for uid, coord in positions.items():

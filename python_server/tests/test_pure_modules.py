@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -15,7 +14,7 @@ from gameserver.models.hex import HexCoord
 from gameserver.util.ai_battle_log import log_ai_battle
 from gameserver.util.hex_spawn_placement import (
     _hex_distance,
-    _sort_key,
+    _ring,
     build_candidate_list,
     spawn_position_for_index,
     assign_spawn_positions,
@@ -39,19 +38,19 @@ class TestHexDistance:
         assert _hex_distance(-2, 1, 1, -1) == 3
 
 
-class TestSortKey:
-    def test_origin_is_first(self):
-        dist, angle = _sort_key(0, 0)
-        assert dist == 0
+class TestRing:
+    def test_ring_0_is_origin(self):
+        assert _ring(0) == [(0, 0)]
 
-    def test_ring_distance_matches_hex_distance(self):
-        for q, r in [(1, 0), (0, 1), (-1, 1)]:
-            dist, _ = _sort_key(q, r)
-            assert dist == 1
+    def test_ring_1_has_six_tiles(self):
+        assert len(_ring(1)) == 6
 
-    def test_angle_is_float(self):
-        _, angle = _sort_key(1, 0)
-        assert isinstance(angle, float)
+    def test_ring_2_has_twelve_tiles(self):
+        assert len(_ring(2)) == 12
+
+    def test_ring_distance_correct(self):
+        for q, r in _ring(3):
+            assert _hex_distance(0, 0, q, r) == 3
 
 
 class TestBuildCandidateList:
@@ -82,48 +81,47 @@ class TestBuildCandidateList:
         dists = [_hex_distance(0, 0, c.q, c.r) for c in result]
         assert dists == sorted(dists)
 
+    def test_radius_0_via_ring(self):
+        # build_candidate_list delegates to _ring — verify consistency
+        result = build_candidate_list(2)
+        assert all(isinstance(c, HexCoord) for c in result)
+
 
 class TestSpawnPositionForIndex:
     def test_index_0_is_origin(self):
-        pos = spawn_position_for_index(0, grid_radius=5, min_separation=1)
+        pos = spawn_position_for_index(0, min_separation=1)
         assert pos == HexCoord(0, 0)
 
     def test_index_1_is_adjacent(self):
-        p0 = spawn_position_for_index(0, grid_radius=5, min_separation=1)
-        p1 = spawn_position_for_index(1, grid_radius=5, min_separation=1)
+        p0 = spawn_position_for_index(0, min_separation=1)
+        p1 = spawn_position_for_index(1, min_separation=1)
         assert p0 != p1
         assert _hex_distance(p0.q, p0.r, p1.q, p1.r) >= 1
 
     def test_separation_enforced(self):
         sep = 4
-        p0 = spawn_position_for_index(0, grid_radius=10, min_separation=sep)
-        p1 = spawn_position_for_index(1, grid_radius=10, min_separation=sep)
+        p0 = spawn_position_for_index(0, min_separation=sep)
+        p1 = spawn_position_for_index(1, min_separation=sep)
         assert _hex_distance(p0.q, p0.r, p1.q, p1.r) >= sep
 
-    def test_raises_when_grid_full(self):
-        with pytest.raises(ValueError, match="Grid.*cannot place empire"):
-            # radius=1 gives 7 tiles; with min_sep=2 can't place many empires
-            for i in range(10):
-                spawn_position_for_index(i, grid_radius=1, min_separation=2)
-
     def test_multiple_indices_unique(self):
-        positions = [spawn_position_for_index(i, grid_radius=20, min_separation=3) for i in range(5)]
+        positions = [spawn_position_for_index(i, min_separation=3) for i in range(5)]
         assert len(set(positions)) == 5
 
 
 class TestAssignSpawnPositions:
     def test_empty_list(self):
-        result = assign_spawn_positions([], grid_radius=10, min_separation=3)
+        result = assign_spawn_positions([], min_separation=3)
         assert result == {}
 
     def test_single_empire(self):
-        result = assign_spawn_positions([42], grid_radius=10, min_separation=3)
+        result = assign_spawn_positions([42], min_separation=3)
         assert 42 in result
         assert isinstance(result[42], HexCoord)
 
     def test_multiple_empires_unique_positions(self):
         uids = [1, 2, 3, 4]
-        result = assign_spawn_positions(uids, grid_radius=20, min_separation=3)
+        result = assign_spawn_positions(uids, min_separation=3)
         assert set(result.keys()) == set(uids)
         positions = list(result.values())
         assert len(set(positions)) == 4
@@ -131,7 +129,7 @@ class TestAssignSpawnPositions:
     def test_separation_respected(self):
         uids = [10, 20, 30]
         sep = 5
-        result = assign_spawn_positions(uids, grid_radius=20, min_separation=sep)
+        result = assign_spawn_positions(uids, min_separation=sep)
         coords = list(result.values())
         for i, a in enumerate(coords):
             for b in coords[i + 1:]:
@@ -140,20 +138,16 @@ class TestAssignSpawnPositions:
     def test_with_footprints(self):
         uids = [1, 2]
         result = assign_spawn_positions(
-            uids, grid_radius=20, min_separation=3,
+            uids, min_separation=3,
             empire_footprints={1: 5, 2: 3}
         )
         assert set(result.keys()) == {1, 2}
 
-    def test_grid_full_some_empires_skipped(self):
-        # Very tight grid: only origin fits with large separation
-        result = assign_spawn_positions(
-            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            grid_radius=1,
-            min_separation=10,
-        )
-        # At least one empire should fail to be placed — grid is too small
-        assert len(result) < 10
+    def test_all_empires_always_placed(self):
+        # Grid is unbounded — all empires must be placed regardless of count
+        uids = list(range(1, 60))
+        result = assign_spawn_positions(uids, min_separation=13)
+        assert set(result.keys()) == set(uids)
 
 
 # ---------------------------------------------------------------------------

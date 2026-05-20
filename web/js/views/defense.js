@@ -884,7 +884,7 @@ async function _loadMapBackground() {
 /** Refetch viewport-bounded fog/enemy tiles for the current pan/zoom. */
 function _refetchNeighbors() {
   if (!grid) return;
-  rest.getMapNeighbors(grid.getVisibleHexBounds())
+  rest.getMapNeighbors(grid.getVisibleHexBounds(), _spectateDefenderUid != null)
     .then(d => {
       if (d?.vision_radius != null) grid.visionRadius = d.vision_radius;
       grid.setNeighborTiles(d?.neighbor_tiles || []);

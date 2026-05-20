@@ -7,6 +7,11 @@ from typing import Any, TYPE_CHECKING
 from fastapi import APIRouter, Depends
 
 from gameserver.network.jwt_auth import get_current_uid
+from gameserver.engine.global_state import (
+    get_season_number, get_season_title,
+    get_next_season_start, get_next_season_leadtime, get_next_season_title,
+    is_season_reset_triggered,
+)
 from gameserver.models.hex import HexCoord
 from gameserver.network.rest_models import (
     BuildRequest,
@@ -199,6 +204,12 @@ def make_router(services: "Services") -> APIRouter:
             "item_upgrade_base_costs": gc.item_upgrade_base_costs if gc else [],
             "wave_era_costs": gc.prices.wave_era_costs if gc else [],
             "critter_slot_params": {"u": gc.prices.critter_slot.u, "y": gc.prices.critter_slot.y, "z": gc.prices.critter_slot.z, "v": gc.prices.critter_slot.v} if gc else {},
+            "season_number": get_season_number(),
+            "season_title": get_season_title(),
+            "next_season_start": get_next_season_start(),
+            "next_season_leadtime": get_next_season_leadtime(),
+            "next_season_title": get_next_season_title(),
+            "season_reset_triggered": is_season_reset_triggered(),
         }
 
     @router.post("/api/empire/ruler/skill-up")
@@ -263,6 +274,7 @@ def make_router(services: "Services") -> APIRouter:
         r0: int | None = None,
         q1: int | None = None,
         r1: int | None = None,
+        spectating: int = 0,
     ) -> dict[str, Any]:
         """Return non-owned tiles within the fog radius of the empire border.
 
@@ -290,7 +302,7 @@ def make_router(services: "Services") -> APIRouter:
         gc = services.empire_service._gc if services.empire_service else None
         from gameserver.util.effects import MAP_VISION_RADIUS_OFFSET
         base_radius = gc.base_map_vision_radius if gc else 1
-        vision_offset = int(empire.effects.get(MAP_VISION_RADIUS_OFFSET, 0))
+        vision_offset = 0 if spectating else int(empire.effects.get(MAP_VISION_RADIUS_OFFSET, 0))
         radius = base_radius + vision_offset
 
         # Strict viewport rect (defender-local). Missing → fall back to the
@@ -503,12 +515,40 @@ def make_router(services: "Services") -> APIRouter:
             key=lambda x: x["culture"] if isinstance(x["culture"], (int, float)) else 0.0,
             reverse=True,
         )
-        gc = empire_service._gc
+
+        era_firsts: list[dict[str, Any]] = []
+        # Merge runtime stats and supplemental data into each result.
+        if services.database is not None:
+            all_stats = await services.database.get_all_empire_stats()
+            stats_by_uid = {row["uid"]: row for row in all_stats}
+            hold_rows = await services.database.get_longest_artifact_hold_per_uid()
+            hold_by_uid = {row["uid"]: row["longest_hold_secs"] for row in hold_rows}
+            era_firsts = await services.database.get_era_firsts()
+            runtime_fields = [
+                "critters_killed", "towers_placed", "towers_sold",
+                "spies_sent", "artifacts_stolen", "defense_gold_earned",
+                "culture_stolen", "research_stolen", "culture_won", "research_won",
+                "longest_battle_ms", "first_era_reached", "peak_artifacts_held",
+                "attacks_won_human", "attacks_lost_human",
+                "defense_won_human", "defense_lost_human",
+                "defense_won_ai", "defense_lost_ai",
+            ]
+            for r in results:
+                row = stats_by_uid.get(r["uid"]) or {}
+                for f in runtime_fields:
+                    r[f] = row.get(f, 0) or 0
+                r["attacks_sent_human"] = (r["attacks_won_human"] or 0) + (r["attacks_lost_human"] or 0)  # type: ignore[operator]
+                r["attacks_received_human"] = (r["defense_won_human"] or 0) + (r["defense_lost_human"] or 0)  # type: ignore[operator]
+                r["longest_artifact_hold_secs"] = round(hold_by_uid.get(r["uid"], 0) or 0)
+
+        from gameserver.util.eras import ERA_ORDER as _ERA_ORDER_LIST
         return {
-            "season_number": gc.season_number if gc else 1,
-            "season_title": gc.season_title if gc else "",
-            "next_season_start": gc.next_season_start if gc else "",
+            "season_number": get_season_number(),
+            "season_title": get_season_title(),
+            "next_season_start": get_next_season_start(),
             "empires": results,
+            "era_firsts": era_firsts,
+            "era_order": _ERA_ORDER_LIST,
         }
 
     return router

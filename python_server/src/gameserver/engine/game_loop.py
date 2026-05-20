@@ -197,10 +197,78 @@ class GameLoop:
 
     def _step(self, dt: float) -> None:
         """One tick of the game loop."""
-        from gameserver.engine.global_state import get_end_criterion_activated, is_end_rally_active
+        from gameserver.engine.global_state import (
+            get_end_criterion_activated, is_end_rally_active,
+            get_next_season_leadtime, get_next_season_start,
+            get_next_season_title, get_season_number, get_season_title,
+            is_season_reset_triggered, set_season_reset_triggered, set_season,
+            clear_end_criterion,
+        )
+        # Season reset: wipe all empires when the leadtime window opens.
+        # Runs regardless of season_reset_triggered — the presence of
+        # next_season_leadtime is the gate; clearing it prevents re-triggering.
+        nsl = get_next_season_leadtime()
+        if nsl:
+            from datetime import datetime, timezone
+            try:
+                reset_at = datetime.fromisoformat(nsl)
+                if reset_at.tzinfo is None:
+                    reset_at = reset_at.replace(tzinfo=timezone.utc)
+                if datetime.now(timezone.utc) >= reset_at:
+                    set_season_reset_triggered(True)
+                    uids = self._empires.wipe_all_empires()
+                    attack_count = self._attacks.wipe_all_attacks()
+                    clear_end_criterion()
+                    if self._database is not None:
+                        asyncio.ensure_future(self._database.wipe_season_stats())
+                    # Clear leadtime so this block won't re-trigger, but keep
+                    # next_season_start/title — the game stays frozen with a
+                    # countdown banner until next_season_start is reached.
+                    set_season(
+                        get_season_number(),
+                        get_season_title(),
+                        get_next_season_start(),
+                        "",
+                        get_next_season_title(),
+                    )
+                    self._season_snapshot_done = False
+                    _log.info(
+                        "Season leadtime: wiped %d empires, %d attacks; "
+                        "frozen until %s",
+                        len(uids), attack_count, get_next_season_start(),
+                    )
+            except (ValueError, OverflowError):
+                pass  # malformed next_season_leadtime — ignore
+
+        # When season_reset_triggered, check if next_season_start is reached →
+        # advance season and unfreeze; otherwise block all game ticks (return early).
+        if is_season_reset_triggered():
+            nss = get_next_season_start()
+            if nss:
+                from datetime import datetime, timezone
+                try:
+                    season_start = datetime.fromisoformat(nss)
+                    if season_start.tzinfo is None:
+                        season_start = season_start.replace(tzinfo=timezone.utc)
+                    if datetime.now(timezone.utc) >= season_start:
+                        new_title = get_next_season_title() or get_season_title()
+                        set_season(get_season_number() + 1, new_title)
+                        set_season_reset_triggered(False)
+                        _log.info(
+                            "New season started: season %d '%s'",
+                            get_season_number(), get_season_title(),
+                        )
+                    else:
+                        return  # frozen — next_season_start not yet reached
+                except (ValueError, OverflowError):
+                    pass
+            else:
+                return  # frozen — no next_season_start configured yet
+
         if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
             if not self._season_snapshot_done:
                 self._season_snapshot_done = True
+                set_season_reset_triggered(True)
                 try:
                     asyncio.ensure_future(self._take_season_snapshot())
                 except RuntimeError:

@@ -89,6 +89,13 @@ class AttackService:
         """Return all attacks (for persistence/debugging)."""
         return list(self._attacks)
 
+    def wipe_all_attacks(self) -> int:
+        """Remove all active attacks. Returns count of removed attacks."""
+        count = len(self._attacks)
+        self._attacks.clear()
+        self._broadcast_timer.clear()
+        return count
+
     def get(self, attack_id: int) -> Attack | None:
         """Return the attack with the given ID, if it exists."""
         for attack in self._attacks:

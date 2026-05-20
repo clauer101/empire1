@@ -61,6 +61,10 @@ effects: {splash_radius: 0.6}
 |---|---|
 | `spy_workshop` | > 0 → Workshop-Sektion im Spionage-Bericht aktiviert |
 | `ruler_unlock` | > 0 → Ruler-Panel im Status-View angezeigt; Ruler kann einer Armee zugewiesen werden |
+| `enable_army` | > 0 → Army-Nav-Link und Army-View freigeschaltet |
+| `enable_techtree` | > 0 → Tech-Tree-Nav-Link und Tech-Tree-View freigeschaltet |
+| `enable_workshop` | > 0 → Workshop-Nav-Link und Workshop-View freigeschaltet |
+| `enable_messages` | > 0 → Messages-Nav-Link und Social-View freigeschaltet |
 
 ---
 

@@ -13,7 +13,7 @@ export default createQueueView({
   contentId: 'research-content',
   loadingIcon: '◉',
   loadingText: 'Loading research…',
-  emptyText: 'No research found',
+  emptyText: 'No research possible — build a <a href="#buildings" class="tpm-no-towers__link">Fire Place</a> first.',
   toggleId: 'hide-completed-research',
   queueKey: 'research_queue',
   categoryKey: 'knowledge',

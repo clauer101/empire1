@@ -346,8 +346,10 @@ class RestClient {
    * @param {{q0:number,r0:number,q1:number,r1:number}} [bounds] Defender-local
    *   viewport bounds; when given only tiles inside that rectangle are returned.
    */
-  async getMapNeighbors(bounds) {
-    return this._get('/api/map/neighbors' + _boundsQuery(bounds));
+  async getMapNeighbors(bounds, spectating = false) {
+    const q = _boundsQuery(bounds);
+    const sep = q ? '&' : '?';
+    return this._get('/api/map/neighbors' + q + (spectating ? sep + 'spectating=1' : ''));
   }
 
   /**

@@ -10,7 +10,7 @@ import { state } from './state.js';
 import { prefetchAllSprites } from './lib/sprite_prefetcher.js';
 import { eventBus } from './events.js';
 import { Router } from './router.js';
-import { setEndRally, isGameFrozen } from './lib/game_state.js';
+import { setEndRally, isGameFrozen, setSeasonResetActive } from './lib/game_state.js';
 import { debug } from './debug.js';
 import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
@@ -133,6 +133,10 @@ function _updateTitleResources(r, rates) {
 const navMsgBadge = document.getElementById('nav-msg-badge');
 const navDashboard = document.getElementById('nav-dashboard');
 const navDefense = document.getElementById('nav-defense');
+const navArmy = document.getElementById('nav-army');
+const navTechtree = document.getElementById('nav-techtree');
+const navWorkshop = document.getElementById('nav-workshop');
+const navMessages = document.getElementById('nav-messages');
 
 // When the user explicitly clicks the defense nav link while already on the
 // defense view (e.g. after spectating an outgoing attack), force a full
@@ -150,6 +154,7 @@ if (navDefense) {
 }
 
 let _eraEffects = {}; // loaded from /api/era-map
+let _eraMap = null;
 let _endRally = null; // { active, effects, seconds_remaining, end_criterion } from summary
 let _selfName = '';
 
@@ -174,6 +179,7 @@ function _buildEraOverlay() {
   el.id = 'era-overlay';
   el.innerHTML = `<div class="era-panel">
     <button class="era-close">✕</button>
+    <div class="era-season"></div>
     <div class="era-numeral"></div>
     <div class="era-name"></div>
     <img class="era-base-img" src="" alt="">
@@ -198,11 +204,11 @@ function _buildEraOverlay() {
 async function _showEraOverlay() {
   if (!_currentEra) return;
   if (!_eraOverlay) _eraOverlay = _buildEraOverlay();
-  // Fetch era effects from server if not yet loaded
-  if (!Object.keys(_eraEffects).length) {
+  // Fetch era map from server if not yet loaded
+  if (!_eraMap) {
     try {
-      const eraMap = await rest.getEraMap();
-      _eraEffects = eraMap.era_effects || {};
+      _eraMap = await rest.getEraMap();
+      _eraEffects = _eraMap.era_effects || {};
     } catch (_) {
       /* use empty */
     }
@@ -210,6 +216,14 @@ async function _showEraOverlay() {
   const era = _currentEra;
   const sprite = ERA_SPRITE_KEY[era] || 'stone';
   const effects = _eraEffects[era] || {};
+  const seasonNum = _eraMap?.season_number ?? 1;
+  const seasonTitle = _eraMap?.season_title ?? '';
+  const seasonEl = _eraOverlay.querySelector('.era-season');
+  if (seasonEl) {
+    seasonEl.style.display = '';
+    seasonEl.innerHTML = `<span class="era-season-num">Season ${seasonNum}</span>`
+      + (seasonTitle ? `<span class="era-season-title">${seasonTitle}</span>` : '');
+  }
   _eraOverlay.querySelector('.era-numeral').textContent = ERA_ROMAN[era] || '';
   _eraOverlay.querySelector('.era-name').textContent = ERA_LABEL_EN[era] || era;
   _eraOverlay.querySelector('.era-base-img').src = `/assets/sprites/bases/base_${sprite}.webp`;
@@ -270,14 +284,22 @@ eventBus.on('state:summary', (data) => {
     _endRally = data.end_rally;
     _selfName = data.name || _selfName;
     setEndRally(data.end_rally);
-    _updateRallyBanner(data.end_rally, _selfName);
+    _updateRallyBanner(data.end_rally, _selfName, data);
   }
+  _updateSeasonResetBanner(data);
   const incoming = data?.attacks_incoming || [];
   const hasIncoming = incoming.length > 0;
   const hasActive = incoming.some((a) => a.phase === 'in_siege' || a.phase === 'in_battle');
 
   if (navDashboard) navDashboard.classList.remove('alarm');
   if (navDefense) navDefense.classList.toggle('alarm', hasActive);
+
+  // Feature-gated nav links — hidden until the empire unlocks the effect
+  const ef2 = data.effects || {};
+  if (navArmy) navArmy.style.display = (ef2.enable_army ?? 0) > 0 ? '' : 'none';
+  if (navTechtree) navTechtree.style.display = (ef2.enable_techtree ?? 0) > 0 ? '' : 'none';
+  if (navWorkshop) navWorkshop.style.display = (ef2.enable_workshop ?? 0) > 0 ? '' : 'none';
+  if (navMessages) navMessages.style.display = (ef2.enable_messages ?? 0) > 0 ? '' : 'none';
 
   // Unread messages badge
   const unread = data?.unread_messages || 0;
@@ -315,11 +337,17 @@ function _tickRallyBanner() {
   }
 }
 
-function _updateGameOverBanner(rally) {
+function _updateGameOverBanner(rally, data) {
   const banner = document.getElementById('game-over-banner');
   if (!banner) return;
   const frozen = rally?.activated_at && !rally?.active;
-  if (!frozen) { banner.style.display = 'none'; return; }
+  // Hide once leadtime is reached — season-reset banner takes over
+  const nsl = data?.next_season_leadtime;
+  const inLeadtime = nsl && Date.now() >= new Date(nsl).getTime();
+  // Also hide if wipe already happened (nsl cleared, no rally criterion left)
+  const resetTriggered = !!data?.season_reset_triggered;
+  const postWipe = resetTriggered && !nsl;
+  if (!frozen || inLeadtime || postWipe) { banner.style.display = 'none'; return; }
   const winner = rally.triggered_by_name || '?';
   const winnerSafe = winner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   banner.innerHTML = `🏆 <strong>${winnerSafe}</strong> has won the season — Congratulations! <a href="#season-results" style="color:#ffd700;font-weight:bold;margin-left:10px;text-decoration:underline;">(view results)</a>`;
@@ -329,14 +357,14 @@ function _updateGameOverBanner(rally) {
   });
 }
 
-function _updateRallyBanner(rally, selfName) {
+function _updateRallyBanner(rally, selfName, data) {
   const banner = document.getElementById('rally-banner');
   if (!banner) return;
   if (!rally?.active) {
     banner.style.display = 'none';
     if (!rally?.activated_at) document.documentElement.style.setProperty('--rally-banner-h', '0px');
     if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
-    _updateGameOverBanner(rally);
+    _updateGameOverBanner(rally, data);
     return;
   }
   const builderName = rally.triggered_by_name || '?';
@@ -373,6 +401,61 @@ function _updateRallyBanner(rally, selfName) {
       window.location.hash = '#army';
     });
   }
+}
+
+// ── Season Reset Banner ──────────────────────────────────────
+let _seasonResetTimer = null;
+let _seasonResetTarget = 0; // epoch ms of next_season_start
+
+function _tickSeasonResetBanner() {
+  const banner = document.getElementById('season-reset-banner');
+  if (!banner || banner.style.display === 'none') return;
+  const secsLeft = Math.max(0, (_seasonResetTarget - Date.now()) / 1000);
+  const h = Math.floor(secsLeft / 3600);
+  const m = Math.floor((secsLeft % 3600) / 60);
+  const s = Math.floor(secsLeft % 60);
+  const timeStr = secsLeft >= 86400
+    ? `${Math.floor(secsLeft / 86400)}d`
+    : `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const base = banner.dataset.baseText || '';
+  banner.textContent = `${base} — new season starts in ${timeStr}`;
+}
+
+function _updateSeasonResetBanner(data) {
+  const banner = document.getElementById('season-reset-banner');
+  if (!banner) return;
+
+  const resetTriggered = !!data?.season_reset_triggered;
+  const nss = data?.next_season_start;
+  const nsl = data?.next_season_leadtime;
+  const inLeadtime = nsl && Date.now() >= new Date(nsl).getTime();
+  // Show only once the leadtime timestamp is reached; resetTriggered alone
+  // (set at rally end) is not enough — the game-over banner owns that phase.
+  const shouldShow = inLeadtime || (resetTriggered && !nsl);
+
+  setSeasonResetActive(resetTriggered);
+
+  if (!shouldShow) {
+    banner.style.display = 'none';
+    if (_seasonResetTimer) { clearInterval(_seasonResetTimer); _seasonResetTimer = null; }
+    document.documentElement.style.setProperty('--rally-banner-h', '0px');
+    return;
+  }
+
+  const nextTitle = data?.next_season_title || '';
+  const nextNum = (data?.season_number ?? 0) + 1;
+  if (resetTriggered) {
+    banner.dataset.baseText = `🌅 Season ${data?.season_number ?? ''} has ended — next season: ${nextTitle || `Season ${nextNum}`}`;
+  } else {
+    banner.dataset.baseText = `🌅 New season starting soon — Season ${nextNum}${nextTitle ? ': ' + nextTitle : ''}`;
+  }
+  _seasonResetTarget = nss ? new Date(nss).getTime() : 0;
+  _tickSeasonResetBanner();
+  banner.style.display = 'block';
+  requestAnimationFrame(() => {
+    document.documentElement.style.setProperty('--rally-banner-h', banner.offsetHeight + 'px');
+  });
+  if (!_seasonResetTimer) _seasonResetTimer = setInterval(_tickSeasonResetBanner, 1000);
 }
 
 // ── Summary polling (every 5s while authenticated) ─────────
@@ -466,14 +549,16 @@ if ('serviceWorker' in navigator) {
 }
 
 (async () => {
-  // 0. Load era-map for end-rally banner (no auth required)
+  // 0. Load era-map for season-reset banner (no auth required)
   try {
     const eraMap = await rest.getEraMap();
     _eraEffects = eraMap.era_effects || {};
-    if (eraMap.end_rally) {
+    _updateSeasonResetBanner(eraMap);
+    // End-rally banner only shown when logged in
+    if (eraMap.end_rally && state.auth?.authenticated) {
       _endRally = eraMap.end_rally;
       setEndRally(eraMap.end_rally);
-      _updateRallyBanner(eraMap.end_rally, '');
+      _updateRallyBanner(eraMap.end_rally, '', eraMap);
     }
   } catch (_) {
     /* non-fatal */

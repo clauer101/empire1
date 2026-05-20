@@ -49,6 +49,12 @@ class RestoredState:
     end_criterion_activated: Optional[datetime] = None
     end_criterion_empire_uid: Optional[int] = None
     end_criterion_empire_name: str = ""
+    season_number: int = 1
+    season_title: str = ""
+    next_season_start: str = ""
+    next_season_leadtime: str = ""
+    next_season_title: str = ""
+    season_reset_triggered: bool = False
 
 
 # ===================================================================
@@ -104,6 +110,12 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
             log.warning("Could not parse end_criterion_activated: %r", eca_raw)
     result.end_criterion_empire_uid = global_dict.get("end_criterion_empire_uid")
     result.end_criterion_empire_name = str(global_dict.get("end_criterion_empire_name") or "")
+    result.season_number = int(global_dict.get("season_number") or 1)
+    result.season_title = str(global_dict.get("season_title") or "")
+    result.next_season_start = str(global_dict.get("next_season_start") or "")
+    result.next_season_leadtime = str(global_dict.get("next_season_leadtime") or "")
+    result.next_season_title = str(global_dict.get("next_season_title") or "")
+    result.season_reset_triggered = bool(global_dict.get("season_reset_triggered") or False)
 
     # ---- Empires ----
     for empire_dict in raw.get("empires", []):
