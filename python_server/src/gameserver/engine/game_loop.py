@@ -142,7 +142,7 @@ class GameLoop:
                 db_src = Path(self._database._db_path)
                 if db_src.exists():
                     dest_db = results_dir / "gameserver.db"
-                    await self._database._conn.execute(f"VACUUM INTO '{dest_db}'")  # type: ignore[union-attr]
+                    await self._database._conn.execute(f"VACUUM INTO '{dest_db}'")
                     _log.info("Season snapshot: copied gameserver.db via VACUUM INTO")
 
             # 3. empire_stats CSV

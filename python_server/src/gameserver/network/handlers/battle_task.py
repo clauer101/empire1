@@ -103,7 +103,7 @@ def _sync_battle_structures(battle: "BattleState", tiles: dict[str, Any], items_
 async def _log_battle_stats(
     battle: "BattleState",
     database: Any,
-    loot: dict,
+    loot: dict[str, Any],
     stolen_artifacts: "list[tuple[str, int]]",
 ) -> None:
     """Record post-battle empire stats to the database (fire-and-forget safe)."""

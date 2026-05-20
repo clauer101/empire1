@@ -6,20 +6,15 @@ repos:
         args: [--fix]
         files: ^python_server/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+  - repo: local
     hooks:
       - id: mypy
-        files: ^python_server/src/
-        args: [--ignore-missing-imports]
-        additional_dependencies:
-          - pydantic>=2.0
-          - pydantic-settings>=2.0
-          - aiosqlite>=0.19
-          - argon2-cffi>=23.0
-          - pyjwt>=2.0
-          - types-PyYAML
-          - msgpack-types
+        name: mypy
+        entry: .venv/bin/mypy
+        args: [python_server/src]
+        language: system
+        pass_filenames: false
+        types: [python]
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
