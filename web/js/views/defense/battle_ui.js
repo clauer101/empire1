@@ -136,7 +136,6 @@ export function createBattleUi(ctx) {
       if (!isDirty && !hasTimer) {
         grid.fromJSON({ tiles: msg.tiles });
         grid.addVoidNeighbors();
-        grid._centerGrid();
         const refetchNeighbors = () => {
           ctx.rest.getMapNeighbors(grid.getVisibleHexBounds())
             .then(data => {

@@ -26,7 +26,7 @@ export const TILE_TYPES = {
     color: '#5c4a32',
     stroke: '#7a6545',
     icon: null,
-    spriteUrl: '/assets/sprites/maps/path2.webp',
+    spriteUrl: '/assets/sprites/maps/path1.webp',
   },
   spawnpoint: {
     id: 'spawnpoint',
@@ -178,6 +178,21 @@ export class HexGrid {
     this._baseCanvas = null;
     this._baseCached = false;
     this._tilesVersion = 0;
+
+    // Static layer caching: grass texture, outlines, fog/neighbor tiles,
+    // edges, tints and enemy/structure sprites are all baked into a single
+    // offscreen canvas at the *current* zoom resolution. It is only rebuilt
+    // when tiles / neighbor tiles / zoom / vision radius change — never on
+    // pan and never per battle frame.
+    this._staticCanvas = null;
+    this._staticDirty = true;
+    this._staticWorldOffsetX = 0;
+    this._staticWorldOffsetY = 0;
+    this._staticZoom = 0;
+    this._staticCanvasScale = window.devicePixelRatio || 1;
+    this._cachedSpriteTiles = null;
+    this._pathCache = null;
+    this._staticRebuildTimerId = null;
 
     // Sprite image cache: url → ImageBitmap | 'loading'
     this._spriteCache = new Map();
@@ -573,6 +588,7 @@ export class HexGrid {
     this.offsetY = my - (my - this.offsetY) * (this.zoom / oldZoom);
     this._clampPanOffset();
     this._dirty = true;
+    this._scheduleStaticRebuildAfterZoom();
     this._emitViewportChange();
   }
 
@@ -674,6 +690,7 @@ export class HexGrid {
         this.offsetY = my - (my - this.offsetY) * (this.zoom / oldZoom);
         this._clampPanOffset();
         this._dirty = true;
+        this._scheduleStaticRebuildAfterZoom();
         this._emitViewportChange();
       }
       this._lastPinchDistance = currentDistance;
@@ -796,6 +813,7 @@ export class HexGrid {
     this._neighborTiles = new Map(
       neighborTiles.map(t => [`${t.q},${t.r}`, { uid: t.uid ?? null, iid: t.iid ?? null, tile_type: t.tile_type ?? null }])
     );
+    this._invalidateStatic();
     this._dirty = true;
   }
 
@@ -955,7 +973,7 @@ export class HexGrid {
     console.log('[HexGrid] setDisplayPath', path ? `${path.length} nodes` : 'null');
     this.battlePath = path; // [{q,r}, ...] or null
     this._partialReachable = null;
-    if (path) this._ensureSpriteLoaded('/assets/sprites/maps/path2.webp');
+    if (path) this._ensureSpriteLoaded('/assets/sprites/maps/path1.webp');
     this._invalidateBase();
     this._dirty = true;
   }
@@ -964,10 +982,11 @@ export class HexGrid {
   setEnemyPath(uid, path) {
     if (path && path.length > 1) {
       this._enemyPaths.set(uid, path);
-      this._ensureSpriteLoaded('/assets/sprites/maps/path2.webp');
+      this._ensureSpriteLoaded('/assets/sprites/maps/path1.webp');
     } else {
       this._enemyPaths.delete(uid);
     }
+    this._invalidateStatic();
     this._dirty = true;
   }
 
@@ -976,7 +995,7 @@ export class HexGrid {
     console.log('[HexGrid] setBattlePath', path ? `${path.length} nodes` : 'null');
     this.battlePath = path; // [{q,r}, ...]
     this.battleActive = true;
-    this._ensureSpriteLoaded('/assets/sprites/maps/path2.webp');
+    this._ensureSpriteLoaded('/assets/sprites/maps/path1.webp');
     this._invalidateBase();
     this._dirty = true;
   }
@@ -1109,6 +1128,31 @@ export class HexGrid {
 
   _invalidateBase() {
     this._baseCached = false;
+    this._invalidateStatic();
+  }
+
+  /** Mark the cached static layer (grass, outlines, fog, edges, sprites) stale. */
+  _invalidateStatic() {
+    this._staticDirty = true;
+    this._cachedSpriteTiles = null;
+    this._pathCache = null;
+  }
+
+  /**
+   * Schedule a deferred static rebuild after zoom gestures settle.
+   * During the zoom gesture _render() reuses the old cache at a rescaled
+   * size — correct geometry but slightly blurry / wrong line widths.
+   * The rebuild fires once, ~200 ms after the last zoom event.
+   */
+  _scheduleStaticRebuildAfterZoom() {
+    if (this._staticRebuildTimerId !== null) {
+      clearTimeout(this._staticRebuildTimerId);
+    }
+    this._staticRebuildTimerId = setTimeout(() => {
+      this._staticRebuildTimerId = null;
+      this._invalidateStatic();
+      this._dirty = true;
+    }, 150);
   }
 
   /**
@@ -1208,54 +1252,98 @@ export class HexGrid {
     this._baseCached = true;
   }
 
+  /**
+   * Render path to an offscreen canvas once, composite per-frame with drawImage.
+   * Each segment between consecutive tile centers is stamped with the path texture,
+   * rotated to the correct angle. Rounded caps drawn per-node blend the joints.
+   */
+  _buildPathCache(allSegments, pathBmp, pathW) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const { points } of allSegments) {
+      for (const p of points) {
+        minX = Math.min(minX, p.x - pathW);
+        minY = Math.min(minY, p.y - pathW);
+        maxX = Math.max(maxX, p.x + pathW);
+        maxY = Math.max(maxY, p.y + pathW);
+      }
+    }
+    if (!isFinite(minX)) return null;
+    const dpr = window.devicePixelRatio || 1;
+    const MAX_TEXTURE = 4096;
+    const wantScale = dpr * this._maxZoom;
+    const pad = pathW;
+    const worldW = maxX - minX + pad * 2;
+    const worldH = maxY - minY + pad * 2;
+    const renderScale = Math.min(wantScale, MAX_TEXTURE / Math.max(worldW, worldH, 1));
+    const offW = Math.ceil(worldW * renderScale);
+    const offH = Math.ceil(worldH * renderScale);
+    const off = document.createElement('canvas');
+    off.width = offW;
+    off.height = offH;
+    const octx = off.getContext('2d');
+    // Work in world-space coords; renderScale applied via setTransform
+    octx.setTransform(renderScale, 0, 0, renderScale, (-minX + pad) * renderScale, (-minY + pad) * renderScale);
+
+    for (const { points, alpha } of allSegments) {
+      if (points.length < 2) continue;
+      octx.save();
+      octx.globalAlpha = alpha;
+
+      // --- stamp one image per segment, clipped to a rounded rectangle ---
+      for (let i = 0; i < points.length - 1; i++) {
+        const ax = points[i].x, ay = points[i].y;
+        const bx = points[i + 1].x, by = points[i + 1].y;
+        const dx = bx - ax, dy = by - ay;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 1) continue;
+        // sprite is 1:8 (tall), long axis maps to segment direction
+        const angle = Math.atan2(dy, dx) - Math.PI / 2;
+        octx.save();
+        octx.translate(ax + dx * 0.5, ay + dy * 0.5);
+        octx.rotate(angle);
+        const stampW = pathW;
+        const ext = stampW * 0.1; // overshoot each end to close the gap at caps
+        const stampH = len + ext * 2;
+        const cornerR = stampW * 0.4; // fully round short ends
+        // clip to rounded rect so the ends are semicircular, not sharp
+        octx.beginPath();
+        octx.roundRect(-stampW / 2, -stampH / 2, stampW, stampH, cornerR);
+        octx.clip();
+        if (pathBmp) {
+          octx.drawImage(pathBmp, -stampW / 2, -stampH / 2, stampW, stampH);
+        } else {
+          octx.fillStyle = '#c8924a';
+          octx.fill();
+        }
+        // fade left and right edges
+        const fadeW = stampW * 0.35;
+        octx.globalCompositeOperation = 'destination-out';
+        const gL = octx.createLinearGradient(-stampW / 2, 0, -stampW / 2 + fadeW, 0);
+        gL.addColorStop(0, 'rgba(0,0,0,1)');
+        gL.addColorStop(1, 'rgba(0,0,0,0)');
+        octx.fillStyle = gL;
+        octx.fillRect(-stampW / 2, -stampH / 2, fadeW, stampH);
+        const gR = octx.createLinearGradient(stampW / 2, 0, stampW / 2 - fadeW, 0);
+        gR.addColorStop(0, 'rgba(0,0,0,1)');
+        gR.addColorStop(1, 'rgba(0,0,0,0)');
+        octx.fillStyle = gR;
+        octx.fillRect(stampW / 2 - fadeW, -stampH / 2, fadeW, stampH);
+        octx.globalCompositeOperation = 'source-over';
+        octx.restore();
+      }
+
+      octx.restore();
+    }
+    return { canvas: off, x: minX - pad, y: minY - pad, scale: renderScale };
+  }
+
   _renderPath(ctx) {
     const sz = this.hexSize;
-    const pathBmp = this._spriteCache.get('/assets/sprites/maps/path2.webp');
+    const pathBmp = this._spriteCache.get('/assets/sprites/maps/path1.webp');
     const pathW = sz * 0.38;
 
-    const _drawSegments = (points, alpha = 1) => {
-      if (pathBmp && pathBmp !== 'loading') {
-        const pathPattern = ctx.createPattern(pathBmp, 'repeat');
-        const scaleY = pathW / pathBmp.height;
-        pathPattern.setTransform(new DOMMatrix().scale(0.5, scaleY * 0.5));
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        for (let i = 0; i < points.length - 1; i++) {
-          const p1 = points[i], p2 = points[i + 1];
-          const dx = p2.x - p1.x, dy = p2.y - p1.y;
-          const dist = Math.hypot(dx, dy);
-          const angle = Math.atan2(dy, dx);
-          ctx.save();
-          ctx.translate(p1.x, p1.y);
-          ctx.rotate(angle);
-          ctx.fillStyle = pathPattern;
-          ctx.fillRect(-pathW * 0.1, -pathW / 2, dist + pathW * 0.2, pathW);
-          ctx.restore();
-        }
-        for (const p of points) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, pathW / 2, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.fillStyle = pathPattern;
-          ctx.fillRect(p.x - pathW / 2, p.y - pathW / 2, pathW, pathW);
-          ctx.restore();
-        }
-        ctx.restore();
-      } else {
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)';
-        ctx.lineWidth = pathW;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-        ctx.stroke();
-        ctx.restore();
-      }
-    };
+    // Collect all segment groups to render
+    const allSegments = [];
 
     if (!this.battlePath && this._partialReachable && this._partialReachable.size > 1) {
       const visitedEdges = new Set();
@@ -1272,13 +1360,12 @@ export class HexGrid {
           points.push(p1, hexToPixel(nb.q, nb.r, sz));
         }
       }
-      if (points.length > 1) _drawSegments(points, 0.75);
+      if (points.length > 1) allSegments.push({ points, alpha: 0.75 });
     }
 
     // Own path
     if (this.battlePath && this.battlePath.length > 1) {
-      const points = this.battlePath.map((p) => hexToPixel(p.q, p.r, sz));
-      _drawSegments(points, 1);
+      allSegments.push({ points: this.battlePath.map((p) => hexToPixel(p.q, p.r, sz)), alpha: 1 });
     } else {
       // Fallback from own tiles when no battlePath set
       const pathTiles = new Set();
@@ -1303,28 +1390,38 @@ export class HexGrid {
           chain.push(parseKey(found));
           current = found;
         }
-        if (chain.length > 1) _drawSegments(chain.map(({ q, r }) => hexToPixel(q, r, sz)), 1);
+        if (chain.length > 1)
+          allSegments.push({ points: chain.map(({ q, r }) => hexToPixel(q, r, sz)), alpha: 1 });
       }
     }
 
-    // Enemy paths — clipped to visible area (own tiles + inner vision radius, no fog ring)
+    // Enemy paths — clipped to visible area
     if (this._enemyPaths.size > 0) {
       const visibleKeys = new Set([...this.tiles.keys(), ...(this._lastInnerKeys ?? new Set())]);
       for (const [, path] of this._enemyPaths) {
-        // Split path into segments of consecutive visible points
         let segment = [];
         for (const p of path) {
-          const key = `${p.q},${p.r}`;
-          if (visibleKeys.has(key)) {
+          if (visibleKeys.has(`${p.q},${p.r}`)) {
             segment.push(hexToPixel(p.q, p.r, sz));
           } else {
-            if (segment.length > 1) _drawSegments(segment, 0.75);
+            if (segment.length > 1) allSegments.push({ points: segment, alpha: 0.75 });
             segment = [];
           }
         }
-        if (segment.length > 1) _drawSegments(segment, 0.75);
+        if (segment.length > 1) allSegments.push({ points: segment, alpha: 0.75 });
       }
     }
+
+    if (allSegments.length === 0) return;
+
+    // Build or reuse offscreen cache — invalidated when tiles/path change via _invalidateStatic()
+    if (!this._pathCache) {
+      this._pathCache = this._buildPathCache(allSegments, pathBmp, pathW);
+    }
+    if (!this._pathCache) return;
+
+    const pc = this._pathCache;
+    ctx.drawImage(pc.canvas, pc.x, pc.y, pc.canvas.width / pc.scale, pc.canvas.height / pc.scale);
   }
 
   /** Draw structure sprites + icon/label overlays at full zoom resolution.
@@ -1357,18 +1454,23 @@ export class HexGrid {
       }
     }
 
-    // Sprites sorted by pixel Y (painter's algorithm) so lower hexes render on top
-    const spriteTiles = [...this.tiles.entries()]
-      .filter(([, data]) => {
-        const tt = getTileType(data.type);
-        return tt.spriteUrl && data.type !== 'void' && data.type !== 'path';
-      })
-      .map(([key, data]) => {
-        const { q, r } = parseKey(key);
-        const { x, y } = hexToPixel(q, r, sz);
-        return { data, x, y };
-      })
-      .sort((a, b) => a.y - b.y);
+    // Sprites sorted by pixel Y (painter's algorithm) so lower hexes render on
+    // top. The list only changes when tiles change, so cache it and rebuild
+    // lazily on static invalidation.
+    if (!this._cachedSpriteTiles) {
+      this._cachedSpriteTiles = [...this.tiles.entries()]
+        .filter(([, data]) => {
+          const tt = getTileType(data.type);
+          return tt.spriteUrl && data.type !== 'void' && data.type !== 'path';
+        })
+        .map(([key, data]) => {
+          const { q, r } = parseKey(key);
+          const { x, y } = hexToPixel(q, r, sz);
+          return { data, x, y };
+        })
+        .sort((a, b) => a.y - b.y);
+    }
+    const spriteTiles = this._cachedSpriteTiles;
 
     for (const { data, x, y } of spriteTiles) {
       const tileType = getTileType(data.type);
@@ -1741,7 +1843,7 @@ export class HexGrid {
       }
     }
 
-    const lw = 8 / this.zoom;
+    const lw = 3 / this.zoom;
     ctx.save();
     ctx.lineWidth = lw;
     ctx.lineCap = 'round';
@@ -1796,49 +1898,79 @@ export class HexGrid {
     }
   }
 
-  _render() {
-    const ctx = this.ctx;
-    const w = this._logicalWidth || this.canvas.width;
-    const h = this._logicalHeight || this.canvas.height;
-    const dpr = window.devicePixelRatio || 1;
+  /**
+   * Render every static layer (grass texture, tile outlines, fog/enemy
+   * neighbor tiles + boundary edges, color tints, battle/enemy paths, and
+   * enemy + structure sprites) into an offscreen canvas at the current zoom
+   * resolution. Composited each frame with a single drawImage in _render().
+   * Only rebuilt when tiles / neighbor tiles / zoom / vision radius change.
+   */
+  _renderStatic() {
+    if (this.tiles.size === 0) return; // retry next frame
 
-    // Clear entire canvas
+    if (!this._staticCanvas) {
+      this._staticCanvas = document.createElement('canvas');
+    }
+
+    // World bounds over owned + neighbor tiles, padded for fog rings beyond
+    // the vision radius and for sprite/edge overflow outside the hex.
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
+    const acc = (q, r) => {
+      const { x, y } = hexToPixel(q, r, this.hexSize);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    };
+    for (const key of this.tiles.keys()) {
+      const { q, r } = parseKey(key);
+      acc(q, r);
+    }
+    for (const key of this._neighborTiles.keys()) {
+      const { q, r } = parseKey(key);
+      acc(q, r);
+    }
+    const pad = this.hexSize * (this.visionRadius + 3);
+    minX -= pad;
+    minY -= pad;
+    maxX += pad;
+    maxY += pad;
+
+    const worldW = maxX - minX;
+    const worldH = maxY - minY;
+    const dpr = window.devicePixelRatio || 1;
+    const MAX_TEXTURE = 8192;
+    const wantScale = dpr * this.zoom;
+    const actualScale = Math.min(wantScale,
+      Math.min(MAX_TEXTURE / (worldW || 1), MAX_TEXTURE / (worldH || 1)));
+
+    this._staticCanvas.width  = Math.max(1, Math.ceil(worldW * actualScale));
+    this._staticCanvas.height = Math.max(1, Math.ceil(worldH * actualScale));
+    this._staticCanvasScale = actualScale;
+    this._staticWorldOffsetX = minX;
+    this._staticWorldOffsetY = minY;
+    this._staticZoom = this.zoom;
+
+    const ctx = this._staticCanvas.getContext('2d');
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(actualScale, 0, 0, actualScale, 0, 0);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, worldW, worldH);
+    // World-space transform: translate so world origin (minX,minY) → canvas (0,0).
+    // Line widths using 1/zoom and 8/zoom remain correct because when drawn
+    // scaled by zoom the result is zoom-invariant screen pixels.
+    ctx.translate(-minX, -minY);
 
-    // Render base layer to cache only when tiles change (not on zoom)
-    if (!this._baseCached) {
-      this._renderBase();
-    }
+    const sz = this.hexSize;
 
-    // Apply only translation (zoom is already in the base layer)
-    ctx.translate(this.offsetX, this.offsetY);
-
-    // Draw cached base layer (already zoomed)
-    // Guard: a 0-sized canvas (e.g. when tiles map is empty) would throw a
-    // DOMException on Chrome — skip drawing until dimensions are valid.
-    if (this._baseCanvas && this._baseCanvas.width > 0 && this._baseCanvas.height > 0) {
-      const scale = this.zoom / dpr;
-      ctx.drawImage(
-        this._baseCanvas,
-        this._baseWorldOffsetX * this.zoom,
-        this._baseWorldOffsetY * this.zoom,
-        this._baseCanvas.width * scale,
-        this._baseCanvas.height * scale
-      );
-    }
-
-    // Apply zoom for per-frame layers (not in the base cache)
-    ctx.scale(this.zoom, this.zoom);
-
-    // Grass texture drawn per-frame at final resolution (no double-scale blur)
+    // Grass texture over all tiles (owned + enemy neighbor tiles)
     if (this._mapBitmap && this.tiles.size > 0) {
-      const sz = this.hexSize;
-      const pattern = ctx.createPattern(this._mapBitmap, 'repeat');
-      pattern.setTransform(new DOMMatrix().scale(0.5));
+      const pattern = this._tilePattern || ctx.createPattern(this._mapBitmap, 'repeat');
+      if (!this._tilePattern) pattern.setTransform(new DOMMatrix().scale(0.5));
       const allTilesPath = new Path2D();
       const ownedTilesPath = new Path2D();
       const enemyTilesPath = new Path2D();
@@ -1872,14 +2004,12 @@ export class HexGrid {
       ctx.fillStyle = pattern;
       ctx.fill(allTilesPath);
       ctx.restore();
-      // Store paths for tint pass after neighbor tiles are drawn
       this._ownedTilesPath = ownedTilesPath;
       this._enemyTilesPath = enemyTilesPath;
     }
 
     // Tile outlines (own + enemy)
     if (this.tiles.size > 0 || this._neighborTiles.size > 0) {
-      const sz = this.hexSize;
       ctx.save();
       ctx.strokeStyle = 'rgba(120,120,120,0.5)';
       ctx.lineWidth = 1 / this.zoom;
@@ -1904,10 +2034,10 @@ export class HexGrid {
       ctx.restore();
     }
 
-    // Viewport-bounded fog / enemy tiles, above base tiles, below structures.
+    // Viewport-bounded fog / enemy tiles + boundary edges
     this._renderNeighborTiles(ctx);
 
-    // Color tints drawn after neighbor tiles so they appear on top of fog/grass
+    // Color tints on top of fog/grass
     if (this._ownedTilesPath) {
       ctx.save();
       ctx.globalAlpha = 0.15;
@@ -1923,11 +2053,87 @@ export class HexGrid {
       ctx.restore();
     }
 
-    // Battle path drawn per-frame at final resolution (no double-scale blur).
+
+    ctx.restore();
+    this._staticDirty = false;
+  }
+
+  _render() {
+    const ctx = this.ctx;
+    const w = this._logicalWidth || this.canvas.width;
+    const h = this._logicalHeight || this.canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Clear entire canvas
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, w, h);
+
+    // Render base layer to cache only when tiles change (not on zoom)
+    if (!this._baseCached) {
+      this._renderBase();
+    }
+
+    // Apply only translation (zoom is already in the base layer)
+    ctx.translate(this.offsetX, this.offsetY);
+
+    // Draw cached base layer (already zoomed)
+    // Guard: a 0-sized canvas (e.g. when tiles map is empty) would throw a
+    // DOMException on Chrome — skip drawing until dimensions are valid.
+    if (this._baseCanvas && this._baseCanvas.width > 0 && this._baseCanvas.height > 0) {
+      const scale = this.zoom / dpr;
+      ctx.drawImage(
+        this._baseCanvas,
+        this._baseWorldOffsetX * this.zoom,
+        this._baseWorldOffsetY * this.zoom,
+        this._baseCanvas.width * scale,
+        this._baseCanvas.height * scale
+      );
+    }
+
+    // Composite the cached static layer (grass, outlines, fog/edges, tints,
+    // path, enemy + structure sprites).
+    // — Content changes (tiles, neighbors, paths): rebuild immediately.
+    // — Zoom changes: reuse old cache at a rescaled draw size until the zoom
+    //   gesture settles (debounce), then rebuild once. This avoids an expensive
+    //   full rebuild on every wheel tick while the user is still zooming.
+    if (this._staticDirty || !this._staticCanvas) {
+      this._renderStatic();
+    }
+    if (
+      this._staticCanvas &&
+      this._staticCanvas.width > 0 &&
+      this._staticCanvas.height > 0
+    ) {
+      // Draw static canvas at the scale it was rendered at.
+      // After zoom settles: scs = dpr*zoom → staticScale = 1/dpr (1:1 sharp).
+      // During gesture: scs = dpr*oldZoom → staticScale = zoom/(dpr*oldZoom) (rescaled).
+      const scs = this._staticCanvasScale || dpr;
+      const staticScale = this.zoom / scs;
+      // Round position to whole physical pixels to avoid sub-pixel interpolation
+      // artifacts that shift visually during pan.
+      const drawX = Math.round(this._staticWorldOffsetX * this.zoom * dpr) / dpr;
+      const drawY = Math.round(this._staticWorldOffsetY * this.zoom * dpr) / dpr;
+      ctx.drawImage(
+        this._staticCanvas,
+        drawX,
+        drawY,
+        this._staticCanvas.width  * staticScale,
+        this._staticCanvas.height * staticScale
+      );
+    }
+
+    // Apply zoom for per-frame dynamic layers (not in any cache)
+    ctx.scale(this.zoom, this.zoom);
+
+    // Path rendered per-frame so texture stays stable during pan
     this._renderPath(ctx);
 
-    // All sprites drawn after tints so buildings always appear on top.
+    // Enemy sprites above path
     this._renderEnemySprites(ctx);
+
+    // Structures (towers, castle, spawnpoint) above path
     this._renderStructures(ctx);
 
     // Draw range circle overlay if set
@@ -1963,6 +2169,7 @@ export class HexGrid {
     }
 
     ctx.restore();
+
   }
 
   // ── Cleanup ────────────────────────────────────────────────
@@ -1971,6 +2178,7 @@ export class HexGrid {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     if (this._resizeObserver) this._resizeObserver.disconnect();
     if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
+    if (this._staticRebuildTimerId !== null) clearTimeout(this._staticRebuildTimerId);
 
     // Remove all event listeners to prevent stale handlers on re-enter
     if (this._handlers) {
