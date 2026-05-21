@@ -34,7 +34,7 @@ SLING_TOWER:
   sprite: "assets/sprites/structures/sling_tower/sling_tower.webp"
   damage: 1
   range: 1.5
-  reload_time: 1800
+  reload_time: 1700
   shot_speed: 1.2
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3

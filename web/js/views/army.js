@@ -194,7 +194,6 @@ function init(el, _api, _state) {
           <button id="global-target-clear" title="Clear" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;">✕</button>
           <div class="empire-ac-dropdown"></div>
         </div>
-        <button id="global-map-btn" title="Open Global Map" style="flex-shrink:0;padding:0 10px;height:32px;border-radius:var(--radius,8px);background:rgba(46,125,50,0.18);border:1px solid rgba(56,142,60,0.3);color:#66bb6a;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0.7;">🌐</button>
       </div>
     </div>
 
@@ -285,27 +284,10 @@ function init(el, _api, _state) {
     // no-op: per-army inputs removed; global input is the single source
   }
 
-  const globalMapBtn = container.querySelector('#global-map-btn');
-
-  function _updateMapBtn() {
-    const hasTarget = !!globalTargetInput.value.trim();
-    globalMapBtn.disabled = !hasTarget;
-    globalMapBtn.style.opacity = hasTarget ? '1' : '0.7';
-    globalMapBtn.style.cursor = hasTarget ? 'pointer' : 'default';
-    globalMapBtn.style.pointerEvents = hasTarget ? '' : 'none';
-  }
-
   container.querySelector('#global-target-clear').addEventListener('click', () => {
     globalTargetInput.value = '';
     _syncGlobalTarget('');
-    _updateMapBtn();
   });
-
-  globalMapBtn.addEventListener('click', () => {
-    window.location.hash = '#globalmap';
-  });
-
-  _updateMapBtn();
 
   _bindAutocomplete(globalTargetInput);
   globalTargetInput.addEventListener('input', () => {

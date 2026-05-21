@@ -154,6 +154,8 @@ function _allAwardsHtml(empires, myUid) {
     { icon: '🎭', label: 'Most Culture Won',               key: 'culture_won',      fmt: n => fmtRes(n) },
     { icon: '⏱', label: 'Longest Battle Survived',        key: 'longest_battle_ms', fmt: n => fmtSecs(Math.round(n / 1000)) },
     { icon: '🌟', label: 'First to Reach New Eras',        key: 'first_era_reached', fmt: n => `${n} era${n !== 1 ? 's' : ''}` },
+    { icon: '🐉', label: 'Most Upgraded Critter',            key: 'critter_upgrade_levels', fmt: n => `${n} levels` },
+    { icon: '🗼', label: 'Most Upgraded Tower',              key: 'tower_upgrade_levels',   fmt: n => `${n} levels` },
     { icon: '⏳', label: 'Longest Artifact Hold',           key: 'longest_artifact_hold_secs', fmt: n => fmtSecs(n) },
     { icon: '⚔',  label: 'Most Attacks Sent (Human)',       key: 'attacks_sent_human',     fmt: n => `${n}` },
     { icon: '🛡', label: 'Most Attacks Suffered (Human)',   key: 'attacks_received_human', fmt: n => `${n}` },

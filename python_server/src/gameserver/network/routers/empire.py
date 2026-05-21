@@ -532,6 +532,7 @@ def make_router(services: "Services") -> APIRouter:
                 "attacks_won_human", "attacks_lost_human",
                 "defense_won_human", "defense_lost_human",
                 "defense_won_ai", "defense_lost_ai",
+                "critter_upgrade_levels", "tower_upgrade_levels",
             ]
             for r in results:
                 row = stats_by_uid.get(r["uid"]) or {}

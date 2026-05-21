@@ -1483,7 +1483,7 @@ function renderEmpiresSection(empires) {
 
   return `
     <div class="panel">
-      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a><span class="badge badge--available" style="margin-left:4px;opacity:0.45;cursor:default;">🌍</span> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
+      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
       <div id="empires-scroll">
         <div id="empires-rows">${rows}</div>
       </div>

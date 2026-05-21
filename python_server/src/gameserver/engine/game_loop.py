@@ -176,6 +176,16 @@ class GameLoop:
                     writer.writerows(holds_rows)
                 _log.info("Season snapshot: wrote artifact_holds.csv (%d rows)", len(holds_rows))
 
+            # 5. Save end-of-season artifact snapshot for next-season bonus
+            if self._database is not None:
+                uid_to_arts = {
+                    e.uid: list(e.artifacts)
+                    for e in self._empires.all_empires.values()
+                    if e.artifacts
+                }
+                await self._database.save_last_season_artifacts(uid_to_arts)
+                _log.info("Season snapshot: saved last_season_artifacts (%d empires)", len(uid_to_arts))
+
             _log.info("Season snapshot complete → %s", results_dir)
         except Exception:
             _log.exception("Season snapshot failed — will not retry")

@@ -83,8 +83,7 @@ class SpyCosts:
 class GameConfig:
     """All tunable gameplay constants.
 
-    Loaded from ``config/game.yaml``.  Every field has a sensible default
-    so the server can start even without the file.
+    Loaded from ``config/game.yaml``.
     """
 
     # -- Timing ------------------------------------------------------
@@ -190,6 +189,9 @@ class GameConfig:
 
     # -- Artifact lottery --------------------------------------------
     accounts_per_artifact: int = 12
+
+    # -- Empire spawn layout -----------------------------------------
+    empire_spawn_spacing: int = 11  # hex distance between new empire spawn points
 
     # -- Map visibility ----------------------------------------------
     base_map_vision_radius: int = 1  # BFS steps outward from empire border shown as fog
@@ -338,6 +340,7 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         "ruler_xp_per_kill", "ruler_xp_per_reached_per_era", "ruler_xp_victory_per_era",
         "item_upgrade_base_costs",
         "end_criterion",
+        "empire_spawn_spacing",
     ]
     for key in _REQUIRED_SCALAR_KEYS:
         _require(raw, key)

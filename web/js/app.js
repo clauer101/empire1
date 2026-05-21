@@ -348,7 +348,7 @@ function _updateGameOverBanner(rally, data) {
   const resetTriggered = !!data?.season_reset_triggered;
   const postWipe = resetTriggered && !nsl;
   if (!frozen || inLeadtime || postWipe) { banner.style.display = 'none'; return; }
-  const winner = rally.triggered_by_name || '?';
+  const winner = rally.culture_leader_name || getCultureLeaderName() || rally.triggered_by_name || '?';
   const winnerSafe = winner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   banner.innerHTML = `🏆 <strong>${winnerSafe}</strong> has won the season — Congratulations! <a href="#season-results" style="color:#ffd700;font-weight:bold;margin-left:10px;text-decoration:underline;">(view results)</a>`;
   banner.style.display = 'block';

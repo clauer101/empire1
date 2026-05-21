@@ -35,6 +35,8 @@ One row per empire (uid). All counters default to 0.
 | `research_won` | REAL | Total research effort gained by looting others |
 | `defense_gold_earned` | REAL | Total gold earned by killing critters in defense |
 | `first_era_reached` | INTEGER | Count of eras this empire was first globally to reach |
+| `critter_upgrade_levels` | INTEGER | Peak total critter upgrade levels across all critter IIDs |
+| `tower_upgrade_levels` | INTEGER | Peak total tower upgrade levels across all tower IIDs |
 
 ### `artifact_holds`
 
@@ -74,6 +76,7 @@ All writes use `asyncio.ensure_future(...)` (fire-and-forget) and are wrapped in
 | Towers sold | `handle_map_save_request()` sell-refund loop | `handlers/economy.py` |
 | Towers placed | `handle_map_save_request()` cost-deduction block | `handlers/economy.py` |
 | First era reached | `_apply_effects()` before/after era comparison | `engine/empire_service.py` |
+| Critter/Tower upgrade levels | `handle_buy_item_upgrade()` after successful purchase | `handlers/economy.py` |
 
 "First era reached" uses `global_state._eras_first_reached` (a module-level set) to track which eras have already been claimed globally. The first empire to reach a given era gets `first_era_reached += 1`.
 

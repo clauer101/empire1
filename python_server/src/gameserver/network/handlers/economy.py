@@ -860,6 +860,25 @@ async def handle_buy_item_upgrade(
 
     log.info("Item upgrade: uid=%d iid=%s stat=%s → level %d for %.1f gold", sender_uid, iid, stat, new_level, price)
 
+    if svc.database is not None:
+        import asyncio as _asyncio
+        from gameserver.models.items import ItemType as _ItemType
+        all_items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+        if item.item_type == _ItemType.CRITTER:
+            total = sum(
+                sum(levels.values())
+                for iid2, levels in empire.item_upgrades.items()
+                if all_items.get(iid2) and all_items[iid2].item_type == _ItemType.CRITTER
+            )
+            _asyncio.ensure_future(svc.database.record_empire_stat_max(sender_uid, "critter_upgrade_levels", total))
+        elif item.item_type == _ItemType.STRUCTURE:
+            total = sum(
+                sum(levels.values())
+                for iid2, levels in empire.item_upgrades.items()
+                if all_items.get(iid2) and all_items[iid2].item_type == _ItemType.STRUCTURE
+            )
+            _asyncio.ensure_future(svc.database.record_empire_stat_max(sender_uid, "tower_upgrade_levels", total))
+
     return {
         "success": True,
         "iid": iid,

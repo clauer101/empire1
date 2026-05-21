@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS empire_stats (
     research_won             REAL    DEFAULT 0,
     defense_gold_earned      REAL    DEFAULT 0,
     first_era_reached        INTEGER DEFAULT 0,
-    peak_artifacts_held      INTEGER DEFAULT 0
+    peak_artifacts_held      INTEGER DEFAULT 0,
+    critter_upgrade_levels   INTEGER DEFAULT 0,
+    tower_upgrade_levels     INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS era_firsts (
     era_key     TEXT PRIMARY KEY,
@@ -51,6 +53,11 @@ CREATE TABLE IF NOT EXISTS artifact_holds (
     artifact_iid      TEXT NOT NULL,
     acquired_at       REAL,
     total_held_secs   REAL DEFAULT 0,
+    PRIMARY KEY (uid, artifact_iid)
+);
+CREATE TABLE IF NOT EXISTS last_season_artifacts (
+    uid          INTEGER NOT NULL,
+    artifact_iid TEXT NOT NULL,
     PRIMARY KEY (uid, artifact_iid)
 );
 CREATE TABLE IF NOT EXISTS users (
@@ -133,6 +140,19 @@ class Database:
         except aiosqlite.OperationalError:
             await self._conn.execute(
                 "ALTER TABLE empire_stats ADD COLUMN peak_artifacts_held INTEGER DEFAULT 0"
+            )
+        # Migrate: add critter/tower upgrade level columns to empire_stats if missing
+        try:
+            await self._conn.execute("SELECT critter_upgrade_levels FROM empire_stats LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute(
+                "ALTER TABLE empire_stats ADD COLUMN critter_upgrade_levels INTEGER DEFAULT 0"
+            )
+        try:
+            await self._conn.execute("SELECT tower_upgrade_levels FROM empire_stats LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute(
+                "ALTER TABLE empire_stats ADD COLUMN tower_upgrade_levels INTEGER DEFAULT 0"
             )
         # Migrate: add last_seen column if missing
         try:
@@ -733,6 +753,27 @@ class Database:
         async with self._conn.execute("SELECT era_key, uid, empire_name FROM era_firsts") as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
+
+    async def save_last_season_artifacts(self, uid_to_artifacts: dict[int, list[str]]) -> None:
+        """Replace last_season_artifacts with the current season's end-state artifacts."""
+        assert self._conn is not None
+        await self._conn.execute("DELETE FROM last_season_artifacts")
+        for uid, iids in uid_to_artifacts.items():
+            for iid in iids:
+                await self._conn.execute(
+                    "INSERT OR IGNORE INTO last_season_artifacts (uid, artifact_iid) VALUES (?, ?)",
+                    (uid, iid),
+                )
+        await self._conn.commit()
+
+    async def get_last_season_artifacts(self, uid: int) -> list[str]:
+        """Return artifact IIDs this user held at the end of the previous season."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT artifact_iid FROM last_season_artifacts WHERE uid = ?", (uid,)
+        ) as cur:
+            rows = await cur.fetchall()
+            return [r["artifact_iid"] for r in rows]
 
     async def wipe_season_stats(self) -> None:
         """Delete all per-season runtime stats (empire_stats, era_firsts, artifact_holds).

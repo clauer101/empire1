@@ -351,7 +351,8 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
             # Index among empires that exist in empire_service (new uid already in DB)
             empire_uids = [u["uid"] for u in users if u["uid"] in svc.empire_service.all_empires or u["uid"] == uid]
             empire_index = empire_uids.index(uid) if uid in empire_uids else len(empire_uids) - 1
-            spawn_offset = _grid_point(spacing=15, index=empire_index)
+            spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
+            spawn_offset = _grid_point(spacing=spacing, index=empire_index)
             log.info("New empire uid=%d index=%d spawn offset q=%d r=%d", uid, empire_index, spawn_offset.q, spawn_offset.r)
         except Exception as exc:
             log.warning("Could not compute spawn position for uid=%d: %s", uid, exc)
@@ -370,7 +371,27 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
         },
     )
     svc.empire_service.register(empire)
+    await _maybe_grant_last_season_artifact(uid, empire)
     await _maybe_grant_artifact_lottery()
+
+
+async def _maybe_grant_last_season_artifact(uid: int, empire: Any) -> None:
+    """If the user held artifacts at the end of last season, grant one randomly."""
+    import random
+
+    svc = _svc()
+    if svc.database is None:
+        return
+    last_arts = await svc.database.get_last_season_artifacts(uid)
+    if not last_arts:
+        return
+    chosen = random.choice(last_arts)
+    if chosen not in empire.artifacts:
+        empire.artifacts.append(chosen)
+    log.info(
+        "Last-season artifact bonus: uid=%d had %d artifact(s), granted %s",
+        uid, len(last_arts), chosen,
+    )
 
 
 async def _maybe_grant_artifact_lottery() -> None:

@@ -16,6 +16,9 @@ certs/
 *.csr
 *.key
 .admin-token-*
-data/
+data/dev
+data/prod/states
+data/prod/replays
+data/prod/states/gameserver.db
 python_server/state*.yaml
 python_server/gameserver*.db
