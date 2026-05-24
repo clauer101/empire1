@@ -238,8 +238,10 @@ async def handle_item_request(
                 "health_max": ruler_def.get("health_max", 2000),
                 "armour_min": ruler_def.get("armour_min", 0),
                 "armour_max": ruler_def.get("armour_max", 19),
-                "value_base": ruler_def.get("value_base", 1000),
-                "base_damage": ruler_def.get("base_damage", 1),
+                "value_min": ruler_def.get("value_min", 10),
+                "value_max": ruler_def.get("value_max", 1000),
+                "damage_min": ruler_def.get("damage_min", 1),
+                "damage_max": ruler_def.get("damage_max", 30),
                 "animation": ruler_def.get("animation", ""),
             },
         }
@@ -771,9 +773,7 @@ async def handle_buy_tile_request(
         }
 
     # Check if the tile is already owned by another empire in world coordinates
-    own_gq = empire.global_q or 0
-    own_gr = empire.global_r or 0
-    world_key = (q + own_gq, r + own_gr)
+    world_key = (q, r)
     tile_owner = svc.empire_service.world_tile_owner()
     existing_owner = tile_owner.get(world_key)
     if existing_owner is not None and existing_owner != target_uid:

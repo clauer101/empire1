@@ -502,19 +502,29 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
       </div>`;
     }).join('');
 
+    const c = def.critter;
+    const combatHtml = c ? `
+      <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:7px;padding-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px">
+        <div style="font-size:0.7em;color:#aaa">❤ HP</div><div style="font-size:0.7em;color:#ddd">${c.health_min}</div>
+        <div style="font-size:0.7em;color:#aaa">🛡 Armour</div><div style="font-size:0.7em;color:#ddd">${c.armour_min}</div>
+        <div style="font-size:0.7em;color:#aaa">⚡ Speed</div><div style="font-size:0.7em;color:#ddd">${c.speed_min}</div>
+        <div style="font-size:0.7em;color:#aaa">⚔ Damage</div><div style="font-size:0.7em;color:#ddd">${c.damage_min}</div>
+      </div>` : '';
+
     return `
-      <div class="ruler-choice-card" data-iid="${iid}" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;transition:border-color .15s;flex:1 1 0;min-width:180px;position:relative;background:var(--panel-bg,#1a1a2a)">
+      <div class="ruler-choice-card" data-iid="${iid}" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;transition:border-color .15s;flex:0 0 260px;width:260px;position:relative;background:var(--panel-bg,#1a1a2a);scroll-snap-align:center">
         ${splash ? `<img src="${splash}" style="width:100%;display:block" alt="">` : ''}
         <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 10px 8px;background:linear-gradient(to bottom,rgba(0,0,0,0) 0%,rgba(0,0,0,0.7) 25%,rgba(0,0,0,0.92) 100%)">
           <div style="font-weight:700;font-size:0.9em;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${def.name || iid}</div>
           <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:5px">${skillRows}</div>
+          ${combatHtml}
           ${def.description ? `<div style="font-size:0.75em;color:#bbb;line-height:1.4;margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08)">${def.description}</div>` : ''}
         </div>
       </div>`;
   }
 
   // Mobile: show one card at a time with prev/next buttons — no swipe/scroll conflict
-  const isMobile = () => window.innerWidth < 700;
+  const isMobile = () => window.innerWidth < 900;
   let mobileIdx = rulers.findIndex(([iid]) => iid === selectedIid);
   if (mobileIdx < 0) mobileIdx = 0;
 
@@ -563,10 +573,14 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
       <div class="prod-overlay-box" style="max-width:min(98vw,1600px);width:98vw;max-height:92vh;overflow-y:auto">
         <button class="prod-overlay-close" title="Close">✕</button>
         <div style="font-weight:bold;font-size:1.05em;margin-bottom:14px">Choose Your Ruler</div>
-        <div style="overflow:hidden">
-          <div id="ruler-cards" style="display:flex;flex-direction:row;gap:10px;align-items:stretch">
-            ${rulers.map(([iid, def]) => _rulerCardHtml(iid, def)).join('')}
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="ruler-carousel-prev" style="flex:0 0 auto;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:2em;line-height:1;width:40px;height:60px;border-radius:6px;cursor:pointer">&#8249;</button>
+          <div id="ruler-cards-track" style="flex:1;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory">
+            <div id="ruler-cards" style="display:flex;flex-direction:row;gap:10px;align-items:stretch;flex-wrap:nowrap">
+              ${rulers.map(([iid, def]) => _rulerCardHtml(iid, def)).join('')}
+            </div>
           </div>
+          <button id="ruler-carousel-next" style="flex:0 0 auto;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:2em;line-height:1;width:40px;height:60px;border-radius:6px;cursor:pointer">&#8250;</button>
         </div>
         <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px">
           <button id="ruler-choose-cancel" style="background:#333;color:#ccc;border:none;border-radius:4px;padding:7px 18px;cursor:pointer">Cancel</button>
@@ -584,6 +598,14 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
     selectedIid = rulers[mobileIdx][0];
     _updateSelection();
     _bindOverlayEvents();
+    requestAnimationFrame(() => {
+      const track = overlay.querySelector('#ruler-cards-track');
+      const card = track?.querySelector(`.ruler-choice-card[data-iid="${selectedIid}"]`);
+      if (!track || !card) return;
+      // Scroll so the selected card is centered in the track
+      const offset = card.offsetLeft - (track.clientWidth / 2) + (card.offsetWidth / 2);
+      track.scrollLeft = offset;
+    });
   }
 
   function _updateSelection() {
@@ -594,6 +616,17 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
   }
 
   function _bindOverlayEvents() {
+    const track = overlay.querySelector('#ruler-cards-track');
+    const cardScrollWidth = () => {
+      const card = track?.querySelector('.ruler-choice-card');
+      return card ? card.getBoundingClientRect().width + 10 : 230;
+    };
+    overlay.querySelector('#ruler-carousel-prev')?.addEventListener('click', () =>
+      track?.scrollBy({ left: -cardScrollWidth(), behavior: 'smooth' })
+    );
+    overlay.querySelector('#ruler-carousel-next')?.addEventListener('click', () =>
+      track?.scrollBy({ left: cardScrollWidth(), behavior: 'smooth' })
+    );
     overlay.querySelector('#ruler-choose-cancel')?.addEventListener('click', () => overlay.remove());
     overlay.querySelector('#ruler-choose-confirm')?.addEventListener('click', async () => {
       const btn = overlay.querySelector('#ruler-choose-confirm');
@@ -1315,19 +1348,19 @@ function _fmtSecs(s) {
 }
 
 const PHASE_LABEL = {
-  travelling: { text: 'travelling', cls: 'phase-travelling' },
+  traveling: { text: 'traveling', cls: 'phase-traveling' },
   in_siege: { text: 'siege', cls: 'phase-siege' },
   in_battle: { text: 'battle', cls: 'phase-battle' },
 };
 
-// Sort incoming attacks: travelling (longest ETA first) → siege (longest remaining first) → battle (longest elapsed first)
+// Sort incoming attacks: traveling (longest ETA first) → siege (longest remaining first) → battle (longest elapsed first)
 function _sortIncoming(attacks) {
-  const order = { travelling: 0, in_siege: 1, in_battle: 2 };
+  const order = { traveling: 0, in_siege: 1, in_battle: 2 };
   return [...attacks].sort((a, b) => {
     const pa = order[a.phase] ?? 3;
     const pb = order[b.phase] ?? 3;
     if (pa !== pb) return pa - pb;
-    if (a.phase === 'travelling')  return (b.eta_seconds ?? 0) - (a.eta_seconds ?? 0);
+    if (a.phase === 'traveling')  return (b.eta_seconds ?? 0) - (a.eta_seconds ?? 0);
     if (a.phase === 'in_siege')    return (b.siege_remaining_seconds ?? 0) - (a.siege_remaining_seconds ?? 0);
     if (a.phase === 'in_battle')   return (b.battle_elapsed_seconds ?? 0) - (a.battle_elapsed_seconds ?? 0);
     return 0;
@@ -1363,7 +1396,7 @@ function _attackEntry(a, direction) {
 
   let countdown = '';
   let pct = 0;
-  if (a.phase === 'travelling') {
+  if (a.phase === 'traveling') {
     countdown = `<span class="atk-cd" data-atk-cd="${a.attack_id}" data-remain="${a.eta_seconds.toFixed(2)}" data-total="${a.total_eta_seconds.toFixed(2)}">${_fmtSecs(a.eta_seconds)}</span>`;
     pct = a.total_eta_seconds > 0 ? Math.round((1 - a.eta_seconds / a.total_eta_seconds) * 100) : 0;
   } else if (a.phase === 'in_siege') {

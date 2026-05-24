@@ -6,7 +6,7 @@ from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from gameserver.network.jwt_auth import get_current_uid
+from gameserver.network.jwt_auth import get_current_uid_admin
 from gameserver.network.rest_models import SavedMapRenameBody
 from gameserver.network.rest_api import (
     _is_recently_active,
@@ -34,7 +34,7 @@ ADMIN_USERNAME = "eem"
 def make_router(services: "Services") -> APIRouter:
     router = APIRouter()
 
-    async def require_admin(uid: int = Depends(get_current_uid)) -> int:
+    async def require_admin(uid: int = Depends(get_current_uid_admin)) -> int:
         if services.database is not None:
             user = await services.database.get_user_by_uid(uid)
             if user is None or user.get("username", "").lower() != ADMIN_USERNAME:
@@ -926,7 +926,8 @@ def make_router(services: "Services") -> APIRouter:
             row["username"] = uid_to_name.get(row["uid"], f"uid:{row['uid']}")
         for row in artifact_holds:
             row["username"] = uid_to_name.get(row["uid"], f"uid:{row['uid']}")
-        return {"empire_stats": empire_stats, "artifact_holds": artifact_holds}
+        era_firsts = await services.database.get_era_firsts()
+        return {"empire_stats": empire_stats, "artifact_holds": artifact_holds, "era_firsts": era_firsts}
 
     @router.get("/api/admin/ai-battle-log")
     async def get_ai_battle_log(limit: int = 500, _uid: int = Depends(require_admin)) -> dict[str, Any]:

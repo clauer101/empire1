@@ -6,7 +6,7 @@
 # effects: passive effects granted when complete
 
 # ============================================================
-#   STEINZEIT  (Effort 60 – 500)
+#   STONEAGE  (Effort 60 – 500)
 # ============================================================
 
 HUNTING:
@@ -53,7 +53,7 @@ CRAFTSMANSHIP:
     build_speed_offset: 0.1
 
 # ============================================================
-#   NEOLITHIKUM  (Effort 800 – 1.500)
+#   NEOLITIC  (Effort 800 – 1.500)
 # ============================================================
 
 POTTERY:
@@ -97,8 +97,28 @@ ALPHABET_WRITING:
   effects:
     research_speed_offset: 0.1
 
+TRIBAL_LEADERSHIP:
+  era: neolithic
+  image: assets/sprites/knowledge/tribal_leadership
+  name: "Tribal Leadership"
+  description: "Emergence of organized leadership structures within tribal society."
+  effort: 1300
+  costs: {}
+  requirements: [ALPHABET_WRITING, AGRICULTURE]
+  effects: {}
+
+WARFARE:
+  era: neolithic
+  image: assets/sprites/knowledge/warfare
+  name: "Warfare"
+  description: "Organized armed conflict and the first strategies of war."
+  effort: 1450
+  costs: {}
+  requirements: [HUNTING, TRIBAL_LEADERSHIP]
+  effects: {}
+
 # ============================================================
-#   BRONZEZEIT  (Effort 1.500 – 8.000)
+#   BRONZEAGE  (Effort 1.500 – 8.000)
 # ============================================================
 
 COPPER_BRONZE:
@@ -170,11 +190,11 @@ DRILL:
   description: "Systematic military training and discipline."
   effort: 7718
   costs: {}
-  requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
+  requirements: [WARFARE, COPPER_BRONZE]
   effects: {}
 
 # ============================================================
-#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+#   IRONAGE / ANTIKE  (Effort 8.000 – 30.000)
 # ============================================================
 
 ARTS:
@@ -258,9 +278,9 @@ PAINTING:
   requirements: [ARTS]
   effects: {}
 
-LITRATURE:
+LITERATURE:
   era: iron
-  image: assets/sprites/knowledge/litrature
+  image: assets/sprites/knowledge/literature
   name: "Literature"
   description: "Written storytelling and literary arts."
   effort: 32504
@@ -269,7 +289,7 @@ LITRATURE:
   effects: {}
 
 # ============================================================
-#   MITTELALTER  (Effort 30.000 – 130.000)
+#   MIDDLE_AGES  (Effort 30.000 – 130.000)
 # ============================================================
 
 SCIENCE:
@@ -383,7 +403,7 @@ PRINTING_PRESS:
   description: "Mass production of printed materials and information."
   effort: 354684
   costs: {}
-  requirements: [STEEL, LITRATURE]
+  requirements: [STEEL, LITERATURE]
   effects: {}
 
 STEALTH_SECRECY:
@@ -448,7 +468,7 @@ MECHANICAL_ENGINEERING:
     build_speed_modifier: 0.2
 
 # ============================================================
-#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+#   INDUSTRIALIZATION  (Effort 500.000 – 2.000.000)
 # ============================================================
 
 OPTICS:
@@ -533,7 +553,7 @@ MEDICINE:
 
 
 # ============================================================
-#   MODERNE  (Effort 2.000.000 – 50.000.000)
+#   MODERN  (Effort 2.000.000 – 50.000.000)
 # ============================================================
 
 KNO_ARMOUR:
@@ -689,7 +709,7 @@ SPECIAL_FORCES:
   effects: {}
 
 # ============================================================
-#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+#   FUTURE  (Effort 50.000.000 – 100.000.000)
 # ============================================================
 
 BIONICS:

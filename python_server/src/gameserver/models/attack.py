@@ -1,6 +1,6 @@
 """Attack model — state machine for army travel and siege.
 
-An Attack tracks an army travelling to a target, entering siege,
+An Attack tracks an army traveling to a target, entering siege,
 and eventually triggering a battle.
 """
 
@@ -13,7 +13,7 @@ from enum import Enum
 class AttackPhase(Enum):
     """Phases of an attack."""
 
-    TRAVELLING = "travelling"
+    TRAVELING = "traveling"
     IN_SIEGE = "in_siege"
     IN_BATTLE = "in_battle"
     FINISHED = "finished"
@@ -42,7 +42,7 @@ class Attack:
     attacker_uid: int
     defender_uid: int
     army_aid: int
-    phase: AttackPhase = AttackPhase.TRAVELLING
+    phase: AttackPhase = AttackPhase.TRAVELING
     eta_seconds: float = 5400.0  # BASE_TRAVEL_OFFSET
     total_eta_seconds: float = 5400.0  # initial ETA for progress calculation
     siege_remaining_seconds: float = 0.0

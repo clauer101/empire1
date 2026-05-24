@@ -123,6 +123,12 @@
     z-index: 99;
     border-radius: 0;
   }
+  /* On login/signup view the nav is hidden and lp-topnav takes its place */
+  body.view-login #rally-banner,
+  body.view-login #game-over-banner,
+  body.view-login #season-reset-banner {
+    top: var(--lp-topnav-h, 80px);
+  }
 
   /* Main column: fixed below nav, flex column — header + app stack vertically */
   #main-col {

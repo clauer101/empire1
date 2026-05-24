@@ -135,7 +135,7 @@ class TestEvictObserverFromAll:
             attacker_uid=10,
             defender_uid=20,
             army_aid=1,
-            phase=AttackPhase.TRAVELLING,
+            phase=AttackPhase.TRAVELING,
         )
         # No _observers attribute set
 

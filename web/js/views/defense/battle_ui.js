@@ -90,13 +90,6 @@ export function createBattleUi(ctx) {
     ctx.addDebugLog(`🎮 Battle Setup: ${msg.defender_name} vs ${msg.attacker_name}`);
     ctx.acquireWakeLock();
 
-    // If a battle is already active on this client, ignore re-initialization triggered
-    // by a second observer connecting (e.g. same user on another device).
-    if (ctx.getGrid().battleActive) {
-      ctx.addDebugLog('⚡ Battle setup ignored — battle already active on this client');
-      return;
-    }
-
     _waveInfoSnapshot = null;
 
     // Check if a battle is already in progress from the summary (user opened defense mid-battle)
@@ -136,8 +129,10 @@ export function createBattleUi(ctx) {
       if (!isDirty && !hasTimer) {
         grid.fromJSON({ tiles: msg.tiles });
         grid.addVoidNeighbors();
+        const _isSpectating = ctx.getSpectateUid() != null;
+        const _spectateUid = ctx.getSpectateUid();
         const refetchNeighbors = () => {
-          ctx.rest.getMapNeighbors(grid.getVisibleHexBounds())
+          ctx.rest.getMapNeighbors(grid.getVisibleHexBounds(), _isSpectating, _spectateUid)
             .then(data => {
               if (data?.vision_radius != null) grid.visionRadius = data.vision_radius;
               grid.setNeighborTiles(data?.neighbor_tiles || []);
@@ -354,10 +349,10 @@ export function createBattleUi(ctx) {
     const bs = ctx.getBattleState();
     const elapsedEl = ctx.getContainer().querySelector('#battle-elapsed');
     if (elapsedEl) {
-      if (bs.phase === 'travelling' && bs.eta_seconds != null) {
+      if (bs.phase === 'traveling' && bs.eta_seconds != null) {
         bs.eta_seconds = Math.max(0, bs.eta_seconds - 0.1);
         elapsedEl.textContent = _formatTime(-bs.eta_seconds * 1000);
-      } else if (bs.phase !== 'travelling') {
+      } else if (bs.phase !== 'traveling') {
         elapsedEl.textContent = _formatTime(bs.elapsed_ms);
       }
     }
@@ -377,7 +372,7 @@ export function createBattleUi(ctx) {
     }
 
     let statusText = 'Waiting...';
-    if (bs.phase === 'travelling') statusText = '🚶 Traveling';
+    if (bs.phase === 'traveling') statusText = '🚶 Traveling';
     else if (bs.phase === 'in_siege') statusText = '🛡 Siege';
     else if (bs.phase === 'in_battle') statusText = '⚔ Battle';
     else if (bs.phase === 'finished') statusText = '✓ Complete';
@@ -401,7 +396,7 @@ export function createBattleUi(ctx) {
     const nextWaveEl = container.querySelector('#battle-next-wave');
     if (!nextWaveEl) return;
 
-    if (bs.phase === 'travelling') {
+    if (bs.phase === 'traveling') {
       // Before battle: show army arrival ETA from the attack summary
       const st = ctx.getSt();
       const attackSummary =

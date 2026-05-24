@@ -54,7 +54,7 @@ def create_token(uid: int) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def verify_token(token: str) -> int:
+def verify_token(token: str, skip_wipe_check: bool = False) -> int:
     """Verify a JWT token and return the user ID.
 
     Args:
@@ -71,6 +71,11 @@ def verify_token(token: str) -> int:
         uid = payload.get("uid")
         if uid is None:
             raise ValueError("Token missing uid claim")
+        if not skip_wipe_check:
+            from gameserver.engine.global_state import get_season_wipe_time
+            wipe_time = get_season_wipe_time()
+            if wipe_time > 0 and (payload.get("iat") or 0) < wipe_time:
+                raise ValueError("Token invalidated by season wipe")
         return int(uid)
     except jwt.ExpiredSignatureError:
         raise ValueError("Token expired")
@@ -96,5 +101,21 @@ async def get_current_uid(
         raise HTTPException(status_code=401, detail="Authorization header required")
     try:
         return verify_token(credentials.credentials)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+async def get_current_uid_admin(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
+) -> int:
+    """Like get_current_uid but skips the season-wipe token invalidation check.
+
+    Admin tokens must remain valid across season wipes so deploy scripts
+    can still call /api/admin/save-state after a wipe.
+    """
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Authorization header required")
+    try:
+        return verify_token(credentials.credentials, skip_wipe_check=True)
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))

@@ -18,6 +18,8 @@
  *   }
  */
 
+import { eventBus } from '../../events.js';
+
 export function createPlacement(ctx) {
   let _isDirtyPath = false;
   let _autoSaveTimer = null;
@@ -256,6 +258,7 @@ export function createPlacement(ctx) {
         0,
         (ctx.getSt().summary.resources.gold || 0) - cost
       );
+      eventBus.emit('ui:gold:spend', cost);
     }
     checkPathAndSave();
   }

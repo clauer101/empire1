@@ -39,8 +39,8 @@ const EFFECT_META = {
   ruler_unlock:                   ['👑', 'Ruler',                    () => 'Unlocked',                                                                                  'Assign a powerful ruler to your empire'],
   enable_army:                    ['⚔',  'Army',                     () => 'Unlocked',                                                                                  'Unlocks the Army view to compose and send attack waves'],
   enable_techtree:                ['⬡',  'Tech Tree',                () => 'Unlocked',                                                                                  'Unlocks the Tech Tree view for advanced research'],
-  enable_workshop:                ['⚙',  'Workshop',                 () => 'Unlocked',                                                                                  'Unlocks the Workshop view for item upgrades'],
-  enable_messages:                ['✉',  'Messages',                 () => 'Unlocked',                                                                                  'Unlocks the Messages view for diplomacy and social features'],
+  enable_workshop:                ['⚙',  'Workshop',                 () => 'Unlocked',                                                                                  'Unlocks the Workshop view for tower and critter upgrades'],
+  enable_messages:                ['✉',  'Messages',                 () => 'Unlocked',                                                                                  'Unlocks the Messages view for battle reports'],
   // -- Cost modifiers
   citizen_cost_modifier:          ['🫂', 'Citizen discount',         (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the culture cost of acquiring new citizens'],
   tile_cost_modifier:             ['🗺️', 'Land discount',            (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the gold cost of acquiring new land tiles'],

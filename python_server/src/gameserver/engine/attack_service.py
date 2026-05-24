@@ -1,7 +1,7 @@
 """Attack service — manages travel and siege state machine.
 
 Handles the lifecycle of attacks:
-  TRAVELLING → IN_SIEGE → IN_BATTLE → FINISHED
+  TRAVELING → IN_SIEGE → IN_BATTLE → FINISHED
 
 Travel time decreases each tick. When ETA reaches 0, the army arrives.
 The arrival logic (siege/battle) is not yet implemented.
@@ -96,6 +96,13 @@ class AttackService:
         self._broadcast_timer.clear()
         return count
 
+    def is_army_in_battle(self, army_aid: int) -> bool:
+        """Return True if the given army is currently IN_BATTLE or IN_SIEGE."""
+        for attack in self._attacks:
+            if attack.army_aid == army_aid and attack.phase == AttackPhase.IN_BATTLE:
+                return True
+        return False
+
     def get(self, attack_id: int) -> Attack | None:
         """Return the attack with the given ID, if it exists."""
         for attack in self._attacks:
@@ -165,7 +172,7 @@ class AttackService:
         Validation mirrors the Java HandleAttackRequest:
         - attacker / defender exist
         - not self-attack
-        - army exists, has waves, not already travelling
+        - army exists, has waves, not already traveling
         """
         att_empire = empire_service.get(attacker_uid)
         def_empire = empire_service.get(defender_uid)
@@ -216,7 +223,7 @@ class AttackService:
             attacker_uid=attacker_uid,
             defender_uid=defender_uid,
             army_aid=army_aid,
-            phase=AttackPhase.TRAVELLING,
+            phase=AttackPhase.TRAVELING,
             eta_seconds=eta,
             total_eta_seconds=eta,
             is_spy=is_spy,
@@ -242,7 +249,7 @@ class AttackService:
         """Launch an AI attack against *defender_uid* using a pre-built army.
 
         Siege time is intentionally left at 0 — it will be computed at the
-        TRAVELLING→IN_SIEGE transition using the defender's current effects.
+        TRAVELING→IN_SIEGE transition using the defender's current effects.
 
         Args:
             defender_uid:   UID of the player to attack.
@@ -260,7 +267,7 @@ class AttackService:
             attacker_uid=AI_UID,
             defender_uid=defender_uid,
             army_aid=army.aid,
-            phase=AttackPhase.TRAVELLING,
+            phase=AttackPhase.TRAVELING,
             eta_seconds=travel_seconds,
             total_eta_seconds=travel_seconds,
             override_siege_seconds=siege_seconds,
@@ -282,11 +289,11 @@ class AttackService:
         Returns the Attack object when it transitions to IN_BATTLE,
         None otherwise.
         """
-        if attack.phase == AttackPhase.TRAVELLING:
+        if attack.phase == AttackPhase.TRAVELING:
             attack.eta_seconds = max(attack.eta_seconds - dt, 0.0)
             if attack.eta_seconds <= 0.0:
                 log.info(
-                    "[STATE] Attack %d: TRAVELLING → IN_SIEGE (attacker=%d, defender=%d, army=%d, spy=%s)",
+                    "[STATE] Attack %d: TRAVELING → IN_SIEGE (attacker=%d, defender=%d, army=%d, spy=%s)",
                     attack.attack_id, attack.attacker_uid,
                     attack.defender_uid, attack.army_aid, attack.is_spy,
                 )
@@ -411,7 +418,7 @@ class AttackService:
         defender_uid: int,
         base_override: float | None = None,
     ) -> float:
-        """Calculate siege duration at TRAVELLING→IN_SIEGE transition.
+        """Calculate siege duration at TRAVELING→IN_SIEGE transition.
 
         Formula:
             result = max(1.0, (base + defender.SIEGE_TIME_OFFSET) * (1 - defender.SIEGE_TIME_MODIFIER))

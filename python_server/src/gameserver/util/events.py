@@ -76,7 +76,7 @@ class SiegeExpired:
 
 @dataclass(frozen=True)
 class AttackPhaseChanged:
-    """An attack's phase has changed (TRAVELLING → IN_SIEGE or IN_SIEGE → IN_BATTLE)."""
+    """An attack's phase has changed (TRAVELING → IN_SIEGE or IN_SIEGE → IN_BATTLE)."""
     attack_id: int
     attacker_uid: int
     defender_uid: int

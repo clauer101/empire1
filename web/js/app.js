@@ -75,6 +75,7 @@ eventBus.on('quick_message', (data) =>
   showToast(data.message || data.text || JSON.stringify(data))
 );
 eventBus.on('notification', (data) => showToast(data.message || data.text || JSON.stringify(data)));
+eventBus.on('ui:gold:spend', (amount) => { _liveGold = Math.max(0, _liveGold - amount); _tickTitleResources(); });
 
 // ── Item completed: immediately refresh items + summary ────
 eventBus.on('server:item_completed', () => {
@@ -343,7 +344,8 @@ function _updateGameOverBanner(rally, data) {
   const frozen = rally?.activated_at && !rally?.active;
   // Hide once leadtime is reached — season-reset banner takes over
   const nsl = data?.next_season_leadtime;
-  const inLeadtime = nsl && Date.now() >= new Date(nsl).getTime();
+  const _utcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
+  const inLeadtime = nsl && Date.now() >= _utcMs(nsl);
   // Also hide if wipe already happened (nsl cleared, no rally criterion left)
   const resetTriggered = !!data?.season_reset_triggered;
   const postWipe = resetTriggered && !nsl;
@@ -418,7 +420,7 @@ function _tickSeasonResetBanner() {
     ? `${Math.floor(secsLeft / 86400)}d`
     : `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   const base = banner.dataset.baseText || '';
-  banner.textContent = `${base} — new season starts in ${timeStr}`;
+  banner.textContent = `${base} starts in ${timeStr}`;
 }
 
 function _updateSeasonResetBanner(data) {
@@ -428,7 +430,8 @@ function _updateSeasonResetBanner(data) {
   const resetTriggered = !!data?.season_reset_triggered;
   const nss = data?.next_season_start;
   const nsl = data?.next_season_leadtime;
-  const inLeadtime = nsl && Date.now() >= new Date(nsl).getTime();
+  const _toUtcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
+  const inLeadtime = nsl && Date.now() >= _toUtcMs(nsl);
   // Show only once the leadtime timestamp is reached; resetTriggered alone
   // (set at rally end) is not enough — the game-over banner owns that phase.
   const shouldShow = inLeadtime || (resetTriggered && !nsl);
@@ -445,11 +448,11 @@ function _updateSeasonResetBanner(data) {
   const nextTitle = data?.next_season_title || '';
   const nextNum = (data?.season_number ?? 0) + 1;
   if (resetTriggered) {
-    banner.dataset.baseText = `🌅 Season ${data?.season_number ?? ''} has ended — next season: ${nextTitle || `Season ${nextNum}`}`;
+    banner.dataset.baseText = `🌅 Season ${data?.season_number ?? ''} has ended — next season '${nextTitle || `Season ${nextNum}`}'`;
   } else {
     banner.dataset.baseText = `🌅 New season starting soon — Season ${nextNum}${nextTitle ? ': ' + nextTitle : ''}`;
   }
-  _seasonResetTarget = nss ? new Date(nss).getTime() : 0;
+  _seasonResetTarget = _toUtcMs(nss);
   _tickSeasonResetBanner();
   banner.style.display = 'block';
   requestAnimationFrame(() => {

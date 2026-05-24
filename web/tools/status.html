@@ -569,7 +569,7 @@ function renderAttacks(attacks) {
   tbody.innerHTML = '';
 
   attacks.forEach(a => {
-    const travelPct  = a.phase === 'travelling' ? pct(a.total_eta_s - a.eta_s, a.total_eta_s) : 100;
+    const travelPct  = a.phase === 'traveling' ? pct(a.total_eta_s - a.eta_s, a.total_eta_s) : 100;
     const siegePct   = a.phase === 'in_siege'   ? pct(a.total_siege_s - a.siege_s, a.total_siege_s) : (a.phase === 'in_battle' || a.phase === 'finished' ? 100 : 0);
     const travelBar  = `<span class="prog-outer"><span class="prog-inner prog-travel" style="width:${travelPct}%"></span></span>`;
     const siegeBar   = a.siege_s > 0

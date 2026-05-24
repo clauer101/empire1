@@ -688,6 +688,9 @@ async def handle_change_wave(
             "error": f"Army {aid} not found",
         }
 
+    if svc.attack_service and svc.attack_service.is_army_in_battle(aid):
+        return {"type": "change_wave_response", "success": False, "error": "Cannot modify army while it is in battle"}
+
     # Find the wave by wave_number (0-indexed)
     if wave_number < 0 or wave_number >= len(army.waves):
         log.warning("change_wave failed uid=%d aid=%d: wave_number=%d out of range",
@@ -863,6 +866,9 @@ async def handle_buy_wave_request(
             "error": f"Army {aid} not found",
         }
 
+    if svc.attack_service and svc.attack_service.is_army_in_battle(aid):
+        return {"type": "buy_wave_response", "success": False, "error": "Cannot modify army while it is in battle"}
+
     # Calculate cost based on waves in this specific army
     wave_price = svc.empire_service.wave_price_for(empire, len(army.waves) + 1)
 
@@ -1006,6 +1012,9 @@ async def handle_buy_wave_era_request(
     army = next((a for a in empire.armies if a.aid == aid), None)
     if army is None:
         return {"type": "buy_wave_era_response", "success": False, "error": f"Army {aid} not found"}
+
+    if svc.attack_service and svc.attack_service.is_army_in_battle(aid):
+        return {"type": "buy_wave_era_response", "success": False, "error": "Cannot modify army while it is in battle"}
 
     if wave_number < 0 or wave_number >= len(army.waves):
         return {"type": "buy_wave_era_response", "success": False, "error": f"Wave {wave_number} not found"}

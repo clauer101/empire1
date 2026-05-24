@@ -226,6 +226,9 @@ class GameLoop:
                     reset_at = reset_at.replace(tzinfo=timezone.utc)
                 if datetime.now(timezone.utc) >= reset_at:
                     set_season_reset_triggered(True)
+                    import time as _time
+                    from gameserver.engine.global_state import set_season_wipe_time
+                    set_season_wipe_time(_time.time())
                     uids = self._empires.wipe_all_empires()
                     attack_count = self._attacks.wipe_all_attacks()
                     clear_end_criterion()
@@ -280,7 +283,8 @@ class GameLoop:
                 self._season_snapshot_done = True
                 set_season_reset_triggered(True)
                 try:
-                    asyncio.ensure_future(self._take_season_snapshot())
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self._take_season_snapshot())
                 except RuntimeError:
                     pass  # no running event loop in tests
             return

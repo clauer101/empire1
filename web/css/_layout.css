@@ -228,6 +228,16 @@
   padding-bottom: 0;
 }
 
+/* Login view: remove padding but keep scroll (for sticky topnav) */
+#app.lp-view {
+  padding: 0;
+}
+
+/* Hide page-header on login view */
+#page-header.lp-hidden {
+  display: none;
+}
+
 /* individual view wrappers */
 .view {
   min-height: 100%;

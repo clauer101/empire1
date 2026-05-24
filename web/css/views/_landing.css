@@ -237,6 +237,211 @@
   width: 100%;
 }
 
+/* ── Sticky login topnav ────────────────────────────── */
+.lp-topnav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(18, 18, 24, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+.lp-topnav-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 8px 16px;
+}
+.lp-topnav-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
+}
+.lp-topnav-signup {
+  font-size: 0.78em;
+  color: #c9a84c;
+  text-decoration: none;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.lp-topnav-signup:hover { text-decoration: underline; opacity: 1; }
+/* input.lp-topnav-input specificity (0,0,1,1) beats input[type='text'] from responsive.css */
+input.lp-topnav-input {
+  padding: 0 8px;
+  font-size: 0.82em;
+  min-height: unset;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  width: 100px;
+  box-sizing: border-box;
+}
+input.lp-topnav-input::placeholder { color: #666; }
+/* button.lp-topnav-btn beats button element selector from responsive.css */
+button.lp-topnav-btn {
+  padding: 0 12px;
+  font-size: 0.82em;
+  min-height: unset;
+  height: auto;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.lp-wrap { padding-top: 16px; }
+
+/* ── Section title ──────────────────────────────────── */
+.lp-section-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--text-bright, #fff);
+  text-align: center;
+  margin: 32px 0 16px;
+  letter-spacing: 0.03em;
+}
+
+/* ── Rulers ─────────────────────────────────────────── */
+.lp-rulers-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.lp-rulers-arrow {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 2em;
+  line-height: 1;
+  width: 40px;
+  height: 60px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 2;
+}
+.lp-rulers-arrow:hover { background: rgba(255, 255, 255, 0.22); }
+
+.lp-rulers {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+}
+.lp-rulers::-webkit-scrollbar { display: none; }
+.lp-ruler-card {
+  flex: 0 0 209px;
+  scroll-snap-align: center;
+  position: relative;
+  background-color: var(--surface);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 100% auto;
+  border-radius: var(--radius);
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+/* gradient so text stays readable over the image */
+.lp-ruler-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: linear-gradient(to bottom, transparent 45%, rgba(10,10,16,0.92) 100%);
+  pointer-events: none;
+}
+.lp-ruler-info {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+}
+.lp-ruler-name { font-size: 0.95em; font-weight: 700; color: #c9a84c; }
+.lp-ruler-desc { font-size: 0.8em; color: var(--text-dim, #aaa); line-height: 1.4; }
+.lp-ruler-skills { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.lp-ruler-skill { font-size: 0.78em; color: var(--text, #ddd); }
+.lp-skill-name { font-weight: 600; color: var(--text-bright, #fff); }
+
+/* ── Epic Buildings teaser ──────────────────────────── */
+.lp-epic-teaser {
+  max-width: 680px;
+  margin: 0 auto 32px;
+  text-align: center;
+  color: var(--text-dim, #aaa);
+  font-size: 0.95em;
+  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lp-epic-teaser strong { color: var(--text-bright, #fff); }
+.lp-epic-teaser-hint {
+  font-size: 0.88em;
+  letter-spacing: 0.04em;
+  color: #c9a84c;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+/* ── Rulers: desktop no-scroll layout ───────────────── */
+@media (min-width: 801px) {
+  .lp-rulers-arrow { display: none; }
+  .lp-rulers { overflow-x: visible; flex-wrap: nowrap; }
+  .lp-ruler-card { flex: 1 1 0; min-width: 0; }
+}
+
+/* ── Epic Buildings (legacy, unused) ────────────────── */
+.lp-epic-intro {
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--text-dim, #aaa);
+  margin: -8px 0 16px;
+}
+.lp-epic-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.lp-epic-pair { display: flex; gap: 12px; align-items: center; }
+.lp-epic-card {
+  flex: 1;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border: 1px solid rgba(201,168,76,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lp-epic-vs { font-size: 0.8em; font-weight: 700; color: var(--text-dim, #888); flex-shrink: 0; width: 24px; text-align: center; }
+.lp-epic-name { font-size: 1em; font-weight: 700; color: #c9a84c; text-shadow: 0 0 6px rgba(201,168,76,0.4); }
+.lp-epic-era { font-size: 0.72em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim, #888); }
+.lp-epic-boost { font-size: 0.85em; font-weight: 600; color: var(--text-bright, #fff); margin-top: 2px; }
+.lp-epic-desc { font-size: 0.82em; color: var(--text-dim, #aaa); line-height: 1.4; }
+
 /* Responsive */
 @media (max-width: 800px) {
   .lp-features {
@@ -244,10 +449,15 @@
   }
 }
 @media (max-width: 480px) {
-  .lp-features {
-    grid-template-columns: 1fr;
+  .lp-topnav-inner { gap: 4px; padding: 6px 8px; }
+  input.lp-topnav-input { width: 72px; }
+  button.lp-topnav-btn { padding: 0 8px; }
+  .lp-features { grid-template-columns: 1fr; }
+  .lp-hero { padding: 40px 16px 28px; }
+  .lp-ruler-card {
+    flex: 0 0 57vw;
+    min-height: 420px;
   }
-  .lp-hero {
-    padding: 40px 16px 28px;
-  }
+  .lp-epic-pair { flex-direction: column; }
+  .lp-epic-vs { width: 100%; }
 }

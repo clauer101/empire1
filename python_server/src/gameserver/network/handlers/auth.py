@@ -343,19 +343,20 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
     starting_res = dict(svc.game_config.starting_resources) if svc.game_config else {"gold": 0.0, "culture": 0.0, "life": 10.0}
     starting_max_life = svc.game_config.starting_max_life if svc.game_config else 10.0
 
-    # Compute global spawn offset for this new empire
+    # Compute global spawn position for this new empire
     spawn_offset = HexCoord(0, 0)
-    if svc.database is not None:
-        try:
-            users = await svc.database.list_users()
-            # Index among empires that exist in empire_service (new uid already in DB)
-            empire_uids = [u["uid"] for u in users if u["uid"] in svc.empire_service.all_empires or u["uid"] == uid]
-            empire_index = empire_uids.index(uid) if uid in empire_uids else len(empire_uids) - 1
-            spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
-            spawn_offset = _grid_point(spacing=spacing, index=empire_index)
-            log.info("New empire uid=%d index=%d spawn offset q=%d r=%d", uid, empire_index, spawn_offset.q, spawn_offset.r)
-        except Exception as exc:
-            log.warning("Could not compute spawn position for uid=%d: %s", uid, exc)
+    try:
+        spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
+        existing_castles: list[tuple[int, int]] = []
+        for emp in svc.empire_service.all_empires.values():
+            for key, tile_type in emp.hex_map.items():
+                if tile_type == "castle":
+                    q, r = map(int, key.split(","))
+                    existing_castles.append((q, r))
+        spawn_offset = _next_spawn_point(spacing=spacing, existing_castles=existing_castles)
+        log.info("New empire uid=%d spawn offset q=%d r=%d (spacing=%d, existing=%d)", uid, spawn_offset.q, spawn_offset.r, spacing, len(existing_castles))
+    except Exception as exc:
+        log.warning("Could not compute spawn position for uid=%d: %s", uid, exc)
 
     oq, or_ = spawn_offset.q, spawn_offset.r
     empire = Empire(
@@ -371,8 +372,6 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
         },
     )
     svc.empire_service.register(empire)
-    await _maybe_grant_last_season_artifact(uid, empire)
-    await _maybe_grant_artifact_lottery()
 
 
 async def _maybe_grant_last_season_artifact(uid: int, empire: Any) -> None:
@@ -394,79 +393,29 @@ async def _maybe_grant_last_season_artifact(uid: int, empire: Any) -> None:
     )
 
 
-async def _maybe_grant_artifact_lottery() -> None:
-    """Check if a new signup tips the accounts-per-artifact ratio and award a relic."""
-    import random
-    from gameserver.models.items import ItemType
 
-    svc = _svc()
-    if svc.database is None or svc.game_config is None:
-        return
-
-    assert svc.empire_service is not None
-    from gameserver.engine.ai_service import AI_UID
-    real_empires = [e for e in svc.empire_service.all_empires.values() if e.uid != AI_UID]
-    num_accounts = len(real_empires)
-    num_artifacts = sum(len(e.artifacts) for e in real_empires)
-
-    ratio = num_accounts / max(num_artifacts, 1)
-    log.info(
-        "Artifact lottery check: accounts=%d artifacts_in_world=%d ratio=%.2f threshold=%d",
-        num_accounts, num_artifacts, ratio, svc.game_config.accounts_per_artifact,
-    )
-    if num_accounts == 0 or ratio <= svc.game_config.accounts_per_artifact:
-        return
-
-    winner = random.choice(real_empires)
-
-    assert svc.upgrade_provider is not None
-    all_artifact_iids = [item.iid for item in svc.upgrade_provider.get_by_type(ItemType.ARTIFACT)]
-    candidates = [iid for iid in all_artifact_iids if iid not in winner.artifacts]
-    if not candidates:
-        return
-
-    artifact_iid = random.choice(candidates)
-    winner.artifacts.append(artifact_iid)
-    svc.empire_service.recalculate_effects(winner)
-
-    artifact_item = svc.upgrade_provider.get(artifact_iid)
-    artifact_name = artifact_item.name if artifact_item else artifact_iid
-    body = (
-        f"A tremor passed through the ancient ley lines tonight — and your name was whispered.\n\n"
-        f"As a new soul joined the realm, the balance of relics shifted. The cosmos, ever watchful, "
-        f"reached into the vault of forgotten ages and withdrew **{artifact_name}**. "
-        f"It has found its way to you.\n\n"
-        f"Scholars call it coincidence. The wise call it destiny. Either way, the artifact is yours — "
-        f"guard it well, for others may come to claim it."
-    )
-    await svc.database.send_message(from_uid=0, to_uid=winner.uid, body=body)
-    log.info(
-        "Artifact lottery: uid=%d (%s) awarded %s (accounts=%d artifacts_in_world=%d)",
-        winner.uid, winner.name, artifact_iid, num_accounts, num_artifacts,
-    )
-
-
-def _grid_point(spacing: int, index: int) -> Any:
-    """Return the *index*-th hex grid point at multiples of *spacing*, inside-out."""
+def _next_spawn_point(spacing: int, existing_castles: list[tuple[int, int]]) -> Any:
+    """Return the nearest grid point (multiples of spacing) that is >= spacing hex steps from all existing castles."""
     import math
     from gameserver.models.hex import HexCoord
 
     def _hex_dist(aq: int, ar: int, bq: int, br: int) -> int:
         return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
 
-    radius = math.ceil(math.sqrt(index + 1)) + 2
-    pts: list[tuple[int, float, int, int]] = []
-    for gq in range(-radius, radius + 1):
-        for gr in range(-radius, radius + 1):
-            q, r = gq * spacing, gr * spacing
-            d = _hex_dist(0, 0, q, r)
-            angle = math.atan2(q, -r)
-            pts.append((d, angle, q, r))
-    pts.sort()
-    if index >= len(pts):
-        # Expand search radius if needed
-        return _grid_point(spacing, index) if radius < index else HexCoord(0, 0)
-    return HexCoord(pts[index][2], pts[index][3])
+    radius = 0
+    while True:
+        pts: list[tuple[int, float, int, int]] = []
+        for gq in range(-radius, radius + 1):
+            for gr in range(-radius, radius + 1):
+                q, r = gq * spacing, gr * spacing
+                d = _hex_dist(0, 0, q, r)
+                angle = math.atan2(q, -r)
+                pts.append((d, angle, q, r))
+        pts.sort()
+        for _, _, q, r in pts:
+            if all(_hex_dist(q, r, eq, er) >= spacing for eq, er in existing_castles):
+                return HexCoord(q, r)
+        radius += 1
 
 
 async def handle_auth_request(

@@ -276,12 +276,15 @@ class SmartCacheASGIMiddleware:
                 if is_image:
                     # Images rarely change — cache for one week.
                     headers["Cache-Control"] = "public, max-age=604800"
+                elif ext in (".html", "") or not ext:
+                    # HTML and directory responses: never cache — always fetch fresh.
+                    headers["Cache-Control"] = "no-store"
+                    for h in ("pragma", "expires", "etag", "last-modified"):
+                        if h in headers:
+                            del headers[h]
                 else:
-                    # HTML / JS / CSS: always revalidate.  ETag/Last-Modified from
-                    # StaticFiles still work, so the browser only re-downloads when
-                    # content actually changed (304 otherwise).
+                    # JS / CSS: revalidate via ETag (hashed filenames mean 304 is fast).
                     headers["Cache-Control"] = "no-cache"
-                    # Remove stale Pragma/Expires that some middleware might add
                     for h in ("pragma", "expires"):
                         if h in headers:
                             del headers[h]
@@ -1503,6 +1506,11 @@ if _BUILD_MODE == "production":
         "/assets/sprites",
         NoCacheStaticFiles(directory=str(WEB_DIR / "assets" / "sprites")),
         name="sprites"
+    )
+    app.mount(
+        "/assets/media",
+        NoCacheStaticFiles(directory=str(WEB_DIR / "assets" / "media")),
+        name="media"
     )
     # Vite bundle assets (hashed JS/CSS/fonts)
     app.mount(

@@ -17,7 +17,7 @@ BASE_CAMP:
   effort: 30  # was 30
   costs: {gold: 5}
   requirements: []
-  excludes: [TRIBAL_COUNCIL]
+  excludes: []
   effects:
     life_regen_modifier: 0.001
     siege_offset: 120.0       
@@ -130,7 +130,6 @@ GRANARY:
   effects:
     gold_offset: 0.121
 
-
 FIELD_HEALER:
   era: neolithic
   image: assets/sprites/buildings/field_healer
@@ -184,9 +183,20 @@ TRIBAL_COUNCIL:
   description: "A gathering place where the tribe elects a leader to guide and represent the people. Unlocks the ruler system."
   effort: 8000
   costs: {gold: 1500}
-  requirements: [ALPHABET_WRITING, AGRICULTURE]
+  requirements: [TRIBAL_LEADERSHIP]
   effects:
     ruler_unlock: 1
+
+WARRIORS_LODGE :
+  era: neolithic
+  image: assets/sprites/buildings/warriors_lodge
+  name: "Warriors Lodge"
+  description: "A place where warriors gather, train, and organize for war. Unlocks the army."
+  effort: 9000
+  costs: {gold: 1600}
+  requirements: [WARFARE]
+  effects:
+    enable_army: 1
 
 # ============================================================
 #   BRONZEZEIT  (Effort 1.500 – 8.000)
@@ -249,7 +259,6 @@ BOOT_CAMP:
   requirements: [DRILL]
   effects:
     max_life_modifier: 3
-    enable_army: 1  # only true or false
 
 CHAPEL:
   era: bronze
@@ -276,7 +285,6 @@ TOWN_GUARD:
     spy_workshop: 1  # only true or false
     max_siege_construction_speed_modifier: -0.02 
 
-
 CHURCH:
   era: bronze
   image: assets/sprites/buildings/church
@@ -299,7 +307,7 @@ LIBRARY:
   description: "Accelerates research progress. Requires writing knowledge."
   effort: 21879
   costs: {gold: 3600}
-  requirements: [LITRATURE]
+  requirements: [LITERATURE]
   effects:
     research_speed_offset: 0.2
 
@@ -428,6 +436,31 @@ FENCING_SCHOOL:
   costs: {gold: 20758}
   requirements: [IRON, DRILL]
   effects: {}
+
+OBSERVATORY:
+  era: iron
+  image: assets/sprites/buildings/observatory
+  name: "Observatory"
+  description: "Astronomical research tower. Greatly accelerates scientific discovery."
+  effort: 55000
+  costs: {gold: 18000}
+  requirements: [ARCHITECTURE]
+  excludes: [QUARTERMASTER]
+  effects:
+    research_speed_modifier: 0.3
+    research_speed_offset: 0.25
+
+QUARTERMASTER:
+  era: iron
+  image: assets/sprites/buildings/quartermaster
+  name: "Quartermaster"
+  description: "Central supply depot reducing army deployment costs."
+  effort: 55000
+  costs: {gold: 18000}
+  requirements: [IRON, LAWS]
+  excludes: [OBSERVATORY]
+  effects:
+    wave_cost_modifier: 0.15
 
 # ============================================================
 #   MITTELALTER  (Effort 30.000 – 130.000)
@@ -629,6 +662,31 @@ CANNON_MANUFACTORY:
   requirements: [GUNPOWDER]
   effects: {}
 
+MERCHANT_GUILD:
+  era: middle_ages
+  image: assets/sprites/buildings/merchant_guild
+  name: "Merchant Guild"
+  description: "Powerful trading association. Massively boosts gold income."
+  effort: 160000
+  costs: {gold: 90000}
+  requirements: [ECONOMY, FEUDALISM]
+  excludes: [COLONIAL_OFFICE]
+  effects:
+    gold_modifier: 0.4
+    gold_offset: 0.4
+
+COLONIAL_OFFICE:
+  era: middle_ages
+  image: assets/sprites/buildings/colonial_office
+  name: "Colonial Office"
+  description: "Expansion authority reducing the cost of settling new territories."
+  effort: 160000
+  costs: {gold: 90000}
+  requirements: [MONARCHY, FEUDALISM]
+  excludes: [MERCHANT_GUILD]
+  effects:
+    tile_cost_modifier: 0.1
+
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
 # ============================================================
@@ -714,6 +772,31 @@ EMPERORS_PALACE:
   effects:
     culture_modifier: 0.2
     gold_modifier: 0.5
+
+PATENT_OFFICE:
+  era: renaissance
+  image: assets/sprites/buildings/patent_office
+  name: "Patent Office"
+  description: "Intellectual property authority reducing workshop upgrade costs."
+  effort: 290000
+  costs: {gold: 300000}
+  requirements: [PRINTING_PRESS, CONSTITUTION]
+  excludes: [MEDICS_CORPS]
+  effects:
+    workshop_cost_modifier: 0.2
+
+MEDICS_CORPS:
+  era: renaissance
+  image: assets/sprites/buildings/medics_corps
+  name: "Medics Corps"
+  description: "Organized battlefield medicine restoring life during combat."
+  effort: 290000
+  costs: {gold: 300000}
+  requirements: [STEALTH_SECRECY, CONSTITUTION]
+  excludes: [PATENT_OFFICE]
+  effects:
+    restore_life_during_battle_modifier: 0.03
+    max_life_modifier: 10
 
 # ============================================================
 #   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
@@ -880,6 +963,31 @@ RESEARCH_VAULT:
   effects:
     research_speed_offset: 0.3
     research_speed_modifier: 0.3
+
+SUPPLY_CHAIN:
+  era: industrial
+  image: assets/sprites/buildings/supply_chain
+  name: "Supply Chain"
+  description: "Industrial logistics network reducing army deployment costs."
+  effort: 560000
+  costs: {gold: 980000}
+  requirements: [COMBUSTION_ENGINE, STRATEGIC_WARFARE]
+  excludes: [BROADCASTING_STATION]
+  effects:
+    wave_cost_modifier: 0.2
+
+BROADCASTING_STATION:
+  era: industrial
+  image: assets/sprites/buildings/broadcasting_station
+  name: "Broadcasting Station"
+  description: "Radio and mass media boosting cultural output."
+  effort: 560000
+  costs: {gold: 980000}
+  requirements: [ELECTRICITY, SOCIAL_SCIENCES]
+  excludes: [SUPPLY_CHAIN]
+  effects:
+    culture_modifier: 0.4
+    culture_offset: 0.8
 
 # ============================================================
 #   MODERNE  (Effort 2.000.000 – 5.300.000)

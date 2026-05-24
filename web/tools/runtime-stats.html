@@ -202,6 +202,14 @@
     </div>
   </div>
 
+  <!-- Era Firsts -->
+  <div class="card" id="era-firsts-card">
+    <div class="card-header">First to Reach Each Era</div>
+    <div class="tbl-wrap" id="era-firsts-wrap">
+      <div class="empty-msg">Loading…</div>
+    </div>
+  </div>
+
   <!-- Artifact hold totals -->
   <div class="card" id="holds-card">
     <div class="card-header">Artifact Hold Totals <span class="badge" id="holds-count">—</span></div>
@@ -266,9 +274,17 @@
     return `${s}s`;
   }
 
+  const ERA_ORDER = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future'];
+  const ERA_LABEL = {
+    stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
+    middle_ages: 'Middle Ages', renaissance: 'Renaissance', industrial: 'Industrial',
+    modern: 'Modern', future: 'Future',
+  };
+
   // ── State ──────────────────────────────────────────────────────────────────
-  let empireRows = [];
-  let holdsRows  = [];
+  let empireRows  = [];
+  let holdsRows   = [];
+  let eraFirstRows = [];
   let sortCol    = 'attacks_won_human';
   let sortDir    = -1; // -1 = desc, 1 = asc
   let hlN        = 5;
@@ -286,14 +302,16 @@
     const msg = document.getElementById('status-msg');
     try {
       const data = await load();
-      empireRows = data.empire_stats || [];
-      holdsRows  = data.artifact_holds || [];
+      empireRows   = data.empire_stats || [];
+      holdsRows    = data.artifact_holds || [];
+      eraFirstRows = data.era_firsts || [];
       msg.textContent = '● Live';
       msg.className = 'ok';
       document.getElementById('last-update').textContent =
         'Updated ' + new Date().toLocaleTimeString();
       renderSummary();
       renderEmpireTable();
+      renderEraFirsts();
       renderHoldsTable();
     } catch (e) {
       msg.textContent = '✕ ' + e.message;
@@ -399,6 +417,30 @@
         renderEmpireTable();
       });
     });
+  }
+
+  // ── Era Firsts Table ───────────────────────────────────────────────────────
+  function renderEraFirsts() {
+    const byEra = {};
+    for (const row of eraFirstRows) byEra[row.era_key] = row;
+    const rows = ERA_ORDER.map(key => ({ key, label: ERA_LABEL[key] || key, ...byEra[key] }));
+    const trs = rows.map((r, i) => {
+      const claimed = !!byEra[r.key];
+      return `<tr>
+        <td style="text-align:left;color:var(--text-dim);font-size:11px">${i + 1}</td>
+        <td style="text-align:left">${r.label}</td>
+        <td style="text-align:left;color:${claimed ? 'var(--warning)' : 'var(--text-dim)'};font-weight:${claimed ? 700 : 400}">${r.empire_name || '—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('era-firsts-wrap').innerHTML = `
+      <table>
+        <thead><tr>
+          <th style="text-align:left;width:32px">#</th>
+          <th style="text-align:left">Era</th>
+          <th style="text-align:left">First Empire</th>
+        </tr></thead>
+        <tbody>${trs}</tbody>
+      </table>`;
   }
 
   // ── Artifact Holds Table ───────────────────────────────────────────────────

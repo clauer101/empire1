@@ -22,6 +22,7 @@ _next_season_start: str = ""
 _next_season_leadtime: str = ""
 _next_season_title: str = ""
 _season_reset_triggered: bool = False
+_season_wipe_time: float = 0.0  # unix timestamp of last empire wipe
 
 
 def get_end_criterion_activated() -> Optional[datetime]:
@@ -122,6 +123,15 @@ def is_season_reset_triggered() -> bool:
 def set_season_reset_triggered(value: bool) -> None:
     global _season_reset_triggered
     _season_reset_triggered = value
+
+
+def get_season_wipe_time() -> float:
+    return _season_wipe_time
+
+
+def set_season_wipe_time(t: float) -> None:
+    global _season_wipe_time
+    _season_wipe_time = t
 
 
 def try_claim_first_era(era_key: str) -> bool:

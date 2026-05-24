@@ -41,7 +41,7 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Early Barbarians Raid"
-    travel_time: 120
+    travel_time: 240
     trigger:
       items: [FIRE_PLACE]
     waves:
@@ -49,7 +49,7 @@ armies:
         slots: 6
 
   - name: "Barbarians"
-    travel_time: 120
+    travel_time: 240
     trigger:
       items: [SHRINE, MYSTIC]
     waves:
@@ -59,7 +59,7 @@ armies:
         slots: 6
 
   - name: "Wild Barbarians"
-    travel_time: 120
+    travel_time: 240
     trigger:
       items: [POTTERY, CRAFTMANSHIP, GRANARY, DOMESTICATION]
     waves:
@@ -71,7 +71,7 @@ armies:
         slots: 6
 
   - name: "Rude Barbarians"
-    travel_time: 150
+    travel_time: 270
     trigger:
       items: [EARTH_WALL, ALPHABET_WRITING, HERBOLOGY, EPIC_DRAWINGS]
     waves:
@@ -83,7 +83,7 @@ armies:
         slots: 2
 
   - name: "Angry Barbarians"
-    travel_time: 150
+    travel_time: 270
     trigger:
       items: [HORSEBACK_RIDING, EXCHANGE_POST, MAIN_HOUSE]
     waves:
@@ -95,7 +95,7 @@ armies:
         slots: 2
 
   - name: "Stone Eaters"
-    travel_time: 180
+    travel_time: 300
     trigger:
       items: [STONE_CIRCLE, CRAFTSMANSHIP]
     waves:
@@ -105,7 +105,7 @@ armies:
         slots: 10
 
   - name: "Hunter Hunters"
-    travel_time: 180
+    travel_time: 300
     trigger:
       items: [HUNTING]
     waves:
@@ -121,7 +121,7 @@ armies:
   # ──────────────────────────────────────────────────────────
 
   - name: "Potter Plunderers"
-    travel_time: 300
+    travel_time: 390
     trigger:
       items: [POTTERY, EPIC_DRAWINGS]
     waves:
@@ -135,7 +135,7 @@ armies:
         slots: 3
 
   - name: "Harvest Raiders"
-    travel_time: 300
+    travel_time: 390
     trigger:
       items: [AGRICULTURE, GRANARY]
     waves:
@@ -151,7 +151,7 @@ armies:
         slots: 5
 
   - name: "Shrine Destroyers"
-    travel_time: 420
+    travel_time: 510
     trigger:
       items: [SHRINE, EXCHANGE_POST]
     waves:
@@ -167,7 +167,7 @@ armies:
         slots: 3
 
   - name: "Epic Plunder"
-    travel_time: 420
+    travel_time: 510
     trigger:
       items: [HERBOLOGY, ALPHABET_WRITING]
     waves:
@@ -181,7 +181,7 @@ armies:
         slots: 6
 
   - name: "Tool Thieves"
-    travel_time: 120
+    travel_time: 210
     trigger:
       items: [TOOL_SHOP]
     waves:
@@ -4159,13 +4159,13 @@ armies:
         slots: 26
       - critter: HELI
         slots: 27
-      - critter: SPECOPS
+      - critter: DRONE
         slots: 28
       - critter: SPECOPS
         slots: 28
       - critter: HELI
         slots: 28
-      - critter: HELI
+      - critter: DRONE
         slots: 29
       - critter: SPECOPS
         slots: 30
@@ -4217,9 +4217,9 @@ armies:
         slots: 27
       - critter: HELI
         slots: 28
-      - critter: HELI
+      - critter: MECH_WARRIOR
         slots: 28
-      - critter: SPECOPS
+      - critter: DRONE
         slots: 28
       - critter: HELI
         slots: 29
@@ -4265,7 +4265,7 @@ armies:
         slots: 25
       - critter: SPECOPS
         slots: 26
-      - critter: SPECOPS
+      - critter: DRONE
         slots: 26
       - critter: SPECOPS
         slots: 26
@@ -4273,7 +4273,7 @@ armies:
         slots: 27
       - critter: SPECOPS
         slots: 28
-      - critter: HELI
+      - critter: MECH_WARRIOR
         slots: 28
       - critter: HELI
         slots: 28
@@ -4329,9 +4329,9 @@ armies:
         slots: 27
       - critter: HELI
         slots: 28
-      - critter: SPECOPS
+      - critter: DRONE
         slots: 28
-      - critter: HELI
+      - critter: DRONE
         slots: 28
       - critter: SPECOPS
         slots: 29
@@ -4483,9 +4483,9 @@ armies:
         slots: 24
       - critter: SPECOPS
         slots: 24
-      - critter: SPECOPS
+      - critter: MECH_WARRIOR
         slots: 24
-      - critter: HELI
+      - critter: DRONE
         slots: 25
       - critter: HELI
         slots: 26
@@ -4501,7 +4501,7 @@ armies:
         slots: 28
       - critter: SPECOPS
         slots: 28
-      - critter: HELI
+      - critter: DRONE
         slots: 29
       - critter: SPECOPS
         slots: 30

@@ -167,3 +167,7 @@ class SetRulerWaveRequest(BaseModel):
     aid: int
     wave_number: int
     ruler_iid: str  # ruler type e.g. "SCIENCE", or "" to remove
+
+
+class RenameEmpireRequest(BaseModel):
+    name: str

@@ -158,6 +158,19 @@ class Router {
     el.style.display = '';
     this._activeViewId = viewId;
     document.title = `E3 — ${view.title}`;
+    const nav = document.getElementById('main-nav');
+    const shell = document.getElementById('shell');
+    const mainCol = document.getElementById('main-col');
+    const pageHeader = document.getElementById('page-header');
+    if (shell) {
+      const isLogin = viewId === 'login' || viewId === 'signup';
+      if (nav) nav.style.display = isLogin ? 'none' : '';
+      if (pageHeader) pageHeader.style.display = isLogin ? 'none' : '';
+      if (mainCol) mainCol.style.gridColumn = isLogin ? '1 / -1' : '';
+      // On mobile, #main-col is fixed at top:52px (nav height). With nav hidden, collapse that gap.
+      if (mainCol) mainCol.style.top = isLogin ? '0' : '';
+      document.body.classList.toggle('view-login', isLogin);
+    }
     view.enter();
 
     // Update nav active state

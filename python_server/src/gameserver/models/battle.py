@@ -73,6 +73,7 @@ class BattleState:
     critters_spawned: int = 0
     critters_killed: int = 0
     critters_reached: int = 0
+    kills_era_xp_sum: float = 0.0  # sum of era_idx for each killed critter (for ruler XP)
 
     # reason: "died" | "reached"
     removed_critters: list[dict[str, Any]] = field(default_factory=list)

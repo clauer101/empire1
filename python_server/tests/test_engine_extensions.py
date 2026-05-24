@@ -95,9 +95,9 @@ class TestAttackServiceQuery:
     def test_get_incoming_filters_by_defender(self):
         svc = _attack_svc()
         a1 = Attack(attack_id=1, attacker_uid=10, defender_uid=20,
-                    army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=100.0)
+                    army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=100.0)
         a2 = Attack(attack_id=2, attacker_uid=10, defender_uid=30,
-                    army_aid=2, phase=AttackPhase.TRAVELLING, eta_seconds=100.0)
+                    army_aid=2, phase=AttackPhase.TRAVELING, eta_seconds=100.0)
         svc._attacks = [a1, a2]
         assert svc.get_incoming(20) == [a1]
         assert svc.get_incoming(30) == [a2]
@@ -113,7 +113,7 @@ class TestAttackServiceQuery:
     def test_get_outgoing_filters_by_attacker(self):
         svc = _attack_svc()
         a = Attack(attack_id=1, attacker_uid=5, defender_uid=99,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=100.0)
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=100.0)
         svc._attacks = [a]
         assert svc.get_outgoing(5) == [a]
         assert svc.get_outgoing(99) == []
@@ -121,7 +121,7 @@ class TestAttackServiceQuery:
     def test_get_returns_by_id(self):
         svc = _attack_svc()
         a = Attack(attack_id=42, attacker_uid=1, defender_uid=2,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=50.0)
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=50.0)
         svc._attacks = [a]
         assert svc.get(42) is a
         assert svc.get(999) is None
@@ -141,7 +141,7 @@ class TestSkipSiege:
     def test_wrong_phase_returns_error(self):
         svc = _attack_svc()
         a = Attack(attack_id=1, attacker_uid=10, defender_uid=20,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=50.0)
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=50.0)
         svc._attacks = [a]
         result = svc.skip_siege(1, requester_uid=20)
         assert isinstance(result, str)
@@ -176,7 +176,7 @@ class TestRestoreAttacks:
     def test_normal_attack_restored(self):
         svc = _attack_svc()
         a = Attack(attack_id=5, attacker_uid=1, defender_uid=2,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=60.0)
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=60.0)
         svc.restore_attacks([a])
         assert len(svc._attacks) == 1
         assert svc._next_attack_id == 6
@@ -204,9 +204,9 @@ class TestRestoreAttacks:
         svc = _attack_svc()
         attacks = [
             Attack(attack_id=10, attacker_uid=1, defender_uid=2,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=10.0),
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=10.0),
             Attack(attack_id=15, attacker_uid=1, defender_uid=3,
-                   army_aid=2, phase=AttackPhase.TRAVELLING, eta_seconds=10.0),
+                   army_aid=2, phase=AttackPhase.TRAVELING, eta_seconds=10.0),
         ]
         svc.restore_attacks(attacks)
         assert svc._next_attack_id == 16
@@ -281,14 +281,14 @@ class TestAttackStep:
     def test_travelling_decrements_eta(self):
         svc = _attack_svc()
         a = Attack(attack_id=1, attacker_uid=1, defender_uid=2,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=100.0)
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=100.0)
         svc.step(a, dt=10.0)
         assert a.eta_seconds == pytest.approx(90.0)
 
     def test_travelling_transitions_to_in_siege(self):
         svc = _attack_svc()
         a = Attack(attack_id=1, attacker_uid=1, defender_uid=2,
-                   army_aid=1, phase=AttackPhase.TRAVELLING, eta_seconds=5.0)
+                   army_aid=1, phase=AttackPhase.TRAVELING, eta_seconds=5.0)
         svc.step(a, dt=10.0)
         assert a.phase == AttackPhase.IN_SIEGE
 
@@ -320,7 +320,7 @@ class TestAttackStep:
     def test_spy_attack_finishes_at_siege(self):
         svc = _attack_svc()
         a = Attack(attack_id=1, attacker_uid=1, defender_uid=2,
-                   army_aid=1, phase=AttackPhase.TRAVELLING,
+                   army_aid=1, phase=AttackPhase.TRAVELING,
                    eta_seconds=1.0, is_spy=True)
         svc.step(a, dt=5.0)
         assert a.phase == AttackPhase.FINISHED
@@ -337,7 +337,7 @@ class TestStartAiAttack:
         result = svc.start_ai_attack(defender_uid=5, army=army, travel_seconds=60.0)
         assert isinstance(result, Attack)
         assert result.defender_uid == 5
-        assert result.phase == AttackPhase.TRAVELLING
+        assert result.phase == AttackPhase.TRAVELING
 
     def test_with_siege_seconds_override(self):
         svc = _attack_svc()

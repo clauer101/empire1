@@ -118,8 +118,8 @@ class TestSiegeConstructionPenalty:
 
         svc._attack_service = MagicMock()
         svc._attack_service.get_incoming.return_value = [
-            _make_attack(AttackPhase.TRAVELLING),
-            _make_attack(AttackPhase.TRAVELLING),
+            _make_attack(AttackPhase.TRAVELING),
+            _make_attack(AttackPhase.TRAVELING),
         ]
 
         svc._progress_buildings(emp, dt=1.0)

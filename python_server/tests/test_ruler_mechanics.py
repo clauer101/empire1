@@ -19,8 +19,10 @@ MAJA_CFG = {
     "health_max": 2000.0,
     "armour_min": 1.0,
     "armour_max": 19.0,
-    "value_base": 1000,
-    "base_damage": 1,
+    "damage_min": 1.0,
+    "damage_max": 30.0,
+    "value_min": 10,
+    "value_max": 1000,
     "animation": "assets/sprites/ruler/maja",
     "scale_base": 1.0,
     "q": [{"research_speed_offset": 0.1}, {"research_speed_offset": 0.2},
@@ -70,8 +72,10 @@ class TestRulerCritterStats:
         assert stats["health"] == pytest.approx(expected_health)
 
     def test_value_scales_with_level(self):
-        stats = ruler_critter_stats(MAJA_CFG, level=5)
-        assert stats["value"] == pytest.approx(1000 * 5)
+        stats_l1 = ruler_critter_stats(MAJA_CFG, level=1)
+        stats_l18 = ruler_critter_stats(MAJA_CFG, level=RULER_MAX_LEVEL)
+        assert stats_l1["value"] == pytest.approx(10.0)
+        assert stats_l18["value"] == pytest.approx(1000.0)
 
     def test_scale_grows_with_level(self):
         stats_l1 = ruler_critter_stats(MAJA_CFG, level=1)
@@ -83,16 +87,138 @@ class TestRulerCritterStats:
         assert stats["animation"] == "assets/sprites/ruler/maja"
 
 
-# ── 2. Ruler XP awarded for kills and victory ─────────────────────────────────
+# ── 2. Combat attributes scale with ruler level ───────────────────────────────
+
+_COMBAT_ATTRS = [
+    ("health",  "health_min",  "health_max"),
+    ("speed",   "speed_min",   "speed_max"),
+    ("armour",  "armour_min",  "armour_max"),
+    ("damage",  "damage_min",  "damage_max"),
+]
+
+ALL_RULER_CFGS = {
+    "MAJA": MAJA_CFG,
+    "BORIN": {
+        "speed_min": 0.6, "speed_max": 1.0,
+        "health_min": 18.0, "health_max": 2800.0,
+        "armour_min": 1.0, "armour_max": 17.0,
+        "damage_min": 1.0, "damage_max": 30.0,
+        "value_min": 10, "value_max": 1200,
+        "animation": "assets/sprites/ruler/borin",
+        "scale_base": 1.0, "q": [], "w": [], "e": [], "r": [],
+    },
+    "NANDI": {
+        "speed_min": 0.8, "speed_max": 1.2,
+        "health_min": 18.0, "health_max": 2100.0,
+        "armour_min": 0.0, "armour_max": 13.0,
+        "damage_min": 1.0, "damage_max": 30.0,
+        "value_min": 10, "value_max": 1000,
+        "animation": "assets/sprites/ruler/nandi",
+        "scale_base": 1.0, "q": [], "w": [], "e": [], "r": [],
+    },
+    "LUCIEN": {
+        "speed_min": 0.6, "speed_max": 1.1,
+        "health_min": 18.0, "health_max": 2200.0,
+        "armour_min": 0.0, "armour_max": 15.0,
+        "damage_min": 1.0, "damage_max": 30.0,
+        "value_min": 10, "value_max": 1200,
+        "animation": "assets/sprites/ruler/lucien",
+        "scale_base": 1.0, "q": [], "w": [], "e": [], "r": [],
+    },
+    "ALRIC": {
+        "speed_min": 0.5, "speed_max": 1.0,
+        "health_min": 22.0, "health_max": 3000.0,
+        "armour_min": 1.0, "armour_max": 19.0,
+        "damage_min": 1.0, "damage_max": 30.0,
+        "value_min": 10, "value_max": 1200,
+        "animation": "assets/sprites/ruler/alric",
+        "scale_base": 1.0, "q": [], "w": [], "e": [], "r": [],
+    },
+}
+
+
+class TestRulerCombatScaling:
+    """Validate all four combat attributes scale correctly with ruler level."""
+
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_level1_equals_min(self, attr, key_min, key_max):
+        stats = ruler_critter_stats(MAJA_CFG, level=1)
+        assert stats[attr] == pytest.approx(MAJA_CFG[key_min])
+
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_max_level_equals_max(self, attr, key_min, key_max):
+        stats = ruler_critter_stats(MAJA_CFG, level=RULER_MAX_LEVEL)
+        assert stats[attr] == pytest.approx(MAJA_CFG[key_max])
+
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_monotonically_increasing(self, attr, key_min, key_max):
+        """Each successive level must have a higher or equal attribute value."""
+        prev = ruler_critter_stats(MAJA_CFG, level=1)[attr]
+        for lvl in range(2, RULER_MAX_LEVEL + 1):
+            cur = ruler_critter_stats(MAJA_CFG, level=lvl)[attr]
+            assert cur >= prev, f"{attr} decreased from level {lvl-1} to {lvl}"
+            prev = cur
+
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_linear_interpolation_at_midpoint(self, attr, key_min, key_max):
+        mid = (RULER_MAX_LEVEL + 1) // 2
+        t = (mid - 1) / (RULER_MAX_LEVEL - 1)
+        expected = MAJA_CFG[key_min] + (MAJA_CFG[key_max] - MAJA_CFG[key_min]) * t
+        stats = ruler_critter_stats(MAJA_CFG, level=mid)
+        assert stats[attr] == pytest.approx(expected)
+
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_max_strictly_greater_than_min(self, attr, key_min, key_max):
+        """Max-level stats must exceed level-1 stats (assuming _max > _min in config)."""
+        s1 = ruler_critter_stats(MAJA_CFG, level=1)
+        s_max = ruler_critter_stats(MAJA_CFG, level=RULER_MAX_LEVEL)
+        if MAJA_CFG[key_max] > MAJA_CFG[key_min]:
+            assert s_max[attr] > s1[attr]
+
+    @pytest.mark.parametrize("ruler_id,cfg", list(ALL_RULER_CFGS.items()))
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_all_rulers_level1_eq_min(self, ruler_id, cfg, attr, key_min, key_max):
+        stats = ruler_critter_stats(cfg, level=1)
+        assert stats[attr] == pytest.approx(cfg[key_min]), \
+            f"{ruler_id}: {attr} at level 1 should equal {key_min}"
+
+    @pytest.mark.parametrize("ruler_id,cfg", list(ALL_RULER_CFGS.items()))
+    @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
+    def test_all_rulers_max_level_eq_max(self, ruler_id, cfg, attr, key_min, key_max):
+        stats = ruler_critter_stats(cfg, level=RULER_MAX_LEVEL)
+        assert stats[attr] == pytest.approx(cfg[key_max]), \
+            f"{ruler_id}: {attr} at max level should equal {key_max}"
+
+    def test_level_zero_clamped_to_level1(self):
+        """Levels below 1 must be treated as level 1 (t clamped to 0)."""
+        stats_0 = ruler_critter_stats(MAJA_CFG, level=0)
+        stats_1 = ruler_critter_stats(MAJA_CFG, level=1)
+        for attr, _, _ in _COMBAT_ATTRS:
+            assert stats_0[attr] == pytest.approx(stats_1[attr])
+
+    def test_level_above_max_clamped(self):
+        """Levels above RULER_MAX_LEVEL must not exceed max values."""
+        stats_over = ruler_critter_stats(MAJA_CFG, level=RULER_MAX_LEVEL + 5)
+        stats_max = ruler_critter_stats(MAJA_CFG, level=RULER_MAX_LEVEL)
+        for attr, _, _ in _COMBAT_ATTRS:
+            assert stats_over[attr] == pytest.approx(stats_max[attr])
+
+
+# ── 4. Ruler XP awarded for kills and victory ─────────────────────────────────
 
 
 class TestRulerXpAward:
-    def _make_battle(self, critters_killed=3, critters_reached=1):
+    def _make_battle(self, critters_killed=3, critters_reached=1, kills_era_xp_sum=None):
+        from gameserver.models.army import CritterWave
         battle = MagicMock()
-        battle.armies = {1: MagicMock(uid=1)}
+        ruler_wave = CritterWave(wave_id=0, iid="MAJA", slots=1.0)
+        army = MagicMock(uid=1, waves=[ruler_wave])
+        battle.armies = {1: army}
         battle.defender = 99
         battle.critters_killed = critters_killed
         battle.critters_reached = critters_reached
+        # kills_era_xp_sum defaults to critters_killed (era_idx=1 per critter)
+        battle.kills_era_xp_sum = kills_era_xp_sum if kills_era_xp_sum is not None else float(critters_killed)
         return battle
 
     def _make_svc(self, empire):
@@ -134,7 +260,7 @@ class TestRulerXpAward:
         assert empire.ruler.xp == pytest.approx(4.0)
 
 
-# ── 3. Ruler gets no XP when not in combat (zero critters, no victory) ────────
+# ── 5. Ruler gets no XP when not in combat (zero critters, no victory) ────────
 
 
 class TestRulerNoXpWhenIdle:
@@ -161,7 +287,7 @@ class TestRulerNoXpWhenIdle:
         assert empire.ruler.xp == pytest.approx(0.0)
 
 
-# ── 4. AI attacker gets no XP (ruler XP skipped for AI_UID) ──────────────────
+# ── 6. AI attacker gets no XP (ruler XP skipped for AI_UID) ──────────────────
 
 
 class TestRulerNoXpForAI:
@@ -183,7 +309,7 @@ class TestRulerNoXpForAI:
         svc.empire_service.get.assert_not_called()
 
 
-# ── 5. Skill level thresholds ─────────────────────────────────────────────────
+# ── 7. Skill level thresholds ─────────────────────────────────────────────────
 
 
 class TestSkillLevelThresholds:
@@ -267,7 +393,7 @@ class TestSkillLevelThresholds:
         assert "points" in result["error"]
 
 
-# ── 6. Ruler effects recalculated/restored correctly ─────────────────────────
+# ── 8. Ruler effects recalculated/restored correctly ─────────────────────────
 
 
 class TestRulerEffectsRestored:
@@ -314,7 +440,7 @@ class TestRulerEffectsRestored:
         assert service.get_ruler_effects(emp) == {}
 
 
-# ── 7. Ruler level derived from XP correctly ─────────────────────────────────
+# ── 9. Ruler level derived from XP correctly ─────────────────────────────────
 
 
 class TestRulerLevelFromXp:

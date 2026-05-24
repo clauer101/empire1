@@ -37,14 +37,16 @@ def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int) -> "dict[str, A
     _min and _max values based on level / RULER_MAX_LEVEL.
     """
     t = max(0.0, min(1.0, (level - 1) / (RULER_MAX_LEVEL - 1)))
+    def _lerp(lo: float, hi: float) -> float:
+        return lo + (hi - lo) * t
     return {
-        "speed": ruler_cfg["speed_min"] + (ruler_cfg["speed_max"] - ruler_cfg["speed_min"]) * t,
-        "health": ruler_cfg["health_min"] + (ruler_cfg["health_max"] - ruler_cfg["health_min"]) * t,
-        "armour": ruler_cfg["armour_min"] + (ruler_cfg["armour_max"] - ruler_cfg["armour_min"]) * t,
-        "value": ruler_cfg["value_base"] * level,
-        "scale": ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
-        "base_damage": ruler_cfg["base_damage"],
-        "animation": ruler_cfg["animation"],
+        "speed":       _lerp(ruler_cfg["speed_min"],   ruler_cfg["speed_max"]),
+        "health":      _lerp(ruler_cfg["health_min"],  ruler_cfg["health_max"]),
+        "armour":      _lerp(ruler_cfg["armour_min"],  ruler_cfg["armour_max"]),
+        "damage":      _lerp(ruler_cfg["damage_min"],  ruler_cfg["damage_max"]),
+        "value":       _lerp(ruler_cfg["value_min"],   ruler_cfg["value_max"]),
+        "scale":       ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
+        "animation":   ruler_cfg["animation"],
     }
 
 
@@ -155,14 +157,12 @@ class EmpireService:
         if self._tile_index_dirty or self._world_tile_owner is None:
             index: dict[tuple[int, int], int] = {}
             for emp in self._empires.values():
-                gq = emp.global_q or 0
-                gr = emp.global_r or 0
                 for key in emp.hex_map:
                     try:
                         eq, er = (int(v) for v in key.split(","))
                     except (ValueError, AttributeError):
                         continue
-                    index[(eq + gq, er + gr)] = emp.uid
+                    index[(eq, er)] = emp.uid
             self._world_tile_owner = index
             self._tile_index_dirty = False
         return self._world_tile_owner
@@ -347,7 +347,15 @@ class EmpireService:
         the era, which has its own set of effects. Also triggers the end
         rally if this item matches the configured end_criterion.
         """
+        # Measure era before this item counts — temporarily hide it from the era check.
+        if iid in empire.knowledge:
+            _dict: dict[str, float] = empire.knowledge
+        else:
+            _dict = empire.buildings
+        _stored = _dict.get(iid, 0.0)
+        _dict[iid] = 1.0  # mark as unfinished so get_current_era ignores it
         _era_before = self.get_current_era(empire)
+        _dict[iid] = _stored  # restore
         self.recalculate_effects(empire)
         _era_after = self.get_current_era(empire)
         if _era_after != _era_before:
@@ -361,6 +369,15 @@ class EmpireService:
                     _asyncio.ensure_future(
                         self._database.record_era_first(_era_after, empire.uid, empire.name)
                     )
+            # Check artifact grant when this empire reaches Era III (bronze)
+            if _era_after == "bronze":
+                import asyncio as _asyncio_lottery
+                try:
+                    _asyncio_lottery.get_running_loop().create_task(
+                        self._maybe_grant_artifact_for_era3(empire)
+                    )
+                except RuntimeError:
+                    pass
         if self._gc is not None and self._gc.end_criterion and iid == self._gc.end_criterion:
             from gameserver.engine.global_state import try_set_end_criterion_activated
             if try_set_end_criterion_activated(
@@ -374,6 +391,51 @@ class EmpireService:
                 # Recalculate effects for ALL empires to apply rally effects immediately
                 for emp in self._empires.values():
                     self.recalculate_effects(emp)
+
+    async def _maybe_grant_artifact_for_era3(self, empire: "Empire") -> None:
+        """If the artifact ratio requires more artifacts in the world, grant one to this empire."""
+        import random
+        from gameserver.engine.ai_service import AI_UID
+        from gameserver.models.items import ItemType
+        from gameserver.util.eras import ERA_ORDER
+        if self._gc is None or self._upgrades is None:
+            return
+        _min_era_idx = ERA_ORDER.index("bronze")
+        eligible = [
+            e for e in self._empires.values()
+            if e.uid != AI_UID
+            and ERA_ORDER.index(self.get_current_era(e)) >= _min_era_idx
+        ]
+        num_accounts = len(eligible)
+        num_artifacts = sum(len(e.artifacts) for e in eligible)
+        ratio = num_accounts / num_artifacts if num_artifacts > 0 else float("inf")
+        log.info(
+            "Artifact check (era3): eligible=%d artifacts=%d ratio=%.2f threshold=%d uid=%d",
+            num_accounts, num_artifacts, ratio, self._gc.accounts_per_artifact, empire.uid,
+        )
+        if num_accounts == 0 or ratio <= self._gc.accounts_per_artifact:
+            return
+        all_artifact_iids = [item.iid for item in self._upgrades.get_by_type(ItemType.ARTIFACT)]
+        candidates = [iid for iid in all_artifact_iids if iid not in empire.artifacts]
+        if not candidates:
+            return
+        artifact_iid = random.choice(candidates)
+        empire.artifacts.append(artifact_iid)
+        self.recalculate_effects(empire)
+        log.info("Artifact granted for era3: uid=%d artifact=%s", empire.uid, artifact_iid)
+        if self._database is not None:
+            artifact_item = self._upgrades.get(artifact_iid)
+            artifact_name = artifact_item.name if artifact_item else artifact_iid
+            body = (
+                f"Your empire has crossed into a new age — and the world has taken notice.\n\n"
+                f"As you reached Era III, the balance of relics shifted. The cosmos withdrew "
+                f"**{artifact_name}** from the vault of forgotten ages and placed it in your hands.\n\n"
+                f"Guard it well, for others may come to claim it."
+            )
+            import asyncio as _amsg
+            _amsg.get_running_loop().create_task(
+                self._database.send_message(from_uid=0, to_uid=empire.uid, body=body)
+            )
 
     def recalculate_effects(self, empire: Empire) -> None:
         """Rebuild empire effects from all completed buildings, knowledge, and current era.
@@ -625,7 +687,8 @@ class EmpireService:
         if self._gc is None:
             return float(level * 100)
         p = self._gc.prices.ruler_xp
-        return float(p.u + (level * p.y) * (level + p.z) ** p.v)
+        n = level - 1
+        return float(p.u + (n * p.y) * (n + p.z) ** p.v)
 
     def ruler_level_from_xp(self, xp: float, max_level: int = 18) -> int:
         """Derive ruler level from total accumulated XP."""
@@ -707,36 +770,4 @@ class EmpireService:
         empire.citizens = {k: v for k, v in distribution.items()}
         return None
 
-    # -- Global spawn positions ------------------------------------------
 
-    def assign_global_spawn_positions(
-        self,
-        users_by_creation: list[dict[str, Any]],
-        *,
-        min_separation: int = 10,
-    ) -> None:
-        """Assign global hex spawn positions to all registered empires.
-
-        Iterates over *users_by_creation* (sorted oldest-first, as returned by
-        ``Database.list_users()``) and assigns each empire the next available
-        hex tile in inside-out order, with at least *min_separation* hex steps
-        between any two spawn points.  The grid grows outward without bound.
-
-        Empires not currently loaded (uid not in self._empires) are skipped.
-        """
-        from gameserver.util.hex_spawn_placement import assign_spawn_positions
-
-        uids_in_order = [u["uid"] for u in users_by_creation if u["uid"] in self._empires]
-        positions = assign_spawn_positions(
-            uids_in_order,
-            min_separation=min_separation,
-        )
-        for uid, coord in positions.items():
-            empire = self._empires[uid]
-            empire.global_q = coord.q
-            empire.global_r = coord.r
-            log.info(
-                "Spawn position assigned: uid=%d name=%r global_q=%d global_r=%d",
-                uid, empire.name, coord.q, coord.r,
-            )
-        return None

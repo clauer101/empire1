@@ -412,6 +412,10 @@ def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> None
         emp = svc.empire_service.get(uid)
         if emp is None:
             continue
+        # Only award XP if the ruler participated in this army's waves
+        ruler_type = emp.ruler.type if emp.ruler else ""
+        if not ruler_type or not any(w.iid == ruler_type for w in army.waves):
+            continue
         xp = 0.0
         era_idx = 1
         if battle.defender is not None:
@@ -422,14 +426,15 @@ def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> None
         xp_per_kill = gc.ruler_xp_per_kill if gc else 1.0
         xp_per_reached = gc.ruler_xp_per_reached_per_era if gc else 10.0
         xp_victory = gc.ruler_xp_victory_per_era if gc else 50.0
-        xp += float(battle.critters_killed) * xp_per_kill
+        xp += float(battle.kills_era_xp_sum) * xp_per_kill
         xp += float(battle.critters_reached) * xp_per_reached * era_idx
         if attacker_won:
             xp += xp_victory * era_idx
         if xp > 0:
             emp.ruler.xp += xp
+            emp.ruler.level = svc.empire_service.ruler_level_from_xp(emp.ruler.xp)
             svc.empire_service.recalculate_effects(emp)
-            log.info("[ruler_xp] uid=%d ruler='%s' +%.0f XP (total=%.0f)", uid, emp.ruler.name, xp, emp.ruler.xp)
+            log.info("[ruler_xp] uid=%d ruler='%s' +%.0f XP (total=%.0f level=%d)", uid, emp.ruler.name, xp, emp.ruler.xp, emp.ruler.level)
 
 
 def _apply_artifact_steal(

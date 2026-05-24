@@ -177,7 +177,8 @@ def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
             "health_max": float(item.get("health_max", 2000)),
             "armour_min": float(item.get("armour_min", 0)),
             "armour_max": float(item.get("armour_max", 19)),
-            "value_base": float(item.get("value_base", 1000)),
+            "value_min": float(item.get("value_min", 10)),
+            "value_max": float(item.get("value_max", 1000)),
             "base_damage": float(item.get("base_damage", 1)),
             "animation": item.get("animation", ""),
             "scale_base": float(item.get("scale_base", 1.0)),
@@ -661,6 +662,7 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
     if saved_state is not None and saved_state.empires:
         for empire in saved_state.empires.values():
             services.empire_service.register(empire)
+            empire.ruler.level = services.empire_service.ruler_level_from_xp(empire.ruler.xp)
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
         services.empire_service.sync_aid_counter()

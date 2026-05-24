@@ -627,7 +627,7 @@ class BattleService:
             armour=stats["armour"],
             scale=stats["scale"],
             value=stats["value"],
-            damage=stats["base_damage"],
+            damage=stats["damage"],
             spawn_on_death={},
         )
 
@@ -811,6 +811,13 @@ class BattleService:
         """
         battle.removed_critters.append({"cid": critter.cid, "reason": "died", "path_progress": critter.path_progress, "value": critter.value})
         battle.critters_killed += 1
+        try:
+            from gameserver.network.handlers._core import _svc as _core_svc
+            _s = _core_svc()
+            _era_idx = (_s.empire_service._item_era_index.get(critter.iid, 0) + 1) if _s.empire_service else 1
+        except AssertionError:
+            _era_idx = 1
+        battle.kills_era_xp_sum += _era_idx
         del battle.critters[critter.cid]
 
         # Award gold to defender

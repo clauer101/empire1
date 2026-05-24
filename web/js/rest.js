@@ -346,10 +346,12 @@ class RestClient {
    * @param {{q0:number,r0:number,q1:number,r1:number}} [bounds] Defender-local
    *   viewport bounds; when given only tiles inside that rectangle are returned.
    */
-  async getMapNeighbors(bounds, spectating = false) {
+  async getMapNeighbors(bounds, spectating = false, defenderUid = null) {
     const q = _boundsQuery(bounds);
     const sep = q ? '&' : '?';
-    return this._get('/api/map/neighbors' + q + (spectating ? sep + 'spectating=1' : ''));
+    let extra = spectating ? sep + 'spectating=1' : '';
+    if (spectating && defenderUid != null) extra += '&defender_uid=' + defenderUid;
+    return this._get('/api/map/neighbors' + q + extra);
   }
 
   /**
@@ -483,6 +485,10 @@ class RestClient {
    */
   async buildItem(iid) {
     return this._post('/api/empire/build', { iid });
+  }
+
+  async renameEmpire(name) {
+    return this._post('/api/empire/rename', { name });
   }
 
   // ── Citizens ──────────────────────────────────────────────

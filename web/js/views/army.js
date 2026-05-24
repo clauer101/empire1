@@ -699,13 +699,14 @@ function _rulerStats(rulerType, level) {
   const catalog = st.items?.rulers?.[rulerType];
   if (!catalog?.critter) return null;
   const c = catalog.critter;
-  const t = Math.max(0, Math.min(1, level / 18));
+  const t = Math.max(0, Math.min(1, (level - 1) / 17));
   const lerp = (a, b) => a + (b - a) * t;
   return {
     health: lerp(c.health_min, c.health_max),
     speed: lerp(c.speed_min, c.speed_max),
     armour: lerp(c.armour_min, c.armour_max),
-    value: c.value_base * level,
+    damage: lerp(c.damage_min ?? 1, c.damage_max ?? 30),
+    value: lerp(c.value_min ?? 10, c.value_max ?? 1000),
     animation: c.animation || '',
   };
 }
@@ -1422,6 +1423,7 @@ function renderArmies(data) {
       const spyAtk = (st.military?.attacks_outgoing || []).find(
         (atk) => atk.is_spy && atk.army_name === a.name
       );
+      const armyInBattle = !!realAtk && realAtk.phase === 'in_battle';
       const btnDisabled = !!realAtk;
       let btnContent;
       const _atkPhaseLabel = (atk) => {
@@ -1434,7 +1436,7 @@ function renderArmies(data) {
           const endTs = Date.now() + atk.siege_remaining_seconds * 1000;
           return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="Siege" style="font-size:0.75em;opacity:0.7;">Siege: ${fmtTravelTime(atk.siege_remaining_seconds)}</span>`;
         }
-        if (atk.phase === 'travelling' || atk.phase === 'traveling') {
+        if (atk.phase === 'traveling' || atk.phase === 'traveling') {
           const endTs = Date.now() + atk.eta_seconds * 1000;
           return `<span class="eta-live" data-eta-ts="${endTs}" data-eta-prefix="ETA" style="font-size:0.75em;opacity:0.7;">ETA: ${fmtTravelTime(atk.eta_seconds)}</span>`;
         }
@@ -1496,8 +1498,8 @@ function renderArmies(data) {
               const rulerName = isRulerWave ? (st.summary?.ruler?.name || w.iid) : '';
               return `
             <div class="wave-tile${isRulerWave ? ' wave-tile--ruler' : ''}" data-aid="${a.aid}" data-wave-idx="${i}">
-              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}" data-is-ruler="${isRulerWave ? 'true' : ''}">
-                <span class="wave-tile__edit-hint">✎</span>
+              <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}" data-is-ruler="${isRulerWave ? 'true' : ''}" ${armyInBattle ? 'disabled title="Army is in battle"' : ''} style="${armyInBattle ? 'opacity:0.45;cursor:not-allowed;' : ''}">
+                <span class="wave-tile__edit-hint">${armyInBattle ? '🔒' : '✎'}</span>
                 ${
                   hasSprite
                     ? `<canvas class="wave-tile__sprite critter-sprite-canvas" data-iid="${w.iid || ''}" data-sprite="${spriteInfo.sprite || ''}" data-animation="${spriteInfo.animation || ''}" width="72" height="72"
@@ -1521,6 +1523,7 @@ function renderArmies(data) {
             : ''
         }
         ${(() => {
+          if (armyInBattle) return '';
           const wp = a.next_wave_price || 0;
           const canAff = currentGold >= wp;
           return `<div class="wave-tile wave-tile-add" data-aid="${a.aid}"

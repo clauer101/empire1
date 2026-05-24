@@ -333,7 +333,7 @@ def _deserialize_attack(d: dict[str, Any]) -> Attack:
         attacker_uid=d["attacker_uid"],
         defender_uid=d["defender_uid"],
         army_aid=d["army_aid"],
-        phase=AttackPhase(d.get("phase", "travelling")),
+        phase=AttackPhase({"travelling": "traveling"}.get(d.get("phase", "traveling"), d.get("phase", "traveling"))),
         eta_seconds=d.get("eta_seconds", 0.0),
         total_eta_seconds=d.get("total_eta_seconds", 60.0),  # default to 60s if not in save
         siege_remaining_seconds=d.get("siege_remaining_seconds", 0.0),

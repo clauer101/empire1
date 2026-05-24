@@ -307,11 +307,9 @@ class TestReplaysRouter:
 # ---------------------------------------------------------------------------
 
 class TestGlobalMapRouter:
-    async def test_global_map_offsets_tiles_by_spawn(self, client, svc):
+    async def test_global_map_tiles_use_stored_coords(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
-        emp.hex_map = {"0,0": "castle", "1,0": "barracks"}
-        emp.global_q = 100
-        emp.global_r = -50
+        emp.hex_map = {"100,-50": "castle", "101,-50": "barracks"}
 
         resp = await client.get("/api/global-map")
         assert resp.status_code == 200
@@ -322,24 +320,20 @@ class TestGlobalMapRouter:
         assert (100, -50, "castle") in coords
         assert (101, -50, "barracks") in coords
 
-    async def test_global_map_none_spawn_treated_as_origin(self, client, svc):
+    async def test_global_map_castle_sets_origin(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
         emp.hex_map = {"2,3": "castle"}
-        emp.global_q = None
-        emp.global_r = None
 
         resp = await client.get("/api/global-map")
         data = resp.json()
         e = next(x for x in data["empires"] if x["uid"] == TEST_UID)
-        assert e["origin"] == {"q": 0, "r": 0}
+        assert e["origin"] == {"q": 2, "r": 3}
         coords = {(t["q"], t["r"], t["type"]) for t in e["tiles"]}
         assert (2, 3, "castle") in coords
 
     async def test_global_map_viewport_clips_tiles(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
         emp.hex_map = {"0,0": "castle", "5,5": "barracks"}
-        emp.global_q = 0
-        emp.global_r = 0
 
         resp = await client.get("/api/global-map?q0=-1&r0=-1&q1=1&r1=1")
         assert resp.status_code == 200
@@ -358,8 +352,6 @@ class TestMapNeighborsRouter:
     async def test_neighbors_clipped_to_viewport(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
         emp.hex_map = {"0,0": "castle"}
-        emp.global_q = 0
-        emp.global_r = 0
 
         resp = await client.get(
             "/api/map/neighbors?q0=0&r0=0&q1=0&r1=1", headers=_auth()
@@ -372,30 +364,21 @@ class TestMapNeighborsRouter:
     async def test_neighbors_owner_via_world_index(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
         emp.hex_map = {"0,0": "castle"}
-        emp.global_q = 0
-        emp.global_r = 0
 
         enemy = _make_empire(uid=99, name="Enemy")
-        enemy.hex_map = {"0,0": "barracks"}
-        enemy.global_q = 1  # enemy world tile = (1, 0)
-        enemy.global_r = 0
+        enemy.hex_map = {"1,0": "barracks"}  # global coords directly
         svc.empire_service.register(enemy)
 
         resp = await client.get("/api/map/neighbors", headers=_auth())
         tiles = {(t["q"], t["r"]): t["uid"] for t in resp.json()["neighbor_tiles"]}
-        # Defender-local (1,0) maps to world (1,0), owned by the enemy.
         assert tiles[(1, 0)] == 99
 
     async def test_neighbors_index_refreshes_after_invalidate(self, client, svc):
         emp = svc.empire_service.all_empires[TEST_UID]
         emp.hex_map = {"0,0": "castle"}
-        emp.global_q = 0
-        emp.global_r = 0
 
         enemy = _make_empire(uid=99, name="Enemy")
-        enemy.hex_map = {"0,0": "barracks"}
-        enemy.global_q = 1
-        enemy.global_r = 0
+        enemy.hex_map = {"1,0": "barracks"}  # global coords directly
         svc.empire_service.register(enemy)
 
         r1 = await client.get("/api/map/neighbors", headers=_auth())

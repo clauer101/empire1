@@ -79,9 +79,6 @@ class Empire:
     hex_map: dict[str, Any] = field(default_factory=dict)  # Composer hex tiles
     max_life: float = 10.0
     ruler: Ruler = field(default_factory=Ruler)
-    global_q: int | None = None  # Global map spawn position (axial hex coords)
-    global_r: int | None = None
-
     # -- Helpers ---------------------------------------------------------
 
     def get_effect(self, key: str, default: float = 0.0) -> float:

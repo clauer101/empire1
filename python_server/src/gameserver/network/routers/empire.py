@@ -20,6 +20,7 @@ from gameserver.network.rest_models import (
     MapSaveBody,
     ChooseRulerRequest,
     RulerSkillUpRequest,
+    RenameEmpireRequest,
 )
 from gameserver.network.rest_api import (
     _stub_message,
@@ -150,6 +151,20 @@ def make_router(services: "Services") -> APIRouter:
         resp = await handle_citizen_upgrade(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
+    @router.post("/api/empire/rename")
+    async def rename_empire(body: RenameEmpireRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        name = body.name.strip()
+        if len(name) < 3:
+            return {"success": False, "error": "Name must be at least 3 characters"}
+        if len(name) > 40:
+            return {"success": False, "error": "Name too long (max 40 characters)"}
+        empire = services.empire_service.all_empires.get(uid) if services.empire_service else None
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        empire.name = name
+        log.info("Empire renamed: uid=%d new_name=%r", uid, name)
+        return {"success": True}
+
     @router.put("/api/empire/citizen")
     async def change_citizen(body: CitizenDistribution, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         from gameserver.network.handlers import handle_change_citizen
@@ -275,6 +290,7 @@ def make_router(services: "Services") -> APIRouter:
         q1: int | None = None,
         r1: int | None = None,
         spectating: int = 0,
+        defender_uid: int | None = None,
     ) -> dict[str, Any]:
         """Return non-owned tiles within the fog radius of the empire border.
 
@@ -284,7 +300,8 @@ def make_router(services: "Services") -> APIRouter:
         Owner lookup uses the shared world tile index (O(1) per tile) instead
         of rescanning every empire.
         """
-        empire = empire_service.get(uid)
+        lookup_uid = defender_uid if spectating and defender_uid is not None else uid
+        empire = empire_service.get(lookup_uid)
         if not empire or not empire.hex_map:
             return {"neighbor_tiles": []}
 
@@ -301,9 +318,12 @@ def make_router(services: "Services") -> APIRouter:
 
         gc = services.empire_service._gc if services.empire_service else None
         from gameserver.util.effects import MAP_VISION_RADIUS_OFFSET
-        base_radius = gc.base_map_vision_radius if gc else 1
-        vision_offset = 0 if spectating else int(empire.effects.get(MAP_VISION_RADIUS_OFFSET, 0))
-        radius = base_radius + vision_offset
+        if spectating:
+            radius = 0
+        else:
+            base_radius = gc.base_map_vision_radius if gc else 1
+            vision_offset = int(empire.effects.get(MAP_VISION_RADIUS_OFFSET, 0))
+            radius = base_radius + vision_offset
 
         # Strict viewport rect (defender-local). Missing → fall back to the
         # territory bounding box padded by the fog radius.
@@ -340,8 +360,6 @@ def make_router(services: "Services") -> APIRouter:
                     next_frontier.add(nb)
             frontier = next_frontier
 
-        own_gq = empire.global_q or 0
-        own_gr = empire.global_r or 0
         world_owner = empire_service.world_tile_owner()
 
         # Build a lookup: owner_uid → hex_map for structure rendering
@@ -351,7 +369,7 @@ def make_router(services: "Services") -> APIRouter:
         for c in visible:
             if not (lo_q <= c.q <= hi_q and lo_r <= c.r <= hi_r):
                 continue
-            owner_uid = world_owner.get((c.q + own_gq, c.r + own_gr))
+            owner_uid = world_owner.get((c.q, c.r))
             if owner_uid == uid:
                 owner_uid = None
             # Include tile type if we can look it up from the owner's hex_map
@@ -415,15 +433,15 @@ def make_router(services: "Services") -> APIRouter:
 
         result = []
         for empire in empire_service.all_empires.values():
-            gq = empire.global_q or 0
-            gr = empire.global_r or 0
             tiles = []
+            castle_q, castle_r = 0, 0
             for key, tile_type in empire.hex_map.items():
                 try:
-                    lq, lr = (int(v) for v in key.split(","))
+                    wq, wr = (int(v) for v in key.split(","))
                 except (ValueError, AttributeError):
                     continue
-                wq, wr = lq + gq, lr + gr
+                if tile_type == "castle":
+                    castle_q, castle_r = wq, wr
                 if clip and not (lo_q <= wq <= hi_q and lo_r <= wr <= hi_r):
                     continue
                 tiles.append({"q": wq, "r": wr, "type": tile_type})
@@ -431,7 +449,7 @@ def make_router(services: "Services") -> APIRouter:
                 result.append({
                     "uid": empire.uid,
                     "name": empire.name,
-                    "origin": {"q": gq, "r": gr},
+                    "origin": {"q": castle_q, "r": castle_r},
                     "tiles": tiles,
                 })
         return {"empires": result}

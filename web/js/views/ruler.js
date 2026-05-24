@@ -76,13 +76,13 @@ function _renderLoading() {
 function _rulerCombatStats(def, level) {
   const c = def?.critter;
   if (!c) return null;
-  const t = Math.max(0, Math.min(1, level / 18));
+  const t = Math.max(0, Math.min(1, (level - 1) / 17));
   const lerp = (a, b) => a + (b - a) * t;
   return {
     health: lerp(c.health_min ?? 0, c.health_max ?? 0),
     armour: lerp(c.armour_min ?? 0, c.armour_max ?? 0),
     speed: lerp(c.speed_min ?? 0, c.speed_max ?? 0),
-    damage: c.base_damage ?? 0,
+    damage: lerp(c.damage_min ?? 1, c.damage_max ?? 30),
   };
 }
 
