@@ -224,7 +224,7 @@ async def _run_battle_task(
         elif not _summary_sent:
             await battle_svc.send_summary(battle, send_fn, loot={})
 
-        _award_ruler_xp(battle, svc, attacker_won)
+        ruler_xp_gained = _award_ruler_xp(battle, svc, attacker_won)
 
         from gameserver.models.attack import AttackPhase
         from gameserver.engine.ai_service import AI_UID
@@ -375,6 +375,9 @@ async def _run_battle_task(
                                 art_name = art_item.name if art_item else art_iid
                                 loot_atk_lines += f"⚜ {art_name} acquired\n"
 
+                    ruler_xp_line = ""
+                    if uid in ruler_xp_gained:
+                        ruler_xp_line = f"👑 Ruler XP:  +{int(ruler_xp_gained[uid])}\n"
                     atk_result = "⚔ You Won!" if not defender_won else "⚔ You Lost!"
                     atk_body = (
                         f"{atk_result}\n"
@@ -386,6 +389,7 @@ async def _run_battle_task(
                         f"💀 Killed:    {battle.critters_killed}\n"
                         f"🏰 Reached:   {battle.critters_reached}\n"
                         f"{loot_atk_lines}"
+                        f"{ruler_xp_line}"
                         f"⏱ Duration:  {dur_str}\n"
                         f"────────────────────\n"
                         f"▶ Replay: #replay/{replay_key}"
@@ -400,11 +404,15 @@ async def _run_battle_task(
             _get_active_battles().pop(battle.defender.uid, None)
 
 
-def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> None:
-    """Award XP to the ruler of each human attacker empire based on battle outcome."""
+def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> "dict[int, float]":
+    """Award XP to the ruler of each human attacker empire based on battle outcome.
+
+    Returns a dict mapping uid -> xp_gained for uids whose ruler participated.
+    """
     from gameserver.engine.ai_service import AI_UID
+    gained: dict[int, float] = {}
     if svc.empire_service is None:
-        return
+        return gained
     for army in battle.armies.values():
         uid = army.uid
         if uid == AI_UID:
@@ -429,12 +437,14 @@ def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> None
         xp += float(battle.kills_era_xp_sum) * xp_per_kill
         xp += float(battle.critters_reached) * xp_per_reached * era_idx
         if attacker_won:
-            xp += xp_victory * era_idx
+            xp += xp_victory * era_idx * era_idx
         if xp > 0:
             emp.ruler.xp += xp
             emp.ruler.level = svc.empire_service.ruler_level_from_xp(emp.ruler.xp)
             svc.empire_service.recalculate_effects(emp)
+            gained[uid] = xp
             log.info("[ruler_xp] uid=%d ruler='%s' +%.0f XP (total=%.0f level=%d)", uid, emp.ruler.name, xp, emp.ruler.xp, emp.ruler.level)
+    return gained
 
 
 def _apply_artifact_steal(

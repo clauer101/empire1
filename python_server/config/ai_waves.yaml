@@ -37,7 +37,7 @@
 armies:
 
   # ──────────────────────────────────────────────────────────
-  #   STEINZEIT  (Effort 20 – 1.500)
+  #   STONE_AGE  (Effort 20 – 1.500)
   # ──────────────────────────────────────────────────────────
 
   - name: "Early Barbarians Raid"
@@ -61,7 +61,7 @@ armies:
   - name: "Wild Barbarians"
     travel_time: 240
     trigger:
-      items: [POTTERY, CRAFTMANSHIP, GRANARY, DOMESTICATION]
+      items: [POTTERY, CRAFTSMANSHIP, GRANARY, DOMESTICATION]
     waves:
       - critter: SCOUT
         slots: 6
@@ -117,7 +117,7 @@ armies:
         slots: 6
 
   # ──────────────────────────────────────────────────────────
-  #   NEOLITHIKUM  (Effort 800 – 7.500)
+  #   NEOLITHIC  (Effort 800 – 7.500)
   # ──────────────────────────────────────────────────────────
 
   - name: "Potter Plunderers"
@@ -133,6 +133,8 @@ armies:
         slots: 6
       - critter: WARRIOR
         slots: 3
+      - critter: WARRIOR
+        slots: 5
 
   - name: "Harvest Raiders"
     travel_time: 390
@@ -149,6 +151,8 @@ armies:
         slots: 6
       - critter: WARRIOR
         slots: 5
+      - critter: WARRIOR
+        slots: 6
 
   - name: "Shrine Destroyers"
     travel_time: 510
@@ -165,6 +169,8 @@ armies:
         slots: 4
       - critter: CART
         slots: 3
+      - critter: CART
+        slots: 6
 
   - name: "Epic Plunder"
     travel_time: 510
@@ -179,6 +185,8 @@ armies:
         slots: 5
       - critter: CART
         slots: 6
+      - critter: WARRIOR
+        slots: 5
 
   - name: "Tool Thieves"
     travel_time: 210
@@ -193,9 +201,93 @@ armies:
         slots: 9
       - critter: WARRIOR
         slots: 4
+      - critter: WARRIOR
+        slots: 6
+
+  - name: "Council War Band"
+    travel_time: 120
+    trigger:
+      items: [TRIBAL_COUNCIL]
+    waves:
+      - critter: WARRIOR
+        slots: 5
+      - critter: CART
+        slots: 4
+      - critter: CART
+        slots: 6
+      - critter: BOWMAN
+        slots: 4
+      - critter: CART
+        slots: 6
+
+  - name: "Neolithic Horde"
+    travel_time: 120
+    trigger:
+      items: []
+    waves:
+      - critter: BOWMAN
+        slots: 5
+      - critter: WARRIOR
+        slots: 4
+      - critter: CART
+        slots: 6
+      - critter: CART
+        slots: 6
+      - critter: WARRIOR
+        slots: 6
+
+  - name: "Herbalist Horrors"
+    travel_time: 120
+    trigger:
+      items: [HERBALIST]
+    waves:
+      - critter: CART
+        slots: 5
+      - critter: WARRIOR
+        slots: 4
+      - critter: CART
+        slots: 5
+      - critter: WARRIOR
+        slots: 6
+      - critter: WARRIOR
+        slots: 8
+
+  - name: "Tribal Raiders"
+    travel_time: 120
+    trigger:
+      items: [TRIBAL_LEADERSHIP]
+    waves:
+      - critter: SCOUT
+        slots: 5
+      - critter: WARRIOR
+        slots: 4
+      - critter: CART
+        slots: 6
+      - critter: WARRIOR
+        slots: 8
+      - critter: WARRIOR
+        slots: 10
+
+  - name: "Aggressive Raiders"
+    travel_time: 120
+    trigger:
+      items: [WARFARE]
+    waves:
+      - critter: CLUBMAN
+        slots: 5
+      - critter: CART
+        slots: 4
+      - critter: WARRIOR
+        slots: 6
+      - critter: WARRIOR
+        slots: 8
+      - critter: SCOUT
+        slots: 10
+      - critter: CART
+        slots: 12
 
   # ──────────────────────────────────────────────────────────
-  #   BRONZEZEIT  (Effort 2.500 – 8.000)
+  #   BRONZE_AGE  (Effort 2.500 – 8.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Bronze Age Marauders"
@@ -281,7 +373,7 @@ armies:
   - name: "Medic Station Raid"
     travel_time: 630
     trigger:
-      items: [MEDICUS]
+      items: [HERBOLOGY]
     waves:
       - critter: BOWMAN
         slots: 10
@@ -389,7 +481,7 @@ armies:
         slots: 18
 
   # ──────────────────────────────────────────────────────────
-  #   EISENZEIT  (Effort 8.000 – 30.000)
+  #   IRON_AGE  (Effort 8.000 – 30.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Artisan Warriors"
@@ -760,32 +852,10 @@ armies:
       - critter: HORSEMAN_FAST
         slots: 19
 
-  - name: "Iron Work Razed"
-    travel_time: 900
-    trigger:
-      items: [IRON_WORK]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: LARGE_CART
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 19
-      - critter: HORSEMAN_FAST
-        slots: 20
-
   - name: "Literary Armies"
     travel_time: 900
     trigger:
-      items: [LITRATURE]
+      items: [LITERATURE]
     waves:
       - critter: LEGIONARY
         slots: 14
@@ -875,7 +945,7 @@ armies:
   - name: "Race Course Massacre"
     travel_time: 120
     trigger:
-      items: []
+      items: [RACE_COURSE]
     waves:
       - critter: LEGIONARY
         slots: 9
@@ -894,8 +964,64 @@ armies:
       - critter: LEGIONARY
         slots: 20
 
+  - name: "Stargazers' Assault"
+    travel_time: 120
+    trigger:
+      items: [OBSERVATORY]
+    waves:
+      - critter: PIKENEER
+        slots: 11
+      - critter: HORSEMAN_FAST
+        slots: 12
+      - critter: LEGIONARY
+        slots: 13
+      - critter: HORSEMAN_SLOW
+        slots: 10
+      - critter: HORSEMAN_FAST
+        slots: 14
+      - critter: THE_SWORDMASTER
+        slots: 13
+      - critter: HORSEMAN_FAST
+        slots: 14
+      - critter: HORSEMAN_SLOW
+        slots: 17
+      - critter: THE_SWORDMASTER
+        slots: 18
+      - critter: CRUSADER
+        slots: 12
+      - critter: HORSEMAN_FAST
+        slots: 20
+
+  - name: "Supply Column"
+    travel_time: 120
+    trigger:
+      items: [QUARTERMASTER]
+    waves:
+      - critter: LEGIONARY
+        slots: 7
+      - critter: LEGIONARY
+        slots: 10
+      - critter: THE_SWORDMASTER
+        slots: 9
+      - critter: LEGIONARY
+        slots: 11
+      - critter: PIKENEER
+        slots: 13
+      - critter: HORSEMAN_SLOW
+        slots: 15
+      - critter: THE_SWORDMASTER
+        slots: 17
+      - critter: LEGIONARY
+        slots: 19
+      - critter: LEGIONARY
+        slots: 19
+      - critter: LEGIONARY
+        slots: 22
+      - critter: HORSEMAN_FAST
+        slots: 23
+
   # ──────────────────────────────────────────────────────────
-  #   MITTELALTER  (Effort 28.000 – 130.000)
+  #   MIDDLE_AGES  (Effort 28.000 – 130.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Command Chain Broken"
@@ -1612,12 +1738,72 @@ armies:
       - critter: CRUSADER
         slots: 24
 
+  - name: "Guild Enforcers"
+    travel_time: 120
+    trigger:
+      items: [MERCHANT_GUILD]
+    waves:
+      - critter: SLAVE
+        slots: 10
+      - critter: SAMURAI
+        slots: 9
+      - critter: CRUSADER
+        slots: 11
+      - critter: SAMURAI
+        slots: 13
+      - critter: CRUSADER
+        slots: 15
+      - critter: KNIGHT
+        slots: 17
+      - critter: SAMURAI
+        slots: 19
+      - critter: SAMURAI
+        slots: 21
+      - critter: CRUSADER
+        slots: 23
+      - critter: CARGO
+        slots: 25
+      - critter: DRAGOONER
+        slots: 27
+      - critter: SAMURAI
+        slots: 27
+
+  - name: "Colonial Vanguard"
+    travel_time: 120
+    trigger:
+      items: [COLONIAL_OFFICE]
+    waves:
+      - critter: SLAVE
+        slots: 9
+      - critter: KNIGHT
+        slots: 8
+      - critter: KNIGHT
+        slots: 10
+      - critter: SIEGE_RAM
+        slots: 12
+      - critter: HANDGUNNER
+        slots: 14
+      - critter: SAMURAI
+        slots: 16
+      - critter: SIEGE_RAM
+        slots: 18
+      - critter: CRUSADER
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
+      - critter: SAMURAI
+        slots: 24
+      - critter: NINJA
+        slots: 26
+      - critter: MUSKETEER
+        slots: 26
+
   # ──────────────────────────────────────────────────────────
   #   RENAISSANCE  (Effort 100.000 – 500.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Printing Press Destroyed"
-    travel_time: 330
+    travel_time: 9000
     trigger:
       items: [PRINTING_PRESS]
     waves:
@@ -1649,7 +1835,7 @@ armies:
         slots: 24
 
   - name: "Cathedral Siege"
-    travel_time: 330
+    travel_time: 9000
     trigger:
       items: [CATHEDRAL]
     waves:
@@ -1681,7 +1867,7 @@ armies:
         slots: 24
 
   - name: "Shadow Operatives"
-    travel_time: 330
+    travel_time: 9000
     trigger:
       items: [STEALTH_SECRECY]
     waves:
@@ -1713,7 +1899,7 @@ armies:
         slots: 24
 
   - name: "Laboratory Raid"
-    travel_time: 360
+    travel_time: 9030
     trigger:
       items: [LABORATORY]
     waves:
@@ -1745,7 +1931,7 @@ armies:
         slots: 24
 
   - name: "Archive Burning"
-    travel_time: 360
+    travel_time: 9030
     trigger:
       items: [ARCHIVES]
     waves:
@@ -1777,7 +1963,7 @@ armies:
         slots: 24
 
   - name: "Triumphal Arc Demolished"
-    travel_time: 360
+    travel_time: 9030
     trigger:
       items: [TRIUMPHAL_ARC]
     waves:
@@ -1809,7 +1995,7 @@ armies:
         slots: 24
 
   - name: "Constitutional Crisis"
-    travel_time: 360
+    travel_time: 9030
     trigger:
       items: [CONSTITUTION]
     waves:
@@ -1841,7 +2027,7 @@ armies:
         slots: 24
 
   - name: "Courthouse Stormed"
-    travel_time: 360
+    travel_time: 9030
     trigger:
       items: [COURTHOUSE]
     waves:
@@ -1873,7 +2059,7 @@ armies:
         slots: 24
 
   - name: "Parade Ground Ambush"
-    travel_time: 390
+    travel_time: 9060
     trigger:
       items: [PARADE_GROUND]
     waves:
@@ -1905,7 +2091,7 @@ armies:
         slots: 24
 
   - name: "Gunsmith Targeted"
-    travel_time: 390
+    travel_time: 9060
     trigger:
       items: [GUNSMITH]
     waves:
@@ -1937,7 +2123,7 @@ armies:
         slots: 24
 
   - name: "Botanical Warfare"
-    travel_time: 390
+    travel_time: 9060
     trigger:
       items: [BOTANIC_GARDENS]
     waves:
@@ -1969,7 +2155,7 @@ armies:
         slots: 24
 
   - name: "Strategic War Begins"
-    travel_time: 390
+    travel_time: 9060
     trigger:
       items: [STRATEGIC_WARFARE]
     waves:
@@ -2001,7 +2187,7 @@ armies:
         slots: 24
 
   - name: "Cannon Factory Sabotage"
-    travel_time: 390
+    travel_time: 9060
     trigger:
       items: [CANNON_MANUFACTORY]
     waves:
@@ -2033,7 +2219,7 @@ armies:
         slots: 24
 
   - name: "Secret Order Exposed"
-    travel_time: 390
+    travel_time: 9060
     trigger:
       items: [SECRET_ORDER]
     waves:
@@ -2065,7 +2251,7 @@ armies:
         slots: 24
 
   - name: "University Burned"
-    travel_time: 420
+    travel_time: 9090
     trigger:
       items: [UNIVERSITY]
     waves:
@@ -2097,7 +2283,7 @@ armies:
         slots: 24
 
   - name: "Natural Philosophy End"
-    travel_time: 420
+    travel_time: 9090
     trigger:
       items: [PHYSICS]
     waves:
@@ -2129,7 +2315,7 @@ armies:
         slots: 24
 
   - name: "High Court Siege"
-    travel_time: 420
+    travel_time: 9090
     trigger:
       items: [HIGH_COURT]
     waves:
@@ -2161,7 +2347,7 @@ armies:
         slots: 24
 
   - name: "Parliament Dissolved by Force"
-    travel_time: 420
+    travel_time: 9090
     trigger:
       items: [PARLIAMENT]
     waves:
@@ -2193,7 +2379,7 @@ armies:
         slots: 24
 
   - name: "Imperial Palace Siege"
-    travel_time: 420
+    travel_time: 9090
     trigger:
       items: [EMPERORS_PALACE]
     waves:
@@ -2225,7 +2411,7 @@ armies:
         slots: 24
 
   - name: "Alchemical Assault"
-    travel_time: 450
+    travel_time: 9120
     trigger:
       items: [CHEMISTRY]
     waves:
@@ -2257,7 +2443,7 @@ armies:
         slots: 24
 
   - name: "Stock Market Crash Force"
-    travel_time: 450
+    travel_time: 9120
     trigger:
       items: [STOCK_MARKET]
     waves:
@@ -2289,7 +2475,7 @@ armies:
         slots: 24
 
   - name: "Mechanical Engineering War"
-    travel_time: 450
+    travel_time: 9120
     trigger:
       items: [MECHANICAL_ENGINEERING]
     waves:
@@ -2320,8 +2506,72 @@ armies:
       - critter: CARGO
         slots: 24
 
+  - name: "Inventors' Brigade"
+    travel_time: 8790
+    trigger:
+      items: [PATENT_OFFICE]
+    waves:
+      - critter: NINJA
+        slots: 15
+      - critter: CARGO
+        slots: 17
+      - critter: CARGO
+        slots: 17
+      - critter: MUSKETEER
+        slots: 18
+      - critter: MUSKETEER
+        slots: 21
+      - critter: CARGO
+        slots: 20
+      - critter: THE_KING
+        slots: 19
+      - critter: THE_KING
+        slots: 16
+      - critter: MUSKETEER
+        slots: 20
+      - critter: SOLDIER
+        slots: 21
+      - critter: TRANSPORTER
+        slots: 22
+      - critter: DRAGOONER
+        slots: 24
+      - critter: NINJA
+        slots: 28
+
+  - name: "Iron Guard"
+    travel_time: 8790
+    trigger:
+      items: [MEDICS_CORPS]
+    waves:
+      - critter: CARGO
+        slots: 15
+      - critter: MUSKETEER
+        slots: 18
+      - critter: CARGO
+        slots: 19
+      - critter: DRAGOONER
+        slots: 20
+      - critter: CARGO
+        slots: 21
+      - critter: THE_KING
+        slots: 21
+      - critter: NINJA
+        slots: 20
+      - critter: NINJA
+        slots: 22
+      - critter: CARGO
+        slots: 23
+      - critter: NINJA
+        slots: 24
+      - critter: SOLDIER
+        slots: 25
+      - critter: MOTORBIKE
+        slots: 25
+      - critter: CARGO
+        slots: 28
+
   # ──────────────────────────────────────────────────────────
-  #   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+  #   INDUSTRIAL  (Effort 500.000 – 2.000.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Heavy Equipment Sabotage"
@@ -3104,8 +3354,96 @@ armies:
       - critter: TRANSPORTER
         slots: 30
 
+  - name: "Mechanized Push"
+    travel_time: 120
+    trigger:
+      items: [SUPPLY_CHAIN]
+    waves:
+      - critter: SOLDIER
+        slots: 17
+      - critter: MOTORBIKE
+        slots: 18
+      - critter: MOTORBIKE
+        slots: 19
+      - critter: MOTORBIKE
+        slots: 20
+      - critter: MOTORBIKE
+        slots: 21
+      - critter: TRANSPORTER
+        slots: 22
+      - critter: TRANSPORTER
+        slots: 23
+      - critter: SOLDIER
+        slots: 23
+      - critter: TRANSPORTER
+        slots: 24
+      - critter: MOTORBIKE
+        slots: 25
+      - critter: MOTORBIKE
+        slots: 25
+      - critter: TRANSPORTER
+        slots: 25
+      - critter: MOTORBIKE
+        slots: 26
+      - critter: SMALL_TANK
+        slots: 28
+      - critter: SMALL_TANK
+        slots: 30
+      - critter: TRANSPORTER
+        slots: 30
+      - critter: SMALL_TANK
+        slots: 32
+      - critter: SPECOPS
+        slots: 34
+      - critter: SIEGE_TANK
+        slots: 32
+
+  - name: "Armored Column"
+    travel_time: 120
+    trigger:
+      items: [BROADCASTING_STATION]
+    waves:
+      - critter: MOTORBIKE
+        slots: 18
+      - critter: SOLDIER
+        slots: 20
+      - critter: MOTORBIKE
+        slots: 20
+      - critter: SMALL_TANK
+        slots: 22
+      - critter: MOTORBIKE
+        slots: 20
+      - critter: SMALL_TANK
+        slots: 21
+      - critter: SMALL_TANK
+        slots: 22
+      - critter: SMALL_TANK
+        slots: 22
+      - critter: SMALL_TANK
+        slots: 25
+      - critter: SOLDIER
+        slots: 24
+      - critter: TRANSPORTER
+        slots: 24
+      - critter: SOLDIER
+        slots: 25
+      - critter: MOTORBIKE
+        slots: 26
+      - critter: MOTORBIKE
+        slots: 28
+      - critter: SMALL_TANK
+        slots: 30
+      - critter: TRANSPORTER
+        slots: 30
+      - critter: MOTORBIKE
+        slots: 32
+      - critter: SPECOPS
+        slots: 34
+      - critter: HELI
+        slots: 36
+
   # ──────────────────────────────────────────────────────────
-  #   MODERNE  (Effort 2.000.000 – 5.300.000)
+  #   MODERN  (Effort 2.000.000 – 5.300.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Armour Pierced"
@@ -4287,7 +4625,7 @@ armies:
   - name: "Intelligence Agency Burned"
     travel_time: 840
     trigger:
-      items: [INTELLIGENCE_AGENCY]
+      items: [INTELLIGENCE_AGENCY, CRYPTOGRAPHERS_GUILD]
     waves:
       - critter: SPECOPS
         slots: 18
@@ -4509,7 +4847,7 @@ armies:
         slots: 30
 
   # ──────────────────────────────────────────────────────────
-  #   ZUKUNFT  (Effort 40.000.000 – 100.000.000)
+  #   FUTURE  (Effort 40.000.000 – 100.000.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Mass Production Disrupted"
@@ -5091,7 +5429,7 @@ armies:
   - name: "Satellite Network Jammed"
     travel_time: 810
     trigger:
-      items: [SATELITE_SYSTEMS]
+      items: [SATELLITE_SYSTEMS]
     waves:
       - critter: MECH_WARRIOR
         slots: 18

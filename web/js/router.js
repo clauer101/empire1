@@ -157,7 +157,9 @@ class Router {
     const el = this._viewElements.get(viewId);
     el.style.display = '';
     this._activeViewId = viewId;
-    document.title = `E3 — ${view.title}`;
+    document.title = viewId === 'login'
+      ? "Relics'n'Rockets — Free Strategy MMO Tower Defense"
+      : `Relics'n'Rockets — ${view.title}`;
     const nav = document.getElementById('main-nav');
     const shell = document.getElementById('shell');
     const mainCol = document.getElementById('main-col');

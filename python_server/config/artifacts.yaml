@@ -9,8 +9,8 @@ AWE_INSPIRING_GRAIL:
   type: ''
   sprite: assets/sprites/artifacts/awe_inspiring_grail.webp
   effects:
-    gold_modifier: 0.2
-    gold_offset: 1
+    gold_modifier: 0.5
+    gold_offset: 0.5
     culture_modifier: 0.33
     culture_offset: 0.5
     max_life_modifier: 10
@@ -22,9 +22,9 @@ LOST_ALMANAC:
   sprite: assets/sprites/artifacts/lost_almanac.webp
   effects:
     research_speed_offset: 0.8
-    research_speed_modifier: 0.8
+    research_speed_modifier: 0.4
     build_speed_modifier: 0.6
-    build_speed_offset: 0.6
+    build_speed_offset: 0.3
     restore_life_after_loss_offset: 10
     life_regen_modifier: 0.003
 ANCIENT_RELIQUE:
@@ -32,23 +32,28 @@ ANCIENT_RELIQUE:
   description: Excavated from beneath three civilisations. Scholars argue about its
     purpose; merchants argue about its price.
   type: ''
+  sprite: assets/sprites/artifacts/ancient_relique.webp
   effects:
-    gold_offset: 2
-    gold_modifier: 0.5
+    max_siege_construction_speed_modifier: 0.1
+    siege_construction_speed_per_army_modifier: 0.02
+    culture_modifier: 0.5
+    culture_offset: 0.7
 ASSASSINS_DAGGER:
   name: Assassin's Dagger
   description: The blade is clean. It has always been clean. Nobody knows why.
   type: ''
+  sprite: assets/sprites/artifacts/assassins_dagger.webp
   effects:
     enemy_siege_time_modifier: 0.1
     travel_time_modifier: 0.33
-    build_speed_offset: 1
+    build_speed_offset: 0.5
     wave_slot_cost_modifier: 0.1
 BATTLE_DRUMS:
   name: Battle Drums
   description: Said to have been beaten at the founding of the first empire. The leather
     is older than memory.
   type: ''
+  sprite: assets/sprites/artifacts/battle_drums.webp
   effects:
     siege_offset: 3600
     restore_life_during_battle_modifier: 0.02
@@ -59,22 +64,28 @@ BOOK_OF_HEROES:
   description: Every name written inside belongs to someone who died young. The last
     entry is smudged beyond reading.
   type: ''
+  sprite: assets/sprites/artifacts/book_of_heroes.webp
   effects:
-    max_life_modifier: 20
-    research_speed_offset: 1
-    culture_modifier: 0.4
-    culture_offset: 0.8
+    max_life_modifier: 10
+    research_speed_offset: 0.8
+    culture_modifier: 0.6
+    culture_offset: 0.4
 FINE_TROWEL:
   name: Fine Trowel
   description: Unremarkable at first glance. Yet every wall built with it has outlasted
     the empire that raised it.
   type: ''
-  effects: {}
+  sprite: assets/sprites/artifacts/fine_trowel.webp
+  effects:
+    build_speed_offset: 0.5
+    build_speed_modifier: 0.5
+    building_cost_modifier: 0.08
 GOLDEN_ARC:
   name: Golden Arc
   description: A curved fragment of something much larger. Whatever it once framed,
     no record survives.
   type: ''
+  sprite: assets/sprites/artifacts/golden_arc.webp
   effects:
     wave_era_cost_modifier: 0.3
     workshop_cost_modifier: 0.1
@@ -86,6 +97,7 @@ MERCIFUL_ARMOUR:
   description: Not a single dent. Whoever wore it never needed to be struck twice
     — or perhaps was never struck at all.
   type: ''
+  sprite: assets/sprites/artifacts/merciful_armor.webp
   effects:
     wave_delay_offset: 2
     siege_offset: -3600
@@ -94,6 +106,7 @@ SCROLLS_OF_WISDOM:
   description: Forty-seven scrolls, tightly bound. The forty-eighth is missing. Everyone
     who reads them goes looking for it.
   type: ''
+  sprite: assets/sprites/artifacts/scrolls_of_wisdom.webp
   effects:
-    research_speed_offset: 2
-    research_speed_modifier: 0.5
+    research_speed_offset: 0.8
+    research_speed_modifier: 0.8

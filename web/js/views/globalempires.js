@@ -4,6 +4,7 @@
 
 import { rest } from '../rest.js';
 import { pageTitle } from '../lib/page_title.js';
+import { state } from '../state.js';
 
 /** @type {HTMLElement} */
 let container;
@@ -11,6 +12,7 @@ let container;
 let _empiresData = null;
 let _renderedStart = 0; // index of first rendered row in _empiresData
 let _renderedEnd = 0;   // index after last rendered row
+let _savedScrollTop = -1; // -1 = never visited; >=0 persists across leave/enter
 
 const INITIAL_WINDOW = 10; // rows above/below self on first render
 const BATCH = 20;          // rows appended per lazy-load step
@@ -24,7 +26,10 @@ function init(el) {
 
 async function enter() {
   pageTitle.set('🌍 Known Empires');
-  _render(null);
+  document.getElementById('app')?.classList.add('full-bleed');
+  // _savedScrollTop: -1 on first ever visit, >=0 on all subsequent re-entries
+  const isFirstVisit = _savedScrollTop < 0;
+  if (!_empiresData) _render(null);
   try {
     const resp = await rest.getEmpires();
     _empiresData = resp.empires || [];
@@ -32,10 +37,20 @@ async function enter() {
     _renderError(e.message);
     return;
   }
-  _render(_empiresData);
+  _render(_empiresData, !isFirstVisit);
+  if (!isFirstVisit) {
+    const scrollEl = container.querySelector('#ge-scroll');
+    if (scrollEl) scrollEl.scrollTop = _savedScrollTop;
+  }
+  // After first render, start tracking position
+  if (isFirstVisit) _savedScrollTop = 0;
 }
 
 function leave() {
+  // Persist current scroll so cyclic re-enters don't reset position
+  const scrollEl = container.querySelector('#ge-scroll');
+  if (scrollEl) _savedScrollTop = scrollEl.scrollTop;
+  document.getElementById('app')?.classList.remove('full-bleed');
   _teardownScroll();
   _empiresData = null;
 }
@@ -62,7 +77,8 @@ function _dot(online) {
 }
 
 function _rowHtml(e, rankIndex, selfEra) {
-  const canAttack = e.era >= selfEra - 1;
+  const armyEnabled = (state.summary?.effects?.enable_army ?? 0) > 0;
+  const canAttack = armyEnabled && e.era >= selfEra - 1;
   const attackBtn = !e.is_self && canAttack
     ? `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>`
     : '';
@@ -171,8 +187,17 @@ function _initLazyScroll() {
   };
   _scrollEl.addEventListener('scroll', _onScroll);
 
-  // Load more immediately if content is short
-  if (_scrollEl.scrollHeight <= _scrollEl.clientHeight) _appendBottom();
+  // Fill viewport: keep loading top and bottom until scrollable or all loaded
+  const _fill = () => {
+    const canScrollMore = _scrollEl.scrollHeight > _scrollEl.clientHeight;
+    if (!canScrollMore) {
+      const didBottom = _renderedEnd < (_empiresData?.length ?? 0);
+      const didTop = _renderedStart > 0;
+      if (didBottom) { _appendBottom(); requestAnimationFrame(_fill); }
+      else if (didTop) { _prependTop(); requestAnimationFrame(_fill); }
+    }
+  };
+  requestAnimationFrame(_fill);
 }
 
 // ── Render ────────────────────────────────────────────────────────────
@@ -188,7 +213,7 @@ function _renderError(msg) {
     </div>`;
 }
 
-function _render(empires) {
+function _render(empires, preserveScroll = false) {
   if (!empires) {
     container.innerHTML = `
       <div style="padding:16px">
@@ -225,7 +250,7 @@ function _render(empires) {
       <div style="flex-shrink:0;padding:0 8px;">
         <span style="color:#666;font-size:0.8em;" id="ge-range">#${_renderedStart + 1}–${_renderedEnd} of ${empires.length}</span>
       </div>
-      <div id="ge-scroll" style="overflow-y:auto;flex:1;">
+      <div id="ge-scroll" style="overflow-y:auto;flex:1;overscroll-behavior-y:contain;">
         <div id="ge-rows" class="panel" style="padding:0;overflow:hidden;width:100%;border-radius:0;">${rows}</div>
       </div>
     </div>`;
@@ -233,9 +258,19 @@ function _render(empires) {
   _bindAttackBtns(container);
   _initLazyScroll();
 
-  // Scroll self into view
-  const selfEl = container.querySelector('[style*="rgba(255,255,255,0.06)"]');
-  selfEl?.scrollIntoView({ block: 'center' });
+  // Only scroll to own empire on initial load, not on re-entry.
+  // Use direct scrollTop instead of scrollIntoView to avoid iOS Safari
+  // scrolling parent containers as a side-effect.
+  if (!preserveScroll) {
+    const scrollEl = container.querySelector('#ge-scroll');
+    const selfEl = container.querySelector('[style*="rgba(255,255,255,0.06)"]');
+    if (scrollEl && selfEl) {
+      requestAnimationFrame(() => {
+        const top = selfEl.offsetTop - scrollEl.clientHeight / 2 + selfEl.clientHeight / 2;
+        scrollEl.scrollTop = Math.max(0, top);
+      });
+    }
+  }
 }
 
 export default {

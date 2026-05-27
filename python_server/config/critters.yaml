@@ -11,7 +11,7 @@
 # animation: path to sprite folder (contains front/back/left/right.gif)
 
 # ============================================================
-#   STEINZEIT  (Effort 20 – 200)
+#   STONE_AGE  (Effort 20 – 200)
 # ============================================================
 
 SLAVE:
@@ -72,7 +72,7 @@ SCOUT:
   requirements: [HUNTING]
 
 # ============================================================
-#   NEOLITHIKUM  (Effort 200 – 1.500)
+#   NEOLITHIC  (Effort 200 – 1.500)
 # ============================================================
 
 WARRIOR:
@@ -109,12 +109,12 @@ CART:
   capture: {}
   bonus: {}
   spawn_on_death: {CLUBMAN: 5}
-  scale: 1.3
+  scale: 2.0
   animation: assets/sprites/critters/cart
   requirements: [DOMESTICATION, TOOL_SHOP, POTTERY]
 
 # ============================================================
-#   BRONZEZEIT  (Effort 1.500 – 8.000)
+#   BRONZE_AGE  (Effort 1.500 – 8.000)
 # ============================================================
 
 BOWMAN:
@@ -175,7 +175,7 @@ CHARIOT:
   requirements: [HORSEBACK_RIDING, COPPER_BRONZE]
 
 # ============================================================
-#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+#   IRON_AGE  (Effort 8.000 – 30.000)
 # ============================================================
 
 PIKENEER:
@@ -293,7 +293,7 @@ THE_SWORDMASTER:
   requirements: [IRON, FENCING_SCHOOL]
 
 # ============================================================
-#   MITTELALTER  (Effort 30.000 – 130.000)
+#   MIDDLE_AGES  (Effort 30.000 – 130.000)
 # ============================================================
 
 CRUSADER:
@@ -510,7 +510,7 @@ CARGO:
   requirements: [PHYSICS, MECHANICAL_ENGINEERING]
 
 # ============================================================
-#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+#   INDUSTRIAL  (Effort 500.000 – 2.000.000)
 # ============================================================
 
 SOLDIER:
@@ -590,7 +590,7 @@ TRANSPORTER:
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 # ============================================================
-#   MODERNE  (Effort 2.000.000 – 5.300.000)
+#   MODERN  (Effort 2.000.000 – 5.300.000)
 # ============================================================
 
 SIEGE_TANK:
@@ -670,7 +670,7 @@ THE_GENERAL:
   requirements: [RECRUITING_OFFICE, MILITARY_SERVICE]
 
 # ============================================================
-#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+#   FUTURE  (Effort 50.000.000 – 100.000.000)
 # ============================================================
 
 

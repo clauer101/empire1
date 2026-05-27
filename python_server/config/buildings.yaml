@@ -6,7 +6,7 @@
 # effects: passive effects granted when complete
 
 # ============================================================
-#   STEINZEIT  (Effort 20 – 200)
+#   STONE_AGE  (Effort 20 – 200)
 # ============================================================
 
 BASE_CAMP:
@@ -109,15 +109,28 @@ SHRINE:
   image: assets/sprites/buildings/shrine
   name: "Shrine"
   description: "Religious structure. Foundation for spiritual buildings."
-  effort: 4800
+  effort: 2800
   costs: {gold: 260}
   requirements: [MYSTIC]
   effects:
     culture_offset: 0.05
 
+
 # ============================================================
-#   NEOLITHIKUM  (Effort 200 – 1.500)
+#   NEOLITHIC  (Effort 200 – 1.500)
 # ============================================================
+
+BULLETIN_BOARD:
+  era: neolithic
+  image: assets/sprites/buildings/bulletin_board
+  name: "Bulletin Board"
+  description: "Communication hub. Requires written language."
+  effort: 1302
+  costs: {gold: 121}
+  requirements: [ALPHABET_WRITING]
+  effects:
+    culture_offset: 0.05
+    enable_messages: 1  # only true or false
 
 GRANARY:
   era: neolithic
@@ -154,7 +167,7 @@ BOW_MAKER:
 
 HERBALIST:
   era: neolithic
-  image: assets/sprites/buildings/medicus
+  image: assets/sprites/buildings/herbalist
   name: "Herbalist"
   description: "Medical facility increasing population health slightly."
   effort: 4000
@@ -163,18 +176,6 @@ HERBALIST:
   effects:    
     max_life_modifier: 3
     restore_life_after_loss_offset: 2
-
-BULLETIN_BOARD:
-  era: neolithic
-  image: assets/sprites/buildings/bulletin_board
-  name: "Bulletin Board"
-  description: "Communication hub. Requires written language."
-  effort: 6302
-  costs: {gold: 881}
-  requirements: [ALPHABET_WRITING]
-  effects:
-    culture_offset: 0.05
-    enable_messages: 1  # only true or false
 
 TRIBAL_COUNCIL:
   era: neolithic
@@ -199,7 +200,7 @@ WARRIORS_LODGE :
     enable_army: 1
 
 # ============================================================
-#   BRONZEZEIT  (Effort 1.500 – 8.000)
+#   BRONZE_AGE  (Effort 1.500 – 8.000)
 # ============================================================
 
 
@@ -283,7 +284,7 @@ TOWN_GUARD:
   effects: 
     siege_offset: 1800
     spy_workshop: 1  # only true or false
-    max_siege_construction_speed_modifier: -0.02 
+    max_siege_construction_speed_modifier: -0.03 
 
 CHURCH:
   era: bronze
@@ -297,7 +298,7 @@ CHURCH:
     culture_offset: 0.2
 
 # ============================================================
-#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+#   IRON_AGE  (Effort 8.000 – 30.000)
 # ============================================================
 
 LIBRARY:
@@ -345,7 +346,7 @@ TREASURE_CHAMBER:
   effects:
     gold_offset: 0.5
     artifact_steal_victory_modifier: 0.1
-    artifact_steal_defeat_modifier: 0.01
+    artifact_steal_defeat_modifier: 0.01    
 
 CARTOGRAPHER:
   era: iron
@@ -389,7 +390,7 @@ WORK_SHOP:
   requirements: [MECHANICS]
   effects:
     build_speed_offset: 0.15
-    max_siege_construction_speed_modifier: -0.02
+    max_siege_construction_speed_modifier: -0.03
     enable_workshop: 1  # only true or false
 
 THEATER:
@@ -460,10 +461,12 @@ QUARTERMASTER:
   requirements: [IRON, LAWS]
   excludes: [OBSERVATORY]
   effects:
-    wave_cost_modifier: 0.15
+    wave_cost_modifier: 0.08
+    wave_era_cost_modifier: 0.08
+    wave_slot_cost_modifier: 0.08
 
 # ============================================================
-#   MITTELALTER  (Effort 30.000 – 130.000)
+#   MIDDLE_AGES  (Effort 30.000 – 130.000)
 # ============================================================
 
 GUILD:
@@ -476,7 +479,7 @@ GUILD:
   requirements: [ECONOMY]
   effects:
     build_speed_modifier: 0.3
-    max_siege_construction_speed_modifier: -0.02 
+    max_siege_construction_speed_modifier: -0.05
 
 SOVEREIGN_GUARD:
   era: middle_ages
@@ -488,7 +491,7 @@ SOVEREIGN_GUARD:
   requirements: [COMMAND_CHAIN]
   effects: 
     siege_offset: 1800
-    siege_construction_speed_per_army_modifier: 0.01
+    siege_construction_speed_per_army_modifier: 0.02
 
 MONASTERY:
   era: middle_ages
@@ -629,7 +632,7 @@ PARADE_GROUND:
   requirements: [COMMAND_CHAIN]
   effects: 
     tower_sell_refund_modifier: 0.1
-    max_siege_construction_speed_modifier: -0.01 
+    max_siege_construction_speed_modifier: -0.03 
 
 GUNSMITH:
   era: middle_ages
@@ -686,6 +689,7 @@ COLONIAL_OFFICE:
   excludes: [MERCHANT_GUILD]
   effects:
     tile_cost_modifier: 0.1
+    building_cost_modifier: 0.1
 
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
@@ -746,7 +750,7 @@ HIGH_COURT:
   requirements: [CONSTITUTION]
   effects: 
     max_life_modifier: 5
-    max_siege_construction_speed_modifier: -0.03
+    max_siege_construction_speed_modifier: -0.05
 
 PARLIAMENT:
   era: renaissance
@@ -799,7 +803,7 @@ MEDICS_CORPS:
     max_life_modifier: 10
 
 # ============================================================
-#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+#   INDUSTRIAL  (Effort 500.000 – 2.000.000)
 # ============================================================
 
 STOCK_MARKET:
@@ -858,7 +862,7 @@ DEFENSE_DEPARTMENT:
   effects: 
     siege_offset: 3600
     wave_delay_offset: 1000
-    max_siege_construction_speed_modifier: -0.03
+    max_siege_construction_speed_modifier: -0.05
 
 ELECTRIC_FENCE:
   era: industrial
@@ -974,7 +978,10 @@ SUPPLY_CHAIN:
   requirements: [COMBUSTION_ENGINE, STRATEGIC_WARFARE]
   excludes: [BROADCASTING_STATION]
   effects:
-    wave_cost_modifier: 0.2
+    wave_cost_modifier: 0.1
+    wave_slot_cost_modifier: 0.1
+    wave_era_cost_modifier: 0.1
+    enemy_siege_time_modifier: 0.1
 
 BROADCASTING_STATION:
   era: industrial
@@ -986,11 +993,12 @@ BROADCASTING_STATION:
   requirements: [ELECTRICITY, SOCIAL_SCIENCES]
   excludes: [SUPPLY_CHAIN]
   effects:
-    culture_modifier: 0.4
+    citizen_effect_modifier: 0.015
+    culture_modifier: 0.8
     culture_offset: 0.8
 
 # ============================================================
-#   MODERNE  (Effort 2.000.000 – 5.300.000)
+#   MODERN  (Effort 2.000.000 – 5.300.000)
 # ============================================================
 
 CRYPTOGRAPHERS_GUILD:
@@ -1070,8 +1078,8 @@ SOCIAL_SECURITY_SYSTEM:
   requirements: [CONSTITUTION, SANITATION]
   effects: 
     max_life_modifier: 10
-    siege_construction_speed_per_army_modifier: 0.01
-    max_siege_construction_speed_modifier: -0.05
+    siege_construction_speed_per_army_modifier: 0.03
+    max_siege_construction_speed_modifier: -0.07
 
 EXECUTIVE_CARPOOL:
   era: modern
@@ -1153,7 +1161,7 @@ INTELLIGENCE_AGENCY:
   effects: 
     siege_offset: 3600
     artifact_steal_victory_modifier: 0.1
-    artifact_steal_defeat_modifier: 0.01
+    # artifact_steal_defeat_modifier: 0.01
 
 MECH_WARRIOR_LAB:
   era: modern
@@ -1188,7 +1196,7 @@ RECRUITING_OFFICE:
     culture_offset: 0.4
 
 # ============================================================
-#   ZUKUNFT  (Effort 40.000.000 – 80.000.000)
+#   FUTURE  (Effort 40.000.000 – 80.000.000)
 # ============================================================
 
 THE_WORLD_WONDER:
@@ -1223,7 +1231,7 @@ CYBER_COMMAND:
   costs: {gold: 4292239}
   requirements: [COMPUTER_TECHNOLOGY, BIONICS]
   effects: 
-    max_siege_construction_speed_modifier: -0.05
+    max_siege_construction_speed_modifier: -0.08
 
 FUSION_REACTOR:
   era: future

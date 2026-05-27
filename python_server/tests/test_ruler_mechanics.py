@@ -63,11 +63,10 @@ class TestRulerCritterStats:
         assert stats["speed"] == pytest.approx(1.1)
         assert stats["armour"] == pytest.approx(19.0)
 
-    def test_mid_level_interpolates_linearly(self):
+    def test_mid_level_interpolates_quadratically(self):
         mid = (RULER_MAX_LEVEL + 1) // 2  # level 9 for max_level=18
         stats = ruler_critter_stats(MAJA_CFG, level=mid)
-        # t = (9-1)/(18-1) ≈ 0.471
-        t = (mid - 1) / (RULER_MAX_LEVEL - 1)
+        t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** 2
         expected_health = 20.0 + (2000.0 - 20.0) * t
         assert stats["health"] == pytest.approx(expected_health)
 
@@ -160,9 +159,9 @@ class TestRulerCombatScaling:
             prev = cur
 
     @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
-    def test_linear_interpolation_at_midpoint(self, attr, key_min, key_max):
+    def test_quadratic_interpolation_at_midpoint(self, attr, key_min, key_max):
         mid = (RULER_MAX_LEVEL + 1) // 2
-        t = (mid - 1) / (RULER_MAX_LEVEL - 1)
+        t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** 2
         expected = MAJA_CFG[key_min] + (MAJA_CFG[key_max] - MAJA_CFG[key_min]) * t
         stats = ruler_critter_stats(MAJA_CFG, level=mid)
         assert stats[attr] == pytest.approx(expected)

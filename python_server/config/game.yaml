@@ -4,7 +4,7 @@ battle_tick_ms: 50.0
 broadcast_interval_ms: 250.0
 min_keep_alive_ms: 10000.0
 initial_wave_delay_ms: 15000.0
-accounts_per_artifact: 2
+accounts_per_artifact: 11
 splash_flight_ms: 500.0
 default_reload_time_ms: 2000.0
 base_gold_per_sec: 0.0
@@ -37,39 +37,39 @@ end_ralley_duration: 604800
 era_effects:
   stone:
     travel_offset: 300.0
-    max_siege_construction_speed_modifier: 0.03
+    max_siege_construction_speed_modifier: 0.10
   neolithic:
     travel_offset: 900
     gold_offset: 0.1
-    max_siege_construction_speed_modifier: 0.05
+    max_siege_construction_speed_modifier: 0.12
   bronze:
     travel_offset: 3600
     gold_offset: 0.3
-    max_siege_construction_speed_modifier: 0.08
+    max_siege_construction_speed_modifier: 0.15
   iron:
     travel_offset: 7200
     gold_offset: 0.7
-    max_siege_construction_speed_modifier: 0.1
+    max_siege_construction_speed_modifier: 0.2
   middle_ages:
     travel_offset: 10800
     gold_offset: 1.4
-    max_siege_construction_speed_modifier: 0.12
+    max_siege_construction_speed_modifier: 0.25
   renaissance:
     travel_offset: 12600
     gold_offset: 2
-    max_siege_construction_speed_modifier: 0.15
+    max_siege_construction_speed_modifier: 0.30
   industrial:
     travel_offset: 14400
     gold_offset: 2.3
-    max_siege_construction_speed_modifier: 0.2
+    max_siege_construction_speed_modifier: 0.35
   modern:
     travel_offset: 16200
     gold_offset: 2.7
-    max_siege_construction_speed_modifier: 0.25
+    max_siege_construction_speed_modifier: 0.40
   future:
     travel_offset: 18000
     gold_offset: 3.2
-    max_siege_construction_speed_modifier: 0.3
+    max_siege_construction_speed_modifier: 0.50
 ai_travel_seconds: 60.0
 ai_min_player_score: 500.0
 waves_per_level: 1.0
@@ -81,10 +81,10 @@ min_lose_culture: 0.01
 max_lose_culture: 0.05
 culture_era_advantage_ratio: 0.51
 base_artifact_steal_victory: 0.3
-base_artifact_steal_defeat: 0.03
+base_artifact_steal_defeat: 0.04
 ruler_xp_per_kill: 1.0
 ruler_xp_per_reached_per_era: 20.0
-ruler_xp_victory_per_era: 100.0
+ruler_xp_victory_per_era: 50.0
 spy_costs:
   defense: 500
   build_queue: 1000
@@ -156,8 +156,8 @@ tower_sell_refund: 0.3
 max_spy_armies: 1
 ai_generator:
   stone:
-    min_waves: 1
-    max_waves: 2
+    min_waves: 2
+    max_waves: 3
     min_slots: 4
     max_slots: 8
     min_previous_era: 0
@@ -165,8 +165,8 @@ ai_generator:
     min_next_era: 0
     max_next_era: 1
   neolithic:
-    min_waves: 1
-    max_waves: 2
+    min_waves: 3
+    max_waves: 4
     min_slots: 5
     max_slots: 10
     min_previous_era: 0
@@ -174,8 +174,8 @@ ai_generator:
     min_next_era: 0
     max_next_era: 1
   bronze:
-    min_waves: 3
-    max_waves: 5
+    min_waves: 4
+    max_waves: 6
     min_slots: 7
     max_slots: 13
     min_previous_era: 1
@@ -183,8 +183,8 @@ ai_generator:
     min_next_era: 0
     max_next_era: 1
   iron:
-    min_waves: 4
-    max_waves: 7
+    min_waves: 5
+    max_waves: 8
     min_slots: 8
     max_slots: 15
     min_previous_era: 1
@@ -192,8 +192,8 @@ ai_generator:
     min_next_era: 0
     max_next_era: 2
   middle_ages:
-    min_waves: 6
-    max_waves: 9
+    min_waves: 7
+    max_waves: 10
     min_slots: 11
     max_slots: 18
     min_previous_era: 2
@@ -201,7 +201,7 @@ ai_generator:
     min_next_era: 1
     max_next_era: 3
   renaissance:
-    min_waves: 8
+    min_waves: 9
     max_waves: 12
     min_slots: 14
     max_slots: 22
@@ -210,8 +210,8 @@ ai_generator:
     min_next_era: 1
     max_next_era: 4
   industrial:
-    min_waves: 10
-    max_waves: 14
+    min_waves: 11
+    max_waves: 15
     min_slots: 16
     max_slots: 26
     min_previous_era: 2
@@ -219,8 +219,8 @@ ai_generator:
     min_next_era: 1
     max_next_era: 4
   modern:
-    min_waves: 11
-    max_waves: 16
+    min_waves: 12
+    max_waves: 17
     min_slots: 18
     max_slots: 30
     min_previous_era: 3
@@ -228,8 +228,8 @@ ai_generator:
     min_next_era: 2
     max_next_era: 5
   future:
-    min_waves: 12
-    max_waves: 18
+    min_waves: 14
+    max_waves: 20
     min_slots: 20
     max_slots: 32
     min_previous_era: 5

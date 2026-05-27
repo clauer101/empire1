@@ -425,7 +425,7 @@ function _dispatchEvent(evt) {
   }
 }
 
-function _onSetup(msg) {
+async function _onSetup(msg) {
   // Enable play button now that the map is ready
   const playBtn = container.querySelector('#replay-play');
   if (playBtn) {
@@ -436,6 +436,10 @@ function _onSetup(msg) {
 
   if (grid) {
     grid.clearBattle();
+
+    // Load background before building tiles so the pattern is ready
+    // when the base layer is first rendered.
+    await _loadMapBackground();
 
     if (msg.tiles) {
       grid.fromJSON({ tiles: msg.tiles });
@@ -461,8 +465,6 @@ function _onSetup(msg) {
 
     grid.battleActive = true;
     grid._dirty = true;
-
-    _loadMapBackground();
   }
 
   // Store for summary
@@ -587,12 +589,7 @@ function _onStatus(msg) {
 
 async function _loadMapBackground() {
   try {
-    const res = await fetch('/api/maps');
-    if (!res.ok) return;
-    const { maps } = await res.json();
-    if (maps && maps.length > 0 && grid) {
-      await grid.setMapBackground(maps[0].url);
-    }
+    if (grid) await grid.setMapBackground('/assets/sprites/maps/grass4.webp');
   } catch (e) {
     console.warn('[Replay] map background not loaded:', e.message);
   }

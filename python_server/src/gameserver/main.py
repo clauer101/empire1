@@ -179,7 +179,8 @@ def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
             "armour_max": float(item.get("armour_max", 19)),
             "value_min": float(item.get("value_min", 10)),
             "value_max": float(item.get("value_max", 1000)),
-            "base_damage": float(item.get("base_damage", 1)),
+            "damage_min": float(item.get("damage_min") or item.get("base_damage") or 1),
+            "damage_max": float(item.get("damage_max") or item.get("base_damage") or 30),
             "animation": item.get("animation", ""),
             "scale_base": float(item.get("scale_base", 1.0)),
         }

@@ -73,18 +73,6 @@ function _renderLoading() {
   container.innerHTML = `<div style="padding:16px"><div class="panel-row"><span class="value" style="color:#666">Loading…</span></div></div>`;
 }
 
-function _rulerCombatStats(def, level) {
-  const c = def?.critter;
-  if (!c) return null;
-  const t = Math.max(0, Math.min(1, (level - 1) / 17));
-  const lerp = (a, b) => a + (b - a) * t;
-  return {
-    health: lerp(c.health_min ?? 0, c.health_max ?? 0),
-    armour: lerp(c.armour_min ?? 0, c.armour_max ?? 0),
-    speed: lerp(c.speed_min ?? 0, c.speed_max ?? 0),
-    damage: lerp(c.damage_min ?? 1, c.damage_max ?? 30),
-  };
-}
 
 function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBgImg, splash, combatStats) {
   return `
@@ -105,7 +93,8 @@ function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillC
           <span>🛡 ${combatStats.armour.toFixed(1)}</span>
           <span>⚡ ${combatStats.speed.toFixed(2)}</span>
           <span>⚔ ${combatStats.damage.toFixed(1)}</span>
-        </div>` : ''}
+        </div>
+        <div style="color:#888;font-size:0.72em;margin-top:3px;">Earn XP by sending this ruler on attacks.</div>` : ''}
       </div>
 
       <!-- Skills pinned to bottom -->
@@ -206,7 +195,7 @@ function _render(summary, rulersCatalog) {
     </div>`;
   }).join('');
 
-  const combatStats = _rulerCombatStats(def, ruler.level || 1);
+  const combatStats = ruler.combat_stats || null;
   const sharedOverlay = (withBg) => _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBg, splash, combatStats);
 
   container.innerHTML = `

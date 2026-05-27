@@ -169,6 +169,7 @@ function render(data) {
     return;
   }
   const r = data.resources || {};
+  const armyEnabled = (data.effects?.enable_army ?? 0) > 0;
 
   const price = data.citizen_price;
   el.innerHTML = `
@@ -1470,8 +1471,8 @@ function renderEffects(effects) {
     .join('');
 }
 
-function _empireRowHtml(e, i, selfEra) {
-  const canAttack = (targetEra) => targetEra >= selfEra - 1;
+function _empireRowHtml(e, i, selfEra, armyEnabled = false) {
+  const canAttack = (targetEra) => armyEnabled && targetEra >= selfEra - 1;
   const dot = (online) =>
     `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${online ? 'var(--success,#66bb6a)' : '#3a3a4a'};${online ? 'box-shadow:0 0 4px var(--success,#66bb6a)' : ''}"></span>`;
   return `
@@ -1505,6 +1506,7 @@ function renderEmpiresSection(empires) {
 
   const selfIdx = empires.findIndex((e) => e.is_self);
   const selfEra = selfIdx >= 0 ? (empires[selfIdx].era || 1) : 1;
+  const armyEnabled = (st.summary?.effects?.enable_army ?? 0) > 0;
 
   // Show 5 above and below self in the status tile
   const TILE_WINDOW = 5;
@@ -1512,7 +1514,7 @@ function renderEmpiresSection(empires) {
   const end = Math.min(empires.length, selfIdx + TILE_WINDOW + 1);
   const slice = empires.slice(start, end);
 
-  const rows = slice.map((e, i) => _empireRowHtml(e, start + i, selfEra)).join('');
+  const rows = slice.map((e, i) => _empireRowHtml(e, start + i, selfEra, armyEnabled)).join('');
 
   return `
     <div class="panel">

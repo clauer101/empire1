@@ -19,6 +19,7 @@ certs/
 data/dev
 data/prod/states
 data/prod/replays
+data/prod/admin_token
 data/prod/states/gameserver.db
 python_server/state*.yaml
 python_server/gameserver*.db

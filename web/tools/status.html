@@ -400,7 +400,9 @@ function buildDetailHTML(e) {
   const artCount = e.artifact_count ?? (e.artifacts?.length ?? 0);
   let artHTML = artCount === 0
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
-    : (e.artifacts ? e.artifacts.map(a => `<span class="chip art">${a}</span>`).join('') : `<span class="chip art">⚜ ×${artCount}</span>`);
+    : (e.artifacts?.length
+        ? e.artifacts.map(a => `<span class="chip art" title="${a}">⚜ ${ARTIFACT_NAMES[a] || a}</span>`).join('')
+        : `<span class="chip art">⚜ ×${artCount}</span>`);
 
   // Ruler
   const ru = e.ruler || {};
@@ -741,6 +743,7 @@ function buildTowerStats(tiles) {
 let ERA_ORDER = [];
 let ERA_KNOWLEDGE = {};  // era key → [iid, ...]
 let ERA_LABELS_EN = {};
+let ARTIFACT_NAMES = {};  // iid → name
 
 async function loadEraMap() {
   try {
@@ -792,7 +795,16 @@ async function poll() {
   }
 }
 
-loadEraMap().then(poll);
+async function loadItems() {
+  try {
+    const d = await fetch(`${GS_BASE}/api/items`).then(r => r.json());
+    for (const [iid, item] of Object.entries(d.artifacts || {})) {
+      ARTIFACT_NAMES[iid] = item.name || iid;
+    }
+  } catch (_) {}
+}
+
+Promise.all([loadEraMap(), loadItems()]).then(poll);
 setInterval(poll, 3000);
 </script>
 </body>

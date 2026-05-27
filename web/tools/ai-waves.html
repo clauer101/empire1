@@ -559,6 +559,12 @@ function critterOptions(selected) {
 
 function renderAll() {
   const content = document.getElementById('content');
+
+  // Preserve collapsed state across re-renders
+  const expandedEras = new Set(
+    [...content.querySelectorAll('.era-section:not(.collapsed)')].map(s => s.dataset.era)
+  );
+
   content.innerHTML = '';
 
   // Group by era
@@ -705,6 +711,7 @@ function renderAll() {
     addBtn.addEventListener('click', () => addArmy(era));
     body.appendChild(addBtn);
 
+    if (expandedEras.has(era)) section.classList.remove('collapsed');
     content.appendChild(section);
   });
 }

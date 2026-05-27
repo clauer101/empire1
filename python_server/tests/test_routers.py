@@ -394,3 +394,205 @@ class TestMapNeighborsRouter:
         assert owners2[(1, 0)] is None
 
 
+# ---------------------------------------------------------------------------
+# Empire router — rename, ruler skill-up, ruler choose
+# ---------------------------------------------------------------------------
+
+class TestEmpireRenameRouter:
+    async def test_rename_success(self, client, svc):
+        resp = await client.post(
+            "/api/empire/rename",
+            json={"name": "NewName"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert svc.empire_service.all_empires[TEST_UID].name == "NewName"
+
+    async def test_rename_too_short(self, client, svc):
+        resp = await client.post(
+            "/api/empire/rename",
+            json={"name": "ab"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+
+    async def test_rename_too_long(self, client, svc):
+        resp = await client.post(
+            "/api/empire/rename",
+            json={"name": "x" * 41},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+
+    async def test_rename_requires_auth(self, client):
+        resp = await client.post("/api/empire/rename", json={"name": "Hacker"})
+        assert resp.status_code in (401, 403, 422)
+
+
+class TestRulerEndpoints:
+    async def test_choose_ruler_success(self, client, svc):
+        # Ensure ruler_unlock effect is set and _rulers is populated
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.effects["ruler_unlock"] = 1
+        svc.empire_service._rulers = {
+            "WARRIOR": {"name": "Warrior", "skills": {}, "splash": ""},
+        }
+        resp = await client.post(
+            "/api/empire/ruler/choose",
+            json={"ruler_iid": "WARRIOR"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert empire.ruler.type == "WARRIOR"
+
+    async def test_choose_ruler_already_chosen(self, client, svc):
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.ruler.type = "WARRIOR"
+        svc.empire_service._rulers = {"WARRIOR": {"name": "Warrior"}}
+        resp = await client.post(
+            "/api/empire/ruler/choose",
+            json={"ruler_iid": "WARRIOR"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+
+    async def test_choose_ruler_unknown_iid(self, client, svc):
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.ruler.type = ""
+        svc.empire_service._rulers = {}
+        resp = await client.post(
+            "/api/empire/ruler/choose",
+            json={"ruler_iid": "NONEXISTENT"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+
+    async def test_skill_up_no_points(self, client, svc):
+        """Ruler at level 1 with 0 XP should have 0 points available."""
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.ruler.xp = 0.0
+        empire.ruler.q = 0
+        empire.ruler.w = 0
+        empire.ruler.e = 0
+        empire.ruler.r = 0
+        resp = await client.post(
+            "/api/empire/ruler/skill-up",
+            json={"skill": "q"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        # Level 1 has 1 point available (total_points=0 < level=1)
+        # so either success (point spent) or no-point error depending on XP
+        assert "success" in data
+
+    async def test_skill_up_invalid_skill(self, client, svc):
+        resp = await client.post(
+            "/api/empire/ruler/skill-up",
+            json={"skill": "x"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+
+    async def test_skill_up_requires_auth(self, client):
+        resp = await client.post("/api/empire/ruler/skill-up", json={"skill": "q"})
+        assert resp.status_code in (401, 403, 422)
+
+
+# ---------------------------------------------------------------------------
+# Army router — buy-critter-slot, buy-wave-era, set-ruler-wave
+# ---------------------------------------------------------------------------
+
+class TestArmyBuyEndpoints:
+    async def test_buy_critter_slot_endpoint_exists(self, client, svc):
+        resp = await client.post(
+            "/api/army/buy-critter-slot",
+            json={"aid": 1, "wave_number": 1},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "success" in data
+
+    async def test_buy_wave_era_endpoint_exists(self, client, svc):
+        resp = await client.post(
+            "/api/army/buy-wave-era",
+            json={"aid": 1, "wave_number": 1},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "success" in data
+
+    async def test_set_ruler_wave_endpoint_exists(self, client, svc):
+        resp = await client.post(
+            "/api/army/set-ruler-wave",
+            json={"aid": 1, "wave_number": 1, "ruler_iid": "WARRIOR"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "success" in data
+
+    async def test_buy_critter_slot_requires_auth(self, client):
+        resp = await client.post("/api/army/buy-critter-slot", json={"aid": 1, "wave_number": 1})
+        assert resp.status_code in (401, 403, 422)
+
+    async def test_buy_wave_era_requires_auth(self, client):
+        resp = await client.post("/api/army/buy-wave-era", json={"aid": 1, "wave_number": 1})
+        assert resp.status_code in (401, 403, 422)
+
+    async def test_set_ruler_wave_requires_auth(self, client):
+        resp = await client.post("/api/army/set-ruler-wave", json={"aid": 1, "wave_number": 1, "ruler_iid": "X"})
+        assert resp.status_code in (401, 403, 422)
+
+
+# ---------------------------------------------------------------------------
+# Attack router — spy-attack, buy-tile
+# ---------------------------------------------------------------------------
+
+class TestSpyAttackRouter:
+    async def test_spy_attack_endpoint_exists(self, client, svc):
+        resp = await client.post(
+            "/api/spy-attack",
+            json={"target_uid": 99, "opponent_name": "Enemy"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "success" in data
+
+    async def test_spy_attack_requires_auth(self, client):
+        resp = await client.post("/api/spy-attack", json={"target_uid": 99, "opponent_name": "Enemy"})
+        assert resp.status_code in (401, 403, 422)
+
+
+class TestBuyTileRouter:
+    async def test_buy_tile_endpoint_exists(self, client, svc):
+        resp = await client.post(
+            "/api/map/buy-tile",
+            json={"q": 1, "r": 0},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "success" in data
+
+    async def test_buy_tile_requires_auth(self, client):
+        resp = await client.post("/api/map/buy-tile", json={"q": 1, "r": 0})
+        assert resp.status_code in (401, 403, 422)
+

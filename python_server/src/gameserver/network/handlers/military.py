@@ -431,6 +431,17 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         if not critters:
             lines.append("  (none)")
 
+    # Artifacts — always included
+    artifact_iids: list[str] = defender.artifacts or []
+    artifact_names = [items[iid].name for iid in artifact_iids if iid in items]
+
+    lines.append("─" * 32)
+    lines.append("⚜ Artifacts")
+    if artifact_names:
+        for aname in artifact_names:
+            lines.append(f"  ⚜ {aname}")
+    else:
+        lines.append("  (none)")
     lines.append("─" * 32)
 
     text = "\n".join(lines)
@@ -440,6 +451,7 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         "era_idx": era_idx,
         "placed_towers": placed_towers,
         "path_length": path_length,
+        "artifacts": artifact_names,
     }
     if has_workshop_intel:
         data["structures"] = [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)]
@@ -994,7 +1006,7 @@ async def handle_buy_critter_slot_request(
 async def handle_buy_wave_era_request(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
-    """Buy an era upgrade for a wave with gold. Max era index is 8 (ZUKUNFT)."""
+    """Buy an era upgrade for a wave with gold. Max era index is 8 (FUTURE)."""
     MAX_ERA_INDEX = 8
     svc = _svc()
     target_uid = sender_uid if sender_uid > 0 else message.sender

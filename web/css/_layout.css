@@ -212,6 +212,7 @@
   border-radius: 0 0 var(--radius) var(--radius);
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
   padding: 16px 20px;
   min-height: 0;
   flex: 1;

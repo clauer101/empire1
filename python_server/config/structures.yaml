@@ -8,7 +8,7 @@
 # effects: special effects (slow, splash_radius, dot, etc.)
 
 # ============================================================
-#   STEINZEIT  (Effort 20 – 200)
+#   STONE_AGE  (Effort 20 – 200)
 # ============================================================
 
 BASIC_TOWER:
@@ -46,7 +46,7 @@ SLING_TOWER:
   requirements: [MAIN_HOUSE, HUNTING]
 
 # ============================================================
-#   NEOLITHIKUM  (Effort 200 – 1.500)
+#   NEOLITHIC  (Effort 200 – 1.500)
 # ============================================================
 
 DOUBLE_SLING_TOWER:
@@ -84,7 +84,7 @@ SPIKE_TRAP:
   requirements: [EARTH_WALL, AGRICULTURE]
 
 # ============================================================
-#   BRONZEZEIT  (Effort 1.500 – 8.000)
+#   BRONZE_AGE  (Effort 1.500 – 8.000)
 # ============================================================
 
 ARROW_TOWER:
@@ -113,7 +113,7 @@ BALLISTA_TOWER:
   reload_time: 3000
   shot_speed: 2
   shot_sprite: "assets/sprites/hud/bolt.webp"
-  shot_sprite_scale: 1.0
+  shot_sprite_scale: 0.8
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
@@ -140,7 +140,7 @@ FIRE_TOWER:
   requirements: [COPPER_BRONZE]
 
 # ============================================================
-#   EISENZEIT / ANTIKE  (Effort 8.000 – 30.000)
+#   IRON_AGE  (Effort 8.000 – 30.000)
 # ============================================================
 
 CATAPULTS:
@@ -167,9 +167,9 @@ ARBELESTE_TOWER:
   damage: 10
   range: 1.5
   reload_time: 2600
-  shot_speed: 1
+  shot_speed: 5
   shot_sprite: "assets/sprites/hud/bolt.webp"
-  shot_sprite_scale: 2.5
+  shot_sprite_scale: 1.5
   projectile_y_offset: 0.3
   upgrade_costs: {}
   max_level: 1
@@ -179,7 +179,7 @@ ARBELESTE_TOWER:
   requirements: [FORGE, IRON]
 
 # ============================================================
-#   MITTELALTER  (Effort 30.000 – 130.000)
+#   MIDDLE_AGES  (Effort 30.000 – 130.000)
 # ============================================================
 
 TAR_TOWER:
@@ -306,7 +306,7 @@ ICE_TOWER:
   requirements: [CHEMISTRY, PHYSICS]
 
 # ============================================================
-#   INDUSTRIALISIERUNG  (Effort 500.000 – 2.000.000)
+#   INDUSTRIAL  (Effort 500.000 – 2.000.000)
 # ============================================================
 
 FLAME_THROWER:
@@ -380,7 +380,7 @@ PARALYZNG_TOWER:
   requirements: [HOSPITAL, MEDICINE]
 
 # ============================================================
-#   MODERNE  (Effort 2.000.000 – 5.300.000)
+#   MODERN  (Effort 2.000.000 – 5.300.000)
 # ============================================================
 
 NAPALM_THROWER:
@@ -487,7 +487,7 @@ LASER_TOWER:
   requirements: [RESEARCH_LAB, ELECTRONICS]
 
 # ============================================================
-#   ZUKUNFT  (Effort 50.000.000 – 100.000.000)
+#   FUTURE  (Effort 50.000.000 – 100.000.000)
 # ============================================================
 
 SNIPER_TOWER:

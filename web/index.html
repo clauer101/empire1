@@ -32,26 +32,34 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "VideoGame",
-    "name": "Relics & Rockets",
-    "description": "A browser-based multiplayer tower defense and empire building strategy game spanning 9 historical eras from the Stone Age to the Future.",
-    "url": "https://relicsnrockets.io/",
-    "image": "https://relicsnrockets.io/assets/banner.jpg",
-    "genre": ["Strategy", "Tower Defense", "Multiplayer"],
-    "gamePlatform": "Web Browser",
-    "applicationCategory": "Game",
-    "operatingSystem": "Any",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
+    "@graph": [
+      {
+        "@type": "VideoGame",
+        "name": "Relics & Rockets",
+        "description": "A browser-based multiplayer tower defense and empire building strategy game spanning 9 historical eras from the Stone Age to the Future.",
+        "url": "https://relicsnrockets.io/",
+        "image": "https://relicsnrockets.io/assets/banner.jpg",
+        "genre": ["Strategy", "Tower Defense", "Multiplayer"],
+        "gamePlatform": "Web Browser",
+        "applicationCategory": "Game",
+        "operatingSystem": "Any",
+        "author": { "@type": "Organization", "name": "Relics & Rockets", "url": "https://relicsnrockets.io/" },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      },
+      {
+        "@type": "Organization",
+        "name": "Relics & Rockets",
+        "url": "https://relicsnrockets.io/",
+        "logo": "https://relicsnrockets.io/assets/icon-192.png",
+        "sameAs": []
+      }
+    ]
   }
   </script>
-
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

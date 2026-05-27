@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /ws/
+Disallow: /tools/
+
+Sitemap: https://relicsnrockets.io/sitemap.xml

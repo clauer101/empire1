@@ -27,10 +27,10 @@ ERA_YAML_TO_KEY: dict[str, str] = {k: k for k in ERA_ORDER}
 # Identity map — era key matches the GameConfig field prefix.
 ERA_YAML_TO_FIELD: dict[str, str] = {k: k for k in ERA_ORDER}
 
-# Maps legacy item era field value → ERA_ORDER index.
+# Maps item era field value (from YAML era: fields) → ERA_ORDER index.
 ERA_ITEM_TO_INDEX: dict[str, int] = {
     "STONE_AGE": 0, "NEOLITHIC": 1, "BRONZE_AGE": 2, "IRON_AGE": 3,
-    "MEDIEVAL": 4, "RENAISSANCE": 5, "INDUSTRIAL": 6, "MODERN": 7, "FUTURE": 8,
+    "MIDDLE_AGES": 4, "RENAISSANCE": 5, "INDUSTRIAL": 6, "MODERN": 7, "FUTURE": 8,
 }
 
 # Display labels.

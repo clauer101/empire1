@@ -1180,7 +1180,7 @@ export class HexGrid {
     });
     this._mapBitmap = await createImageBitmap(blob);
     this._tilePattern = this.ctx.createPattern(this._mapBitmap, 'repeat');
-    this._tilePattern.setTransform(new DOMMatrix().scale(0.5));
+    this._tilePattern.setTransform(new DOMMatrix().scale(0.2));
     this._invalidateBase();
     this._dirty = true;
   }
@@ -1233,16 +1233,6 @@ export class HexGrid {
 
     // Translate so tiles start at (0,0) — zoom applied at draw time in _render()
     ctx.translate(-minX, -minY);
-
-    const sz = this.hexSize;
-
-    // Grass texture is drawn per-frame in _render() to avoid double-scaling blur.
-    let tilePattern = null;
-    if (this._mapBitmap) {
-      tilePattern = ctx.createPattern(this._mapBitmap, 'repeat');
-      tilePattern.setTransform(new DOMMatrix().scale(0.5));
-    }
-
 
     // Neighbor fog / enemy tiles are no longer baked into the base canvas —
     // they are viewport-bounded and drawn per-frame by _renderNeighborTiles().
@@ -1969,8 +1959,7 @@ export class HexGrid {
 
     // Grass texture over all tiles (owned + enemy neighbor tiles)
     if (this._mapBitmap && this.tiles.size > 0) {
-      const pattern = this._tilePattern || ctx.createPattern(this._mapBitmap, 'repeat');
-      if (!this._tilePattern) pattern.setTransform(new DOMMatrix().scale(0.5));
+      const pattern = this._tilePattern ?? ctx.createPattern(this._mapBitmap, 'repeat');
       const allTilesPath = new Path2D();
       const ownedTilesPath = new Path2D();
       const enemyTilesPath = new Path2D();

@@ -692,22 +692,21 @@ function _initCritterCanvases(el) {
 }
 
 /**
- * Compute level-scaled ruler critter stats for display.
- * Returns null if catalog data is unavailable.
+ * Return ruler combat stats for display.
+ * Uses backend-computed values from summary.ruler.combat_stats (quadratic formula).
+ * animation is still read from the item catalog (static sprite metadata).
+ * Returns null if data is unavailable.
  */
-function _rulerStats(rulerType, level) {
+function _rulerStats(rulerType, _level) {
   const catalog = st.items?.rulers?.[rulerType];
-  if (!catalog?.critter) return null;
-  const c = catalog.critter;
-  const t = Math.max(0, Math.min(1, (level - 1) / 17));
-  const lerp = (a, b) => a + (b - a) * t;
+  const combat = st.summary?.ruler?.combat_stats;
+  if (!combat) return null;
   return {
-    health: lerp(c.health_min, c.health_max),
-    speed: lerp(c.speed_min, c.speed_max),
-    armour: lerp(c.armour_min, c.armour_max),
-    damage: lerp(c.damage_min ?? 1, c.damage_max ?? 30),
-    value: lerp(c.value_min ?? 10, c.value_max ?? 1000),
-    animation: c.animation || '',
+    health: combat.health,
+    speed: combat.speed,
+    armour: combat.armour,
+    damage: combat.damage,
+    animation: catalog?.critter?.animation || '',
   };
 }
 
@@ -1158,6 +1157,13 @@ function _onSpyReport(msg) {
       <div style="font-size:12px;margin-bottom:3px;">🛤 Path length: ${pathLenHtml}</div>
       <div style="font-size:12px;margin-bottom:8px;">🏰 Towers placed: ${towerCountHtml}</div>
       ${eraDistHTML}
+    </div>
+
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">⚜ Artifacts</div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:10px;">
+      ${(msg.artifacts || []).length > 0
+        ? (msg.artifacts).map((a) => `<div style="padding:2px 0;font-size:12px;">⚜ ${escHtml(a)}</div>`).join('')
+        : '<div style="opacity:0.4;font-size:12px;">none</div>'}
     </div>
 
     <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">🔬 Workshop Intelligence &mdash; ${escHtml(era)}</div>

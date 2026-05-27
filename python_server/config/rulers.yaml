@@ -10,7 +10,7 @@ MAJA:
   speed_max: 1.1
   health_min: 16
   health_max: 2000
-  armour_min: 0
+  armour_min: 1
   armour_max: 15
   value_min: 10
   value_max: 1000
@@ -60,10 +60,10 @@ NANDI:
   speed_max: 1.2
   health_min: 18
   health_max: 2100
-  armour_min: 0
-  armour_max: 13
+  armour_min: 1
+  armour_max: 15
   value_min: 10
-  value_max: 1000
+  value_max: 10000
   damage_min: 1
   damage_max: 30
   animation: assets/sprites/ruler/nandi
@@ -90,11 +90,11 @@ NANDI:
     name: 'Cultural Footprint'
     description: 'Reduces the costs of aquiring new land.'
     levels:
-    - {land_cost_modifier: 0.04}
-    - {land_cost_modifier: 0.08}
-    - {land_cost_modifier: 0.12}
-    - {land_cost_modifier: 0.16}
-    - {land_cost_modifier: 0.20}
+    - {tile_cost_modifier: 0.04}
+    - {tile_cost_modifier: 0.08}
+    - {tile_cost_modifier: 0.12}
+    - {tile_cost_modifier: 0.16}
+    - {tile_cost_modifier: 0.20}
   r:
     name: Grand Apotheosis
     description: 'Grants a cultural blessing to your empire.'
@@ -110,10 +110,10 @@ LUCIEN:
   speed_max: 1.1
   health_min: 18
   health_max: 2200
-  armour_min: 0
+  armour_min: 1
   armour_max: 15
   value_min: 10
-  value_max: 1200
+  value_max: 10000
   damage_min: 1
   damage_max: 30
   animation: assets/sprites/ruler/lucien
@@ -131,11 +131,11 @@ LUCIEN:
     name: 'Guild Monopoly'
     description: 'Reduces the cost of buildings.'
     levels:
-    - {building_cost_modifier: 0.02}
-    - {building_cost_modifier: 0.04}
+    - {building_cost_modifier: 0.03}
     - {building_cost_modifier: 0.06}
-    - {building_cost_modifier: 0.08}
-    - {building_cost_modifier: 0.10}
+    - {building_cost_modifier: 0.09}
+    - {building_cost_modifier: 0.12}
+    - {building_cost_modifier: 0.15}
   e:
     name: 'Tribute of the Masses'
     description: 'Scientists and artists generate gold.'
@@ -160,10 +160,10 @@ BORIN:
   speed_max: 1.0
   health_min: 18
   health_max: 2800
-  armour_min: 1
-  armour_max: 17
+  armour_min: 2
+  armour_max: 16
   value_min: 10
-  value_max: 1200
+  value_max: 10000
   damage_min: 1
   damage_max: 30
   animation: assets/sprites/ruler/borin
@@ -199,9 +199,9 @@ BORIN:
     name: 'Fortress Bastion'
     description: 'Increases the delay between incoming waves.'
     levels:
-    - {wave_delay_offset: 500}
     - {wave_delay_offset: 1000}
     - {wave_delay_offset: 1500}
+    - {wave_delay_offset: 2000}
 ALRIC:
   name: Alric Shadowmere
   description: "A shadowy tactician who moves armies like shadows across the map. Alric expands territory cheaply and strikes faster than any opponent can prepare for."
@@ -209,11 +209,11 @@ ALRIC:
   speed_min: 0.5
   speed_max: 1.0
   health_min: 22
-  health_max: 3000
+  health_max: 2700
   armour_min: 1
   armour_max: 19
   value_min: 10
-  value_max: 1200
+  value_max: 10000
   damage_min: 1
   damage_max: 30
   animation: assets/sprites/ruler/alric

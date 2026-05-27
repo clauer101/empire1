@@ -28,6 +28,19 @@ def _svc() -> "Services":
     return _core_svc()
 
 
+def _ruler_combat_stats(empire: Any, svc: Any) -> "dict[str, Any] | None":
+    from gameserver.engine.empire_service import ruler_critter_stats
+    ruler_type = empire.ruler.type if empire.ruler else None
+    if not ruler_type or not svc.empire_service:
+        return None
+    ruler_cfg = svc.empire_service._rulers.get(ruler_type)
+    if not ruler_cfg:
+        return None
+    level = svc.empire_service.ruler_level_from_xp(empire.ruler.xp)
+    s = ruler_critter_stats(ruler_cfg, level)
+    return {"health": s["health"], "armour": s["armour"], "speed": s["speed"], "damage": s["damage"]}
+
+
 def _build_end_rally_info(gc: Any, empire_service: Any = None) -> dict[str, Any]:
     """Return end-rally status dict for the client."""
     from gameserver.engine.global_state import (
@@ -244,6 +257,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
             "w": empire.ruler.w,
             "e": empire.ruler.e,
             "r": empire.ruler.r,
+            "combat_stats": _ruler_combat_stats(empire, svc),
         },
         "ruler_effects": svc.empire_service.get_ruler_effects(empire),
         "season_number": _gs.get_season_number(),

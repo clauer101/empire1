@@ -4,7 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-All UI text, labels, messages, button text, and placeholders in the codebase must be written in English.
+**Project language is English.** This applies to:
+- All UI text, labels, messages, button text, and placeholders
+- All code identifiers, variable names, constants, and function names
+- All comments, docstrings, and documentation
+- All YAML config keys and section comments
+- No German words anywhere in the codebase
+
+## Frontend Data Principle
+
+The backend owns all game data. The frontend is a display layer only — it must not recalculate or derive values that the backend already computes (e.g. combat stats, XP thresholds, era effects). Always have the backend include the computed value in its API response and display it directly in the frontend.
+
+**Exception:** Optimistic updates (e.g. immediately reflecting a user action before the server responds) may compute new values locally, provided the next server response overwrites them.
 
 ## Shell Commands
 
@@ -203,17 +214,16 @@ Developer tools at `web/tools/` — `status.html` (live server status), `databas
 - **Effects dict**: tower effects (burn, slow) are stored as `effects.burn_duration`, `effects.burn_dps`, etc. in config and models.
 - **Async throughout**: backend uses `asyncio`; tests use `pytest-asyncio`.
 
-### Era Key Naming — 3 Systems (Gotcha)
+### Era Key Naming — 2 Systems
 
-Three different era key systems exist and must not be mixed:
+Two era key formats exist. Do not mix them:
 
 | System | Example | Used in |
 |--------|---------|---------|
-| **German** | `STEINZEIT`, `MITTELALTER` | `ERA_ORDER`, `get_current_era()`, `era_effects` dict keys |
-| **Internal** | `stone`, `middle_ages`, `renaissance` | `game.yaml` keys, `ai_generator`, `ERA_BACKEND_TO_INTERNAL` |
-| **YAML-item** | `STONE_AGE`, `MEDIEVAL`, `INDUSTRIAL` | `era:` field in `knowledge.yaml`, `ERA_ITEM_TO_INDEX` |
+| **Lowercase** | `stone`, `middle_ages`, `renaissance` | `ERA_ORDER`, `get_current_era()`, `era_effects` dict keys, `game.yaml`, `ERA_LABELS_EN` |
+| **UPPERCASE** | `STONE_AGE`, `MIDDLE_AGES`, `INDUSTRIAL` | `era:` field in item YAMLs (`knowledge.yaml`, `buildings.yaml`, etc.), `ERA_ITEM_TO_INDEX` |
 
-Mappings: `ERA_BACKEND_TO_INTERNAL` in `util/army_generator.py`, `ERA_YAML_TO_KEY` in `util/eras.py`.  
+The lowercase form is the canonical runtime format. The UPPERCASE form only appears in item YAML `era:` fields and `ERA_ITEM_TO_INDEX`.  
 Travel offsets are stored as legacy flat fields: `stone_travel_offset`, `middle_ages_travel_offset`, etc. in `GameConfig`.
 
 ### Upgrade System

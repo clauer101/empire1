@@ -125,7 +125,7 @@ class GameConfig:
     future_travel_offset: float = 300.0
 
 
-    # Generic per-era effects dict: { "STEINZEIT": {"gold_offset": 5.0, ...}, ... }
+    # Generic per-era effects dict: { "stone": {"gold_offset": 5.0, ...}, ... }
     # Applied to empire.effects when era is determined.
     era_effects: Dict[str, Dict[str, float]] = field(default_factory=dict)
 

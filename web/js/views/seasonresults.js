@@ -188,9 +188,9 @@ function _allAwardsHtml(empires, myUid) {
 }
 
 const _ERA_LABELS = {
-  STEINZEIT: 'Stone Age', BRONZEZEIT: 'Bronze Age', EISENZEIT: 'Iron Age',
-  MITTELALTER: 'Middle Ages', RENAISSANCE: 'Renaissance', INDUSTRIALISIERUNG: 'Industrialization',
-  MODERNE: 'Modern Age', INFORMATION: 'Information Age', ZUKUNFT: 'Future',
+  stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
+  middle_ages: 'Middle Ages', renaissance: 'Renaissance', industrial: 'Industrial',
+  modern: 'Modern', future: 'Future',
 };
 
 function _eraFirstsTableHtml(eraFirsts, eraOrder, myUid) {

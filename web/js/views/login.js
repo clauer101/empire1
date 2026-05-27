@@ -123,6 +123,7 @@ function init(el, _api, _state) {
           <h1 class="lp-title">Relics'n'Rockets</h1>
           <p class="lp-tagline">Rise from the Stone Age to the Future.<br>Research, build, defend, and conquer.</p>
           <p class="lp-mmotag">Join hundreds of players — forge alliances, pick your rivals, and leave your mark on a living world.</p>
+          <video controls style="width:50%;border-radius:6px;margin:12px auto 4px;display:block;" src="/assets/media/RnR.mp4"></video>
           <p class="lp-early-access">⚠ Early Access — expect bugs, occasional outages, and frequent updates. Your feedback shapes the game.</p>
           <div class="lp-parade">${critterRow}</div>
         </div>

@@ -35,7 +35,6 @@ WAVE_DELAY_OFFSET = "wave_delay_offset"
 # -- Cost modifiers ------------------------------------------------------
 CITIZEN_COST_MODIFIER = "citizen_cost_modifier"       # reduces citizen upgrade cost: price × (1 - v)
 TILE_COST_MODIFIER = "tile_cost_modifier"             # reduces new tile cost: price × (1 - v)
-LAND_COST_MODIFIER = "land_cost_modifier"             # reduces new tile cost (ruler variant): price × (1 - v), stacks with tile_cost_modifier
 BUILDING_COST_MODIFIER = "building_cost_modifier"     # reduces gold cost of buildings: gold × (1 - v)
 WAVE_COST_MODIFIER = "wave_cost_modifier"             # reduces new wave cost: price × (1 - v)
 WAVE_ERA_COST_MODIFIER = "wave_era_cost_modifier"     # reduces wave era upgrade cost: price × (1 - v)

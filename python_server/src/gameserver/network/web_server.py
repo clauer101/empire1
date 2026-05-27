@@ -35,15 +35,15 @@ _SAVED_MAPS_PATH = _CONFIG_DIR / "saved_maps.yaml"
 _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
 
 _ERA_PATTERNS = [
-    ("stone",        re.compile(r'#\s+STEINZEIT')),
-    ("neolithic",    re.compile(r'#\s+NEOLITHIKUM')),
-    ("bronze",       re.compile(r'#\s+BRONZEZEIT')),
-    ("iron",         re.compile(r'#\s+EISENZEIT')),
-    ("middle_ages",  re.compile(r'#\s+MITTELALTER')),
+    ("stone",        re.compile(r'#\s+STONE_AGE')),
+    ("neolithic",    re.compile(r'#\s+NEOLITHIC')),
+    ("bronze",       re.compile(r'#\s+BRONZE_AGE')),
+    ("iron",         re.compile(r'#\s+IRON_AGE')),
+    ("middle_ages",  re.compile(r'#\s+MIDDLE_AGES')),
     ("renaissance",  re.compile(r'#\s+RENAISSANCE')),
-    ("industrial",   re.compile(r'#\s+INDUSTRIALIS')),
-    ("modern",       re.compile(r'#\s+MODERNE')),
-    ("future",       re.compile(r'#\s+ZUKUNFT')),
+    ("industrial",   re.compile(r'#\s+INDUSTRIAL')),
+    ("modern",       re.compile(r'#\s+MODERN')),
+    ("future",       re.compile(r'#\s+FUTURE')),
 ]
 
 _ERA_INFO = {
@@ -61,9 +61,9 @@ _ERA_INFO = {
 _ERA_ORDER = list(_ERA_INFO.keys())
 
 _ERA_COMMENT_KEY = {
-    "stone": "STEINZEIT", "neolithic": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
-    "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "renaissance": "RENAISSANCE",
-    "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
+    "stone": "STONE_AGE", "neolithic": "NEOLITHIC", "bronze": "BRONZE_AGE",
+    "iron": "IRON_AGE", "middle_ages": "MIDDLE_AGES", "renaissance": "RENAISSANCE",
+    "industrial": "INDUSTRIAL", "modern": "MODERN", "future": "FUTURE",
 }
 
 _SPRITE_EXTS = [".png", ".webp", ".jpg"]

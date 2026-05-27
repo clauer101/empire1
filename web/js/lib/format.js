@@ -49,15 +49,15 @@ const EFFECT_META = {
   wave_era_cost_modifier:         ['⚔️', 'Wave era discount',        (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the gold cost of upgrading wave era'],
   wave_slot_cost_modifier:        ['⚔️', 'Wave slot discount',       (v) => `-${(v * 100).toFixed(0)}%`,                                                               'Reduces the gold cost of purchasing additional critter slots'],
   // -- Citizen modifiers
-  citizen_effect_modifier:        ['🫂', 'Citizen efficiency',       (v) => `+${(v * 100).toFixed(0)}%`,                                                               'Adds to the productivity bonus of each citizen'],
-  other_citizen_gold_modifier:    ['💰', 'Artist/Scientist gold',    (v) => `+${(v * 100).toFixed(0)}% per citizen`,                                                  'Artists and scientists also contribute to gold income'],
+  citizen_effect_modifier:        ['🫂', 'Citizen efficiency',       (v) => `+${(v * 100).toFixed(1)}%`,                                                               'Adds to the productivity bonus of each citizen'],
+  other_citizen_gold_modifier:    ['💰', 'Artist/Scientist gold',    (v) => `+${(v * 100).toFixed(1)}% per citizen`,                                                  'Artists and scientists also contribute to gold income'],
   // -- One-shot lump sums (shown in ruler skill tooltips only)
   gold_lump_sum_on_skill_up:      ['💰', 'Skill-up gold reward',     (v) => `+${v.toLocaleString('de-DE')} gold`,                                                     'Grants a one-time gold bonus when this skill level is reached'],
   culture_lump_sum_on_skill_up:   ['🎭', 'Skill-up culture reward',  (v) => `+${v.toLocaleString('de-DE')} culture`,                                                  'Grants a one-time culture bonus when this skill level is reached'],
   // -- Combat
   restore_life_during_battle_modifier: ['❤️', 'Battle life regen',   (v) => `+${v}/s`,                                                                              'Adds to life regeneration while in battle'],
   enemy_siege_time_modifier:      ['⚔️', 'Siege corruption',         (v) => `-${(v * 100).toFixed(0)}% enemy siege`,                                                  'Reduces the siege duration of your own attacks'],
-  max_siege_construction_speed_modifier:      ['🏗', 'Max siege disruption', (v) => `-${(v * 100).toFixed(0)}% build speed`,   'Maximum construction speed reduction during siege'],
+  max_siege_construction_speed_modifier:      ['🏗', 'Max siege disruption', (v) => `${(v * 100).toFixed(0)}% build speed`,   'Maximum construction speed reduction during siege'],
   siege_construction_speed_per_army_modifier: ['🏗', 'Siege resilience',    (v) => `-${(v * 100).toFixed(0)}% per army`,        'Reduces the construction speed penalty per besieging army'],
 };
 

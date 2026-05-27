@@ -37,6 +37,7 @@ def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int) -> "dict[str, A
     _min and _max values based on level / RULER_MAX_LEVEL.
     """
     t = max(0.0, min(1.0, (level - 1) / (RULER_MAX_LEVEL - 1)))
+    t = t * t  # quadratic: slow growth early, steep growth near max level
     def _lerp(lo: float, hi: float) -> float:
         return lo + (hi - lo) * t
     return {
@@ -638,8 +639,8 @@ class EmpireService:
         return self._citizen_price(i) * max(0.0, 1.0 - discount)
 
     def tile_price_for(self, empire: Empire, i: int) -> float:
-        """Tile price with empire's tile_cost_modifier and land_cost_modifier applied."""
-        discount = empire.get_effect("tile_cost_modifier", 0.0) + empire.get_effect("land_cost_modifier", 0.0)
+        """Tile price with empire's tile_cost_modifier applied."""
+        discount = empire.get_effect("tile_cost_modifier", 0.0)
         return self._tile_price(i) * max(0.0, 1.0 - discount)
 
     def wave_price_for(self, empire: Empire, i: int) -> float:
