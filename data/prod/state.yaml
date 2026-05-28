@@ -1,7 +1,7 @@
 meta:
   version: 1
-  saved_at: '2026-05-27T17:16:01'
-  saved_at_unix: 1779902161.137502
+  saved_at: '2026-05-28T20:03:42'
+  saved_at_unix: 1779998622.8577354
 global:
   season_number: 2
   season_title: The Rise of Kingdoms
@@ -16,9 +16,9 @@ empires:
 - uid: 4
   name: Eemtopia
   resources:
-    gold: 28592.594061688138
-    culture: 202937.2020824808
-    life: 26.0
+    gold: 135504.89505019903
+    culture: 298664.1497585135
+    life: 16.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -45,7 +45,9 @@ empires:
     QUARTERMASTER: 0.0
     TREASURE_CHAMBER: 0.0
     BOOT_CAMP: 0.0
-    FENCING_SCHOOL: 70035.93247101443
+    FENCING_SCHOOL: 13612.15597216104
+    BANK: 0.0
+    CHAPEL: 0.0
   build_queue: FENCING_SCHOOL
   knowledge:
     HUNTING: 0.0
@@ -71,29 +73,31 @@ empires:
     MATHMATICS: 0.0
     IRON: 0.0
     ECONOMY: 0.0
-    STEEL: 115186.67519836407
-    ARCHITECTURE: 0.0
-    COMMAND_CHAIN: 75237.06550434123
+    STEEL: 10684.142739029548
+    ARCHITECTURE: 1989.1207114032688
+    COMMAND_CHAIN: 70173.20733709898
+    PAINTING: 26890.069531204175
+    LITERATURE: 28180.715221920556
   research_queue: STEEL
   citizens:
-    merchant: 15
+    merchant: 17
     scientist: 0
     artist: 0
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 2.431
-    culture_offset: 1.0
+    gold_offset: 2.931
+    culture_offset: 0.7
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    gold_modifier: 0.8
+    gold_modifier: 1.3
     ruler_unlock: 1.0
     enable_army: 1.0
-    build_speed_modifier: 0.8
+    build_speed_modifier: 0.5
     enable_messages: 1.0
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
-    max_life_modifier: 16.0
+    max_life_modifier: 6.0
     travel_offset: -1800.0
     map_vision_radius_offset: 2.0
     spy_workshop: 1.0
@@ -103,13 +107,12 @@ empires:
     wave_slot_cost_modifier: 0.24
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
+    culture_modifier: 0.35
     build_speed_offset: 0.1
-    research_speed_offset: 0.9
-    culture_modifier: 0.8
+    research_speed_offset: 0.1
   item_upgrades: {}
-  artifacts:
-  - BOOK_OF_HEROES
-  max_life: 26.0
+  artifacts: []
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 350
@@ -135,9 +138,9 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 5
-      iid: SWORDMAN
-      slots: 6
-      max_era: 2
+      iid: PIKENEER
+      slots: 21
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 6
@@ -147,14 +150,14 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: PIKENEER
-      slots: 15
+      iid: LARGE_CART
+      slots: 21
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 3
       iid: PIKENEER
-      slots: 11
+      slots: 19
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -187,9 +190,15 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 4
-      iid: CHARIOT
-      slots: 5
-      max_era: 2
+      iid: LARGE_CART
+      slots: 14
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: SLAVE
+      slots: 1
+      max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
   spies: []
@@ -259,7 +268,7 @@ empires:
     type: BALLISTA_TOWER
   - q: 1
     r: -3
-    type: castle
+    type: empty
   - q: 1
     r: 0
     type: empty
@@ -277,6 +286,12 @@ empires:
       type: FIRE_TOWER
       select: random
   - q: 2
+    r: -3
+    type: CATAPULTS
+  - q: 2
+    r: -4
+    type: empty
+  - q: 2
     r: 0
     type: empty
   - q: 2
@@ -284,11 +299,19 @@ empires:
     type: empty
   - q: 2
     r: 2
-    type: CATAPULTS
+    type:
+      type: CATAPULTS
+      select: random
+  - q: 3
+    r: -4
+    type: empty
+  - q: 4
+    r: -4
+    type: castle
   ruler:
     name: Alric Shadowmere
     type: ALRIC
-    xp: 7063.0
+    xp: 14901.0
     level: 5
     q: 4
     w: 1
@@ -315,7 +338,389 @@ empires:
   max_life: 10.0
   structures: {}
   armies:
-  - aid: 1061
+  - aid: 1325
+    uid: 0
+    name: Temple Defiled
+    waves:
+    - wave_id: 1
+      iid: CRUSADER
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: KNIGHT
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: SIEGE_RAM
+      slots: 19.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: CRUSADER
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: SAMURAI
+      slots: 21.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: KNIGHT
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: SIEGE_RAM
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: SAMURAI
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: SIEGE_RAM
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: SAMURAI
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+  - aid: 1326
+    uid: 0
+    name: Savage Rabble
+    waves:
+    - wave_id: 1
+      iid: LEGIONARY
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: MUSKETEER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: LARGE_CART
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: THE_KING
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: HORSEMAN_SLOW
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: MUSKETEER
+      slots: 13.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: HORSEMAN_FAST
+      slots: 11.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+  - aid: 1327
+    uid: 0
+    name: Rowdy Plunderers
+    waves:
+    - wave_id: 1
+      iid: CHARIOT
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: PIKENEER
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: CONDOTTERI
+      slots: 13.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: CONDOTTERI
+      slots: 9.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: PIKENEER
+      slots: 10.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+  - aid: 1332
+    uid: 0
+    name: Rowdy Plunderers
+    waves:
+    - wave_id: 1
+      iid: NINJA
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: HANDGUNNER
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: PIKENEER
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: SIEGE_RAM
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: CONDOTTERI
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: KNIGHT
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: CRUSADER
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: HORSEMAN_FAST
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: CRUSADER
+      slots: 11.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: CONDOTTERI
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+  - aid: 1339
+    uid: 0
+    name: Notice Board Burning
+    waves:
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SWORDMAN
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: HORSEMAN_SLOW
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: LEGIONARY
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: LARGE_CART
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: HORSEMAN_FAST
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: HORSEMAN_FAST
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+  - aid: 1341
+    uid: 0
+    name: Lore Collection Razed
+    waves:
+    - wave_id: 1
+      iid: LEGIONARY
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: PIKENEER
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: HORSEMAN_SLOW
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: LEGIONARY
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: HORSEMAN_FAST
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: LARGE_CART
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: HORSEMAN_SLOW
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: HORSEMAN_SLOW
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+  - aid: 1343
+    uid: 0
+    name: Economy Disruption
+    waves:
+    - wave_id: 1
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CRUSADER
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: CRUSADER
+      slots: 19.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: SAMURAI
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: SAMURAI
+      slots: 21.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: SAMURAI
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: SIEGE_RAM
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: KNIGHT
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: SIEGE_RAM
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+  - aid: 1345
     uid: 0
     name: Iron Tide
     waves:
@@ -367,122 +772,30 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 105000
-  - aid: 1071
+  - aid: 1346
     uid: 0
-    name: Crude Invaders
+    name: Church Razed
     waves:
     - wave_id: 1
-      iid: BOWMAN
-      slots: 9.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: PIKENEER
-      slots: 11.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: LARGE_CART
-      slots: 12.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: THE_SWORDMASTER
-      slots: 999.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: BOWMAN
-      slots: 11.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: PIKENEER
-      slots: 12.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: LARGE_CART
-      slots: 12.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: THE_SWORDMASTER
-      slots: 999.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1074
-    uid: 0
-    name: Howling Savages
-    waves:
-    - wave_id: 1
-      iid: BOWMAN
-      slots: 10.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: CONDOTTERI
-      slots: 10.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: LARGE_CART
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: HORSEMAN_SLOW
-      slots: 13.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: THE_SWORDMASTER
-      slots: 999.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: BOWMAN
-      slots: 8.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-  - aid: 1075
-    uid: 0
-    name: Siege Machinery
-    waves:
-    - wave_id: 1
-      iid: SIEGE_RAM
+      iid: CRUSADER
       slots: 16.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: KNIGHT
+      iid: SIEGE_RAM
       slots: 17.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 15000
     - wave_id: 3
-      iid: SAMURAI
+      iid: CRUSADER
       slots: 18.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 30000
     - wave_id: 4
-      iid: SAMURAI
+      iid: SIEGE_RAM
       slots: 19.0
       max_era: 0
       num_critters_spawned: 0
@@ -500,19 +813,19 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 75000
     - wave_id: 7
-      iid: KNIGHT
+      iid: SIEGE_RAM
       slots: 22.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 90000
     - wave_id: 8
-      iid: SIEGE_RAM
+      iid: CRUSADER
       slots: 16.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 105000
     - wave_id: 9
-      iid: KNIGHT
+      iid: SAMURAI
       slots: 18.0
       max_era: 0
       num_critters_spawned: 0
@@ -529,283 +842,581 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 150000
-  - aid: 1077
+  - aid: 1347
     uid: 0
-    name: Treasure Hunt
+    name: Economy Disruption
     waves:
     - wave_id: 1
-      iid: LEGIONARY
-      slots: 13.0
+      iid: KNIGHT
+      slots: 16.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: HORSEMAN_FAST
+      iid: CRUSADER
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: CRUSADER
+      slots: 19.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: SAMURAI
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: SAMURAI
+      slots: 21.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: SAMURAI
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: SIEGE_RAM
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: KNIGHT
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: SIEGE_RAM
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+  - aid: 1348
+    uid: 0
+    name: Chapel Siege
+    waves:
+    - wave_id: 1
+      iid: LEGIONARY
       slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: PIKENEER
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: HORSEMAN_SLOW
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: HORSEMAN_SLOW
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: LARGE_CART
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: LEGIONARY
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: PIKENEER
+      slots: 19.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: PIKENEER
+      slots: 23.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+  - aid: 1349
+    uid: 0
+    name: Numerology of War
+    waves:
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SWORDMAN
+      slots: 13.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: PIKENEER
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: LARGE_CART
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: HORSEMAN_SLOW
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: LEGIONARY
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: HORSEMAN_SLOW
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: LEGIONARY
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+  - aid: 1350
+    uid: 0
+    name: Forgotten Warband
+    waves:
+    - wave_id: 1
+      iid: KNIGHT
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: THE_SWORDMASTER
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: LEGIONARY
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: CRUSADER
+      slots: 9.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: THE_SWORDMASTER
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: CHARIOT
+      slots: 13.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: THE_SWORDMASTER
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+  - aid: 1351
+    uid: 0
+    name: Economy Disruption
+    waves:
+    - wave_id: 1
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CRUSADER
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: CRUSADER
+      slots: 19.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: SAMURAI
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: SAMURAI
+      slots: 21.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: SAMURAI
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: SIEGE_RAM
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: KNIGHT
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: SIEGE_RAM
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
+  - aid: 1352
+    uid: 0
+    name: Stubborn Raiders
+    waves:
+    - wave_id: 1
+      iid: CHARIOT
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CHARIOT
+      slots: 11.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 15000
     - wave_id: 3
       iid: LARGE_CART
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: HORSEMAN_FAST
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HORSEMAN_FAST
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: PIKENEER
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: HORSEMAN_SLOW
-      slots: 18.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: HORSEMAN_FAST
-      slots: 19.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1078
-    uid: 0
-    name: Field Healer Hunt
-    waves:
-    - wave_id: 1
-      iid: CHARIOT
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: BOWMAN
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SWORDMAN
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: BOWMAN
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: CHARIOT
-      slots: 20.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-  - aid: 1079
-    uid: 0
-    name: Restless Horde
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 13.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: CONDOTTERI
-      slots: 10.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: CRUSADER
-      slots: 11.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: THE_SWORDMASTER
-      slots: 999.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: SWORDMAN
-      slots: 9.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: HORSEMAN_FAST
-      slots: 12.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: LEGIONARY
-      slots: 9.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: THE_SWORDMASTER
-      slots: 999.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1080
-    uid: 0
-    name: Grumpy Marauders
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 12.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: SIEGE_RAM
-      slots: 12.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: BOWMAN
-      slots: 11.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: HORSEMAN_FAST
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: CRUSADER
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-  - aid: 1081
-    uid: 0
-    name: Drilled Swords
-    waves:
-    - wave_id: 1
-      iid: SWORDMAN
-      slots: 11.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: BOWMAN
-      slots: 10.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: CLUBMAN
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: CHARIOT
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: CHARIOT
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: SWORDMAN
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-  - aid: 1082
-    uid: 0
-    name: Relentless Mob
-    waves:
-    - wave_id: 1
-      iid: HORSEMAN_SLOW
-      slots: 9.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: BOWMAN
-      slots: 13.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: CRUSADER
       slots: 12.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 30000
     - wave_id: 4
-      iid: SWORDMAN
+      iid: HORSEMAN_FAST
       slots: 8.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 45000
     - wave_id: 5
-      iid: PIKENEER
-      slots: 14.0
+      iid: CRUSADER
+      slots: 11.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 60000
     - wave_id: 6
-      iid: CHARIOT
+      iid: LEGIONARY
       slots: 14.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 75000
     - wave_id: 7
-      iid: LARGE_CART
+      iid: SIEGE_RAM
       slots: 12.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 90000
-  - aid: 1083
+    - wave_id: 8
+      iid: LARGE_CART
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+  - aid: 1353
     uid: 0
-    name: Clumsy Attackers
+    name: Lore Collection Razed
     waves:
     - wave_id: 1
-      iid: SWORDMAN
-      slots: 10.0
+      iid: LEGIONARY
+      slots: 14.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: BOWMAN
+      iid: PIKENEER
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: HORSEMAN_SLOW
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: LEGIONARY
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: HORSEMAN_FAST
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: LARGE_CART
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: HORSEMAN_SLOW
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: HORSEMAN_SLOW
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+  - aid: 1354
+    uid: 0
+    name: Noisy Barbarians
+    waves:
+    - wave_id: 1
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SIEGE_RAM
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: CRUSADER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: PIKENEER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: CRUSADER
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: NINJA
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: SAMURAI
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: HORSEMAN_SLOW
       slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: THE_KING
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: HANDGUNNER
+      slots: 13.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+  - aid: 1356
+    uid: 0
+    name: War Drummers
+    waves:
+    - wave_id: 1
+      iid: BOWMAN
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CLUBMAN
+      slots: 12.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 15000
     - wave_id: 3
       iid: SWORDMAN
-      slots: 14.0
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: BOWMAN
+      slots: 13.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: SWORDMAN
+      slots: 9.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+  - aid: 1357
+    uid: 0
+    name: Reckless Looters
+    waves:
+    - wave_id: 1
+      iid: KNIGHT
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: CRUSADER
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: LEGIONARY
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 30000
+    - wave_id: 4
+      iid: CONDOTTERI
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 45000
+    - wave_id: 5
+      iid: CRUSADER
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 60000
+    - wave_id: 6
+      iid: SAMURAI
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: CARGO
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+    - wave_id: 8
+      iid: HORSEMAN_SLOW
+      slots: 15.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 105000
+    - wave_id: 9
+      iid: LARGE_CART
+      slots: 12.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: THE_KING
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+  - aid: 1358
+    uid: 0
+    name: Disorganized Mob
+    waves:
+    - wave_id: 1
+      iid: SAMURAI
+      slots: 17.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: HORSEMAN_FAST
+      slots: 16.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 15000
+    - wave_id: 3
+      iid: SAMURAI
+      slots: 17.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 30000
@@ -816,357 +1427,145 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 45000
     - wave_id: 5
-      iid: PIKENEER
-      slots: 13.0
+      iid: SIEGE_RAM
+      slots: 18.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 60000
-  - aid: 1084
+    - wave_id: 6
+      iid: THE_KING
+      slots: 999.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 75000
+    - wave_id: 7
+      iid: LEGIONARY
+      slots: 14.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 90000
+  - aid: 1359
     uid: 0
-    name: Boot Camp Assault
+    name: Chapel Siege
     waves:
     - wave_id: 1
       iid: LEGIONARY
-      slots: 13.0
+      slots: 14.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
       iid: PIKENEER
-      slots: 14.0
+      slots: 15.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 15000
     - wave_id: 3
-      iid: LEGIONARY
-      slots: 14.0
+      iid: HORSEMAN_SLOW
+      slots: 16.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 30000
     - wave_id: 4
-      iid: HORSEMAN_FAST
-      slots: 15.0
+      iid: HORSEMAN_SLOW
+      slots: 17.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 45000
     - wave_id: 5
       iid: LARGE_CART
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: LEGIONARY
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: HORSEMAN_SLOW
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: HORSEMAN_SLOW
-      slots: 23.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1085
-    uid: 0
-    name: Lore Collection Razed
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: PIKENEER
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: HORSEMAN_SLOW
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: LEGIONARY
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HORSEMAN_FAST
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: LARGE_CART
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: HORSEMAN_SLOW
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: HORSEMAN_SLOW
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1086
-    uid: 0
-    name: Forge Sabotage
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: HORSEMAN_SLOW
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: PIKENEER
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: HORSEMAN_FAST
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HORSEMAN_FAST
       slots: 17.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 60000
     - wave_id: 6
-      iid: HORSEMAN_SLOW
+      iid: LEGIONARY
       slots: 18.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 75000
     - wave_id: 7
-      iid: LEGIONARY
+      iid: PIKENEER
       slots: 19.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 90000
     - wave_id: 8
-      iid: LARGE_CART
-      slots: 20.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1087
-    uid: 0
-    name: Town Guard Overwhelmed
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: HORSEMAN_SLOW
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: HORSEMAN_FAST
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
       iid: PIKENEER
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HORSEMAN_FAST
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: LARGE_CART
-      slots: 18.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: HORSEMAN_SLOW
       slots: 23.0
       max_era: 0
       num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: LARGE_CART
-      slots: 22.0
-      max_era: 0
-      num_critters_spawned: 0
       next_critter_ms: 105000
-  - aid: 1088
+  - aid: 1360
     uid: 0
-    name: Lore Collection Razed
+    name: Fencing School Sacked
     waves:
     - wave_id: 1
-      iid: LEGIONARY
-      slots: 14.0
+      iid: SAMURAI
+      slots: 16.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: PIKENEER
-      slots: 15.0
+      iid: SIEGE_RAM
+      slots: 17.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 15000
     - wave_id: 3
-      iid: HORSEMAN_SLOW
-      slots: 15.0
+      iid: SAMURAI
+      slots: 18.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 30000
     - wave_id: 4
-      iid: LEGIONARY
-      slots: 16.0
+      iid: SAMURAI
+      slots: 19.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 45000
     - wave_id: 5
-      iid: HORSEMAN_FAST
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
-    - wave_id: 6
-      iid: LARGE_CART
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 75000
-    - wave_id: 7
-      iid: HORSEMAN_SLOW
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 90000
-    - wave_id: 8
-      iid: HORSEMAN_SLOW
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 105000
-  - aid: 1089
-    uid: 0
-    name: Field Healer Hunt
-    waves:
-    - wave_id: 1
-      iid: CHARIOT
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: BOWMAN
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: SWORDMAN
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: BOWMAN
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: CHARIOT
+      iid: SAMURAI
       slots: 20.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 60000
-  - aid: 1090
-    uid: 0
-    name: Town Guard Overwhelmed
-    waves:
-    - wave_id: 1
-      iid: LEGIONARY
-      slots: 14.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 0
-    - wave_id: 2
-      iid: HORSEMAN_SLOW
-      slots: 15.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 15000
-    - wave_id: 3
-      iid: HORSEMAN_FAST
-      slots: 16.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 30000
-    - wave_id: 4
-      iid: PIKENEER
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 45000
-    - wave_id: 5
-      iid: HORSEMAN_FAST
-      slots: 17.0
-      max_era: 0
-      num_critters_spawned: 0
-      next_critter_ms: 60000
     - wave_id: 6
-      iid: LARGE_CART
-      slots: 18.0
+      iid: KNIGHT
+      slots: 21.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 75000
     - wave_id: 7
-      iid: HORSEMAN_SLOW
-      slots: 23.0
+      iid: CRUSADER
+      slots: 22.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 90000
     - wave_id: 8
-      iid: LARGE_CART
-      slots: 22.0
+      iid: SAMURAI
+      slots: 16.0
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 105000
+    - wave_id: 9
+      iid: CRUSADER
+      slots: 18.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 120000
+    - wave_id: 10
+      iid: KNIGHT
+      slots: 20.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 135000
+    - wave_id: 11
+      iid: KNIGHT
+      slots: 22.0
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 150000
   spies: []
   bosses: {}
   hex_map: []
@@ -1174,8 +1573,8 @@ empires:
 - uid: 21
   name: Nobelheim
   resources:
-    gold: 24771.6759440409
-    culture: 175931.72224409805
+    gold: 225713.75527511805
+    culture: 307557.6746595892
     life: 16.0
   buildings:
     INIT: 0.0
@@ -1204,9 +1603,13 @@ empires:
     TREASURE_CHAMBER: 0.0
     FIELD_HEALER: 0.0
     BOOT_CAMP: 0.0
-    TEMPLE: 63440.93916348307
-    OBSERVATORY: 44693.825419446526
-  build_queue: OBSERVATORY
+    TEMPLE: 0.0
+    OBSERVATORY: 0.0
+    FORGE: 0.0
+    THEATER: 0.0
+    LORE_COLLECTION: 0.0
+    MONASTERY: 76771.74031105317
+  build_queue: MONASTERY
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -1231,40 +1634,57 @@ empires:
     LAWS: 0.0
     ARCHITECTURE: 0.0
     CARTOGRAPHY: 0.0
-    PAINTING: 3403.280044286509
-  research_queue: PAINTING
+    PAINTING: 0.0
+    IRON: 0.0
+    ECONOMY: 0.0
+    LITERATURE: 0.0
+    STEEL: 132470.13482256662
+  research_queue: STEEL
   citizens:
-    merchant: 15
-    scientist: 0
+    merchant: 0
+    scientist: 18
     artist: 0
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 1.731
-    culture_offset: 0.8999999999999999
+    gold_offset: 2.431
+    culture_offset: 1.55
     build_speed_modifier: 1.0
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    research_speed_modifier: 0.44999999999999996
+    research_speed_modifier: 0.75
     enable_techtree: 1.0
     gold_modifier: 0.8
     enable_army: 1.0
     ruler_unlock: 1.0
-    culture_modifier: 0.35
+    culture_modifier: 0.65
     enable_messages: 1.0
     max_life_modifier: 6.0
     travel_offset: -1800.0
     map_vision_radius_offset: 2.0
     spy_workshop: 1.0
-    max_siege_construction_speed_modifier: 0.14
-    build_speed_offset: 0.25
+    max_siege_construction_speed_modifier: 0.19
+    build_speed_offset: 0.44999999999999996
     enable_workshop: 1.0
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    research_speed_offset: 0.1
+    research_speed_offset: 0.35
+    tower_sell_refund_modifier: 0.1
     citizen_cost_modifier: 0.1
-    tile_cost_modifier: 0.04
-  item_upgrades: {}
+    tile_cost_modifier: 0.08
+  item_upgrades:
+    BALLISTA_TOWER:
+      reload: 1
+    FIRE_TOWER:
+      reload: 1
+    CATAPULTS:
+      reload: 1
+    SPIKE_TRAP:
+      reload: 1
+    DOUBLE_SLING_TOWER:
+      reload: 1
+    ARBELESTE_TOWER:
+      reload: 1
   artifacts: []
   max_life: 16.0
   structures: {}
@@ -1333,13 +1753,23 @@ empires:
       max_era: 1
       num_critters_spawned: 0
       next_critter_ms: 0
+  - aid: 1122
+    uid: 21
+    name: Gorbatschows rote Linie
+    waves:
+    - wave_id: 4
+      iid: SLAVE
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
   spies: []
   bosses: {}
   hex_map:
   - q: -10
     r: 10
     type:
-      type: DOUBLE_SLING_TOWER
+      type: ARBELESTE_TOWER
       select: random
   - q: -10
     r: 11
@@ -1381,7 +1811,7 @@ empires:
   - q: -12
     r: 12
     type:
-      type: DOUBLE_SLING_TOWER
+      type: ARBELESTE_TOWER
       select: random
   - q: -12
     r: 13
@@ -1404,7 +1834,7 @@ empires:
   - q: -8
     r: 10
     type:
-      type: DOUBLE_SLING_TOWER
+      type: ARBELESTE_TOWER
       select: random
   - q: -8
     r: 11
@@ -1438,17 +1868,17 @@ empires:
   ruler:
     name: Nandi
     type: NANDI
-    xp: 1001.0
-    level: 3
+    xp: 3248.0
+    level: 4
     q: 2
     w: 0
-    e: 1
+    e: 2
     r: 0
 - uid: 28
   name: NorthernTrolls
   resources:
-    gold: 9825.683905265065
-    culture: 149733.68925897198
+    gold: 6573.324387386713
+    culture: 287759.7345222134
     life: 16.0
   buildings:
     INIT: 0.0
@@ -1471,15 +1901,21 @@ empires:
     HARBOR: 0.0
     BOOT_CAMP: 0.0
     TOWN_GUARD: 0.0
-    THEATER: 48602.73029781976
+    THEATER: 0.0
     GRANARY: 0.0
     BOW_MAKER: 0.0
     SHRINE: 0.0
     WORK_SHOP: 0.0
     WATCH_TOWER: 0.0
     TREADWHEEL_CRANE: 0.0
-    FORGE: 13963.417157879783
-  build_queue: FORGE
+    FORGE: 0.0
+    TREASURE_CHAMBER: 0.0
+    FENCING_SCHOOL: 35481.246815741026
+    SWORD_MAKER: 0.0
+    LIBRARY: 0.0
+    CARTOGRAPHER: 0.0
+    QUARTERMASTER: 54970.80283905429
+  build_queue: FENCING_SCHOOL
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -1504,42 +1940,44 @@ empires:
     LAWS: 0.0
     LITERATURE: 0.0
     IRON: 0.0
-    ARCHITECTURE: 14824.25647020102
-  research_queue: ARCHITECTURE
+    ARCHITECTURE: 0.0
+    PAINTING: 0.0
+    CARTOGRAPHY: 0.0
+    ECONOMY: 58742.450990448255
+  research_queue: ECONOMY
   citizens:
-    merchant: 14
+    merchant: 18
     scientist: 0
     artist: 0
   effects:
     life_regen_modifier: 0.002
-    siege_offset: 10920.0
-    gold_offset: 1.2309999999999999
-    culture_offset: 0.9000000000000001
+    siege_offset: 7320.0
+    gold_offset: 1.731
+    culture_offset: 1.2000000000000002
     gold_modifier: 0.8
-    wave_delay_offset: 2000.5
+    wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    build_speed_modifier: 0.7
+    build_speed_modifier: 1.0
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
     ruler_unlock: 1.0
     enable_messages: 1.0
     enable_army: 1.0
     max_life_modifier: 6.0
-    culture_modifier: 0.35
-    travel_offset: -1800.0
+    culture_modifier: 0.55
+    travel_offset: -3600.0
     spy_workshop: 1.0
     max_siege_construction_speed_modifier: 0.14
-    build_speed_offset: 0.25
+    build_speed_offset: 0.44999999999999996
     enable_workshop: 1.0
-    map_vision_radius_offset: 2.0
-    research_speed_offset: 0.1
-    restore_life_during_battle_modifier: 0.02
-    tile_cost_modifier: 0.1
-    citizen_cost_modifier: 0.05
+    map_vision_radius_offset: 5.0
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
+    research_speed_offset: 0.30000000000000004
+    citizen_cost_modifier: 0.15
     citizen_effect_modifier: 0.006
   item_upgrades: {}
-  artifacts:
-  - BATTLE_DRUMS
+  artifacts: []
   max_life: 16.0
   structures: {}
   armies:
@@ -1549,13 +1987,13 @@ empires:
     waves:
     - wave_id: 1
       iid: CHARIOT
-      slots: 5
+      slots: 9
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
       iid: PIKENEER
-      slots: 9
+      slots: 20
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -1593,7 +2031,7 @@ empires:
     type: empty
   - q: -11
     r: -2
-    type: DOUBLE_SLING_TOWER
+    type: ARBELESTE_TOWER
   - q: -11
     r: 0
     type: empty
@@ -1605,10 +2043,12 @@ empires:
     type: castle
   - q: -12
     r: 0
-    type: SPIKE_TRAP
+    type:
+      type: SPIKE_TRAP
+      select: random
   - q: -12
     r: 1
-    type: DOUBLE_SLING_TOWER
+    type: ARBELESTE_TOWER
   - q: -12
     r: 2
     type: FIRE_TOWER
@@ -1617,12 +2057,20 @@ empires:
     type: BALLISTA_TOWER
   - q: -6
     r: -2
-    type: BALLISTA_TOWER
+    type:
+      type: BALLISTA_TOWER
+      select: last
+  - q: -6
+    r: -3
+    type: ARBELESTE_TOWER
   - q: -7
     r: -1
     type: empty
   - q: -7
     r: -2
+    type: empty
+  - q: -7
+    r: -3
     type: spawnpoint
   - q: -7
     r: 0
@@ -1632,10 +2080,13 @@ empires:
     type: BALLISTA_TOWER
   - q: -8
     r: -1
-    type: DOUBLE_SLING_TOWER
+    type: ARBELESTE_TOWER
   - q: -8
     r: -2
     type: FIRE_TOWER
+  - q: -8
+    r: -3
+    type: ARBELESTE_TOWER
   - q: -8
     r: 0
     type:
@@ -1665,9 +2116,9 @@ empires:
   ruler:
     name: Nandi
     type: NANDI
-    xp: 398.0
-    level: 2
-    q: 1
+    xp: 5563.0
+    level: 4
+    q: 3
     w: 1
     e: 0
     r: 0
@@ -1709,8 +2160,8 @@ empires:
 - uid: 7
   name: Limperium
   resources:
-    gold: 55799.88952562187
-    culture: 131755.53785484153
+    gold: 37686.45046546401
+    culture: 286867.07375446026
     life: 16.0
   buildings:
     INIT: 0.0
@@ -1738,9 +2189,12 @@ empires:
     CHAPEL: 0.0
     BOOT_CAMP: 0.0
     LIBRARY: 0.0
-    LORE_COLLECTION: 9955.214498213938
-    THEATER: 48606.78382672303
-  build_queue: LORE_COLLECTION
+    LORE_COLLECTION: 0.0
+    THEATER: 0.0
+    TOWN_GUARD: 0.0
+    WORK_SHOP: 0.0
+    BANK: 55960.689386271064
+  build_queue: BANK
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -1764,17 +2218,20 @@ empires:
     MECHANICS: 0.0
     LAWS: 0.0
     LITERATURE: 0.0
-    ECONOMY: 56455.57798710345
-  research_queue: ECONOMY
+    ECONOMY: 0.0
+    IRON: 0.0
+    STEEL: 97374.87300067104
+    CARTOGRAPHY: 0.0
+  research_queue: STEEL
   citizens:
-    merchant: 14
-    scientist: 0
+    merchant: 9
+    scientist: 8
     artist: 0
   effects:
     life_regen_modifier: 0.002
-    siege_offset: 5520.0
-    gold_offset: 1.731
-    culture_offset: 0.8999999999999999
+    siege_offset: 7320.0
+    gold_offset: 2.431
+    culture_offset: 1.35
     gold_modifier: 0.8
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
@@ -1789,12 +2246,19 @@ empires:
     enable_army: 1.0
     artifact_steal_victory_modifier: 0.13
     artifact_steal_defeat_modifier: 0.01
-    culture_modifier: 0.35
+    culture_modifier: 0.55
     research_speed_offset: 0.30000000000000004
-    build_speed_offset: 0.1
-    max_siege_construction_speed_modifier: 0.2
+    tower_sell_refund_modifier: 0.1
+    spy_workshop: 1.0
+    max_siege_construction_speed_modifier: 0.19
+    build_speed_offset: 0.25
+    enable_workshop: 1.0
     wave_slot_cost_modifier: 0.08
-  item_upgrades: {}
+  item_upgrades:
+    CATAPULTS:
+      reload: 5
+    ARROW_TOWER:
+      damage: 2
   artifacts: []
   max_life: 16.0
   structures: {}
@@ -1810,15 +2274,15 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 5
-      iid: BOWMAN
-      slots: 11
-      max_era: 2
+      iid: LARGE_CART
+      slots: 12
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 6
-      iid: BOWMAN
-      slots: 11
-      max_era: 2
+      iid: PIKENEER
+      slots: 12
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 7
@@ -1829,6 +2293,40 @@ empires:
       next_critter_ms: 0
     - wave_id: 8
       iid: ALRIC
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  - aid: 1235
+    uid: 7
+    name: Inkasso Limin
+    waves:
+    - wave_id: 1
+      iid: BOWMAN
+      slots: 7
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: BOWMAN
+      slots: 9
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: BOWMAN
+      slots: 9
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 4
+      iid: CART
+      slots: 10
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 5
+      iid: SCOUT
       slots: 1
       max_era: 0
       num_critters_spawned: 0
@@ -1844,15 +2342,13 @@ empires:
     type: CATAPULTS
   - q: 10
     r: -8
-    type:
-      type: SPIKE_TRAP
-      select: random
+    type: FIRE_TOWER
   - q: 10
     r: -9
     type: empty
   - q: 11
     r: -10
-    type: ARROW_TOWER
+    type: FIRE_TOWER
   - q: 11
     r: -11
     type: empty
@@ -1879,6 +2375,9 @@ empires:
     r: -12
     type: empty
   - q: 12
+    r: -13
+    type: CATAPULTS
+  - q: 12
     r: -9
     type:
       type: ARROW_TOWER
@@ -1899,6 +2398,9 @@ empires:
   - q: 13
     r: -13
     type: empty
+  - q: 13
+    r: -14
+    type: CATAPULTS
   - q: 14
     r: -11
     type:
@@ -1913,6 +2415,9 @@ empires:
   - q: 14
     r: -14
     type: empty
+  - q: 14
+    r: -15
+    type: CATAPULTS
   - q: 15
     r: -12
     type: ARROW_TOWER
@@ -1924,11 +2429,14 @@ empires:
     type: ARROW_TOWER
   - q: 15
     r: -15
+    type: empty
+  - q: 15
+    r: -16
+    type: CATAPULTS
+  - q: 16
+    r: -12
     type: castle
   - q: 16
-    r: -12
-    type: spawnpoint
-  - q: 16
     r: -13
     type: empty
   - q: 16
@@ -1937,10 +2445,16 @@ empires:
   - q: 16
     r: -15
     type: ARROW_TOWER
+  - q: 16
+    r: -16
+    type: empty
+  - q: 16
+    r: -17
+    type: spawnpoint
   ruler:
     name: Alric Shadowmere
     type: ALRIC
-    xp: 512.0
+    xp: 1334.0
     level: 3
     q: 2
     w: 0
@@ -1949,9 +2463,9 @@ empires:
 - uid: 23
   name: Dravithar Coalition
   resources:
-    gold: 16975.1084570642
-    culture: 215830.2296094433
-    life: 12.808602576029966
+    gold: 124504.4585485701
+    culture: 315656.8249349031
+    life: 14.158405495826138
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -1974,13 +2488,19 @@ empires:
     HERBALIST: 0.0
     OBSERVATORY: 0.0
     LIBRARY: 0.0
-    WATCH_TOWER: 5475.517742103662
+    WATCH_TOWER: 0.0
     FIELD_HEALER: 0.0
     SHRINE: 0.0
     WORK_SHOP: 0.0
-    BANK: 50097.177567262195
+    BANK: 0.0
     MARKET_PLACE: 0.0
-  build_queue: BANK
+    GUILD: 0.0
+    TREADWHEEL_CRANE: 0.0
+    CHAPEL: 0.0
+    BOOT_CAMP: 0.0
+    TOWN_GUARD: 0.0
+    CANNON_MANUFACTORY: 193695.75220812095
+  build_queue: CANNON_MANUFACTORY
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -2004,45 +2524,52 @@ empires:
     IRON: 0.0
     ARCHITECTURE: 0.0
     LITERATURE: 0.0
-    ECONOMY: 0.0
+    ECONOMY: 17290.92988574935
     SAILING: 4084.7256806934897
     COMMAND_CHAIN: 0.0
-    FANATISM: 56070.684002340386
-    HORSEBACK_RIDING: 5057.642259499512
-  research_queue: FANATISM
+    FANATISM: 0.0
+    HORSEBACK_RIDING: 4232.805610245785
+    SCIENCE: 0.0
+    GUNPOWDER: 0.0
+    STEEL: 146478.27187588255
+    FEUDALISM: 65758.26878065817
+  research_queue: FEUDALISM
   citizens:
-    merchant: 0
-    scientist: 16
+    merchant: 18
+    scientist: 0
     artist: 0
   effects:
     life_regen_modifier: 0.002
-    siege_offset: 3720.0
-    gold_offset: 2.431
-    culture_offset: 1.1
-    gold_modifier: 0.5
-    wave_delay_offset: 1000.0
+    siege_offset: 7320.0
+    gold_offset: 2.931
+    culture_offset: 1.2
+    gold_modifier: 1.0
+    wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    build_speed_modifier: 0.8
+    build_speed_modifier: 1.3
     ruler_unlock: 1.0
     research_speed_modifier: 0.75
     enable_techtree: 1.0
     enable_army: 1.0
     enable_messages: 1.0
-    culture_modifier: 0.4
+    culture_modifier: 0.55
     build_speed_offset: 0.44999999999999996
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    max_life_modifier: 3.0
+    max_life_modifier: 6.0
     research_speed_offset: 0.55
-    max_siege_construction_speed_modifier: 0.22
+    map_vision_radius_offset: 2.0
+    max_siege_construction_speed_modifier: 0.14
     enable_workshop: 1.0
+    spy_workshop: 1.0
+    citizen_cost_modifier: 0.05
     citizen_effect_modifier: 0.024
   item_upgrades:
     ARROW_TOWER:
       damage: 5
       reload: 5
   artifacts: []
-  max_life: 13.0
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 411
@@ -2056,15 +2583,15 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: PIKENEER
-      slots: 13
-      max_era: 3
+      iid: HANDGUNNER
+      slots: 15
+      max_era: 4
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
-      iid: PIKENEER
-      slots: 13
-      max_era: 3
+      iid: HANDGUNNER
+      slots: 15
+      max_era: 4
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 11
@@ -2119,6 +2646,9 @@ empires:
   - q: 11
     r: 1
     type: spawnpoint
+  - q: 11
+    r: 3
+    type: castle
   - q: 12
     r: -1
     type: empty
@@ -2137,7 +2667,7 @@ empires:
       select: random
   - q: 12
     r: 2
-    type: castle
+    type: empty
   - q: 13
     r: -1
     type: empty
@@ -2174,17 +2704,17 @@ empires:
   ruler:
     name: Nandi
     type: NANDI
-    xp: 3294.0
-    level: 4
-    q: 0
+    xp: 13714.0
+    level: 5
+    q: 1
     w: 4
     e: 0
     r: 0
 - uid: 29
   name: Wikinger-Empire
   resources:
-    gold: 19768.043721793623
-    culture: 203933.14858883544
+    gold: 65355.8501665297
+    culture: 641477.4196855888
     life: 13.0
   buildings:
     INIT: 0.0
@@ -2215,8 +2745,13 @@ empires:
     TREASURE_CHAMBER: 0.0
     LORE_COLLECTION: 0.0
     FORGE: 0.0
-    THEATER: 27263.77605444201
-  build_queue: THEATER
+    THEATER: 0.0
+    LIBRARY: 0.0
+    TREADWHEEL_CRANE: 0.0
+    TEMPLE: 0.0
+    CARTOGRAPHER: 0.0
+    FENCING_SCHOOL: 23814.291444811908
+  build_queue: FENCING_SCHOOL
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -2243,18 +2778,22 @@ empires:
     IRON: 0.0
     LITERATURE: 0.0
     CARTOGRAPHY: 0.0
-    ECONOMY: 73359.01362015252
-  research_queue: ECONOMY
+    ECONOMY: 0.0
+    COMMAND_CHAIN: 0.0
+    STEEL: 128914.68456576642
+    TACTICS: 82342.74050818627
+    PAINTING: 6088.9716215211565
+  research_queue: STEEL
   citizens:
-    merchant: 16
+    merchant: 22
     scientist: 0
     artist: 0
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 1.731
-    culture_offset: 1.05
-    build_speed_modifier: 0.8
+    gold_offset: 2.431
+    culture_offset: 1.55
+    build_speed_modifier: 1.0
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
     research_speed_modifier: 0.75
@@ -2264,26 +2803,27 @@ empires:
     ruler_unlock: 1.0
     enable_messages: 1.0
     max_life_modifier: 3.0
-    culture_modifier: 0.35
-    map_vision_radius_offset: 2.0
-    travel_offset: -1800.0
+    culture_modifier: 0.6499999999999999
+    map_vision_radius_offset: 5.0
+    travel_offset: -3600.0
     spy_workshop: 1.0
-    max_siege_construction_speed_modifier: 0.14
+    max_siege_construction_speed_modifier: 0.19
     build_speed_offset: 0.44999999999999996
     enable_workshop: 1.0
-    research_speed_offset: 0.35
+    research_speed_offset: 0.55
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
     tower_sell_refund_modifier: 0.1
-    citizen_cost_modifier: 0.15
+    citizen_cost_modifier: 0.2
     tile_cost_modifier: 0.04
   item_upgrades:
     BALLISTA_TOWER:
-      reload: 5
+      reload: 8
     CHARIOT:
       speed: 3
     PIKENEER:
-      armour: 4
+      armour: 5
+      speed: 2
   artifacts: []
   max_life: 13.0
   structures: {}
@@ -2294,26 +2834,32 @@ empires:
     waves:
     - wave_id: 1
       iid: PIKENEER
-      slots: 10
+      slots: 14
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
       iid: PIKENEER
-      slots: 10
+      slots: 14
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 16
-      iid: NANDI
-      slots: 6
-      max_era: 1
+      iid: PIKENEER
+      slots: 14
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 3
-      iid: CHARIOT
-      slots: 7
-      max_era: 2
+      iid: PIKENEER
+      slots: 14
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: NANDI
+      slots: 1
+      max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
   - aid: 1026
@@ -2345,6 +2891,9 @@ empires:
     r: 12
     type: BALLISTA_TOWER
   - q: -1
+    r: 13
+    type: BALLISTA_TOWER
+  - q: -1
     r: 9
     type: BALLISTA_TOWER
   - q: -2
@@ -2358,10 +2907,19 @@ empires:
     type: empty
   - q: -2
     r: 13
+    type: empty
+  - q: -2
+    r: 14
     type: spawnpoint
   - q: -3
     r: 12
     type: BALLISTA_TOWER
+  - q: -3
+    r: 13
+    type: empty
+  - q: -3
+    r: 14
+    type: empty
   - q: 0
     r: 10
     type:
@@ -2422,18 +2980,18 @@ empires:
   ruler:
     name: Nandi
     type: NANDI
-    xp: 3928.0
-    level: 4
-    q: 3
+    xp: 16009.0
+    level: 6
+    q: 4
     w: 0
     e: 1
-    r: 0
+    r: 1
 - uid: 24
   name: Bearfoot
   resources:
-    gold: 20764.69606512858
-    culture: 233813.43392508233
-    life: 6.855174718123878
+    gold: 52425.01173679026
+    culture: 404957.03700000764
+    life: 10.613610387303996
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -2460,7 +3018,12 @@ empires:
     TOWN_GUARD: 0.0
     TREASURE_CHAMBER: 0.0
     FIELD_HEALER: 0.0
-  build_queue: null
+    THEATER: 0.0
+    SWORD_MAKER: 0.0
+    WORK_SHOP: 0.0
+    BOOT_CAMP: 0.0
+    FENCING_SCHOOL: 52732.509579348545
+  build_queue: FENCING_SCHOOL
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -2485,41 +3048,45 @@ empires:
     PAINTING: 0.0
     MATHMATICS: 0.0
     IRON: 0.0
-    ECONOMY: 85604.43706232391
-  research_queue: ECONOMY
+    ECONOMY: 0.0
+    LITERATURE: 25232.970189988675
+    STEEL: 146478.27187588255
+    ARCHITECTURE: 24406.04876795638
+  research_queue: ARCHITECTURE
   citizens:
     merchant: 0
     scientist: 0
-    artist: 16
+    artist: 19
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 1.981
-    culture_offset: 1.05
+    gold_offset: 3.431
+    culture_offset: 1.35
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
     gold_modifier: 0.8
     enable_messages: 1.0
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    culture_modifier: 0.35
+    culture_modifier: 0.55
     ruler_unlock: 1.0
     build_speed_modifier: 0.5
     tower_sell_refund_modifier: 0.1
     enable_army: 1.0
     travel_offset: -1800.0
-    max_life_modifier: 3.0
+    max_life_modifier: 6.0
     map_vision_radius_offset: 2.0
     spy_workshop: 1.0
-    max_siege_construction_speed_modifier: 0.17
+    max_siege_construction_speed_modifier: 0.19
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    build_speed_offset: 0.1
+    build_speed_offset: 0.25
+    enable_workshop: 1.0
     research_speed_offset: 0.1
     other_citizen_gold_modifier: 0.002
   item_upgrades: {}
   artifacts: []
-  max_life: 13.0
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 851
@@ -2527,27 +3094,27 @@ empires:
     name: Angriff
     waves:
     - wave_id: 3
-      iid: BOWMAN
-      slots: 7
-      max_era: 2
+      iid: PIKENEER
+      slots: 12
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 4
-      iid: BOWMAN
-      slots: 7
-      max_era: 2
+      iid: PIKENEER
+      slots: 12
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 5
-      iid: CHARIOT
-      slots: 7
-      max_era: 2
+      iid: PIKENEER
+      slots: 12
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 6
-      iid: BOWMAN
+      iid: PIKENEER
       slots: 13
-      max_era: 2
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 7
@@ -2568,6 +3135,16 @@ empires:
       max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
+  - aid: 1115
+    uid: 24
+    name: Relikt
+    waves:
+    - wave_id: 2
+      iid: SLAVE
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
   spies: []
   bosses: {}
   hex_map:
@@ -2579,9 +3156,7 @@ empires:
     type: FIRE_TOWER
   - q: -10
     r: -12
-    type:
-      type: FIRE_TOWER
-      select: last
+    type: CATAPULTS
   - q: -10
     r: -13
     type: empty
@@ -2596,10 +3171,10 @@ empires:
     type: empty
   - q: -11
     r: -11
-    type: castle
+    type: spawnpoint
   - q: -11
     r: -12
-    type: ARROW_TOWER
+    type: SPIKE_TRAP
   - q: -11
     r: -13
     type: empty
@@ -2608,25 +3183,43 @@ empires:
     type: CATAPULTS
   - q: -11
     r: -8
-    type: empty
+    type: CATAPULTS
   - q: -11
     r: -9
     type: BALLISTA_TOWER
   - q: -12
     r: -10
-    type: BALLISTA_TOWER
+    type: ARROW_TOWER
   - q: -12
     r: -11
     type: BALLISTA_TOWER
   - q: -12
     r: -12
-    type: spawnpoint
+    type: empty
   - q: -12
     r: -13
     type: ARROW_TOWER
   - q: -12
     r: -9
     type: BALLISTA_TOWER
+  - q: -13
+    r: -10
+    type: empty
+  - q: -13
+    r: -11
+    type: empty
+  - q: -13
+    r: -12
+    type: ARROW_TOWER
+  - q: -13
+    r: -9
+    type: castle
+  - q: -14
+    r: -10
+    type: empty
+  - q: -14
+    r: -11
+    type: ARROW_TOWER
   - q: -8
     r: -11
     type: ARROW_TOWER
@@ -2638,7 +3231,9 @@ empires:
     type: FIRE_TOWER
   - q: -8
     r: -14
-    type: FIRE_TOWER
+    type:
+      type: FIRE_TOWER
+      select: last
   - q: -9
     r: -10
     type: SPIKE_TRAP
@@ -2653,24 +3248,22 @@ empires:
     type: empty
   - q: -9
     r: -14
-    type:
-      type: FIRE_TOWER
-      select: last
+    type: BALLISTA_TOWER
   ruler:
     name: Lucien Duskbane
     type: LUCIEN
-    xp: 1004.0
-    level: 3
-    q: 2
+    xp: 9759.0
+    level: 5
+    q: 4
     w: 0
     e: 1
     r: 0
 - uid: 58
   name: Aleria
   resources:
-    gold: 34326.24510319006
-    culture: 152138.28095072226
-    life: 16.0
+    gold: 39864.66481773132
+    culture: 328159.02281491127
+    life: 6.957393650923987
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -2698,8 +3291,12 @@ empires:
     TOWN_GUARD: 0.0
     LORE_COLLECTION: 0.0
     FORGE: 0.0
-    TREASURE_CHAMBER: 6184.4381279295985
-  build_queue: TREASURE_CHAMBER
+    TREASURE_CHAMBER: 0.0
+    CHURCH: 0.0
+    FENCING_SCHOOL: 0.0
+    THEATER: 0.0
+    CARTOGRAPHER: 10388.171812644712
+  build_queue: CARTOGRAPHER
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -2723,18 +3320,23 @@ empires:
     MATHMATICS: 0.0
     IRON: 0.0
     LAWS: 0.0
-    CARTOGRAPHY: 3300.9997272119144
-  research_queue: CARTOGRAPHY
+    CARTOGRAPHY: 0.0
+    ARCHITECTURE: 0.0
+    LITERATURE: 0.0
+    STEEL: 146584.00408720475
+    COMMAND_CHAIN: 76580.51323050573
+    PAINTING: 6775.542700661868
+  research_queue: PAINTING
   citizens:
-    merchant: 11
+    merchant: 5
     scientist: 0
-    artist: 3
+    artist: 13
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 1.2309999999999999
-    culture_offset: 0.8500000000000001
-    build_speed_modifier: 0.5
+    gold_offset: 1.731
+    culture_offset: 1.35
+    build_speed_modifier: 0.8
     gold_modifier: 0.8
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
@@ -2746,14 +3348,16 @@ empires:
     enable_messages: 1.0
     max_life_modifier: 6.0
     travel_offset: -1800.0
-    culture_modifier: 0.35
+    culture_modifier: 0.55
     spy_workshop: 1.0
     max_siege_construction_speed_modifier: 0.17
     tower_sell_refund_modifier: 0.1
     build_speed_offset: 0.30000000000000004
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
     research_speed_offset: 0.1
     citizen_effect_modifier: 0.018
-    tile_cost_modifier: 0.04
+    tile_cost_modifier: 0.08
   item_upgrades: {}
   artifacts: []
   max_life: 16.0
@@ -2771,7 +3375,7 @@ empires:
       next_critter_ms: 0
     - wave_id: 8
       iid: LARGE_CART
-      slots: 6
+      slots: 8
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -2811,20 +3415,38 @@ empires:
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
+    - wave_id: 1
+      iid: THE_SWORDMASTER
+      slots: 1
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: PIKENEER
+      slots: 5
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: PIKENEER
+      slots: 5
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
   - aid: 458
     uid: 58
     name: Die Geröll-Banditen
     waves:
     - wave_id: 5
-      iid: CHARIOT
+      iid: LEGIONARY
       slots: 6
-      max_era: 2
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 6
-      iid: CHARIOT
+      iid: PIKENEER
       slots: 5
-      max_era: 2
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 7
@@ -2840,9 +3462,27 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: SLAVE
+      iid: THE_SWORDMASTER
       slots: 1
-      max_era: 0
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 5
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: LEGIONARY
+      slots: 5
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: PIKENEER
+      slots: 5
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
   spies: []
@@ -2901,7 +3541,7 @@ empires:
       select: random
   - q: 12
     r: 11
-    type: ARROW_TOWER
+    type: ARBELESTE_TOWER
   - q: 12
     r: 12
     type: ARROW_TOWER
@@ -2913,15 +3553,24 @@ empires:
   - q: 12
     r: 14
     type: empty
+  - q: 12
+    r: 15
+    type: ARBELESTE_TOWER
+  - q: 13
+    r: 10
+    type: castle
   - q: 13
     r: 11
-    type: castle
+    type: empty
   - q: 13
     r: 12
     type: empty
   - q: 13
     r: 13
     type: empty
+  - q: 14
+    r: 12
+    type: ARBELESTE_TOWER
   - q: 8
     r: 10
     type: ARROW_TOWER
@@ -2930,7 +3579,7 @@ empires:
     type: BALLISTA_TOWER
   - q: 8
     r: 13
-    type: ARROW_TOWER
+    type: ARBELESTE_TOWER
   - q: 8
     r: 15
     type:
@@ -2959,18 +3608,18 @@ empires:
   ruler:
     name: Nandi
     type: NANDI
-    xp: 4175.0
-    level: 4
+    xp: 7096.0
+    level: 5
     q: 0
     w: 3
-    e: 1
+    e: 2
     r: 0
 - uid: 13
   name: Gempire
   resources:
-    gold: 35160.60807383374
-    culture: 98183.14468840162
-    life: 13.0
+    gold: 51326.63165617133
+    culture: 221426.55222148803
+    life: 26.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -2996,8 +3645,13 @@ empires:
     CHAPEL: 0.0
     LIBRARY: 0.0
     LORE_COLLECTION: 0.0
-    BOOT_CAMP: 11706.812387775186
-  build_queue: BOOT_CAMP
+    BOOT_CAMP: 0.0
+    TOWN_GUARD: 0.0
+    TREADWHEEL_CRANE: 0.0
+    FORGE: 0.0
+    OBSERVATORY: 0.0
+    FENCING_SCHOOL: 19131.313488653148
+  build_queue: FENCING_SCHOOL
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -3021,45 +3675,54 @@ empires:
     LITERATURE: 0.0
     LAWS: 0.0
     IRON: 0.0
-    ECONOMY: 96718.25204498212
-    ARCHITECTURE: 6529.397028985319
-  research_queue: ARCHITECTURE
+    ECONOMY: 0.0
+    ARCHITECTURE: 0.0
+    HORSEBACK_RIDING: 4629.1992748691555
+    COMMAND_CHAIN: 16300.047788646987
+    TACTICS: 82650.71138919287
+    STEEL: 112435.29869167993
+  research_queue: STEEL
   citizens:
     merchant: 0
-    scientist: 13
+    scientist: 16
     artist: 0
   effects:
     life_regen_modifier: 0.002
-    siege_offset: 5520.0
-    gold_offset: 1.731
+    siege_offset: 7320.0
+    gold_offset: 3.431
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    culture_offset: 0.8500000000000001
-    research_speed_modifier: 0.44999999999999996
+    culture_offset: 1.25
+    research_speed_modifier: 0.75
     enable_techtree: 1.0
-    build_speed_modifier: 0.5
+    build_speed_modifier: 1.0
     gold_modifier: 0.8
     map_vision_radius_offset: 2.0
     enable_messages: 1.0
     enable_army: 1.0
     ruler_unlock: 1.0
     travel_offset: -1800.0
-    artifact_steal_victory_modifier: 0.13
+    artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    build_speed_offset: 0.25
-    max_siege_construction_speed_modifier: 0.17
+    build_speed_offset: 0.44999999999999996
+    max_siege_construction_speed_modifier: 0.19
     enable_workshop: 1.0
-    max_life_modifier: 3.0
-    culture_modifier: 0.35
-    research_speed_offset: 0.30000000000000004
+    max_life_modifier: 16.0
+    culture_modifier: 0.95
+    research_speed_offset: 0.8500000000000001
     tower_sell_refund_modifier: 0.1
-    wave_slot_cost_modifier: 0.04
-    wave_era_cost_modifier: 0.1
+    spy_workshop: 1.0
   item_upgrades:
     BALLISTA_TOWER:
-      damage: 3
-  artifacts: []
-  max_life: 13.0
+      damage: 5
+      reload: 3
+    FIRE_TOWER:
+      effect_value: 4
+      reload: 2
+      effect_duration: 1
+  artifacts:
+  - BOOK_OF_HEROES
+  max_life: 26.0
   structures: {}
   armies:
   - aid: 656
@@ -3067,37 +3730,37 @@ empires:
     name: GemstoneSeekers
     waves:
     - wave_id: 5
-      iid: PIKENEER
-      slots: 13
+      iid: LEGIONARY
+      slots: 15
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 10
-      iid: PIKENEER
-      slots: 13
+      iid: LEGIONARY
+      slots: 15
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 11
-      iid: SLAVE
-      slots: 5
-      max_era: 1
+      iid: LARGE_CART
+      slots: 12
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 18
-      iid: SLAVE
+      iid: LEGIONARY
       slots: 5
-      max_era: 1
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 19
-      iid: SLAVE
+      iid: LARGE_CART
       slots: 4
-      max_era: 1
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 20
-      iid: ALRIC
+      iid: SLAVE
       slots: 1
       max_era: 0
       num_critters_spawned: 0
@@ -3108,12 +3771,18 @@ empires:
     waves:
     - wave_id: 1
       iid: SLAVE
-      slots: 1
-      max_era: 0
+      slots: 8
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
       iid: SLAVE
+      slots: 8
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: LUCIEN
       slots: 1
       max_era: 0
       num_critters_spawned: 0
@@ -3158,6 +3827,9 @@ empires:
     type:
       type: BALLISTA_TOWER
       select: random
+  - q: -11
+    r: 25
+    type: spawnpoint
   - q: -12
     r: 20
     type: BALLISTA_TOWER
@@ -3177,7 +3849,10 @@ empires:
     type: BALLISTA_TOWER
   - q: -12
     r: 25
-    type: spawnpoint
+    type: empty
+  - q: -13
+    r: 21
+    type: FIRE_TOWER
   - q: -13
     r: 22
     type: empty
@@ -3190,6 +3865,17 @@ empires:
   - q: -13
     r: 25
     type: empty
+  - q: -13
+    r: 26
+    type:
+      type: FIRE_TOWER
+      select: random
+  - q: -14
+    r: 23
+    type: BALLISTA_TOWER
+  - q: -14
+    r: 24
+    type: FIRE_TOWER
   - q: -8
     r: 20
     type: BALLISTA_TOWER
@@ -3214,20 +3900,20 @@ empires:
     r: 23
     type: BALLISTA_TOWER
   ruler:
-    name: Alric Shadowmere
-    type: ALRIC
-    xp: 658.0
-    level: 3
-    q: 1
-    w: 1
-    e: 1
+    name: Lucien Duskbane
+    type: LUCIEN
+    xp: 5417.0
+    level: 4
+    q: 4
+    w: 0
+    e: 0
     r: 0
 - uid: 22
   name: Los Hanseles
   resources:
-    gold: 60911.16865287668
-    culture: 123379.34963147924
-    life: 3.665326356580016
+    gold: 103317.03762316312
+    culture: 210233.9680522348
+    life: 10.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -3251,7 +3937,15 @@ empires:
     CHAPEL: 0.0
     TREADWHEEL_CRANE: 0.0
     FORGE: 0.0
-  build_queue: null
+    QUARTERMASTER: 0.0
+    FENCING_SCHOOL: 0.0
+    TREASURE_CHAMBER: 0.0
+    SWORD_MAKER: 0.0
+    TOWN_GUARD: 0.0
+    LIBRARY: 0.0
+    LORE_COLLECTION: 0.0
+    CARTOGRAPHER: 14339.07678852337
+  build_queue: CARTOGRAPHER
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -3275,18 +3969,25 @@ empires:
     IRON: 0.0
     ARTS: 0.0
     LAWS: 0.0
-  research_queue: null
+    PAINTING: 0.0
+    ECONOMY: 61725.60523251351
+    HORSEBACK_RIDING: 4846.465503689483
+    COMMAND_CHAIN: 12259.569723640989
+    LITERATURE: 0.0
+    CARTOGRAPHY: 0.0
+    STEEL: 146478.27187588255
+  research_queue: COMMAND_CHAIN
   citizens:
-    merchant: 0
+    merchant: 16
     scientist: 0
-    artist: 13
+    artist: 0
   effects:
     life_regen_modifier: 0.001
-    siege_offset: 5520.0
-    gold_offset: 1.2309999999999999
+    siege_offset: 7320.0
+    gold_offset: 1.731
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 1.0
-    culture_offset: 0.8999999999999999
+    culture_offset: 1.05
     build_speed_modifier: 1.0
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
@@ -3296,17 +3997,20 @@ empires:
     map_vision_radius_offset: 2.0
     enable_army: 1.0
     travel_offset: -1800.0
-    build_speed_offset: 0.95
-    max_siege_construction_speed_modifier: 0.17
+    build_speed_offset: 0.44999999999999996
+    max_siege_construction_speed_modifier: 0.14
     enable_workshop: 1.0
     culture_modifier: 0.35
-    research_speed_offset: 0.5
-    enemy_siege_time_modifier: 0.1
-    travel_time_modifier: 0.33
-    wave_slot_cost_modifier: 0.1
+    wave_cost_modifier: 0.08
+    wave_era_cost_modifier: 0.08
+    wave_slot_cost_modifier: 0.08
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
+    spy_workshop: 1.0
+    research_speed_offset: 1.1
+    tower_sell_refund_modifier: 0.1
   item_upgrades: {}
-  artifacts:
-  - ASSASSINS_DAGGER
+  artifacts: []
   max_life: 10.0
   structures: {}
   armies:
@@ -3315,8 +4019,8 @@ empires:
     name: Achtung! Kanghars
     waves:
     - wave_id: 1
-      iid: PIKENEER
-      slots: 8
+      iid: THE_SWORDMASTER
+      slots: 12
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -3327,33 +4031,51 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 3
-      iid: WARRIOR
-      slots: 6
-      max_era: 2
+      iid: THE_SWORDMASTER
+      slots: 9
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 4
-      iid: WARRIOR
-      slots: 6
-      max_era: 1
+      iid: THE_SWORDMASTER
+      slots: 11
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
-      iid: WARRIOR
-      slots: 6
-      max_era: 1
+      iid: THE_SWORDMASTER
+      slots: 11
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: CART
-      slots: 6
-      max_era: 1
+      iid: THE_SWORDMASTER
+      slots: 11
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 3
-      iid: WARRIOR
+      iid: THE_SWORDMASTER
       slots: 6
-      max_era: 1
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: THE_SWORDMASTER
+      slots: 1
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: THE_SWORDMASTER
+      slots: 1
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: THE_SWORDMASTER
+      slots: 1
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
   - aid: 934
@@ -3383,10 +4105,10 @@ empires:
     type: empty
   - q: -20
     r: 22
-    type: DOUBLE_SLING_TOWER
+    type: FIRE_TOWER
   - q: -20
     r: 23
-    type: DOUBLE_SLING_TOWER
+    type: ARBELESTE_TOWER
   - q: -20
     r: 24
     type: empty
@@ -3406,7 +4128,7 @@ empires:
     type: spawnpoint
   - q: -21
     r: 24
-    type: DOUBLE_SLING_TOWER
+    type: BALLISTA_TOWER
   - q: -21
     r: 25
     type: empty
@@ -3418,13 +4140,13 @@ empires:
     type: empty
   - q: -22
     r: 24
-    type: DOUBLE_SLING_TOWER
+    type: BALLISTA_TOWER
   - q: -22
     r: 25
     type: empty
   - q: -23
     r: 23
-    type: DOUBLE_SLING_TOWER
+    type: BALLISTA_TOWER
   - q: -23
     r: 24
     type: BALLISTA_TOWER
@@ -3437,18 +4159,18 @@ empires:
   ruler:
     name: Maja Soulstone
     type: MAJA
-    xp: 805.0
-    level: 3
-    q: 3
+    xp: 6066.0
+    level: 5
+    q: 4
     w: 0
     e: 0
     r: 0
 - uid: 26
   name: Zornbolds
   resources:
-    gold: 27266.200739836604
-    culture: 203216.63982516658
-    life: 13.0
+    gold: 21812.050949699948
+    culture: 441839.2931797953
+    life: 16.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -3475,8 +4197,15 @@ empires:
     WATCH_TOWER: 0.0
     FIELD_HEALER: 0.0
     TREADWHEEL_CRANE: 0.0
-    THEATER: 14461.012940687404
-  build_queue: THEATER
+    THEATER: 0.0
+    FORGE: 0.0
+    OBSERVATORY: 0.0
+    BOOT_CAMP: 0.0
+    CARTOGRAPHER: 0.0
+    LORE_COLLECTION: 0.0
+    FENCING_SCHOOL: 0.0
+    LIBRARY: 19625.85392458903
+  build_queue: LIBRARY
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -3502,40 +4231,48 @@ empires:
     IRON: 0.0
     ARCHITECTURE: 0.0
     LAWS: 0.0
-    PAINTING: 19546.21326036762
-  research_queue: PAINTING
+    PAINTING: 0.0
+    LITERATURE: 0.0
+    ECONOMY: 230.61440659518712
+    STEEL: 146478.27187588255
+    COMMAND_CHAIN: 76839.10627825832
+  research_queue: COMMAND_CHAIN
   citizens:
     merchant: 0
     scientist: 0
-    artist: 16
+    artist: 19
   effects:
     life_regen_modifier: 0.002
-    siege_offset: 5520.0
-    gold_offset: 2.231
-    culture_offset: 0.9000000000000001
+    siege_offset: 9120.0
+    gold_offset: 2.731
+    culture_offset: 1.35
     build_speed_modifier: 1.0
     gold_modifier: 0.8
-    research_speed_modifier: 0.44999999999999996
+    research_speed_modifier: 0.75
     enable_techtree: 1.0
     enable_messages: 1.0
-    wave_delay_offset: 2000.0
+    wave_delay_offset: 2000.5
     restore_life_after_loss_offset: 5.0
-    max_life_modifier: 3.0
-    culture_modifier: 0.35
+    max_life_modifier: 6.0
+    culture_modifier: 0.55
     ruler_unlock: 1.0
-    travel_offset: -1800.0
+    travel_offset: -3600.0
     enable_army: 1.0
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    build_speed_offset: 0.25
+    build_speed_offset: 0.44999999999999996
     max_siege_construction_speed_modifier: 0.17
     enable_workshop: 1.0
-    map_vision_radius_offset: 2.0
-    research_speed_offset: 0.1
+    map_vision_radius_offset: 5.0
+    research_speed_offset: 0.35
+    tower_sell_refund_modifier: 0.1
+    restore_life_during_battle_modifier: 0.02
+    tile_cost_modifier: 0.1
     other_citizen_gold_modifier: 0.002
   item_upgrades: {}
-  artifacts: []
-  max_life: 13.0
+  artifacts:
+  - BATTLE_DRUMS
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 810
@@ -3550,7 +4287,7 @@ empires:
       next_critter_ms: 0
     - wave_id: 10
       iid: PIKENEER
-      slots: 8
+      slots: 10
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -3561,32 +4298,32 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 12
-      iid: CHARIOT
-      slots: 6
-      max_era: 2
+      iid: PIKENEER
+      slots: 10
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 13
-      iid: PIKENEER
-      slots: 8
+      iid: THE_SWORDMASTER
+      slots: 10
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 14
-      iid: CHARIOT
-      slots: 6
-      max_era: 2
+      iid: PIKENEER
+      slots: 10
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 9
-      iid: CHARIOT
-      slots: 6
-      max_era: 2
+      iid: PIKENEER
+      slots: 10
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 10
       iid: PIKENEER
-      slots: 8
+      slots: 10
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -3602,6 +4339,12 @@ empires:
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
+    - wave_id: 1
+      iid: PIKENEER
+      slots: 10
+      max_era: 3
+      num_critters_spawned: 0.0
+      next_critter_ms: 0.0
   - aid: 816
     uid: 26
     name: Nemrod
@@ -3621,6 +4364,9 @@ empires:
   - q: -19
     r: 12
     type: ARROW_TOWER
+  - q: -19
+    r: 13
+    type: SPIKE_TRAP
   - q: -20
     r: 10
     type: ARROW_TOWER
@@ -3675,7 +4421,9 @@ empires:
     type: castle
   - q: -22
     r: 14
-    type: ARROW_TOWER
+    type:
+      type: ARBELESTE_TOWER
+      select: random
   - q: -22
     r: 15
     type: empty
@@ -3700,6 +4448,11 @@ empires:
     r: 16
     type: ARROW_TOWER
   - q: -24
+    r: 12
+    type:
+      type: SPIKE_TRAP
+      select: last
+  - q: -24
     r: 13
     type: ARROW_TOWER
   - q: -24
@@ -3716,22 +4469,41 @@ empires:
       type: CATAPULTS
       select: last
   - q: -25
-    r: 15
+    r: 13
     type: spawnpoint
+  - q: -25
+    r: 14
+    type: empty
+  - q: -25
+    r: 15
+    type: empty
+  - q: -25
+    r: 16
+    type: SPIKE_TRAP
+  - q: -26
+    r: 14
+    type:
+      type: ARBELESTE_TOWER
+      select: random
+  - q: -26
+    r: 15
+    type:
+      type: ARBELESTE_TOWER
+      select: random
   ruler:
     name: Lucien Duskbane
     type: LUCIEN
-    xp: 2472.0
-    level: 4
-    q: 3
+    xp: 12705.0
+    level: 5
+    q: 4
     w: 0
     e: 1
     r: 0
 - uid: 64
   name: Schlumpfhausen
   resources:
-    gold: 50728.02110950768
-    culture: 123737.7546178346
+    gold: 65963.42732662559
+    culture: 201294.5566242554
     life: 16.0
   buildings:
     INIT: 0.0
@@ -3760,8 +4532,13 @@ empires:
     TREASURE_CHAMBER: 0.0
     OBSERVATORY: 0.0
     FORGE: 0.0
-    TREADWHEEL_CRANE: 26296.245880172723
-  build_queue: TREADWHEEL_CRANE
+    TREADWHEEL_CRANE: 0.0
+    WORK_SHOP: 35398.107493492345
+    FENCING_SCHOOL: 0.0
+    TOWN_GUARD: 0.0
+    LORE_COLLECTION: 0.0
+    BANK: 3040.6379475328968
+  build_queue: BANK
   knowledge:
     MYSTIC: 0.0
     HUNTING: 0.0
@@ -3786,18 +4563,21 @@ empires:
     IRON: 0.0
     ARCHITECTURE: 0.0
     LAWS: 0.0
-    COMMAND_CHAIN: 37526.35990381875
-  research_queue: COMMAND_CHAIN
+    COMMAND_CHAIN: 0.0
+    PAINTING: 29533.829684145632
+    ECONOMY: 0.0
+    STEEL: 83847.07282281257
+  research_queue: STEEL
   citizens:
-    merchant: 14
-    scientist: 0
+    merchant: 0
+    scientist: 15
     artist: 0
   effects:
     life_regen_modifier: 0.002
-    siege_offset: 5520.0
-    gold_offset: 1.731
-    culture_offset: 0.7
-    build_speed_modifier: 0.8
+    siege_offset: 7320.0
+    gold_offset: 2.431
+    culture_offset: 0.8500000000000001
+    build_speed_modifier: 1.0
     gold_modifier: 0.8
     enable_army: 1.0
     ruler_unlock: 1.0
@@ -3810,11 +4590,13 @@ empires:
     map_vision_radius_offset: 2.0
     max_life_modifier: 6.0
     culture_modifier: 0.35
-    artifact_steal_victory_modifier: 0.15000000000000002
+    artifact_steal_victory_modifier: 0.19
     artifact_steal_defeat_modifier: 0.01
     research_speed_offset: 0.35
     build_speed_offset: 0.30000000000000004
-    max_siege_construction_speed_modifier: 0.2
+    spy_workshop: 1.0
+    max_siege_construction_speed_modifier: 0.22
+    tower_sell_refund_modifier: 0.1
     wave_era_cost_modifier: 0.2
   item_upgrades: {}
   artifacts: []
@@ -3827,14 +4609,14 @@ empires:
     waves:
     - wave_id: 1
       iid: PIKENEER
-      slots: 9
+      slots: 15
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
-      iid: CHARIOT
+      iid: THE_SWORDMASTER
       slots: 9
-      max_era: 2
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 4
@@ -3844,8 +4626,8 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 17
-      iid: PIKENEER
-      slots: 8
+      iid: LEGIONARY
+      slots: 12
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -3855,6 +4637,18 @@ empires:
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
+    - wave_id: 2
+      iid: THE_SWORDMASTER
+      slots: 1
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: LEGIONARY
+      slots: 4
+      max_era: 3
+      num_critters_spawned: 0.0
+      next_critter_ms: 0.0
   - aid: 592
     uid: 64
     name: Azrael
@@ -3862,7 +4656,7 @@ empires:
     - wave_id: 1
       iid: BOWMAN
       slots: 3
-      max_era: 2
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 2
@@ -3877,6 +4671,12 @@ empires:
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
+    - wave_id: 1
+      iid: THE_SWORDMASTER
+      slots: 1
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
   spies: []
   bosses: {}
   hex_map:
@@ -3888,7 +4688,10 @@ empires:
     type: empty
   - q: -18
     r: -3
-    type: castle
+    type: empty
+  - q: -18
+    r: -4
+    type: empty
   - q: -18
     r: 0
     type: empty
@@ -3901,6 +4704,9 @@ empires:
   - q: -19
     r: -3
     type: FIRE_TOWER
+  - q: -19
+    r: -4
+    type: empty
   - q: -19
     r: 0
     type: SPIKE_TRAP
@@ -3916,6 +4722,9 @@ empires:
   - q: -20
     r: -3
     type: BALLISTA_TOWER
+  - q: -20
+    r: -4
+    type: castle
   - q: -20
     r: 0
     type: empty
@@ -3961,6 +4770,9 @@ empires:
     r: 2
     type: spawnpoint
   - q: -23
+    r: -1
+    type: FIRE_TOWER
+  - q: -23
     r: 0
     type: ARROW_TOWER
   - q: -23
@@ -3975,18 +4787,18 @@ empires:
   ruler:
     name: Alric Shadowmere
     type: ALRIC
-    xp: 4893.0
-    level: 4
+    xp: 6408.0
+    level: 5
     q: 0
     w: 2
-    e: 2
+    e: 3
     r: 0
 - uid: 25
   name: Wicked$Kingdom
   resources:
-    gold: 26688.597275519696
-    culture: 138551.3436252841
-    life: 9.21420164861797
+    gold: 16951.152228320258
+    culture: 547052.8577259952
+    life: 16.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -4010,8 +4822,19 @@ empires:
     FORGE: 0.0
     TREADWHEEL_CRANE: 0.0
     TEMPLE: 0.0
-    CARTOGRAPHER: 5393.748098590961
-  build_queue: CARTOGRAPHER
+    CARTOGRAPHER: 0.0
+    OBSERVATORY: 0.0
+    HERBALIST: 0.0
+    LIBRARY: 0.0
+    WATCH_TOWER: 0.0
+    TOWN_GUARD: 0.0
+    THEATER: 0.0
+    FIELD_HEALER: 0.0
+    CHAPEL: 0.0
+    BOOT_CAMP: 0.0
+    LORE_COLLECTION: 0.0
+    GUILD: 58098.37822849836
+  build_queue: GUILD
   knowledge:
     MYSTIC: 0.0
     HUNTING: 0.0
@@ -4029,7 +4852,7 @@ empires:
     CURRENCY: 0.0
     SAILING: 0.0
     DRILL: 0.0
-    HORSEBACK_RIDING: 3773.3397463656765
+    HORSEBACK_RIDING: 2041.5668958612243
     MATHMATICS: 0.0
     MECHANICS: 0.0
     IRON: 0.0
@@ -4037,48 +4860,64 @@ empires:
     CARTOGRAPHY: 0.0
     ARTS: 0.0
     LAWS: 0.0
-    LITERATURE: 13697.618817656452
-  research_queue: LITERATURE
+    LITERATURE: 0.0
+    ECONOMY: 0.0
+    COMMAND_CHAIN: 8581.780669238293
+    STEEL: 146478.27187588255
+    PAINTING: 29301.826043730845
+  research_queue: COMMAND_CHAIN
   citizens:
-    merchant: 15
+    merchant: 21
     scientist: 0
     artist: 0
   effects:
-    life_regen_modifier: 0.001
-    siege_offset: 3720.0
-    gold_offset: 1.731
-    culture_offset: 1.0
+    life_regen_modifier: 0.002
+    siege_offset: 7320.0
+    gold_offset: 2.431
+    culture_offset: 1.55
     build_speed_modifier: 1.0
-    wave_delay_offset: 1000.0
-    restore_life_after_loss_offset: 1.0
-    research_speed_modifier: 0.44999999999999996
+    wave_delay_offset: 2000.0
+    restore_life_after_loss_offset: 5.0
+    research_speed_modifier: 0.75
     enable_techtree: 1.0
     gold_modifier: 0.8
     ruler_unlock: 1.0
     enable_army: 1.0
-    travel_offset: -1800.0
+    travel_offset: -3600.0
     enable_messages: 1.0
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    build_speed_offset: 0.44999999999999996
-    max_siege_construction_speed_modifier: 0.17
+    build_speed_offset: 0.6499999999999999
+    max_siege_construction_speed_modifier: 0.19
     enable_workshop: 1.0
-    culture_modifier: 0.30000000000000004
-    research_speed_offset: 0.1
+    culture_modifier: 0.6500000000000001
+    map_vision_radius_offset: 5.0
+    research_speed_offset: 0.55
+    max_life_modifier: 6.0
+    spy_workshop: 1.0
+    tower_sell_refund_modifier: 0.1
+    enemy_siege_time_modifier: 0.1
+    travel_time_modifier: 0.33
+    wave_slot_cost_modifier: 0.1
     citizen_cost_modifier: 0.2
     citizen_effect_modifier: 0.006
   item_upgrades:
     PIKENEER:
       speed: 1
     ARBELESTE_TOWER:
-      reload: 1
+      reload: 2
+      damage: 1
     CATAPULTS:
-      reload: 1
+      reload: 2
+      damage: 1
     FIRE_TOWER:
-      reload: 1
-      effect_value: 1
-  artifacts: []
-  max_life: 10.0
+      reload: 2
+      effect_value: 2
+    SPIKE_TRAP:
+      reload: 10
+  artifacts:
+  - ASSASSINS_DAGGER
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 363
@@ -4093,13 +4932,19 @@ empires:
       next_critter_ms: 0
     - wave_id: 2
       iid: PIKENEER
-      slots: 14
+      slots: 15
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 17
       iid: PIKENEER
-      slots: 14
+      slots: 15
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: PIKENEER
+      slots: 15
       max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -4130,6 +4975,14 @@ empires:
   - q: -1
     r: -22
     type: CATAPULTS
+  - q: -1
+    r: -23
+    type: empty
+  - q: -1
+    r: -24
+    type:
+      type: CATAPULTS
+      select: random
   - q: -2
     r: -19
     type:
@@ -4140,7 +4993,35 @@ empires:
     type: empty
   - q: -2
     r: -21
-    type: spawnpoint
+    type: empty
+  - q: -2
+    r: -22
+    type: empty
+  - q: -2
+    r: -23
+    type:
+      type: SPIKE_TRAP
+      select: random
+  - q: -3
+    r: -19
+    type:
+      type: CATAPULTS
+      select: random
+  - q: -3
+    r: -20
+    type:
+      type: SPIKE_TRAP
+      select: random
+  - q: -3
+    r: -21
+    type:
+      type: ARBELESTE_TOWER
+      select: random
+  - q: -3
+    r: -22
+    type:
+      type: FIRE_TOWER
+      select: last
   - q: 0
     r: -19
     type:
@@ -4158,6 +5039,9 @@ empires:
   - q: 0
     r: -23
     type: ARBELESTE_TOWER
+  - q: 0
+    r: -24
+    type: spawnpoint
   - q: 1
     r: -20
     type:
@@ -4176,7 +5060,9 @@ empires:
     type: empty
   - q: 1
     r: -24
-    type: FIRE_TOWER
+    type:
+      type: FIRE_TOWER
+      select: last
   - q: 2
     r: -21
     type:
@@ -4193,7 +5079,9 @@ empires:
     type: ARBELESTE_TOWER
   - q: 3
     r: -22
-    type: FIRE_TOWER
+    type:
+      type: FIRE_TOWER
+      select: last
   - q: 3
     r: -23
     type: ARBELESTE_TOWER
@@ -4203,18 +5091,18 @@ empires:
   ruler:
     name: Nandi
     type: NANDI
-    xp: 9950.0
-    level: 5
+    xp: 26395.0
+    level: 6
     q: 4
     w: 1
     e: 0
-    r: 0
+    r: 1
 - uid: 3
   name: Bikini Bottom
   resources:
-    gold: 8082.410164935395
-    culture: 69685.67812485706
-    life: 13.0
+    gold: 93183.55265881467
+    culture: 143214.84432151882
+    life: 12.760719484212016
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -4235,10 +5123,15 @@ empires:
     WATCH_TOWER: 0.0
     WARRIORS_LODGE: 0.0
     TOWN_GUARD: 0.0
-    HARBOR: 3934.702254242647
+    HARBOR: 0.0
     SWORD_MAKER: 0.0
     MARKET_PLACE: 0.0
     LORE_COLLECTION: 0.0
+    BOOT_CAMP: 0.0
+    TREASURE_CHAMBER: 0.0
+    CHAPEL: 0.0
+    WORK_SHOP: 0.0
+    CHURCH: 0.0
   build_queue: null
   knowledge:
     HUNTING: 0.0
@@ -4261,39 +5154,48 @@ empires:
     MECHANICS: 0.0
     ARTS: 0.0
     LAWS: 0.0
-    MATHMATICS: 9225.731942002667
-  research_queue: MATHMATICS
+    MATHMATICS: 0.0
+    IRON: 0.0
+    ARCHITECTURE: 0.0
+    CARTOGRAPHY: 0.0
+    PAINTING: 12711.05968554734
+  research_queue: PAINTING
   citizens:
-    merchant: 12
+    merchant: 14
     scientist: 0
     artist: 0
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 1.2309999999999999
-    culture_offset: 0.75
+    gold_offset: 1.731
+    culture_offset: 1.05
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
-    build_speed_modifier: 0.5
-    gold_modifier: 0.5
+    build_speed_modifier: 0.8
+    gold_modifier: 0.8
     enable_messages: 1.0
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    max_life_modifier: 3.0
+    max_life_modifier: 6.0
     ruler_unlock: 1.0
     map_vision_radius_offset: 2.0
     enable_army: 1.0
     spy_workshop: 1.0
-    max_siege_construction_speed_modifier: 0.17
+    max_siege_construction_speed_modifier: 0.14
+    travel_offset: -1800.0
     tower_sell_refund_modifier: 0.1
-    build_speed_offset: 0.1
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
+    culture_modifier: 0.35
+    build_speed_offset: 0.25
+    enable_workshop: 1.0
     research_speed_offset: 0.1
-    culture_modifier: 0.2
     citizen_cost_modifier: 0.05
+    citizen_effect_modifier: 0.006
     tile_cost_modifier: 0.04
   item_upgrades: {}
   artifacts: []
-  max_life: 13.0
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 880
@@ -4302,25 +5204,25 @@ empires:
     waves:
     - wave_id: 14
       iid: CHARIOT
-      slots: 6
-      max_era: 2
+      slots: 10
+      max_era: 3
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 15
       iid: CHARIOT
-      slots: 7
+      slots: 10
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 16
       iid: BOWMAN
-      slots: 7
+      slots: 9
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
       iid: CART
-      slots: 5
+      slots: 6
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -4336,30 +5238,42 @@ empires:
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
+    - wave_id: 1
+      iid: WARRIOR
+      slots: 4
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
   spies: []
   bosses: {}
   hex_map:
   - q: 10
     r: -20
-    type: SLING_TOWER
+    type: BALLISTA_TOWER
   - q: 10
-    r: -21
-    type: castle
-  - q: 10
-    r: -22
-    type: BASIC_TOWER
-  - q: 11
-    r: -20
-    type: FIRE_TOWER
-  - q: 11
     r: -21
     type: empty
-  - q: 11
+  - q: 10
     r: -22
-    type: FIRE_TOWER
-  - q: 11
+    type: BALLISTA_TOWER
+  - q: 10
     r: -23
     type: spawnpoint
+  - q: 11
+    r: -20
+    type: FIRE_TOWER
+  - q: 11
+    r: -21
+    type: empty
+  - q: 11
+    r: -22
+    type: FIRE_TOWER
+  - q: 11
+    r: -23
+    type: empty
+  - q: 11
+    r: -24
+    type: BALLISTA_TOWER
   - q: 12
     r: -20
     type: BALLISTA_TOWER
@@ -4374,10 +5288,10 @@ empires:
     type: empty
   - q: 12
     r: -24
-    type: SLING_TOWER
+    type: FIRE_TOWER
   - q: 13
     r: -20
-    type: SPIKE_TRAP
+    type: FIRE_TOWER
   - q: 13
     r: -21
     type: empty
@@ -4401,7 +5315,7 @@ empires:
     type: empty
   - q: 14
     r: -24
-    type: SPIKE_TRAP
+    type: CATAPULTS
   - q: 15
     r: -22
     type: empty
@@ -4411,20 +5325,32 @@ empires:
   - q: 15
     r: -24
     type: ARROW_TOWER
+  - q: 16
+    r: -22
+    type: CATAPULTS
+  - q: 9
+    r: -20
+    type: CATAPULTS
+  - q: 9
+    r: -21
+    type: castle
+  - q: 9
+    r: -22
+    type: FIRE_TOWER
   ruler:
     name: Nandi
     type: NANDI
-    xp: 152.0
-    level: 2
+    xp: 470.0
+    level: 3
     q: 1
-    w: 0
+    w: 1
     e: 1
     r: 0
 - uid: 62
   name: MaxAg3
   resources:
-    gold: 7898.685949807549
-    culture: 112433.9770526787
+    gold: 5825.742311400299
+    culture: 212921.2023587193
     life: 16.0
   buildings:
     INIT: 0.0
@@ -4451,8 +5377,14 @@ empires:
     BOOT_CAMP: 0.0
     CHAPEL: 0.0
     TOWN_GUARD: 0.0
-    TREASURE_CHAMBER: 7257.599504000556
-  build_queue: TREASURE_CHAMBER
+    TREASURE_CHAMBER: 0.0
+    FORGE: 0.0
+    LORE_COLLECTION: 0.0
+    CHURCH: 0.0
+    WORK_SHOP: 0.0
+    LIBRARY: 0.0
+    CARTOGRAPHER: 16300.827669142898
+  build_queue: CARTOGRAPHER
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -4477,17 +5409,20 @@ empires:
     IRON: 0.0
     LAWS: 0.0
     CARTOGRAPHY: 0.0
-    ARCHITECTURE: 13875.46543787906
-  research_queue: ARCHITECTURE
+    ARCHITECTURE: 0.0
+    PAINTING: 0.0
+    LITERATURE: 0.0
+    COMMAND_CHAIN: 47410.043699103866
+  research_queue: COMMAND_CHAIN
   citizens:
-    merchant: 4
-    scientist: 7
-    artist: 2
+    merchant: 7
+    scientist: 4
+    artist: 5
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 1.3809999999999998
-    culture_offset: 0.7
+    gold_offset: 1.881
+    culture_offset: 1.05
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
     research_speed_modifier: 0.44999999999999996
@@ -4496,32 +5431,52 @@ empires:
     max_life_modifier: 6.0
     map_vision_radius_offset: 2.0
     enable_messages: 1.0
-    build_speed_modifier: 0.5
+    build_speed_modifier: 0.8
     travel_offset: -1800.0
     enable_army: 1.0
     ruler_unlock: 1.0
     culture_modifier: 0.35
     spy_workshop: 1.0
-    max_siege_construction_speed_modifier: 0.17
-    build_speed_offset: 0.1
-    research_speed_offset: 0.1
+    max_siege_construction_speed_modifier: 0.14
+    artifact_steal_victory_modifier: 0.1
+    artifact_steal_defeat_modifier: 0.01
+    build_speed_offset: 0.44999999999999996
+    tower_sell_refund_modifier: 0.1
+    enable_workshop: 1.0
+    research_speed_offset: 0.30000000000000004
   item_upgrades: {}
   artifacts: []
   max_life: 16.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 1091
+    uid: 62
+    name: M & Ms
+    waves:
+    - wave_id: 2
+      iid: SLAVE
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0.0
+      next_critter_ms: 0.0
+    - wave_id: 3
+      iid: SLAVE
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0.0
+      next_critter_ms: 0.0
   spies: []
   bosses: {}
   hex_map:
   - q: 20
     r: -19
-    type: BALLISTA_TOWER
+    type: ARBELESTE_TOWER
   - q: 20
     r: -20
     type: BALLISTA_TOWER
   - q: 20
     r: -21
-    type: FIRE_TOWER
+    type: ARBELESTE_TOWER
   - q: 21
     r: -19
     type: CATAPULTS
@@ -4534,6 +5489,9 @@ empires:
   - q: 21
     r: -22
     type: CATAPULTS
+  - q: 21
+    r: -23
+    type: spawnpoint
   - q: 22
     r: -19
     type: BALLISTA_TOWER
@@ -4542,16 +5500,22 @@ empires:
     type: empty
   - q: 22
     r: -21
-    type: FIRE_TOWER
+    type: CATAPULTS
   - q: 22
     r: -22
     type: castle
   - q: 22
     r: -23
-    type: FIRE_TOWER
+    type: ARBELESTE_TOWER
+  - q: 22
+    r: -24
+    type: empty
+  - q: 22
+    r: -25
+    type: CATAPULTS
   - q: 23
     r: -20
-    type: FIRE_TOWER
+    type: ARBELESTE_TOWER
   - q: 23
     r: -21
     type: empty
@@ -4560,7 +5524,13 @@ empires:
     type: CATAPULTS
   - q: 23
     r: -23
-    type: BALLISTA_TOWER
+    type: ARBELESTE_TOWER
+  - q: 23
+    r: -24
+    type: empty
+  - q: 23
+    r: -25
+    type: ARBELESTE_TOWER
   - q: 24
     r: -21
     type: BALLISTA_TOWER
@@ -4569,10 +5539,10 @@ empires:
     type: empty
   - q: 24
     r: -23
-    type: BALLISTA_TOWER
+    type: ARBELESTE_TOWER
   - q: 24
     r: -24
-    type: spawnpoint
+    type: empty
   - q: 24
     r: -25
     type: BALLISTA_TOWER
@@ -4587,10 +5557,10 @@ empires:
     type: empty
   - q: 25
     r: -25
-    type: BALLISTA_TOWER
+    type: ARBELESTE_TOWER
   - q: 26
     r: -23
-    type: FIRE_TOWER
+    type: ARBELESTE_TOWER
   - q: 26
     r: -24
     type: BALLISTA_TOWER
@@ -4609,9 +5579,9 @@ empires:
 - uid: 65
   name: Nubisien
   resources:
-    gold: 35060.59281700498
-    culture: 194018.3698806919
-    life: 13.0
+    gold: 15790.583815532449
+    culture: 443272.58967799606
+    life: 16.0
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -4640,7 +5610,13 @@ empires:
     SWORD_MAKER: 0.0
     WORK_SHOP: 0.0
     TOWN_GUARD: 0.0
-  build_queue: null
+    THEATER: 0.0
+    TEMPLE: 0.0
+    FORGE: 0.0
+    BOOT_CAMP: 0.0
+    CARTOGRAPHER: 0.0
+    LIBRARY: 1226.1658761742572
+  build_queue: LIBRARY
   knowledge:
     MYSTIC: 0.0
     HUNTING: 0.0
@@ -4665,17 +5641,20 @@ empires:
     CARTOGRAPHY: 0.0
     ARCHITECTURE: 0.0
     LAWS: 0.0
-    IRON: 928.6720360212217
-  research_queue: IRON
+    IRON: 0.0
+    PAINTING: 0.0
+    LITERATURE: 0.0
+    COMMAND_CHAIN: 63358.952048608866
+  research_queue: COMMAND_CHAIN
   citizens:
     merchant: 0
     scientist: 0
-    artist: 15
+    artist: 19
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
     gold_offset: 1.731
-    culture_offset: 1.05
+    culture_offset: 1.55
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
     build_speed_modifier: 0.8
@@ -4684,23 +5663,27 @@ empires:
     enable_messages: 1.0
     gold_modifier: 0.8
     ruler_unlock: 1.0
-    culture_modifier: 0.35
+    culture_modifier: 0.6499999999999999
     enable_army: 1.0
-    max_life_modifier: 3.0
-    map_vision_radius_offset: 2.0
+    max_life_modifier: 6.0
+    map_vision_radius_offset: 5.0
     tower_sell_refund_modifier: 0.1
-    travel_offset: -1800.0
+    travel_offset: -3600.0
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
-    build_speed_offset: 0.25
+    build_speed_offset: 0.44999999999999996
     max_siege_construction_speed_modifier: 0.14
     enable_workshop: 1.0
     spy_workshop: 1.0
     research_speed_offset: 0.1
     tile_cost_modifier: 0.04
-  item_upgrades: {}
+  item_upgrades:
+    ARROW_TOWER:
+      reload: 7
+    CATAPULTS:
+      reload: 4
   artifacts: []
-  max_life: 13.0
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 688
@@ -4714,9 +5697,9 @@ empires:
       num_critters_spawned: 0.0
       next_critter_ms: 0.0
     - wave_id: 9
-      iid: WARRIOR
-      slots: 3
-      max_era: 1
+      iid: SWORDMAN
+      slots: 6
+      max_era: 2
       num_critters_spawned: 0.0
       next_critter_ms: 0.0
   spies: []
@@ -4730,6 +5713,12 @@ empires:
     type: ARROW_TOWER
   - q: 20
     r: -12
+    type: ARROW_TOWER
+  - q: 20
+    r: -7
+    type: ARROW_TOWER
+  - q: 20
+    r: -8
     type: ARROW_TOWER
   - q: 20
     r: -9
@@ -4747,11 +5736,14 @@ empires:
     r: -13
     type: ARROW_TOWER
   - q: 21
+    r: -7
+    type: ARBELESTE_TOWER
+  - q: 21
     r: -8
     type: ARROW_TOWER
   - q: 21
     r: -9
-    type: ARROW_TOWER
+    type: CATAPULTS
   - q: 22
     r: -10
     type: empty
@@ -4771,8 +5763,11 @@ empires:
     r: -15
     type: castle
   - q: 22
-    r: -7
+    r: -6
     type: spawnpoint
+  - q: 22
+    r: -7
+    type: empty
   - q: 22
     r: -8
     type: empty
@@ -4782,7 +5777,7 @@ empires:
   - q: 23
     r: -10
     type:
-      type: ARROW_TOWER
+      type: CATAPULTS
       select: last
   - q: 23
     r: -11
@@ -4805,7 +5800,17 @@ empires:
       type: ARROW_TOWER
       select: last
   - q: 23
+    r: -8
+    type:
+      type: ARBELESTE_TOWER
+      select: last
+  - q: 23
     r: -9
+    type:
+      type: ARROW_TOWER
+      select: last
+  - q: 24
+    r: -10
     type:
       type: ARROW_TOWER
       select: last
@@ -4841,9 +5846,9 @@ empires:
 - uid: 66
   name: Mitras
   resources:
-    gold: 36318.01480348703
-    culture: 76860.9820573672
-    life: 4.558674636712041
+    gold: 118772.57398842096
+    culture: 112429.32377382755
+    life: 5.208908318222006
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -4859,7 +5864,11 @@ empires:
     CHAPEL: 0.0
     BOW_MAKER: 0.0
     HERBALIST: 0.0
-  build_queue: null
+    GRANARY: 0.0
+    THEATER: 0.0
+    TRIBAL_COUNCIL: 0.0
+    CHURCH: 9759.370218160053
+  build_queue: CHURCH
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -4871,18 +5880,21 @@ empires:
     RELIGION: 0.0
     MUSIC: 0.0
     ARTS: 0.0
-    HORSEBACK_RIDING: 1459.4707340238551
+    HORSEBACK_RIDING: 4071.718825213853
     AGRICULTURE: 0.0
-  research_queue: null
+    TRIBAL_LEADERSHIP: 0.0
+    LITERATURE: 0.0
+    PAINTING: 20421.29393343414
+  research_queue: PAINTING
   citizens:
     merchant: 3
     scientist: 6
-    artist: 3
+    artist: 4
   effects:
     life_regen_modifier: 0.001
     siege_offset: 3720.0
-    gold_offset: 1.1099999999999999
-    culture_offset: 0.7
+    gold_offset: 1.2309999999999999
+    culture_offset: 1.0
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
     build_speed_modifier: 0.5
@@ -4890,8 +5902,9 @@ empires:
     restore_life_after_loss_offset: 3.0
     enable_messages: 1.0
     gold_modifier: 0.1
-    culture_modifier: 0.35
+    culture_modifier: 0.55
     max_life_modifier: 3.0
+    ruler_unlock: 1.0
     build_speed_offset: 0.1
     research_speed_offset: 0.1
     max_siege_construction_speed_modifier: 0.2
@@ -4944,6 +5957,9 @@ empires:
     r: -9
     type: DOUBLE_SLING_TOWER
   - q: -23
+    r: -10
+    type: DOUBLE_SLING_TOWER
+  - q: -23
     r: -5
     type:
       type: DOUBLE_SLING_TOWER
@@ -4961,7 +5977,9 @@ empires:
     type: spawnpoint
   - q: -23
     r: -9
-    type: DOUBLE_SLING_TOWER
+    type:
+      type: SPIKE_TRAP
+      select: last
   - q: -24
     r: -6
     type: empty
@@ -4973,19 +5991,27 @@ empires:
   - q: -24
     r: -8
     type: empty
+  - q: -24
+    r: -9
+    type: SPIKE_TRAP
   - q: -25
     r: -6
     type: empty
   - q: -25
     r: -7
     type: empty
+  - q: -25
+    r: -8
+    type:
+      type: SPIKE_TRAP
+      select: last
   ruler: {}
 - uid: 67
   name: FosCo Dominion
   resources:
-    gold: 75122.7096052568
-    culture: 100764.76721500429
-    life: 16.0
+    gold: 143224.08212109562
+    culture: 246560.0694710203
+    life: 13.836003656706009
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -5012,8 +6038,13 @@ empires:
     CHAPEL: 0.0
     CHURCH: 0.0
     BOOT_CAMP: 0.0
-    TREADWHEEL_CRANE: 5596.529293701507
-  build_queue: TREADWHEEL_CRANE
+    TREADWHEEL_CRANE: 0.0
+    LORE_COLLECTION: 0.0
+    FORGE: 0.0
+    THEATER: 0.0
+    FENCING_SCHOOL: 0.0
+    QUARTERMASTER: 7049.294288454958
+  build_queue: QUARTERMASTER
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -5035,20 +6066,22 @@ empires:
     IRON: 0.0
     ARTS: 0.0
     LAWS: 0.0
-    COMMAND_CHAIN: 38269.686613388614
-  research_queue: COMMAND_CHAIN
+    COMMAND_CHAIN: 40403.795497742525
+    TACTICS: 80521.95202241282
+    ECONOMY: 48446.75218104026
+  research_queue: ECONOMY
   citizens:
     merchant: 0
     scientist: 0
-    artist: 13
+    artist: 16
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
     gold_offset: 1.2309999999999999
-    culture_offset: 0.9000000000000001
+    culture_offset: 1.35
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
-    build_speed_modifier: 0.5
+    build_speed_modifier: 0.7
     gold_modifier: 0.5
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
@@ -5059,11 +6092,14 @@ empires:
     spy_workshop: 1.0
     max_siege_construction_speed_modifier: 0.14
     ruler_unlock: 1.0
-    build_speed_offset: 0.25
+    build_speed_offset: 0.44999999999999996
     enable_workshop: 1.0
-    culture_modifier: 0.35
+    culture_modifier: 0.55
+    tower_sell_refund_modifier: 0.1
     research_speed_offset: 0.1
-  item_upgrades: {}
+  item_upgrades:
+    FIRE_TOWER:
+      damage: 1
   artifacts: []
   max_life: 16.0
   structures: {}
@@ -5079,7 +6115,7 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 1
-      iid: PIKENEER
+      iid: LEGIONARY
       slots: 1
       max_era: 3
       num_critters_spawned: 0
@@ -5089,13 +6125,13 @@ empires:
     name: FosCo Guard 2
     waves:
     - wave_id: 2
-      iid: PIKENEER
+      iid: LEGIONARY
       slots: 1
       max_era: 3
       num_critters_spawned: 0.0
       next_critter_ms: 0.0
     - wave_id: 3
-      iid: PIKENEER
+      iid: LEGIONARY
       slots: 1
       max_era: 3
       num_critters_spawned: 0.0
@@ -5124,21 +6160,24 @@ empires:
   - q: 0
     r: 24
     type: SPIKE_TRAP
+  - q: 0
+    r: 25
+    type: spawnpoint
   - q: 1
     r: 20
-    type: DOUBLE_SLING_TOWER
+    type: ARBELESTE_TOWER
   - q: 1
     r: 21
     type: empty
   - q: 1
     r: 22
-    type: BASIC_TOWER
+    type: ARROW_TOWER
   - q: 1
     r: 23
     type: empty
   - q: 1
     r: 24
-    type: castle
+    type: empty
   - q: 2
     r: 19
     type: FIRE_TOWER
@@ -5147,7 +6186,7 @@ empires:
     type: empty
   - q: 2
     r: 21
-    type: DOUBLE_SLING_TOWER
+    type: ARBELESTE_TOWER
   - q: 2
     r: 23
     type: SPIKE_TRAP
@@ -5165,11 +6204,32 @@ empires:
     type: FIRE_TOWER
   - q: 4
     r: 18
-    type: spawnpoint
+    type: ARBELESTE_TOWER
+  - q: 4
+    r: 19
+    type: empty
+  - q: 5
+    r: 16
+    type: castle
+  - q: 5
+    r: 17
+    type: empty
+  - q: 5
+    r: 18
+    type: empty
+  - q: 5
+    r: 19
+    type: DOUBLE_SLING_TOWER
+  - q: 6
+    r: 16
+    type: SPIKE_TRAP
+  - q: 6
+    r: 17
+    type: SPIKE_TRAP
   ruler:
     name: Alric Shadowmere
     type: ALRIC
-    xp: 22.0
+    xp: 57.0
     level: 1
     q: 0
     w: 0
@@ -5178,9 +6238,9 @@ empires:
 - uid: 15
   name: Fruit Republic
   resources:
-    gold: 3762.9507738155767
-    culture: 52292.18576992643
-    life: 13.0
+    gold: 83960.7902442122
+    culture: 154337.6156425001
+    life: 13.169497591244015
   buildings:
     INIT: 0.0
     BASE_CAMP: 0.0
@@ -5203,7 +6263,12 @@ empires:
     WATCH_TOWER: 0.0
     CHURCH: 0.0
     TOWN_GUARD: 0.0
-  build_queue: null
+    MARKET_PLACE: 0.0
+    CHAPEL: 0.0
+    HARBOR: 0.0
+    BOOT_CAMP: 0.0
+    WORK_SHOP: 3003.2350654516017
+  build_queue: WORK_SHOP
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -5219,39 +6284,44 @@ empires:
     RELIGION: 0.0
     DRILL: 0.0
     HORSEBACK_RIDING: 0.0
-    CURRENCY: 780.8465998032717
+    CURRENCY: 0.0
     MUSIC: 0.0
     SAILING: 0.0
-  research_queue: CURRENCY
+    MECHANICS: 0.0
+    STEEL: 146582.85184006736
+    IRON: 0.0
+    ARTS: 9402.023019807542
+  research_queue: ARTS
   citizens:
-    merchant: 11
+    merchant: 14
     scientist: 0
     artist: 0
   effects:
     life_regen_modifier: 0.002
     siege_offset: 7320.0
-    gold_offset: 0.981
+    gold_offset: 1.7309999999999999
     wave_delay_offset: 2000.0
     restore_life_after_loss_offset: 5.0
-    culture_offset: 0.8
+    culture_offset: 0.8999999999999999
     build_speed_modifier: 0.5
-    gold_modifier: 0.1
+    gold_modifier: 0.8
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
     enable_messages: 1.0
-    max_life_modifier: 3.0
+    max_life_modifier: 6.0
     ruler_unlock: 1.0
     enable_army: 1.0
     map_vision_radius_offset: 2.0
     spy_workshop: 1.0
-    max_siege_construction_speed_modifier: 0.12
+    max_siege_construction_speed_modifier: 0.17
+    culture_modifier: 0.35
+    travel_offset: -1800.0
     build_speed_offset: 0.1
     research_speed_offset: 0.1
-    culture_modifier: 0.2
     other_citizen_gold_modifier: 0.002
   item_upgrades: {}
   artifacts: []
-  max_life: 13.0
+  max_life: 16.0
   structures: {}
   armies:
   - aid: 890
@@ -5259,8 +6329,8 @@ empires:
     name: Gelbe Gefahr 🍌
     waves:
     - wave_id: 18
-      iid: BOWMAN
-      slots: 6
+      iid: CHARIOT
+      slots: 10
       max_era: 2
       num_critters_spawned: 0
       next_critter_ms: 0
@@ -5271,9 +6341,19 @@ empires:
       num_critters_spawned: 0
       next_critter_ms: 0
     - wave_id: 20
-      iid: SCOUT
-      slots: 6
-      max_era: 1
+      iid: CHARIOT
+      slots: 10
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  - aid: 1201
+    uid: 15
+    name: Freche Früchtchen 🍌
+    waves:
+    - wave_id: 1
+      iid: SLAVE
+      slots: 1
+      max_era: 0
       num_critters_spawned: 0
       next_critter_ms: 0
   spies: []
@@ -5306,11 +6386,24 @@ empires:
     type: empty
   - q: -11
     r: -23
-    type: FIRE_TOWER
+    type:
+      type: FIRE_TOWER
+      select: random
   - q: -12
     r: -21
     type:
       type: SPIKE_TRAP
+      select: random
+  - q: -5
+    r: -25
+    type: BALLISTA_TOWER
+  - q: -6
+    r: -22
+    type: spawnpoint
+  - q: -6
+    r: -23
+    type:
+      type: FIRE_TOWER
       select: random
   - q: -6
     r: -24
@@ -5318,6 +6411,12 @@ empires:
   - q: -6
     r: -25
     type: empty
+  - q: -7
+    r: -21
+    type: empty
+  - q: -7
+    r: -22
+    type: BALLISTA_TOWER
   - q: -7
     r: -23
     type: empty
@@ -5329,7 +6428,7 @@ empires:
     type: castle
   - q: -8
     r: -21
-    type: spawnpoint
+    type: empty
   - q: -8
     r: -22
     type:
@@ -5343,6 +6442,9 @@ empires:
     type:
       type: ARROW_TOWER
       select: random
+  - q: -9
+    r: -20
+    type: ARROW_TOWER
   - q: -9
     r: -21
     type: empty
@@ -5362,16 +6464,16 @@ empires:
   ruler:
     name: Lucien Duskbane
     type: LUCIEN
-    xp: 260.0
-    level: 2
-    q: 1
+    xp: 2513.0
+    level: 4
+    q: 3
     w: 0
     e: 1
     r: 0
 - uid: 68
   name: Bridgeport
   resources:
-    gold: 30794.51965644404
+    gold: 49983.51871190475
     culture: 0.0
     life: 10.0
   buildings:
@@ -5413,8 +6515,8 @@ empires:
 - uid: 69
   name: BaalZe
   resources:
-    gold: 14028.31200480035
-    culture: 76726.71152608818
+    gold: 4588.608189567523
+    culture: 143743.10708104656
     life: 13.0
   buildings:
     INIT: 0.0
@@ -5433,9 +6535,13 @@ empires:
     HERBALIST: 0.0
     WATCH_TOWER: 0.0
     FIELD_HEALER: 0.0
-    HARBOR: 6601.7857543454975
+    HARBOR: 0.0
     TRIBAL_COUNCIL: 0.0
-  build_queue: null
+    WARRIORS_LODGE: 0.0
+    SWORD_MAKER: 0.0
+    MARKET_PLACE: 0.0
+    CHAPEL: 1650.9868068080102
+  build_queue: CHAPEL
   knowledge:
     HUNTING: 0.0
     MYSTIC: 0.0
@@ -5454,15 +6560,23 @@ empires:
     HORSEBACK_RIDING: 0.0
     CURRENCY: 0.0
     DRILL: 0.0
-  research_queue: null
+    ARTS: 0.0
+    MECHANICS: 0.0
+    LITERATURE: 31919.730201362876
+    MATHMATICS: 0.0
+    LAWS: 20681.272279459445
+    CARTOGRAPHY: 17721.86827074584
+    ARCHITECTURE: 20806.63905531811
+    IRON: 22157.10219162522
+  research_queue: ARCHITECTURE
   citizens:
-    merchant: 4
-    scientist: 4
-    artist: 3
+    merchant: 0
+    scientist: 0
+    artist: 14
   effects:
     life_regen_modifier: 0.002
     siege_offset: 5520.0
-    gold_offset: 0.831
+    gold_offset: 1.2309999999999999
     culture_offset: 0.6000000000000001
     build_speed_modifier: 0.5
     enable_messages: 1.0
@@ -5470,74 +6584,149 @@ empires:
     restore_life_after_loss_offset: 5.0
     research_speed_modifier: 0.44999999999999996
     enable_techtree: 1.0
-    gold_modifier: 0.1
+    gold_modifier: 0.8
     max_life_modifier: 3.0
     map_vision_radius_offset: 2.0
+    travel_offset: -1800.0
     ruler_unlock: 1.0
+    enable_army: 1.0
     build_speed_offset: 0.1
     research_speed_offset: 0.1
     culture_modifier: 0.2
-    max_siege_construction_speed_modifier: 0.15
+    max_siege_construction_speed_modifier: 0.2
+    citizen_cost_modifier: 0.05
   item_upgrades: {}
   artifacts: []
   max_life: 13.0
   structures: {}
-  armies: []
+  armies:
+  - aid: 1206
+    uid: 69
+    name: B1
+    waves:
+    - wave_id: 4
+      iid: NANDI
+      slots: 2
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 5
+      iid: CHARIOT
+      slots: 8
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 6
+      iid: SWORDMAN
+      slots: 8
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 7
+      iid: CHARIOT
+      slots: 8
+      max_era: 2
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 8
+      iid: SWORDMAN
+      slots: 6
+      max_era: 3
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 9
+      iid: SCOUT
+      slots: 7
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 10
+      iid: ALRIC
+      slots: 5
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 11
+      iid: BORIN
+      slots: 4
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 12
+      iid: LUCIEN
+      slots: 4
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 13
+      iid: MAJA
+      slots: 3
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SCOUT
+      slots: 5
+      max_era: 0
+      num_critters_spawned: 0.0
+      next_critter_ms: 0.0
   spies: []
   bosses: {}
   hex_map:
   - q: -18
     r: -25
-    type: empty
-  - q: -19
-    r: -23
-    type:
-      type: SPIKE_TRAP
-      select: last
-  - q: -19
-    r: -24
-    type: FIRE_TOWER
-  - q: -20
-    r: -21
-    type: empty
-  - q: -20
-    r: -22
-    type: empty
-  - q: -20
-    r: -23
-    type: empty
-  - q: -20
-    r: -24
-    type: SPIKE_TRAP
-  - q: -21
-    r: -20
-    type: empty
-  - q: -21
-    r: -21
-    type:
-      type: FIRE_TOWER
-      select: last
-  - q: -21
-    r: -22
-    type: SPIKE_TRAP
-  - q: -21
-    r: -23
-    type: empty
-  - q: -22
-    r: -19
-    type: empty
-  - q: -22
-    r: -20
-    type: FIRE_TOWER
-  - q: -22
-    r: -21
     type: castle
+  - q: -19
+    r: -23
+    type: ARROW_TOWER
+  - q: -19
+    r: -24
+    type: empty
+  - q: -20
+    r: -21
+    type: empty
+  - q: -20
+    r: -22
+    type: empty
+  - q: -20
+    r: -23
+    type: empty
+  - q: -20
+    r: -24
+    type: DOUBLE_SLING_TOWER
+  - q: -21
+    r: -20
+    type: empty
+  - q: -21
+    r: -21
+    type:
+      type: FIRE_TOWER
+      select: random
+  - q: -21
+    r: -22
+    type: ARROW_TOWER
+  - q: -21
+    r: -23
+    type:
+      type: FIRE_TOWER
+      select: random
+  - q: -22
+    r: -19
+    type: empty
+  - q: -22
+    r: -20
+    type:
+      type: FIRE_TOWER
+      select: random
+  - q: -22
+    r: -21
+    type: spawnpoint
   - q: -22
     r: -22
     type: empty
   - q: -22
     r: -23
-    type: SPIKE_TRAP
+    type: ARROW_TOWER
   - q: -23
     r: -19
     type: empty
@@ -5545,415 +6734,799 @@ empires:
     r: -20
     type:
       type: FIRE_TOWER
-      select: last
+      select: random
   - q: -23
     r: -21
-    type: FIRE_TOWER
+    type:
+      type: FIRE_TOWER
+      select: random
   - q: -23
     r: -22
-    type: SPIKE_TRAP
+    type: empty
+  - q: -23
+    r: -23
+    type: ARROW_TOWER
   - q: -24
     r: -19
     type: empty
   - q: -24
     r: -20
+    type: empty
+  - q: -24
+    r: -21
+    type: empty
+  - q: -24
+    r: -22
+    type: ARROW_TOWER
+  - q: -25
+    r: -21
+    type: ARROW_TOWER
+  ruler:
+    name: Nandi
+    type: NANDI
+    xp: 0.0
+    level: 1
+    q: 1
+    w: 0
+    e: 0
+    r: 0
+- uid: 6
+  name: KundK Monarchie
+  resources:
+    gold: 11454.145290879485
+    culture: 10784.128570826873
+    life: 5.677857791208002
+  buildings:
+    INIT: 0.0
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    SHRINE: 0.0
+    TOOL_SHOP: 0.0
+    FIELD_HEALER: 5970.26192785059
+    GRANARY: 0.0
+    EARTH_WALL: 0.0
+    EPIC_DRAWINGS: 0.0
+    EXCHANGE_POST: 0.0
+    BOW_MAKER: 0.0
+    BULLETIN_BOARD: 0.0
+    WARRIORS_LODGE: 0.0
+  build_queue: null
+  knowledge:
+    HUNTING: 0.0
+    MYSTIC: 0.0
+    DOMESTICATION: 0.0
+    HERBOLOGY: 0.0
+    CRAFTSMANSHIP: 0.0
+    POTTERY: 0.0
+    ALPHABET_WRITING: 0.0
+    AGRICULTURE: 0.0
+    TRIBAL_LEADERSHIP: 0.0
+    WARFARE: 0.0
+  research_queue: null
+  citizens:
+    merchant: 3
+    scientist: 3
+    artist: 0
+  effects:
+    life_regen_modifier: 0.001
+    siege_offset: 3720.0
+    gold_offset: 0.631
+    culture_offset: 0.4
+    build_speed_modifier: 0.5
+    wave_delay_offset: 1000.0
+    restore_life_after_loss_offset: 1.0
+    research_speed_modifier: 0.44999999999999996
+    enable_techtree: 1.0
+    gold_modifier: 0.1
+    enable_messages: 1.0
+    enable_army: 1.0
+    build_speed_offset: 0.1
+    research_speed_offset: 0.1
+    max_siege_construction_speed_modifier: 0.12
+  item_upgrades: {}
+  artifacts: []
+  max_life: 10.0
+  structures: {}
+  armies:
+  - aid: 1277
+    uid: 6
+    name: Herr Damit
+    waves:
+    - wave_id: 1
+      iid: WARRIOR
+      slots: 1
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: WARRIOR
+      slots: 1
+      max_era: 1
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 3
+      iid: SCOUT
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 1
+      iid: SCOUT
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+    - wave_id: 2
+      iid: SCOUT
+      slots: 1
+      max_era: 0
+      num_critters_spawned: 0
+      next_critter_ms: 0
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: 20
+    r: 23
+    type: empty
+  - q: 20
+    r: 24
+    type: empty
+  - q: 20
+    r: 25
+    type: empty
+  - q: 21
+    r: 22
+    type: empty
+  - q: 21
+    r: 23
+    type: SLING_TOWER
+  - q: 21
+    r: 24
+    type: SLING_TOWER
+  - q: 21
+    r: 25
+    type: castle
+  - q: 22
+    r: 21
+    type: empty
+  - q: 22
+    r: 22
+    type: SLING_TOWER
+  - q: 22
+    r: 23
     type: spawnpoint
+  - q: 22
+    r: 24
+    type: SLING_TOWER
+  - q: 23
+    r: 21
+    type: empty
+  - q: 23
+    r: 22
+    type: empty
+  - q: 23
+    r: 23
+    type: SLING_TOWER
+  ruler: {}
+- uid: 55
+  name: Ratziverse
+  resources:
+    gold: 4823.117035190014
+    culture: 7177.651735658398
+    life: 10.0
+  buildings:
+    INIT: 0.0
+    BASE_CAMP: 0.0
+    FIRE_PLACE: 0.0
+    MAIN_HOUSE: 0.0
+    STONE_CIRCLE: 0.0
+    TOOL_SHOP: 0.0
+    EPIC_DRAWINGS: 0.0
+    EARTH_WALL: 0.0
+    SHRINE: 0.0
+    TRIBAL_COUNCIL: 0.0
+  build_queue: null
+  knowledge:
+    MYSTIC: 0.0
+    HUNTING: 0.0
+    CRAFTSMANSHIP: 0.0
+    DOMESTICATION: 0.0
+    ALPHABET_WRITING: 0.0
+    POTTERY: 0.0
+    HERBOLOGY: 0.0
+    AGRICULTURE: 0.0
+    TRIBAL_LEADERSHIP: 0.0
+    WARFARE: 0.0
+  research_queue: null
+  citizens:
+    merchant: 2
+    scientist: 1
+    artist: 2
+  effects:
+    life_regen_modifier: 0.001
+    siege_offset: 3720.0
+    gold_offset: 0.30000000000000004
+    culture_offset: 0.35
+    build_speed_modifier: 0.5
+    research_speed_modifier: 0.44999999999999996
+    enable_techtree: 1.0
+    wave_delay_offset: 1000.0
+    restore_life_after_loss_offset: 1.0
+    ruler_unlock: 1.0
+    build_speed_offset: 0.1
+    research_speed_offset: 0.1
+    max_siege_construction_speed_modifier: 0.12
+  item_upgrades: {}
+  artifacts: []
+  max_life: 10.0
+  structures: {}
+  armies: []
+  spies: []
+  bosses: {}
+  hex_map:
+  - q: -10
+    r: 31
+    type: SLING_TOWER
+  - q: -10
+    r: 32
+    type: SLING_TOWER
+  - q: -10
+    r: 33
+    type: SLING_TOWER
+  - q: -11
+    r: 31
+    type: SLING_TOWER
+  - q: -11
+    r: 32
+    type: empty
+  - q: -11
+    r: 33
+    type: empty
+  - q: -11
+    r: 34
+    type: spawnpoint
+  - q: -12
+    r: 32
+    type: empty
+  - q: -12
+    r: 33
+    type: SLING_TOWER
+  - q: -12
+    r: 34
+    type: SLING_TOWER
+  - q: -13
+    r: 33
+    type: castle
   ruler: {}
 attacks:
-- attack_id: 1285
-  attacker_uid: 58
-  defender_uid: 28
-  army_aid: 356
+- attack_id: 1740
+  attacker_uid: 13
+  defender_uid: 25
+  army_aid: 835
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 4252.67029576702
-  total_siege_seconds: 10920.0
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 57.045813181008725
+  total_siege_seconds: 7320.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1287
-  attacker_uid: 22
-  defender_uid: 28
-  army_aid: 934
+- attack_id: 1752
+  attacker_uid: 64
+  defender_uid: 13
+  army_aid: 273
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 3617.9999999999995
-  siege_remaining_seconds: 1939.4611410390353
-  total_siege_seconds: 9828.0
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 965.4132932020102
+  total_siege_seconds: 7320.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1291
+- attack_id: 1781
   attacker_uid: 0
-  defender_uid: 28
-  army_aid: 1061
+  defender_uid: 21
+  army_aid: 1325
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 1170.2056309290929
-  total_siege_seconds: 10920.0
+  total_eta_seconds: 8400.0
+  siege_remaining_seconds: 3493.9481605020037
+  total_siege_seconds: 7320.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1294
-  attacker_uid: 23
-  defender_uid: 67
-  army_aid: 411
+- attack_id: 1783
+  attacker_uid: 0
+  defender_uid: 13
+  army_aid: 1326
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 10800.0
+  siege_remaining_seconds: 6172.247357715
+  total_siege_seconds: 7320.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1784
+  attacker_uid: 0
+  defender_uid: 3
+  army_aid: 1327
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 2810.961433993006
+  total_siege_seconds: 7320.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1791
+  attacker_uid: 67
+  defender_uid: 26
+  army_aid: 466
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 5680.443953342992
+  total_siege_seconds: 9120.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1792
+  attacker_uid: 0
+  defender_uid: 4
+  army_aid: 1332
   phase: traveling
-  eta_seconds: 389.29824904806446
+  eta_seconds: 290.5425222140361
   total_eta_seconds: 10800.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1299
-  attacker_uid: 64
-  defender_uid: 22
-  army_aid: 273
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 1254.3809759470169
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1303
-  attacker_uid: 13
-  defender_uid: 15
-  army_aid: 656
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 1889.2975705959834
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1305
-  attacker_uid: 7
-  defender_uid: 22
-  army_aid: 803
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 2188.823133782018
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1309
-  attacker_uid: 0
-  defender_uid: 65
-  army_aid: 1071
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 6218.42313974502
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1313
-  attacker_uid: 0
-  defender_uid: 67
-  army_aid: 1074
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 7177.813715534983
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1314
-  attacker_uid: 64
-  defender_uid: 28
-  army_aid: 592
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 9182.681748253992
-  total_siege_seconds: 10920.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1315
-  attacker_uid: 0
-  defender_uid: 28
-  army_aid: 1075
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 270.0
-  siege_remaining_seconds: 4141.4483688620385
-  total_siege_seconds: 10920.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1317
-  attacker_uid: 29
-  defender_uid: 28
-  army_aid: 329
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 9583.191528417985
-  total_siege_seconds: 10920.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1318
-  attacker_uid: 4
-  defender_uid: 67
-  army_aid: 350
-  phase: traveling
-  eta_seconds: 3003.5507540040417
-  total_eta_seconds: 9000.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1320
-  attacker_uid: 3
-  defender_uid: 69
-  army_aid: 880
-  phase: traveling
-  eta_seconds: 1338.004316236009
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1321
+- attack_id: 1802
   attacker_uid: 26
-  defender_uid: 15
-  army_aid: 810
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 5400.0
-  siege_remaining_seconds: 6998.533409493975
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1322
-  attacker_uid: 0
-  defender_uid: 24
-  army_aid: 1077
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 2673.8975166940363
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1323
-  attacker_uid: 0
-  defender_uid: 69
-  army_aid: 1078
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 630.0
-  siege_remaining_seconds: 653.465852955007
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1324
-  attacker_uid: 4
-  defender_uid: 22
-  army_aid: 655
-  phase: traveling
-  eta_seconds: 3768.91832234303
-  total_eta_seconds: 9000.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1325
-  attacker_uid: 67
-  defender_uid: 28
-  army_aid: 466
-  phase: traveling
-  eta_seconds: 2118.175552081084
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1326
-  attacker_uid: 15
-  defender_uid: 22
-  army_aid: 890
+  defender_uid: 25
+  army_aid: 816
   phase: in_siege
   eta_seconds: 0.0
   total_eta_seconds: 3600.0
-  siege_remaining_seconds: 4042.0121737170266
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1327
-  attacker_uid: 0
-  defender_uid: 3
-  army_aid: 1079
-  phase: traveling
-  eta_seconds: 2377.5195849849842
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1328
-  attacker_uid: 0
-  defender_uid: 58
-  army_aid: 1080
-  phase: traveling
-  eta_seconds: 3757.5395384940784
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1329
-  attacker_uid: 0
-  defender_uid: 69
-  army_aid: 1081
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 660.0
-  siege_remaining_seconds: 2832.916590107023
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1330
-  attacker_uid: 0
-  defender_uid: 25
-  army_aid: 1082
-  phase: traveling
-  eta_seconds: 3877.8359380559996
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1331
-  attacker_uid: 0
-  defender_uid: 28
-  army_aid: 1083
-  phase: traveling
-  eta_seconds: 4117.341710224049
-  total_eta_seconds: 7200.0
-  siege_remaining_seconds: 0.0
-  total_siege_seconds: 30.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1332
-  attacker_uid: 0
-  defender_uid: 4
-  army_aid: 1084
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 5197.94565098302
+  siege_remaining_seconds: 1417.1024557680075
   total_siege_seconds: 7320.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1333
-  attacker_uid: 0
-  defender_uid: 13
-  army_aid: 1085
+- attack_id: 1803
+  attacker_uid: 3
+  defender_uid: 15
+  army_aid: 880
   phase: in_siege
   eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 3414.96728801704
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1334
-  attacker_uid: 0
-  defender_uid: 22
-  army_aid: 1086
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 3507.119969586027
-  total_siege_seconds: 5520.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1335
-  attacker_uid: 25
-  defender_uid: 22
-  army_aid: 555
-  phase: traveling
-  eta_seconds: 2887.346638986026
   total_eta_seconds: 5400.0
+  siege_remaining_seconds: 3397.8121434600025
+  total_siege_seconds: 7320.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1805
+  attacker_uid: 0
+  defender_uid: 6
+  army_aid: 1339
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 534.917928885
+  total_siege_seconds: 3720.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1807
+  attacker_uid: 24
+  defender_uid: 66
+  army_aid: 851
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 675.1629571240001
+  total_siege_seconds: 3720.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1808
+  attacker_uid: 7
+  defender_uid: 13
+  army_aid: 803
+  phase: traveling
+  eta_seconds: 1033.012839005944
+  total_eta_seconds: 9000.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1336
+- attack_id: 1809
+  attacker_uid: 0
+  defender_uid: 22
+  army_aid: 1341
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 6600.0
+  siege_remaining_seconds: 6152.222216937
+  total_siege_seconds: 7320.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1811
+  attacker_uid: 0
+  defender_uid: 21
+  army_aid: 1343
+  phase: traveling
+  eta_seconds: 821.0249403820198
+  total_eta_seconds: 8100.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1812
+  attacker_uid: 24
+  defender_uid: 26
+  army_aid: 1115
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 7807.965257340002
+  total_siege_seconds: 9120.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1813
+  attacker_uid: 29
+  defender_uid: 25
+  army_aid: 1026
+  phase: traveling
+  eta_seconds: 496.7872538690035
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1814
+  attacker_uid: 29
+  defender_uid: 66
+  army_aid: 329
+  phase: traveling
+  eta_seconds: 966.6075144920042
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1815
+  attacker_uid: 7
+  defender_uid: 25
+  army_aid: 1235
+  phase: traveling
+  eta_seconds: 2807.655456153031
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1817
   attacker_uid: 0
   defender_uid: 15
-  army_aid: 1087
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 6190.578362461994
-  total_siege_seconds: 7320.0
+  army_aid: 1345
+  phase: traveling
+  eta_seconds: 765.5882470990068
+  total_eta_seconds: 6300.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1337
+- attack_id: 1818
+  attacker_uid: 21
+  defender_uid: 25
+  army_aid: 1122
+  phase: traveling
+  eta_seconds: 3555.7088896929954
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1819
+  attacker_uid: 25
+  defender_uid: 13
+  army_aid: 555
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 2411.9999999999995
+  siege_remaining_seconds: 3561.212817871
+  total_siege_seconds: 6588.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1820
   attacker_uid: 0
   defender_uid: 3
-  army_aid: 1088
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 6566.903598526958
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1338
-  attacker_uid: 0
-  defender_uid: 24
-  army_aid: 1089
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 630.0
-  siege_remaining_seconds: 6379.668210263946
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1339
-  attacker_uid: 0
-  defender_uid: 65
-  army_aid: 1090
-  phase: in_siege
-  eta_seconds: 0.0
-  total_eta_seconds: 900.0
-  siege_remaining_seconds: 6740.129658274003
-  total_siege_seconds: 7320.0
-  is_spy: false
-  army_name_override: ''
-- attack_id: 1340
-  attacker_uid: 13
-  defender_uid: 4
-  army_aid: 835
+  army_aid: 1346
   phase: traveling
-  eta_seconds: 4228.387765906053
-  total_eta_seconds: 5400.0
+  eta_seconds: 3276.7325233009933
+  total_eta_seconds: 8700.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1341
-  attacker_uid: 26
-  defender_uid: 28
-  army_aid: 816
+- attack_id: 1822
+  attacker_uid: 0
+  defender_uid: 25
+  army_aid: 1347
   phase: traveling
-  eta_seconds: 4615.86513024196
-  total_eta_seconds: 5400.0
+  eta_seconds: 2866.9709949120106
+  total_eta_seconds: 8100.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
   is_spy: false
   army_name_override: ''
-- attack_id: 1342
+- attack_id: 1824
+  attacker_uid: 0
+  defender_uid: 25
+  army_aid: 1348
+  phase: traveling
+  eta_seconds: 1067.3414834090158
+  total_eta_seconds: 6000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1825
+  attacker_uid: 0
+  defender_uid: 69
+  army_aid: 1349
+  phase: traveling
+  eta_seconds: 767.3414834090104
+  total_eta_seconds: 5700.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1826
   attacker_uid: 26
   defender_uid: 66
-  army_aid: 10001342
+  army_aid: 810
+  phase: in_siege
+  eta_seconds: 0.0
+  total_eta_seconds: 3600.0
+  siege_remaining_seconds: 2739.5543551499995
+  total_siege_seconds: 3720.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1827
+  attacker_uid: 0
+  defender_uid: 15
+  army_aid: 1350
   phase: traveling
-  eta_seconds: 2584.848318847944
+  eta_seconds: 3004.425456345004
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1829
+  attacker_uid: 69
+  defender_uid: 15
+  army_aid: 1206
+  phase: traveling
+  eta_seconds: 1329.6332704920032
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1830
+  attacker_uid: 0
+  defender_uid: 24
+  army_aid: 1351
+  phase: traveling
+  eta_seconds: 4589.345908870005
+  total_eta_seconds: 8100.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1831
+  attacker_uid: 0
+  defender_uid: 26
+  army_aid: 1352
+  phase: traveling
+  eta_seconds: 4024.9328470670016
+  total_eta_seconds: 7200.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1832
+  attacker_uid: 28
+  defender_uid: 66
+  army_aid: 643
+  phase: traveling
+  eta_seconds: 488.078872819
+  total_eta_seconds: 3600.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1833
+  attacker_uid: 64
+  defender_uid: 26
+  army_aid: 592
+  phase: traveling
+  eta_seconds: 5968.206299387978
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1835
+  attacker_uid: 22
+  defender_uid: 26
+  army_aid: 934
+  phase: traveling
+  eta_seconds: 2642.561841783
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1836
+  attacker_uid: 0
+  defender_uid: 21
+  army_aid: 1353
+  phase: traveling
+  eta_seconds: 3920.654397589
+  total_eta_seconds: 6600.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1837
+  attacker_uid: 0
+  defender_uid: 13
+  army_aid: 1354
+  phase: traveling
+  eta_seconds: 8405.028779094977
+  total_eta_seconds: 10800.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1838
+  attacker_uid: 23
+  defender_uid: 4
+  army_aid: 411
+  phase: traveling
+  eta_seconds: 8540.251951723985
+  total_eta_seconds: 10800.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1839
+  attacker_uid: 15
+  defender_uid: 13
+  army_aid: 890
+  phase: traveling
+  eta_seconds: 3340.571228
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1840
+  attacker_uid: 15
+  defender_uid: 13
+  army_aid: 1201
+  phase: traveling
+  eta_seconds: 3341.5723012099998
+  total_eta_seconds: 5400.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1842
+  attacker_uid: 0
+  defender_uid: 24
+  army_aid: 1356
+  phase: traveling
+  eta_seconds: 675.6159391109995
+  total_eta_seconds: 2700.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1843
+  attacker_uid: 13
+  defender_uid: 66
+  army_aid: 656
+  phase: traveling
+  eta_seconds: 6987.630751021989
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1844
+  attacker_uid: 0
+  defender_uid: 23
+  army_aid: 1357
+  phase: traveling
+  eta_seconds: 8824.674665443988
+  total_eta_seconds: 10800.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1845
+  attacker_uid: 25
+  defender_uid: 66
+  army_aid: 363
+  phase: traveling
+  eta_seconds: 2951.8532420779993
+  total_eta_seconds: 4823.999999999999
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1846
+  attacker_uid: 29
+  defender_uid: 15
+  army_aid: 10001846
+  phase: traveling
+  eta_seconds: 2242.859575081
+  total_eta_seconds: 3600.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: true
+  army_name_override: Participation Trophy
+- attack_id: 1847
+  attacker_uid: 0
+  defender_uid: 64
+  army_aid: 1358
+  phase: traveling
+  eta_seconds: 9484.907130072996
+  total_eta_seconds: 10800.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1848
+  attacker_uid: 21
+  defender_uid: 13
+  army_aid: 443
+  phase: traveling
+  eta_seconds: 7849.2435382410085
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1849
+  attacker_uid: 0
+  defender_uid: 3
+  army_aid: 1359
+  phase: traveling
+  eta_seconds: 4972.422278884
+  total_eta_seconds: 6000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1850
+  attacker_uid: 0
+  defender_uid: 26
+  army_aid: 1360
+  phase: traveling
+  eta_seconds: 8125.704014791005
+  total_eta_seconds: 9000.0
+  siege_remaining_seconds: 0.0
+  total_siege_seconds: 30.0
+  is_spy: false
+  army_name_override: ''
+- attack_id: 1851
+  attacker_uid: 69
+  defender_uid: 64
+  army_aid: 10001851
+  phase: traveling
+  eta_seconds: 2696.996471333
   total_eta_seconds: 2700.0
   siege_remaining_seconds: 0.0
   total_siege_seconds: 30.0
   is_spy: true
-  army_name_override: Dexter
+  army_name_override: B1
 battles: []

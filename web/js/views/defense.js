@@ -230,7 +230,11 @@ async function _showDefenseEffectsOverlay() {
     return `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>${rowsHtml}</div>`;
   }
 
-  const fmtDur = (s) => s >= 3600 ? (s / 3600).toFixed(1) + 'h' : s >= 60 ? Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's' : s.toFixed(0) + 's';
+  const fmtDur = (s) => {
+    if (s >= 3600) return +(s / 3600).toPrecision(3) + 'h';
+    if (s >= 60) return Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
+    return +s.toPrecision(3) + 's';
+  };
 
   const _items = st.items;
   function _name(iid) {

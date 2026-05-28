@@ -4,7 +4,8 @@ from __future__ import annotations
 import logging
 from typing import Any, TYPE_CHECKING
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from slowapi import Limiter
 
 from gameserver.network.jwt_auth import get_current_uid
 from gameserver.engine.global_state import (
@@ -74,13 +75,14 @@ def _build_end_rally_info_for_era_map(gc: Any, empire_service: Any = None) -> di
     }
 
 
-def make_router(services: "Services") -> APIRouter:
+def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     router = APIRouter()
     assert services.empire_service is not None
     empire_service = services.empire_service  # non-optional for closure narrowing
 
     @router.get("/api/empire/summary")
-    async def get_summary(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+    @limiter.limit("300/minute")
+    async def get_summary(request: Request, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         from gameserver.network.handlers import handle_summary_request
         msg = _stub_message()
         resp = await handle_summary_request(msg, uid)
@@ -108,7 +110,8 @@ def make_router(services: "Services") -> APIRouter:
         return resp or {"error": "No data"}
 
     @router.get("/api/empires")
-    async def list_empires(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+    @limiter.limit("120/minute")
+    async def list_empires(request: Request, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Return all known empires sorted by culture points descending."""
         uid_to_user: dict[int, str] = {}
         uid_to_last_seen: dict[int, str] = {}
@@ -123,6 +126,10 @@ def make_router(services: "Services") -> APIRouter:
                 continue
             era_key = empire_service.get_current_era(empire)
             era_idx = empire_service._ERA_ORDER.index(era_key) + 1 if era_key in empire_service._ERA_ORDER else 1
+            bot_prob = (
+                services.bot_detector.get_probability(empire.uid)
+                if services.bot_detector else 0.5
+            )
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -132,13 +139,15 @@ def make_router(services: "Services") -> APIRouter:
                 "era": era_idx,
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "artifact_count": len(empire.artifacts),
+                "bot_probability": round(bot_prob, 3),
             })
         empires.sort(key=lambda e: float(e.get("culture") or 0),  # type: ignore[arg-type]
                      reverse=True)
         return {"empires": empires}
 
     @router.post("/api/empire/build")
-    async def build_item(body: BuildRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+    @limiter.limit("60/minute")
+    async def build_item(request: Request, body: BuildRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         from gameserver.network.handlers import handle_new_item
         msg = _stub_message(iid=body.iid)
         resp = await handle_new_item(msg, uid)
@@ -274,12 +283,25 @@ def make_router(services: "Services") -> APIRouter:
             return {"success": False, "error": "Empire not found"}
         if empire.ruler.type:
             return {"success": False, "error": "Ruler already chosen"}
+        if empire.get_effect("ruler_unlock", 0) <= 0:
+            return {"success": False, "error": "Ruler not yet unlocked — research the required knowledge first"}
         rulers = empire_service._rulers if empire_service else {}
         if body.ruler_iid not in rulers:
             return {"success": False, "error": "Unknown ruler"}
         ruler_def = rulers[body.ruler_iid]
         empire.ruler.type = body.ruler_iid
         empire.ruler.name = ruler_def.get("name", body.ruler_iid)
+        return {"success": True}
+
+    @router.post("/api/empire/ruler/dismiss")
+    async def dismiss_ruler(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        empire = empire_service.get(uid)
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        if empire.ruler.r > 0:
+            return {"success": False, "error": "Ruler cannot be changed once the R skill has been upgraded"}
+        from gameserver.models.empire import Ruler
+        empire.ruler = Ruler()
         return {"success": True}
 
     @router.get("/api/map/neighbors")

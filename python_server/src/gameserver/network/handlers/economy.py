@@ -783,6 +783,19 @@ async def handle_buy_tile_request(
             "error": "This tile belongs to another empire",
         }
 
+    # Require adjacency to an existing owned (non-void) tile to keep territory contiguous
+    neighbor_offsets = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1))
+    has_owned_neighbor = any(
+        _tile_type(hex_map.get(f"{q + dq},{r + dr}", 'void')) != 'void'
+        for dq, dr in neighbor_offsets
+    )
+    if not has_owned_neighbor:
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": "Tile must be adjacent to one of your existing tiles",
+        }
+
     # Calculate cost based on number of already purchased tiles
     purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
     tile_price = svc.empire_service.tile_price_for(empire, purchased_tile_count + 1)

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/optimize-assets.mjs --write && vite build",
+    "build": "node scripts/optimize-assets.mjs --write && node scripts/build-api-page.mjs && vite build",
+    "build:api": "node scripts/build-api-page.mjs",
     "preview": "vite preview",
     "assets:optimize": "node scripts/optimize-assets.mjs --write",
     "test:e2e": "playwright test",
@@ -21,6 +22,7 @@
     "@playwright/test": "^1.59.1",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
+    "marked": "^14.1.4",
     "prettier": "^3.8.3",
     "sharp": "^0.34.5",
     "vite": "^6.3.5"

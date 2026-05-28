@@ -273,6 +273,7 @@
           <th>User</th>
           <th>Empire</th>
           <th>Era</th>
+          <th>Bot%</th>
           <th>Culture</th>
           <th>Gold</th>
           <th>Life</th>
@@ -287,7 +288,7 @@
         </tr>
       </thead>
       <tbody id="empires-body">
-        <tr><td colspan="15" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
+        <tr><td colspan="16" style="color:var(--text-dim);padding:20px 14px">Loading…</td></tr>
       </tbody>
     </table>
     </div>
@@ -322,6 +323,14 @@
 
 <script>
 const GS_BASE = window.location.origin;
+
+function fmtBotProb(v) {
+  if (v == null) return '<span style="color:var(--text-dim)">?</span>';
+  const pct = Math.round(v * 100);
+  if (v >= 0.70) return `<span style="color:var(--danger);font-weight:700">🤖 ${pct}%</span>`;
+  if (v <= 0.30) return `<span style="color:var(--success)">${pct}%</span>`;
+  return `<span style="color:var(--text-dim)">${pct}%</span>`;
+}
 
 function fmtPow(v) {
   if (v === undefined || v === null) return '—';
@@ -474,7 +483,7 @@ function renderEmpires(empires) {
   const tbody = document.getElementById('empires-body');
 
   if (!empires.length) {
-    tbody.innerHTML = '<tr><td colspan="13" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" style="color:var(--text-dim);padding:20px 14px">No empires.</td></tr>';
     return;
   }
 
@@ -508,6 +517,7 @@ function renderEmpires(empires) {
       <td>${e.username || '—'}</td>
       <td style="color:var(--accent)">${e.name}</td>
       <td style="color:var(--text-dim);font-size:11px">${calcEra(e.knowledge_done)}</td>
+      <td>${fmtBotProb(e.bot_probability)}</td>
       <td>${fmtPow(culture)}</td>
       <td>${fmtPow(gold)}</td>
       <td>
@@ -533,7 +543,7 @@ function renderEmpires(empires) {
     detailRow.className = `empire-detail${isOpen ? ' open' : ''}`;
     detailRow.dataset.uid = e.uid;
     const detailTd = document.createElement('td');
-    detailTd.colSpan = 15;
+    detailTd.colSpan = 16;
     detailTd.innerHTML = buildDetailHTML(e);
     detailRow.appendChild(detailTd);
 

@@ -21,7 +21,7 @@ from pathlib import Path
 import yaml
 from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from starlette.datastructures import MutableHeaders
 import uvicorn
 
@@ -1487,6 +1487,12 @@ async def serve_index():
     html = (_SERVE_DIR / "index.html").read_text(encoding="utf-8")
     html = html.replace("https://relicsnrockets.io", _SITE_URL)
     return HTMLResponse(html)
+
+
+@app.get("/api-docs", include_in_schema=False)
+async def api_docs_redirect():
+    """Friendly alias for the public API documentation page."""
+    return RedirectResponse("/api.html", status_code=301)
 
 
 # In production mode, dist/ only contains bundled JS/CSS — serve non-bundled dirs raw

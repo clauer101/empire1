@@ -270,6 +270,14 @@
   opacity: 0.85;
 }
 .lp-topnav-signup:hover { text-decoration: underline; opacity: 1; }
+.lp-topnav-api {
+  font-size: 0.78em;
+  color: #4fc3f7;
+  text-decoration: none;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.lp-topnav-api:hover { text-decoration: underline; opacity: 1; }
 /* input.lp-topnav-input specificity (0,0,1,1) beats input[type='text'] from responsive.css */
 input.lp-topnav-input {
   padding: 0 8px;

@@ -86,9 +86,21 @@
   const BASE_SCALE = 0.467;
 
   const ERA_ORDER = [
-    'Steinzeit','Neolithikum','Bronzezeit','Eisenzeit',
-    'Mittelalter','Renaissance','Industrialisierung','Moderne','Zukunft',
+    'stone', 'neolithic', 'bronze', 'iron',
+    'middle_ages', 'renaissance', 'industrial', 'modern', 'future', 'rulers',
   ];
+  const ERA_LABELS = {
+    stone:        'Stone Age',
+    neolithic:    'Neolithic',
+    bronze:       'Bronze Age',
+    iron:         'Iron Age',
+    middle_ages:  'Middle Ages',
+    renaissance:  'Renaissance',
+    industrial:   'Industrial',
+    modern:       'Modern',
+    future:       'Future',
+    rulers:       'Rulers',
+  };
 
   let zoomFactor = 4;
   let direction  = 'forward';
@@ -112,7 +124,9 @@
       const sprite = CritterSprite.fromManifest(entry);
       await sprite.load().catch(() => {});
       const st = statsMap.get(entry.name.toLowerCase());
-      return { name: entry.name, sprite, scale: st?.scale ?? 1.0, era: st?.era ?? 'Steinzeit' };
+      const isRuler = entry.name.startsWith('ruler_');
+      const era = isRuler ? 'rulers' : (st?.era ?? 'stone');
+      return { name: entry.name, sprite, scale: st?.scale ?? 1.0, era };
     }));
 
     buildGrid();
@@ -141,7 +155,7 @@
 
     const byEra = new Map(ERA_ORDER.map(e => [e, []]));
     for (const c of critters) {
-      const era = c.era || 'Steinzeit';
+      const era = c.era || 'stone';
       if (!byEra.has(era)) byEra.set(era, []);
       byEra.get(era).push(c);
     }
@@ -157,7 +171,7 @@
 
       const heading = document.createElement('div');
       heading.className = 'era-heading';
-      heading.textContent = `${era}  (${group.length})`;
+      heading.textContent = `${ERA_LABELS[era] ?? era}  (${group.length})`;
       section.appendChild(heading);
 
       const cols  = Math.min(COLS, group.length);
@@ -223,7 +237,7 @@
 
     const byEra = new Map(ERA_ORDER.map(e => [e, []]));
     for (const c of critters) {
-      const era = c.era || 'Steinzeit';
+      const era = c.era || 'stone';
       if (!byEra.has(era)) byEra.set(era, []);
       byEra.get(era).push(c);
     }

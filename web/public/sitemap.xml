@@ -5,7 +5,7 @@
   <!-- Landing page / login -->
   <url>
     <loc>https://relicsnrockets.io/</loc>
-    <lastmod>2026-05-24</lastmod>
+    <lastmod>2026-05-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -13,15 +13,23 @@
   <!-- Sign-up page -->
   <url>
     <loc>https://relicsnrockets.io/#signup</loc>
-    <lastmod>2026-05-24</lastmod>
+    <lastmod>2026-05-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <!-- Public API documentation (for external AI bot developers) -->
+  <url>
+    <loc>https://relicsnrockets.io/api.html</loc>
+    <lastmod>2026-05-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
 
   <!-- Legal / GDPR -->
   <url>
     <loc>https://relicsnrockets.io/dsgvo.html</loc>
-    <lastmod>2026-05-24</lastmod>
+    <lastmod>2026-05-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

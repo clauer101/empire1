@@ -10,7 +10,7 @@ AWE_INSPIRING_GRAIL:
   sprite: assets/sprites/artifacts/awe_inspiring_grail.webp
   effects:
     gold_modifier: 0.5
-    gold_offset: 0.5
+    gold_offset: 0.3
     culture_modifier: 0.33
     culture_offset: 0.5
     max_life_modifier: 10
@@ -21,7 +21,7 @@ LOST_ALMANAC:
   type: ''
   sprite: assets/sprites/artifacts/lost_almanac.webp
   effects:
-    research_speed_offset: 0.8
+    research_speed_offset: 0.2
     research_speed_modifier: 0.4
     build_speed_modifier: 0.6
     build_speed_offset: 0.3
@@ -37,7 +37,7 @@ ANCIENT_RELIQUE:
     max_siege_construction_speed_modifier: 0.1
     siege_construction_speed_per_army_modifier: 0.02
     culture_modifier: 0.5
-    culture_offset: 0.7
+    culture_offset: 0.3
 ASSASSINS_DAGGER:
   name: Assassin's Dagger
   description: The blade is clean. It has always been clean. Nobody knows why.
@@ -46,7 +46,7 @@ ASSASSINS_DAGGER:
   effects:
     enemy_siege_time_modifier: 0.1
     travel_time_modifier: 0.33
-    build_speed_offset: 0.5
+    build_speed_offset: 0.2
     wave_slot_cost_modifier: 0.1
 BATTLE_DRUMS:
   name: Battle Drums
@@ -67,7 +67,7 @@ BOOK_OF_HEROES:
   sprite: assets/sprites/artifacts/book_of_heroes.webp
   effects:
     max_life_modifier: 10
-    research_speed_offset: 0.8
+    research_speed_offset: 0.3
     culture_modifier: 0.6
     culture_offset: 0.4
 FINE_TROWEL:
@@ -77,7 +77,7 @@ FINE_TROWEL:
   type: ''
   sprite: assets/sprites/artifacts/fine_trowel.webp
   effects:
-    build_speed_offset: 0.5
+    build_speed_offset: 0.3
     build_speed_modifier: 0.5
     building_cost_modifier: 0.08
 GOLDEN_ARC:
@@ -90,7 +90,7 @@ GOLDEN_ARC:
     wave_era_cost_modifier: 0.3
     workshop_cost_modifier: 0.1
     build_speed_modifier: 0.4
-    build_speed_offset: 0.4
+    build_speed_offset: 0.2
     life_regen_modifier: 0.001
 MERCIFUL_ARMOUR:
   name: Merciful Armour
@@ -108,5 +108,5 @@ SCROLLS_OF_WISDOM:
   type: ''
   sprite: assets/sprites/artifacts/scrolls_of_wisdom.webp
   effects:
-    research_speed_offset: 0.8
+    research_speed_offset: 0.4
     research_speed_modifier: 0.8

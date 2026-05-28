@@ -642,6 +642,10 @@ class RestClient {
     return this._post('/api/empire/ruler/choose', { ruler_iid: rulerIid });
   }
 
+  async dismissRuler() {
+    return this._post('/api/empire/ruler/dismiss', {});
+  }
+
   // ── WebSocket URL helper ──────────────────────────────────
 
   /**

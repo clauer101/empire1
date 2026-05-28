@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from slowapi import Limiter
 
 from gameserver.network.jwt_auth import get_current_uid
 from gameserver.network.rest_models import (
@@ -16,11 +17,12 @@ if TYPE_CHECKING:
     from gameserver.main import Services
 
 
-def make_router(services: "Services") -> APIRouter:
+def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     router = APIRouter()
 
     @router.post("/api/messages")
-    async def send_message(body: SendMessageRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+    @limiter.limit("20/minute")
+    async def send_message(request: Request, body: SendMessageRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Send a message. to_uid=None/0 = global chat, otherwise private."""
         if not body.body.strip():
             return {"success": False, "error": "Message body cannot be empty"}

@@ -74,7 +74,7 @@ function _renderLoading() {
 }
 
 
-function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBgImg, splash, combatStats) {
+function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBgImg, splash, combatStats, canChange) {
   return `
     <div style="position:relative;overflow:hidden;padding:0;${withBgImg ? 'background:var(--surface);border:1px solid var(--border-color,#333);border-radius:var(--radius,6px);' : ''}" id="ruler-panel-wrap${withBgImg ? '' : '-mobile'}">
       ${withBgImg && splash ? `<img src="${splash}" style="width:100%;display:block;opacity:0.5;object-fit:cover;object-position:top;" alt="">` : ''}
@@ -100,6 +100,11 @@ function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillC
       <!-- Skills pinned to bottom -->
       <div style="position:absolute;bottom:32px;left:0;right:0;z-index:2;padding:6px 0 0;display:flex;flex-direction:column;gap:4px;">
         ${skillCards}
+        <div style="text-align:center;padding:6px 0 2px">
+          ${canChange
+            ? `<a id="change-ruler-link" href="#" style="font-size:0.78em;color:#888;text-decoration:underline;cursor:pointer">change ruler</a>`
+            : `<span style="font-size:0.72em;color:#555">locked — R skill upgraded</span>`}
+        </div>
       </div>
     </div>`;
 }
@@ -196,7 +201,8 @@ function _render(summary, rulersCatalog) {
   }).join('');
 
   const combatStats = ruler.combat_stats || null;
-  const sharedOverlay = (withBg) => _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBg, splash, combatStats);
+  const canChange = (ruler.r || 0) === 0;
+  const sharedOverlay = (withBg) => _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBg, splash, combatStats, canChange);
 
   container.innerHTML = `
     <!-- Desktop: image inside panel, max 500px -->
@@ -243,6 +249,51 @@ function _render(summary, rulersCatalog) {
   _bindEvents(rulersCatalog);
 }
 
+function _showChangeRulerOverlay(rulersCatalog) {
+  document.querySelector('.change-ruler-confirm-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'change-ruler-confirm-overlay tt-overlay visible';
+  overlay.innerHTML = `
+    <div class="tt-panel" style="max-width:340px">
+      <button class="tt-close">&times;</button>
+      <div class="tt-dp-name" style="color:#ffa726">👑 Change Ruler</div>
+      <div class="tt-dp-desc" style="margin-top:10px;font-style:normal;line-height:1.7;font-size:0.92em">
+        <p style="margin-bottom:10px">Changing your ruler will permanently remove your current ruler and <strong style="color:#ef5350">reset all XP, levels, and skill points</strong>.</p>
+        <p>You can then select a new ruler from the available options.</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button id="change-ruler-cancel" style="flex:1;background:#4fc3f7;color:#111;border:none;border-radius:4px;padding:8px 0;font-weight:700;cursor:pointer">Cancel</button>
+        <button id="change-ruler-confirm" style="flex:1;background:#333;color:#ccc;border:1px solid #555;border-radius:4px;padding:8px 0;cursor:pointer">Change Ruler</button>
+      </div>
+      <div id="change-ruler-error" style="color:#ef9a9a;font-size:0.85em;margin-top:8px;min-height:1em;text-align:center"></div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
+  });
+  overlay.querySelector('#change-ruler-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#change-ruler-confirm').addEventListener('click', async () => {
+    const btn = overlay.querySelector('#change-ruler-confirm');
+    const errEl = overlay.querySelector('#change-ruler-error');
+    btn.disabled = true;
+    errEl.textContent = '';
+    try {
+      const resp = await rest.dismissRuler();
+      if (resp?.success) {
+        overlay.remove();
+        showChooseRulerOverlay(rulersCatalog, _load);
+      } else {
+        errEl.textContent = resp?.error || 'Could not change ruler';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      errEl.textContent = e.message;
+      btn.disabled = false;
+    }
+  });
+  document.body.appendChild(overlay);
+}
+
 function _bindEvents(rulersCatalog) {
   container.querySelector('#choose-ruler-btn')?.addEventListener('click', () =>
     showChooseRulerOverlay(rulersCatalog, _load)
@@ -255,6 +306,12 @@ function _bindEvents(rulersCatalog) {
         if (resp?.success) await _load();
         else btn.disabled = false;
       } catch (_) { btn.disabled = false; }
+    });
+  });
+  container.querySelectorAll('#change-ruler-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      _showChangeRulerOverlay(rulersCatalog);
     });
   });
 }

@@ -40,6 +40,7 @@ from gameserver.loaders.ai_loader import load_ai_waves
 from gameserver.loaders.item_loader import load_items
 from gameserver.loaders.map_loader import load_map
 from gameserver.models.map import HexMap
+from gameserver.engine.bot_detection import BotDetector
 from gameserver.network.auth import AuthService
 from gameserver.network.router import Router
 from gameserver.network.server import Server
@@ -105,6 +106,7 @@ class Services:
     router: Optional[Router] = None
     server: Optional[Server] = None
     database: Optional[Database] = None
+    bot_detector: Optional[BotDetector] = None
     # Set during start_network — present after startup
     _rest_server: Optional[object] = None
     _rest_task: Optional[asyncio.Task[None]] = None
@@ -347,8 +349,9 @@ def create_services(config: Configuration, database: Database, state_file: str =
     game_loop._database = database
 
     auth_service = AuthService(database, gc)
+    bot_detector = BotDetector(database)
     router = Router()
-    server = Server(router, port=gc.ws_port)
+    server = Server(router, port=gc.ws_port, bot_detector=bot_detector)
 
     # Clean up old replay files
     from gameserver.persistence.replay import cleanup_old_replays
@@ -371,6 +374,7 @@ def create_services(config: Configuration, database: Database, state_file: str =
         router=router,
         server=server,
         database=database,
+        bot_detector=bot_detector,
     )
 
     return svc
@@ -445,6 +449,10 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
 
     # Register all message handlers on the router
     register_all_handlers(services)
+
+    # Load persisted bot signals before opening connections
+    if services.bot_detector is not None:
+        await services.bot_detector.load_all()
 
     await services.server.start()
     log.info("  WebSocket server listening on %s:%d", services.server._host, services.server._port)

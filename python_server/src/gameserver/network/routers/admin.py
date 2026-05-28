@@ -151,11 +151,16 @@ def make_router(services: "Services") -> APIRouter:
                 _pl = None
             power = compute_power(empire, up, path_length=_pl, gc=_gc).to_dict() if up else {"economy": 0, "attack": 0, "defense": 0, "total": 0}
 
+            bot_prob = (
+                services.bot_detector.get_probability(empire.uid)
+                if services.bot_detector else 0.5
+            )
             empires_out.append({
                 "uid": empire.uid,
                 "name": empire.name,
                 "username": uid_to_user.get(empire.uid, ""),
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
+                "bot_probability": round(bot_prob, 3),
                 "resources": {k: round(v, 1) for k, v in empire.resources.items()},
                 "max_life": round(empire.max_life, 1),
                 "citizens": empire.citizens,

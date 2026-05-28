@@ -446,12 +446,21 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
 
     text = "\n".join(lines)
 
+    ruler_info: dict[str, Any] | None = None
+    if defender.ruler and defender.ruler.type:
+        ruler_def = (svc.empire_service._rulers or {}).get(defender.ruler.type, {})
+        ruler_info = {
+            "name": ruler_def.get("name", defender.ruler.name or defender.ruler.type),
+            "level": defender.ruler.level,
+        }
+
     data: dict[str, Any] = {
         "era": era_label,
         "era_idx": era_idx,
         "placed_towers": placed_towers,
         "path_length": path_length,
         "artifacts": artifact_names,
+        "ruler": ruler_info,
     }
     if has_workshop_intel:
         data["structures"] = [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)]
@@ -735,6 +744,14 @@ async def handle_change_wave(
                         "success": False,
                         "error": f"Critter era (index {critter_era_idx}) exceeds wave max era (index {wave.max_era})",
                     }
+            if critter_item and critter_item.is_boss:
+                for w in army.waves:
+                    if w.iid == critter_iid and w.wave_id != wave.wave_id:
+                        return {
+                            "type": "change_wave_response",
+                            "success": False,
+                            "error": f"Boss {critter_iid} is already assigned to another wave in this army",
+                        }
         wave.iid = critter_iid
         log.info("change_wave: updated wave %d critter type to %s", wave_number, critter_iid)
 

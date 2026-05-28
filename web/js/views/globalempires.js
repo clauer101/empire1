@@ -90,7 +90,7 @@ function _rowHtml(e, rankIndex, selfEra) {
         <div style="min-width:0;">
           <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             ${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>
-            ${e.username ? `<span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username})</span>` : ''}
+            ${e.username ? `<span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username}${(e.bot_probability ?? 0.5) >= 0.70 ? ' 🤖' : ''})</span>` : ''}
             ${e.is_self ? ' ★' : ''}
           </div>
           <div style="color:#ffa726;font-size:0.82em;">${_fmt(e.resources?.culture ?? e.culture)} ✦

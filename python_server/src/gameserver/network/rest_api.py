@@ -222,7 +222,14 @@ def create_app(services: "Services") -> FastAPI:
     """
     app = FastAPI(title="E3 Game Server", version="1.0.0")
 
-    limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+    def _real_ip(request: Request) -> str:
+        return (
+            request.headers.get("X-Real-IP")
+            or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+            or get_remote_address(request)
+        )
+
+    limiter = Limiter(key_func=_real_ip, default_limits=["120/minute"])
     app.state.limiter = limiter
 
     @app.exception_handler(RateLimitExceeded)
@@ -285,6 +292,38 @@ def create_app(services: "Services") -> FastAPI:
                     pass
         return response
 
+    @app.middleware("http")
+    async def bot_signal_middleware(request: Request, call_next: Any) -> Any:
+        response = await call_next(request)
+        if services.bot_detector is None or response.status_code >= 400:
+            return response
+        auth = request.headers.get("authorization", "")
+        if not auth.startswith("Bearer "):
+            return response
+        try:
+            uid = verify_token(auth[7:])
+        except Exception:
+            return response
+        bd = services.bot_detector
+        path = request.url.path
+        method = request.method
+        # Header fingerprint — updated on every request
+        bd.record_header_signal(uid, request.headers)
+        # Reaction event — when client fetches summary
+        if path == "/api/empire/summary":
+            bd.record_reaction_event(uid)
+        # Reaction action — any state-mutating call after a summary fetch
+        elif method in ("POST", "PUT") and any(
+            path.startswith(p) for p in (
+                "/api/empire/build", "/api/empire/citizen",
+                "/api/map/buy-tile", "/api/empire/ruler",
+                "/api/army", "/api/attack", "/api/spy-attack",
+                "/api/item/buy-upgrade",
+            )
+        ):
+            bd.record_action(uid)
+        return response
+
     # Wire up sub-routers
     from gameserver.network.routers.auth import make_router as _auth_router
     from gameserver.network.routers.empire import make_router as _empire_router
@@ -295,10 +334,10 @@ def create_app(services: "Services") -> FastAPI:
     from gameserver.network.routers.admin import make_router as _admin_router
 
     app.include_router(_auth_router(services, limiter))
-    app.include_router(_empire_router(services))
+    app.include_router(_empire_router(services, limiter))
     app.include_router(_army_router(services))
-    app.include_router(_attack_router(services))
-    app.include_router(_messages_router(services))
+    app.include_router(_attack_router(services, limiter))
+    app.include_router(_messages_router(services, limiter))
     app.include_router(_replays_router(services))
     app.include_router(_admin_router(services))
 

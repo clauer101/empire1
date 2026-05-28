@@ -20,6 +20,7 @@ from websockets.asyncio.server import ServerConnection, Server as WSServer
 
 if TYPE_CHECKING:
     from gameserver.network.router import Router
+    from gameserver.engine.bot_detection import BotDetector
 
 log = structlog.get_logger(__name__)
 
@@ -63,7 +64,8 @@ class Server:
 
     def __init__(self, router: Router, host: str = "0.0.0.0", port: int = 8765,
                  ping_interval: int = 30, ping_timeout: int = 10,
-                 max_size: int = 1_048_576) -> None:
+                 max_size: int = 1_048_576,
+                 bot_detector: Optional["BotDetector"] = None) -> None:
         self._router = router
         self._host = host
         self._port = port
@@ -74,6 +76,7 @@ class Server:
         self._ws_to_uid: dict[int, int] = {}  # id(ws) → uid
         self._server: Optional[WSServer] = None
         self._next_guest_uid = -1  # negative UIDs for unauthenticated
+        self._bot_detector: Optional["BotDetector"] = bot_detector
 
     # -- Lifecycle -------------------------------------------------------
 
@@ -171,6 +174,8 @@ class Server:
         try:
             raw = json.dumps(data, ensure_ascii=False, default=str)
             await ws.send(raw)
+            if self._bot_detector and uid > 0 and data.get("type") == "summary_response":
+                self._bot_detector.record_reaction_event(uid)
             return True
         except websockets.ConnectionClosed:
             log.debug("send_to uid=%d failed — connection closed", uid)
@@ -313,6 +318,12 @@ class Server:
         request_id = data.get("request_id")
         msg_type = data.get("type", "")
         log.debug("Received: type=%s uid=%d", msg_type, uid)
+
+        # Record bot signal for game-action messages
+        if self._bot_detector and uid > 0:
+            from gameserver.engine.bot_detection import WS_ACTION_TYPES
+            if msg_type in WS_ACTION_TYPES:
+                self._bot_detector.record_action(uid)
 
         # Route through the Router
         try:

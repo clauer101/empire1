@@ -154,16 +154,20 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
     from gameserver.network.handlers._core import _active_battles
 
     def _attack_dto(a: Any) -> dict[str, Any]:
+        assert svc.empire_service is not None
+        _att_emp = svc.empire_service.get(a.attacker_uid)
         if a.army_name_override:
             _army_name = a.army_name_override
+            _with_ruler = False
         else:
-            assert svc.empire_service is not None
-            _att_emp = svc.empire_service.get(a.attacker_uid)
             _army_name = ""
+            _with_ruler = False
             if _att_emp:
+                _ruler_iids = set(svc.empire_service._rulers.keys())
                 for _arm in _att_emp.armies:
                     if _arm.aid == a.army_aid:
                         _army_name = _arm.name
+                        _with_ruler = any(w.iid in _ruler_iids for w in _arm.waves)
                         break
         _battle = _active_battles.get(a.defender_uid)
         _elapsed = round(_battle.elapsed_ms / 1000, 1) if _battle else 0.0
@@ -181,6 +185,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
             "total_siege_seconds": round(a.total_siege_seconds, 1),
             "is_spy": a.is_spy,
             "battle_elapsed_seconds": _elapsed,
+            "with_ruler": _with_ruler,
         }
 
     attacks_incoming = [_attack_dto(a) for a in svc.attack_service.get_incoming(uid)]

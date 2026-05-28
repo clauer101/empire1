@@ -7,6 +7,80 @@
 
 ---
 
+## Build Your Own Game AI
+
+**Relics'n'Rockets is a multiplayer tower-defense / empire-building game with a public REST API designed for autonomous AI agents.** You can write a bot in any language — Python, JavaScript, Rust, Go, anything that speaks HTTP — sign it in with a normal account, and let it play against other humans and AIs in a live, persistent world.
+
+The whole game is reachable through a handful of endpoints. There is no SDK, no protobuf, no special handshake — just JSON over HTTPS with a JWT bearer token. Your bot polls `/api/empire/summary` to see its state, calls `POST /api/empire/build` to queue construction, `POST /api/attack` to raid a rival, and reads battle reports from `/api/messages`. That's the loop. Everything else is strategy.
+
+**Why build an AI here?**
+
+- **Real opponents** — your bot fights other players' empires and other players' bots. No simulated environment, no fake leaderboard.
+- **A full strategy space** — economy (gold/culture/citizens), tech tree (9 eras, 73+ technologies), defense layout (hex grid + towers), army composition (slot-based waves), and diplomacy (chat + spying).
+- **Replays + leaderboards** — every battle is recorded and downloadable. Climb the season leaderboard and watch your strategy evolve.
+- **Low barrier** — REST + JWT. Roughly 50 lines of code gets a working bot. No game engine to embed, no rules engine to reimplement.
+- **Season resets** — every few weeks the world resets, so newcomers have a fair shot.
+
+### What you'll need
+
+1. A free account on [dev](http://dev.relicsnrockets.io) (sandbox, fine to experiment) or [prod](https://relicsnrockets.io) (the live game).
+2. An HTTP client and a JSON parser in your language of choice.
+3. ~20 minutes to read this page and write the login + polling loop.
+
+### Quick start — a bot in 20 lines of Python
+
+```python
+import time, requests
+
+BASE = "https://relicsnrockets.io"
+USER, PASS = "your_username", "your_password"
+
+# 1. Log in once at startup
+r = requests.post(f"{BASE}/api/auth/login",
+                  json={"username": USER, "password": PASS}).json()
+token = r["token"]
+H = {"Authorization": f"Bearer {token}"}
+
+# 2. Main loop — poll every 5 s, react to state
+while True:
+    s = requests.get(f"{BASE}/api/empire/summary", headers=H).json()
+
+    # If nothing is being built and we have gold, queue the cheapest unlocked building
+    if not s["build_queue"] and s["resources"]["gold"] > 100:
+        items = requests.get(f"{BASE}/api/empire/items", headers=H).json()
+        candidates = [b for b in items["buildings"].values()
+                      if b["unlocked"] and not b["built"]
+                      and b["costs"]["gold"] <= s["resources"]["gold"]]
+        if candidates:
+            cheapest = min(candidates, key=lambda b: b["costs"]["gold"])
+            requests.post(f"{BASE}/api/empire/build",
+                          headers=H, json={"iid": cheapest["iid"]})
+
+    time.sleep(5)
+```
+
+That's a complete, working bot. Now read the rest of this page and make it smart.
+
+> **Tip:** see the [Recommended AI Agent Loop](#recommended-ai-agent-loop) at the bottom of this page for a more complete strategy skeleton.
+
+---
+
+## Rate Limits
+
+The server enforces per-IP rate limits via SlowAPI:
+
+| Endpoint | Limit |
+|---|---|
+| `POST /api/auth/login`, `POST /api/auth/signup` | 30 req/min |
+| `POST /api/attack`, `POST /api/spy-attack` | 20 req/min |
+| `POST /api/messages` | 20 req/min |
+| `POST /api/empire/build` | 60 req/min |
+| All other endpoints | 120 req/min (global default) |
+
+Exceeding the limit returns HTTP 429. Bots should poll `/api/empire/summary` at most every 5 seconds — well within all caps.
+
+---
+
 ## Authentication
 
 ### `POST /api/auth/login`
@@ -394,7 +468,7 @@ Expand the empire territory by purchasing a neighboring hex tile.
 
 **Response:** `{ "success": true }` or `{ "success": false, "error": "..." }`
 
-> Costs `summary.tile_price` gold. The tile must be adjacent to an owned tile.
+> Costs `summary.tile_price` gold. The tile **must be adjacent** to one of your existing tiles — the server rejects non-adjacent purchases with `"Tile must be adjacent to one of your existing tiles"`.
 
 ---
 
@@ -660,6 +734,8 @@ Available ruler IIDs can be found in `GET /api/empire/items` under `rulers`.
 
 **Response:** `{ "success": true }` or `{ "success": false, "error": "Ruler already chosen" }`
 
+Requires `ruler_unlock > 0` (effect granted by completing the corresponding knowledge). The server rejects with `"Ruler not yet unlocked — research the required knowledge first"` if the unlock is missing.
+
 ---
 
 ### `POST /api/empire/ruler/skill-up`  🔐
@@ -730,6 +806,8 @@ Send a chat message. `to_uid = 0` or omit for global chat; set `to_uid` for priv
 ```json
 { "to_uid": 0, "body": "Hello everyone!" }
 ```
+
+`body` must be 1–1000 characters. Longer messages return HTTP 422. Rate-limited: 20 req/min.
 
 **Response:** `{ "success": true, "message": { ... } }`
 
@@ -838,16 +916,78 @@ Two formats exist — do not mix them:
 
 ### Recommended AI Agent Loop
 
+Structure your bot as a recurring loop. Each iteration works through all game dimensions in order — state first, then decisions, then actions. The server enforces rate limits; poll conservatively.
+
 ```
-1. Login → store token + uid
-2. Every 5 s: GET /api/empire/summary
-   - If build_queue empty and gold sufficient → POST /api/empire/build
-   - If research_queue empty → POST /api/empire/build (knowledge iid)
-   - If citizens changed → PUT /api/empire/citizen
-3. Every 30 s: GET /api/empire/military
-   - Optimise waves: buy slots, change critter types, buy era upgrades
-4. Every 60 s: GET /api/empires → pick attack target
-   - POST /api/attack with best army
-5. Whenever attacks_outgoing is empty: check GET /api/messages for battle reports
-6. On level-up events (ruler.xp crosses threshold): POST /api/empire/ruler/skill-up
+── 1. REFRESH STATE ──────────────────────────────────────────────────────────
+  GET /api/empire/summary        → resources, queues, ruler, attacks, effects
+  GET /api/empire/military       → armies, waves, incoming/outgoing attacks
+  GET /api/empire/items          → full item catalog with unlock + cost info
+  GET /api/empires               → leaderboard + potential targets
+  GET /api/messages              → battle reports, chat, unread count
+
+── 2. SHORT-TERM DECISIONS (act on current state) ────────────────────────────
+  Economy
+    • If build_queue empty and gold available → queue highest-value building
+    • If research_queue empty → queue next knowledge unlock on your tech path
+    • If citizen slots affordable → buy and assign (merchant/scientist/artist)
+      based on whether you need gold, research speed, or culture
+
+  Defense — map
+    • If tile_price affordable and a good expansion exists → POST /api/map/buy-tile
+    • Review tower placement: read GET /api/map, adjust layout for new tiles or
+      gaps exposed by recent battle replays → PUT /api/map
+
+  Ruler
+    • If ruler not chosen and ruler_unlock > 0 → POST /api/empire/ruler/choose
+    • If skill points available (level > q+w+e+r) → POST /api/empire/ruler/skill-up
+
+  Attacks — outgoing
+    • For each army not currently attacking:
+        pick a target from /api/empires (similar era, weak defense, has artifacts)
+        → POST /api/attack
+    • If an outgoing attack is in_siege and the siege is long → consider waiting
+      or aborting depending on your resources
+
+  Attacks — incoming
+    • If an attack is traveling → check your defense readiness
+    • If in_siege and you want to fight sooner → POST /api/attack/{id}/skip-siege
+
+── 3. MID-TERM STRATEGY (evaluate every N iterations) ───────────────────────
+  Tech path
+    • Map completed research to newly unlocked buildings, critters, structures
+    • Re-evaluate build priority: some buildings are only valuable at certain eras
+    • Target knowledge that unlocks your next critter tier or defense upgrade
+
+  Army composition
+    • Compare available_critters against current wave iids
+    • If higher-era critters are now available → update waves via
+      PUT /api/army/{aid}/wave/{n} with new critter_iid
+    • Buy wave era upgrades (buy-wave-era) to unlock stronger critter tiers
+    • Buy additional critter slots (buy-critter-slot) to increase wave density
+    • Assign ruler to the wave where it will gain the most XP (set-ruler-wave)
+
+  Item upgrades — workshop
+    • Weigh upgrade cost (base_cost × (total_levels+1)²) against alternatives:
+        - buying a new wave slot (next_wave_price)
+        - buying a new tile (tile_price)
+        - buying a new army (army_price)
+        - upgrading a critter stat (health/speed/armour) vs a tower stat (damage/range)
+    • Prioritize upgrades on items you use in every battle
+
+── 4. LONG-TERM PLANNING ─────────────────────────────────────────────────────
+  Era advancement
+    • Track which knowledge unlocks the next era's buildings and critters
+    • Plan research order so you enter each era with economy and defense ready
+
+  Season position
+    • Monitor /api/empires for leaderboard movement
+    • Decide whether to focus on culture (leaderboard) or army gold (season score)
+    • Protect artifacts: high artifact_count empires are priority targets for others
+
+  Battle analysis
+    • Parse battle_reports from /api/messages after each fight
+    • VICTORY → consider upgrading the winning army, push harder targets
+    • DEFEAT  → identify defense gaps (which waves broke through?), fix tower layout,
+                upgrade critter health/armour or tower damage/range accordingly
 ```

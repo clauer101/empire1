@@ -177,9 +177,9 @@ function render(data) {
 
       <div class="panel">
         <div class="panel-header">Resources</div>
-        <div class="panel-row"><span class="label">💰 Gold</span><span class="value"><span data-live-res="gold">${fmt(r.gold)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))}/h)</span></span></div>
-        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value"><span data-live-res="culture">${fmt(r.culture)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))}/h)</span></span></div>
-        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0))}/h)</span></span></div>
+        <div class="panel-row"><span class="label">💰 Gold</span><span class="value"><span data-live-res="gold">${fmt(r.gold)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))})</span></span></div>
+        <div class="panel-row"><span class="label">🎭 Culture</span><span class="value"><span data-live-res="culture">${fmt(r.culture)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))})</span></span></div>
+        <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0))})</span></span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
         <div class="panel-header" style="margin-bottom:4px">Citizens</div>
         ${renderCitizens(data.citizens)}
@@ -251,8 +251,12 @@ function render(data) {
           const wallSecs = buildMultiplier > 0 ? remaining / buildMultiplier : remaining;
           const wallTotal = buildMultiplier > 0 ? effort / buildMultiplier : effort;
           const pct = effort > 0 ? Math.max(0, Math.min(100, (1 - remaining / effort) * 100)) : 0;
+          const siegeCount = (data.attacks_incoming || []).filter((a) => a.phase === 'in_siege').length;
+          const siegeStyle = siegeCount > 0 ? 'color:#ef5350;cursor:pointer;' : '';
+          const siegePrefix = siegeCount > 0 ? '⚠ ' : '';
+          const siegeAttr = siegeCount > 0 ? ' data-siege-build-warning' : '';
           return `
-            <div class="panel-row"><span class="label">🔨 ${itemName}</span><span class="value" style="font-size:0.85em" data-queue-cd="build" data-remain="${wallSecs.toFixed(2)}" data-pct-start="${pct.toFixed(2)}" data-wall-total="${wallTotal.toFixed(2)}">${_fmtSecs(wallSecs)}</span></div>
+            <div class="panel-row"><span class="label">🔨 ${itemName}</span><span class="value" style="font-size:0.85em;${siegeStyle}" data-queue-cd="build" data-remain="${wallSecs.toFixed(2)}" data-pct-start="${pct.toFixed(2)}" data-wall-total="${wallTotal.toFixed(2)}"${siegeAttr}>${siegePrefix}${_fmtSecs(wallSecs)}</span></div>
             <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px">
               <div data-queue-bar="build" style="background:#4fc3f7;width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div>
             </div>`;
@@ -292,6 +296,9 @@ function render(data) {
   el.querySelectorAll('.art-badge-clickable').forEach((badge) => {
     badge.addEventListener('click', () => _showArtifactOverlay(badge.dataset.iid));
   });
+
+  // Bind siege build-time warning click
+  el.querySelector('[data-siege-build-warning]')?.addEventListener('click', () => _showSiegeBuildOverlay(data));
 
   // Replace old citizen-btn handler with slider init
   _initCitizenSlider(el, data);
@@ -405,7 +412,7 @@ function _tick() {
 
   el.querySelectorAll('[data-queue-cd]').forEach((span) => {
     const remain = Math.max(0, parseFloat(span.dataset.remain) - elapsedS);
-    span.textContent = _fmtSecs(remain);
+    span.textContent = (span.hasAttribute('data-siege-build-warning') ? '⚠ ' : '') + _fmtSecs(remain);
     const wallTotal = parseFloat(span.dataset.wallTotal);
     if (wallTotal > 0) {
       const pct = Math.min(100, parseFloat(span.dataset.pctStart) + (elapsedS / wallTotal) * 100);
@@ -696,6 +703,80 @@ function _showArtifactOverlay(iid) {
       <div style="font-size:11px;color:#666;font-family:monospace;margin-bottom:10px">${iid}</div>
       ${desc ? `<div style="color:#ccc;font-size:0.9em;margin-bottom:12px;line-height:1.5">${desc}</div>` : ''}
       ${effectRows ? `<div style="font-weight:600;font-size:0.78em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Effects</div>${effectRows}` : ''}
+    </div>
+  `;
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) {
+      overlay.remove();
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
+function _showSiegeBuildOverlay(data) {
+  document.querySelector('.siege-build-overlay')?.remove();
+
+  const effects = data.effects || {};
+  const attacks = data.attacks_incoming || [];
+  const siegeCount = attacks.filter((a) => a.phase === 'in_siege').length;
+  const baseSiegePerArmy = data.base_siege_construction_speed_per_army_modifier ?? 0.05;
+  const resilienceModifier = effects.siege_construction_speed_per_army_modifier || 0;
+  const effectivePerArmy = Math.max(0, baseSiegePerArmy - resilienceModifier);
+  const maxCap = effects.max_siege_construction_speed_modifier || 0;
+  const rawPenalty = siegeCount * effectivePerArmy;
+  const isCapped = maxCap > 0 && rawPenalty > maxCap;
+  const penalty = isCapped ? maxCap : rawPenalty;
+
+  const baseBuildSpeed = data.base_build_speed ?? 1;
+  const buildOffset = effects.build_speed_offset || 0;
+  const buildModifier = effects.build_speed_modifier || 0;
+  const unpenalizedSpeed = (baseBuildSpeed + buildOffset) * (1 + buildModifier);
+  const penalizedSpeed = unpenalizedSpeed * (1 - penalty);
+
+  const armyLabel = `${siegeCount} besieging arm${siegeCount !== 1 ? 'ies' : 'y'}`;
+
+  const resilienceRow = resilienceModifier > 0
+    ? `<div class="panel-row"><span class="label" style="color:#aaa">Resilience:</span><span class="value" style="color:#a5d6a7">−${(resilienceModifier * 100).toFixed(0)}%/army</span></div>`
+    : '';
+
+  const capRow = isCapped
+    ? `<div class="panel-row"><span class="label" style="color:#aaa">Raw penalty:</span><span class="value" style="color:#ef9a9a">−${(rawPenalty * 100).toFixed(0)}%</span></div>
+       <div class="panel-row"><span class="label" style="color:#aaa">Cap (era):</span><span class="value" style="color:#ef5350">−${(maxCap * 100).toFixed(0)}% (capped)</span></div>`
+    : `<div class="panel-row"><span class="label" style="color:#aaa">Penalty:</span><span class="value" style="color:#ef5350">−${(penalty * 100).toFixed(0)}%</span></div>`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'siege-build-overlay prod-overlay';
+  overlay.style.alignItems = 'center';
+  overlay.innerHTML = `
+    <div class="prod-overlay-box" style="max-width:360px;border-top:3px solid #ef5350;">
+      <button class="prod-overlay-close" title="Close">✕</button>
+      <div style="color:#ef5350;font-size:1.1em;font-weight:700;margin-bottom:10px">⚠ Build Speed Disrupted</div>
+      <div style="color:#ccc;font-size:0.9em;line-height:1.5;margin-bottom:14px">
+        Your empire is under siege. Besieging armies disrupt construction work and slow your builders.
+      </div>
+
+      <div style="font-weight:600;font-size:0.78em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Siege Breakdown</div>
+      <div class="panel-row"><span class="label" style="color:#aaa">Armies in siege:</span><span class="value" style="color:#ef5350;font-weight:600">${armyLabel}</span></div>
+      <div class="panel-row"><span class="label" style="color:#aaa">Base per army:</span><span class="value" style="color:#ef9a9a">−${(baseSiegePerArmy * 100).toFixed(0)}%/army</span></div>
+      ${resilienceRow}
+      <div class="panel-row"><span class="label" style="color:#aaa">Effective per army:</span><span class="value" style="color:#ef9a9a">−${(effectivePerArmy * 100).toFixed(0)}%/army</span></div>
+      <div style="border-top:1px solid #444;margin:8px 0"></div>
+      ${capRow}
+
+      <div style="border-top:1px solid #c62828;margin:10px 0 8px"></div>
+      <div style="font-weight:600;font-size:0.78em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Effect on Build Speed</div>
+      <div class="panel-row"><span class="label" style="color:#aaa">Without siege:</span><span class="value" style="color:#4fc3f7"><s>${_fmtSpeedH(unpenalizedSpeed)}</s></span></div>
+      <div class="panel-row"><span class="label" style="color:#ef5350;font-weight:700">Effective now:</span><span class="value" style="color:#ef5350;font-weight:700">${_fmtSpeedH(penalizedSpeed)}</span></div>
+
+      <div style="border-top:1px solid #444;margin:10px 0 8px"></div>
+      <div style="font-size:0.82em;color:#888;line-height:1.5">
+        Build <strong style="color:#ccc">Town Guard</strong>, <strong style="color:#ccc">Work Shop</strong>,
+        <strong style="color:#ccc">Guild</strong>, <strong style="color:#ccc">Parade Ground</strong> or
+        <strong style="color:#ccc">High Court</strong> to reduce the siege disruption cap.
+        End the siege phase early with the <em>End Siege</em> button in the Attacks panel.
+      </div>
     </div>
   `;
 
@@ -1134,6 +1215,13 @@ function _renderModifierSourceRows(effectSources, key, rulerName, skipCategories
   return html;
 }
 
+function _fmtSpeedH(perSec) {
+  const h = perSec * 3600;
+  if (Math.abs(h) >= 1e6) return +(h / 1e6).toPrecision(3) + 'M/h';
+  if (Math.abs(h) >= 1e3) return +(h / 1e3).toPrecision(3) + 'k/h';
+  return +h.toPrecision(3) + '/h';
+}
+
 function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName, siegeArmyCount, baseSiegePerArmy) {
   baseBuildSpeed = baseBuildSpeed ?? 1.0;
   const buildOffset = effects?.build_speed_offset || 0;
@@ -1141,17 +1229,17 @@ function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName, sie
   const effective = calcBuildSpeed({ base_build_speed: baseBuildSpeed, effects });
 
   const items = st.items;
-  let html = `<div class="panel-row"><span class="label">+${baseBuildSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
-  html += _renderOffsetSourceRows(effectSources, 'build_speed_offset', (v) => `+${v.toFixed(2)}`, rulerName, items);
+  let html = `<div class="panel-row"><span class="label">+${_fmtSpeedH(baseBuildSpeed)}</span><span class="value">(base)</span></div>`;
+  html += _renderOffsetSourceRows(effectSources, 'build_speed_offset', (v) => `+${_fmtSpeedH(v)}`, rulerName, items);
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   html += _renderModifierSourceRows(effectSources, 'build_speed_modifier', rulerName, [], items);
   const totalOffset = baseBuildSpeed + buildOffset;
   const multiplier = 1 + buildModifier;
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   const effectiveStr = siegeArmyCount > 0
-    ? `<s style="color:#555">${effective.toFixed(3)}/s</s>`
-    : `${effective.toFixed(3)}/s`;
-  html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effectiveStr}</span></div>`;
+    ? `<s style="color:#555">${_fmtSpeedH(effective)}</s>`
+    : _fmtSpeedH(effective);
+  html += `<div class="panel-row" style="color:#4fc3f7;font-weight:bold"><span class="label">= ${_fmtSpeedH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${effectiveStr}</span></div>`;
 
   // ── Siege penalty (shown when under siege) ──
   if (siegeArmyCount > 0) {
@@ -1178,7 +1266,7 @@ function renderBuildSpeed(effectSources, effects, baseBuildSpeed, rulerName, sie
     } else {
       html += `<div class="panel-row"><span class="label" style="color:#ef5350">−${(penalty * 100).toFixed(0)}%</span><span class="value" style="color:#888;font-size:10px">${siegeArmyCount} × ${(effectivePerArmy * 100).toFixed(0)}%</span></div>`;
     }
-    html += `<div class="panel-row" style="border-top:1px solid #c62828;margin:4px 0 0;padding-top:4px"><span class="label" style="color:#ef5350;font-weight:bold">= ${penaltySpeed.toFixed(3)}/s</span><span class="value" style="color:#ef5350;font-weight:bold">effective</span></div>`;
+    html += `<div class="panel-row" style="border-top:1px solid #c62828;margin:4px 0 0;padding-top:4px"><span class="label" style="color:#ef5350;font-weight:bold">= ${_fmtSpeedH(penaltySpeed)}</span><span class="value" style="color:#ef5350;font-weight:bold">effective</span></div>`;
   }
 
   return html;
@@ -1196,8 +1284,8 @@ function renderResearchSpeed(effectSources, effects, citizens, citizenEffect, ba
   const effective = calcResearchSpeed({ base_research_speed: baseResearchSpeed, effects, citizens, citizen_effect: citizenEffect });
 
   const items = st.items;
-  let html = `<div class="panel-row"><span class="label">+${baseResearchSpeed.toFixed(2)}</span><span class="value">(base)</span></div>`;
-  html += _renderOffsetSourceRows(effectSources, 'research_speed_offset', (v) => `+${v.toFixed(2)}`, rulerName, items);
+  let html = `<div class="panel-row"><span class="label">+${_fmtSpeedH(baseResearchSpeed)}</span><span class="value">(base)</span></div>`;
+  html += _renderOffsetSourceRows(effectSources, 'research_speed_offset', (v) => `+${_fmtSpeedH(v)}`, rulerName, items);
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   const bonusLabel = scientistCitizenBonus > 1
     ? `(${scientistCount} 🔭 × ${citizenEffect} × <span style="color:#ffd54f">👑${scientistCitizenBonus.toFixed(1)}</span>)`
@@ -1205,7 +1293,7 @@ function renderResearchSpeed(effectSources, effects, citizens, citizenEffect, ba
   html += `<div class="panel-row"><span class="label">+${(scientistBonus * 100).toFixed(0)}%</span><span class="value">${bonusLabel}</span></div>`;
   html += _renderModifierSourceRows(effectSources, 'research_speed_modifier', rulerName, ['citizens'], items);
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${totalOffset.toFixed(2)} × ${multiplier.toFixed(2)}</span><span class="value">${effective.toFixed(3)}/s</span></div>`;
+  html += `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${_fmtSpeedH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${_fmtSpeedH(effective)}</span></div>`;
   return html;
 }
 
@@ -1227,10 +1315,9 @@ function renderRestoreLife(effectSources, effects, baseRestore, rulerName) {
 
 function fmtPerH(perSecond) {
   const h = perSecond * 3600;
-  if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
-  if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
-  if (Math.abs(h) >= 10) return Math.round(h) + '';
-  return h.toFixed(1);
+  if (Math.abs(h) >= 1e6) return +(h / 1e6).toPrecision(3) + 'M/h';
+  if (Math.abs(h) >= 1e3) return +(h / 1e3).toPrecision(3) + 'k/h';
+  return +h.toPrecision(3) + '/h';
 }
 
 // effects[key] from the backend is already the full aggregated sum of all
@@ -1272,10 +1359,9 @@ function renderResourceIncome(resourceType, effectSources, effects, citizens, ci
   baseAmount = baseAmount ?? 0;
   const fmtH = (v) => {
     const h = v * 3600;
-    if (Math.abs(h) >= 1e6) return (h / 1e6).toFixed(1) + 'M';
-    if (Math.abs(h) >= 1e3) return Math.round(h / 1e3) + 'k';
-    if (Math.abs(h) >= 10) return Math.round(h) + '';
-    return h.toFixed(1);
+    if (Math.abs(h) >= 1e6) return +(h / 1e6).toPrecision(3) + 'M/h';
+    if (Math.abs(h) >= 1e3) return +(h / 1e3).toPrecision(3) + 'k/h';
+    return +h.toPrecision(3) + '/h';
   };
 
   let html = '';
@@ -1337,6 +1423,14 @@ function _resolveEmpireUsername(uid) {
   return '';
 }
 
+function _resolveEmpireBotProbability(uid) {
+  if (_empiresData) {
+    const e = _empiresData.find((x) => x.uid === uid);
+    if (e) return e.bot_probability ?? 0.5;
+  }
+  return 0.5;
+}
+
 function _fmtSecs(s) {
   if (s == null || s < 0) return '—';
   const h = Math.floor(s / 3600);
@@ -1378,7 +1472,9 @@ function _attackEntry(a, direction) {
     : direction === 'in'
       ? a.attacker_username || _resolveEmpireUsername(otherUid)
       : _resolveEmpireUsername(otherUid);
-  const empLabel = isAI ? 'AI' : username ? `${empireName} (${username})` : empireName;
+  const isBot = !isAI && (_resolveEmpireBotProbability(otherUid) ?? 0.5) >= 0.70;
+  const usernameLabel = username ? `${username}${isBot ? ' 🤖' : ''}` : (isBot ? '🤖' : '');
+  const empLabel = isAI ? 'AI' : usernameLabel ? `${empireName} (${usernameLabel})` : empireName;
   const armyName = a.army_name || '';
   const displayedArmyName =
     armyName && a.is_spy && direction === 'out' ? `"${armyName}"` : armyName;
@@ -1413,8 +1509,8 @@ function _attackEntry(a, direction) {
   }
   pct = Math.max(0, Math.min(100, pct));
 
-  // Icon: ⚠ for incoming, 👁 for watchable outgoing, → otherwise
-  const icon = direction === 'in' ? '⚠' : showWatch ? '👁' : '→';
+  // Icon: ⚠ for incoming, 👑 ruler, 🕵 spy, 👁 watchable, → otherwise
+  const icon = direction === 'in' ? '⚠' : a.with_ruler ? '👑' : a.is_spy ? '🕵' : showWatch ? '👁' : '→';
 
   return `
     <div class="attack-entry attack-${direction}${direction === 'in' ? ' attack-in-clickable' : ''}${outClickable ? ' atk-watch-entry' : ''}" ${direction === 'in' ? `data-attack-id="${a.attack_id}" data-attacker-uid="${a.attacker_uid}" title="Click to open battle view" style="cursor:pointer"` : outDataAttrs}>

@@ -110,6 +110,7 @@ function init(el, _api, _state) {
           <button id="login-btn" class="lp-topnav-btn">Sign In</button>
         </div>
         <a href="#signup" class="lp-topnav-signup">New? Create Empire →</a>
+        <a href="/api.html" class="lp-topnav-api" title="Public REST API — build your own AI bot">🤖 API for AI devs</a>
       </div>
     </div>
 

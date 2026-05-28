@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ===================================================================
@@ -138,7 +138,7 @@ class SpyAttackRequest(BaseModel):
 
 class SendMessageRequest(BaseModel):
     to_uid: Optional[int] = None  # None or 0 = global chat
-    body: str
+    body: str = Field(min_length=1, max_length=1000)
 
 
 class BattleFeedbackRequest(BaseModel):

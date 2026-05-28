@@ -14,6 +14,7 @@ export default defineConfig({
         // SPA pages only — tools are developer-only and served raw
         main: resolve(__dirname, 'index.html'),
         dsgvo: resolve(__dirname, 'dsgvo.html'),
+        api: resolve(__dirname, 'api.html'),
       },
     },
 

@@ -95,6 +95,14 @@ CREATE TABLE IF NOT EXISTS login_events (
 CREATE INDEX IF NOT EXISTS ix_login_events_uid ON login_events(uid);
 CREATE INDEX IF NOT EXISTS ix_login_events_ip  ON login_events(ip);
 CREATE INDEX IF NOT EXISTS ix_login_events_fp  ON login_events(fingerprint);
+CREATE TABLE IF NOT EXISTS bot_signals (
+    uid                 INTEGER PRIMARY KEY,
+    reaction_times_json TEXT    NOT NULL DEFAULT '[]',
+    header_bot_score    REAL    NOT NULL DEFAULT -1.0,
+    bot_probability     REAL    NOT NULL DEFAULT 0.5,
+    user_agent          TEXT    NOT NULL DEFAULT '',
+    updated_at          TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS ai_battle_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -281,6 +289,50 @@ class Database:
                     "empire_name": r[3],
                     "created_at": str(r[4]) if r[4] else "",
                     "last_seen": str(r[5]) if r[5] else "",
+                }
+                for r in rows
+            ]
+
+    # -- Bot detection signals -------------------------------------------
+
+    async def upsert_bot_signal(
+        self,
+        uid: int,
+        reaction_times_json: str,
+        header_bot_score: float,
+        bot_probability: float,
+        user_agent: str,
+    ) -> None:
+        """Insert or update bot detection signals for a user."""
+        assert self._conn is not None
+        await self._conn.execute(
+            """INSERT INTO bot_signals
+               (uid, reaction_times_json, header_bot_score, bot_probability, user_agent, updated_at)
+               VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+               ON CONFLICT(uid) DO UPDATE SET
+                 reaction_times_json = excluded.reaction_times_json,
+                 header_bot_score    = excluded.header_bot_score,
+                 bot_probability     = excluded.bot_probability,
+                 user_agent          = excluded.user_agent,
+                 updated_at          = excluded.updated_at""",
+            (uid, reaction_times_json, header_bot_score, bot_probability, user_agent),
+        )
+        await self._conn.commit()
+
+    async def list_bot_signals(self) -> list[dict[str, Any]]:
+        """Return all stored bot signals."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, reaction_times_json, header_bot_score, bot_probability, user_agent FROM bot_signals"
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [
+                {
+                    "uid": r[0],
+                    "reaction_times_json": r[1],
+                    "header_bot_score": r[2],
+                    "bot_probability": r[3],
+                    "user_agent": r[4],
                 }
                 for r in rows
             ]

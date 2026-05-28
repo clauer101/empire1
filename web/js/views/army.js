@@ -814,17 +814,24 @@ function _openCritterOverlay(
           </div>
         </button>`;
       })()}
-      ${[..._availableCritters]
+      ${(() => {
+        const currentArmy = (st.military?.armies || []).find((a) => a.aid === aid);
+        const bossesInArmy = new Set(
+          (currentArmy?.waves || [])
+            .filter((w, wi) => wi !== waveIdx && _availableCritters.find((c) => c.iid === w.iid && c.is_boss))
+            .map((w) => w.iid)
+        );
+        return [..._availableCritters]
         .reverse()
         .map((c) => {
           const isSelected = c.iid === currentIid;
-          const isMuted = (c.era_index ?? 0) > maxEra;
+          const isMuted = (c.era_index ?? 0) > maxEra || (c.is_boss && bossesInArmy.has(c.iid));
           const u = _applyCritUpgrades(c);
           const upgLevels = st.summary?.item_upgrades?.[c.iid] ?? {};
           const totalUpgLvl = Object.values(upgLevels).reduce((a, b) => a + b, 0);
           return `
           <button class="critter-pick-tile${isSelected ? ' critter-pick-tile--selected' : ''}${isMuted ? ' critter-pick-tile--muted' : ''}"
-              data-iid="${c.iid}" ${isMuted ? 'title="Era not unlocked for this wave"' : ''}>
+              data-iid="${c.iid}" ${c.is_boss && bossesInArmy.has(c.iid) ? 'title="Boss already used in another wave of this army"' : isMuted ? 'title="Era not unlocked for this wave"' : ''}>
             <div class="cpt-sprite" style="${isMuted ? 'opacity:0.35;filter:grayscale(1);' : ''}">
               <canvas class="critter-sprite-canvas" data-iid="${c.iid}" data-sprite="${c.sprite || ''}" data-animation="${c.animation || ''}" width="64" height="64"></canvas>
             </div>
@@ -842,7 +849,8 @@ function _openCritterOverlay(
             </div>
           </button>`;
         })
-        .join('')}
+        .join('');
+      })()}
     </div>
   `;
 
@@ -1166,6 +1174,13 @@ function _onSpyReport(msg) {
         : '<div style="opacity:0.4;font-size:12px;">none</div>'}
     </div>
 
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">👑 Ruler</div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:10px;">
+      ${msg.ruler
+        ? `<div style="font-size:12px;">👑 ${escHtml(msg.ruler.name)} &mdash; <span style="color:#aaa">Lv ${msg.ruler.level}</span></div>`
+        : '<div style="opacity:0.4;font-size:12px;">none</div>'}
+    </div>
+
     <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">🔬 Workshop Intelligence &mdash; ${escHtml(era)}</div>
     <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Towers</div>
@@ -1320,7 +1335,12 @@ function _bindAutocomplete(input) {
     _render(matches, q);
   }
 
-  input.addEventListener('input', _search);
+  let _debounceTimer = null;
+  const _debouncedSearch = () => {
+    clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(_search, 300);
+  };
+  input.addEventListener('input', _debouncedSearch);
   input.addEventListener('focus', () => {
     if (input.value.trim()) _search();
   });
@@ -1512,7 +1532,7 @@ function renderArmies(data) {
                         style="image-rendering:pixelated;"></canvas>`
                     : `<div class="wave-tile__no-critter">＋</div>`
                 }
-                <div class="wave-tile__count">${isRulerWave ? '👑' : (hasSprite ? numCritters : '')}</div>
+                <div class="wave-tile__count">${isRulerWave ? '👑' : selectedCritter?.is_boss ? '★' : (hasSprite ? numCritters : '')}</div>
               </button>
               <div class="wave-tile__footer">
                 ${isRulerWave

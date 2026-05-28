@@ -257,18 +257,18 @@ LEGIONARY:
 LARGE_CART:
   era: iron
   name: "Large Cart"
-  description: "A massive carrier that deploys four Pikeneers on destruction. Three slots but delivers a dangerous payload."
+  description: "A massive carrier that deploys three Pikeneers on destruction. Four slots but delivers a dangerous payload."
   speed: 0.35
   health: 7
   value: 130
   damage: 3
   armour: 2.5
-  slots: 3
+  slots: 4
   time_between: 2200
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: {PIKENEER: 4}
+  spawn_on_death: {PIKENEER: 3}
   scale: 2.0
   animation: assets/sprites/critters/large_cart
   requirements: [BOOT_CAMP, IRON]
@@ -278,10 +278,10 @@ THE_SWORDMASTER:
   name: "The Swordmaster"
   description: "An ancient legend who fills an entire wave alone. Enormous health and damage that no single tower can handle."
   speed: 0.4
-  health: 321
+  health: 256
   value: 300
   damage: 7
-  armour: 5
+  armour: 4.5
   slots: 999
   time_between: 2000
   is_boss: true

@@ -99,6 +99,8 @@ Set `BUILD_MODE=production` to make the web server (`web/fastapi_server.py`) ser
 
 After changing JS/CSS files: re-run `npm run build` before deploying.
 
+**API documentation** lives in `docs/API.md`. The file `web/api.html` is auto-generated from it by `web/scripts/build-api-page.mjs`, which runs automatically as part of `npm run build`. Never edit `web/api.html` directly — all changes must go into `docs/API.md`.
+
 When adding new image assets (JPG/PNG sprites): run `npm run assets:optimize` to
 generate WebP siblings. The build step runs this automatically. Skip PWA icons
 (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) — those must stay PNG.

@@ -149,9 +149,9 @@ LUCIEN:
     name: 'Grand Bailout'
     description: 'Provides a large lump sum of gold when a skill is upgraded.'
     levels:
+    - {gold_lump_sum_on_skill_up: 1000000}
+    - {gold_lump_sum_on_skill_up: 5000000}
     - {gold_lump_sum_on_skill_up: 10000000}
-    - {gold_lump_sum_on_skill_up: 20000000}
-    - {gold_lump_sum_on_skill_up: 50000000}
 BORIN:
   name: Borin Stonehelm
   description: "A battle-hardened warlord and master builder. Borin turns defense into dominance — reinforcing towers, reclaiming gold from sold structures, and outlasting every siege."
