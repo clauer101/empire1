@@ -1,67 +1,55 @@
 # ============================================================
 # AI Hardcoded Wave Definitions
 # ============================================================
-# Each entry defines an army the AI will send when the
-# defender matches ALL trigger conditions.
-#
-# Entries are evaluated IN ORDER.  The LAST matching entry
-# wins  (most-specific entries should go last).
-# If no entry matches, the adaptive heuristic is used.
-#
-# ── Trigger fields (all optional, default = always true) ────
-#   items:    list of building/knowledge IIDs that must ALL be
-#             completed by the defender (remaining_effort == 0)
-#   citizen:  defender must have at least this many citizens
-#
-# ── Wave fields ─────────────────────────────────────────────
-#   critter:  critter IID (matched case-insensitively)
-#   slots:    number of critters in this wave
-#
-# ── Optional top-level fields ───────────────────────────────
-#   travel_time: travel duration in seconds before the attack
-#                arrives (overrides ai_travel_seconds from
-#                game.yaml).  Omit to use the default.
-#
-# ── Progression overview ────────────────────────────────────
-#   Steinzeit      →  SLAVE / WARRIOR / SCOUT
-#   Neolithikum    →  CLUBMAN / SCOUT / WARRIOR
-#   Bronzezeit     →  BOWMAN / SWORDMAN / CHARIOT
-#   Eisenzeit      →  PIKENEER / HORSEMAN_FAST / LEGIONARY
-#   Mittelalter    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM
-#   Renaissance    →  NINJA / MUSKETEER / DRAGOONER
-#   Industrialis.  →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK
-#   Moderne        →  SPECOPS / HELI
-#   Zukunft        →  MECH_WARRIOR
-# ============================================================
 
 armies:
 
   # ──────────────────────────────────────────────────────────
-  #   STONE_AGE  (Effort 20 – 1.500)
+  #   STONE_AGE      (Effort 20 – 1.500)
   # ──────────────────────────────────────────────────────────
 
-  - name: "Early Barbarians Raid"
+  - name: "Stone Age Raid"
     travel_time: 180
     trigger:
-      items: [FIRE_PLACE]
+      items: [BASE_CAMP, FIRE_PLACE, STONE_CIRCLE, MAIN_HOUSE]
     waves:
       - critter: SLAVE
         slots: 6
 
-  - name: "Barbarians"
-    travel_time: 210
+  - name: "Primitive Assault"
+    travel_time: 300
     trigger:
-      items: [SHRINE, MYSTIC]
+      items: [EARTH_WALL, EPIC_DRAWINGS, EXCHANGE_POST, TOOL_SHOP, MAIN_HOUSE, STONE_CIRCLE]
+    waves:
+      - critter: SCOUT
+        slots: 4
+      - critter: SCOUT
+        slots: 10
+
+  - name: "Clan Attack"
+    travel_time: 690
+    trigger:
+      items: [SHRINE, HUNTING, MYSTIC, DOMESTICATION, CRAFTSMANSHIP]
     waves:
       - critter: CLUBMAN
         slots: 4
+      - critter: CLUBMAN
+        slots: 5
       - critter: SCOUT
-        slots: 6
+        slots: 3
+      - critter: SCOUT
+        slots: 4
+      - critter: SLAVE
+        slots: 3
 
-  - name: "Wild Barbarians"
+  # ──────────────────────────────────────────────────────────
+  #   NEOLITHIC      (Effort 800 – 7.500)
+  # ──────────────────────────────────────────────────────────
+
+  - name: "Neolithic Horde"
     travel_time: 240
     trigger:
-      items: [POTTERY, CRAFTSMANSHIP, GRANARY, DOMESTICATION]
+      items: [BULLETIN_BOARD, GRANARY, FIELD_HEALER]
     waves:
       - critter: SCOUT
         slots: 6
@@ -70,176 +58,26 @@ armies:
       - critter: CLUBMAN
         slots: 6
 
-  - name: "Rude Barbarians"
-    travel_time: 270
+  - name: "Tribal Warband"
+    travel_time: 630
     trigger:
-      items: [EARTH_WALL, ALPHABET_WRITING, HERBOLOGY, EPIC_DRAWINGS]
+      items: [BOW_MAKER, HERBALIST, TRIBAL_COUNCIL]
     waves:
-      - critter: CLUBMAN
-        slots: 5
-      - critter: SCOUT
-        slots: 7
-      - critter: WARRIOR
-        slots: 2
-
-  - name: "Angry Barbarians"
-    travel_time: 270
-    trigger:
-      items: [HORSEBACK_RIDING, EXCHANGE_POST, MAIN_HOUSE]
-    waves:
-      - critter: CLUBMAN
-        slots: 6
-      - critter: SCOUT
-        slots: 8
       - critter: CART
-        slots: 2
-
-  - name: "Stone Eaters"
-    travel_time: 300
-    trigger:
-      items: [STONE_CIRCLE, CRAFTSMANSHIP]
-    waves:
-      - critter: SCOUT
-        slots: 4
-      - critter: SCOUT
-        slots: 10
-
-  - name: "Hunter Hunters"
-    travel_time: 300
-    trigger:
-      items: [HUNTING]
-    waves:
-      - critter: SLAVE
-        slots: 4
-      - critter: SCOUT
-        slots: 7
-      - critter: SCOUT
-        slots: 6
-
-  # ──────────────────────────────────────────────────────────
-  #   NEOLITHIC  (Effort 800 – 7.500)
-  # ──────────────────────────────────────────────────────────
-
-  - name: "Potter Plunderers"
-    travel_time: 600
-    trigger:
-      items: [POTTERY, EPIC_DRAWINGS]
-    waves:
-      - critter: WARRIOR
-        slots: 4
-      - critter: SCOUT
-        slots: 6
-      - critter: SCOUT
-        slots: 6
-      - critter: WARRIOR
         slots: 3
+      - critter: WARRIOR
+        slots: 2
+      - critter: SCOUT
+        slots: 5
+      - critter: CLUBMAN
+        slots: 6
       - critter: WARRIOR
         slots: 5
 
   - name: "Harvest Raiders"
-    travel_time: 630
-    trigger:
-      items: [AGRICULTURE, GRANARY]
-    waves:
-      - critter: CART
-        slots: 3
-      - critter: WARRIOR
-        slots: 2
-      - critter: SCOUT
-        slots: 5
-      - critter: CLUBMAN
-        slots: 6
-      - critter: WARRIOR
-        slots: 5
-      - critter: WARRIOR
-        slots: 6
-
-  - name: "Shrine Destroyers"
-    travel_time: 690
-    trigger:
-      items: [SHRINE, EXCHANGE_POST]
-    waves:
-      - critter: CLUBMAN
-        slots: 4
-      - critter: WARRIOR
-        slots: 5
-      - critter: CART
-        slots: 3
-      - critter: SCOUT
-        slots: 4
-      - critter: CART
-        slots: 3
-      - critter: CART
-        slots: 6
-
-  - name: "Epic Plunder"
-    travel_time: 720
-    trigger:
-      items: [HERBOLOGY, ALPHABET_WRITING]
-    waves:
-      - critter: WARRIOR
-        slots: 5
-      - critter: CART
-        slots: 6
-      - critter: WARRIOR
-        slots: 5
-      - critter: CART
-        slots: 6
-      - critter: WARRIOR
-        slots: 5
-
-  - name: "Tool Thieves"
-    travel_time: 750
-    trigger:
-      items: [TOOL_SHOP]
-    waves:
-      - critter: BOWMAN
-        slots: 3
-      - critter: WARRIOR
-        slots: 7
-      - critter: CART
-        slots: 9
-      - critter: WARRIOR
-        slots: 4
-      - critter: WARRIOR
-        slots: 6
-
-  - name: "Council War Band"
-    travel_time: 780
-    trigger:
-      items: [TRIBAL_COUNCIL]
-    waves:
-      - critter: WARRIOR
-        slots: 5
-      - critter: CART
-        slots: 4
-      - critter: CART
-        slots: 6
-      - critter: BOWMAN
-        slots: 4
-      - critter: CART
-        slots: 6
-
-  - name: "Neolithic Horde"
-    travel_time: 810
-    trigger:
-      items: []
-    waves:
-      - critter: BOWMAN
-        slots: 5
-      - critter: WARRIOR
-        slots: 4
-      - critter: CART
-        slots: 6
-      - critter: CART
-        slots: 6
-      - critter: WARRIOR
-        slots: 6
-
-  - name: "Herbalist Horrors"
     travel_time: 840
     trigger:
-      items: [HERBALIST]
+      items: [WARRIORS_LODGE, POTTERY, HERBOLOGY]
     waves:
       - critter: CART
         slots: 5
@@ -252,80 +90,42 @@ armies:
       - critter: WARRIOR
         slots: 8
 
-  - name: "Tribal Raiders"
-    travel_time: 870
+  - name: "Pottery Thieves"
+    travel_time: 3000
     trigger:
-      items: [TRIBAL_LEADERSHIP]
+      items: [AGRICULTURE, ALPHABET_WRITING, TRIBAL_LEADERSHIP, WARFARE]
     waves:
-      - critter: SCOUT
-        slots: 5
-      - critter: WARRIOR
-        slots: 4
-      - critter: CART
-        slots: 6
-      - critter: WARRIOR
-        slots: 8
-      - critter: WARRIOR
-        slots: 10
-
-  - name: "Aggressive Raiders"
-    travel_time: 900
-    trigger:
-      items: [WARFARE]
-    waves:
-      - critter: CLUBMAN
-        slots: 5
-      - critter: CART
-        slots: 4
-      - critter: WARRIOR
-        slots: 6
-      - critter: WARRIOR
-        slots: 8
-      - critter: SCOUT
-        slots: 10
-      - critter: CART
+      - critter: BOWMAN
         slots: 12
-
-  # ──────────────────────────────────────────────────────────
-  #   BRONZE_AGE  (Effort 2.500 – 8.000)
-  # ──────────────────────────────────────────────────────────
-
-  - name: "Bronze Age Marauders"
-    travel_time: 2400
-    trigger:
-      items: [COPPER_BRONZE]
-    waves:
-      - critter: BOWMAN
-        slots: 10
       - critter: CLUBMAN
-        slots: 15
-      - critter: CHARIOT
-        slots: 13
-      - critter: CHARIOT
-        slots: 17
-      - critter: BOWMAN
-        slots: 20
-
-  - name: "Zealous Crusade"
-    travel_time: 2700
-    trigger:
-      items: [RELIGION]
-    waves:
-      - critter: BOWMAN
         slots: 10
-      - critter: WARRIOR
-        slots: 15
       - critter: SWORDMAN
-        slots: 13
+        slots: 12
       - critter: BOWMAN
-        slots: 17
-      - critter: CART
-        slots: 17
+        slots: 15
+      - critter: CHARIOT
+        slots: 16
 
-  - name: "War Drummers"
+  # ──────────────────────────────────────────────────────────
+  #   BRONZE_AGE     (Effort 2.500 – 8.000)
+  # ──────────────────────────────────────────────────────────
+
+  - name: "Bronze Warriors"
+    travel_time: 270
+    trigger:
+      items: [WATCH_TOWER, HARBOR, SWORD_MAKER]
+    waves:
+      - critter: CLUBMAN
+        slots: 6
+      - critter: SCOUT
+        slots: 8
+      - critter: CART
+        slots: 2
+
+  - name: "Chariot Rush"
     travel_time: 2700
     trigger:
-      items: [MUSIC, HORSEBACK_RIDING]
+      items: [MARKET_PLACE, BOOT_CAMP, CHAPEL, TOWN_GUARD]
     waves:
       - critter: BOWMAN
         slots: 12
@@ -338,156 +138,52 @@ armies:
       - critter: SWORDMAN
         slots: 9
 
-  - name: "Bow Maker's Rivals"
-    travel_time: 3000
-    trigger:
-      items: [BOW_MAKER]
-    waves:
-      - critter: BOWMAN
-        slots: 12
-      - critter: CLUBMAN
-        slots: 10
-      - critter: SWORDMAN
-        slots: 12
-      - critter: BOWMAN
-        slots: 15
-      - critter: CHARIOT
-        slots: 16
-
-  - name: "Sea Raiders"
-    travel_time: 3000
-    trigger:
-      items: [SAILING]
-    waves:
-      - critter: BOWMAN
-        slots: 11
-      - critter: SCOUT
-        slots: 13
-      - critter: SWORDMAN
-        slots: 13
-      - critter: SWORDMAN
-        slots: 14
-      - critter: CHARIOT
-        slots: 13
-
-  - name: "Medic Station Raid"
-    travel_time: 3000
-    trigger:
-      items: [HERBOLOGY]
-    waves:
-      - critter: BOWMAN
-        slots: 10
-      - critter: SWORDMAN
-        slots: 9
-      - critter: BOWMAN
-        slots: 14
-      - critter: SWORDMAN
-        slots: 14
-      - critter: CHARIOT
-        slots: 12
-
-  - name: "Watch Tower Breach"
-    travel_time: 3000
-    trigger:
-      items: [WATCH_TOWER]
-    waves:
-      - critter: SWORDMAN
-        slots: 11
-      - critter: BOWMAN
-        slots: 12
-      - critter: SWORDMAN
-        slots: 14
-      - critter: BOWMAN
-        slots: 15
-
-  - name: "Currency Wars"
+  - name: "Copper Blades"
     travel_time: 3300
     trigger:
-      items: [CURRENCY]
+      items: [CHURCH, COPPER_BRONZE, RELIGION, MUSIC]
     waves:
       - critter: SWORDMAN
-        slots: 10
-      - critter: BOWMAN
-        slots: 11
-      - critter: SWORDMAN
         slots: 12
+      - critter: CHARIOT
+        slots: 13
+      - critter: CHARIOT
+        slots: 14
+      - critter: CHARIOT
+        slots: 15
+      - critter: SWORDMAN
+        slots: 16
+
+  - name: "Harbor Raiders"
+    travel_time: 6000
+    trigger:
+      items: [SAILING, HORSEBACK_RIDING, CURRENCY, DRILL]
+    waves:
+      - critter: LEGIONARY
+        slots: 13
+      - critter: PIKENEER
+        slots: 14
+      - critter: LEGIONARY
+        slots: 14
+      - critter: HORSEMAN_FAST
+        slots: 15
+      - critter: LARGE_CART
+        slots: 15
+      - critter: LEGIONARY
+        slots: 16
       - critter: HORSEMAN_SLOW
-        slots: 10
-
-  - name: "Field Healer Hunt"
-    travel_time: 3300
-    trigger:
-      items: [FIELD_HEALER]
-    waves:
-      - critter: CHARIOT
-        slots: 14
-      - critter: BOWMAN
-        slots: 15
-      - critter: SWORDMAN
-        slots: 16
-      - critter: BOWMAN
         slots: 17
-      - critter: CHARIOT
-        slots: 20
-
-  - name: "Harbor Blockade"
-    travel_time: 3300
-    trigger:
-      items: [HARBOR]
-    waves:
-      - critter: SWORDMAN
-        slots: 12
-      - critter: CHARIOT
-        slots: 13
-      - critter: CHARIOT
-        slots: 14
-      - critter: CHARIOT
-        slots: 15
-      - critter: SWORDMAN
-        slots: 16
-
-  - name: "Drilled Swords"
-    travel_time: 3600
-    trigger:
-      items: [DRILL]
-    waves:
-      - critter: SWORDMAN
-        slots: 11
-      - critter: BOWMAN
-        slots: 10
-      - critter: CLUBMAN
-        slots: 16
-      - critter: CHARIOT
-        slots: 15
-      - critter: CHARIOT
-        slots: 16
-      - critter: SWORDMAN
-        slots: 14
-
-  - name: "Iron Blade Strike"
-    travel_time: 3600
-    trigger:
-      items: [SWORD_MAKER]
-    waves:
-      - critter: SWORDMAN
-        slots: 14
-      - critter: CHARIOT
-        slots: 15
-      - critter: SWORDMAN
-        slots: 16
-      - critter: CHARIOT
-        slots: 17
-      - critter: BOWMAN
-        slots: 18
+      - critter: HORSEMAN_SLOW
+        slots: 23
 
   # ──────────────────────────────────────────────────────────
-  #   IRON_AGE  (Effort 8.000 – 30.000)
+  #   IRON_AGE       (Effort 8.000 – 30.000)
   # ──────────────────────────────────────────────────────────
 
-  - name: "Artisan Warriors"
+  - name: "Iron Legion"
     travel_time: 5400
     trigger:
-      items: [ARTS]
+      items: [LIBRARY, LORE_COLLECTION, FORGE, TREASURE_CHAMBER]
     waves:
       - critter: SWORDMAN
         slots: 10
@@ -504,380 +200,54 @@ armies:
       - critter: LEGIONARY
         slots: 15
 
-  - name: "Notice Board Burning"
-    travel_time: 5400
+  - name: "Cavalry Strike"
+    travel_time: 6000
     trigger:
-      items: [BULLETIN_BOARD]
+      items: [CARTOGRAPHER, STABLES, RACE_COURSE, WORK_SHOP, THEATER]
     waves:
-      - critter: PIKENEER
+      - critter: LEGIONARY
         slots: 14
-      - critter: SWORDMAN
+      - critter: PIKENEER
         slots: 15
-      - critter: HORSEMAN_SLOW
+      - critter: HORSEMAN_FAST
         slots: 16
+      - critter: LARGE_CART
+        slots: 17
       - critter: LEGIONARY
         slots: 17
-      - critter: LARGE_CART
-        slots: 17
-      - critter: HORSEMAN_FAST
+      - critter: LEGIONARY
         slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 16
-
-  - name: "Mechanical Assault"
-    travel_time: 5400
-    trigger:
-      items: [MECHANICS]
-    waves:
-      - critter: PIKENEER
-        slots: 14
-      - critter: BOWMAN
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: LARGE_CART
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: PIKENEER
-        slots: 18
-      - critter: LARGE_CART
+      - critter: LEGIONARY
         slots: 19
+      - critter: PIKENEER
+        slots: 22
+
+  - name: "Legionary March"
+    travel_time: 6600
+    trigger:
+      items: [TREADWHEEL_CRANE, TEMPLE, FENCING_SCHOOL, OBSERVATORY]
+    waves:
       - critter: LEGIONARY
+        slots: 14
+      - critter: HORSEMAN_SLOW
+        slots: 15
+      - critter: PIKENEER
+        slots: 16
+      - critter: HORSEMAN_FAST
+        slots: 17
+      - critter: HORSEMAN_FAST
+        slots: 17
+      - critter: HORSEMAN_SLOW
+        slots: 18
+      - critter: LEGIONARY
+        slots: 19
+      - critter: LARGE_CART
         slots: 20
-
-  - name: "Market Place Looting"
-    travel_time: 5700
-    trigger:
-      items: [MARKET_PLACE]
-    waves:
-      - critter: PIKENEER
-        slots: 14
-      - critter: HORSEMAN_FAST
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 13
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 20
-
-  - name: "Numerology of War"
-    travel_time: 5700
-    trigger:
-      items: [MATHMATICS]
-    waves:
-      - critter: PIKENEER
-        slots: 12
-      - critter: SWORDMAN
-        slots: 13
-      - critter: PIKENEER
-        slots: 14
-      - critter: LARGE_CART
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: LEGIONARY
-        slots: 22
-
-  - name: "War Maps Desecrated"
-    travel_time: 5700
-    trigger:
-      items: [CARTOGRAPHY]
-    waves:
-      - critter: HORSEMAN_FAST
-        slots: 14
-      - critter: PIKENEER
-        slots: 15
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: LARGE_CART
-        slots: 19
-      - critter: HORSEMAN_SLOW
-        slots: 23
-
-  - name: "Boot Camp Assault"
-    travel_time: 6000
-    trigger:
-      items: [BOOT_CAMP]
-    waves:
-      - critter: LEGIONARY
-        slots: 13
-      - critter: PIKENEER
-        slots: 14
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_FAST
-        slots: 15
-      - critter: LARGE_CART
-        slots: 15
-      - critter: LEGIONARY
-        slots: 16
-      - critter: HORSEMAN_SLOW
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 23
-
-  - name: "Laws Broken"
-    travel_time: 6000
-    trigger:
-      items: [LAWS]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: PIKENEER
-        slots: 15
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: LARGE_CART
-        slots: 17
-      - critter: LEGIONARY
-        slots: 17
-      - critter: LEGIONARY
-        slots: 18
-      - critter: LEGIONARY
-        slots: 19
-      - critter: PIKENEER
-        slots: 22
-
-  - name: "Chapel Siege"
-    travel_time: 6000
-    trigger:
-      items: [CHAPEL]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: PIKENEER
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: HORSEMAN_SLOW
-        slots: 17
-      - critter: LARGE_CART
-        slots: 17
-      - critter: LEGIONARY
-        slots: 18
-      - critter: PIKENEER
-        slots: 19
-      - critter: PIKENEER
-        slots: 23
-
-  - name: "Town Guard Overwhelmed"
-    travel_time: 6300
-    trigger:
-      items: [TOWN_GUARD]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: PIKENEER
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: LARGE_CART
-        slots: 18
-      - critter: HORSEMAN_SLOW
-        slots: 23
-      - critter: LARGE_CART
-        slots: 22
 
   - name: "Iron Tide"
-    travel_time: 6300
-    trigger:
-      items: [IRON]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: LARGE_CART
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: PIKENEER
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: LEGIONARY
-        slots: 19
-      - critter: PIKENEER
-        slots: 20
-
-  - name: "Library Burned"
-    travel_time: 6300
-    trigger:
-      items: [LIBRARY]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_FAST
-        slots: 15
-      - critter: LEGIONARY
-        slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: PIKENEER
-        slots: 21
-      - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 19
-      - critter: HORSEMAN_FAST
-        slots: 20
-
-  - name: "Architectural Conquest"
-    travel_time: 6600
-    trigger:
-      items: [ARCHITECTURE]
-    waves:
-      - critter: LEGIONARY
-        slots: 10
-      - critter: HORSEMAN_SLOW
-        slots: 11
-      - critter: PIKENEER
-        slots: 12
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: LARGE_CART
-        slots: 17
-
-  - name: "Lore Collection Razed"
-    travel_time: 6600
-    trigger:
-      items: [LORE_COLLECTION]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: PIKENEER
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: LEGIONARY
-        slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: LARGE_CART
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-
-  - name: "Forge Sabotage"
-    travel_time: 6600
-    trigger:
-      items: [FORGE]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: PIKENEER
-        slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: LEGIONARY
-        slots: 19
-      - critter: LARGE_CART
-        slots: 20
-
-  - name: "Ancient Paintings Burned"
-    travel_time: 6900
-    trigger:
-      items: [PAINTING]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: HORSEMAN_FAST
-        slots: 15
-      - critter: PIKENEER
-        slots: 16
-      - critter: HORSEMAN_SLOW
-        slots: 17
-      - critter: LEGIONARY
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 18
-      - critter: LEGIONARY
-        slots: 19
-      - critter: HORSEMAN_FAST
-        slots: 20
-
-  - name: "Treasure Hunt"
-    travel_time: 6900
-    trigger:
-      items: [TREASURE_CHAMBER]
-    waves:
-      - critter: LEGIONARY
-        slots: 13
-      - critter: HORSEMAN_FAST
-        slots: 14
-      - critter: LARGE_CART
-        slots: 15
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: PIKENEER
-        slots: 17
-      - critter: HORSEMAN_SLOW
-        slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 19
-
-  - name: "Literary Armies"
     travel_time: 7200
     trigger:
-      items: [LITERATURE]
-    waves:
-      - critter: LEGIONARY
-        slots: 14
-      - critter: PIKENEER
-        slots: 15
-      - critter: LARGE_CART
-        slots: 16
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: LEGIONARY
-        slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 19
-      - critter: LEGIONARY
-        slots: 20
-
-  - name: "Cartographer's Ruin"
-    travel_time: 7200
-    trigger:
-      items: [CARTOGRAPHER]
+      items: [QUARTERMASTER, ARTS, MECHANICS, MATHMATICS, CARTOGRAPHY]
     waves:
       - critter: LEGIONARY
         slots: 14
@@ -898,164 +268,10 @@ armies:
       - critter: PIKENEER
         slots: 20
 
-  - name: "Scientific Siege"
-    travel_time: 7200
-    trigger:
-      items: [SCIENCE]
-    waves:
-      - critter: LEGIONARY
-        slots: 12
-      - critter: HORSEMAN_FAST
-        slots: 13
-      - critter: HORSEMAN_SLOW
-        slots: 14
-      - critter: LEGIONARY
-        slots: 15
-      - critter: LEGIONARY
-        slots: 15
-      - critter: HORSEMAN_SLOW
-        slots: 16
-      - critter: HORSEMAN_SLOW
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 18
-
-  - name: "Stables Raid"
-    travel_time: 7200
-    trigger:
-      items: [STABLES]
-    waves:
-      - critter: LEGIONARY
-        slots: 5
-      - critter: CHARIOT
-        slots: 4
-      - critter: HORSEMAN_SLOW
-        slots: 14
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: HORSEMAN_FAST
-        slots: 17
-      - critter: HORSEMAN_FAST
-        slots: 18
-      - critter: HORSEMAN_SLOW
-        slots: 21
-      - critter: LEGIONARY
-        slots: 18
-
-  - name: "Race Course Massacre"
-    travel_time: 7200
-    trigger:
-      items: [RACE_COURSE]
-    waves:
-      - critter: LEGIONARY
-        slots: 9
-      - critter: HORSEMAN_SLOW
-        slots: 8
-      - critter: HORSEMAN_SLOW
-        slots: 10
-      - critter: PIKENEER
-        slots: 12
-      - critter: HORSEMAN_SLOW
-        slots: 14
-      - critter: HORSEMAN_FAST
-        slots: 16
-      - critter: CRUSADER
-        slots: 11
-      - critter: LEGIONARY
-        slots: 20
-
-  - name: "Stargazers' Assault"
-    travel_time: 7200
-    trigger:
-      items: [OBSERVATORY]
-    waves:
-      - critter: PIKENEER
-        slots: 11
-      - critter: HORSEMAN_FAST
-        slots: 12
-      - critter: LEGIONARY
-        slots: 13
-      - critter: HORSEMAN_SLOW
-        slots: 10
-      - critter: HORSEMAN_FAST
-        slots: 14
-      - critter: THE_SWORDMASTER
-        slots: 13
-      - critter: HORSEMAN_FAST
-        slots: 14
-      - critter: HORSEMAN_SLOW
-        slots: 17
-      - critter: THE_SWORDMASTER
-        slots: 18
-      - critter: CRUSADER
-        slots: 12
-      - critter: HORSEMAN_FAST
-        slots: 20
-
-  - name: "Supply Column"
-    travel_time: 7200
-    trigger:
-      items: [QUARTERMASTER]
-    waves:
-      - critter: LEGIONARY
-        slots: 7
-      - critter: LEGIONARY
-        slots: 10
-      - critter: THE_SWORDMASTER
-        slots: 9
-      - critter: LEGIONARY
-        slots: 11
-      - critter: PIKENEER
-        slots: 13
-      - critter: HORSEMAN_SLOW
-        slots: 15
-      - critter: THE_SWORDMASTER
-        slots: 17
-      - critter: LEGIONARY
-        slots: 19
-      - critter: LEGIONARY
-        slots: 19
-      - critter: LEGIONARY
-        slots: 22
-      - critter: HORSEMAN_FAST
-        slots: 23
-
-  # ──────────────────────────────────────────────────────────
-  #   MIDDLE_AGES  (Effort 28.000 – 130.000)
-  # ──────────────────────────────────────────────────────────
-
-  - name: "Command Chain Broken"
-    travel_time: 7200
-    trigger:
-      items: [COMMAND_CHAIN]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: LEGIONARY
-        slots: 17
-      - critter: LEGIONARY
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: CRUSADER
-        slots: 20
-      - critter: LARGE_CART
-        slots: 21
-      - critter: KNIGHT
-        slots: 22
-      - critter: CRUSADER
-        slots: 16
-      - critter: LARGE_CART
-        slots: 18
-      - critter: SAMURAI
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 22
-
-  - name: "Workshop Wreckers"
+  - name: "Quartermaster Force"
     travel_time: 7500
     trigger:
-      items: [WORK_SHOP]
+      items: [LAWS, IRON, ARCHITECTURE, PAINTING, LITERATURE]
     waves:
       - critter: CRUSADER
         slots: 16
@@ -1080,638 +296,122 @@ armies:
       - critter: KNIGHT
         slots: 22
 
-  - name: "Battle Tactics"
-    travel_time: 7500
-    trigger:
-      items: [TACTICS]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: KNIGHT
-        slots: 18
-      - critter: KNIGHT
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: SAMURAI
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
+  # ──────────────────────────────────────────────────────────
+  #   MIDDLE_AGES    (Effort 28.000 – 130.000)
+  # ──────────────────────────────────────────────────────────
 
-  - name: "Fanatic Onslaught"
-    travel_time: 7800
+  - name: "Medieval Siege"
+    travel_time: 7200
     trigger:
-      items: [FANATISM]
+      items: [GUILD, SOVEREIGN_GUARD, MONASTERY, MANOR]
     waves:
-      - critter: CRUSADER
-        slots: 16
       - critter: LEGIONARY
-        slots: 17
-      - critter: CRUSADER
-        slots: 18
-      - critter: KNIGHT
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: CRUSADER
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: SAMURAI
-        slots: 16
-      - critter: LARGE_CART
-        slots: 18
-      - critter: CRUSADER
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-
-  - name: "Theater in Flames"
-    travel_time: 7800
-    trigger:
-      items: [THEATER]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: CRUSADER
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: CRUSADER
-        slots: 18
-      - critter: CRUSADER
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 22
-
-  - name: "Holy War Declared"
-    travel_time: 8100
-    trigger:
-      items: [HOLY_WAR]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: CRUSADER
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: KNIGHT
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: CRUSADER
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-
-  - name: "Economy Disruption"
-    travel_time: 8100
-    trigger:
-      items: [ECONOMY]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: CRUSADER
-        slots: 17
-      - critter: CRUSADER
-        slots: 18
-      - critter: CRUSADER
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: SAMURAI
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: KNIGHT
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 22
-
-  - name: "Siege Machinery"
-    travel_time: 8400
-    trigger:
-      items: [TREADWHEEL_CRANE]
-    waves:
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: SAMURAI
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: SAMURAI
-        slots: 21
-      - critter: KNIGHT
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: KNIGHT
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-
-  - name: "Temple Defiled"
-    travel_time: 8400
-    trigger:
-      items: [TEMPLE]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: CRUSADER
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: CRUSADER
-        slots: 20
-      - critter: SAMURAI
-        slots: 21
-      - critter: KNIGHT
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: SAMURAI
-        slots: 22
-
-  - name: "Church Razed"
-    travel_time: 8700
-    trigger:
-      items: [CHURCH]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: CRUSADER
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: SAMURAI
-        slots: 21
-      - critter: SIEGE_RAM
-        slots: 22
-      - critter: CRUSADER
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-
-  - name: "Feudal Uprising"
-    travel_time: 8700
-    trigger:
-      items: [FEUDALISM]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: CRUSADER
-        slots: 17
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: KNIGHT
-        slots: 21
-      - critter: SIEGE_RAM
-        slots: 22
-      - critter: CRUSADER
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: SAMURAI
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-
-  - name: "Fencing School Sacked"
-    travel_time: 9000
-    trigger:
-      items: [FENCING_SCHOOL]
-    waves:
-      - critter: SAMURAI
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: SAMURAI
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: KNIGHT
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: SAMURAI
-        slots: 16
-      - critter: CRUSADER
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-
-  - name: "Guild Blockade"
-    travel_time: 9000
-    trigger:
-      items: [GUILD]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: KNIGHT
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: CRUSADER
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-
-  - name: "Sovereign Guard Clash"
-    travel_time: 9300
-    trigger:
-      items: [SOVEREIGN_GUARD]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: CRUSADER
-        slots: 17
-      - critter: CRUSADER
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: CRUSADER
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: KNIGHT
-        slots: 18
-      - critter: SAMURAI
-        slots: 20
-      - critter: SAMURAI
-        slots: 22
-
-  - name: "Monastery Sacked"
-    travel_time: 9300
-    trigger:
-      items: [MONASTERY]
-    waves:
-      - critter: CRUSADER
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: SAMURAI
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: SAMURAI
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: KNIGHT
-        slots: 16
-      - critter: KNIGHT
-        slots: 18
-      - critter: CRUSADER
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-
-  - name: "Royal Court Siege"
-    travel_time: 9600
-    trigger:
-      items: [MONARCHY]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: SAMURAI
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: SAMURAI
-        slots: 20
-      - critter: SAMURAI
-        slots: 21
-      - critter: KNIGHT
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: SAMURAI
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-
-  - name: "Manor Plundered"
-    travel_time: 9600
-    trigger:
-      items: [MANOR]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: SAMURAI
-        slots: 18
-      - critter: CRUSADER
-        slots: 19
-      - critter: CRUSADER
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: SAMURAI
-        slots: 16
-      - critter: CRUSADER
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-
-  - name: "Bank Heist"
-    travel_time: 9900
-    trigger:
-      items: [BANK]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: KNIGHT
-        slots: 18
-      - critter: CRUSADER
-        slots: 19
-      - critter: KNIGHT
-        slots: 20
-      - critter: KNIGHT
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: KNIGHT
-        slots: 16
-      - critter: KNIGHT
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-
-  - name: "Steel Blades Advance"
-    travel_time: 9900
-    trigger:
-      items: [STEEL]
-    waves:
-      - critter: KNIGHT
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 17
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
-      - critter: CRUSADER
-        slots: 20
-      - critter: KNIGHT
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: CRUSADER
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: SAMURAI
-        slots: 22
-      - critter: SAMURAI
-        slots: 24
-
-  - name: "Academy Sacked"
-    travel_time: 10200
-    trigger:
-      items: [ACADEMY]
-    waves:
-      - critter: SAMURAI
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: KNIGHT
-        slots: 18
-      - critter: KNIGHT
-        slots: 19
-      - critter: CRUSADER
-        slots: 20
-      - critter: CRUSADER
-        slots: 21
-      - critter: SIEGE_RAM
-        slots: 22
-      - critter: SAMURAI
-        slots: 16
-      - critter: CRUSADER
-        slots: 18
-      - critter: CRUSADER
-        slots: 20
-      - critter: CRUSADER
-        slots: 22
-      - critter: SAMURAI
-        slots: 24
-
-  - name: "Gunpowder Plot"
-    travel_time: 10200
-    trigger:
-      items: [GUNPOWDER]
-    waves:
-      - critter: SAMURAI
+        slots: 12
+      - critter: HORSEMAN_FAST
+        slots: 13
+      - critter: HORSEMAN_SLOW
+        slots: 14
+      - critter: LEGIONARY
+        slots: 15
+      - critter: LEGIONARY
+        slots: 15
+      - critter: HORSEMAN_SLOW
         slots: 16
       - critter: HORSEMAN_SLOW
         slots: 17
-      - critter: CRUSADER
+      - critter: HORSEMAN_FAST
         slots: 18
-      - critter: KNIGHT
-        slots: 19
-      - critter: LEGIONARY
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 21
-      - critter: SAMURAI
-        slots: 22
-      - critter: PIKENEER
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: KNIGHT
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 22
-      - critter: CRUSADER
-        slots: 24
 
-  - name: "City Walls Stormed"
-    travel_time: 10500
+  - name: "Knights' Charge"
+    travel_time: 8100
     trigger:
-      items: [CITY_WALLS]
+      items: [BANK, ACADEMY, CITY_WALLS, CASTLE, MUSEUM]
     waves:
-      - critter: SIEGE_RAM
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: SIEGE_RAM
-        slots: 18
       - critter: CRUSADER
-        slots: 19
-      - critter: KNIGHT
-        slots: 20
-      - critter: KNIGHT
-        slots: 21
-      - critter: KNIGHT
-        slots: 22
-      - critter: SAMURAI
-        slots: 16
-      - critter: SAMURAI
-        slots: 18
-      - critter: SAMURAI
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 24
-
-  - name: "Castle Besieged"
-    travel_time: 10500
-    trigger:
-      items: [CASTLE]
-    waves:
-      - critter: KNIGHT
         slots: 16
       - critter: SIEGE_RAM
         slots: 17
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: SAMURAI
-        slots: 19
       - critter: CRUSADER
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 19
+      - critter: SAMURAI
+        slots: 20
+      - critter: KNIGHT
+        slots: 21
+      - critter: SAMURAI
+        slots: 22
+      - critter: CRUSADER
+        slots: 16
+      - critter: SAMURAI
+        slots: 18
+      - critter: KNIGHT
+        slots: 20
+      - critter: KNIGHT
+        slots: 22
+
+  - name: "Crusader Host"
+    travel_time: 9300
+    trigger:
+      items: [THE_KINGS_LAIR, LABORATORY, TRIUMPHAL_ARC, COURTHOUSE, PARADE_GROUND]
+    waves:
+      - critter: CRUSADER
+        slots: 16
+      - critter: SIEGE_RAM
+        slots: 17
+      - critter: SAMURAI
+        slots: 18
+      - critter: SIEGE_RAM
+        slots: 19
+      - critter: SIEGE_RAM
         slots: 20
       - critter: SAMURAI
         slots: 21
-      - critter: SIEGE_RAM
+      - critter: CRUSADER
         slots: 22
       - critter: KNIGHT
         slots: 16
-      - critter: SIEGE_RAM
+      - critter: KNIGHT
         slots: 18
-      - critter: SIEGE_RAM
+      - critter: CRUSADER
         slots: 20
       - critter: CRUSADER
         slots: 22
+
+  - name: "Castle Assault"
+    travel_time: 10200
+    trigger:
+      items: [GUNSMITH, BOTANIC_GARDENS, CANNON_MANUFACTORY, MERCHANT_GUILD, COLONIAL_OFFICE]
+    waves:
+      - critter: SAMURAI
+        slots: 16
+      - critter: KNIGHT
+        slots: 17
+      - critter: KNIGHT
+        slots: 18
+      - critter: KNIGHT
+        slots: 19
       - critter: CRUSADER
+        slots: 20
+      - critter: CRUSADER
+        slots: 21
+      - critter: SIEGE_RAM
+        slots: 22
+      - critter: SAMURAI
+        slots: 16
+      - critter: CRUSADER
+        slots: 18
+      - critter: CRUSADER
+        slots: 20
+      - critter: CRUSADER
+        slots: 22
+      - critter: SAMURAI
         slots: 24
 
-  - name: "Museum Looted"
+  - name: "Feudal Army"
     travel_time: 10800
     trigger:
-      items: [MUSEUM]
-    waves:
-      - critter: SAMURAI
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: KNIGHT
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 19
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: SIEGE_RAM
-        slots: 21
-      - critter: CRUSADER
-        slots: 22
-      - critter: CRUSADER
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: SIEGE_RAM
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-      - critter: SIEGE_RAM
-        slots: 24
-
-  - name: "King's Lair Stormed"
-    travel_time: 10800
-    trigger:
-      items: [THE_KINGS_LAIR]
+      items: [SCIENCE, COMMAND_CHAIN, TACTICS, FANATISM, HOLY_WAR]
     waves:
       - critter: KNIGHT
         slots: 16
@@ -1738,282 +438,62 @@ armies:
       - critter: CRUSADER
         slots: 24
 
-  - name: "Guild Enforcers"
-    travel_time: 10800
-    trigger:
-      items: [MERCHANT_GUILD]
-    waves:
-      - critter: SLAVE
-        slots: 10
-      - critter: SAMURAI
-        slots: 9
-      - critter: CRUSADER
-        slots: 11
-      - critter: SAMURAI
-        slots: 13
-      - critter: CRUSADER
-        slots: 15
-      - critter: KNIGHT
-        slots: 17
-      - critter: SAMURAI
-        slots: 19
-      - critter: SAMURAI
-        slots: 21
-      - critter: CRUSADER
-        slots: 23
-      - critter: CARGO
-        slots: 25
-      - critter: DRAGOONER
-        slots: 27
-      - critter: SAMURAI
-        slots: 27
-
-  - name: "Colonial Vanguard"
-    travel_time: 10800
-    trigger:
-      items: [COLONIAL_OFFICE]
-    waves:
-      - critter: SLAVE
-        slots: 9
-      - critter: KNIGHT
-        slots: 8
-      - critter: KNIGHT
-        slots: 10
-      - critter: SIEGE_RAM
-        slots: 12
-      - critter: HANDGUNNER
-        slots: 14
-      - critter: SAMURAI
-        slots: 16
-      - critter: SIEGE_RAM
-        slots: 18
-      - critter: CRUSADER
-        slots: 20
-      - critter: KNIGHT
-        slots: 22
-      - critter: SAMURAI
-        slots: 24
-      - critter: NINJA
-        slots: 26
-      - critter: MUSKETEER
-        slots: 26
-
-  # ──────────────────────────────────────────────────────────
-  #   RENAISSANCE  (Effort 100.000 – 500.000)
-  # ──────────────────────────────────────────────────────────
-
-  - name: "Printing Press Destroyed"
-    travel_time: 10800
-    trigger:
-      items: [PRINTING_PRESS]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: SAMURAI
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: NINJA
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: MUSKETEER
-        slots: 19
-      - critter: MUSKETEER
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: MUSKETEER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: MUSKETEER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Cathedral Siege"
-    travel_time: 10800
-    trigger:
-      items: [CATHEDRAL]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: SAMURAI
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: MUSKETEER
-        slots: 18
-      - critter: NINJA
-        slots: 19
-      - critter: CARGO
-        slots: 19
-      - critter: DRAGOONER
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: MUSKETEER
-        slots: 21
-      - critter: MUSKETEER
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: THE_KING
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Shadow Operatives"
-    travel_time: 10800
-    trigger:
-      items: [STEALTH_SECRECY]
-    waves:
-      - critter: NINJA
-        slots: 16
-      - critter: SAMURAI
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: NINJA
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 19
-      - critter: DRAGOONER
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: NINJA
-        slots: 21
-      - critter: MUSKETEER
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: MUSKETEER
-        slots: 23
-      - critter: NINJA
-        slots: 24
-
-  - name: "Laboratory Raid"
-    travel_time: 11100
-    trigger:
-      items: [LABORATORY]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: DRAGOONER
-        slots: 18
-      - critter: CARGO
-        slots: 19
-      - critter: CARGO
-        slots: 19
-      - critter: MUSKETEER
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: DRAGOONER
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: MUSKETEER
-        slots: 23
-      - critter: NINJA
-        slots: 24
-
-  - name: "Archive Burning"
-    travel_time: 11100
-    trigger:
-      items: [ARCHIVES]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: NINJA
-        slots: 18
-      - critter: NINJA
-        slots: 19
-      - critter: CARGO
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: DRAGOONER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: CARGO
-        slots: 23
-      - critter: DRAGOONER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Triumphal Arc Demolished"
-    travel_time: 11100
-    trigger:
-      items: [TRIUMPHAL_ARC]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: KNIGHT
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: NINJA
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: CARGO
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 22
-      - critter: THE_KING
-        slots: 23
-      - critter: CARGO
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Constitutional Crisis"
+  - name: "Holy Crusade"
     travel_time: 11400
     trigger:
-      items: [CONSTITUTION]
+      items: [ECONOMY, FEUDALISM, MONARCHY, GUNPOWDER, STEEL]
     waves:
       - critter: MUSKETEER
         slots: 16
-      - critter: KNIGHT
-        slots: 17
       - critter: DRAGOONER
         slots: 17
       - critter: CARGO
+        slots: 17
+      - critter: DRAGOONER
         slots: 18
+      - critter: NINJA
+        slots: 19
       - critter: DRAGOONER
         slots: 19
       - critter: NINJA
+        slots: 20
+      - critter: MUSKETEER
+        slots: 21
+      - critter: MUSKETEER
+        slots: 21
+      - critter: CARGO
+        slots: 22
+      - critter: DRAGOONER
+        slots: 23
+      - critter: MUSKETEER
+        slots: 23
+      - critter: DRAGOONER
+        slots: 24
+
+  # ──────────────────────────────────────────────────────────
+  #   RENAISSANCE    (Effort 100.000 – 500.000)
+  # ──────────────────────────────────────────────────────────
+
+  - name: "Renaissance Force"
+    travel_time: 10800
+    trigger:
+      items: [CATHEDRAL, ARCHIVES, SECRET_ORDER, UNIVERSITY]
+    waves:
+      - critter: MUSKETEER
+        slots: 16
+      - critter: DRAGOONER
+        slots: 17
+      - critter: NINJA
+        slots: 17
+      - critter: NINJA
+        slots: 18
+      - critter: MUSKETEER
+        slots: 19
+      - critter: MUSKETEER
         slots: 19
       - critter: MUSKETEER
         slots: 20
-      - critter: CARGO
+      - critter: NINJA
         slots: 21
       - critter: MUSKETEER
         slots: 21
@@ -2021,79 +501,15 @@ armies:
         slots: 22
       - critter: NINJA
         slots: 23
-      - critter: NINJA
-        slots: 23
       - critter: MUSKETEER
+        slots: 23
+      - critter: DRAGOONER
         slots: 24
 
-  - name: "Courthouse Stormed"
+  - name: "Musketeer Brigade"
     travel_time: 11400
     trigger:
-      items: [COURTHOUSE]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: CARGO
-        slots: 17
-      - critter: DRAGOONER
-        slots: 18
-      - critter: NINJA
-        slots: 19
-      - critter: DRAGOONER
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: MUSKETEER
-        slots: 21
-      - critter: CARGO
-        slots: 22
-      - critter: DRAGOONER
-        slots: 23
-      - critter: MUSKETEER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Parade Ground Ambush"
-    travel_time: 11700
-    trigger:
-      items: [PARADE_GROUND]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: CARGO
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: DRAGOONER
-        slots: 18
-      - critter: DRAGOONER
-        slots: 19
-      - critter: CARGO
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: NINJA
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: MUSKETEER
-        slots: 23
-      - critter: MUSKETEER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Gunsmith Targeted"
-    travel_time: 11700
-    trigger:
-      items: [GUNSMITH]
+      items: [HIGH_COURT, PARLIAMENT, EMPERORS_PALACE, PATENT_OFFICE]
     waves:
       - critter: MUSKETEER
         slots: 16
@@ -2103,189 +519,29 @@ armies:
         slots: 17
       - critter: CARGO
         slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 19
       - critter: DRAGOONER
-        slots: 20
-      - critter: DRAGOONER
-        slots: 21
-      - critter: NINJA
-        slots: 21
-      - critter: DRAGOONER
-        slots: 22
-      - critter: MUSKETEER
-        slots: 23
-      - critter: CARGO
-        slots: 23
-      - critter: MUSKETEER
-        slots: 24
-
-  - name: "Botanical Warfare"
-    travel_time: 11700
-    trigger:
-      items: [BOTANIC_GARDENS]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: DRAGOONER
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: CARGO
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: DRAGOONER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 23
-      - critter: NINJA
-        slots: 24
-
-  - name: "Strategic War Begins"
-    travel_time: 12000
-    trigger:
-      items: [STRATEGIC_WARFARE]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: CARGO
-        slots: 18
-      - critter: DRAGOONER
-        slots: 19
-      - critter: DRAGOONER
-        slots: 19
-      - critter: CARGO
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 21
-      - critter: MUSKETEER
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: NINJA
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Cannon Factory Sabotage"
-    travel_time: 12000
-    trigger:
-      items: [CANNON_MANUFACTORY]
-    waves:
-      - critter: CARGO
-        slots: 16
-      - critter: MUSKETEER
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: NINJA
-        slots: 18
-      - critter: NINJA
         slots: 19
       - critter: NINJA
         slots: 19
       - critter: MUSKETEER
         slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 21
-      - critter: MUSKETEER
-        slots: 22
-      - critter: MUSKETEER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 23
       - critter: CARGO
-        slots: 24
-
-  - name: "Secret Order Exposed"
-    travel_time: 12000
-    trigger:
-      items: [SECRET_ORDER]
-    waves:
-      - critter: NINJA
-        slots: 16
-      - critter: MUSKETEER
-        slots: 17
-      - critter: MUSKETEER
-        slots: 17
-      - critter: NINJA
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 19
-      - critter: DRAGOONER
-        slots: 20
-      - critter: DRAGOONER
         slots: 21
-      - critter: NINJA
+      - critter: MUSKETEER
         slots: 21
       - critter: DRAGOONER
         slots: 22
       - critter: NINJA
         slots: 23
-      - critter: MUSKETEER
+      - critter: NINJA
         slots: 23
-      - critter: CARGO
+      - critter: MUSKETEER
         slots: 24
 
-  - name: "University Burned"
+  - name: "Ninja Infiltration"
     travel_time: 12300
     trigger:
-      items: [UNIVERSITY]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: DRAGOONER
-        slots: 17
-      - critter: CARGO
-        slots: 18
-      - critter: NINJA
-        slots: 19
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: DRAGOONER
-        slots: 21
-      - critter: DRAGOONER
-        slots: 22
-      - critter: CARGO
-        slots: 23
-      - critter: NINJA
-        slots: 23
-      - critter: MUSKETEER
-        slots: 24
-
-  - name: "Natural Philosophy End"
-    travel_time: 12300
-    trigger:
-      items: [PHYSICS]
+      items: [MEDICS_CORPS, PRINTING_PRESS, STEALTH_SECRECY, CONSTITUTION]
     waves:
       - critter: MUSKETEER
         slots: 16
@@ -2314,106 +570,10 @@ armies:
       - critter: MUSKETEER
         slots: 24
 
-  - name: "High Court Siege"
-    travel_time: 12300
-    trigger:
-      items: [HIGH_COURT]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: CARGO
-        slots: 17
-      - critter: DRAGOONER
-        slots: 17
-      - critter: DRAGOONER
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: DRAGOONER
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: CARGO
-        slots: 21
-      - critter: NINJA
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: DRAGOONER
-        slots: 23
-      - critter: NINJA
-        slots: 24
-
-  - name: "Parliament Dissolved by Force"
+  - name: "Cannon Barrage"
     travel_time: 12600
     trigger:
-      items: [PARLIAMENT]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: DRAGOONER
-        slots: 17
-      - critter: CARGO
-        slots: 18
-      - critter: MUSKETEER
-        slots: 19
-      - critter: DRAGOONER
-        slots: 19
-      - critter: DRAGOONER
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: MUSKETEER
-        slots: 21
-      - critter: CARGO
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: MUSKETEER
-        slots: 23
-      - critter: NINJA
-        slots: 24
-
-  - name: "Imperial Palace Siege"
-    travel_time: 12600
-    trigger:
-      items: [EMPERORS_PALACE]
-    waves:
-      - critter: MUSKETEER
-        slots: 16
-      - critter: DRAGOONER
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: MUSKETEER
-        slots: 18
-      - critter: CARGO
-        slots: 19
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: NINJA
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: NINJA
-        slots: 23
-      - critter: DRAGOONER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 24
-
-  - name: "Alchemical Assault"
-    travel_time: 12600
-    trigger:
-      items: [CHEMISTRY]
+      items: [STRATEGIC_WARFARE, PHYSICS, CHEMISTRY, MECHANICAL_ENGINEERING]
     waves:
       - critter: MUSKETEER
         slots: 16
@@ -2441,3489 +601,763 @@ armies:
         slots: 23
       - critter: MUSKETEER
         slots: 24
-
-  - name: "Stock Market Crash Force"
-    travel_time: 12600
-    trigger:
-      items: [STOCK_MARKET]
-    waves:
-      - critter: DRAGOONER
-        slots: 16
-      - critter: MUSKETEER
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: MUSKETEER
-        slots: 18
-      - critter: NINJA
-        slots: 19
-      - critter: MUSKETEER
-        slots: 19
-      - critter: NINJA
-        slots: 20
-      - critter: NINJA
-        slots: 21
-      - critter: MUSKETEER
-        slots: 21
-      - critter: NINJA
-        slots: 22
-      - critter: MUSKETEER
-        slots: 23
-      - critter: NINJA
-        slots: 23
-      - critter: NINJA
-        slots: 24
-
-  - name: "Mechanical Engineering War"
-    travel_time: 12600
-    trigger:
-      items: [MECHANICAL_ENGINEERING]
-    waves:
-      - critter: CARGO
-        slots: 16
-      - critter: MUSKETEER
-        slots: 17
-      - critter: NINJA
-        slots: 17
-      - critter: DRAGOONER
-        slots: 18
-      - critter: NINJA
-        slots: 19
-      - critter: DRAGOONER
-        slots: 19
-      - critter: DRAGOONER
-        slots: 20
-      - critter: MUSKETEER
-        slots: 21
-      - critter: MUSKETEER
-        slots: 21
-      - critter: CARGO
-        slots: 22
-      - critter: MUSKETEER
-        slots: 23
-      - critter: DRAGOONER
-        slots: 23
-      - critter: CARGO
-        slots: 24
-
-  - name: "Inventors' Brigade"
-    travel_time: 12600
-    trigger:
-      items: [PATENT_OFFICE]
-    waves:
-      - critter: NINJA
-        slots: 15
-      - critter: CARGO
-        slots: 17
-      - critter: CARGO
-        slots: 17
-      - critter: MUSKETEER
-        slots: 18
-      - critter: MUSKETEER
-        slots: 21
-      - critter: CARGO
-        slots: 20
-      - critter: THE_KING
-        slots: 19
-      - critter: THE_KING
-        slots: 16
-      - critter: MUSKETEER
-        slots: 20
-      - critter: SOLDIER
-        slots: 21
-      - critter: TRANSPORTER
-        slots: 22
-      - critter: DRAGOONER
-        slots: 24
-      - critter: NINJA
-        slots: 28
-
-  - name: "Iron Guard"
-    travel_time: 12600
-    trigger:
-      items: [MEDICS_CORPS]
-    waves:
-      - critter: CARGO
-        slots: 15
-      - critter: MUSKETEER
-        slots: 18
-      - critter: CARGO
-        slots: 19
-      - critter: DRAGOONER
-        slots: 20
-      - critter: CARGO
-        slots: 21
-      - critter: THE_KING
-        slots: 21
-      - critter: NINJA
-        slots: 20
-      - critter: NINJA
-        slots: 22
-      - critter: CARGO
-        slots: 23
-      - critter: NINJA
-        slots: 24
-      - critter: SOLDIER
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: CARGO
-        slots: 28
 
   # ──────────────────────────────────────────────────────────
-  #   INDUSTRIAL  (Effort 500.000 – 2.000.000)
+  #   INDUSTRIAL     (Effort 500.000 – 2.000.000)
   # ──────────────────────────────────────────────────────────
 
-  - name: "Heavy Equipment Sabotage"
+  - name: "Industrial March"
     travel_time: 12600
     trigger:
-      items: [HEAVY_EQUIPMENT]
+      items: [STOCK_MARKET, HEAVY_EQUIPMENT, RAIL_ROADS, VEHICLE_WORKSHOP]
     waves:
-      - critter: SOLDIER
-        slots: 18
       - critter: DRAGOONER
+        slots: 16
+      - critter: MUSKETEER
+        slots: 17
+      - critter: NINJA
+        slots: 17
+      - critter: MUSKETEER
+        slots: 18
+      - critter: NINJA
         slots: 19
-      - critter: SMALL_TANK
+      - critter: MUSKETEER
         slots: 19
-      - critter: MOTORBIKE
+      - critter: NINJA
         slots: 20
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 21
-      - critter: TRANSPORTER
+      - critter: MUSKETEER
         slots: 21
-      - critter: SIEGE_TANK
+      - critter: NINJA
         slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: TRANSPORTER
+      - critter: MUSKETEER
         slots: 23
-      - critter: MOTORBIKE
+      - critter: NINJA
+        slots: 23
+      - critter: NINJA
         slots: 24
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: SOLDIER
-        slots: 27
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: SOLDIER
-        slots: 29
-      - critter: SOLDIER
-        slots: 30
 
-  - name: "Optical Spies"
-    travel_time: 12600
+  - name: "Mechanized Strike"
+    travel_time: 12900
     trigger:
-      items: [OPTICS]
+      items: [DEFENSE_DEPARTMENT, ELECTRIC_FENCE, AIRFIELD, HANGAR, HOSPITAL]
     waves:
-      - critter: SOLDIER
+      - critter: NINJA
         slots: 18
       - critter: CARGO
         slots: 19
-      - critter: SOLDIER
+      - critter: NINJA
         slots: 19
-      - critter: SOLDIER
+      - critter: NINJA
         slots: 20
-      - critter: TRANSPORTER
+      - critter: NINJA
         slots: 21
-      - critter: MOTORBIKE
+      - critter: NINJA
         slots: 21
-      - critter: SMALL_TANK
+      - critter: THE_KING
         slots: 22
-      - critter: MOTORBIKE
+      - critter: MUSKETEER
+        slots: 22
+      - critter: DRAGOONER
         slots: 23
-      - critter: MOTORBIKE
-        slots: 23
-      - critter: MOTORBIKE
+      - critter: CARGO
         slots: 24
-      - critter: MOTORBIKE
+      - critter: CARGO
+        slots: 24
+      - critter: THE_KING
         slots: 25
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: SMALL_TANK
+      - critter: CARGO
         slots: 26
-      - critter: SOLDIER
+      - critter: DRAGOONER
+        slots: 26
+      - critter: NINJA
         slots: 27
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 27
-      - critter: SOLDIER
+      - critter: CARGO
         slots: 28
-      - critter: TRANSPORTER
+      - critter: CARGO
         slots: 29
-      - critter: MOTORBIKE
+      - critter: NINJA
         slots: 29
-      - critter: TRANSPORTER
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Ballistic Impact"
-    travel_time: 12900
+  - name: "Steam Assault"
+    travel_time: 13800
     trigger:
-      items: [BALLISTICS]
+      items: [FACTORY, EMERGENCY_ROOM, BARRACKS, FEDERAL_RESERVE, RESEARCH_VAULT]
     waves:
-      - critter: SOLDIER
-        slots: 18
       - critter: DRAGOONER
+        slots: 18
+      - critter: NINJA
         slots: 19
-      - critter: SOLDIER
+      - critter: NINJA
         slots: 19
-      - critter: MOTORBIKE
+      - critter: DRAGOONER
         slots: 20
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 21
-      - critter: SOLDIER
+      - critter: CARGO
         slots: 21
-      - critter: SMALL_TANK
+      - critter: MUSKETEER
         slots: 22
-      - critter: MOTORBIKE
+      - critter: THE_KING
         slots: 22
-      - critter: MOTORBIKE
+      - critter: CARGO
         slots: 23
-      - critter: SMALL_TANK
+      - critter: THE_KING
         slots: 24
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 24
-      - critter: MOTORBIKE
+      - critter: MUSKETEER
         slots: 25
-      - critter: MOTORBIKE
+      - critter: DRAGOONER
         slots: 26
-      - critter: TRANSPORTER
+      - critter: THE_KING
         slots: 26
       - critter: MUSKETEER
         slots: 27
-      - critter: TRANSPORTER
+      - critter: CARGO
         slots: 27
-      - critter: TRANSPORTER
+      - critter: THE_KING
         slots: 28
-      - critter: SMALL_TANK
-        slots: 29
       - critter: DRAGOONER
         slots: 29
-      - critter: SOLDIER
+      - critter: NINJA
+        slots: 29
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Steam Engine Explosion"
-    travel_time: 12900
-    trigger:
-      items: [STEAM_ENGINE]
-    waves:
-      - critter: SOLDIER
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: SMALL_TANK
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: TRANSPORTER
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: SOLDIER
-        slots: 23
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: SOLDIER
-        slots: 27
-      - critter: SOLDIER
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: SOLDIER
-        slots: 29
-      - critter: TRANSPORTER
-        slots: 30
-
-  - name: "Rail Road Ambush"
-    travel_time: 13200
-    trigger:
-      items: [RAIL_ROADS]
-    waves:
-      - critter: SOLDIER
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SMALL_TANK
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: SMALL_TANK
-        slots: 21
-      - critter: SOLDIER
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: SMALL_TANK
-        slots: 23
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: SOLDIER
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 30
-
-  - name: "Vehicle Workshop Raid"
-    travel_time: 13200
-    trigger:
-      items: [VEHICLE_WORKSHOP]
-    waves:
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: SOLDIER
-        slots: 19
-      - critter: SMALL_TANK
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: SOLDIER
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: TRANSPORTER
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 23
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: SOLDIER
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: SOLDIER
-        slots: 26
-      - critter: SOLDIER
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 30
-
-  - name: "Sanitation Sabotage"
-    travel_time: 13500
-    trigger:
-      items: [SANITATION]
-    waves:
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: SOLDIER
-        slots: 19
-      - critter: SMALL_TANK
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: TRANSPORTER
-        slots: 21
-      - critter: SOLDIER
-        slots: 22
-      - critter: SMALL_TANK
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 23
-      - critter: SOLDIER
-        slots: 24
-      - critter: SOLDIER
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: MOTORBIKE
-        slots: 28
-      - critter: TRANSPORTER
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: SOLDIER
-        slots: 30
-
-  - name: "Electrical Blackout Strike"
-    travel_time: 13500
-    trigger:
-      items: [ELECTRICITY]
-    waves:
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: SOLDIER
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: SOLDIER
-        slots: 21
-      - critter: TRANSPORTER
-        slots: 22
-      - critter: SOLDIER
-        slots: 22
-      - critter: SMALL_TANK
-        slots: 23
-      - critter: SOLDIER
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SOLDIER
-        slots: 28
-      - critter: MOTORBIKE
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: TRANSPORTER
-        slots: 30
-
-  - name: "Defense Department Overrun"
-    travel_time: 13800
-    trigger:
-      items: [DEFENSE_DEPARTMENT]
-    waves:
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: SMALL_TANK
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: MOTORBIKE
-        slots: 20
-      - critter: SMALL_TANK
-        slots: 21
-      - critter: SOLDIER
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: TRANSPORTER
-        slots: 22
-      - critter: SOLDIER
-        slots: 23
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: SOLDIER
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: SOLDIER
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: TRANSPORTER
-        slots: 30
-
-  - name: "Electric Fence Dismantled"
-    travel_time: 13800
-    trigger:
-      items: [ELECTRIC_FENCE]
-    waves:
-      - critter: SMALL_TANK
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: SMALL_TANK
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: TRANSPORTER
-        slots: 23
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: SIEGE_TANK
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: TRANSPORTER
-        slots: 26
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: SOLDIER
-        slots: 30
-
-  - name: "Airfield Bombed"
-    travel_time: 14100
-    trigger:
-      items: [AIRFIELD]
-    waves:
-      - critter: SOLDIER
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: TRANSPORTER
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: SOLDIER
-        slots: 23
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SOLDIER
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 29
-      - critter: TRANSPORTER
-        slots: 30
-
-  - name: "Combustion Engine Revolution"
-    travel_time: 14100
-    trigger:
-      items: [COMBUSTION_ENGINE]
-    waves:
-      - critter: TRANSPORTER
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SOLDIER
-        slots: 20
-      - critter: SOLDIER
-        slots: 21
-      - critter: SOLDIER
-        slots: 21
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 23
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: SOLDIER
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SOLDIER
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 30
-
-  - name: "Hangar Raid"
-    travel_time: 14100
-    trigger:
-      items: [HANGAR]
-    waves:
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: TRANSPORTER
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SMALL_TANK
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: SOLDIER
-        slots: 21
-      - critter: SOLDIER
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 22
-      - critter: SOLDIER
-        slots: 23
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: SOLDIER
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 29
-      - critter: TRANSPORTER
-        slots: 30
-
-  - name: "Hospital Siege"
+  - name: "Tank Column"
     travel_time: 14400
     trigger:
-      items: [HOSPITAL]
+      items: [SUPPLY_CHAIN, BROADCASTING_STATION, OPTICS, BALLISTICS, STEAM_ENGINE]
     waves:
-      - critter: MOTORBIKE
+      - critter: CARGO
         slots: 18
-      - critter: SOLDIER
+      - critter: THE_KING
         slots: 19
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 19
-      - critter: SMALL_TANK
+      - critter: CARGO
         slots: 20
-      - critter: SOLDIER
+      - critter: NINJA
         slots: 21
-      - critter: MOTORBIKE
+      - critter: CARGO
         slots: 21
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 22
-      - critter: SIEGE_TANK
+      - critter: THE_KING
         slots: 22
-      - critter: SOLDIER
+      - critter: MUSKETEER
         slots: 23
-      - critter: MOTORBIKE
+      - critter: NINJA
         slots: 24
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 24
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 25
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 26
-      - critter: TRANSPORTER
+      - critter: CARGO
         slots: 26
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 27
-      - critter: HELI
+      - critter: CARGO
         slots: 27
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 28
-      - critter: SMALL_TANK
+      - critter: THE_KING
         slots: 29
-      - critter: MOTORBIKE
+      - critter: THE_KING
         slots: 29
-      - critter: TRANSPORTER
+      - critter: THE_KING
         slots: 30
 
-  - name: "Factory Seizure"
+  - name: "Factory Raid"
     travel_time: 14400
     trigger:
-      items: [FACTORY]
+      items: [SANITATION, ELECTRICITY, COMBUSTION_ENGINE, SOCIAL_SCIENCES, MEDICINE]
     waves:
-      - critter: TRANSPORTER
+      - critter: NINJA
         slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 20
-      - critter: SMALL_TANK
-        slots: 21
-      - critter: SOLDIER
-        slots: 21
-      - critter: SOLDIER
-        slots: 22
-      - critter: SMALL_TANK
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 23
-      - critter: SOLDIER
-        slots: 24
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 27
-      - critter: SMALL_TANK
-        slots: 28
-      - critter: TRANSPORTER
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: SOLDIER
-        slots: 30
-
-  - name: "Emergency Room Overwhelmed"
-    travel_time: 14400
-    trigger:
-      items: [EMERGENCY_ROOM]
-    waves:
-      - critter: TRANSPORTER
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: SOLDIER
-        slots: 19
-      - critter: SOLDIER
+      - critter: DRAGOONER
         slots: 20
-      - critter: SOLDIER
-        slots: 21
-      - critter: SOLDIER
-        slots: 21
-      - critter: MOTORBIKE
+      - critter: THE_KING
         slots: 22
-      - critter: SMALL_TANK
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: SOLDIER
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 26
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: TRANSPORTER
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SMALL_TANK
-        slots: 29
-      - critter: SOLDIER
-        slots: 30
-
-  - name: "Barracks Invasion"
-    travel_time: 14400
-    trigger:
-      items: [BARRACKS]
-    waves:
-      - critter: SOLDIER
-        slots: 18
-      - critter: SMALL_TANK
-        slots: 19
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: TRANSPORTER
+      - critter: DRAGOONER
         slots: 20
-      - critter: MOTORBIKE
+      - critter: THE_KING
         slots: 21
-      - critter: TRANSPORTER
-        slots: 21
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 22
-      - critter: MOTORBIKE
+      - critter: MUSKETEER
         slots: 22
-      - critter: MOTORBIKE
-        slots: 23
-      - critter: MOTORBIKE
-        slots: 24
-      - critter: SMALL_TANK
-        slots: 24
-      - critter: SMALL_TANK
+      - critter: CARGO
         slots: 25
-      - critter: SOLDIER
+      - critter: THE_KING
+        slots: 24
+      - critter: DRAGOONER
+        slots: 24
+      - critter: MUSKETEER
+        slots: 25
+      - critter: NINJA
         slots: 26
-      - critter: TRANSPORTER
-        slots: 26
-      - critter: MOTORBIKE
-        slots: 27
-      - critter: SOLDIER
-        slots: 27
-      - critter: HELI
+      - critter: CARGO
         slots: 28
-      - critter: TRANSPORTER
-        slots: 29
-      - critter: MOTORBIKE
-        slots: 29
-      - critter: TRANSPORTER
+      - critter: DRAGOONER
         slots: 30
-
-  - name: "Mechanized Push"
-    travel_time: 14400
-    trigger:
-      items: [SUPPLY_CHAIN]
-    waves:
-      - critter: SOLDIER
-        slots: 17
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: MOTORBIKE
-        slots: 19
-      - critter: MOTORBIKE
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 21
-      - critter: TRANSPORTER
-        slots: 22
-      - critter: TRANSPORTER
-        slots: 23
-      - critter: SOLDIER
-        slots: 23
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 25
-      - critter: TRANSPORTER
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: SMALL_TANK
-        slots: 28
-      - critter: SMALL_TANK
+      - critter: NINJA
         slots: 30
-      - critter: TRANSPORTER
-        slots: 30
-      - critter: SMALL_TANK
+      - critter: THE_KING
         slots: 32
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 34
-      - critter: SIEGE_TANK
-        slots: 32
-
-  - name: "Armored Column"
-    travel_time: 14400
-    trigger:
-      items: [BROADCASTING_STATION]
-    waves:
-      - critter: MOTORBIKE
-        slots: 18
-      - critter: SOLDIER
-        slots: 20
-      - critter: MOTORBIKE
-        slots: 20
-      - critter: SMALL_TANK
-        slots: 22
-      - critter: MOTORBIKE
-        slots: 20
-      - critter: SMALL_TANK
-        slots: 21
-      - critter: SMALL_TANK
-        slots: 22
-      - critter: SMALL_TANK
-        slots: 22
-      - critter: SMALL_TANK
-        slots: 25
-      - critter: SOLDIER
-        slots: 24
-      - critter: TRANSPORTER
-        slots: 24
-      - critter: SOLDIER
-        slots: 25
-      - critter: MOTORBIKE
-        slots: 26
-      - critter: MOTORBIKE
-        slots: 28
-      - critter: SMALL_TANK
-        slots: 30
-      - critter: TRANSPORTER
-        slots: 30
-      - critter: MOTORBIKE
-        slots: 32
-      - critter: SPECOPS
-        slots: 34
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 36
 
   # ──────────────────────────────────────────────────────────
-  #   MODERN  (Effort 2.000.000 – 5.300.000)
+  #   MODERN         (Effort 2.000.000 – 5.300.000)
   # ──────────────────────────────────────────────────────────
 
-  - name: "Armour Pierced"
+  - name: "Modern Warfare"
     travel_time: 14400
     trigger:
-      items: [KNO_ARMOUR]
+      items: [CRYPTOGRAPHERS_GUILD, ROCKET_SILO, WMD_SITE, ARTS_GALLERY, RESEARCH_LAB]
     waves:
-      - critter: TRANSPORTER
+      - critter: MUSKETEER
         slots: 18
-      - critter: SIEGE_TANK
+      - critter: CARGO
         slots: 18
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 19
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 20
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 20
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 20
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 21
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 22
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 22
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 22
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 23
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 24
-      - critter: HELI
+      - critter: THE_KING
         slots: 24
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 24
-      - critter: HELI
+      - critter: THE_KING
         slots: 25
-      - critter: HELI
+      - critter: NINJA
         slots: 26
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 26
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 26
-      - critter: HELI
+      - critter: NINJA
         slots: 27
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 28
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 28
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 28
-      - critter: HELI
+      - critter: CARGO
         slots: 29
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 30
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 30
 
-  - name: "Rocket Silo Raid"
-    travel_time: 14700
-    trigger:
-      items: [ROCKET_SILO]
-    waves:
-      - critter: SMALL_TANK
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Research Vault Cracked"
-    travel_time: 14700
-    trigger:
-      items: [RESEARCH_VAULT]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: TRANSPORTER
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "WMD Site Neutralised"
-    travel_time: 15000
-    trigger:
-      items: [WMD_SITE]
-    waves:
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SMALL_TANK
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Arts Gallery Torched"
-    travel_time: 15000
-    trigger:
-      items: [ARTS_GALLERY]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: SOLDIER
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Research Lab Sabotage"
-    travel_time: 15000
-    trigger:
-      items: [RESEARCH_LAB]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Echelon Compromise"
+  - name: "Special Ops"
     travel_time: 15300
     trigger:
-      items: [ECHELON_DEFENSE_FACILITY]
+      items: [ECHELON_DEFENSE_FACILITY, SOCIAL_SECURITY_SYSTEM, EXECUTIVE_CARPOOL, NAVIGATION_SYSTEM, DERIVATIVE_MARKET]
     waves:
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 18
-      - critter: SIEGE_TANK
+      - critter: MUSKETEER
         slots: 18
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 19
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 20
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 20
-      - critter: HELI
+      - critter: THE_KING
         slots: 20
-      - critter: HELI
+      - critter: CARGO
         slots: 21
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 22
-      - critter: HELI
+      - critter: THE_KING
         slots: 22
-      - critter: HELI
+      - critter: CARGO
         slots: 22
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 23
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 24
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 24
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 24
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 25
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 26
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 26
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 26
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 27
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 28
-      - critter: HELI
+      - critter: CARGO
         slots: 28
-      - critter: HELI
+      - critter: THE_KING
         slots: 28
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 29
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 30
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Federal Reserve Raided"
-    travel_time: 15300
-    trigger:
-      items: [FEDERAL_RESERVE]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Social Order Collapse"
-    travel_time: 15600
-    trigger:
-      items: [SOCIAL_SECURITY_SYSTEM]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Social Sciences War"
-    travel_time: 15600
-    trigger:
-      items: [SOCIAL_SCIENCES]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: SOLDIER
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Executive Ambush"
-    travel_time: 15900
-    trigger:
-      items: [EXECUTIVE_CARPOOL]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Navigation Jammed"
-    travel_time: 15900
-    trigger:
-      items: [NAVIGATION_SYSTEM]
-    waves:
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Medical Corps Destroyed"
+  - name: "Heli Strike"
     travel_time: 16200
     trigger:
-      items: [MEDICINE]
+      items: [BOMBING_AREA, NUCLEAR_POWER_PLANT, ROBO_MANUFACTURE, INTELLIGENCE_AGENCY, MECH_WARRIOR_LAB, ELITE_ACADEMY]
     waves:
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 18
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 18
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 19
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 20
-      - critter: HELI
+      - critter: NINJA
         slots: 20
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 20
-      - critter: HELI
+      - critter: THE_KING
         slots: 21
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 22
-      - critter: HELI
+      - critter: NINJA
         slots: 22
-      - critter: HELI
+      - critter: NINJA
         slots: 22
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 23
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 24
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 24
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 24
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 25
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 26
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 26
-      - critter: HELI
+      - critter: THE_KING
         slots: 26
-      - critter: HELI
+      - critter: CARGO
         slots: 27
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 28
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 28
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 28
-      - critter: HELI
+      - critter: CARGO
         slots: 29
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 30
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Derivative Crash Strike"
+  - name: "Siege Assault"
     travel_time: 16200
     trigger:
-      items: [DERIVATIVE_MARKET]
+      items: [RECRUITING_OFFICE, KNO_ARMOUR, CRYPTOLOGY, MILITARY_SERVICE, AVIATION]
     waves:
-      - critter: SIEGE_TANK
+      - critter: DRAGOONER
         slots: 18
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 18
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 19
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 20
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 20
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 20
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 21
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 22
-      - critter: HELI
+      - critter: CARGO
         slots: 22
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 22
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 23
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 24
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 24
-      - critter: HELI
+      - critter: NINJA
         slots: 24
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 25
-      - critter: HELI
+      - critter: THE_KING
         slots: 26
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 26
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 26
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 27
-      - critter: HELI
+      - critter: NINJA
         slots: 28
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 28
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 28
-      - critter: HELI
+      - critter: NINJA
         slots: 29
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 30
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Bombing Area Attacked"
+  - name: "Urban Combat"
     travel_time: 16200
     trigger:
-      items: [BOMBING_AREA]
+      items: [ELECTRONICS, MASS_PRODUCTION, NUCLEAR_REACTION, CHEMICAL_WARFARE, ROCKET_SCIENCE]
     waves:
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 18
-      - critter: SIEGE_TANK
+      - critter: THE_KING
         slots: 18
-      - critter: HELI
+      - critter: THE_KING
         slots: 19
-      - critter: HELI
+      - critter: CARGO
         slots: 20
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 20
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 20
-      - critter: HELI
+      - critter: THE_KING
         slots: 21
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 22
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 22
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 22
-      - critter: HELI
+      - critter: CARGO
         slots: 23
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 24
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 24
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 24
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 25
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 26
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 26
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 26
-      - critter: HELI
+      - critter: CARGO
         slots: 27
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 28
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 28
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 28
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 29
-      - critter: HELI
+      - critter: THE_KING
         slots: 30
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Nuclear Plant Threatened"
-    travel_time: 16200
+  - name: "Cyber Strike"
+    travel_time: 16800
     trigger:
-      items: [NUCLEAR_POWER_PLANT]
+      items: [AERO_DYNAMICS, GLOBALIZATION_STRATEGIES, CIVIL_ENGINEERING, SATELLITE_SYSTEMS, COMPUTER_TECHNOLOGY, SPECIAL_FORCES]
     waves:
-      - critter: HELI
+      - critter: THE_KING
         slots: 18
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 18
-      - critter: HELI
+      - critter: THE_KING
         slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Robo Manufacture Seized"
-    travel_time: 16200
-    trigger:
-      items: [ROBO_MANUFACTURE]
-    waves:
-      - critter: HELI
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: HELI
+      - critter: THE_KING
         slots: 19
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 20
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Cryptology Deciphered"
-    travel_time: 16200
-    trigger:
-      items: [CRYPTOLOGY]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: SMALL_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
+      - critter: CARGO
         slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Military Draft Disrupted"
-    travel_time: 16200
-    trigger:
-      items: [MILITARY_SERVICE]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 21
-      - critter: HELI
+      - critter: CARGO
         slots: 22
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
+      - critter: NINJA
         slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: DRONE
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: DRONE
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Aviation Grounded"
-    travel_time: 16200
-    trigger:
-      items: [AVIATION]
-    waves:
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 23
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 24
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 24
-      - critter: HELI
+      - critter: NINJA
         slots: 24
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: DRONE
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Electronics Jammed"
-    travel_time: 16200
-    trigger:
-      items: [ELECTRONICS]
-    waves:
-      - critter: HELI
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 25
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 26
-      - critter: DRONE
+      - critter: NINJA
         slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: HELI
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Intelligence Agency Burned"
-    travel_time: 16200
-    trigger:
-      items: [INTELLIGENCE_AGENCY, CRYPTOGRAPHERS_GUILD]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: DRONE
-        slots: 28
-      - critter: DRONE
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Mech Warrior Lab Raided"
-    travel_time: 16200
-    trigger:
-      items: [MECH_WARRIOR_LAB]
-    waves:
-      - critter: HELI
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 27
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 28
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
+      - critter: NINJA
         slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Elite Academy Purged"
-    travel_time: 16200
-    trigger:
-      items: [ELITE_ACADEMY]
-    waves:
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
-        slots: 28
-      - critter: HELI
+      - critter: MUSKETEER
         slots: 29
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Recruiting Office Stormed"
-    travel_time: 16200
-    trigger:
-      items: [RECRUITING_OFFICE]
-    waves:
-      - critter: THE_GENERAL
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: HELI
-        slots: 19
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: HELI
-        slots: 22
-      - critter: SPECOPS
-        slots: 23
-      - critter: HELI
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: DRONE
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: HELI
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: DRONE
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 30
 
   # ──────────────────────────────────────────────────────────
-  #   FUTURE  (Effort 40.000.000 – 100.000.000)
+  #   FUTURE         (Effort 40.000.000 – 100.000.000)
   # ──────────────────────────────────────────────────────────
 
-  - name: "Mass Production Disrupted"
-    travel_time: 16200
-    trigger:
-      items: [MASS_PRODUCTION]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: THE_GENERAL
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Fission Chain Reaction"
-    travel_time: 16200
-    trigger:
-      items: [NUCLEAR_REACTION]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "World Wonder Threatened"
+  - name: "Mech Uprising"
     travel_time: 16500
     trigger:
-      items: [THE_WORLD_WONDER]
+      items: [THE_WORLD_WONDER, SPACE_CENTER]
     waves:
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 18
-      - critter: HELI
+      - critter: DRAGOONER
         slots: 18
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 19
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 19
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 20
-      - critter: THE_GENERAL
+      - critter: DRAGOONER
         slots: 20
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 21
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 21
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 21
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 22
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 22
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 23
-      - critter: THE_GENERAL
+      - critter: DRAGOONER
         slots: 23
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 24
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 24
-      - critter: THE_GENERAL
+      - critter: THE_KING
         slots: 24
-      - critter: THE_GENERAL
+      - critter: MUSKETEER
         slots: 25
-      - critter: MECH_WARRIOR
+      - critter: DRAGOONER
         slots: 25
-      - critter: THE_GENERAL
+      - critter: THE_KING
         slots: 26
-      - critter: THE_GENERAL
+      - critter: MUSKETEER
         slots: 26
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 27
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 27
-      - critter: THE_GENERAL
+      - critter: CARGO
         slots: 27
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 28
-      - critter: THE_GENERAL
+      - critter: THE_KING
         slots: 28
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 29
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 29
-      - critter: MECH_WARRIOR
+      - critter: DRAGOONER
         slots: 30
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 30
 
-  - name: "Chemical Warfare Deployment"
-    travel_time: 16500
-    trigger:
-      items: [CHEMICAL_WARFARE]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: SPECOPS
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: THE_GENERAL
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: SPECOPS
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Rocket Science Grounded"
-    travel_time: 16800
-    trigger:
-      items: [ROCKET_SCIENCE]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: SPECOPS
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 25
-      - critter: THE_GENERAL
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: SPECOPS
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "Aero Dynamic Supremacy"
-    travel_time: 16800
-    trigger:
-      items: [AERO_DYNAMICS]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: SPECOPS
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: HELI
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "Globalisation Crushed"
-    travel_time: 17100
-    trigger:
-      items: [GLOBALIZATION_STRATEGIES]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: SPECOPS
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: THE_GENERAL
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: HELI
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: THE_GENERAL
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "Civil Infrastructure Demolished"
-    travel_time: 17100
-    trigger:
-      items: [CIVIL_ENGINEERING]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: HELI
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: SPECOPS
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: HELI
-        slots: 30
-
-  - name: "Space Center Attacked"
-    travel_time: 17400
-    trigger:
-      items: [SPACE_CENTER]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: THE_GENERAL
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: SPECOPS
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: HELI
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: THE_GENERAL
-        slots: 30
-
-  - name: "Satellite Network Jammed"
-    travel_time: 17400
-    trigger:
-      items: [SATELLITE_SYSTEMS]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: THE_GENERAL
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: SPECOPS
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "Cyber Command Hacked"
+  - name: "Drone Swarm"
     travel_time: 17700
     trigger:
-      items: [CYBER_COMMAND]
+      items: [CYBER_COMMAND, FUSION_REACTOR]
     waves:
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 18
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 18
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 19
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 19
-      - critter: SPECOPS
+      - critter: DRAGOONER
         slots: 20
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 20
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 21
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 21
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 22
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 22
-      - critter: THE_GENERAL
+      - critter: CARGO
         slots: 22
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 23
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 23
-      - critter: THE_GENERAL
+      - critter: DRAGOONER
         slots: 24
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 24
-      - critter: MECH_WARRIOR
+      - critter: DRAGOONER
         slots: 25
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 25
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 26
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 26
-      - critter: THE_GENERAL
+      - critter: DRAGOONER
         slots: 26
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 27
-      - critter: THE_GENERAL
+      - critter: MUSKETEER
         slots: 27
-      - critter: THE_GENERAL
+      - critter: MUSKETEER
         slots: 28
-      - critter: THE_GENERAL
+      - critter: MUSKETEER
         slots: 28
-      - critter: THE_GENERAL
+      - critter: THE_KING
         slots: 29
-      - critter: THE_GENERAL
+      - critter: CARGO
         slots: 29
-      - critter: THE_GENERAL
+      - critter: NINJA
         slots: 30
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 30
 
-  - name: "Computer Network Crash"
-    travel_time: 17700
-    trigger:
-      items: [COMPUTER_TECHNOLOGY]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: THE_GENERAL
-        slots: 30
-
-  - name: "Special Forces Ambush"
+  - name: "Future Shock"
     travel_time: 18000
     trigger:
-      items: [SPECIAL_FORCES]
+      items: [BIONICS, FIBER_COMPOSITE, COLD_FUSION]
     waves:
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 18
-      - critter: SPECOPS
+      - critter: MUSKETEER
         slots: 18
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 19
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 19
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 20
-      - critter: THE_GENERAL
+      - critter: NINJA
         slots: 20
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 21
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 21
-      - critter: SPECOPS
+      - critter: CARGO
+        slots: 21
+      - critter: THE_KING
         slots: 22
-      - critter: SPECOPS
+      - critter: THE_KING
         slots: 22
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 23
-      - critter: MECH_WARRIOR
+      - critter: DRAGOONER
         slots: 23
-      - critter: THE_GENERAL
+      - critter: NINJA
         slots: 24
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 24
-      - critter: MECH_WARRIOR
+      - critter: NINJA
+        slots: 24
+      - critter: CARGO
         slots: 25
-      - critter: MECH_WARRIOR
+      - critter: CARGO
         slots: 25
-      - critter: SPECOPS
+      - critter: CARGO
         slots: 26
-      - critter: SPECOPS
+      - critter: NINJA
         slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 27
-      - critter: THE_GENERAL
+      - critter: THE_KING
         slots: 27
-      - critter: THE_GENERAL
+      - critter: MUSKETEER
+        slots: 27
+      - critter: DRAGOONER
         slots: 28
-      - critter: THE_GENERAL
+      - critter: NINJA
         slots: 28
-      - critter: MECH_WARRIOR
+      - critter: MUSKETEER
         slots: 29
-      - critter: THE_GENERAL
+      - critter: NINJA
         slots: 29
-      - critter: MECH_WARRIOR
+      - critter: THE_KING
         slots: 30
-      - critter: THE_GENERAL
-        slots: 30
-
-  - name: "Bionic Uprising"
-    travel_time: 18000
-    trigger:
-      items: [BIONICS]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: THE_GENERAL
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: THE_GENERAL
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
-
-  - name: "Composite Armour Pierced"
-    travel_time: 18000
-    trigger:
-      items: [FIBER_COMPOSITE]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: SIEGE_TANK
-        slots: 18
-      - critter: SPECOPS
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: THE_GENERAL
-        slots: 20
-      - critter: SPECOPS
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: SPECOPS
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: SPECOPS
-        slots: 24
-      - critter: HELI
-        slots: 25
-      - critter: THE_GENERAL
-        slots: 25
-      - critter: MECH_WARRIOR
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: THE_GENERAL
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 28
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "Fusion Reactor Critical"
-    travel_time: 18000
-    trigger:
-      items: [FUSION_REACTOR]
-    waves:
-      - critter: MECH_WARRIOR
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: HELI
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: MECH_WARRIOR
-        slots: 30
-
-  - name: "Cold Fusion Annihilation"
-    travel_time: 18000
-    trigger:
-      items: [COLD_FUSION]
-    waves:
-      - critter: SPECOPS
-        slots: 18
-      - critter: HELI
-        slots: 18
-      - critter: MECH_WARRIOR
-        slots: 19
-      - critter: SPECOPS
-        slots: 19
-      - critter: SIEGE_TANK
-        slots: 20
-      - critter: HELI
-        slots: 20
-      - critter: MECH_WARRIOR
-        slots: 21
-      - critter: SIEGE_TANK
-        slots: 21
-      - critter: SPECOPS
-        slots: 21
-      - critter: THE_GENERAL
-        slots: 22
-      - critter: MECH_WARRIOR
-        slots: 22
-      - critter: THE_GENERAL
-        slots: 23
-      - critter: MECH_WARRIOR
-        slots: 23
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: THE_GENERAL
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 24
-      - critter: MECH_WARRIOR
-        slots: 25
-      - critter: HELI
-        slots: 25
-      - critter: HELI
-        slots: 26
-      - critter: SPECOPS
-        slots: 26
-      - critter: SPECOPS
-        slots: 27
-      - critter: MECH_WARRIOR
-        slots: 27
-      - critter: HELI
-        slots: 27
-      - critter: SPECOPS
-        slots: 28
-      - critter: SPECOPS
-        slots: 28
-      - critter: THE_GENERAL
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
-      - critter: MECH_WARRIOR
+      - critter: NINJA
         slots: 30
