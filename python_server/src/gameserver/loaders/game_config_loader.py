@@ -159,7 +159,7 @@ class GameConfig:
     artifact_steal_chance: float = 0.33
     base_artifact_steal_victory: float = 0.5
     base_artifact_steal_defeat: float = 0.05
-    steal_power_thresholds: list = field(default_factory=lambda: [80,180,400,800,1500,3000,6000,12000,25000])
+    steal_power_thresholds: list[float] = field(default_factory=lambda: [80,180,400,800,1500,3000,6000,12000,25000])
     steal_min_multiplier: float = 0.10
 
     # -- Ruler XP rewards --------------------------------------------
