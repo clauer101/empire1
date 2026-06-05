@@ -4,6 +4,7 @@ Contains armies, attacks, waves, siege, and spy handlers.
 """
 from __future__ import annotations
 
+import html
 import logging
 from typing import Any, Optional
 
@@ -175,6 +176,11 @@ async def handle_new_army(
             "success": False,
             "error": "Army name cannot be empty",
         }
+
+    if len(name) > 120:
+        return {"type": "new_army_response", "success": False, "error": "Army name must not exceed 120 characters"}
+
+    name = html.escape(name)
 
     # Calculate cost based on number of existing armies
     army_count = len(empire.armies)
@@ -406,6 +412,14 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
 
     has_workshop_intel = attacker is not None and attacker.get_effect("spy_workshop", 0.0) > 0
 
+    ruler_info: dict[str, Any] | None = None
+    if defender.ruler and defender.ruler.type:
+        ruler_def = (svc.empire_service._rulers or {}).get(defender.ruler.type, {})
+        ruler_info = {
+            "name": ruler_def.get("name", defender.ruler.name or defender.ruler.type),
+            "level": defender.ruler.level,
+        }
+
     lines = [
         f"🕵 Spy report on {defender.name}",
         "🛡 Defense Intelligence",
@@ -442,17 +456,16 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
             lines.append(f"  ⚜ {aname}")
     else:
         lines.append("  (none)")
+
+    lines.append("─" * 32)
+    lines.append("👑 Ruler")
+    if ruler_info:
+        lines.append(f"  👑 {ruler_info['name']}  Lv {ruler_info['level']}")
+    else:
+        lines.append("  (none)")
     lines.append("─" * 32)
 
     text = "\n".join(lines)
-
-    ruler_info: dict[str, Any] | None = None
-    if defender.ruler and defender.ruler.type:
-        ruler_def = (svc.empire_service._rulers or {}).get(defender.ruler.type, {})
-        ruler_info = {
-            "name": ruler_def.get("name", defender.ruler.name or defender.ruler.type),
-            "level": defender.ruler.level,
-        }
 
     data: dict[str, Any] = {
         "era": era_label,
@@ -533,6 +546,19 @@ async def handle_spy_attack(
     if isinstance(result, str):
         return {"type": "spy_attack_response", "success": False, "error": result}
 
+    # Compute fake wave info from first wave of the disguised army for the defender's preview
+    _fw = first_army.waves[0]
+    _item = svc.upgrade_provider.items.get(_fw.iid) if svc.upgrade_provider else None
+    _slot_cost = max(0.1, float(getattr(_item, "slots", 1.0) or 1.0)) if _item else 1.0
+    result.fake_wave_info = {
+        "wave_index": 1,
+        "total_waves": len(first_army.waves),
+        "iid": _fw.iid,
+        "critter_name": _item.name if _item else _fw.iid,
+        "critter_count": max(1, round(float(_fw.slots) / _slot_cost)),
+        "eta_ms": 0,
+    }
+
     log.info("[spy_attack] uid=%d → defender=%d army=%d attack_id=%d ETA=%.1fs",
              attacker_uid, defender_uid, first_army.aid, result.attack_id, result.eta_seconds)
     if svc.database is not None:
@@ -591,6 +617,11 @@ async def handle_change_army(
             "success": False,
             "error": "Army name cannot be empty",
         }
+
+    if len(name) > 120:
+        return {"type": "change_army_response", "success": False, "error": "Army name must not exceed 120 characters"}
+
+    name = html.escape(name)
 
     # Update the name
     old_name = army.name
@@ -665,6 +696,37 @@ async def handle_new_wave(
         "slots": new_wave.slots,
         "wave_count": len(army.waves),
     }
+
+
+async def handle_reorder_waves(
+    aid: int, wave_ids: list[int], sender_uid: int,
+) -> dict[str, Any]:
+    """Reorder waves within an army.
+
+    Validates that wave_ids is a permutation of the army's current wave IDs,
+    then applies the new order in-place.
+    """
+    svc = _svc()
+    empire = svc.empire_service.get(sender_uid)
+    if empire is None:
+        return {"success": False, "error": "No empire found"}
+
+    army = next((a for a in empire.armies if a.aid == aid), None)
+    if army is None:
+        return {"success": False, "error": f"Army {aid} not found"}
+
+    if svc.attack_service and svc.attack_service.is_army_in_battle(aid):
+        return {"success": False, "error": "Cannot modify army while it is in battle"}
+
+    current_ids = sorted(w.wave_id for w in army.waves)
+    if len(wave_ids) != len(set(wave_ids)):
+        return {"success": False, "error": "wave_ids contains duplicates"}
+    if sorted(wave_ids) != current_ids:
+        return {"success": False, "error": "wave_ids must be a permutation of existing wave IDs"}
+
+    wave_map = {w.wave_id: w for w in army.waves}
+    army.waves = [wave_map[wid] for wid in wave_ids]
+    return {"success": True}
 
 
 async def handle_change_wave(

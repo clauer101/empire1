@@ -15,6 +15,7 @@ import { pageTitle } from '../lib/page_title.js';
 import { rest } from '../rest.js';
 import { debug } from '../debug.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY } from '../lib/eras.js';
+import { escHtml } from '../lib/html.js';
 
 import {
   _NON_TOWER,
@@ -272,6 +273,13 @@ async function _showDefenseEffectsOverlay() {
   const battleRegenMod = effects.restore_life_during_battle_modifier || 0;
   const battleRegenRows = sourceRows('restore_life_during_battle_modifier', (v) => `+${(v * 100).toFixed(0)}%`);
 
+  const refundBase = summary.tower_sell_refund ?? 0.3;
+  const refundModifier = effects.tower_sell_refund_modifier || 0;
+  const refundTotal = refundBase + refundModifier;
+  const refundModRows = sourceRows('tower_sell_refund_modifier', (v) => `+${(v * 100).toFixed(0)}%`);
+  const refundBaseRow = `<div class="panel-row"><span class="label">${(refundBase * 100).toFixed(0)}%</span><span class="value" style="color:#888">Base refund</span></div>`;
+  const refundRows = refundBaseRow + (refundModifier > 0 ? refundModRows.replace(/<div style="color:#555.*?<\/div>/, '') : '');
+
   const tiles = grid ? [...grid.tiles.values()] : [];
   const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles)}</div>`;
 
@@ -313,6 +321,7 @@ async function _showDefenseEffectsOverlay() {
     ${section('🌊', 'Wave Delay', '#4fc3f7', `+${(waveTotal / 1000).toFixed(1)}s`, waveRows)}
     ${section('❤', 'Restore Life after Defeat', '#e05c5c', `+${restoreTotal.toFixed(1)}`, restoreRows)}
     ${section('❤️', 'Battle Life Regen', '#e05c5c', `+${battleRegenMod.toFixed(3)}/s extra while defending`, battleRegenRows)}
+    ${section('💰', 'Tower Sell Refund', '#81c784', `${Math.round(refundTotal * 100)}%`, refundRows)}
   `;
   box.addEventListener('click', (e) => {
     if (e.target.classList.contains('prod-overlay-close')) overlay.remove();
@@ -450,6 +459,7 @@ function _makeWsCtx() {
     setPendingAttackId: (id) => {
       _pendingAttackId = id;
     },
+    setFakeWaveInfo: (wi) => _battleUi?.setFakeWaveInfo(wi),
   };
 }
 
@@ -601,7 +611,7 @@ function _showTileDetails(q, r, tile) {
 
   // neighbor tile (fog of war area — belongs to another empire)
   if (tile.type === 'neighbor') {
-    const ownerName = tile.uid != null ? (_uidToEmpireName[tile.uid] || `Empire #${tile.uid}`) : 'Unclaimed';
+    const ownerName = escHtml(tile.uid != null ? (_uidToEmpireName[tile.uid] || `Empire #${tile.uid}`) : 'Unclaimed');
     const ownerColor = tile.uid != null ? 'var(--danger)' : 'var(--text-dim)';
     const ownerIcon = tile.uid != null ? '⚔ ' : '';
     const title = tile.uid != null ? 'Enemy Territory' : 'Fog of War';

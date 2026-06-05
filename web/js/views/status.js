@@ -9,6 +9,7 @@ import { eventBus } from '../events.js';
 import { pageTitle } from '../lib/page_title.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
 import { fmtEffectRow, fmtEffectValue, fmtEffectLabel } from '../lib/format.js';
+import { escHtml } from '../lib/html.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
 import { isGameFrozen } from '../lib/game_state.js';
@@ -1480,8 +1481,8 @@ function _attackEntry(a, direction) {
     armyName && a.is_spy && direction === 'out' ? `"${armyName}"` : armyName;
   // Show army name as primary label; empire/username as secondary hint
   const empName = displayedArmyName
-    ? `${displayedArmyName}<span class="atk-empire-hint"> · ${empLabel}</span>`
-    : empLabel;
+    ? `${displayedArmyName}<span class="atk-empire-hint"> · ${escHtml(empLabel)}</span>`
+    : escHtml(empLabel);
 
   const showWatch = direction === 'out' && (a.phase === 'in_siege' || a.phase === 'in_battle');
 
@@ -1577,7 +1578,7 @@ function _empireRowHtml(e, i, selfEra, armyEnabled = false) {
         <span style="color:#888;font-size:0.8em;min-width:16px;">${i + 1}</span>
         ${dot(e.online)}
         <div style="min-width:0;">
-          <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username})</span>` : ''}${e.is_self ? ' ★' : ''}</div>
+          <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username}${e.is_bot ? ' 🤖' : ''})</span>` : ''}${e.is_self ? ' ★' : ''}</div>
           <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artifact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;color:#c9a84c;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artifacts?">${'⚜'.repeat(e.artifact_count)}</span>` : ''}</div>
         </div>
       </div>

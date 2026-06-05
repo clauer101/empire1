@@ -130,6 +130,11 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 services.bot_detector.get_probability(empire.uid)
                 if services.bot_detector else 0.5
             )
+            is_bot = (
+                services.bot_detector.get_is_bot(empire.uid)
+                if services.bot_detector else False
+            )
+            empire.is_bot = is_bot  # sync back so state.yaml stays current
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -140,6 +145,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "artifact_count": len(empire.artifacts),
                 "bot_probability": round(bot_prob, 3),
+                "is_bot": is_bot,
             })
         empires.sort(key=lambda e: float(e.get("culture") or 0),  # type: ignore[arg-type]
                      reverse=True)

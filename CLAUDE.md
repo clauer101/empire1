@@ -145,6 +145,8 @@ Never install with `pip install` alone — it won't update the lockfile and the 
 
 ## Deployment
 
+**Never deploy to prod without explicit user confirmation.** Always default to dev only.
+
 ```bash
 ./deploy.sh prod       # build + deploy prod
 ./deploy.sh dev        # build + deploy dev

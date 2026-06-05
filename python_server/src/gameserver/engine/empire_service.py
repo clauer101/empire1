@@ -471,6 +471,13 @@ class EmpireService:
             if is_end_rally_active(self._gc):
                 for key, value in self._gc.end_rally_effects.items():
                     empire.effects[key] = empire.effects.get(key, 0.0) + value
+        # Bake game.yaml base for ruler_artifact_steal_bonus so ruler skill effects stack on top
+        if self._gc is not None:
+            base_ruler_steal = getattr(self._gc, "ruler_artifact_steal_bonus", 0.0)
+            if base_ruler_steal:
+                empire.effects["ruler_artifact_steal_bonus"] = (
+                    empire.effects.get("ruler_artifact_steal_bonus", 0.0) + base_ruler_steal
+                )
         # Apply ruler skill effects
         for key, value in self.get_ruler_effects(empire).items():
             empire.effects[key] = empire.effects.get(key, 0.0) + value

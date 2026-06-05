@@ -74,12 +74,18 @@ class BattleState:
     critters_killed: int = 0
     critters_reached: int = 0
     kills_era_xp_sum: float = 0.0  # sum of era_idx for each killed critter (for ruler XP)
+    ruler_reached_goal: bool = False  # True if a ruler critter reached the castle
 
     # reason: "died" | "reached"
     removed_critters: list[dict[str, Any]] = field(default_factory=list)
 
     broadcast_interval_ms: float = 250.0
     recorder: ReplayRecorder | None = None
+
+    # Opt: tracks cids already introduced to observers (static fields omitted after first send)
+    seen_cids: set[int] = field(default_factory=set)
+    # Opt: last serialised wave_infos — only retransmit when changed
+    last_wave_infos_json: str = ""
 
     MIN_KEEP_ALIVE_MS: float = 10_000.0
 

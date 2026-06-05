@@ -229,8 +229,8 @@ class TestRulerXpAward:
         )
         emp_svc = MagicMock()
         emp_svc.get.return_value = empire
-        emp_svc._ERA_ORDER = ["STEINZEIT", "MITTELALTER", "RENAISSANCE"]
-        emp_svc.get_current_era.return_value = "STEINZEIT"
+        emp_svc._ERA_ORDER = ["stone", "middle_ages", "renaissance"]
+        emp_svc.get_current_era.return_value = "stone"
         svc.empire_service = emp_svc
         return svc
 
@@ -278,8 +278,8 @@ class TestRulerNoXpWhenIdle:
         )
         emp_svc = MagicMock()
         emp_svc.get.return_value = empire
-        emp_svc._ERA_ORDER = ["STEINZEIT"]
-        emp_svc.get_current_era.return_value = "STEINZEIT"
+        emp_svc._ERA_ORDER = ["stone"]
+        emp_svc.get_current_era.return_value = "stone"
         svc.empire_service = emp_svc
 
         _award_ruler_xp(battle, svc, attacker_won=False)

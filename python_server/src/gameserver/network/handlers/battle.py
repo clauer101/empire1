@@ -161,6 +161,7 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
     _active_battles = _get_active_battles()
     battle = _active_battles.get(attack.defender_uid)
     if battle is not None and not battle.is_finished:
+        from gameserver.engine.battle_service import _shot_visual_type
         setup_msg = {
             "type": "battle_setup",
             "bid": battle.bid,
@@ -169,12 +170,16 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
             "attacker_uid": battle.attacker_uids[0] if battle.attacker_uids else attack.attacker_uid,
             "attacker_uids": list(battle.attacker_uids),
             "defender_name": battle.defender.name if battle.defender else "",
+            "defender_max_life": battle.defender.max_life if battle.defender else 10,
             "attacker_name": (e.name if (e := svc.empire_service.get(battle.attacker_uids[0])) else ""
                               if battle.attacker_uids and svc.empire_service else ""),
             "tiles": battle.defender.hex_map if battle.defender else {},
             "structures": [
                 {"sid": s.sid, "iid": s.iid, "q": s.position.q, "r": s.position.r,
-                 "damage": s.damage, "range": s.range, "select": s.select}
+                 "damage": s.damage, "range": s.range, "select": s.select,
+                 "shot_type": _shot_visual_type(s.effects),
+                 "shot_sprite": s.shot_sprite, "shot_sprite_scale": s.shot_sprite_scale,
+                 "projectile_y_offset": s.projectile_y_offset}
                 for s in battle.structures.values()
             ],
             "path": [{"q": h.q, "r": h.r} for h in battle.critter_path],
@@ -183,6 +188,10 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
             await svc.server.send_to(observer_uid, setup_msg)
             log.info("_send_battle_setup: sent to uid=%d (battle bid=%d, %d attackers)",
                      observer_uid, battle.bid, len(battle.attacker_uids))
+        # New observer joining mid-battle: clear seen_cids so next broadcast
+        # delivers full static critter data to all observers (including the new one).
+        battle.seen_cids.clear()
+        battle.last_wave_infos_json = ""
         return
 
     # Fallback: no active battle yet (still in siege) — build from defender map
@@ -222,16 +231,21 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
                 log.debug("[_send_battle_setup] Loaded structure sid=%d iid=%s at (%d,%d)",
                          structure.sid, structure.iid, q, r)
 
+    from gameserver.engine.battle_service import _shot_visual_type
     setup_msg = {
         "type": "battle_setup",
         "bid": attack.attack_id,
         "defender_uid": attack.defender_uid,
         "attacker_uid": attack.attacker_uid,
         "attacker_uids": [attack.attacker_uid],
+        "defender_max_life": defender_empire.max_life,
         "tiles": tiles,
         "structures": [
             {"sid": s.sid, "iid": s.iid, "q": s.position.q, "r": s.position.r,
-             "damage": s.damage, "range": s.range, "select": s.select}
+             "damage": s.damage, "range": s.range, "select": s.select,
+             "shot_type": _shot_visual_type(s.effects),
+             "shot_sprite": s.shot_sprite, "shot_sprite_scale": s.shot_sprite_scale,
+             "projectile_y_offset": s.projectile_y_offset}
             for s in structures_dict.values()
         ],
         "path": [{"q": h.q, "r": h.r} for h in hex_path],

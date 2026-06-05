@@ -614,6 +614,10 @@ class RestClient {
     return this._post('/api/army/set-ruler-wave', { aid, wave_number: waveNumber, ruler_iid: rulerIid });
   }
 
+  async reorderWaves(aid, waveIds) {
+    return this._put(`/api/army/${aid}/wave-order`, { wave_ids: waveIds });
+  }
+
   async buyItemUpgrade(iid, stat) {
     return this._post('/api/item/buy-upgrade', { iid, stat });
   }

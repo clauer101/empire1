@@ -211,6 +211,7 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
         bosses=bosses,
         hex_map=_deserialize_editor_hex_map(d.get("hex_map", [])),
         ruler=_deserialize_ruler(d.get("ruler", {})),
+        is_bot=bool(d.get("is_bot", False)),
     )
 
 
@@ -237,6 +238,9 @@ def _deserialize_structure(d: dict[str, Any]) -> Structure:
         reload_time_ms=d["reload_time_ms"],
         shot_speed=d["shot_speed"],
         shot_type=d.get("shot_type", "normal"),
+        shot_sprite=d.get("shot_sprite", ""),
+        shot_sprite_scale=d.get("shot_sprite_scale", 1.0),
+        projectile_y_offset=d.get("projectile_y_offset", 0.0),
         effects=dict(d.get("effects", {})),
     )
 

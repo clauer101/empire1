@@ -152,7 +152,7 @@ class TestBuildArmy:
 
         result = ai._build_army(empire, player_power=2000.0)
         assert result is not None
-        army, travel_s, siege_s = result
+        army, travel_s = result
         # Wave count comes from game.yaml ai_generator (stone era default: 1–2)
         assert len(army.waves) >= 1
         assert all(w.slots >= 1 for w in army.waves)
@@ -166,7 +166,7 @@ class TestBuildArmy:
 
         result = ai._build_army(empire, player_power=2000.0)
         assert result is not None
-        army, _, _ = result
+        army, _ = result
         assert len(army.waves) >= 1
         # All critter IIDs must be uppercase strings (valid YAML keys)
         for w in army.waves:
@@ -224,7 +224,7 @@ class TestMatchWaves:
         empire = _make_empire()
         results = ai._match_waves_for_item(empire, "FIRE_PLACE")
         assert len(results) == 1
-        army, travel_s, siege_s = results[0]
+        army, travel_s = results[0]
         assert army.name == "test_wave"
         assert len(army.waves) == 1
         assert army.waves[0].iid == "WOLF"

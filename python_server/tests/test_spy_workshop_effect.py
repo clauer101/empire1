@@ -24,7 +24,7 @@ def _make_svc(defender: Empire) -> MagicMock:
     from gameserver.util.eras import ERA_ORDER
 
     empire_svc = MagicMock()
-    empire_svc.get_current_era = MagicMock(return_value=ERA_ORDER[0])  # STEINZEIT
+    empire_svc.get_current_era = MagicMock(return_value=ERA_ORDER[0])  # stone
 
     items: dict = {}
     empire_svc._item_era_index = {}

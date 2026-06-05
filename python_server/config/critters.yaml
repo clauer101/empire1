@@ -320,8 +320,8 @@ KNIGHT:
   name: "Knight"
   description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
   speed: 0.4
-  health: 42
-  value: 94
+  health: 52
+  value: 194
   damage: 1
   armour: 6
   slots: 2
@@ -338,11 +338,11 @@ SAMURAI:
   era: middle_ages
   name: "Samurai"
   description: "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker."
-  speed: 0.85
-  health: 16
+  speed: 1
+  health: 21
   value: 86
   damage: 1
-  armour: 2.5
+  armour: 3
   slots: 1
   time_between: 1100
   is_boss: false
@@ -418,11 +418,11 @@ THE_KING:
   era: renaissance
   name: "The King"
   description: "A legendary ruler who fills an entire wave with impossible health and crushing damage. Bring your best defenses."
-  speed: 0.4
-  health: 780
+  speed: 0.45
+  health: 1080
   value: 1000
   damage: 10
-  armour: 8
+  armour: 9
   slots: 999
   time_between: 2000
   is_boss: true
@@ -437,7 +437,7 @@ NINJA:
   era: renaissance
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
-  speed: 1.05
+  speed: 1.1
   health: 52
   value: 168
   damage: 1
@@ -518,10 +518,10 @@ SOLDIER:
   name: "Soldier"
   description: "Industrial-era infantry with solid health and armor. The dependable backbone of modern assaults."
   speed: 0.75
-  health: 145
+  health: 189
   value: 250
   damage: 1
-  armour: 4
+  armour: 5
   slots: 1
   time_between: 900
   is_boss: false
@@ -654,8 +654,8 @@ THE_GENERAL:
   era: modern
   name: "The General"
   description: "Supreme commander with devastating power and near-impenetrable armor. A wave-filling behemoth of modern warfare."
-  speed: 0.4
-  health: 1270
+  speed: 0.5
+  health: 2270
   value: 9000
   damage: 18
   armour: 13

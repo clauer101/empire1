@@ -150,6 +150,7 @@ class GameConfig:
     ai_generator: Dict[str, Dict[str, int]] = field(default_factory=dict)
 
     # -- Battle strategy / loot --------------------------------------
+    ruler_artifact_steal_bonus: float = 0.15  # added to steal chance when ruler reaches castle
     min_lose_knowledge: float = 0.03
     max_lose_knowledge: float = 0.15
     min_lose_culture: float = 0.01
@@ -186,6 +187,10 @@ class GameConfig:
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower
     max_spy_armies: int = 1
+    chance_triggered_one_army: int = 5
+    chance_triggered_two_armies: int = 4
+    chance_triggered_three_armies: int = 1
+    chance_triggered_four_armies: int = 0
 
     # -- Artifact lottery --------------------------------------------
     accounts_per_artifact: int = 12

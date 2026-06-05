@@ -178,6 +178,9 @@ export function createBattleWs(ctx) {
         if (msg.new_phase === 'in_siege' && !ctx.getPendingAttackId() && msg.attack_id != null) {
           ctx.setPendingAttackId(msg.attack_id);
         }
+        if (msg.new_phase === 'in_siege' && msg.wave_info) {
+          ctx.setFakeWaveInfo(msg.wave_info);
+        }
         if (msg.new_phase) {
           ctx.setBattlePhase(msg.new_phase);
           ctx.updateStatusFromBattleMsg();

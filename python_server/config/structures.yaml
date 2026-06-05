@@ -186,7 +186,7 @@ TAR_TOWER:
   era: middle_ages
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
-  damage: 7
+  damage: 6
   range: 1.5
   reload_time: 2400
   shot_speed: 1
@@ -203,7 +203,7 @@ HEAVY_TOWER:
   era: middle_ages
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
-  damage: 23
+  damage: 22
   range: 1.5
   reload_time: 3200
   shot_speed: 2.5
@@ -220,7 +220,7 @@ BOILING_OIL:
   era: middle_ages
   name: "Boiling Oil"
   sprite: "assets/sprites/structures/boiling_oil/boiling_oil.webp"
-  damage: 4
+  damage: 3
   range: 1.5
   reload_time: 2400
   shot_speed: 1
@@ -237,7 +237,7 @@ CANNON_TOWER:
   era: middle_ages
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 21
+  damage: 20
   range: 2
   reload_time: 3900
   shot_speed: 1
@@ -258,7 +258,7 @@ RIFLE_TOWER:
   era: renaissance
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
-  damage: 14
+  damage: 13
   range: 1.5
   reload_time: 1400
   shot_speed: 5
@@ -275,7 +275,7 @@ COLD_TOWER:
   era: renaissance
   name: "Cold Tower"
   sprite: "assets/sprites/structures/cold_tower/cold_tower.webp"
-  damage: 4
+  damage: 3
   range: 2
   reload_time: 1200
   shot_speed: 5
@@ -292,7 +292,7 @@ ICE_TOWER:
   era: renaissance
   name: "Ice Tower"
   sprite: "assets/sprites/structures/ice_tower/ice_tower.webp"
-  damage: 7
+  damage: 6
   range: 3
   reload_time: 2000
   shot_speed: 2
@@ -313,7 +313,7 @@ FLAME_THROWER:
   era: industrial
   name: "Flame Thrower"
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
-  damage: 3
+  damage: 2
   range: 1.5
   reload_time: 2400
   shot_speed: 3
@@ -330,7 +330,7 @@ SHOCK_TOWER:
   era: industrial
   name: "Shock Tower"
   sprite: "assets/sprites/structures/shock_tower/shock_tower.webp"
-  damage: 16
+  damage: 14
   range: 1.5
   reload_time: 1700
   shot_speed: 20
@@ -348,7 +348,7 @@ GATLING_TOWER:
   era: industrial
   name: "Gatling Tower"
   sprite: "assets/sprites/structures/gatling_tower/gatling_tower.webp"
-  damage: 14
+  damage: 13
   range: 1.5
   reload_time: 800
   shot_speed: 6
@@ -365,7 +365,7 @@ PARALYZNG_TOWER:
   era: industrial
   name: "Paralyzing Tower"
   sprite: "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp"
-  damage: 9
+  damage: 8
   range: 1.5
   reload_time: 2000
   shot_speed: 5
@@ -387,7 +387,7 @@ NAPALM_THROWER:
   era: modern
   name: "Napalm Thrower"
   sprite: "assets/sprites/structures/napalm_tower/napalm_tower.webp"
-  damage: 11
+  damage: 9
   range: 1.5
   reload_time: 3000
   shot_speed: 2
@@ -404,7 +404,7 @@ MG_TOWER:
   era: modern
   name: "MG Bunker"
   sprite: "assets/sprites/structures/mg_bunker/mg_bunker.webp"
-  damage: 21
+  damage: 20
   range: 1.5
   reload_time: 1000
   shot_speed: 10
@@ -421,7 +421,7 @@ RAPID_FIRE_MG_BUNKER:
   era: modern
   name: "Rapid Fire MG Bunker"
   sprite: "assets/sprites/structures/rapid_mg_tower/rapid_mg_tower.webp"
-  damage: 16
+  damage: 15
   range: 1.5
   reload_time: 600
   shot_speed: 10
@@ -438,7 +438,7 @@ RADAR_TOWER:
   era: modern
   name: "Radar Tower"
   sprite: "assets/sprites/structures/radar_tower/radar_tower.webp"
-  damage: 25
+  damage: 23
   range: 4
   reload_time: 2900
   shot_speed: 5
@@ -455,7 +455,7 @@ ANTI_AIR_TOWER:
   era: modern
   name: "Anti-Air Tower"
   sprite: "assets/sprites/structures/anti_air_tower/anti_air_tower.webp"
-  damage: 50
+  damage: 48
   range: 2.5
   reload_time: 2800
   shot_speed: 5
@@ -472,7 +472,7 @@ LASER_TOWER:
   era: modern
   name: "Laser Tower"
   sprite: "assets/sprites/structures/sniper_tower/sniper_tower.webp"
-  damage: 62
+  damage: 60
   range: 2.5
   reload_time: 3600
   shot_speed: 10

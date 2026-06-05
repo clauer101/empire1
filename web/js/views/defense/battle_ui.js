@@ -22,6 +22,7 @@
  */
 
 import { buildBattleSummaryHtml } from '../../lib/battle_summary_html.js';
+import { escHtml } from '../../lib/html.js';
 
 export function createBattleUi(ctx) {
   let _statusLoopId = null;
@@ -156,6 +157,8 @@ export function createBattleUi(ctx) {
       }
     }
 
+    if (msg.defender_max_life != null) grid._defenderMaxLife = msg.defender_max_life;
+
     if (msg.structures) {
       for (const s of msg.structures) {
         const key = ctx.hexKey(s.q, s.r);
@@ -166,6 +169,8 @@ export function createBattleUi(ctx) {
           tile.sid = s.sid;
           tile.structure_data = s;
         }
+        grid._structureBySid.set(s.sid, s);
+        if (s.shot_sprite) grid._ensureSpriteLoaded('/' + s.shot_sprite, false);
       }
     }
 
@@ -230,9 +235,13 @@ export function createBattleUi(ctx) {
 
     if (grid && !grid.battleActive) grid.battleActive = true;
 
-    if (msg.critters && Array.isArray(msg.critters)) {
+    if (msg.critters != null || msg.new_critters != null) {
       const activeCids = new Set();
-      for (const c of msg.critters) {
+      for (const c of (msg.new_critters || [])) {
+        grid.updateBattleCritter(c);
+        activeCids.add(c.cid);
+      }
+      for (const c of (msg.critters || [])) {
         grid.updateBattleCritter(c);
         activeCids.add(c.cid);
       }
@@ -366,9 +375,9 @@ export function createBattleUi(ctx) {
     const attackerEl = container.querySelector('#battle-attacker');
     if (defenderEl) defenderEl.textContent = bs.defender_name || '-';
     if (attackerEl) {
-      const armyName = bs.attacker_army_name || bs.attacker_name || '-';
+      const armyName = bs.attacker_army_name || escHtml(bs.attacker_name || '-');
       const username = bs.attacker_username;
-      attackerEl.textContent = username ? `${armyName} (${username})` : armyName;
+      attackerEl.innerHTML = username ? `${armyName} (${escHtml(username)})` : armyName;
     }
 
     let statusText = 'Waiting...';
@@ -491,6 +500,11 @@ export function createBattleUi(ctx) {
     overlay.style.display = 'flex';
   }
 
+  function setFakeWaveInfo(wi) {
+    _waveInfoSnapshot = wi ? { wave_info: wi, receivedAt: performance.now() } : null;
+    _updateNextWaveDisplay();
+  }
+
   return {
     spawnFlyingIcon,
     onBattleStatus,
@@ -503,6 +517,7 @@ export function createBattleUi(ctx) {
     updateStatus,
     updateStatusPanel,
     updateStatusFromBattleMsg,
+    setFakeWaveInfo,
     showSummary,
   };
 }

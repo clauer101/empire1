@@ -202,7 +202,7 @@ function init(el, _api, _state) {
       <div style="background:var(--panel-bg,#1e1e2e);border:1px solid var(--border-color);border-radius:var(--radius,8px);padding:14px 16px;min-width:240px;max-width:90vw;display:flex;flex-direction:column;gap:8px;position:relative;">
         <button id="new-army-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1;">✕</button>
         <div style="font-weight:bold;padding-right:20px;">New Army</div>
-        <input type="text" id="new-army-name" placeholder="Name" style="width:100%;box-sizing:border-box;" />
+        <input type="text" id="new-army-name" placeholder="Name" maxlength="120" style="width:100%;box-sizing:border-box;" />
         <div id="new-army-msg" style="font-size:0.82em;min-height:14px;"></div>
         <button id="new-army-confirm" style="width:100%;">Buy</button>
       </div>
@@ -248,6 +248,10 @@ function init(el, _api, _state) {
       .prod-overlay-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;line-height:1;padding:0}
       .prod-overlay-section{margin-bottom:14px}
       .prod-overlay-title{font-size:0.78em;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color,#444)}
+      .wave-tile{transition:transform 0.15s ease;}
+      .wave-tile--dragging{opacity:0;pointer-events:none;}
+      .wave-tile[draggable="true"]{cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+      .wave-tile[draggable="true"]:active{cursor:grabbing;}
     `;
     document.head.appendChild(s);
   }
@@ -524,12 +528,13 @@ async function onEditArmyName(e) {
 
   // Replace name with input field
   nameHeader.innerHTML = `
-    <input type="text" class="army-name-input" value="${currentName}" data-aid="${aid}" />
+    <input type="text" class="army-name-input" data-aid="${aid}" maxlength="120" />
     <button class="army-confirm-btn" data-aid="${aid}" title="Save">✓</button>
     <button class="army-cancel-btn" data-aid="${aid}" title="Cancel">✕</button>
   `;
 
   const input = nameHeader.querySelector('.army-name-input');
+  input.value = currentName;
   const confirmBtn = nameHeader.querySelector('.army-confirm-btn');
   const cancelBtn = nameHeader.querySelector('.army-cancel-btn');
 
@@ -942,6 +947,282 @@ function _openCritterOverlay(
   });
 
   overlay.classList.add('is-open');
+}
+
+/**
+ * Wire up drag-and-drop (desktop) and long-press drag (mobile) for wave reordering.
+ *
+ * Visual model: the dragged tile becomes an invisible placeholder (opacity:0) that
+ * stays in its original DOM position. All other tiles shift via CSS transform to
+ * slide into their new positions in real time, showing a gap at the drop target.
+ * On drop, one insertBefore finalizes the DOM order, clears transforms, and calls
+ * the backend. The approach avoids double-reorder bugs.
+ */
+function _initWaveDragDrop(wavesContainer, aid) {
+  const tiles = () => [...wavesContainer.querySelectorAll('.wave-tile:not(.wave-tile-add)')];
+
+  let _srcEl      = null;
+  let _srcIdx     = -1;
+  let _dstIdx     = -1;
+  let _cachedStep = 0;   // tile step (width+gap) for same-row shift animation
+  let _tileLefts  = [];  // offsetLeft of each tile at drag start (for shift animation, 1-row)
+  let _tileRects  = [];  // {left,top,right,bottom,width,height} snapshot for 2-D touch detection
+
+  // Slide non-src tiles to visually show a gap at dstIdx.
+  function _applyShifts(srcIdx, dstIdx) {
+    tiles().forEach((t, i) => {
+      if (i === srcIdx) return;
+      let shift = 0;
+      if (srcIdx < dstIdx && i > srcIdx && i < dstIdx) shift = -_cachedStep;
+      else if (srcIdx > dstIdx && i >= dstIdx && i < srcIdx) shift = _cachedStep;
+      t.style.transform = shift ? `translateX(${Math.round(shift)}px)` : '';
+    });
+  }
+
+  // Commit reorder: disable transition → clear transforms instantly → DOM move →
+  // re-enable transition next frame. This prevents the jump-back animation glitch.
+  function _finalize(srcIdx, dstIdx) {
+    if (!_srcEl) return;
+    const all = tiles();
+
+    all.forEach(t => { t.style.transition = 'none'; t.style.transform = ''; });
+    _srcEl.classList.remove('wave-tile--dragging');
+
+    const noMove = dstIdx === srcIdx || dstIdx === srcIdx + 1;
+    let newIds = null;
+    if (!noMove) {
+      const addTile = wavesContainer.querySelector('.wave-tile-add');
+      const refTile = dstIdx >= all.length ? (addTile ?? null) : all[dstIdx];
+      wavesContainer.insertBefore(_srcEl, refTile);
+      newIds = tiles().map(t => parseInt(t.dataset.waveId, 10));
+    }
+
+    _srcEl = null; _srcIdx = -1; _dstIdx = -1; _cachedStep = 0; _tileLefts = []; _tileRects = [];
+
+    requestAnimationFrame(() => tiles().forEach(t => { t.style.transition = ''; }));
+
+    if (newIds) {
+      if (!newIds.some(isNaN) && new Set(newIds).size === newIds.length) {
+        rest.reorderWaves(aid, newIds).then(r => {
+          if (!r?.success) rest.getMilitary();
+        });
+      } else {
+        rest.getMilitary();
+      }
+    }
+  }
+
+  function _reset() {
+    if (!_srcEl) return;
+    tiles().forEach(t => { t.style.transition = 'none'; t.style.transform = ''; });
+    _srcEl.classList.remove('wave-tile--dragging');
+    _srcEl = null; _srcIdx = -1; _dstIdx = -1; _cachedStep = 0; _tileLefts = []; _tileRects = [];
+    requestAnimationFrame(() => tiles().forEach(t => { t.style.transition = ''; }));
+  }
+
+  // Row-aware insertion index from touch coordinates.
+  // Groups non-src tiles by visual row, finds the closest row to ty,
+  // then resolves the before/after position by tx within that row.
+  function _dstFromTouch(tx, ty) {
+    const rects = _tileRects;
+    const n = rects.length;
+
+    // Build row groups from non-src tiles (group tiles whose tops differ by < half tile height)
+    const rows = []; // each entry: sorted array of tile indices in one row
+    for (let i = 0; i < n; i++) {
+      if (i === _srcIdx) continue;
+      const top = rects[i].top;
+      let placed = false;
+      for (const row of rows) {
+        if (Math.abs(rects[row[0]].top - top) < rects[i].height * 0.6) {
+          row.push(i); placed = true; break;
+        }
+      }
+      if (!placed) rows.push([i]);
+    }
+    if (rows.length === 0) return _dstIdx;
+
+    // Find the row whose vertical midpoint is closest to ty
+    let bestRow = rows[0];
+    let bestDist = Infinity;
+    for (const row of rows) {
+      const r = rects[row[0]];
+      const dist = Math.abs(ty - (r.top + r.bottom) / 2);
+      if (dist < bestDist) { bestDist = dist; bestRow = row; }
+    }
+
+    // Sort row tiles left→right, then resolve x position
+    bestRow.sort((a, b) => rects[a].left - rects[b].left);
+    for (let k = 0; k < bestRow.length; k++) {
+      const i = bestRow[k];
+      const mid = rects[i].left + rects[i].width / 2;
+      if (tx < mid - _DEADZONE) return i;        // insert before tile i
+      if (tx <= mid + _DEADZONE) return _dstIdx;  // dead zone: keep current
+      if (k === bestRow.length - 1) return i + 1; // after last tile in this row
+    }
+    return _dstIdx;
+  }
+
+  // ── Desktop: HTML5 Drag & Drop ───────────────────────────────────
+  function _onDragStart(e) {
+    const all = tiles();
+    _srcEl      = e.currentTarget;
+    _srcIdx     = all.indexOf(_srcEl);
+    _dstIdx     = _srcIdx;
+    _cachedStep = all.length >= 2 ? all[1].offsetLeft - all[0].offsetLeft : (all[0]?.offsetWidth ?? 80) + 8;
+    _tileLefts  = all.map(t => t.offsetLeft);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', _srcEl.dataset.waveId);
+    e.dataTransfer.setDragImage(_srcEl, e.offsetX, e.offsetY);
+    requestAnimationFrame(() => _srcEl?.classList.add('wave-tile--dragging'));
+  }
+
+  function _onDragOver(e) {
+    if (!_srcEl) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const overEl  = e.currentTarget;
+    const overIdx = tiles().indexOf(overEl);
+    if (overIdx === -1 || overEl === _srcEl) return;
+
+    // Dead zone: only commit if cursor is clearly past the midpoint (20% of tile width)
+    const rect   = overEl.getBoundingClientRect();
+    const dzone  = rect.width * 0.2;
+    const mid    = rect.left + rect.width / 2;
+    let dst;
+    if (e.clientX < mid - dzone) dst = overIdx;
+    else if (e.clientX > mid + dzone) dst = overIdx + 1;
+    else return; // in dead zone — keep current dstIdx
+
+    if (dst === _dstIdx) return;
+    _dstIdx = dst;
+    _applyShifts(_srcIdx, _dstIdx);
+  }
+
+  function _onDrop(e) {
+    e.preventDefault();
+    if (!_srcEl) return;
+    _finalize(_srcIdx, _dstIdx === -1 ? _srcIdx : _dstIdx);
+  }
+
+  function _onDragEnd() { _reset(); }
+
+  // ── Mobile: long-press → touch drag ─────────────────────────────
+  let _longPressTimer = null;
+  let _ghost          = null;
+  let _touchStartX    = 0;
+  let _touchStartY    = 0;
+  let _isTouchDrag    = false;
+  const _DEADZONE     = 18; // px: don't flip dstIdx when finger is near tile midpoint
+
+  const _blockSelect = e => e.preventDefault();
+
+  function _cancelLongPress() {
+    clearTimeout(_longPressTimer);
+    _longPressTimer = null;
+    document.removeEventListener('selectstart', _blockSelect);
+  }
+  function _removeGhost() { _ghost?.remove(); _ghost = null; }
+
+  function _onTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    _touchStartX = e.touches[0].clientX;
+    _touchStartY = e.touches[0].clientY;
+    _isTouchDrag = false;
+    const tile = e.currentTarget;
+    document.addEventListener('selectstart', _blockSelect);
+    _longPressTimer = setTimeout(() => {
+      document.removeEventListener('selectstart', _blockSelect);
+      const all   = tiles();
+      _srcEl      = tile;
+      _srcIdx     = all.indexOf(tile);
+      _dstIdx     = _srcIdx;
+      _cachedStep = all.length >= 2 ? all[1].offsetLeft - all[0].offsetLeft : (all[0]?.offsetWidth ?? 80) + 8;
+      _tileLefts  = all.map(t => t.offsetLeft);
+      // Snapshot viewport-relative rects for 2-D touch detection.
+      // getBoundingClientRect is safe here because touchmove prevents scroll during drag.
+      _tileRects  = all.map(t => { const r = t.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; });
+      _isTouchDrag = true;
+      tile.classList.add('wave-tile--dragging');
+      const rect = tile.getBoundingClientRect();
+      _ghost = tile.cloneNode(true);
+      // Canvas pixel content is not copied by cloneNode — replace each with a snapshot img
+      tile.querySelectorAll('canvas').forEach((src, i) => {
+        const dst = _ghost.querySelectorAll('canvas')[i];
+        if (!dst) return;
+        try {
+          const img = document.createElement('img');
+          img.src = src.toDataURL();
+          img.style.cssText = dst.style.cssText;
+          img.style.width  = dst.style.width  || src.style.width  || src.width  + 'px';
+          img.style.height = dst.style.height || src.style.height || src.height + 'px';
+          dst.replaceWith(img);
+        } catch (_) { /* tainted canvas — leave blank */ }
+      });
+      _ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;opacity:0.85;` +
+        `width:${rect.width}px;height:${rect.height}px;` +
+        `left:${rect.left + rect.width / 2}px;top:${rect.top + rect.height / 2}px;` +
+        `transform:translate(-50%,-50%) scale(1.08);` +
+        `border-radius:var(--radius,8px);box-shadow:0 6px 24px rgba(0,0,0,0.7);transition:none;`;
+      document.body.appendChild(_ghost);
+      navigator.vibrate?.(40);
+    }, 500);
+  }
+
+  function _onTouchMove(e) {
+    if (!_isTouchDrag) {
+      const dx = e.touches[0].clientX - _touchStartX;
+      const dy = e.touches[0].clientY - _touchStartY;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) _cancelLongPress();
+      return;
+    }
+    e.preventDefault();
+    const tx = e.touches[0].clientX;
+    const ty = e.touches[0].clientY;
+    if (_ghost) { _ghost.style.left = `${tx}px`; _ghost.style.top = `${ty}px`; }
+
+    // 2-D row-aware position detection using cached viewport rects.
+    const newDst = _dstFromTouch(tx, ty);
+
+    if (newDst !== _dstIdx) {
+      _dstIdx = newDst;
+      _applyShifts(_srcIdx, _dstIdx);
+    }
+  }
+
+  function _onTouchEnd() {
+    _cancelLongPress();
+    _removeGhost();
+    if (!_isTouchDrag) { _isTouchDrag = false; return; }
+    _isTouchDrag = false;
+    _finalize(_srcIdx, _dstIdx);
+  }
+
+  // ── Attach listeners ──────────────────────────────────────────────
+  tiles().forEach(tile => {
+    tile.setAttribute('draggable', 'true');
+    tile.addEventListener('dragstart',   _onDragStart);
+    tile.addEventListener('dragover',    _onDragOver);
+    tile.addEventListener('drop',        _onDrop);
+    tile.addEventListener('dragend',     _onDragEnd);
+    tile.addEventListener('touchstart',  _onTouchStart,  { passive: true });
+    tile.addEventListener('touchmove',   _onTouchMove,   { passive: false });
+    tile.addEventListener('touchend',    _onTouchEnd);
+    tile.addEventListener('touchcancel', _onTouchEnd);
+  });
+
+  // Container-level handlers so drops on gaps between tiles are accepted
+  // (without these the browser shows a "forbidden" cursor over the gaps).
+  wavesContainer.addEventListener('dragover', e => {
+    if (!_srcEl) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  });
+  wavesContainer.addEventListener('drop', e => {
+    e.preventDefault();
+    if (!_srcEl) return;
+    _finalize(_srcIdx, _dstIdx === -1 ? _srcIdx : _dstIdx);
+  });
 }
 
 async function onIncreaseSlots(e) {
@@ -1486,7 +1767,7 @@ function renderArmies(data) {
           : `<span>⚔ Attack</span>`;
       }
       return `
-    <div class="army-group" data-aid="${a.aid}">
+    <div class="army-group" data-aid="${a.aid}" data-in-battle="${armyInBattle}">
       <div class="army-name-header">
         <div class="army-name">${a.name} <span class="army-id"></span></div>
         <button class="army-edit-btn" title="Edit army name" data-aid="${a.aid}">
@@ -1523,7 +1804,7 @@ function renderArmies(data) {
                 : (w.iid && (spriteInfo.sprite || spriteInfo.animation));
               const rulerName = isRulerWave ? (st.summary?.ruler?.name || w.iid) : '';
               return `
-            <div class="wave-tile${isRulerWave ? ' wave-tile--ruler' : ''}" data-aid="${a.aid}" data-wave-idx="${i}">
+            <div class="wave-tile${isRulerWave ? ' wave-tile--ruler' : ''}" data-aid="${a.aid}" data-wave-idx="${i}" data-wave-id="${w.wave_id}">
               <button class="wave-critter-btn" data-aid="${a.aid}" data-wave-idx="${i}" data-current-iid="${w.iid || ''}" data-max-era="${w.max_era ?? 0}" data-next-era-price="${w.next_era_price ?? 0}" data-next-slot-price="${w.next_slot_price ?? 0}" data-slots="${w.slots || 0}" data-is-ruler="${isRulerWave ? 'true' : ''}" ${armyInBattle ? 'disabled title="Army is in battle"' : ''} style="${armyInBattle ? 'opacity:0.45;cursor:not-allowed;' : ''}">
                 <span class="wave-tile__edit-hint">${armyInBattle ? '🔒' : '✎'}</span>
                 ${
@@ -1616,6 +1897,13 @@ function renderArmies(data) {
 
   // Initialize critter sprite canvases (wave buttons)
   _initCritterCanvases(el);
+
+  // Wire drag-and-drop reordering for each army's wave container
+  el.querySelectorAll('.army-group[data-aid]').forEach(group => {
+    if (group.dataset.inBattle === 'true') return; // no reorder during active combat
+    const wavesContainer = group.querySelector('.waves-container');
+    if (wavesContainer) _initWaveDragDrop(wavesContainer, parseInt(group.dataset.aid, 10));
+  });
 
   // Restore scroll position after re-render (skip if we just navigated here externally)
   if (_resetScroll) {

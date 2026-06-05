@@ -74,6 +74,45 @@
     .field-input:focus { border-color: var(--accent); }
     .field-input.mono { font-family: var(--mono); }
 
+    .field-input.desc { font-size: 11px; resize: vertical; min-height: 40px; }
+    textarea.field-input { font-family: inherit; }
+
+    /* Combat stats section */
+    .combat-section {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .combat-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--danger); margin-bottom: 2px;
+    }
+    .combat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 12px;
+    }
+    @media (max-width: 700px) { .combat-grid { grid-template-columns: 1fr 1fr; } }
+    .combat-stat {
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .combat-stat-label {
+      font-size: 10px; color: var(--text-dim); font-weight: 600;
+    }
+    .combat-stat-inputs { display: flex; gap: 4px; align-items: center; }
+    .combat-stat-inputs input {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 6px; font-size: 11px; font-family: var(--mono);
+      width: 0; flex: 1; outline: none;
+    }
+    .combat-stat-inputs input:focus { border-color: var(--danger); }
+    .combat-sep { color: var(--text-dim); font-size: 11px; }
+    .combat-stat-single input {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 6px; font-size: 11px; font-family: var(--mono);
+      width: 100%; outline: none;
+    }
+    .combat-stat-single input:focus { border-color: var(--accent); }
+
     /* Ability section (Q/W/E/R) */
     .ability-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
@@ -259,6 +298,64 @@ function renderLevelEffects(container, effects, onChange) {
   });
 }
 
+// ── Render combat stats section ──────────────────────────────
+function renderCombatStats(parent, ruler, onChange) {
+  const section = document.createElement('div');
+  section.className = 'combat-section';
+  section.innerHTML = '<div class="combat-title">⚔ Combat Stats (min → max @ level 18)</div>';
+
+  const grid = document.createElement('div');
+  grid.className = 'combat-grid';
+
+  const STATS = [
+    { key: 'health',  label: 'Health',     step: 1,   isMinMax: true },
+    { key: 'armour',  label: 'Armour',     step: 0.1, isMinMax: true },
+    { key: 'speed',   label: 'Speed',      step: 0.01, isMinMax: true },
+    { key: 'damage',  label: 'Damage',     step: 0.5, isMinMax: true },
+    { key: 'value',   label: 'Value',      step: 1,   isMinMax: true },
+    { key: 'scale_base', label: 'Scale',   step: 0.05, isMinMax: false },
+  ];
+
+  STATS.forEach(({ key, label, step, isMinMax }) => {
+    const cell = document.createElement('div');
+    cell.className = 'combat-stat';
+    const lbl = document.createElement('div');
+    lbl.className = 'combat-stat-label';
+    lbl.textContent = label;
+    cell.appendChild(lbl);
+
+    if (isMinMax) {
+      const wrap = document.createElement('div');
+      wrap.className = 'combat-stat-inputs';
+      const minIn = document.createElement('input');
+      minIn.type = 'number'; minIn.step = step;
+      minIn.value = ruler[key + '_min'] ?? 0;
+      const sep = document.createElement('span');
+      sep.className = 'combat-sep'; sep.textContent = '→';
+      const maxIn = document.createElement('input');
+      maxIn.type = 'number'; maxIn.step = step;
+      maxIn.value = ruler[key + '_max'] ?? 0;
+      minIn.addEventListener('input', () => { ruler[key + '_min'] = parseFloat(minIn.value) || 0; onChange(); });
+      maxIn.addEventListener('input', () => { ruler[key + '_max'] = parseFloat(maxIn.value) || 0; onChange(); });
+      wrap.append(minIn, sep, maxIn);
+      cell.appendChild(wrap);
+    } else {
+      const wrap = document.createElement('div');
+      wrap.className = 'combat-stat-single';
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.step = step;
+      inp.value = ruler[key] ?? 1;
+      inp.addEventListener('input', () => { ruler[key] = parseFloat(inp.value) || 0; onChange(); });
+      wrap.appendChild(inp);
+      cell.appendChild(wrap);
+    }
+    grid.appendChild(cell);
+  });
+
+  section.appendChild(grid);
+  parent.appendChild(section);
+}
+
 // ── Render ability column (Q/W/E/R) ─────────────────────────
 function renderAbilityCol(parent, label, ability, onChange) {
   const col = document.createElement('div');
@@ -334,6 +431,11 @@ function renderAll() {
           <span class="field-label">Type</span>
           <input class="field-input" data-field="type" value="${ruler.type || ''}" placeholder="e.g. warrior, scholar" />
         </div>
+        <div class="field-row" style="align-items:flex-start">
+          <span class="field-label" style="padding-top:4px">Desc</span>
+          <textarea class="field-input desc" data-field="description" rows="2" placeholder="Description">${_esc(ruler.description || '')}</textarea>
+        </div>
+        <div class="combat-stats-host"></div>
         <div class="ability-grid"></div>
       </div>
     `;
@@ -346,6 +448,8 @@ function renderAll() {
         markDirty();
       });
     });
+
+    renderCombatStats(card.querySelector('.combat-stats-host'), ruler, () => markDirty());
 
     card.querySelector('.ruler-del-btn').addEventListener('click', () => {
       rulers.splice(ri, 1);
@@ -368,7 +472,13 @@ function renderAll() {
 // ── Add new ruler ─────────────────────────────────────────────
 document.getElementById('add-btn').addEventListener('click', () => {
   rulers.push({
-    iid: '', name: '', type: '',
+    iid: '', name: '', description: '', type: '',
+    health_min: 10, health_max: 100,
+    armour_min: 0,  armour_max: 10,
+    speed_min: 0.5, speed_max: 1.0,
+    damage_min: 1,  damage_max: 30,
+    value_min: 10,  value_max: 1000,
+    scale_base: 1.0, animation: '',
     q: emptyAbility(5), w: emptyAbility(5), e: emptyAbility(5), r: emptyAbility(3),
   });
   markDirty();

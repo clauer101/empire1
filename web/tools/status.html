@@ -639,29 +639,29 @@ function renderAttacks(attacks) {
 
 // ── Tower era mapping ────────────────────────────────────────────
 const TOWER_ERA = {
-  BASIC_TOWER: 'Steinzeit',    SLING_TOWER: 'Steinzeit',
-  DOUBLE_SLING_TOWER: 'Neolith.', SPIKE_TRAP: 'Neolith.',
+  BASIC_TOWER: 'Stone Age',    SLING_TOWER: 'Stone Age',
+  DOUBLE_SLING_TOWER: 'Neolithic', SPIKE_TRAP: 'Neolithic',
   ARROW_TOWER: 'Bronze',       BALLISTA_TOWER: 'Bronze',    FIRE_TOWER: 'Bronze',
-  CATAPULTS: 'Eisenzeit',      ARBELESTE_TOWER: 'Eisenzeit',
-  TAR_TOWER: 'Mittelalter',    HEAVY_TOWER: 'Mittelalter',  BOILING_OIL: 'Mittelalter',
-  CANNON_TOWER: 'Mittelalter',
+  CATAPULTS: 'Iron Age',       ARBELESTE_TOWER: 'Iron Age',
+  TAR_TOWER: 'Middle Ages',    HEAVY_TOWER: 'Middle Ages',  BOILING_OIL: 'Middle Ages',
+  CANNON_TOWER: 'Middle Ages',
   RIFLE_TOWER: 'Renaissance',  COLD_TOWER: 'Renaissance', ICE_TOWER: 'Renaissance',
-  FLAME_THROWER: 'Industrie',  SHOCK_TOWER: 'Industrie',    PARALYZNG_TOWER: 'Industrie',  GATLING_TOWER: 'Industrie',
-  NAPALM_THROWER: 'Moderne',   MG_TOWER: 'Moderne',         RAPID_FIRE_MG_BUNKER: 'Moderne',
-  RADAR_TOWER: 'Moderne',      ANTI_AIR_TOWER: 'Moderne',   LASER_TOWER: 'Moderne',
-  SNIPER_TOWER: 'Zukunft',     ROCKET_TOWER: 'Zukunft',
+  FLAME_THROWER: 'Industrial', SHOCK_TOWER: 'Industrial',   PARALYZNG_TOWER: 'Industrial',  GATLING_TOWER: 'Industrial',
+  NAPALM_THROWER: 'Modern',    MG_TOWER: 'Modern',          RAPID_FIRE_MG_BUNKER: 'Modern',
+  RADAR_TOWER: 'Modern',       ANTI_AIR_TOWER: 'Modern',    LASER_TOWER: 'Modern',
+  SNIPER_TOWER: 'Future',      ROCKET_TOWER: 'Future',
 };
 
 const ERA_COLORS = {
-  'Steinzeit':   '#8B7355',
-  'Neolith.':    '#A0887A',
+  'Stone Age':   '#8B7355',
+  'Neolithic':   '#A0887A',
   'Bronze':      '#CD7F32',
-  'Eisenzeit':   '#888888',
-  'Mittelalter': '#6B8A8A',
+  'Iron Age':    '#888888',
+  'Middle Ages': '#6B8A8A',
   'Renaissance': '#8B6914',
-  'Industrie':   '#FF6B35',
-  'Moderne':     '#4B9CD3',
-  'Zukunft':     '#9B59B6',
+  'Industrial':  '#FF6B35',
+  'Modern':      '#4B9CD3',
+  'Future':      '#9B59B6',
 };
 
 const TILE_COLORS = {
@@ -718,7 +718,7 @@ function buildHexMapSVG(tiles) {
   return `<svg width="${W}" height="${H}" style="display:block;border-radius:3px">${polys.join('')}</svg>`;
 }
 
-const ERA_ORDER_STATUS = ['Steinzeit','Neolith.','Bronze','Eisenzeit','Mittelalter','Renaissance','Industrie','Moderne','Zukunft'];
+const ERA_ORDER_STATUS = ['Stone Age','Neolithic','Bronze','Iron Age','Middle Ages','Renaissance','Industrial','Modern','Future'];
 
 function buildTowerStats(tiles) {
   if (!tiles) return {count: 0, eraHTML: ''};

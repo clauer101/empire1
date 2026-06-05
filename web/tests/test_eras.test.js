@@ -13,8 +13,8 @@ function test(name, fn) {
 function eq(a, b) { if (a !== b) throw new Error(`Expected "${b}", got "${a}"`); }
 
 const ERAS = [
-  'STEINZEIT', 'NEOLITHIKUM', 'BRONZEZEIT', 'EISENZEIT',
-  'MITTELALTER', 'RENAISSANCE', 'INDUSTRIALISIERUNG', 'MODERNE', 'ZUKUNFT'
+  'stone', 'neolithic', 'bronze', 'iron',
+  'middle_ages', 'renaissance', 'industrial', 'modern', 'future'
 ];
 
 // ── ERA_ROMAN ────────────────────────────────────────────────────────────────
@@ -25,8 +25,8 @@ test('ERA_ROMAN: covers all eras', () => {
     if (!(era in ERA_ROMAN)) throw new Error(`Missing ${era}`);
   }
 });
-test('ERA_ROMAN: STEINZEIT → I', () => eq(ERA_ROMAN.STEINZEIT, 'I'));
-test('ERA_ROMAN: ZUKUNFT → IX', () => eq(ERA_ROMAN.ZUKUNFT, 'IX'));
+test('ERA_ROMAN: stone → I',  () => eq(ERA_ROMAN.stone,  'I'));
+test('ERA_ROMAN: future → IX', () => eq(ERA_ROMAN.future, 'IX'));
 
 // ── ERA_LABEL_EN ─────────────────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ test('ERA_LABEL_EN: covers all eras', () => {
     if (!ERA_LABEL_EN[era]) throw new Error(`Empty label for ${era}`);
   }
 });
-test('ERA_LABEL_EN: STEINZEIT → Stone Age', () => eq(ERA_LABEL_EN.STEINZEIT, 'Stone Age'));
+test('ERA_LABEL_EN: stone → Stone Age', () => eq(ERA_LABEL_EN.stone, 'Stone Age'));
 
 // ── ERA_SPRITE_KEY ───────────────────────────────────────────────────────────
 
@@ -47,8 +47,8 @@ test('ERA_SPRITE_KEY: covers all eras', () => {
     if (!(era in ERA_SPRITE_KEY)) throw new Error(`Missing ${era}`);
   }
 });
-test('ERA_SPRITE_KEY: STEINZEIT → stone', () => eq(ERA_SPRITE_KEY.STEINZEIT, 'stone'));
-test('ERA_SPRITE_KEY: ZUKUNFT → future', () => eq(ERA_SPRITE_KEY.ZUKUNFT, 'future'));
+test('ERA_SPRITE_KEY: stone → stone',   () => eq(ERA_SPRITE_KEY.stone,  'stone'));
+test('ERA_SPRITE_KEY: future → future', () => eq(ERA_SPRITE_KEY.future, 'future'));
 
 // ── Cross-check all maps have same keys ──────────────────────────────────────
 

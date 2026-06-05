@@ -451,6 +451,8 @@ async function _onSetup(msg) {
       grid.setBattlePath(msg.path);
     }
 
+    if (msg.defender_max_life != null) grid._defenderMaxLife = msg.defender_max_life;
+
     if (msg.structures) {
       for (const s of msg.structures) {
         const _meta = s.select && s.select !== 'first' ? { select: s.select } : {};
@@ -460,6 +462,8 @@ async function _onSetup(msg) {
           tile.sid = s.sid;
           tile.structure_data = s;
         }
+        grid._structureBySid.set(s.sid, s);
+        if (s.shot_sprite) grid._ensureSpriteLoaded('/' + s.shot_sprite, false);
       }
     }
 
@@ -486,9 +490,13 @@ async function _onSetup(msg) {
 function _onUpdate(msg) {
   if (!grid) return;
 
-  if (msg.critters && Array.isArray(msg.critters)) {
+  if (msg.critters != null || msg.new_critters != null) {
     const activeCids = new Set();
-    for (const c of msg.critters) {
+    for (const c of (msg.new_critters || [])) {
+      grid.updateBattleCritter(c);
+      activeCids.add(c.cid);
+    }
+    for (const c of (msg.critters || [])) {
       grid.updateBattleCritter(c);
       activeCids.add(c.cid);
     }

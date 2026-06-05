@@ -45,15 +45,15 @@ CRITTERS_PATH   = CONFIG_DIR / "critters.yaml"
 
 # Maps era CLI arg → backend era key
 ERA_KEYWORDS = {
-    "steinzeit":          "STEINZEIT",
-    "neolithikum":        "NEOLITHIKUM",
-    "bronzezeit":         "BRONZEZEIT",
-    "eisenzeit":          "EISENZEIT",
-    "mittelalter":        "MITTELALTER",
-    "renaissance":        "RENAISSANCE",
-    "industrialisierung": "INDUSTRIALISIERUNG",
-    "moderne":            "MODERNE",
-    "zukunft":            "ZUKUNFT",
+    "stone":        "stone",
+    "neolithic":    "neolithic",
+    "bronze":       "bronze",
+    "iron":         "iron",
+    "middle_ages":  "middle_ages",
+    "renaissance":  "renaissance",
+    "industrial":   "industrial",
+    "modern":       "modern",
+    "future":       "future",
 }
 
 

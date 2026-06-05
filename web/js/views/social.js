@@ -17,6 +17,10 @@ let _data = null;
 let _pollInterval = null;
 /** expanded battle report message IDs */
 let _openBattleReportIds = new Set();
+/** active filter: 'player' | 'ai' | 'both' */
+let _filterOpponent = 'both';
+/** active filter: 'victory' | 'defeat' | 'both' */
+let _filterOutcome = 'both';
 
 // ── Init ────────────────────────────────────────────────────────────
 
@@ -26,21 +30,85 @@ function init(el, _api, _state) {
   _renderShell();
 }
 
+const _T3 = {
+  opponent: { vals: ['both', 'player', 'ai'],     labels: ['Any opponent', 'vs. Player', 'vs. AI'] },
+  outcome:  { vals: ['both', 'victory', 'defeat'], labels: ['Any outcome',  'Victory', 'Defeat'] },
+};
+
+function _toggle3Html(group) {
+  return `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="br-t3" data-group="${group}" data-pos="0" style="
+        position:relative;width:66px;height:22px;border-radius:11px;flex-shrink:0;
+        background:transparent;border:1px solid rgba(255,255,255,0.2);
+        cursor:pointer;
+        -webkit-tap-highlight-color:transparent;user-select:none;">
+        <div class="br-t3-knob" style="position:absolute;top:0;left:0;
+          width:22px;height:22px;border-radius:11px;
+          background:var(--accent,#4fc3f7);
+          transition:left .15s ease;pointer-events:none;"></div>
+      </div>
+      <span class="br-t3-val" style="font-size:12px;color:var(--text-dim);">${_T3[group].labels[0]}</span>
+    </div>`;
+}
+
+function _setToggle3(track, pos) {
+  const group = track.dataset.group;
+  track.dataset.pos = String(pos);
+  track.querySelector('.br-t3-knob').style.left = `${pos * 22}px`;
+  track.parentElement.querySelector('.br-t3-val').textContent = _T3[group].labels[pos];
+  if (group === 'opponent') _filterOpponent = _T3[group].vals[pos];
+  else _filterOutcome = _T3[group].vals[pos];
+  _applyFilters();
+}
+
+function _applyFilters() {
+  const el = container.querySelector('#br-reports');
+  if (!el) return;
+  let visible = 0;
+  el.querySelectorAll('.br-panel').forEach((panel) => {
+    const ai = panel.dataset.ai === '1';
+    const won = panel.dataset.won === '1';
+    const showOpponent = _filterOpponent === 'both' || (_filterOpponent === 'ai' ? ai : !ai);
+    const showOutcome  = _filterOutcome  === 'both' || (_filterOutcome  === 'victory' ? won : !won);
+    const show = showOpponent && showOutcome;
+    panel.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const empty = el.querySelector('#br-empty');
+  if (empty) empty.style.display = visible ? 'none' : '';
+}
+
 function _renderShell() {
   container.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow-x:hidden;';
   container.innerHTML = `
+    <div id="br-filters" style="
+      flex-shrink:0;
+      display:flex;flex-direction:column;gap:6px;
+      padding:8px 4px 4px;
+      -webkit-tap-highlight-color:transparent;
+    ">
+      ${_toggle3Html('opponent')}
+      ${_toggle3Html('outcome')}
+    </div>
     <div id="message-list" style="
       flex:1;
       overflow-y:auto;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
       min-height:0;
-      padding:8px 4px;
+      padding:0 4px 8px;
     ">
-      <div class="empty-state"><div class="empty-icon">⚔</div><p>Loading…</p></div>
+      <div id="br-reports">
+        <div class="empty-state"><div class="empty-icon">⚔</div><p>Loading…</p></div>
+      </div>
     </div>
   `;
+
+  container.querySelectorAll('.br-t3').forEach((track) => {
+    track.addEventListener('click', () => {
+      const pos = ((+track.dataset.pos) + 1) % 3;
+      _setToggle3(track, pos);
+    });
+  });
 }
 
 // ── Lifecycle ────────────────────────────────────────────────────────
@@ -65,7 +133,7 @@ async function _refresh() {
     _data = await rest.getMessages();
     _render(_data);
   } catch (err) {
-    const el = container.querySelector('#message-list');
+    const el = container.querySelector('#br-reports');
     if (el)
       el.innerHTML = `<div class="error-msg" style="padding:12px">Error: ${_esc(err.message)}</div>`;
   }
@@ -74,7 +142,7 @@ async function _refresh() {
 // ── Render ────────────────────────────────────────────────────────────
 
 function _render(data) {
-  const el = container.querySelector('#message-list');
+  const el = container.querySelector('#br-reports');
   if (!el) return;
 
   if (!data) {
@@ -105,25 +173,31 @@ function _parseBattleReportSummary(body) {
   return { result, opponent };
 }
 
+function _isAiBattle(body) {
+  return /Attacker\(s\):\s*AI\b/m.test(body || '');
+}
+
 function _renderBattleReports(el, messages, myUid) {
   const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
   messages = messages.filter((m) => new Date(m.sent_at).getTime() >= cutoff);
-  if (!messages.length) {
-    el.innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports in the last 3 days.</p></div>';
-    return;
-  }
-  el.innerHTML = messages
-    .map((m, idx) => {
-      const unreadDot = !m.read
-        ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
-        : '';
-      const { result, opponent } = _parseBattleReportSummary(m.body || '');
-      const detailId = 'br-detail-' + idx;
-      const won = /Won/i.test(result);
-      const resultColor = won ? 'var(--success,#66bb6a)' : 'var(--danger,#ef5350)';
-      return `
-      <div class="panel" style="margin-bottom:6px;padding:0;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
+
+  el.innerHTML =
+    '<div id="br-empty" class="empty-state" style="display:none"><div class="empty-icon">⚔</div><p>No matching battle reports.</p></div>' +
+    (messages.length === 0
+      ? '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports in the last 3 days.</p></div>'
+      : messages
+        .map((m, idx) => {
+          const unreadDot = !m.read
+            ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
+            : '';
+          const { result, opponent } = _parseBattleReportSummary(m.body || '');
+          const detailId = 'br-detail-' + idx;
+          const won = /Won/i.test(result) || /^🕵/u.test(result);
+          const isAi = _isAiBattle(m.body);
+          const resultColor = won ? 'var(--success,#66bb6a)' : 'var(--danger,#ef5350)';
+          return `
+      <div class="panel br-panel" data-ai="${isAi ? 1 : 0}" data-won="${won ? 1 : 0}"
+           style="margin-bottom:6px;padding:0;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
         <button class="br-header" data-target="${detailId}" data-msg-id="${m.id}"
           style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
                  padding:10px 14px;background:none;border:none;cursor:pointer;text-align:left;">
@@ -141,8 +215,8 @@ function _renderBattleReports(el, messages, myUid) {
           <div style="font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${_linkify(_esc(m.body))}</div>
         </div>
       </div>`;
-    })
-    .join('');
+        })
+        .join(''));
 
   // Restore open state
   el.querySelectorAll('.br-header').forEach((btn) => {
@@ -169,6 +243,8 @@ function _renderBattleReports(el, messages, myUid) {
       }
     });
   });
+
+  _applyFilters();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────

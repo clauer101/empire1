@@ -123,7 +123,7 @@
     /* ── Wave row ── */
     .wave-row {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto;
       gap: 0;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -131,11 +131,32 @@
     .wave-row:last-child { border-bottom: none; }
 
     .wave-main {
-      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .wave-header {
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    .wave-header:hover { background: var(--surface-hover); }
+
+    .wave-arrow { font-size: 14px; color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0; line-height: 1; }
+    .wave-row.collapsed .wave-arrow { transform: rotate(-90deg); }
+
+    .wave-body {
+      padding: 6px 14px 10px;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      border-top: 1px solid var(--border);
     }
+    .wave-row.collapsed .wave-body { display: none; }
 
     .wave-top {
       display: flex;
@@ -144,20 +165,85 @@
       flex-wrap: wrap;
     }
 
-    .wave-name-input {
-      background: transparent;
-      color: var(--text);
-      border: none;
-      font-family: var(--font);
+    .wave-name-display {
       font-size: 13px;
       font-weight: 600;
-      width: 240px;
-      border-bottom: 1px solid transparent;
-      padding: 1px 2px;
-      outline: none;
-      transition: border-color 0.15s;
+      color: var(--text);
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .wave-name-input:focus { border-bottom-color: var(--accent); }
+
+    .rename-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .rename-btn:hover { color: var(--accent); background: var(--surface-alt); }
+
+    /* ── Rename overlay ── */
+    .rename-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .rename-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .rename-modal-title { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .rename-modal-input {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+      width: 100%;
+    }
+    .rename-modal-input:focus { border-color: var(--accent); }
+    .rename-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .rename-cancel-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      padding: 6px 16px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .rename-cancel-btn:hover { border-color: var(--text); color: var(--text); }
+    .rename-confirm-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #000;
+      padding: 6px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .rename-confirm-btn:hover { opacity: 0.85; }
 
     .travel-label { color: var(--text-dim); font-size: 11px; }
 
@@ -225,46 +311,32 @@
     .army-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: wrap;
     }
     .army-label { color: var(--text-dim); font-size: 11px; }
 
     .unit-tile {
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
+      flex-direction: row;
+      align-items: center;
       gap: 3px;
       background: var(--surface-alt);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 4px 6px;
-      min-width: 90px;
-    }
-
-    .unit-tile-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 4px;
-    }
-
-    .unit-tile-bottom {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      padding: 2px 4px;
     }
 
     .unit-tile-sprite {
       display: flex;
-      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
     }
     .critter-sprite-canvas {
       image-rendering: pixelated;
-      width: 32px;
-      height: 32px;
-      border-radius: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 2px;
       background: rgba(255,255,255,0.03);
     }
 
@@ -276,27 +348,27 @@
       font-size: 11px;
       outline: none;
       cursor: pointer;
-      flex: 1;
-      min-width: 0;
+      max-width: 88px;
     }
     .unit-select option { background: var(--surface-alt); }
 
     .slot-btn {
       background: var(--surface);
-      color: var(--text-dim);
+      color: var(--text);
       border: 1px solid var(--border);
       border-radius: 3px;
-      width: 18px;
-      height: 18px;
+      width: 26px;
+      height: 26px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
       line-height: 1;
       flex-shrink: 0;
     }
-    .slot-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .slot-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
     .slot-count {
       font-family: var(--mono);
@@ -368,9 +440,9 @@
     .wave-actions {
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
-      padding: 8px;
+      padding: 6px 8px;
       gap: 4px;
       border-left: 1px solid var(--border);
     }
@@ -497,6 +569,17 @@
   <div id="loading">Lade Daten…</div>
 </div>
 
+<div id="rename-overlay" class="rename-overlay" style="display:none">
+  <div class="rename-modal">
+    <div class="rename-modal-title">Rename Army</div>
+    <input id="rename-input" class="rename-modal-input" type="text" autocomplete="off" />
+    <div class="rename-modal-actions">
+      <button id="rename-cancel" class="rename-cancel-btn">Cancel</button>
+      <button id="rename-confirm" class="rename-confirm-btn">Rename</button>
+    </div>
+  </div>
+</div>
+
 <script src="era-map.js"></script>
 <script>
 // ERA_ORDER, ERA_INFO, ERA_CRITTERS, ALL_CRITTERS populated from /api/era-map in init()
@@ -504,6 +587,39 @@ let ERA_ORDER    = [];
 let ERA_INFO     = {};
 let ERA_CRITTERS = {};
 let ALL_CRITTERS = [];
+
+// ── Rename overlay ───────────────────────────────────────────
+{
+  let _cb = null;
+  const overlay  = document.getElementById('rename-overlay');
+  const input    = document.getElementById('rename-input');
+  const btnOk    = document.getElementById('rename-confirm');
+  const btnCancel = document.getElementById('rename-cancel');
+
+  window.openRenameOverlay = (currentName, onConfirm) => {
+    input.value = currentName;
+    overlay.style.display = 'flex';
+    input.focus();
+    input.select();
+    _cb = onConfirm;
+  };
+
+  const commit = () => {
+    const v = input.value.trim();
+    if (v && _cb) _cb(v);
+    overlay.style.display = 'none';
+    _cb = null;
+  };
+  const cancel = () => { overlay.style.display = 'none'; _cb = null; };
+
+  btnOk.addEventListener('click', commit);
+  btnCancel.addEventListener('click', cancel);
+  overlay.addEventListener('click', e => { if (e.target === overlay) cancel(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') commit();
+    if (e.key === 'Escape') cancel();
+  });
+}
 
 // CRITTER_STATS populated from /api/critter-stats in init() — {IID: {health, speed, armour, slots}}
 let CRITTER_STATS = {};
@@ -564,6 +680,9 @@ function renderAll() {
   const expandedEras = new Set(
     [...content.querySelectorAll('.era-section:not(.collapsed)')].map(s => s.dataset.era)
   );
+  const expandedArmies = new Set(
+    [...content.querySelectorAll('.wave-row:not(.collapsed)')].map(r => r.dataset.armyKey)
+  );
 
   content.innerHTML = '';
 
@@ -571,7 +690,7 @@ function renderAll() {
   const groups = {};
   ERA_ORDER.forEach(e => groups[e] = []);
   armies.forEach((a, i) => {
-    const era = a.era || 'Steinzeit';
+    const era = a.era || 'stone';
     if (!groups[era]) groups[era] = [];
     groups[era].push({ army: a, idx: i });
   });
@@ -593,11 +712,6 @@ function renderAll() {
           <span class="era-time-label">Travel</span>
           <button class="era-time-btn" data-field="travel_time" data-delta="-30">−</button>
           <button class="era-time-btn" data-field="travel_time" data-delta="30">+</button>
-        </div>
-        <div class="era-time-ctrl" title="Siege-Zeit aller Armeen anpassen">
-          <span class="era-time-label">Siege</span>
-          <button class="era-time-btn" data-field="siege_time" data-delta="-30">−</button>
-          <button class="era-time-btn" data-field="siege_time" data-delta="30">+</button>
         </div>
         <button class="era-rand-btn" title="Allen Armeen eine zufällige Wave hinzufügen">⚄ Wave für alle</button>
       </div>
@@ -701,7 +815,9 @@ function renderAll() {
     }
 
     items.forEach(({ army, idx }) => {
-      body.appendChild(buildArmyRow(army, idx));
+      const armyRow = buildArmyRow(army, idx);
+      if (expandedArmies.has(armyRow.dataset.armyKey)) armyRow.classList.remove('collapsed');
+      body.appendChild(armyRow);
     });
 
     // Add army button
@@ -718,28 +834,47 @@ function renderAll() {
 
 function buildArmyRow(army, idx) {
   const row = document.createElement('div');
-  row.className = 'wave-row';
+  row.className = 'wave-row collapsed';
   row.dataset.idx = idx;
+  row.dataset.armyKey = army.name || String(idx);
 
   // ── Main column ──
   const main = document.createElement('div');
   main.className = 'wave-main';
 
-  // Top: name + travel time
-  const top = document.createElement('div');
-  top.className = 'wave-top';
+  // ── Collapsed header (always visible) ──
+  const header = document.createElement('div');
+  header.className = 'wave-header';
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.className = 'wave-name-input';
-  nameInput.value = army.name || '';
-  nameInput.addEventListener('input', () => { army.name = nameInput.value; markDirty(); });
-  top.appendChild(nameInput);
+  const arrow = document.createElement('span');
+  arrow.className = 'wave-arrow';
+  arrow.innerHTML = '&#9660;';
+  header.appendChild(arrow);
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'wave-name-display';
+  nameSpan.textContent = army.name || '';
+  header.appendChild(nameSpan);
+
+  const renameBtn = document.createElement('button');
+  renameBtn.className = 'rename-btn';
+  renameBtn.title = 'Rename';
+  renameBtn.textContent = '✏';
+  renameBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openRenameOverlay(army.name || '', newName => {
+      army.name = newName;
+      nameSpan.textContent = newName;
+      row.dataset.armyKey = newName;
+      markDirty();
+    });
+  });
+  header.appendChild(renameBtn);
 
   const tLabel = document.createElement('span');
   tLabel.className = 'travel-label';
   tLabel.textContent = 'Travel:';
-  top.appendChild(tLabel);
+  header.appendChild(tLabel);
 
   const tInput = document.createElement('input');
   tInput.type = 'number';
@@ -748,72 +883,39 @@ function buildArmyRow(army, idx) {
   tInput.min = 0;
   tInput.step = 30;
   tInput.addEventListener('input', () => { army.travel_time = parseInt(tInput.value) || 0; markDirty(); });
-  top.appendChild(tInput);
+  tInput.addEventListener('click', e => e.stopPropagation());
+  header.appendChild(tInput);
 
   const tSec = document.createElement('span');
   tSec.className = 'travel-label';
   tSec.textContent = 's';
-  top.appendChild(tSec);
+  header.appendChild(tSec);
 
-  const sLabel = document.createElement('span');
-  sLabel.className = 'travel-label';
-  sLabel.textContent = 'Siege:';
-  top.appendChild(sLabel);
+  const diffBadge = document.createElement('span');
+  diffBadge.className = 'diff-badge';
+  renderDiffBadge(diffBadge, army);
+  header.appendChild(diffBadge);
 
-  const sInput = document.createElement('input');
-  sInput.type = 'number';
-  sInput.className = 'travel-input';
-  sInput.value = army.siege_time ?? '';
-  sInput.min = 0;
-  sInput.step = 30;
-  sInput.addEventListener('input', () => { army.siege_time = parseInt(sInput.value) || 0; markDirty(); });
-  top.appendChild(sInput);
+  header.addEventListener('click', () => row.classList.toggle('collapsed'));
+  main.appendChild(header);
 
-  const sSec = document.createElement('span');
-  sSec.className = 'travel-label';
-  sSec.textContent = 's';
-  top.appendChild(sSec);
-
-  // time_between
-  const tbLabel = document.createElement('span');
-  tbLabel.className = 'travel-label';
-  tbLabel.textContent = 'Interval:';
-  top.appendChild(tbLabel);
-
-  const tbInput = document.createElement('input');
-  tbInput.type = 'number';
-  tbInput.className = 'travel-input';
-  tbInput.value = army.time_between ?? '';
-  tbInput.placeholder = 'ms';
-  tbInput.min = 500;
-  tbInput.step = 500;
-  tbInput.title = 'Zeit zwischen Waves (ms). Leer = Standard (15000ms)';
-  tbInput.addEventListener('input', () => {
-    const v = parseInt(tbInput.value);
-    if (isNaN(v) || tbInput.value.trim() === '') {
-      delete army.time_between;
-    } else {
-      army.time_between = Math.max(500, v);
-    }
-    markDirty();
-  });
-  top.appendChild(tbInput);
-
-  const tbSec = document.createElement('span');
-  tbSec.className = 'travel-label';
-  tbSec.textContent = 'ms';
-  top.appendChild(tbSec);
+  // ── Collapsible body ──
+  const body = document.createElement('div');
+  body.className = 'wave-body';
 
   // All-slots ± buttons
+  const top = document.createElement('div');
+  top.className = 'wave-top';
+
   const allSlotsLabel = document.createElement('span');
   allSlotsLabel.className = 'travel-label';
-  allSlotsLabel.textContent = 'Alle Slots:';
+  allSlotsLabel.textContent = 'All slots:';
   top.appendChild(allSlotsLabel);
 
   const allSlotsMinus = document.createElement('button');
   allSlotsMinus.className = 'slot-btn';
   allSlotsMinus.textContent = '−';
-  allSlotsMinus.title = 'Alle Waves −1 Slot';
+  allSlotsMinus.title = 'All waves −1 slot';
   allSlotsMinus.addEventListener('click', () => {
     for (const w of army.waves || []) w.slots = Math.max(1, (w.slots || 1) - 1);
     markDirty();
@@ -824,23 +926,17 @@ function buildArmyRow(army, idx) {
   const allSlotsPlus = document.createElement('button');
   allSlotsPlus.className = 'slot-btn';
   allSlotsPlus.textContent = '+';
-  allSlotsPlus.title = 'Alle Waves +1 Slot';
+  allSlotsPlus.title = 'All waves +1 slot';
   allSlotsPlus.addEventListener('click', () => {
     for (const w of army.waves || []) w.slots = (w.slots || 1) + 1;
     markDirty();
     renderAll();
   });
   top.appendChild(allSlotsPlus);
-
-  const diffBadge = document.createElement('span');
-  diffBadge.className = 'diff-badge';
-  renderDiffBadge(diffBadge, army);
-  top.appendChild(diffBadge);
-
-  main.appendChild(top);
+  body.appendChild(top);
 
   // Trigger row
-  main.appendChild(buildTriggerRow(army));
+  body.appendChild(buildTriggerRow(army));
 
   // Era distribution bars
   const eraDistDiv = document.createElement('div');
@@ -851,7 +947,7 @@ function buildArmyRow(army, idx) {
     const totalSlots = waves.reduce((s, w) => s + (w.slots || 0), 0);
     const byEra = {};
     for (const w of waves) {
-      const era = CRITTER_STATS[w.critter]?.era || 'Unbekannt';
+      const era = CRITTER_STATS[w.critter]?.era || 'unknown';
       byEra[era] = (byEra[era] || 0) + (w.slots || 0);
     }
     eraDistDiv.innerHTML = ERA_ORDER
@@ -872,9 +968,10 @@ function buildArmyRow(army, idx) {
 
   // Waves (critter/slot units) row
   const refreshDiff = () => { renderDiffBadge(diffBadge, army); refreshEraBars(); };
-  main.appendChild(buildWavesRow(army, refreshDiff));
-  main.appendChild(eraDistDiv);
+  body.appendChild(buildWavesRow(army, refreshDiff));
+  body.appendChild(eraDistDiv);
 
+  main.appendChild(body);
   row.appendChild(main);
 
   // ── Actions column ──
@@ -883,7 +980,7 @@ function buildArmyRow(army, idx) {
 
   const delBtn = document.createElement('button');
   delBtn.className = 'del-wave-btn';
-  delBtn.textContent = 'Löschen';
+  delBtn.textContent = 'Delete';
   delBtn.addEventListener('click', () => {
     armies.splice(idx, 1);
     markDirty();
@@ -992,32 +1089,24 @@ function buildWavesRow(army, refreshDiff) {
       const tile = document.createElement('div');
       tile.className = 'unit-tile';
 
-      // Top row: critter select + delete button
-      const top = document.createElement('div');
-      top.className = 'unit-tile-top';
+      // Sprite
+      const spriteWrap = document.createElement('div');
+      spriteWrap.className = 'unit-tile-sprite';
+      const canvas = document.createElement('canvas');
+      canvas.className = 'critter-sprite-canvas';
+      canvas.dataset.src = critterSpritePath(unit.critter);
+      canvas.width = 18; canvas.height = 18;
+      spriteWrap.appendChild(canvas);
 
       const sel = document.createElement('select');
       sel.className = 'unit-select';
       sel.innerHTML = critterOptions(unit.critter);
-      sel.addEventListener('change', () => { unit.critter = sel.value; markDirty(); refreshDiff?.(); });
-
-      const del = document.createElement('button');
-      del.className = 'unit-del';
-      del.title = 'Wave entfernen';
-      del.textContent = '✕';
-      del.addEventListener('click', () => {
-        units.splice(ui, 1);
-        army.waves = units;
-        markDirty();
-        rebuildUnits();
-        refreshDiff?.();
+      sel.addEventListener('change', () => {
+        unit.critter = sel.value;
+        canvas.dataset.src = critterSpritePath(sel.value);
+        drawCritterSprites(tile);
+        markDirty(); refreshDiff?.();
       });
-
-      top.append(sel, del);
-
-      // Bottom row: − count +
-      const bottom = document.createElement('div');
-      bottom.className = 'unit-tile-bottom';
 
       const minus = document.createElement('button');
       minus.className = 'slot-btn';
@@ -1037,24 +1126,19 @@ function buildWavesRow(army, refreshDiff) {
         unit.slots++; count.textContent = unit.slots; markDirty(); refreshDiff?.();
       });
 
-      // Sprite
-      const spriteWrap = document.createElement('div');
-      spriteWrap.className = 'unit-tile-sprite';
-      const canvas = document.createElement('canvas');
-      canvas.className = 'critter-sprite-canvas';
-      canvas.dataset.src = critterSpritePath(unit.critter);
-      canvas.width = 32; canvas.height = 32;
-      spriteWrap.appendChild(canvas);
-
-      // update sprite when critter changes
-      sel.addEventListener('change', () => {
-        canvas.style.display = '';
-        canvas.dataset.src = critterSpritePath(sel.value);
-        drawCritterSprites(tile);
+      const del = document.createElement('button');
+      del.className = 'unit-del';
+      del.title = 'Remove wave';
+      del.textContent = '✕';
+      del.addEventListener('click', () => {
+        units.splice(ui, 1);
+        army.waves = units;
+        markDirty();
+        rebuildUnits();
+        refreshDiff?.();
       });
 
-      bottom.append(minus, count, plus);
-      tile.append(top, spriteWrap, bottom);
+      tile.append(spriteWrap, sel, minus, count, plus, del);
       row.insertBefore(tile, addWaveBtn);
     });
     drawCritterSprites(row);

@@ -342,7 +342,6 @@ function setTab(tab) {
   _tab = tab;
   document.getElementById('tab-buildings').classList.toggle('active', tab === 'buildings');
   document.getElementById('tab-knowledge').classList.toggle('active', tab === 'knowledge');
-  document.getElementById('save-gold-btn').style.display = tab === 'buildings' ? '' : 'none';
   renderAll();
 }
 

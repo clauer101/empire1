@@ -339,12 +339,6 @@ class TestStartAiAttack:
         assert result.defender_uid == 5
         assert result.phase == AttackPhase.TRAVELING
 
-    def test_with_siege_seconds_override(self):
-        svc = _attack_svc()
-        army = _army_with_waves(aid=101, uid=0)
-        result = svc.start_ai_attack(5, army, travel_seconds=30.0, siege_seconds=120.0)
-        assert isinstance(result, Attack)
-        assert result.override_siege_seconds == 120.0
 
 
 # ---------------------------------------------------------------------------

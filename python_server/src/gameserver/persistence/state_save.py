@@ -175,6 +175,7 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
             "e": empire.ruler.e,
             "r": empire.ruler.r,
         } if empire.ruler.type else {},
+        "is_bot": empire.is_bot,
     }
 
 
@@ -188,6 +189,9 @@ def _serialize_structure(s: Structure) -> dict[str, Any]:
         "reload_time_ms": s.reload_time_ms,
         "shot_speed": s.shot_speed,
         "shot_type": s.shot_type,
+        "shot_sprite": s.shot_sprite,
+        "shot_sprite_scale": s.shot_sprite_scale,
+        "projectile_y_offset": s.projectile_y_offset,
         "effects": dict(s.effects),
         # Transient battle state — not persisted in empire context:
         # focus_cid, reload_remaining_ms are battle-only

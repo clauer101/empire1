@@ -219,12 +219,42 @@ async def _run_battle_task(
         stolen_artifacts = _apply_artifact_steal(battle, svc, attacker_won)
         if stolen_artifacts:
             loot["artifacts"] = [{"iid": iid, "winner_uid": uid} for iid, uid in stolen_artifacts]
-        if attacker_won or stolen_artifacts:
-            await battle_svc.send_summary(battle, send_fn, loot)
-        elif not _summary_sent:
-            await battle_svc.send_summary(battle, send_fn, loot={})
 
-        ruler_xp_gained = _award_ruler_xp(battle, svc, attacker_won)
+        ruler_xp_gained, ruler_xp_pvp_bonus = _award_ruler_xp(battle, svc, attacker_won)
+
+        # PvP gold bonus: defender earns double when a human attacker is in a higher era
+        from gameserver.engine.ai_service import AI_UID as _AI_UID_PVP
+        from gameserver.util.eras import ERA_ORDER as _ERA_ORDER_PVP
+        pvp_gold_bonus = 0.0
+        if battle.defender and battle.defender_gold_earned > 0 and svc.empire_service:
+            def_era_idx = _ERA_ORDER_PVP.index(
+                svc.empire_service.get_current_era(battle.defender)
+            ) if svc.empire_service.get_current_era(battle.defender) in _ERA_ORDER_PVP else 0
+            for _atk_uid in battle.attacker_uids:
+                if _atk_uid == _AI_UID_PVP:
+                    continue
+                _atk_emp = svc.empire_service.get(_atk_uid)
+                if _atk_emp is None:
+                    continue
+                _atk_era = svc.empire_service.get_current_era(_atk_emp)
+                _atk_era_idx = _ERA_ORDER_PVP.index(_atk_era) if _atk_era in _ERA_ORDER_PVP else 0
+                if _atk_era_idx > def_era_idx:
+                    pvp_gold_bonus = battle.defender_gold_earned
+                    battle.defender.resources["gold"] = (
+                        battle.defender.resources.get("gold", 0.0) + pvp_gold_bonus
+                    )
+                    log.info(
+                        "[battle] bid=%d PvP gold bonus: +%.1f for defender uid=%d"
+                        " (attacker era %s > defender era %s)",
+                        bid, pvp_gold_bonus, battle.defender.uid, _atk_era,
+                        svc.empire_service.get_current_era(battle.defender),
+                    )
+                    break
+
+        if attacker_won or stolen_artifacts:
+            await battle_svc.send_summary(battle, send_fn, loot, ruler_xp_gained, pvp_gold_bonus, ruler_xp_pvp_bonus)
+        elif not _summary_sent:
+            await battle_svc.send_summary(battle, send_fn, loot={}, ruler_xp_gained=ruler_xp_gained, pvp_gold_bonus=pvp_gold_bonus, ruler_xp_pvp_bonus=ruler_xp_pvp_bonus)
 
         from gameserver.models.attack import AttackPhase
         from gameserver.engine.ai_service import AI_UID
@@ -313,6 +343,10 @@ async def _run_battle_task(
                         art_winner_name = art_winner_emp.name if art_winner_emp else str(art_winner_uid)
                         loot_def_lines += f"⚜ {art_name} stolen by {art_winner_name}\n"
 
+                pvp_bonus_line = (
+                    f"⚡ PvP Bonus:  +{int(pvp_gold_bonus)} gold (×2 vs player)\n"
+                    if pvp_gold_bonus > 0 else ""
+                )
                 def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
                 def_body = (
                     f"{def_result}\n"
@@ -325,6 +359,7 @@ async def _run_battle_task(
                     f"🏰 Reached:   {battle.critters_reached}\n"
                     f"🗼 Towers:    {len(battle.structures)}\n"
                     f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
+                    f"{pvp_bonus_line}"
                     f"{loot_def_lines}"
                     f"⏱ Duration:  {dur_str}\n"
                     f"────────────────────\n"
@@ -377,7 +412,14 @@ async def _run_battle_task(
 
                     ruler_xp_line = ""
                     if uid in ruler_xp_gained:
-                        ruler_xp_line = f"👑 Ruler XP:  +{int(ruler_xp_gained[uid])}\n"
+                        xp_bonus = ruler_xp_pvp_bonus.get(uid, 0.0) if ruler_xp_pvp_bonus else 0.0
+                        xp_bonus_note = f" (incl. ⚡+{int(xp_bonus)} era bonus)" if xp_bonus > 0 else ""
+                        ruler_xp_line = f"👑 Ruler XP:  +{int(ruler_xp_gained[uid])}{xp_bonus_note}\n"
+                    ruler_steal_line = ""
+                    if battle.ruler_reached_goal:
+                        _cfg_default = getattr(svc.game_config, "ruler_artifact_steal_bonus", 0.15) if svc.game_config else 0.15
+                        _steal_pct = int(emp.get_effect("ruler_artifact_steal_bonus", _cfg_default) * 100) if emp is not None else int(_cfg_default * 100)
+                        ruler_steal_line = f"⚜ Ruler bonus: +{_steal_pct}% artifact steal chance\n"
                     atk_result = "⚔ You Won!" if not defender_won else "⚔ You Lost!"
                     atk_body = (
                         f"{atk_result}\n"
@@ -390,6 +432,7 @@ async def _run_battle_task(
                         f"🏰 Reached:   {battle.critters_reached}\n"
                         f"{loot_atk_lines}"
                         f"{ruler_xp_line}"
+                        f"{ruler_steal_line}"
                         f"⏱ Duration:  {dur_str}\n"
                         f"────────────────────\n"
                         f"▶ Replay: #replay/{replay_key}"
@@ -404,15 +447,25 @@ async def _run_battle_task(
             _get_active_battles().pop(battle.defender.uid, None)
 
 
-def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> "dict[int, float]":
+def _award_ruler_xp(
+    battle: "BattleState", svc: Any, attacker_won: bool
+) -> "tuple[dict[int, float], dict[int, float]]":
     """Award XP to the ruler of each human attacker empire based on battle outcome.
 
-    Returns a dict mapping uid -> xp_gained for uids whose ruler participated.
+    Returns (gained, pvp_xp_bonus):
+        gained       – uid -> total XP awarded (including any bonus)
+        pvp_xp_bonus – uid -> bonus XP from attacking a higher-era defender (0 if none)
     """
     from gameserver.engine.ai_service import AI_UID
     gained: dict[int, float] = {}
+    pvp_xp_bonus: dict[int, float] = {}
     if svc.empire_service is None:
-        return gained
+        return gained, pvp_xp_bonus
+    era_order = svc.empire_service._ERA_ORDER
+    def_era_idx = 0
+    if battle.defender is not None:
+        def_era_key = svc.empire_service.get_current_era(battle.defender)
+        def_era_idx = era_order.index(def_era_key) + 1 if def_era_key in era_order else 1
     for army in battle.armies.values():
         uid = army.uid
         if uid == AI_UID:
@@ -424,27 +477,34 @@ def _award_ruler_xp(battle: "BattleState", svc: Any, attacker_won: bool) -> "dic
         ruler_type = emp.ruler.type if emp.ruler else ""
         if not ruler_type or not any(w.iid == ruler_type for w in army.waves):
             continue
-        xp = 0.0
-        era_idx = 1
-        if battle.defender is not None:
-            era_key = svc.empire_service.get_current_era(battle.defender)
-            era_order = svc.empire_service._ERA_ORDER
-            era_idx = era_order.index(era_key) + 1 if era_key in era_order else 1
         gc = svc.game_config
         xp_per_kill = gc.ruler_xp_per_kill if gc else 1.0
         xp_per_reached = gc.ruler_xp_per_reached_per_era if gc else 10.0
         xp_victory = gc.ruler_xp_victory_per_era if gc else 50.0
+        xp = 0.0
         xp += float(battle.kills_era_xp_sum) * xp_per_kill
-        xp += float(battle.critters_reached) * xp_per_reached * era_idx
+        xp += float(battle.critters_reached) * xp_per_reached * def_era_idx
         if attacker_won:
-            xp += xp_victory * era_idx * era_idx
+            xp += xp_victory * def_era_idx * def_era_idx
+        # Double XP when the defender is in a higher era than the attacker
+        atk_era_key = svc.empire_service.get_current_era(emp)
+        atk_era_idx = era_order.index(atk_era_key) + 1 if atk_era_key in era_order else 1
+        bonus = 0.0
+        if def_era_idx > atk_era_idx and xp > 0:
+            bonus = xp
+            xp *= 2
         if xp > 0:
             emp.ruler.xp += xp
             emp.ruler.level = svc.empire_service.ruler_level_from_xp(emp.ruler.xp)
             svc.empire_service.recalculate_effects(emp)
             gained[uid] = xp
-            log.info("[ruler_xp] uid=%d ruler='%s' +%.0f XP (total=%.0f level=%d)", uid, emp.ruler.name, xp, emp.ruler.xp, emp.ruler.level)
-    return gained
+            pvp_xp_bonus[uid] = bonus
+            log.info(
+                "[ruler_xp] uid=%d ruler='%s' +%.0f XP (total=%.0f level=%d%s)",
+                uid, emp.ruler.name, xp, emp.ruler.xp, emp.ruler.level,
+                f", incl. +{bonus:.0f} era-advantage bonus" if bonus > 0 else "",
+            )
+    return gained, pvp_xp_bonus
 
 
 def _apply_artifact_steal(
@@ -471,13 +531,17 @@ def _apply_artifact_steal(
     effect_key = "artifact_steal_victory_modifier" if attacker_won else "artifact_steal_defeat_modifier"
     base_cfg_key = "base_artifact_steal_victory" if attacker_won else "base_artifact_steal_defeat"
     base_chance = getattr(cfg, base_cfg_key, 0.5 if attacker_won else 0.05) if cfg else (0.5 if attacker_won else 0.05)
+    cfg_ruler_steal_default = getattr(cfg, "ruler_artifact_steal_bonus", 0.15) if cfg else 0.15
 
     # Per-attacker chance computed once before any transfers (attacker_chances stays fixed)
     attacker_chances: list[tuple[int, float]] = []
     for uid in human_uids:
         emp = svc.empire_service.get(uid) if svc.empire_service else None
         modifier = emp.get_effect(effect_key, 0.0) if emp is not None else 0.0
-        attacker_chances.append((uid, base_chance + modifier))
+        ruler_steal_bonus = 0.0
+        if battle.ruler_reached_goal:
+            ruler_steal_bonus = emp.get_effect("ruler_artifact_steal_bonus", cfg_ruler_steal_default) if emp is not None else cfg_ruler_steal_default
+        attacker_chances.append((uid, base_chance + modifier + ruler_steal_bonus))
 
     stolen: list[tuple[str, int]] = []
 
@@ -692,6 +756,12 @@ def _create_attack_phase_handler() -> Callable[..., Any]:
             "new_phase": event.new_phase,
         }
 
+        # Spy in_siege: add fake wave info so the defender's preview looks plausible
+        if event.new_phase == "in_siege" and svc.attack_service:
+            _atk = svc.attack_service.get(event.attack_id)
+            if _atk and _atk.is_spy and _atk.fake_wave_info:
+                push_msg["wave_info"] = _atk.fake_wave_info
+
         if svc.server:
             await svc.server.send_to(attacker_uid, push_msg)
             await svc.server.send_to(defender_uid, push_msg)
@@ -885,7 +955,7 @@ def _create_battle_start_handler() -> Callable[..., Any]:
                     if defender_empire_j else 0.0
                 )
                 for _i, _wave in enumerate(attacking_army.waves):
-                    _wave.next_critter_ms = int(_i * _initial_delay_ms) + (_i + 1) * _wave_delay_offset_ms
+                    _wave.next_critter_ms = int(_i * (_initial_delay_ms + _wave_delay_offset_ms))
                     _wave.num_critters_spawned = 0
 
                 # Send the existing battle setup to the new attacker
@@ -1005,6 +1075,7 @@ def _create_battle_start_handler() -> Callable[..., Any]:
             log.info("[battle:start_requested] SUCCESS: battle %d created (attacker=%d, defender=%d)",
                      bid, attacker_uid, defender_uid)
 
+            from gameserver.engine.battle_service import _shot_visual_type
             setup_msg = {
                 "type": "battle_setup",
                 "bid": bid,
@@ -1013,12 +1084,16 @@ def _create_battle_start_handler() -> Callable[..., Any]:
                 "attacker_uid": attacker_uid,
                 "attacker_uids": [attacker_uid],
                 "defender_name": defender_empire.name if defender_empire else "",
+                "defender_max_life": defender_empire.max_life if defender_empire else 10,
                 "attacker_name": attacker_empire.name if attacker_empire else "",
                 "attacker_army_name": attacking_army.name if attacking_army else "",
                 "tiles": tiles,
                 "structures": [
                     {"sid": s.sid, "iid": s.iid, "q": s.position.q, "r": s.position.r,
-                     "damage": s.damage, "range": s.range, "select": s.select}
+                     "damage": s.damage, "range": s.range, "select": s.select,
+                     "shot_type": _shot_visual_type(s.effects),
+                     "shot_sprite": s.shot_sprite, "shot_sprite_scale": s.shot_sprite_scale,
+                     "projectile_y_offset": s.projectile_y_offset}
                     for s in structures_dict.values()
                 ],
                 "path": [{"q": h.q, "r": h.r} for h in critter_path],
@@ -1042,7 +1117,7 @@ def _create_battle_start_handler() -> Callable[..., Any]:
             log.info("[battle:wave_timers] defender=%d wave_delay_offset=%.0fms initial_delay=%.0fms",
                      defender_uid, _wave_delay_offset_ms, _initial_delay_ms)
             for _i, _wave in enumerate(attacking_army.waves):
-                _wave.next_critter_ms = int(_i * _initial_delay_ms) + (_i + 1) * _wave_delay_offset_ms
+                _wave.next_critter_ms = int(_i * (_initial_delay_ms + _wave_delay_offset_ms))
                 _wave.num_critters_spawned = 0
                 log.info("[battle:wave_timers] wave[%d] next_critter_ms=%.0f", _i, _wave.next_critter_ms)
 

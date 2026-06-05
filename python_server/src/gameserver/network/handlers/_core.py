@@ -53,6 +53,22 @@ _next_wid: int = 1  # Wave ID counter
 _services: Optional[Services] = None
 
 
+def sync_wid_counter(empires: dict) -> None:
+    """Set _next_wid above the highest wave_id across all empires.
+
+    Must be called after loading state so new wave IDs never collide with existing ones.
+    """
+    global _next_wid
+    max_wid = 0
+    for empire in empires.values():
+        for army in empire.armies:
+            for wave in army.waves:
+                if wave.wave_id > max_wid:
+                    max_wid = wave.wave_id
+    _next_wid = max_wid + 1
+    log.info("Wave ID counter synced: next_wid=%d", _next_wid)
+
+
 def _svc() -> Services:
     """Get the Services container. Raises if not initialized."""
     assert _services is not None, "handlers: services not initialized"

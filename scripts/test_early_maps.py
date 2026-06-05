@@ -37,7 +37,7 @@ TARGET_MAP_NAMES = {
     "2 Basic Tower (len: 4)",
 }
 
-TARGET_SECTIONS = {"STEINZEIT", "NEOLITH"}  # substring match on section headers
+TARGET_SECTIONS = {"STONE", "NEOLITH"}  # substring match on section headers
 
 CONFIG_DIR = str(Path(__file__).resolve().parent / "python_server" / "config")
 SAVED_MAPS_PATH = Path(__file__).resolve().parent / "python_server" / "config" / "saved_maps.yaml"
@@ -96,7 +96,7 @@ def load_early_armies(game_config) -> list[tuple[str, Army]]:
         armies.append((entry.get("name", f"Army #{aid}"), Army(aid=aid, uid=0, name=entry.get("name", ""), waves=waves)))
         aid += 1
 
-    # Filter: keep only armies whose index in ai_waves.yaml falls before BRONZEZEIT.
+    # Filter: keep only armies whose index in ai_waves.yaml falls before BRONZE_AGE.
     # We do this by re-reading the file and collecting army names per section.
     early_names: set[str] = set()
     raw_text = AI_WAVES_PATH.read_text()
@@ -106,8 +106,8 @@ def load_early_armies(game_config) -> list[tuple[str, Army]]:
         if stripped.startswith("#"):
             upper = stripped.lstrip("#").strip().upper()
             # New section header
-            if any(kw in upper for kw in ("STEINZEIT", "NEOLITH", "BRONZEZEIT", "EISEN",
-                                           "MITTEL", "RENAIS", "INDUSTR", "MODERN", "ZUKUNFT")):
+            if any(kw in upper for kw in ("STONE", "NEOLITH", "BRONZE", "IRON",
+                                           "MIDDLE", "RENAIS", "INDUSTR", "MODERN", "FUTURE")):
                 current_early = any(kw in upper for kw in TARGET_SECTIONS)
         elif stripped.startswith("- name:") and current_early:
             name = stripped[len("- name:"):].strip().strip('"').strip("'")

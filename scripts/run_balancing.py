@@ -56,15 +56,15 @@ TOWER_ERA: dict[str, str] = {
 
 # Section keywords in ai_waves.yaml → era label
 ERA_KEYWORDS = [
-    ("ZUKUNFT", "Future"),
+    ("FUTURE", "Future"),
     ("MODERN", "Modern"),
     ("INDUSTR", "Industrial"),
     ("RENAIS", "Renaissance"),
-    ("MITTEL", "Middle Ages"),
-    ("EISEN", "Iron Age"),
+    ("MIDDLE", "Middle Ages"),
+    ("IRON", "Iron Age"),
     ("BRONZE", "Bronze Age"),
     ("NEOLITH", "Neolithic"),
-    ("STEIN", "Stone Age"),
+    ("STONE", "Stone Age"),
 ]
 
 

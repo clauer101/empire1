@@ -64,10 +64,23 @@ server {
     }
 }
 
+# ── Prod: www → non-www redirect (HTTPS) ─────────────────────────────────────
+server {
+    listen 443 ssl;
+    server_name www.relicsnrockets.io;
+
+    ssl_certificate     /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    return 301 https://relicsnrockets.io$request_uri;
+}
+
 # ── Prod ──────────────────────────────────────────────────────────────────────
 server {
     listen 443 ssl;
-    server_name relicsnrockets.io www.relicsnrockets.io;
+    server_name relicsnrockets.io;
 
     ssl_certificate     /etc/nginx/ssl/fullchain.pem;
     ssl_certificate_key /etc/nginx/ssl/server.key;

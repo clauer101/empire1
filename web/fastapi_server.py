@@ -50,15 +50,15 @@ _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
 
 # ERA_PATTERNS kept only for ai_waves.yaml which has no per-entry era fields
 _ERA_PATTERNS = [
-    ("stone",        re.compile(r'#\s+STEINZEIT')),
-    ("neolithic",    re.compile(r'#\s+NEOLITHIKUM')),
-    ("bronze",       re.compile(r'#\s+BRONZEZEIT')),
-    ("iron",         re.compile(r'#\s+EISENZEIT')),
-    ("middle_ages",  re.compile(r'#\s+MITTELALTER')),
+    ("stone",        re.compile(r'#\s+STONE_AGE')),
+    ("neolithic",    re.compile(r'#\s+NEOLITHIC')),
+    ("bronze",       re.compile(r'#\s+BRONZE_AGE')),
+    ("iron",         re.compile(r'#\s+IRON_AGE')),
+    ("middle_ages",  re.compile(r'#\s+MIDDLE_AGES')),
     ("renaissance",  re.compile(r'#\s+RENAISSANCE')),
-    ("industrial",   re.compile(r'#\s+INDUSTRIALIS')),
-    ("modern",       re.compile(r'#\s+MODERNE')),
-    ("future",       re.compile(r'#\s+ZUKUNFT')),
+    ("industrial",   re.compile(r'#\s+INDUSTRIAL')),
+    ("modern",       re.compile(r'#\s+MODERN')),
+    ("future",       re.compile(r'#\s+FUTURE')),
 ]
 
 _ERA_INFO = {
@@ -166,15 +166,15 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
         "#                game.yaml).  Omit to use the default.\n"
         "#\n"
         "# ── Progression overview ────────────────────────────────────\n"
-        "#   Steinzeit      →  SLAVE / WARRIOR / SCOUT\n"
-        "#   Neolithikum    →  CLUBMAN / SCOUT / WARRIOR\n"
-        "#   Bronzezeit     →  BOWMAN / SWORDMAN / CHARIOT\n"
-        "#   Eisenzeit      →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
-        "#   Mittelalter    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
+        "#   Stone Age      →  SLAVE / WARRIOR / SCOUT\n"
+        "#   Neolithic      →  CLUBMAN / SCOUT / WARRIOR\n"
+        "#   Bronze Age     →  BOWMAN / SWORDMAN / CHARIOT\n"
+        "#   Iron Age       →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
+        "#   Middle Ages    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
         "#   Renaissance    →  NINJA / MUSKETEER / DRAGOONER\n"
-        "#   Industrialis.  →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
-        "#   Moderne        →  SPECOPS / HELI\n"
-        "#   Zukunft        →  MECH_WARRIOR\n"
+        "#   Industrial     →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
+        "#   Modern         →  SPECOPS / HELI\n"
+        "#   Future         →  MECH_WARRIOR\n"
         "# ============================================================\n"
         "\n"
         "armies:\n"
@@ -188,9 +188,9 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
 
     # Map lowercase English era keys → YAML comment markers used in ai_waves.yaml
     _ERA_COMMENT_KEY = {
-        "stone": "STEINZEIT", "neolithic": "NEOLITHIKUM", "bronze": "BRONZEZEIT",
-        "iron": "EISENZEIT", "middle_ages": "MITTELALTER", "renaissance": "RENAISSANCE",
-        "industrial": "INDUSTRIALISIERUNG", "modern": "MODERNE", "future": "ZUKUNFT",
+        "stone": "STONE_AGE", "neolithic": "NEOLITHIC", "bronze": "BRONZE_AGE",
+        "iron": "IRON_AGE", "middle_ages": "MIDDLE_AGES", "renaissance": "RENAISSANCE",
+        "industrial": "INDUSTRIAL", "modern": "MODERN", "future": "FUTURE",
     }
 
     lines = [header]
@@ -207,10 +207,6 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
             lines.append(f"  - name: {json.dumps(w['name'], ensure_ascii=False)}")
             if "travel_time" in w:
                 lines.append(f"    travel_time: {int(w['travel_time'])}")
-            if "siege_time" in w:
-                lines.append(f"    siege_time: {int(w['siege_time'])}")
-            if w.get("time_between") is not None:
-                lines.append(f"    time_between: {int(w['time_between'])}")
             if "trigger" in w:
                 trig = w["trigger"]
                 lines.append("    trigger:")
@@ -803,7 +799,7 @@ def _set_era_field_in_yaml(path: Path, iid: str, era: str) -> None:
 
 @app.patch("/api/critter-era")
 async def patch_critter_era(changes: dict = Body(...)):
-    """Set era for critters. Body: { IID: 'Eisenzeit', ... }"""
+    """Set era for critters. Body: { IID: 'iron', ... }"""
     for iid, era in changes.items():
         _set_era_field_in_yaml(CRITTERS_PATH, str(iid), str(era))
     return {"ok": True}
@@ -1102,7 +1098,20 @@ async def get_rulers():
             result.append({
                 "iid": iid,
                 "name": data.get("name", ""),
+                "description": data.get("description", ""),
                 "type": data.get("type", ""),
+                "health_min": data.get("health_min", 10),
+                "health_max": data.get("health_max", 100),
+                "armour_min": data.get("armour_min", 0),
+                "armour_max": data.get("armour_max", 10),
+                "speed_min":  data.get("speed_min",  0.5),
+                "speed_max":  data.get("speed_max",  1.0),
+                "damage_min": data.get("damage_min", 1),
+                "damage_max": data.get("damage_max", 30),
+                "value_min":  data.get("value_min",  10),
+                "value_max":  data.get("value_max",  1000),
+                "scale_base": data.get("scale_base", 1.0),
+                "animation":  data.get("animation",  ""),
                 "q": _ability(data.get("q", {})),
                 "w": _ability(data.get("w", {})),
                 "e": _ability(data.get("e", {})),
@@ -1133,7 +1142,20 @@ async def save_rulers(request: Request):
                 return {"name": "", "description": "", "levels": val or []}
             raw[iid] = {
                 "name": item.get("name", ""),
+                "description": item.get("description", ""),
                 "type": item.get("type", ""),
+                "health_min": float(item.get("health_min", 10)),
+                "health_max": float(item.get("health_max", 100)),
+                "armour_min": float(item.get("armour_min", 0)),
+                "armour_max": float(item.get("armour_max", 10)),
+                "speed_min":  float(item.get("speed_min",  0.5)),
+                "speed_max":  float(item.get("speed_max",  1.0)),
+                "damage_min": float(item.get("damage_min", 1)),
+                "damage_max": float(item.get("damage_max", 30)),
+                "value_min":  float(item.get("value_min",  10)),
+                "value_max":  float(item.get("value_max",  1000)),
+                "scale_base": float(item.get("scale_base", 1.0)),
+                "animation":  item.get("animation", ""),
                 "q": _ability_out(item.get("q", {})),
                 "w": _ability_out(item.get("w", {})),
                 "e": _ability_out(item.get("e", {})),

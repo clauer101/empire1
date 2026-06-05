@@ -7,8 +7,8 @@ import re
 import sys
 import yaml
 
-ERAS = ['STEINZEIT', 'NEOLITHIKUM', 'BRONZEZEIT', 'EISENZEIT',
-        'MITTELALTER', 'RENAISSANCE', 'INDUSTRIELLE REVOLUTION', 'MODERNE ERA', 'ZUKUNFT']
+ERAS = ['STONE_AGE', 'NEOLITHIC', 'BRONZE_AGE', 'IRON_AGE',
+        'MIDDLE_AGES', 'RENAISSANCE', 'INDUSTRIAL', 'MODERN', 'FUTURE']
 
 ERA_RE = re.compile(r'^#\s+(' + '|'.join(ERAS) + ')', re.IGNORECASE)
 ITEM_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')

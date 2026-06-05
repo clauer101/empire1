@@ -158,15 +158,15 @@ def _write_ai_waves(waves_with_era: list[dict[str, Any]]) -> str:
         "#                game.yaml).  Omit to use the default.\n"
         "#\n"
         "# ── Progression overview ────────────────────────────────────\n"
-        "#   Steinzeit      →  SLAVE / WARRIOR / SCOUT\n"
-        "#   Neolithikum    →  CLUBMAN / SCOUT / WARRIOR\n"
-        "#   Bronzezeit     →  BOWMAN / SWORDMAN / CHARIOT\n"
-        "#   Eisenzeit      →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
-        "#   Mittelalter    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
+        "#   Stone Age      →  SLAVE / WARRIOR / SCOUT\n"
+        "#   Neolithic      →  CLUBMAN / SCOUT / WARRIOR\n"
+        "#   Bronze Age     →  BOWMAN / SWORDMAN / CHARIOT\n"
+        "#   Iron Age       →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
+        "#   Middle Ages    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
         "#   Renaissance    →  NINJA / MUSKETEER / DRAGOONER\n"
-        "#   Industrialis.  →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
-        "#   Moderne        →  SPECOPS / HELI\n"
-        "#   Zukunft        →  MECH_WARRIOR\n"
+        "#   Industrial     →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
+        "#   Modern         →  SPECOPS / HELI\n"
+        "#   Future         →  MECH_WARRIOR\n"
         "# ============================================================\n"
         "\n"
         "armies:\n"
@@ -189,22 +189,22 @@ def _write_ai_waves(waves_with_era: list[dict[str, Any]]) -> str:
             lines.append(f"  - name: {json.dumps(w['name'], ensure_ascii=False)}")
             if "travel_time" in w:
                 lines.append(f"    travel_time: {int(w['travel_time'])}")
-            if "siege_time" in w:
-                lines.append(f"    siege_time: {int(w['siege_time'])}")
-            if w.get("time_between") is not None:
-                lines.append(f"    time_between: {int(w['time_between'])}")
-            if "trigger" in w:
+            if "trigger" in w and w["trigger"]:
                 trig = w["trigger"]
                 lines.append("    trigger:")
-                if "items" in trig:
+                if trig.get("items"):
                     items_str = ", ".join(trig["items"])
                     lines.append(f"      items: [{items_str}]")
-                if "citizen" in trig:
+                if trig.get("citizen"):
                     lines.append(f"      citizen: {trig['citizen']}")
-            lines.append("    waves:")
-            for unit in w.get("waves", []):
-                lines.append(f"      - critter: {unit['critter']}")
-                lines.append(f"        slots: {unit['slots']}")
+            wave_list = w.get("waves") or []
+            if wave_list:
+                lines.append("    waves:")
+                for unit in wave_list:
+                    lines.append(f"      - critter: {unit['critter']}")
+                    lines.append(f"        slots: {unit['slots']}")
+            else:
+                lines.append("    waves: []")
             lines.append("")
     return "\n".join(lines)
 
@@ -663,7 +663,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
     async def save_ai_waves(request: Request) -> Any:
         try:
             body = await request.json()
-            AI_WAVES_PATH.write_text(_write_ai_waves(body.get("waves", [])), encoding="utf-8")
+            AI_WAVES_PATH.write_text(_write_ai_waves(body.get("waves") or []), encoding="utf-8")
             return JSONResponse({"success": True})
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)

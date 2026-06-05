@@ -3,13 +3,13 @@
  *
  * Fetches /api/era-map once and caches it.  Response shape:
  *   {eras, info, critters, structures, buildings_knowledge}
- * where `eras` is the ordered list of German era display names (Steinzeit…Zukunft).
+ * where `eras` is the ordered list of English era keys (stone…future).
  *
  * Usage:
  *   <script src="era-map.js"></script>
  *   const em = await fetchEraMap();
  *   console.log(em.eras);          // ["stone", ...]
- *   console.log(em.critters);      // {Steinzeit: ["SLAVE", ...], ...}
+ *   console.log(em.critters);      // {stone: ["SLAVE", ...], ...}
  */
 
 let _eraMapCache = null;

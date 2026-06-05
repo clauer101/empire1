@@ -675,7 +675,7 @@ class TestSpyWorkshop:
         from unittest.mock import MagicMock
         svc = MagicMock()
         svc.upgrade_provider.items = {}
-        svc.empire_service.get_current_era = MagicMock(return_value="STEINZEIT")
+        svc.empire_service.get_current_era = MagicMock(return_value="stone")
         svc.empire_service._item_era_index = {}
         return svc
 

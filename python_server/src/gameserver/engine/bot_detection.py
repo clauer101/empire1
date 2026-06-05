@@ -115,6 +115,7 @@ class BotDetector:
         self._header_score: dict[int, float] = {}      # -1.0 = never seen
         self._user_agent: dict[int, str] = {}
         self._bot_probability: dict[int, float] = {}
+        self._is_bot: dict[int, bool] = {}
         self._last_header_persist: dict[int, float] = {}  # uid → monotonic time
 
     # ── Startup ───────────────────────────────────────────────────────────────
@@ -134,6 +135,12 @@ class BotDetector:
             self._user_agent[uid] = row.get("user_agent") or ""
             self._bot_probability[uid] = float(row.get("bot_probability") or 0.5)
         log.info("BotDetector loaded %d records", len(self._bot_probability))
+
+    def sync_from_empires(self, empires: Any) -> None:
+        """Initialise _is_bot from persisted Empire.is_bot values (call once after startup load)."""
+        values = empires.values() if hasattr(empires, "values") else empires
+        for empire in values:
+            self._is_bot[empire.uid] = bool(empire.is_bot)
 
     # ── Signal recording ──────────────────────────────────────────────────────
 
@@ -198,9 +205,23 @@ class BotDetector:
         else:
             self._bot_probability[uid] = _W_HEADER * h + _W_REACTION * r
 
+        # Hysteresis: flag set at ≥ 0.95, cleared only when < 0.50
+        prob = self._bot_probability[uid]
+        current = self._is_bot.get(uid, False)
+        if prob >= 0.95:
+            self._is_bot[uid] = True
+        elif prob < 0.50:
+            self._is_bot[uid] = False
+        else:
+            self._is_bot[uid] = current  # stay in current state
+
     def get_probability(self, uid: int) -> float:
         """Return bot probability in [0.0, 1.0]. Returns 0.5 when unknown."""
         return self._bot_probability.get(uid, 0.5)
+
+    def get_is_bot(self, uid: int) -> bool:
+        """Return the stable is_bot flag (hysteresis: set ≥ 0.95, cleared < 0.50)."""
+        return self._is_bot.get(uid, False)
 
     # ── Persistence ───────────────────────────────────────────────────────────
 

@@ -453,6 +453,8 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
     # Load persisted bot signals before opening connections
     if services.bot_detector is not None:
         await services.bot_detector.load_all()
+        if services.empire_service is not None:
+            services.bot_detector.sync_from_empires(services.empire_service.all_empires)
 
     await services.server.start()
     log.info("  WebSocket server listening on %s:%d", services.server._host, services.server._port)
@@ -675,6 +677,8 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
         services.empire_service.sync_aid_counter()
+        from gameserver.network.handlers._core import sync_wid_counter
+        sync_wid_counter(services.empire_service.all_empires)
         # Restore attacks (also advances the ID counter)
         if saved_state.attacks:
             services.attack_service.restore_attacks(saved_state.attacks)

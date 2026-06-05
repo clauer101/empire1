@@ -11,8 +11,9 @@
  *   overlay.destroy();                   // cleanup
  */
 
-import { fmtEffort, fmtEffectRow, fmtEffectsInline, fmtTowerEffects } from './format.js';
+import { fmtEffort, fmtSecs, fmtEffectRow, fmtEffectsInline, fmtTowerEffects } from './format.js';
 import { ERA_YAML_TO_KEY, ERA_LABEL_EN } from './eras.js';
+import { calcBuildSpeed, calcResearchSpeed } from './speed.js';
 
 export class ItemOverlay {
   constructor(state) {
@@ -114,7 +115,7 @@ export class ItemOverlay {
         ${desc ? `<div class="tt-dp-desc">${desc}</div>` : ''}
         <div class="tt-dp-props">
           ${eraLabel ? `<span class="tt-dp-label">Era:</span><span>${eraLabel}</span>` : ''}
-          ${effort != null ? `<span class="tt-dp-label">Effort:</span><span>${this._fmtEffort(effort)}</span>` : ''}
+          ${effort != null ? `<span class="tt-dp-label">Duration:</span><span>${this._fmtDuration(effort, 'knowledge')}</span>` : ''}
         </div>
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
@@ -144,7 +145,7 @@ export class ItemOverlay {
         ${desc ? `<div class="tt-dp-desc">${desc}</div>` : ''}
         <div class="tt-dp-props">
           ${eraLabel ? `<span class="tt-dp-label">Era:</span><span>${eraLabel}</span>` : ''}
-          ${effort != null ? `<span class="tt-dp-label">Effort:</span><span>${this._fmtEffort(effort)}</span>` : ''}
+          ${effort != null ? `<span class="tt-dp-label">Duration:</span><span>${this._fmtDuration(effort, 'building')}</span>` : ''}
           ${costsStr ? `<span class="tt-dp-label">Costs:</span><span>${costsStr}</span>` : ''}
         </div>
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
@@ -268,6 +269,16 @@ export class ItemOverlay {
 
   _fmtEffort(n) {
     return fmtEffort(n);
+  }
+
+  _fmtDuration(effort, category) {
+    if (effort == null) return '—';
+    const summary = this._st.summary;
+    if (!summary) return fmtEffort(effort);
+    const speed = category === 'knowledge'
+      ? calcResearchSpeed(summary)
+      : calcBuildSpeed(summary);
+    return speed > 0 ? fmtSecs(effort / speed) : fmtEffort(effort);
   }
 
   _fmtEffectRows(effects) {

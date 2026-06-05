@@ -244,7 +244,6 @@ class AttackService:
         defender_uid: int,
         army: Army,
         travel_seconds: float = 30.0,
-        siege_seconds: float | None = None,
     ) -> Attack | str:
         """Launch an AI attack against *defender_uid* using a pre-built army.
 
@@ -270,7 +269,6 @@ class AttackService:
             phase=AttackPhase.TRAVELING,
             eta_seconds=travel_seconds,
             total_eta_seconds=travel_seconds,
-            override_siege_seconds=siege_seconds,
         )
         self._next_attack_id += 1
         self._attacks.append(attack)
@@ -318,17 +316,9 @@ class AttackService:
                     ))
                     attack.phase = AttackPhase.FINISHED
                 else:
-                    # Use explicit siege_seconds as base if set, otherwise use config base;
-                    # always apply defender's SIEGE_TIME_OFFSET on top.
-                    if attack.override_siege_seconds is not None:
-                        siege_duration = self._calculate_siege_duration(
-                            attack.attacker_uid, attack.defender_uid,
-                            base_override=float(attack.override_siege_seconds),
-                        )
-                    else:
-                        siege_duration = self._calculate_siege_duration(
-                            attack.attacker_uid, attack.defender_uid
-                        )
+                    siege_duration = self._calculate_siege_duration(
+                        attack.attacker_uid, attack.defender_uid
+                    )
                     attack.siege_remaining_seconds = siege_duration
                     attack.total_siege_seconds = siege_duration
 

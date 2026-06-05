@@ -364,8 +364,8 @@
     rows = [...rows].sort((a, b) => {
       const av = a[colDef.key] ?? (typeof a[colDef.key] === 'number' ? 0 : '');
       const bv = b[colDef.key] ?? (typeof b[colDef.key] === 'number' ? 0 : '');
-      if (av < bv) return sortDir;
-      if (av > bv) return -sortDir;
+      if (av > bv) return sortDir;
+      if (av < bv) return -sortDir;
       return 0;
     });
 
@@ -458,8 +458,8 @@
     rows = [...rows].sort((a, b) => {
       const av = a[holdsSortCol] ?? 0;
       const bv = b[holdsSortCol] ?? 0;
-      if (av < bv) return holdsSortDir;
-      if (av > bv) return -holdsSortDir;
+      if (av > bv) return holdsSortDir;
+      if (av < bv) return -holdsSortDir;
       return 0;
     });
 

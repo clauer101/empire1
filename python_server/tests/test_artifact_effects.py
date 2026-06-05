@@ -32,12 +32,12 @@ def _make_service(items: list[ItemDetails]) -> EmpireService:
     svc = EmpireService.__new__(EmpireService)
     svc._upgrades = up
     svc._gc = gc
-    svc._ERA_ORDER = ["STEINZEIT"]
+    svc._ERA_ORDER = ["stone"]
     svc._base_gold = 0.0
     svc._base_culture = 0.0
     svc._base_build_speed = 1.0
     svc._base_research_speed = 1.0
-    svc.get_current_era = MagicMock(return_value="STEINZEIT")
+    svc.get_current_era = MagicMock(return_value="stone")
     return svc
 
 

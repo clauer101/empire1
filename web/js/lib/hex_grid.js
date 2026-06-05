@@ -108,6 +108,7 @@ export class HexGrid {
     this._partialReachable = null;
     this.battleCritters = new Map();
     this.battleShots = new Map();
+    this._structureBySid = new Map(); // sid → structure data from battle_setup
     this.battleActive = false;
 
     // Defender castle health bar
@@ -1002,18 +1003,18 @@ export class HexGrid {
 
   /** Update or add a critter with server data. */
   updateBattleCritter(data) {
-    // data: { cid, iid, path_progress, health, max_health, slow_remaining_ms, burn_remaining_ms, scale }
+    // Merge with existing entry: static fields (iid, max_health, scale) only present on first send.
+    const existing = this.battleCritters.get(data.cid) || {};
     this.battleCritters.set(data.cid, {
-      iid: data.iid,
-      path_progress: data.path_progress,
-      health: data.health,
-      max_health: data.max_health,
+      iid:              data.iid        ?? existing.iid,
+      max_health:       data.max_health ?? existing.max_health,
+      scale:            data.scale      ?? existing.scale ?? 1.0,
+      path_progress:    data.path_progress,
+      health:           data.health,
       slow_remaining_ms: data.slow_remaining_ms || 0,
       burn_remaining_ms: data.burn_remaining_ms || 0,
-      scale: data.scale ?? 1.0,
     });
     this.battleActive = true;
-    // No need to set dirty - continuous rendering during battle
   }
 
   /** Remove a critter (died or finished). */
@@ -1025,7 +1026,7 @@ export class HexGrid {
   /** Update the defender's castle life for the health bar. */
   setDefenderLives(life, maxLife) {
     this._defenderLife = life;
-    this._defenderMaxLife = maxLife;
+    if (maxLife != null) this._defenderMaxLife = maxLife;
     this._dirty = true;
   }
 
@@ -1067,28 +1068,31 @@ export class HexGrid {
 
   /** Update or add a shot with server data. */
   updateBattleShot(data) {
-    // data: { source_sid, target_cid, shot_type, path_progress, origin_q, origin_r }
+    // data: { source_sid, target_cid, path_progress }
+    // Static visual fields are looked up from _structureBySid (populated in battle_setup).
     const shot_id = `${data.source_sid}_${data.target_cid}`;
 
-    // Remove shot if path_progress >= 1.0 (arrived)
     if (data.path_progress >= 1.0) {
       this.battleShots.delete(shot_id);
       return;
     }
 
-    const shotSpriteUrl = data.shot_sprite ? '/' + data.shot_sprite : null;
+    // Prefer static data from battle_setup; fall back to per-shot fields (old replays)
+    const struct = this._structureBySid.get(data.source_sid) || {};
+    const rawSprite = data.shot_sprite ?? struct.shot_sprite ?? null;
+    const shotSpriteUrl = rawSprite ? '/' + rawSprite : null;
     if (shotSpriteUrl) this._ensureSpriteLoaded(shotSpriteUrl, false);
 
     this.battleShots.set(shot_id, {
-      source_sid: data.source_sid,
-      target_cid: data.target_cid,
-      shot_type: data.shot_type,
-      shot_sprite: shotSpriteUrl,
-      shot_sprite_scale: data.shot_sprite_scale ?? 1.0,
-      path_progress: data.path_progress,
-      origin_q: data.origin_q,
-      origin_r: data.origin_r,
-      projectile_y_offset: data.projectile_y_offset ?? 0.0,
+      source_sid:          data.source_sid,
+      target_cid:          data.target_cid,
+      shot_type:           data.shot_type           ?? struct.shot_type           ?? 0,
+      shot_sprite:         shotSpriteUrl,
+      shot_sprite_scale:   data.shot_sprite_scale   ?? struct.shot_sprite_scale   ?? 1.0,
+      path_progress:       data.path_progress,
+      origin_q:            data.origin_q            ?? struct.q                   ?? 0,
+      origin_r:            data.origin_r            ?? struct.r                   ?? 0,
+      projectile_y_offset: data.projectile_y_offset ?? struct.projectile_y_offset ?? 0.0,
     });
     this.battleActive = true;
   }
@@ -1097,6 +1101,7 @@ export class HexGrid {
   clearBattle() {
     this.battleCritters.clear();
     this.battleShots.clear();
+    this._structureBySid.clear();
     this.battleActive = false;
     // Path stays visible after battle ends (last setDisplayPath value is retained)
     this._dirty = true;

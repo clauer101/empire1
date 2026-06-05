@@ -125,6 +125,10 @@ class WaveChangeRequest(BaseModel):
     slots: Optional[int] = None
 
 
+class WaveReorderRequest(BaseModel):
+    wave_ids: list[int]
+
+
 class AttackRequest(BaseModel):
     target_uid: int = 0
     opponent_name: str = ""

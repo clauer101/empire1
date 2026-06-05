@@ -414,7 +414,7 @@ TREADWHEEL_CRANE:
   costs: {gold: 20000}
   requirements: [MECHANICS]
   effects:
-    build_speed_modifier: 0.2
+    build_speed_modifier: 0.4
 
 TEMPLE:
   era: iron
@@ -676,7 +676,7 @@ MERCHANT_GUILD:
   excludes: [COLONIAL_OFFICE]
   effects:
     gold_modifier: 0.4
-    gold_offset: 0.4
+    gold_offset: 0.8
 
 COLONIAL_OFFICE:
   era: middle_ages
@@ -688,7 +688,7 @@ COLONIAL_OFFICE:
   requirements: [MONARCHY, FEUDALISM]
   excludes: [MERCHANT_GUILD]
   effects:
-    tile_cost_modifier: 0.1
+    tile_cost_modifier: 0.2
     building_cost_modifier: 0.1
 
 # ============================================================

@@ -166,16 +166,24 @@ class AIService:
     ) -> None:
         """Called once when an empire completes a building or research item.
 
-        Finds every hardcoded wave whose trigger list contains *iid* AND
-        whose full trigger conditions are now satisfied, then dispatches them.
+        If a hardcoded wave in ai_waves.yaml has this item in its trigger list,
+        those armies are dispatched. Otherwise a random number of era-appropriate
+        adaptive armies is sent based on the chance_triggered_* weights in game.yaml.
         """
         empire = empire_service.get(empire_uid)
         if empire is None:
             return
 
+        if self._is_suppressed_item(iid):
+            log.info("[AI_ATTACK] Item '%s' completed for defender=%d — suppressed (no-spawn entry)", iid, empire_uid)
+            return
+
         matches = self._match_waves_for_item(empire, iid, empire_service=empire_service)
-        for army, travel_s, siege_s in matches:
-            self._send_army(empire_uid, empire, empire_service, attack_service, army, travel_s, siege_s)
+        if matches:
+            for army, travel_s in matches:
+                self._send_army(empire_uid, empire, empire_service, attack_service, army, travel_s)
+        else:
+            self._trigger_random_armies(empire_uid, empire, empire_service, attack_service, iid)
 
     def trigger_attacks(
         self,
@@ -274,7 +282,6 @@ class AIService:
         attack_service: AttackService,
         army: Army,
         travel_seconds: float | None = None,
-        siege_seconds: float | None = None,
     ) -> None:
         """Register *army* with the AI empire and dispatch the attack."""
         from gameserver.models.empire import Empire as EmpireModel
@@ -311,7 +318,6 @@ class AIService:
             defender_uid=defender_uid,
             army=army,
             travel_seconds=travel_s,
-            siege_seconds=siege_seconds,
         )
         if isinstance(attack, str):
             log.error("[AI_ATTACK] FAILED to start attack: %s", attack)
@@ -340,7 +346,7 @@ class AIService:
                 defender_uid,
             )
             return
-        army, travel_s, siege_s = result
+        army, travel_s = result
         log.info(
             "[AI_ATTACK] '%s' for defender=%d power=%.1f params=%s",
             army_name, defender_uid, player_power, _params_summary(self._params),
@@ -348,7 +354,122 @@ class AIService:
         self._send_army(defender_uid=defender_uid, empire=empire,
                         empire_service=empire_service,
                         attack_service=attack_service, army=army,
-                        travel_seconds=travel_s, siege_seconds=siege_s)
+                        travel_seconds=travel_s)
+
+    def _trigger_random_armies(
+        self,
+        defender_uid: int,
+        empire: "Empire",
+        empire_service: "EmpireService",
+        attack_service: "AttackService",
+        triggered_by_iid: str,
+    ) -> None:
+        """Dispatch 1–4 random era-appropriate armies from ai_waves.yaml.
+
+        The count is drawn from a weighted distribution defined by the
+        chance_triggered_* fields in game.yaml. Armies are selected from
+        hardcoded entries whose critters primarily belong to the player's
+        current era. travel_time is read directly from each yaml entry.
+        If all weights are zero the feature is disabled.
+        """
+        cfg = self._game_config
+        if cfg is None:
+            return
+
+        weights = [
+            getattr(cfg, "chance_triggered_one_army", 5),
+            getattr(cfg, "chance_triggered_two_armies", 4),
+            getattr(cfg, "chance_triggered_three_armies", 1),
+            getattr(cfg, "chance_triggered_four_armies", 0),
+        ]
+        if sum(weights) == 0:
+            return
+
+        item_details = (self._upgrades.items if self._upgrades else {}).get(triggered_by_iid.upper())
+        era_internal = item_details.era if item_details and item_details.era else empire_service.get_current_era(empire)
+        candidates = self._hardcoded_armies_for_era(era_internal)
+        if not candidates:
+            return
+
+        army_count: int = random.choices([1, 2, 3, 4], weights=weights)[0]
+        log.info(
+            "[AI_ATTACK] Item '%s' completed for defender=%d era=%s → %d triggered army attack(s) "
+            "(%d candidates)",
+            triggered_by_iid, defender_uid, era_internal, army_count, len(candidates),
+        )
+
+        from gameserver.models.army import Army, CritterWave
+        initial_delay_ms = cfg.initial_wave_delay_ms
+
+        for _ in range(army_count):
+            entry = random.choice(candidates)
+            army_def = entry.get("waves") or []
+            if not army_def:
+                continue
+
+            waves: list[CritterWave] = []
+            for i, wave_def in enumerate(army_def):
+                critter_iid = wave_def.get("critter", "")
+                slots = wave_def.get("slots", 1)
+                waves.append(CritterWave(
+                    wave_id=i + 1,
+                    iid=critter_iid.upper() if critter_iid else critter_iid,
+                    slots=float(slots),
+                    num_critters_spawned=0,
+                    next_critter_ms=int(i * initial_delay_ms),
+                ))
+
+            explicit_travel = float(entry.get("travel_time", 0) or 0)
+            travel_s = explicit_travel if explicit_travel else self._era_travel_seconds(empire, empire_service)
+
+            army = Army(aid=0, uid=AI_UID, name=entry.get("name", "AI Assault"), waves=waves)
+            self._send_army(defender_uid, empire, empire_service, attack_service, army, travel_s)
+
+    def _hardcoded_armies_for_era(self, era_internal: str) -> "list[dict[str, Any]]":
+        """Return hardcoded army entries whose critters are primarily from *era_internal*.
+
+        Uses the dominant era (most total slots) of each army to classify it.
+        Falls back to a broader search (≤ player era) if no exact match exists.
+        """
+        import os
+        from pathlib import Path
+        from gameserver.util.army_generator import parse_critter_era_groups, ERA_ORDER_INTERNAL
+
+        config_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config")
+        critters_yaml = Path(config_dir) / "critters.yaml"
+        try:
+            era_groups = parse_critter_era_groups(critters_yaml)
+        except Exception:
+            log.warning("[AI_ATTACK] Could not parse critters.yaml for era classification")
+            return self._hardcoded_waves
+
+        # Reverse map: UPPER_IID → era_internal
+        critter_to_era: dict[str, str] = {
+            iid.upper(): era
+            for era, iids in era_groups.items()
+            for iid in iids
+        }
+
+        era_idx = ERA_ORDER_INTERNAL.index(era_internal) if era_internal in ERA_ORDER_INTERNAL else 0
+
+        def dominant_era_idx(entry: "dict[str, Any]") -> int:
+            slots_by_era: dict[str, float] = {}
+            for wave_def in entry.get("waves") or []:
+                iid = (wave_def.get("critter") or "").upper()
+                era = critter_to_era.get(iid, ERA_ORDER_INTERNAL[0])
+                slots_by_era[era] = slots_by_era.get(era, 0.0) + float(wave_def.get("slots", 1))
+            if not slots_by_era:
+                return 0
+            dominant = max(slots_by_era, key=lambda e: slots_by_era[e])
+            return ERA_ORDER_INTERNAL.index(dominant) if dominant in ERA_ORDER_INTERNAL else 0
+
+        exact = [e for e in self._hardcoded_waves if dominant_era_idx(e) == era_idx]
+        if exact:
+            return exact
+
+        # No exact match → fall back to closest available era
+        broader = [e for e in self._hardcoded_waves if dominant_era_idx(e) <= era_idx]
+        return broader or self._hardcoded_waves
 
     def _era_travel_seconds(self, empire: "Empire", empire_service: "EmpireService") -> float:
         """Return the era-appropriate travel time for an AI attack targeting *empire*.
@@ -406,13 +527,23 @@ class AIService:
         total = building_score + research_score + culture_score + tile_score
         return max(total, self._game_config.ai_min_player_score)
 
+    def _is_suppressed_item(self, iid: str) -> bool:
+        """Return True if a hardcoded entry with empty waves claims this iid as its trigger."""
+        iid_upper = iid.upper()
+        for entry in self._hardcoded_waves:
+            trigger = entry.get("trigger") or {}
+            req_items = trigger.get("items") or []
+            if iid_upper in [x.upper() for x in req_items]:
+                if not entry.get("waves"):
+                    return True
+        return False
+
     def _match_waves_for_item(
         self,
         empire: "Empire",
         completed_iid: str,
         empire_service: "EmpireService | None" = None,
-    ) -> "list[tuple[Army, float, float | None]]":
-        """Return (Army, travel_seconds, siege_seconds) triples matching the completed item."""
+    ) -> "list[tuple[Army, float]]":
         """Return all Army entries whose trigger list contains *completed_iid*
         AND whose full trigger conditions are met.
         """
@@ -421,22 +552,15 @@ class AIService:
 
         from gameserver.models.army import Army, CritterWave
 
-        total_citizens = sum(empire.citizens.values())
-
         results = []
         for entry in self._hardcoded_waves:
             name = entry.get("name", "")
 
             trigger = entry.get("trigger") or {}
-            req_items   = trigger.get("items") or []
-            citizen_min = trigger.get("citizen", 999)
+            req_items = trigger.get("items") or []
 
-            # The completed item must appear in the trigger list
             iid_upper = completed_iid.upper()
-            in_items = iid_upper in [x.upper() for x in req_items]
-            citizen_trigger = total_citizens >= citizen_min
-
-            if not (in_items or citizen_trigger):
+            if iid_upper not in [x.upper() for x in req_items]:
                 continue
 
             army_def = entry.get("waves") or []
@@ -467,19 +591,17 @@ class AIService:
                 travel_s = self._era_travel_seconds(empire, empire_service)
             else:
                 travel_s = self._game_config.ai_travel_seconds if self._game_config else 30.0
-            raw_siege = entry.get("siege_time", 0) or 0
-            siege_s: float | None = float(raw_siege) if raw_siege else None
             log.info(
-                "[AI_ATTACK] Wave '%s' triggered by iid=%s for empire=%s travel=%.0fs siege=%s",
-                name, completed_iid, empire.uid, travel_s, siege_s,
+                "[AI_ATTACK] Wave '%s' triggered by iid=%s for empire=%s travel=%.0fs",
+                name, completed_iid, empire.uid, travel_s,
             )
-            results.append((Army(aid=aid, uid=AI_UID, name=name, waves=waves), travel_s, siege_s))
+            results.append((Army(aid=aid, uid=AI_UID, name=name, waves=waves), travel_s))
 
         return results
 
     def _match_hardcoded_wave(self, empire: "Empire",
-                              empire_service: "EmpireService | None" = None) -> "tuple[Army, float, float | None] | None":
-        """Return (Army, travel_seconds, siege_seconds) for the last matching hardcoded wave entry,
+                              empire_service: "EmpireService | None" = None) -> "tuple[Army, float] | None":
+        """Return (Army, travel_seconds) for the last matching hardcoded wave entry,
         or None if no entry matches."""
         if not self._hardcoded_waves:
             return None
@@ -539,13 +661,11 @@ class AIService:
                     travel_s = self._era_travel_seconds(empire, empire_service)
                 else:
                     travel_s = self._game_config.ai_travel_seconds if self._game_config else 30.0
-        raw_siege = last_match.get("siege_time", 0) or 0
-        siege_s: float | None = float(raw_siege) if raw_siege else None
-        log.info("[AI_ATTACK] Using hardcoded wave '%s' for defender uid=%s travel=%.0fs siege=%s", name, empire.uid, travel_s, siege_s)
-        return Army(aid=aid, uid=AI_UID, name=name, waves=waves), travel_s, siege_s
+        log.info("[AI_ATTACK] Using hardcoded wave '%s' for defender uid=%s travel=%.0fs", name, empire.uid, travel_s)
+        return Army(aid=aid, uid=AI_UID, name=name, waves=waves), travel_s
 
     def _build_army(self, empire: Empire, player_power: float, army_name: str = "AI Assault",
-                    empire_service: "EmpireService | None" = None) -> "tuple[Army, float, float | None] | None":
+                    empire_service: "EmpireService | None" = None) -> "tuple[Army, float] | None":
         """Construct a random era-appropriate Army using the shared army_generator logic."""
         from gameserver.models.army import Army, CritterWave
         from gameserver.util.army_generator import (
@@ -601,7 +721,7 @@ class AIService:
             else:
                 travel_s = self._game_config.ai_travel_seconds if self._game_config else 30.0
 
-        return Army(aid=0, uid=AI_UID, name=result["name"], waves=waves), travel_s, None
+        return Army(aid=0, uid=AI_UID, name=result["name"], waves=waves), travel_s
 
     # -- Barbarian periodic attacks ----------------------------------------
 

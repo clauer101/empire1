@@ -728,7 +728,7 @@ class BattleService:
                         critter.armour *= 1.0 + (cu.armour / 100.0) * iid_upgrades.get("armour", 0)
                     battle.critters[critter.cid] = critter
                     battle.critters_spawned += 1
-                    log.info("[SPAWN] Critter cid=%d (%s) owner=%d wave=%d (%.2f/%.2f, path=%d)",
+                    log.debug("[SPAWN] Critter cid=%d (%s) owner=%d wave=%d (%.2f/%.2f, path=%d)",
                              critter.cid, critter.iid, uid, wave.wave_id,
                              wave.num_critters_spawned, wave.slots, len(critter.path))
 
@@ -791,7 +791,21 @@ class BattleService:
         
         # Track defender losses for summary
         battle.defender_losses["life"] = battle.defender_losses.get("life", 0.0) + life_damage
-        
+
+        # Flag if a ruler critter reached the castle
+        if not battle.ruler_reached_goal:
+            try:
+                from gameserver.network.handlers._core import _svc as _core_svc
+                _s = _core_svc()
+                for _uid in battle.attacker_uids:
+                    _emp = _s.empire_service.get(_uid) if _s.empire_service else None
+                    if _emp and _emp.ruler and _emp.ruler.type == critter.iid:
+                        battle.ruler_reached_goal = True
+                        log.info("[battle] Ruler critter '%s' reached the castle (bid=%d)", critter.iid, battle.bid)
+                        break
+            except Exception:
+                pass
+
         # Give capture resources to the owning attacker
         owner_uid = critter.owner_uid or (battle.attacker_uids[0] if battle.attacker_uids else 0)
         if owner_uid and critter.capture:
@@ -828,7 +842,7 @@ class BattleService:
             log.info("[KILLED] Critter cid=%d (%s) killed — defender awarded %.1f gold (total: %.1f)",
                      critter.cid, critter.iid, critter.value, battle.defender.resources["gold"])
         else:
-            log.info("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f",
+            log.debug("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f",
                      critter.cid, critter.iid, critter.path_progress)
 
         if critter.spawn_on_death:
@@ -856,7 +870,7 @@ class BattleService:
                 spawn_progress = max(0.0, dead.path_progress - offset)
                 child = self._make_critter_from_item(iid, path=dead.path, path_progress=spawn_progress)
                 battle.critters[child.cid] = child
-                log.info("[SPAWN_ON_DEATH] Critter cid=%d (%s) spawned from dead cid=%d at progress=%.3f",
+                log.debug("[SPAWN_ON_DEATH] Critter cid=%d (%s) spawned from dead cid=%d at progress=%.3f",
                          child.cid, child.iid, dead.cid, spawn_progress)
                 spawn_idx += 1
 
@@ -869,56 +883,64 @@ class BattleService:
         send_fn: Callable[[int, dict[str, Any]], Awaitable[bool]],
     ) -> None:
         """Send battle_update delta to all observers with current critter positions."""
-        # Build critter snapshot for all active critters
-        critter_updates = []
+        # Opt 1: static fields (iid, max_health, scale) only for first-seen critters
+        new_critters: list[dict[str, Any]] = []
+        critter_updates: list[dict[str, Any]] = []
         for cid, critter in battle.critters.items():
-            critter_updates.append({
+            dyn: dict[str, Any] = {
                 "cid": cid,
-                "iid": critter.iid,
-                "health": critter.health,
-                "max_health": critter.max_health,
-                "path_progress": critter.path_progress,
-                "slow_remaining_ms": max(0, critter.slow_remaining_ms),
-                "burn_remaining_ms": max(0, critter.burn_remaining_ms),
-                "scale": critter.scale,
-            })
-        
-        # Build shot snapshot for all pending shots
-        shot_updates = []
+                "health": round(critter.health, 1),          # Opt 4
+                "path_progress": round(critter.path_progress, 3),  # Opt 4
+                "slow_remaining_ms": max(0, int(critter.slow_remaining_ms)),
+                "burn_remaining_ms": max(0, int(critter.burn_remaining_ms)),
+            }
+            if cid not in battle.seen_cids:
+                new_critters.append({
+                    **dyn,
+                    "iid": critter.iid,
+                    "max_health": critter.max_health,
+                    "scale": critter.scale,
+                })
+            else:
+                critter_updates.append(dyn)
+
+        # Update seen_cids: add all active, remove newly dead
+        battle.seen_cids.update(battle.critters.keys())
+        for rc in battle.removed_critters:
+            battle.seen_cids.discard(rc["cid"])
+
+        # Opt 3: shots carry only mutable fields; static fields come from battle_setup
+        shot_updates: list[dict[str, Any]] = []
         for shot in battle.pending_shots:
-            src_struct = battle.structures.get(shot.source_sid)
             shot_updates.append({
                 "source_sid": shot.source_sid,
                 "target_cid": shot.target_cid,
-                "shot_type": _shot_visual_type(shot.effects),
-                "shot_sprite": src_struct.shot_sprite if src_struct else "",
-                "shot_sprite_scale": src_struct.shot_sprite_scale if src_struct else 1.0,
-                "projectile_y_offset": src_struct.projectile_y_offset if src_struct else 0.0,
-                "path_progress": shot.path_progress,
-                "origin_q": shot.origin.q if shot.origin else 0,
-                "origin_r": shot.origin.r if shot.origin else 0,
+                "path_progress": round(shot.path_progress, 3),  # Opt 4
             })
-        
-        defender_life = battle.defender.resources.get("life", 0) if battle.defender else 0
-        defender_max_life = battle.defender.max_life if battle.defender else 10
 
+        defender_life = battle.defender.resources.get("life", 0) if battle.defender else 0
+        # Opt 5: defender_max_life sent once in battle_setup, not repeated here
+
+        # Opt 2: wave_info only when the list actually changed
         upcoming_waves = self.build_upcoming_waves(battle.armies)
-        wave_info = upcoming_waves[0] if upcoming_waves else None
-        wave_infos = upcoming_waves
+        wave_infos_json = str(upcoming_waves)
 
         msg: dict[str, Any] = {
             "type": "battle_update",
             "bid": battle.bid,
             "elapsed_ms": battle.elapsed_ms,
+            "new_critters": new_critters,
             "critters": critter_updates,
             "shots": shot_updates,
             "removed_critters": battle.removed_critters,
-            "defender_life": defender_life,
-            "defender_max_life": defender_max_life,
-            "wave_info": wave_info,
-            "wave_infos": wave_infos,
+            "defender_life": round(defender_life, 1),
         }
-        
+
+        if wave_infos_json != battle.last_wave_infos_json:
+            msg["wave_info"] = upcoming_waves[0] if upcoming_waves else None
+            msg["wave_infos"] = upcoming_waves
+            battle.last_wave_infos_json = wave_infos_json
+
         # Record for replay before clearing deltas
         if battle.recorder is not None:
             battle.recorder.record(battle.elapsed_ms, msg)
@@ -926,21 +948,42 @@ class BattleService:
         # Send to all observers (snapshot to avoid mutation during async iteration)
         for uid in list(battle.observer_uids):
             await send_fn(uid, msg)
-        
+
         # Clear removed_critters after broadcast
         battle.removed_critters = []
+
+    def _ruler_steal_bonus_per_attacker(self, battle: BattleState) -> dict[str, float]:
+        """Return per-attacker ruler steal bonus (already stacked in empire.effects) as {str(uid): value}."""
+        cfg_default = getattr(self._gc, "ruler_artifact_steal_bonus", 0.15) if self._gc else 0.15
+        result: dict[str, float] = {}
+        try:
+            from gameserver.network.handlers._core import _svc as _core_svc
+            _s = _core_svc()
+            for uid in battle.attacker_uids:
+                emp = _s.empire_service.get(uid) if _s.empire_service else None
+                result[str(uid)] = emp.get_effect("ruler_artifact_steal_bonus", cfg_default) if emp is not None else cfg_default
+        except Exception:
+            for uid in battle.attacker_uids:
+                result[str(uid)] = cfg_default
+        return result
 
     async def send_summary(
         self,
         battle: BattleState,
         send_fn: Callable[[int, dict[str, Any]], Awaitable[bool]],
         loot: dict[str, Any] | None = None,
+        ruler_xp_gained: dict[int, float] | None = None,
+        pvp_gold_bonus: float = 0.0,
+        ruler_xp_pvp_bonus: dict[int, float] | None = None,
     ) -> None:
         """Send battle_summary when battle ends.
-        
+
         Args:
             loot: Optional loot dict computed after battle ends (only on defender loss).
                   Shape: {knowledge, culture, artifact}
+            ruler_xp_gained: Optional dict mapping attacker uid -> XP gained this battle.
+            pvp_gold_bonus: Extra gold awarded to defender for surviving a human attacker.
+            ruler_xp_pvp_bonus: uid -> bonus XP from attacking a higher-era defender.
         """
         total_waves = sum(len(a.waves) for a in battle.armies.values())
         # army_names: uid → list of army names (one uid can have multiple armies)
@@ -969,6 +1012,7 @@ class BattleService:
             "attacker_gains": dict(battle.attacker_gains),
             "defender_losses": dict(battle.defender_losses),
             "defender_gold_earned": battle.defender_gold_earned,
+            "pvp_gold_bonus": round(pvp_gold_bonus),
             "critters_spawned": battle.critters_spawned,
             "critters_killed": battle.critters_killed,
             "critters_reached": battle.critters_reached,
@@ -976,6 +1020,10 @@ class BattleService:
             "num_waves": total_waves,
             "num_towers": len(battle.structures),
             "loot": loot or {},
+            "ruler_xp": {str(uid): round(xp) for uid, xp in (ruler_xp_gained or {}).items()},
+            "ruler_xp_pvp_bonus": {str(uid): round(xp) for uid, xp in (ruler_xp_pvp_bonus or {}).items() if xp > 0},
+            "ruler_reached_goal": battle.ruler_reached_goal,
+            "ruler_artifact_steal_bonus": self._ruler_steal_bonus_per_attacker(battle),
         }
 
         # Recompute the path from the defender's current tiles now that the battle is
