@@ -67,7 +67,7 @@ function _applyStructUpgrades(s, iid) {
   if (edLvl && ef.burn_duration) ef.burn_duration *= 1 + (d.effect_duration / 100) * edLvl;
   if (evLvl && ef.burn_dps) ef.burn_dps *= 1 + (d.effect_value / 100) * evLvl;
   if (edLvl && ef.slow_duration) ef.slow_duration *= 1 + (d.effect_duration / 100) * edLvl;
-  if (evLvl && ef.slow_ratio != null) ef.slow_ratio *= 1 + (d.effect_value / 100) * evLvl;
+  if (evLvl && ef.slow_ratio != null) ef.slow_ratio *= 1 - (d.effect_value / 100) * evLvl;
   return {
     ...s,
     damage: s.damage * (1 + (d.damage / 100) * dmgLvl),

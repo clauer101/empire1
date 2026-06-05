@@ -83,6 +83,19 @@ culture_era_advantage_ratio: 0.51
 base_artifact_steal_victory: 0.3
 base_artifact_steal_defeat: 0.04
 ruler_artifact_steal_bonus: 0.15
+# Army power threshold per era (stone→future). army_power = Σ count×health×(1+armour)×(1+speed).
+# Armies below the threshold for their era get a reduced steal chance (down to steal_min_multiplier).
+steal_power_thresholds:
+  - 80      # stone
+  - 500     # neolithic
+  - 800     # bronze
+  - 1500     # iron
+  - 5000    # middle_ages
+  - 20000    # renaissance
+  - 60000    # industrial
+  - 1200000   # modern
+  - 2500000   # future
+steal_min_multiplier: 0.10
 ruler_xp_per_kill: 1.0
 ruler_xp_per_reached_per_era: 20.0
 ruler_xp_victory_per_era: 50.0

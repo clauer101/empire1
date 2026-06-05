@@ -15,6 +15,8 @@ __all__ = [
     # private names explicitly exported for importers
     "_evict_observer_from_all",
     "_apply_artifact_steal",
+    "_army_power",
+    "_army_steal_multiplier",
     "_compute_and_apply_loot",
     "_sync_battle_structures",
     "_run_battle_task",
@@ -414,6 +416,8 @@ from gameserver.network.handlers.battle_task import (  # noqa: F401, E402
     _sync_battle_structures,
     _run_battle_task,
     _apply_artifact_steal,
+    _army_power,
+    _army_steal_multiplier,
     _compute_and_apply_loot,
     _create_item_completed_handler,
     _create_attack_phase_handler,

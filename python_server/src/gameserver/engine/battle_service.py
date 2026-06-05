@@ -439,14 +439,16 @@ class BattleService:
                     # Apply effect_duration and effect_value upgrades to shot effects
                     shot_effects = dict(structure.effects)
                     if su and (efdur_lvl > 0 or efval_lvl > 0):
-                        efdur_mult   = 1.0 + (su.effect_duration / 100.0) * efdur_lvl
-                        efval_mult   = 1.0 + (su.effect_value / 100.0) * efval_lvl
+                        efdur_mult     = 1.0 + (su.effect_duration / 100.0) * efdur_lvl
+                        efval_mult     = 1.0 + (su.effect_value / 100.0) * efval_lvl
+                        efval_mult_inv = 1.0 - (su.effect_value / 100.0) * efval_lvl
                         for k in ("slow_duration", "burn_duration"):
                             if k in shot_effects:
                                 shot_effects[k] = shot_effects[k] * efdur_mult
-                        for k in ("slow_ratio", "burn_dps"):
-                            if k in shot_effects:
-                                shot_effects[k] = shot_effects[k] * efval_mult
+                        if "burn_dps" in shot_effects:
+                            shot_effects["burn_dps"] = shot_effects["burn_dps"] * efval_mult
+                        if "slow_ratio" in shot_effects:
+                            shot_effects["slow_ratio"] = shot_effects["slow_ratio"] * efval_mult_inv
 
                     shot = Shot(
                         damage=structure.damage * damage_mult,
@@ -975,6 +977,7 @@ class BattleService:
         ruler_xp_gained: dict[int, float] | None = None,
         pvp_gold_bonus: float = 0.0,
         ruler_xp_pvp_bonus: dict[int, float] | None = None,
+        artifact_steal_chances: dict[int, float] | None = None,
     ) -> None:
         """Send battle_summary when battle ends.
 
@@ -1024,6 +1027,7 @@ class BattleService:
             "ruler_xp_pvp_bonus": {str(uid): round(xp) for uid, xp in (ruler_xp_pvp_bonus or {}).items() if xp > 0},
             "ruler_reached_goal": battle.ruler_reached_goal,
             "ruler_artifact_steal_bonus": self._ruler_steal_bonus_per_attacker(battle),
+            "artifact_steal_chances": {str(uid): c for uid, c in (artifact_steal_chances or {}).items()},
         }
 
         # Recompute the path from the defender's current tiles now that the battle is

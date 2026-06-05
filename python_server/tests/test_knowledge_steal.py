@@ -159,7 +159,7 @@ class TestAiDefeatNoKnowledgeSteal:
         svc.game_config.base_artifact_steal_victory = 1.0
         svc.game_config.base_artifact_steal_defeat = 1.0
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == []
         assert battle.defender.artifacts == ["CROWN"]
@@ -173,7 +173,7 @@ class TestAiDefeatNoKnowledgeSteal:
         svc = _make_svc()
         svc.game_config.base_artifact_steal_victory = 1.0
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == []
         assert battle.defender.artifacts == ["CROWN"]

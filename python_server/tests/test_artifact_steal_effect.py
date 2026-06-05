@@ -26,14 +26,19 @@ def _make_svc(attacker: Empire, base_victory: float = 0.5, base_defeat: float = 
     cfg = MagicMock()
     cfg.base_artifact_steal_victory = base_victory
     cfg.base_artifact_steal_defeat = base_defeat
+    cfg.steal_power_thresholds = [200.0]
+    cfg.steal_min_multiplier = 0.10
 
     empire_svc = MagicMock()
     empire_svc.get = MagicMock(return_value=attacker)
     empire_svc.recalculate_effects = MagicMock()
+    empire_svc.get_current_era = MagicMock(return_value="stone")
 
     svc = MagicMock()
     svc.game_config = cfg
     svc.empire_service = empire_svc
+    svc.upgrade_provider = MagicMock()
+    svc.upgrade_provider.items = {}
     return svc
 
 
@@ -47,7 +52,7 @@ class TestArtifactStealVictoryEffect:
         # base=0.0 means no steal — modifier doesn't help
         svc = _make_svc(attacker, base_victory=0.0)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == []
 
@@ -59,7 +64,7 @@ class TestArtifactStealVictoryEffect:
         # base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal
         svc = _make_svc(attacker, base_victory=0.5)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == [("ART", ATTACKER_UID)]
 
@@ -70,7 +75,7 @@ class TestArtifactStealVictoryEffect:
         attacker.effects["artifact_steal_victory_modifier"] = 0.6
         svc = _make_svc(attacker, base_victory=0.4)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert len(stolen) == 1
 
@@ -82,7 +87,7 @@ class TestArtifactStealVictoryEffect:
         # defeat_chance=0.0 → no steal regardless of victory modifier
         svc = _make_svc(attacker, base_victory=0.5, base_defeat=0.0)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == []
 
@@ -107,7 +112,7 @@ class TestArtifactStealDefeatEffect:
         defender.artifacts = ["ART"]
         svc = _make_svc(attacker, base_defeat=0.0)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == []
 
@@ -119,7 +124,7 @@ class TestArtifactStealDefeatEffect:
         # base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal
         svc = _make_svc(attacker, base_defeat=0.5)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == [("ART", ATTACKER_UID)]
 
@@ -130,7 +135,7 @@ class TestArtifactStealDefeatEffect:
         attacker.effects["artifact_steal_defeat_modifier"] = 100.0
         svc = _make_svc(attacker, base_victory=0.0, base_defeat=0.5)
 
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == []
 
@@ -161,6 +166,25 @@ class TestMultiAttackerEffects:
         )
         return battle, att1, att2, defender
 
+    def _make_multi_svc(self, empire_store, base_victory=0.5, base_defeat=0.0):
+        cfg = MagicMock()
+        cfg.base_artifact_steal_victory = base_victory
+        cfg.base_artifact_steal_defeat = base_defeat
+        cfg.steal_power_thresholds = [200.0]
+        cfg.steal_min_multiplier = 0.10
+
+        empire_svc = MagicMock()
+        empire_svc.get = MagicMock(side_effect=lambda uid: empire_store.get(uid))
+        empire_svc.recalculate_effects = MagicMock()
+        empire_svc.get_current_era = MagicMock(return_value="stone")
+
+        svc = MagicMock()
+        svc.game_config = cfg
+        svc.empire_service = empire_svc
+        svc.upgrade_provider = MagicMock()
+        svc.upgrade_provider.items = {}
+        return svc
+
     def test_each_attacker_uses_own_modifier(self):
         """att1 has modifier=-0.5 (base=0.5-0.5=0 → miss), att2 has modifier=0.5 → effective=1.0 → guaranteed."""
         battle, att1, att2, defender = self._make_multi_battle()
@@ -169,20 +193,9 @@ class TestMultiAttackerEffects:
         att1.effects["artifact_steal_victory_modifier"] = -0.5   # effective = 0.5 - 0.5 = 0.0
         att2.effects["artifact_steal_victory_modifier"] = 0.5    # effective = 0.5 + 0.5 = 1.0
 
-        cfg = MagicMock()
-        cfg.base_artifact_steal_victory = 0.5
-        cfg.base_artifact_steal_defeat = 0.0
+        svc = self._make_multi_svc({10: att1, 11: att2}, base_victory=0.5)
 
-        empire_store = {10: att1, 11: att2}
-        empire_svc = MagicMock()
-        empire_svc.get = MagicMock(side_effect=lambda uid: empire_store.get(uid))
-        empire_svc.recalculate_effects = MagicMock()
-
-        svc = MagicMock()
-        svc.game_config = cfg
-        svc.empire_service = empire_svc
-
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         # att1 misses (effective=0), att2 steals (effective=1.0)
         assert stolen == [("ART", 11)]
@@ -194,20 +207,9 @@ class TestMultiAttackerEffects:
         battle, att1, att2, defender = self._make_multi_battle()
         defender.artifacts = ["ART"]
 
-        cfg = MagicMock()
-        cfg.base_artifact_steal_victory = 1.0
-        cfg.base_artifact_steal_defeat = 0.0
+        svc = self._make_multi_svc({10: att1, 11: att2}, base_victory=1.0)
 
-        empire_store = {10: att1, 11: att2}
-        empire_svc = MagicMock()
-        empire_svc.get = MagicMock(side_effect=lambda uid: empire_store.get(uid))
-        empire_svc.recalculate_effects = MagicMock()
-
-        svc = MagicMock()
-        svc.game_config = cfg
-        svc.empire_service = empire_svc
-
-        stolen = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == [("ART", 10)]
         assert "ART" in att1.artifacts

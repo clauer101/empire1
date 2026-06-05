@@ -53,7 +53,7 @@ _next_wid: int = 1  # Wave ID counter
 _services: Optional[Services] = None
 
 
-def sync_wid_counter(empires: dict) -> None:
+def sync_wid_counter(empires: dict[int, Any]) -> None:
     """Set _next_wid above the highest wave_id across all empires.
 
     Must be called after loading state so new wave IDs never collide with existing ones.
@@ -148,6 +148,8 @@ from gameserver.network.handlers.battle import *  # noqa: E402,F401,F403
 from gameserver.network.handlers.battle import (  # noqa: E402,F401
     _evict_observer_from_all,
     _apply_artifact_steal,
+    _army_power,
+    _army_steal_multiplier,
     _compute_and_apply_loot,
 )
 

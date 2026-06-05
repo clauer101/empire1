@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class AttackPhase(Enum):
@@ -49,5 +50,5 @@ class Attack:
     total_siege_seconds: float = 30.0  # initial siege duration for progress calculation
     is_spy: bool = False  # spy attacks end immediately at IN_SIEGE instead of battling
     army_name_override: str = ""  # used by spy attacks whose army_aid is a virtual ID
-    fake_wave_info: "dict | None" = None  # spy: first wave of disguised army, for defense-view preview
+    fake_wave_info: "dict[str, Any] | None" = None  # spy: first wave of disguised army, for defense-view preview
 

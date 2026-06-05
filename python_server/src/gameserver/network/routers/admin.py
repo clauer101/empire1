@@ -325,11 +325,11 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_reset_password(username: str, body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.database is None:
             return {"ok": False, "error": "no database"}
-        import bcrypt
+        from gameserver.network.auth import _hash_password
         pw = body.get("password", "")
         if not pw:
             return {"ok": False, "error": "password required"}
-        pw_hash = bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+        pw_hash = _hash_password(pw)
         assert services.database._conn is not None
         async with services.database._conn.execute(
             "UPDATE users SET password_hash = ? WHERE username = ?", (pw_hash, username)
