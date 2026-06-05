@@ -507,7 +507,7 @@ def _award_ruler_xp(
     return gained, pvp_xp_bonus
 
 
-def _army_power(army: Any, items_by_iid: dict) -> float:
+def _army_power(army: Any, items_by_iid: dict[str, Any]) -> float:
     """Combat effectiveness score: Σ count × health × (1+armour) × (1+speed).
 
     Mirrors calcDifficulty() from web/tools/ai-waves.html.
@@ -526,10 +526,10 @@ def _army_power(army: Any, items_by_iid: dict) -> float:
     return score
 
 
-def _army_steal_multiplier(army: Any, era_idx: int, items_by_iid: dict, gc: Any) -> float:
+def _army_steal_multiplier(army: Any, era_idx: int, items_by_iid: dict[str, Any], gc: Any) -> float:
     """Return a [min_mult, 1.0] multiplier based on how powerful the army is for its era."""
     power = _army_power(army, items_by_iid)
-    thresholds: list = getattr(gc, "steal_power_thresholds", [200.0]) if gc else [200.0]
+    thresholds: list[float] = getattr(gc, "steal_power_thresholds", [200.0]) if gc else [200.0]
     idx = max(0, min(era_idx, len(thresholds) - 1))
     threshold = float(thresholds[idx])
     min_mult: float = getattr(gc, "steal_min_multiplier", 0.10) if gc else 0.10
