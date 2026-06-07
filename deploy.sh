@@ -9,6 +9,8 @@
 #   ./deploy.sh dev stop     # stop dev
 #   ./deploy.sh -f prod      # force deploy prod even if battles are ongoing
 #   ./deploy.sh -f           # force deploy both
+#   ./deploy.sh -w prod      # wait until no battles, then deploy prod
+#   ./deploy.sh -w           # wait until no battles, then deploy both
 
 set -euo pipefail
 
@@ -21,10 +23,13 @@ RED='\033[1;31m'
 NC='\033[0m'
 
 FORCE=0
+WAIT=0
 ARGS=()
 for arg in "$@"; do
     if [[ "$arg" == "-f" ]]; then
         FORCE=1
+    elif [[ "$arg" == "-w" ]]; then
+        WAIT=1
     else
         ARGS+=("$arg")
     fi
@@ -69,6 +74,28 @@ build_assets() {
     (export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && cd web && npm run build --silent)
 }
 
+# Returns the number of active battles for the given env/port, or 0 if unreachable.
+_get_battle_count() {
+    local port="$1"
+    local token_file=".admin-token-${2}"
+
+    if [[ ! -f "$token_file" ]]; then
+        echo "0"; return
+    fi
+    if ! curl -s --connect-timeout 1 "http://localhost:${port}/api/health" >/dev/null 2>&1; then
+        echo "0"; return
+    fi
+
+    local token resp
+    token=$(cat "$token_file")
+    resp=$(curl -s --connect-timeout 2 \
+        "http://localhost:${port}/api/admin/status" \
+        -H "Authorization: Bearer $token" 2>/dev/null || echo "{}")
+    echo "$resp" | python3 -c \
+        "import sys,json; d=json.load(sys.stdin); print(sum(1 for a in d.get('attacks',[]) if a.get('phase')=='in_battle'))" \
+        2>/dev/null || echo "0"
+}
+
 # Check for ongoing battles via the admin status API.
 # Prints a warning and returns 1 if battles are in progress, 0 otherwise.
 check_battles() {
@@ -85,24 +112,47 @@ check_battles() {
         return 0  # server not running, nothing to check
     fi
 
-    local token
-    token=$(cat "$token_file")
-    local resp
-    resp=$(curl -s --connect-timeout 2 \
-        "http://localhost:${port}/api/admin/status" \
-        -H "Authorization: Bearer $token" 2>/dev/null || echo "{}")
-
     local battle_count
-    battle_count=$(echo "$resp" | python3 -c \
-        "import sys,json; d=json.load(sys.stdin); print(sum(1 for a in d.get('attacks',[]) if a.get('phase')=='in_battle'))" \
-        2>/dev/null || echo "0")
+    battle_count=$(_get_battle_count "$port" "$env")
 
     if [[ "$battle_count" -gt 0 ]]; then
         echo -e "${RED}  ✗ $battle_count active battle(s) on $env — deploy aborted${NC}"
-        echo -e "${RED}    Use -f to force deployment${NC}"
+        echo -e "${RED}    Use -f to force, -w to wait${NC}"
         return 1
     fi
     return 0
+}
+
+# Wait until no battles are active, polling every 15 seconds.
+wait_for_no_battles() {
+    local env="$1"
+    local port="$2"
+    local token_file=".admin-token-${env}"
+
+    if [[ ! -f "$token_file" ]]; then
+        echo -e "${YELLOW}  [WARN] No $token_file — skipping battle wait${NC}"
+        return 0
+    fi
+    if ! curl -s --connect-timeout 1 "http://localhost:${port}/api/health" >/dev/null 2>&1; then
+        return 0  # server not running
+    fi
+
+    local battle_count
+    battle_count=$(_get_battle_count "$port" "$env")
+    if [[ "$battle_count" -eq 0 ]]; then
+        return 0
+    fi
+
+    echo -e "${YELLOW}  ⏳ $battle_count active battle(s) on $env — waiting...${NC}"
+    while true; do
+        sleep 15
+        battle_count=$(_get_battle_count "$port" "$env")
+        if [[ "$battle_count" -eq 0 ]]; then
+            echo -e "${GREEN}  No active battles — proceeding with deploy${NC}"
+            return 0
+        fi
+        echo -e "${YELLOW}  ⏳ Still $battle_count battle(s) — waiting...${NC}"
+    done
 }
 
 deploy() {
@@ -116,25 +166,17 @@ deploy() {
     echo " $(date '+%Y-%m-%d %H:%M:%S')"
     echo -e "========================================${NC}"
 
-    if [[ "$FORCE" -eq 0 ]]; then
+    if [[ "$FORCE" -eq 1 ]]; then
+        local bc
+        bc=$(_get_battle_count "$port" "$env")
+        if [[ "$bc" -gt 0 ]]; then
+            echo -e "${YELLOW}  ⚠ $bc active battle(s) on $env — deploying anyway (-f)${NC}"
+        fi
+    elif [[ "$WAIT" -eq 1 ]]; then
+        wait_for_no_battles "$env" "$port"
+    else
         if ! check_battles "$env" "$port"; then
             exit 1
-        fi
-    else
-        # Still run the check to print a warning, but don't abort
-        local token_file=".admin-token-${env}"
-        if [[ -f "$token_file" ]] && curl -s --connect-timeout 1 "http://localhost:${port}/api/health" >/dev/null 2>&1; then
-            local token resp battle_count
-            token=$(cat "$token_file")
-            resp=$(curl -s --connect-timeout 2 \
-                "http://localhost:${port}/api/admin/status" \
-                -H "Authorization: Bearer $token" 2>/dev/null || echo "{}")
-            battle_count=$(echo "$resp" | python3 -c \
-                "import sys,json; d=json.load(sys.stdin); print(sum(1 for a in d.get('attacks',[]) if a.get('phase')=='in_battle'))" \
-                2>/dev/null || echo "0")
-            if [[ "$battle_count" -gt 0 ]]; then
-                echo -e "${YELLOW}  ⚠ $battle_count active battle(s) on $env — deploying anyway (-f)${NC}"
-            fi
         fi
     fi
 
@@ -186,7 +228,7 @@ case "$TARGET" in
         deploy "dev"  "docker-compose.dev.yml" "empire1-dev" "8180"
         ;;
     *)
-        echo "Usage: $0 [-f] [prod|dev|both] [stop]" >&2
+        echo "Usage: $0 [-f|-w] [prod|dev|both] [stop]" >&2
         exit 1
         ;;
 esac

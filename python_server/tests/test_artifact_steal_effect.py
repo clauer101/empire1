@@ -52,7 +52,7 @@ class TestArtifactStealVictoryEffect:
         # base=0.0 means no steal — modifier doesn't help
         svc = _make_svc(attacker, base_victory=0.0)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == []
 
@@ -64,7 +64,7 @@ class TestArtifactStealVictoryEffect:
         # base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal
         svc = _make_svc(attacker, base_victory=0.5)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == [("ART", ATTACKER_UID)]
 
@@ -75,7 +75,7 @@ class TestArtifactStealVictoryEffect:
         attacker.effects["artifact_steal_victory_modifier"] = 0.6
         svc = _make_svc(attacker, base_victory=0.4)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert len(stolen) == 1
 
@@ -87,7 +87,7 @@ class TestArtifactStealVictoryEffect:
         # defeat_chance=0.0 → no steal regardless of victory modifier
         svc = _make_svc(attacker, base_victory=0.5, base_defeat=0.0)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == []
 
@@ -112,7 +112,7 @@ class TestArtifactStealDefeatEffect:
         defender.artifacts = ["ART"]
         svc = _make_svc(attacker, base_defeat=0.0)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == []
 
@@ -124,7 +124,7 @@ class TestArtifactStealDefeatEffect:
         # base=0.5 + modifier=0.5 → effective=1.0 → guaranteed steal
         svc = _make_svc(attacker, base_defeat=0.5)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=False)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=False)
 
         assert stolen == [("ART", ATTACKER_UID)]
 
@@ -135,7 +135,7 @@ class TestArtifactStealDefeatEffect:
         attacker.effects["artifact_steal_defeat_modifier"] = 100.0
         svc = _make_svc(attacker, base_victory=0.0, base_defeat=0.5)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == []
 
@@ -195,7 +195,7 @@ class TestMultiAttackerEffects:
 
         svc = self._make_multi_svc({10: att1, 11: att2}, base_victory=0.5)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         # att1 misses (effective=0), att2 steals (effective=1.0)
         assert stolen == [("ART", 11)]
@@ -209,7 +209,7 @@ class TestMultiAttackerEffects:
 
         svc = self._make_multi_svc({10: att1, 11: att2}, base_victory=1.0)
 
-        stolen, _ = _apply_artifact_steal(battle, svc, attacker_won=True)
+        stolen, *_ = _apply_artifact_steal(battle, svc, attacker_won=True)
 
         assert stolen == [("ART", 10)]
         assert "ART" in att1.artifacts

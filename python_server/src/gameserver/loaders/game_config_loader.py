@@ -156,11 +156,20 @@ class GameConfig:
     min_lose_culture: float = 0.01
     max_lose_culture: float = 0.05
     culture_era_advantage_ratio: float = 0.5
+    culture_steal_per_life_and_era: float = 2000.0
     artifact_steal_chance: float = 0.33
     base_artifact_steal_victory: float = 0.5
     base_artifact_steal_defeat: float = 0.05
     steal_power_thresholds: list[float] = field(default_factory=lambda: [80,180,400,800,1500,3000,6000,12000,25000])
     steal_min_multiplier: float = 0.10
+
+    # -- Ruler aura --------------------------------------------------
+    ruler_aura_effects: Dict[str, float] = field(default_factory=lambda: {
+        "slow_tower_modifier": 0.3,
+        "reduce_tower_damage": 0.3,
+        "increase_armour_modifier": 0.3,
+        "increase_critter_speed": 0.3,
+    })
 
     # -- Ruler XP rewards --------------------------------------------
     ruler_xp_per_kill: float = 1.0

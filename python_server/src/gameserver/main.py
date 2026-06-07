@@ -185,6 +185,9 @@ def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
             "damage_max": float(item.get("damage_max") or item.get("base_damage") or 30),
             "animation": item.get("animation", ""),
             "scale_base": float(item.get("scale_base", 1.0)),
+            "aura_min": float(item.get("aura_min", 0.0)),
+            "aura_max": float(item.get("aura_max", 0.0)),
+            "aura_effects": dict(item.get("aura_effects") or {}),
         }
     return result
 

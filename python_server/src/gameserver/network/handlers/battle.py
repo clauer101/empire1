@@ -104,6 +104,28 @@ async def _send_battle_state_to_observer(attack: "Attack", observer_uid: int) ->
             break
 
     if not attacking_army:
+        # Spy attacks use a virtual army_aid not present in the attacker's army list.
+        # During traveling, send a plausible battle_status using the prebuilt fake_wave_info
+        # so the defender sees the fake next-wave preview instead of a blank display.
+        if (getattr(attack, "is_spy", False)
+                and attack.phase == AttackPhase.TRAVELING
+                and getattr(attack, "fake_wave_info", None)):
+            spy_status_msg = {
+                "type": "battle_status",
+                "attack_id": attack.attack_id,
+                "phase": "traveling",
+                "defender_uid": attack.defender_uid,
+                "defender_name": defender_empire.name,
+                "attacker_uid": attack.attacker_uid,
+                "attacker_name": attacker_empire.name,
+                "attacker_army_name": getattr(attack, "army_name_override", "") or "",
+                "attacker_username": "",
+                "time_since_start_s": 0,
+                "wave_info": attack.fake_wave_info,
+                "defender_era": svc.empire_service.get_current_era(defender_empire),
+            }
+            if svc.server:
+                await svc.server.send_to(observer_uid, spy_status_msg)
         return
 
     if attack.phase == AttackPhase.IN_SIEGE:

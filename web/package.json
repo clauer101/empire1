@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/optimize-assets.mjs --write && node scripts/build-api-page.mjs && vite build",
+    "build": "node scripts/optimize-assets.mjs --write && node scripts/build-api-page.mjs && node scripts/gen-openapi.mjs && vite build",
     "build:api": "node scripts/build-api-page.mjs",
     "preview": "vite preview",
     "assets:optimize": "node scripts/optimize-assets.mjs --write",

@@ -15,9 +15,10 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI, Request, Body
+from fastapi import FastAPI, Request, Body, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.exceptions import HTTPException
 
 log = logging.getLogger(__name__)
 
@@ -616,12 +617,24 @@ class NoCacheStaticFiles(StaticFiles):
 
 # ── Route registration ────────────────────────────────────────────────────────
 
-def register_web_routes(app: FastAPI, web_dir: Path) -> None:
+_ADMIN_USERNAME = "eem"
+
+
+def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = None) -> None:
     """Register all web-client routes on *app*, then mount static files.
 
     Must be called AFTER all game API routes are registered so the
     catch-all static mount doesn't shadow them.
     """
+
+    from gameserver.network.jwt_auth import get_current_uid_admin as _get_uid_admin
+
+    async def require_admin(uid: int = Depends(_get_uid_admin)) -> int:
+        if services is not None and services.database is not None:
+            user = await services.database.get_user_by_uid(uid)
+            if user is None or user.get("username", "").lower() != _ADMIN_USERNAME:
+                raise HTTPException(status_code=403, detail="Admin only")
+        return uid
 
     # Ensure gameserver package is importable (needed for army_generator import)
     _src = str(Path(__file__).resolve().parent.parent.parent)
@@ -660,7 +673,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/ai-waves")
-    async def save_ai_waves(request: Request) -> Any:
+    async def save_ai_waves(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             body = await request.json()
             AI_WAVES_PATH.write_text(_write_ai_waves(body.get("waves") or []), encoding="utf-8")
@@ -691,7 +704,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/prices")
-    async def save_prices(request: Request) -> Any:
+    async def save_prices(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             prices = await request.json()
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
@@ -713,7 +726,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/ai-generator")
-    async def save_ai_generator(request: Request) -> Any:
+    async def save_ai_generator(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             data = await request.json()
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
@@ -735,7 +748,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/barbarians-aggressiveness")
-    async def save_barbarians_aggressiveness(request: Request) -> Any:
+    async def save_barbarians_aggressiveness(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             data = await request.json()
             raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
@@ -766,7 +779,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse(_parse_items_full(KNOWLEDGE_PATH))
 
     @app.post("/api/buildings")
-    async def save_buildings(request: Request) -> Any:
+    async def save_buildings(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             _save_efforts(BUILDINGS_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -774,7 +787,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/knowledge")
-    async def save_knowledge(request: Request) -> Any:
+    async def save_knowledge(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             _save_efforts(KNOWLEDGE_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -782,7 +795,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/buildings-gold")
-    async def save_buildings_gold(request: Request) -> Any:
+    async def save_buildings_gold(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             _save_gold_costs(BUILDINGS_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -790,7 +803,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/knowledge-gold")
-    async def save_knowledge_gold(request: Request) -> Any:
+    async def save_knowledge_gold(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             _save_gold_costs(KNOWLEDGE_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -798,7 +811,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/structure-gold")
-    async def save_structure_gold(request: Request) -> Any:
+    async def save_structure_gold(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             _save_gold_costs(STRUCTURES_PATH, await request.json())
             return JSONResponse({"success": True})
@@ -810,12 +823,12 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse(_parse_critters(web_dir, CRITTERS_PATH))
 
     @app.patch("/api/critter-stats")
-    async def patch_critter_stats(changes: dict[str, Any] = Body(...)) -> Any:
+    async def patch_critter_stats(changes: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         _patch_yaml_inplace(CRITTERS_PATH, changes)
         return {"ok": True}
 
     @app.patch("/api/critter-era")
-    async def patch_critter_era(changes: dict[str, Any] = Body(...)) -> Any:
+    async def patch_critter_era(changes: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         for iid, era in changes.items():
             _set_era_field_in_yaml(CRITTERS_PATH, str(iid), str(era))
         return {"ok": True}
@@ -825,42 +838,42 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse(_parse_structures(STRUCTURES_PATH))
 
     @app.patch("/api/structure-stats")
-    async def patch_structure_stats(changes: dict[str, Any] = Body(...)) -> Any:
+    async def patch_structure_stats(changes: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         _patch_yaml_inplace(STRUCTURES_PATH, changes)
         return {"ok": True}
 
     @app.patch("/api/building-effects")
-    async def patch_building_effects(changes: dict[str, Any] = Body(...)) -> Any:
+    async def patch_building_effects(changes: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         _patch_yaml_inplace(BUILDINGS_PATH, changes)
         return {"ok": True}
 
     @app.patch("/api/knowledge-effects")
-    async def patch_knowledge_effects(changes: dict[str, Any] = Body(...)) -> Any:
+    async def patch_knowledge_effects(changes: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         _patch_yaml_inplace(KNOWLEDGE_PATH, changes)
         return {"ok": True}
 
     @app.post("/api/building-effects")
-    async def add_building_effect(body: dict[str, Any] = Body(...)) -> Any:
+    async def add_building_effect(body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         ok = _add_effect_to_yaml(BUILDINGS_PATH, body["iid"], body["effect"], body["value"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.post("/api/knowledge-effects")
-    async def add_knowledge_effect(body: dict[str, Any] = Body(...)) -> Any:
+    async def add_knowledge_effect(body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         ok = _add_effect_to_yaml(KNOWLEDGE_PATH, body["iid"], body["effect"], body["value"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.post("/api/building-effects/remove")
-    async def remove_building_effect(body: dict[str, Any] = Body(...)) -> Any:
+    async def remove_building_effect(body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         ok = _remove_effect_from_yaml(BUILDINGS_PATH, body["iid"], body["effect"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.post("/api/knowledge-effects/remove")
-    async def remove_knowledge_effect(body: dict[str, Any] = Body(...)) -> Any:
+    async def remove_knowledge_effect(body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         ok = _remove_effect_from_yaml(KNOWLEDGE_PATH, body["iid"], body["effect"])
         return JSONResponse({"ok": ok}, status_code=200 if ok else 404)
 
     @app.patch("/api/item-requirements")
-    async def patch_item_requirements(body: dict[str, Any] = Body(...)) -> Any:
+    async def patch_item_requirements(body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         results = {}
         yaml_files = [BUILDINGS_PATH, KNOWLEDGE_PATH, CRITTERS_PATH, STRUCTURES_PATH]
         raw_by_path = {p: yaml.safe_load(p.read_text(encoding="utf-8")) or {} for p in yaml_files}
@@ -878,7 +891,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return {"results": results}
 
     @app.patch("/api/tower-effects/{iid}")
-    async def patch_tower_effects(iid: str, body: dict[str, Any] = Body(...)) -> Any:
+    async def patch_tower_effects(iid: str, body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         new_effects: dict[str, Any] = body.get("effects", {})
         lines = STRUCTURES_PATH.read_text(encoding="utf-8").splitlines()
         iid_idx = next((i for i, ln in enumerate(lines) if ln.startswith(f"{iid}:")), None)
@@ -916,7 +929,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     @app.post("/api/artifacts")
-    async def save_artifacts(request: Request) -> Any:
+    async def save_artifacts(request: Request, _uid: int = Depends(require_admin)) -> Any:
         try:
             items = await request.json()
             raw = {}
@@ -935,7 +948,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
-    @app.get("/api/admin/catalog")
+    @app.get("/api/admin/catalog", include_in_schema=False)
     async def get_catalog() -> Any:
         def _load(path: Path) -> dict[str, Any]:
             with open(path) as f:
@@ -1019,7 +1032,7 @@ def register_web_routes(app: FastAPI, web_dir: Path) -> None:
         return JSONResponse({"maps": names, "life": life, "power": power, "age_pct": age_pct})
 
     @app.put("/api/tools/map-life")
-    async def set_map_life(payload: dict[str, Any]) -> Any:
+    async def set_map_life(payload: dict[str, Any], _uid: int = Depends(require_admin)) -> Any:
         map_name = payload.get("map_name", "")
         life = payload.get("life")
         if not map_name or life is None:

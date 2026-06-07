@@ -12,6 +12,8 @@ import { showChooseRulerOverlay } from './status.js';
 let container;
 /** @type {import('../state.js').StateStore} */
 let st;
+/** @type {object|null} */
+let _lastRuler = null;
 
 // ── Init ─────────────────────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ function _renderLoading() {
 }
 
 
-function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBgImg, splash, combatStats, canChange) {
+function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBgImg, splash, combatStats, canChange, auraHtml) {
   return `
     <div style="position:relative;overflow:hidden;padding:0;${withBgImg ? 'background:var(--surface);border:1px solid var(--border-color,#333);border-radius:var(--radius,6px);' : ''}" id="ruler-panel-wrap${withBgImg ? '' : '-mobile'}">
       ${withBgImg && splash ? `<img src="${splash}" style="width:100%;display:block;opacity:0.5;object-fit:cover;object-position:top;" alt="">` : ''}
@@ -97,8 +99,9 @@ function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillC
         <div style="color:#888;font-size:0.72em;margin-top:3px;">Earn XP by sending this ruler on attacks.</div>` : ''}
       </div>
 
-      <!-- Skills pinned to bottom -->
+      <!-- Skills + aura pinned to bottom -->
       <div style="position:absolute;bottom:32px;left:0;right:0;z-index:2;padding:6px 0 0;display:flex;flex-direction:column;gap:4px;">
+        ${auraHtml}
         ${skillCards}
         <div style="text-align:center;padding:6px 0 2px">
           ${canChange
@@ -111,6 +114,7 @@ function _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillC
 
 function _render(summary, rulersCatalog) {
   const ruler = summary.ruler;
+  _lastRuler = ruler;
   const empireEffects = summary.effects || {};
   const rulerUnlocked = (empireEffects?.ruler_unlock ?? 0) > 0;
 
@@ -202,7 +206,29 @@ function _render(summary, rulersCatalog) {
 
   const combatStats = ruler.combat_stats || null;
   const canChange = (ruler.r || 0) === 0;
-  const sharedOverlay = (withBg) => _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBg, splash, combatStats, canChange);
+
+  // Build aura selection section
+  const auraEffects = ruler.aura_effects || {};
+  const auraKeys = Object.keys(auraEffects);
+  const currentAura = ruler.aura_choice || '';
+  const auraHtml = auraKeys.length > 1 ? (() => {
+    const activeLabel = currentAura
+      ? formatEffect(currentAura, auraEffects[currentAura]).replace(/ \(.*\)$/, '')
+      : null;
+    return `<div style="padding:2px 14px 4px;">
+      <button id="select-aura-link" style="
+        width:100%;padding:6px 12px;border-radius:4px;border:1px solid ${currentAura ? '#66bb6a' : '#555'};
+        background:${currentAura ? 'rgba(102,187,106,0.1)' : 'rgba(255,255,255,0.05)'};
+        color:${currentAura ? '#81c784' : '#aaa'};cursor:pointer;text-align:left;
+        display:flex;justify-content:space-between;align-items:center;font-size:0.82em;
+      ">
+        <span>✨ Aura${activeLabel ? `: ${activeLabel}` : ''}</span>
+        <span style="font-size:0.8em;color:#666;">select ›</span>
+      </button>
+    </div>`;
+  })() : '';
+
+  const sharedOverlay = (withBg) => _panelOverlayHtml(rulerDisplayName, ruler, pct, atMax, xpTarget, skillCards, withBg, splash, combatStats, canChange, auraHtml);
 
   container.innerHTML = `
     <!-- Desktop: image inside panel, max 500px -->
@@ -294,6 +320,67 @@ function _showChangeRulerOverlay(rulersCatalog) {
   document.body.appendChild(overlay);
 }
 
+function _showAuraChoiceOverlay(ruler) {
+  document.querySelector('.aura-choice-overlay')?.remove();
+  const auraEffects = ruler?.aura_effects || {};
+  const currentAura = ruler?.aura_choice || '';
+  const overlay = document.createElement('div');
+  overlay.className = 'aura-choice-overlay tt-overlay visible';
+
+  const rows = Object.entries(auraEffects).map(([k, v]) => {
+    const label = formatEffect(k, v).replace(/ \(.*\)$/, '');
+    const val = fmtEffectValue(k, v);
+    const active = k === currentAura;
+    return `<button class="aura-choice-opt" data-aura="${k}" style="
+      width:100%;padding:10px 14px;border-radius:4px;border:1px solid ${active ? '#66bb6a' : '#444'};
+      background:${active ? 'rgba(102,187,106,0.12)' : 'rgba(255,255,255,0.03)'};
+      color:${active ? '#81c784' : '#ccc'};cursor:pointer;text-align:left;display:flex;
+      justify-content:space-between;align-items:center;gap:12px;
+    ">
+      <span style="font-size:0.9em;font-weight:${active ? '700' : '400'}">${label}</span>
+      <span style="font-size:0.85em;color:${active ? '#a5d6a7' : '#888'};flex-shrink:0">${active ? '✓ ' : ''}${val}</span>
+    </button>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <div class="tt-panel" style="max-width:360px">
+      <button class="tt-close">&times;</button>
+      <div class="tt-dp-name" style="color:#ffa726">✨ Aura Effect</div>
+      <div style="color:#888;font-size:0.85em;margin:8px 0 14px">Choose which aura effect your ruler radiates in battle. Only one is active at a time.</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
+      <div id="aura-choice-error" style="color:#ef9a9a;font-size:0.85em;margin-top:10px;min-height:1em;text-align:center"></div>
+    </div>`;
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
+  });
+
+  overlay.querySelectorAll('.aura-choice-opt').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const key = btn.dataset.aura;
+      const isActive = key === currentAura;
+      const errEl = overlay.querySelector('#aura-choice-error');
+      overlay.querySelectorAll('.aura-choice-opt').forEach((b) => b.disabled = true);
+      errEl.textContent = '';
+      try {
+        const resp = await rest.rulerAuraChoice(isActive ? '' : key);
+        if (resp?.success) {
+          overlay.remove();
+          await _load();
+        } else {
+          errEl.textContent = resp?.error || 'Could not save choice';
+          overlay.querySelectorAll('.aura-choice-opt').forEach((b) => b.disabled = false);
+        }
+      } catch (e) {
+        errEl.textContent = e.message;
+        overlay.querySelectorAll('.aura-choice-opt').forEach((b) => b.disabled = false);
+      }
+    });
+  });
+
+  document.body.appendChild(overlay);
+}
+
 function _bindEvents(rulersCatalog) {
   container.querySelector('#choose-ruler-btn')?.addEventListener('click', () =>
     showChooseRulerOverlay(rulersCatalog, _load)
@@ -313,6 +400,9 @@ function _bindEvents(rulersCatalog) {
       e.preventDefault();
       _showChangeRulerOverlay(rulersCatalog);
     });
+  });
+  container.querySelectorAll('#select-aura-link').forEach((btn) => {
+    btn.addEventListener('click', () => _showAuraChoiceOverlay(_lastRuler));
   });
 }
 

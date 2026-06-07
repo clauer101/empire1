@@ -289,9 +289,9 @@ class TestTowerEffectValueUpgrade:
         return b.pending_shots[0].effects
 
     def test_slow_ratio_scaled(self):
-        """Level 1 at +100% → slow_ratio × 2."""
-        efx = self._shoot(100.0, 1, {"slow_duration": 1000.0, "slow_ratio": 0.3})
-        assert efx["slow_ratio"] == pytest.approx(0.6)
+        """Level 1 at +50% → slow_ratio × 0.5 (lower ratio = stronger slow)."""
+        efx = self._shoot(50.0, 1, {"slow_duration": 1000.0, "slow_ratio": 0.4})
+        assert efx["slow_ratio"] == pytest.approx(0.2)
 
     def test_burn_dps_scaled(self):
         """Level 2 at +50% → burn_dps × 2."""

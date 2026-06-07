@@ -86,6 +86,15 @@ class Critter:
     xp: float = 0.0
     is_boss: bool = False
 
+    # Ruler aura fields
+    is_ruler: bool = False
+    aura_radius: float = 0.0
+    aura_effects: dict[str, float] = field(default_factory=dict)
+    # Transient — reset and recomputed each tick by _apply_ruler_auras
+    in_aura: bool = False
+    aura_speed_modifier: float = 0.0
+    aura_armour_modifier: float = 0.0
+
     # -- Derived properties ----------------------------------------------
 
     @property

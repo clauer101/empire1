@@ -19,6 +19,8 @@ MAJA:
   value_max: 10000.0
   scale_base: 1.0
   animation: assets/sprites/ruler/maja
+  aura_min: 1.5
+  aura_max: 4.0
   q:
     name: Chrono-Scholar’s Insight
     description: ''
@@ -71,6 +73,8 @@ NANDI:
   value_max: 10000.0
   scale_base: 1.0
   animation: assets/sprites/ruler/nandi
+  aura_min: 1.5
+  aura_max: 4.5
   q:
     name: Voice of the Commons
     description: ''
@@ -123,6 +127,8 @@ LUCIEN:
   value_max: 10000.0
   scale_base: 1.0
   animation: assets/sprites/ruler/lucien
+  aura_min: 1.5
+  aura_max: 4.0
   q:
     name: Golden Interest
     description: ''
@@ -175,6 +181,8 @@ BORIN:
   value_max: 10000.0
   scale_base: 1.0
   animation: assets/sprites/ruler/borin
+  aura_min: 2.0
+  aura_max: 5.0
   q:
     name: Juggernauts Resolve
     description: ''
@@ -226,6 +234,8 @@ ALRIC:
   value_max: 10000.0
   scale_base: 1.0
   animation: assets/sprites/ruler/alric
+  aura_min: 1.5
+  aura_max: 4.5
   q:
     name: Shadow Conscription
     description: ''

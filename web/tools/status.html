@@ -399,7 +399,7 @@ function buildDetailHTML(e) {
         const waveList = a.waves.map(w =>
           `<li style="color:var(--text-dim);font-size:10px;font-family:var(--mono)">${w.iid} <span style="color:var(--text)">×${w.slots}</span></li>`
         ).join('');
-        const power = calcArmyPower(a.waves);
+        const power = a.power ?? 0;
         const powerBadge = `<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:6px">⚔ ${power.toLocaleString()}</span>`;
         return `<div style="margin-bottom:6px">
           <div class="detail-key" style="margin-bottom:2px">${a.name || 'Army ' + a.aid}${powerBadge}</div>
@@ -756,18 +756,7 @@ let ERA_ORDER = [];
 let ERA_KNOWLEDGE = {};  // era key → [iid, ...]
 let ERA_LABELS_EN = {};
 let ARTIFACT_NAMES = {};  // iid → name
-let CRITTER_STATS = {};   // iid → {health, armour, speed, slots}
 
-function calcArmyPower(waves) {
-  let score = 0;
-  for (const w of (waves || [])) {
-    const s = CRITTER_STATS[w.iid];
-    if (!s) continue;
-    const count = w.slots / Math.max(1, s.slots);
-    score += count * s.health * (1 + s.armour) * (1 + s.speed);
-  }
-  return Math.round(score);
-}
 
 async function loadEraMap() {
   try {
@@ -828,16 +817,7 @@ async function loadItems() {
   } catch (_) {}
 }
 
-async function loadCritterStats() {
-  try {
-    const list = await fetch(`${GS_BASE}/api/critter-stats`).then(r => r.json());
-    CRITTER_STATS = Object.fromEntries(
-      list.map(c => [c.iid, { health: c.health, armour: c.armour, speed: c.speed, slots: c.slots || 1 }])
-    );
-  } catch (_) {}
-}
-
-Promise.all([loadEraMap(), loadItems(), loadCritterStats()]).then(poll);
+Promise.all([loadEraMap(), loadItems()]).then(poll);
 setInterval(poll, 3000);
 </script>
 </body>

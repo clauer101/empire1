@@ -339,7 +339,7 @@ def create_app(services: "Services") -> FastAPI:
     app.include_router(_attack_router(services, limiter))
     app.include_router(_messages_router(services, limiter))
     app.include_router(_replays_router(services))
-    app.include_router(_admin_router(services))
+    app.include_router(_admin_router(services), include_in_schema=False)
 
     # WebSocket endpoint — stays here
     @app.websocket("/ws")
@@ -426,7 +426,7 @@ def create_app(services: "Services") -> FastAPI:
     )
     if not _web_dir.is_dir():
         _web_dir = Path(__file__).resolve().parent.parent.parent.parent / "web"
-    _reg(app, _web_dir)
+    _reg(app, _web_dir, services)
 
     log.info("REST API created with %d routes", len(app.routes))
     return app

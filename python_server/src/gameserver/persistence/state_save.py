@@ -174,6 +174,7 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
             "w": empire.ruler.w,
             "e": empire.ruler.e,
             "r": empire.ruler.r,
+            "aura_choice": empire.ruler.aura_choice,
         } if empire.ruler.type else {},
         "is_bot": empire.is_bot,
     }

@@ -221,6 +221,7 @@ class BattleService:
         4. flush_reached  — apply castle damage or critter_died for reached
         5. step_armies    — spawn new critters
         """
+        self._apply_ruler_auras(battle)
         self._step_critters(battle, dt_ms)
         self._step_towers(battle, dt_ms)
         self._step_shots(battle, dt_ms)
@@ -273,7 +274,8 @@ class BattleService:
 
         # Apply base damage (reduced by armour, minimum 1; zero if tower has 0 base damage)
         has_burn = "burn_dps" in shot.effects or "burn_duration" in shot.effects
-        damage = max(1.0, shot.damage - critter.armour) if shot.damage > 0 else 0.0
+        eff_armour = critter.armour * (1.0 + critter.aura_armour_modifier)
+        damage = max(1.0, shot.damage - eff_armour) if shot.damage > 0 else 0.0
         if damage > 0:
             critter.health -= damage
         log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)",
@@ -307,7 +309,8 @@ class BattleService:
                 oq, or_ = critter_hex_pos(other.path, other.path_progress)
                 dist = hex_world_distance(impact_q, impact_r, oq, or_)
                 if dist <= splash_radius:
-                    splash_dmg = max(1.0, shot.damage - other.armour) if shot.damage > 0 else 0.0
+                    other_eff_armour = other.armour * (1.0 + other.aura_armour_modifier)
+                    splash_dmg = max(1.0, shot.damage - other_eff_armour) if shot.damage > 0 else 0.0
                     other.health -= splash_dmg
                     if has_splash_slow:
                         other.slow_remaining_ms = float(shot.effects.get("slow_duration", 2000.0))
@@ -360,10 +363,11 @@ class BattleService:
         if not critter.path or len(critter.path) < 2:
             return
         
-        # Calculate effective speed (reduced by slow effects)
+        # Calculate effective speed (reduced by slow effects, boosted by aura)
         effective_speed = critter.speed
         if critter.slow_remaining_ms > 0:
             effective_speed = critter.slow_speed
+        effective_speed *= (1.0 + critter.aura_speed_modifier)
         
         # Distance traveled in this tick (in hex tiles)
         dt_s = dt_ms / 1000.0
@@ -419,6 +423,10 @@ class BattleService:
             damage_mult = 1.0 + (su.damage / 100.0) * dmg_lvl if su else 1.0
             range_mult  = 1.0 + (su.range  / 100.0) * rng_lvl if su else 1.0
             reload_mult = 1.0 + (su.reload / 100.0) * rld_lvl if su else 1.0
+
+            # Apply aura debuffs from rulers
+            damage_mult *= (1.0 - structure.aura_damage_modifier)
+            reload_mult *= (1.0 - structure.aura_reload_modifier)
 
             # Decrement reload timer (reload upgrade speeds up reload)
             if structure.reload_remaining_ms > 0:
@@ -612,12 +620,18 @@ class BattleService:
         ruler_level: int,
         path: list[Any],
         ruler_cfg: "dict[str, Any]",
+        aura_choice: str = "",
     ) -> Critter:
         """Create a Critter from ruler config, scaling stats by ruler level."""
-        stats = ruler_critter_stats(ruler_cfg, ruler_level)
+        stats = ruler_critter_stats(ruler_cfg, ruler_level, aura_effects=dict(self._gc.ruler_aura_effects))
         health = stats["health"]
         anim_folder = (stats.get("animation") or "").rstrip("/").split("/")[-1]
         sprite_iid = f"ruler_{anim_folder}" if anim_folder else f"RULER_{ruler_iid}"
+        all_aura_effects: dict[str, float] = dict(stats.get("aura_effects") or {})
+        if aura_choice and aura_choice in all_aura_effects:
+            active_aura_effects = {aura_choice: all_aura_effects[aura_choice]}
+        else:
+            active_aura_effects = {}
         return Critter(
             cid=_new_cid(),
             iid=sprite_iid,
@@ -631,7 +645,54 @@ class BattleService:
             value=stats["value"],
             damage=stats["damage"],
             spawn_on_death={},
+            is_ruler=True,
+            aura_radius=stats.get("aura_radius", 0.0),
+            aura_effects=active_aura_effects,
         )
+
+    def _apply_ruler_auras(self, battle: BattleState) -> None:
+        """Reset and recompute aura modifiers for all critters and structures."""
+        # Reset transient aura state
+        for critter in battle.critters.values():
+            critter.in_aura = False
+            critter.aura_speed_modifier = 0.0
+            critter.aura_armour_modifier = 0.0
+        for structure in battle.structures.values():
+            structure.aura_damage_modifier = 0.0
+            structure.aura_reload_modifier = 0.0
+
+        # Apply aura effects from each live ruler
+        for ruler in battle.critters.values():
+            if not ruler.is_ruler or ruler.health <= 0 or ruler.reached_goal:
+                continue
+            radius = ruler.aura_radius
+            if radius <= 0.0:
+                continue
+            effects = ruler.aura_effects
+            rq, rr = critter_hex_pos(ruler.path, ruler.path_progress)
+
+            # Buff nearby critters
+            inc_armour = effects.get("increase_armour_modifier", 0.0)
+            inc_speed = effects.get("increase_critter_speed", 0.0)
+            if inc_armour > 0.0 or inc_speed > 0.0:
+                for critter in battle.critters.values():
+                    if critter.cid == ruler.cid or not critter.path:
+                        continue
+                    cq, cr = critter_hex_pos(critter.path, critter.path_progress)
+                    if hex_world_distance(rq, rr, cq, cr) <= radius:
+                        critter.in_aura = True
+                        critter.aura_armour_modifier += inc_armour
+                        critter.aura_speed_modifier += inc_speed
+
+            # Debuff nearby towers
+            slow_tower = effects.get("slow_tower_modifier", 0.0)
+            reduce_dmg = effects.get("reduce_tower_damage", 0.0)
+            if slow_tower > 0.0 or reduce_dmg > 0.0:
+                for structure in battle.structures.values():
+                    sq, sr = float(structure.position.q), float(structure.position.r)
+                    if hex_world_distance(rq, rr, sq, sr) <= radius:
+                        structure.aura_reload_modifier += slow_tower
+                        structure.aura_damage_modifier += reduce_dmg
 
     def _step_wave(
         self,
@@ -639,6 +700,7 @@ class BattleService:
         dt_ms: float,
         ruler_level: int = 1,
         ruler_cfg: "dict[str, Any] | None" = None,
+        aura_choice: str = "",
     ) -> list[Critter]:
         """Step a wave: decrement spawn timer and spawn critters as needed.
 
@@ -672,7 +734,7 @@ class BattleService:
             # Spawn if it fits, or if this is the very first critter of the wave
             if critters_spawned == 0 or critters_spawned + critter_slot_cost <= wave.slots:
                 if ruler_cfg is not None:
-                    critter = self._make_ruler_critter(wave.iid, ruler_level, path=[], ruler_cfg=ruler_cfg)
+                    critter = self._make_ruler_critter(wave.iid, ruler_level, path=[], ruler_cfg=ruler_cfg, aura_choice=aura_choice)
                 else:
                     critter = self._make_critter_from_item(wave.iid, path=[])
                 critters.append(critter)
@@ -711,6 +773,7 @@ class BattleService:
                 pass
 
             ruler_level = emp.ruler.level if emp else 1
+            aura_choice = emp.ruler.aura_choice if emp else ""
 
             for wave in army.waves:
                 ruler_cfg: dict[str, Any] | None = self._rulers.get(wave.iid)
@@ -718,6 +781,7 @@ class BattleService:
                     wave, dt_ms,
                     ruler_level=ruler_level,
                     ruler_cfg=ruler_cfg,
+                    aura_choice=aura_choice,
                 )
                 for critter in new_critters:
                     critter.path = battle.critter_path
@@ -895,6 +959,7 @@ class BattleService:
                 "path_progress": round(critter.path_progress, 3),  # Opt 4
                 "slow_remaining_ms": max(0, int(critter.slow_remaining_ms)),
                 "burn_remaining_ms": max(0, int(critter.burn_remaining_ms)),
+                "in_aura": critter.in_aura,
             }
             if cid not in battle.seen_cids:
                 new_critters.append({
@@ -902,6 +967,9 @@ class BattleService:
                     "iid": critter.iid,
                     "max_health": critter.max_health,
                     "scale": critter.scale,
+                    "aura_radius": critter.aura_radius,
+                    "speed": critter.speed,
+                    "path_length": max(1, len(critter.path) - 1),
                 })
             else:
                 critter_updates.append(dyn)
@@ -927,6 +995,9 @@ class BattleService:
         upcoming_waves = self.build_upcoming_waves(battle.armies)
         wave_infos_json = str(upcoming_waves)
 
+        debuffed_sids = [sid for sid, s in battle.structures.items()
+                         if s.aura_damage_modifier > 0 or s.aura_reload_modifier > 0]
+
         msg: dict[str, Any] = {
             "type": "battle_update",
             "bid": battle.bid,
@@ -936,6 +1007,7 @@ class BattleService:
             "shots": shot_updates,
             "removed_critters": battle.removed_critters,
             "defender_life": round(defender_life, 1),
+            "debuffed_sids": debuffed_sids,
         }
 
         if wave_infos_json != battle.last_wave_infos_json:
@@ -978,6 +1050,7 @@ class BattleService:
         pvp_gold_bonus: float = 0.0,
         ruler_xp_pvp_bonus: dict[int, float] | None = None,
         artifact_steal_chances: dict[int, float] | None = None,
+        army_steal_multipliers: dict[int, float] | None = None,
     ) -> None:
         """Send battle_summary when battle ends.
 
@@ -1028,6 +1101,7 @@ class BattleService:
             "ruler_reached_goal": battle.ruler_reached_goal,
             "ruler_artifact_steal_bonus": self._ruler_steal_bonus_per_attacker(battle),
             "artifact_steal_chances": {str(uid): c for uid, c in (artifact_steal_chances or {}).items()},
+            "army_steal_multipliers": {str(uid): m for uid, m in (army_steal_multipliers or {}).items()},
         }
 
         # Recompute the path from the defender's current tiles now that the battle is

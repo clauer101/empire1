@@ -47,6 +47,9 @@ class Structure:
     # Transient battle state
     focus_cid: int | None = field(default=None, repr=False)
     reload_remaining_ms: float = field(default=0.0, repr=False)
+    # Transient aura debuffs — reset and recomputed each tick by _apply_ruler_auras
+    aura_damage_modifier: float = field(default=0.0, repr=False)
+    aura_reload_modifier: float = field(default=0.0, repr=False)
 
 
 def structure_from_item(

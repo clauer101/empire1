@@ -176,6 +176,8 @@ export function buildBattleSummaryHtml(msg, catalog = {}, opts = {}) {
       html += `<li ${mutedSt}>📖 Knowledge: –</li>`;
     }
 
+    const stealChances = msg.artifact_steal_chances || {};
+    const stealMults = msg.army_steal_multipliers || {};
     if (artifacts.length > 0) {
       for (const art of artifacts) {
         const artName = catalog[art.iid]?.name || art.iid;
@@ -184,6 +186,18 @@ export function buildBattleSummaryHtml(msg, catalog = {}, opts = {}) {
       }
     } else {
       html += `<li ${mutedSt}>⚜ –</li>`;
+    }
+    const stealLines = attackerUids.map(uid => {
+      const c = stealChances[String(uid)] ?? stealChances[uid];
+      if (c == null) return null;
+      const m = stealMults[String(uid)] ?? stealMults[uid] ?? 1.0;
+      const finalPct = Math.round(c * 100);
+      const breakdown = (m < 1.0 && m > 0) ? ` (${Math.round(c / m * 100)}% x ${m.toFixed(2)})` : '';
+      const prefix = multiAttacker ? `${_esc(empireNames[uid] || `uid ${uid}`)}: ` : '';
+      return `${prefix}${finalPct}%${breakdown}`;
+    }).filter(Boolean).join(', ');
+    if (stealLines) {
+      html += `<li style="padding:2px 0;color:var(--muted,#888);font-size:0.85em">⚜ Steal chance: ${stealLines}</li>`;
     }
     html += '</ul></div>';
   }

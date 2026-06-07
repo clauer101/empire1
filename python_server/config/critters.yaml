@@ -320,7 +320,7 @@ KNIGHT:
   name: "Knight"
   description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
   speed: 0.4
-  health: 52
+  health: 68
   value: 194
   damage: 1
   armour: 6

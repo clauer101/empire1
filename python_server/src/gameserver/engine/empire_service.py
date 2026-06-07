@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 RULER_MAX_LEVEL = 18
 
 
-def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int) -> "dict[str, Any]":
+def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int, aura_effects: "dict[str, float] | None" = None) -> "dict[str, Any]":
     """Compute level-scaled critter stats for a ruler.
 
     All numeric combat attributes are linearly interpolated between their
@@ -46,8 +46,10 @@ def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int) -> "dict[str, A
         "armour":      _lerp(ruler_cfg["armour_min"],  ruler_cfg["armour_max"]),
         "damage":      _lerp(ruler_cfg["damage_min"],  ruler_cfg["damage_max"]),
         "value":       _lerp(ruler_cfg["value_min"],   ruler_cfg["value_max"]),
-        "scale":       ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
-        "animation":   ruler_cfg["animation"],
+        "scale":        ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
+        "animation":    ruler_cfg["animation"],
+        "aura_radius":  _lerp(ruler_cfg.get("aura_min", 0.0), ruler_cfg.get("aura_max", 0.0)),
+        "aura_effects": aura_effects or {},
     }
 
 

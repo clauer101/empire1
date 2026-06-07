@@ -234,6 +234,7 @@ export function createBattleUi(ctx) {
     _setupValidTimer = null;
 
     if (grid && !grid.battleActive) grid.battleActive = true;
+    grid.notifyBattleUpdate();
 
     if (msg.critters != null || msg.new_critters != null) {
       const activeCids = new Set();
@@ -290,6 +291,7 @@ export function createBattleUi(ctx) {
     }
 
     if (msg.defender_life != null) grid.setDefenderLives(msg.defender_life, msg.defender_max_life);
+    if (msg.debuffed_sids != null) grid.setDebuffedSids(msg.debuffed_sids);
     if ('wave_info' in msg) {
       ctx.getBattleState().wave_info = msg.wave_info;
       _waveInfoSnapshot = msg.wave_info ? { wave_info: msg.wave_info, receivedAt: performance.now() } : null;

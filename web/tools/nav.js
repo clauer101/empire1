@@ -44,6 +44,7 @@
     { name: '🎛️ Sigmoid',     href: 'sigmoid_tuner.html' },
     { name: '⏱ Effort',       href: 'effort-tuner.html' },
     { name: '🔧 Workshop',     href: 'workshop-config.html' },
+    { name: '⚙ Game Config',  href: 'game-config.html' },
     { name: '🐾 Critters',     href: 'critters.html' },
     // Battle/Balancing
     { name: '⚖ Balance',      href: 'balance.html' },

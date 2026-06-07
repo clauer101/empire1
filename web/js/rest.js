@@ -650,6 +650,10 @@ class RestClient {
     return this._post('/api/empire/ruler/dismiss', {});
   }
 
+  async rulerAuraChoice(auraEffect) {
+    return this._post('/api/empire/ruler/aura-choice', { aura_effect: auraEffect });
+  }
+
   // ── WebSocket URL helper ──────────────────────────────────
 
   /**

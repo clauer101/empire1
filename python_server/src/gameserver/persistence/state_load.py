@@ -225,6 +225,7 @@ def _deserialize_ruler(d: dict[str, Any]) -> Ruler:
         w=int(d.get("w", 0)),
         e=int(d.get("e", 0)),
         r=int(d.get("r", 0)),
+        aura_choice=d.get("aura_choice", ""),
     )
 
 

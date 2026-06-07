@@ -32,7 +32,7 @@ ADMIN_USERNAME = "eem"
 
 
 def make_router(services: "Services") -> APIRouter:
-    router = APIRouter()
+    router = APIRouter(include_in_schema=False)
 
     async def require_admin(uid: int = Depends(get_current_uid_admin)) -> int:
         if services.database is not None:
@@ -121,6 +121,8 @@ def make_router(services: "Services") -> APIRouter:
             knowledge_done = [iid for iid, v in empire.knowledge.items() if v == 0.0]
             knowledge_wip  = {iid: round(v, 1) for iid, v in empire.knowledge.items() if v != 0.0}
 
+            from gameserver.network.handlers.battle_task import _army_power as _ap
+            items_by_iid = up.items if up else {}
             armies_out = []
             for army in empire.armies:
                 armies_out.append({
@@ -130,6 +132,7 @@ def make_router(services: "Services") -> APIRouter:
                         {"iid": w.iid, "slots": w.slots}
                         for w in army.waves
                     ],
+                    "power": round(_ap(army, items_by_iid)),
                 })
 
             hex_tiles = []
@@ -918,6 +921,48 @@ def make_router(services: "Services") -> APIRouter:
             services.empire_service._gc = new_gc
         if services.attack_service and services.empire_service and services.empire_service._gc:
             services.attack_service._game_config = services.empire_service._gc
+        return {"success": True}
+
+    @router.get("/api/admin/game-config")
+    async def get_game_config_full(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        import yaml as _yaml
+        p = _CONFIG_DIR / "game.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        return raw
+
+    @router.patch("/api/admin/game-config")
+    async def patch_game_config_full(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        import yaml as _yaml
+        p = _CONFIG_DIR / "game.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+
+        def _deep_merge(dst: dict, src: dict) -> None:
+            for k, v in src.items():
+                if isinstance(v, dict) and isinstance(dst.get(k), dict):
+                    _deep_merge(dst[k], v)
+                else:
+                    dst[k] = v
+
+        _deep_merge(raw, body)
+        with p.open("w") as f:
+            _yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+        from gameserver.loaders.game_config_loader import load_game_config
+        new_gc = load_game_config(str(p))
+        if services.game_config is not None:
+            services.game_config = new_gc
+        if services.empire_service:
+            services.empire_service._gc = new_gc
+        if services.battle_service:
+            services.battle_service._gc = new_gc
+        if services.ai_service:
+            services.ai_service._game_config = new_gc
+        if services.game_loop:
+            services.game_loop._gc = new_gc
+        if services.attack_service:
+            services.attack_service._game_config = new_gc
         return {"success": True}
 
     @router.get("/api/admin/runtime-stats")

@@ -753,7 +753,7 @@ function _openCritterOverlay(
       <!-- Slots -->
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);flex-wrap:wrap;">
         <div style="min-width:0;">
-          <div style="font-size:18px;font-weight:700;color:var(--accent);line-height:1.1;">${currentSlots}</div>
+          <div id="wave-slot-count" style="font-size:18px;font-weight:700;color:var(--accent);line-height:1.1;">${currentSlots}</div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Slots · critters per wave</div>
         </div>
         <button id="wave-slot-upgrade-btn"
@@ -866,32 +866,24 @@ function _openCritterOverlay(
   if (slotUpgradeBtn) {
     slotUpgradeBtn.addEventListener('click', async () => {
       if (slotUpgradeBtn.getAttribute('data-can-afford') !== 'true') return;
-      const newSlots = currentSlots + 1;
-      const newNextSlotPrice = _slotPrice(newSlots + 1);
-      _openCritterOverlay(
-        aid,
-        waveIdx,
-        currentIid,
-        maxEra,
-        nextEraPrice,
-        newNextSlotPrice,
-        newSlots
-      );
-      rest.buyCritterSlot(aid, waveIdx).then((resp) => {
-        if (!resp.success) {
-          _openCritterOverlay(
-            aid,
-            waveIdx,
-            currentIid,
-            maxEra,
-            nextEraPrice,
-            nextSlotPrice,
-            currentSlots
-          );
-        } else {
-          Promise.all([rest.getSummary(), rest.getMilitary()]);
-        }
-      });
+      slotUpgradeBtn.disabled = true;
+      slotUpgradeBtn.setAttribute('data-can-afford', 'false');
+      const resp = await rest.buyCritterSlot(aid, waveIdx);
+      if (!resp.success) {
+        slotUpgradeBtn.disabled = false;
+        slotUpgradeBtn.setAttribute('data-can-afford', 'true');
+        return;
+      }
+      const [, milResp] = await Promise.all([rest.getSummary(), rest.getMilitary()]);
+      const updatedArmy = (milResp?.armies || []).find((a) => a.aid === aid);
+      const updatedWave = updatedArmy?.waves?.[waveIdx];
+      const serverNextSlotPrice = updatedWave?.next_slot_price ?? nextSlotPrice;
+      const newSlots = updatedWave?.slots ?? currentSlots + 1;
+      const slotCountEl = body.querySelector('#wave-slot-count');
+      if (slotCountEl) slotCountEl.textContent = newSlots;
+      slotUpgradeBtn.textContent = `+1 · 💰${Math.round(serverNextSlotPrice)}`;
+      slotUpgradeBtn.disabled = false;
+      slotUpgradeBtn.setAttribute('data-can-afford', 'true');
     });
   }
 

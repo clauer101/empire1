@@ -162,6 +162,10 @@ class ChooseRulerRequest(BaseModel):
     ruler_iid: str  # e.g. "MAJA", "NANDA", "LUCIEN"
 
 
+class RulerAuraChoiceRequest(BaseModel):
+    aura_effect: str  # one of the ruler's available aura_effect keys, or "" to clear
+
+
 class BuyItemUpgradeRequest(BaseModel):
     iid: str   # e.g. "ARROW_TOWER" or "SOLDIER"
     stat: str  # e.g. "damage", "range", "health", "speed"

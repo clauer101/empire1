@@ -26,6 +26,7 @@ class Ruler:
     w: int = 0
     e: int = 0
     r: int = 0
+    aura_choice: str = ""
 
 
 @dataclass

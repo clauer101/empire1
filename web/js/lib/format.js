@@ -54,6 +54,11 @@ const EFFECT_META = {
   // -- One-shot lump sums (shown in ruler skill tooltips only)
   gold_lump_sum_on_skill_up:      ['💰', 'Skill-up gold reward',     (v) => `+${v.toLocaleString('de-DE')} gold`,                                                     'Grants a one-time gold bonus when this skill level is reached'],
   culture_lump_sum_on_skill_up:   ['🎭', 'Skill-up culture reward',  (v) => `+${v.toLocaleString('de-DE')} culture`,                                                  'Grants a one-time culture bonus when this skill level is reached'],
+  // -- Ruler aura effects
+  increase_armour_modifier:            ['🛡', 'Aura: Armour boost',   (v) => `+${(v * 100).toFixed(0)}% armour`,                                                           'Boosts armour of nearby friendly critters'],
+  increase_critter_speed:              ['⚡', 'Aura: Speed boost',    (v) => `+${(v * 100).toFixed(0)}% speed`,                                                           'Boosts speed of nearby friendly critters'],
+  slow_tower_modifier:                 ['❄', 'Aura: Tower slow',      (v) => `-${(v * 100).toFixed(0)}% reload`,                                                    'Slows reload speed of nearby enemy towers'],
+  reduce_tower_damage:                 ['💢', 'Aura: Tower damage',   (v) => `-${(v * 100).toFixed(0)}% damage`,                                                    'Reduces damage of nearby enemy towers'],
   // -- Combat
   restore_life_during_battle_modifier: ['❤️', 'Battle life regen',   (v) => `+${v}/s`,                                                                              'Adds to life regeneration while in battle'],
   enemy_siege_time_modifier:      ['⚔️', 'Siege corruption',         (v) => `-${(v * 100).toFixed(0)}% enemy siege`,                                                  'Reduces the siege duration of your own attacks'],

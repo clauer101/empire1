@@ -108,7 +108,9 @@ export class HexGrid {
     this._partialReachable = null;
     this.battleCritters = new Map();
     this.battleShots = new Map();
+    this._lastBattleUpdateTs = null; // performance.now() when last battle_update arrived
     this._structureBySid = new Map(); // sid → structure data from battle_setup
+    this._debuffedSids = new Set();   // sids of towers currently under ruler aura
     this.battleActive = false;
 
     // Defender castle health bar
@@ -1003,16 +1005,27 @@ export class HexGrid {
 
   /** Update or add a critter with server data. */
   updateBattleCritter(data) {
-    // Merge with existing entry: static fields (iid, max_health, scale) only present on first send.
+    // Merge with existing entry: static fields only present on first send.
     const existing = this.battleCritters.get(data.cid) || {};
+    const now = performance.now();
+    // For smooth rendering: keep a _renderProgress that lags behind server value.
+    // On first appearance, snap to server position. Afterwards, let the render loop
+    // smoothly advance _renderProgress toward path_progress each frame.
+    const isNew = existing._progressTs == null;
     this.battleCritters.set(data.cid, {
-      iid:              data.iid        ?? existing.iid,
-      max_health:       data.max_health ?? existing.max_health,
-      scale:            data.scale      ?? existing.scale ?? 1.0,
-      path_progress:    data.path_progress,
-      health:           data.health,
+      iid:               data.iid         ?? existing.iid,
+      max_health:        data.max_health  ?? existing.max_health,
+      scale:             data.scale       ?? existing.scale       ?? 1.0,
+      aura_radius:       data.aura_radius ?? existing.aura_radius ?? 0,
+      speed:             data.speed       ?? existing.speed       ?? 0,
+      path_length:       data.path_length ?? existing.path_length ?? 1,
+      path_progress:     data.path_progress,
+      health:            data.health,
       slow_remaining_ms: data.slow_remaining_ms || 0,
       burn_remaining_ms: data.burn_remaining_ms || 0,
+      in_aura:           data.in_aura ?? false,
+      _renderProgress:   isNew ? data.path_progress : (existing._renderProgress ?? data.path_progress),
+      _progressTs:       now,
     });
     this.battleActive = true;
   }
@@ -1097,11 +1110,24 @@ export class HexGrid {
     this.battleActive = true;
   }
 
+  /** Call once per battle_update message so critter interpolation knows the update timestamp. */
+  notifyBattleUpdate() {
+    this._lastBattleUpdateTs = performance.now();
+  }
+
+  /** Update the set of tower sids under ruler aura debuff. */
+  setDebuffedSids(sids) {
+    this._debuffedSids = new Set(sids);
+    this._dirty = true;
+  }
+
   /** Clear all battle state. */
   clearBattle() {
     this.battleCritters.clear();
     this.battleShots.clear();
     this._structureBySid.clear();
+    this._debuffedSids.clear();
+    this._lastBattleUpdateTs = null;
     this.battleActive = false;
     // Path stays visible after battle ends (last setDisplayPath value is retained)
     this._dirty = true;
@@ -1483,6 +1509,26 @@ export class HexGrid {
       const drawH = aspect >= 1 ? spriteSize / aspect : spriteSize;
       ctx.drawImage(bitmap, x - drawW / 2, y - drawH / 2 - yOffset, drawW, drawH);
     }
+
+  }
+
+  /** Render aura debuff icons above towers in ruler range (on top of all other layers). */
+  _renderDebuffedTowerIcons() {
+    if (this._debuffedSids.size === 0) return;
+    const ctx = this.ctx;
+    const sz = this.hexSize;
+    ctx.font = `${Math.max(8, sz * 0.28)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    for (const sid of this._debuffedSids) {
+      const s = this._structureBySid.get(sid);
+      if (!s) continue;
+      const { x, y } = hexToPixel(s.q, s.r, sz);
+      const towerSpriteH = sz * 1.7;
+      const shotOriginY = y - (s.projectile_y_offset ?? 0) * towerSpriteH;
+      const iconY = shotOriginY - sz * 0.25;
+      ctx.fillText('✨', x, iconY);
+    }
   }
 
   /** Render critters on top of current canvas state (assumes transform already applied). */
@@ -1490,17 +1536,51 @@ export class HexGrid {
     const ctx = this.ctx;
     const sz = this.hexSize;
     const ts = performance.now();
+    const dtFrameMs = this._lastFrameTs != null ? ts - this._lastFrameTs : 16;
+    this._lastFrameTs = ts;
 
     for (const [cid, critter] of this.battleCritters) {
+      if (!critter.iid) continue;
       const critterScale = critter.scale ?? 1.0;
       // Base size at scale=1: sz*0.467 (2/3 of sz*0.7), then multiplied by critter scale
       const spriteSize = sz * 0.467 * critterScale;
-      const { x, y } = this._getCritterPixelPos(critter.path_progress, sz);
+
+      // Smooth rendering: advance _renderProgress toward server path_progress at a constant rate.
+      // How much progress the critter covers per ms (measured from speed + path_length).
+      const progressPerMs = critter.speed > 0 && critter.path_length > 0
+        ? (critter.speed / 1000) / critter.path_length
+        : 0;
+      // Advance renderProgress by one frame's worth of movement.
+      let renderProgress = critter._renderProgress ?? critter.path_progress;
+      if (progressPerMs > 0) {
+        renderProgress = Math.min(critter.path_progress, renderProgress + progressPerMs * dtFrameMs);
+      } else {
+        // Snap if no speed info.
+        renderProgress = critter.path_progress;
+      }
+      // Write back so next frame continues from here.
+      critter._renderProgress = renderProgress;
+
+      const { x, y } = this._getCritterPixelPos(renderProgress, sz);
       const spriteKey = critter.iid.toLowerCase();
       const sprite = this._critterSprites.get(spriteKey);
 
       // Offset draw position upward so feet (bottom of sprite) sit on hex center
       const drawY = y - spriteSize / 2;
+
+      // ── Ruler aura circle (drawn behind everything) ───────
+      if (critter.aura_radius > 0) {
+        const pxR = critter.aura_radius * sz * Math.sqrt(3);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, pxR, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,200,50,0.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,210,80,0.7)';
+        ctx.lineWidth = 1.5 / this.zoom;
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // ── Status effect glow (drawn behind sprite) ──────────
       if (critter.slow_remaining_ms > 0) {
@@ -1524,7 +1604,7 @@ export class HexGrid {
 
       if (sprite && sprite !== 'loading') {
         // ── Sprite animation ──────────────────────────────
-        const dir = this._getCritterDirection(critter.path_progress);
+        const dir = this._getCritterDirection(renderProgress);
         sprite.draw(ctx, dir, ts, x, drawY, spriteSize);
       } else {
         // ── Fallback: coloured circle ────────────────────
@@ -1559,6 +1639,7 @@ export class HexGrid {
         const statusIcons = [];
         if (critter.burn_remaining_ms > 0) statusIcons.push('🔥');
         if (critter.slow_remaining_ms > 0) statusIcons.push('❄');
+        if (critter.in_aura && !critter.aura_radius) statusIcons.push('✨');
         if (statusIcons.length) {
           ctx.font = `${Math.round(sz * 0.22)}px sans-serif`;
           ctx.textAlign = 'center';
@@ -2156,6 +2237,9 @@ export class HexGrid {
     if (this.battleCritters.size > 0) {
       this._renderCritters();
     }
+
+    // Draw tower aura debuff icons on top of everything
+    this._renderDebuffedTowerIcons();
 
     // Draw castle health bar above all critters
     if (this.battleActive && this._castlePos) {

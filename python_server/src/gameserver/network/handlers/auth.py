@@ -28,6 +28,10 @@ def _svc() -> "Services":
     return _core_svc()
 
 
+def _ruler_aura_effects(svc: Any) -> "dict[str, float]":
+    return dict(svc.empire_service._gc.ruler_aura_effects)
+
+
 def _ruler_combat_stats(empire: Any, svc: Any) -> "dict[str, Any] | None":
     from gameserver.engine.empire_service import ruler_critter_stats
     ruler_type = empire.ruler.type if empire.ruler else None
@@ -262,6 +266,8 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
             "w": empire.ruler.w,
             "e": empire.ruler.e,
             "r": empire.ruler.r,
+            "aura_choice": empire.ruler.aura_choice,
+            "aura_effects": _ruler_aura_effects(svc),
             "combat_stats": _ruler_combat_stats(empire, svc),
         },
         "ruler_effects": svc.empire_service.get_ruler_effects(empire),

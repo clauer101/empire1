@@ -542,6 +542,7 @@ function _onUpdate(msg) {
     }
   }
 
+  if (msg.debuffed_sids != null) grid.setDebuffedSids(msg.debuffed_sids);
   if (msg.defender_life != null) {
     grid.setDefenderLives(msg.defender_life, msg.defender_max_life);
   }

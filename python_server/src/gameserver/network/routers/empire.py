@@ -21,6 +21,7 @@ from gameserver.network.rest_models import (
     MapSaveBody,
     ChooseRulerRequest,
     RulerSkillUpRequest,
+    RulerAuraChoiceRequest,
     RenameEmpireRequest,
 )
 from gameserver.network.rest_api import (
@@ -308,6 +309,20 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             return {"success": False, "error": "Ruler cannot be changed once the R skill has been upgraded"}
         from gameserver.models.empire import Ruler
         empire.ruler = Ruler()
+        return {"success": True}
+
+    @router.post("/api/empire/ruler/aura-choice")
+    async def ruler_aura_choice(body: RulerAuraChoiceRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        empire = empire_service.get(uid)
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        ruler_type = empire.ruler.type
+        if not ruler_type:
+            return {"success": False, "error": "No ruler selected"}
+        choice = body.aura_effect
+        if choice and choice not in empire_service._gc.ruler_aura_effects:
+            return {"success": False, "error": f"Invalid aura effect: {choice}"}
+        empire.ruler.aura_choice = choice
         return {"success": True}
 
     @router.get("/api/map/neighbors")
