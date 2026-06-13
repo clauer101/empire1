@@ -38,6 +38,7 @@ class SignupRequest(BaseModel):
     password: str
     email: str = ""
     empire_name: str = ""
+    is_bot: bool = False
 
 
 class SignupResponse(BaseModel):

@@ -61,8 +61,8 @@ export class ItemOverlay {
   }
 
   /** Create clickable badge HTML. */
-  linkBadge(iid, name, category) {
-    return `<span class="tt-ubadge tt-link tt-cat-${category}" data-iid="${iid}" data-cat="${category}">${name}</span>`;
+  linkBadge(iid, name, category, extraClass = '') {
+    return `<span class="tt-ubadge tt-link tt-cat-${category}${extraClass ? ' ' + extraClass : ''}" data-iid="${iid}" data-cat="${category}">${name}</span>`;
   }
 
   /** Bind click handlers on all .tt-link badges inside el. */

@@ -146,6 +146,7 @@ function init(el, _api, _state) {
       // Paused: _pausedAt already holds the correct position; just update speed.
       _speed = newSpeed;
     }
+    if (grid) grid.setPlaybackSpeed(_speed);
   });
   container.querySelector('#replay-summary-close').addEventListener('click', () => {
     container.querySelector('#replay-summary').style.display = 'none';
@@ -324,6 +325,7 @@ function _reset() {
   _defenderUid = null;
   const sel = container.querySelector('#replay-speed');
   if (sel) sel.value = '1';
+  if (grid) grid.setPlaybackSpeed(1);
   const btn = container.querySelector('#replay-play');
   if (btn) btn.textContent = '▶ Play';
 }

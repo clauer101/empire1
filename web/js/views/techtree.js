@@ -227,7 +227,7 @@ function render() {
         }
 
         html += `<div class="tt-node" data-iid="${iid}">
-          <div class="tt-node-name" title="${iid}"><span class="tt-status-icon"></span>${name}</div>
+          <div class="tt-node-name" title="${iid}"><span class="tt-status-icon"></span>${name}${avail?.advances_era ? '<span class="badge badge--era-advance" title="Completing this item advances your empire to a new era">⬆</span>' : ''}</div>
           ${effort != null ? `<div class="tt-node-effort">⏱ ${_fmtEffort(effort)}</div>` : ''}
           ${effectsStr ? `<div class="tt-node-effects">✦ ${effectsStr}</div>` : ''}
           <div class="tt-node-locked" style="display:none">🔒</div>

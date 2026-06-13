@@ -116,6 +116,7 @@ class BotDetector:
         self._user_agent: dict[int, str] = {}
         self._bot_probability: dict[int, float] = {}
         self._is_bot: dict[int, bool] = {}
+        self._declared: set[int] = set()               # uids that self-declared as bot at signup
         self._last_header_persist: dict[int, float] = {}  # uid → monotonic time
 
     # ── Startup ───────────────────────────────────────────────────────────────
@@ -141,6 +142,16 @@ class BotDetector:
         values = empires.values() if hasattr(empires, "values") else empires
         for empire in values:
             self._is_bot[empire.uid] = bool(empire.is_bot)
+
+    def declare_bot(self, uid: int) -> None:
+        """Mark uid as a self-declared bot (set at signup; bypasses detection heuristics)."""
+        self._declared.add(uid)
+        self._is_bot[uid] = True
+        self._bot_probability[uid] = 1.0
+        try:
+            asyncio.get_running_loop().create_task(self._persist_uid(uid))
+        except RuntimeError:
+            pass
 
     # ── Signal recording ──────────────────────────────────────────────────────
 
@@ -192,6 +203,10 @@ class BotDetector:
     # ── Probability ───────────────────────────────────────────────────────────
 
     def _recompute(self, uid: int) -> None:
+        if uid in self._declared:
+            self._bot_probability[uid] = 1.0
+            self._is_bot[uid] = True
+            return
         h = self._header_score.get(uid, -1.0)
         r_times = self._reaction_times.get(uid, [])
         r = _reaction_bot_score(r_times)

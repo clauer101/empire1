@@ -9,8 +9,9 @@
 # If no entry matches, the adaptive heuristic is used.
 #
 # ── Trigger fields (all optional, default = always true) ────
-#   items:    list of building/knowledge IIDs; any one of them
-#             completing triggers this army (OR logic)
+#   items:    list of building/knowledge IIDs that must ALL be
+#             completed by the defender (remaining_effort == 0)
+#   citizen:  defender must have at least this many citizens
 #
 # ── Wave fields ─────────────────────────────────────────────
 #   critter:  critter IID (matched case-insensitively)
@@ -77,7 +78,7 @@ armies:
     travel_time: 12
     trigger:
       items: [BASE_CAMP]
-    waves: []
+    waves:
 
   # ──────────────────────────────────────────────────────────
   #   NEOLITHIC  (Effort 800 – 7.500)
@@ -419,7 +420,7 @@ armies:
       - critter: SIEGE_RAM
         slots: 30
       - critter: CONDOTTERI
-        slots: 32
+        slots: 34
 
   - name: "Knights' Charge"
     travel_time: 8100
@@ -459,7 +460,7 @@ armies:
       - critter: HANDGUNNER
         slots: 34
       - critter: HANDGUNNER
-        slots: 36
+        slots: 32
 
   - name: "Crusader Host"
     travel_time: 9300
@@ -499,7 +500,7 @@ armies:
       - critter: CRUSADER
         slots: 34
       - critter: KNIGHT
-        slots: 36
+        slots: 31
 
   - name: "Castle Assault"
     travel_time: 10200
@@ -539,9 +540,9 @@ armies:
       - critter: CONDOTTERI
         slots: 34
       - critter: SIEGE_RAM
-        slots: 36
+        slots: 32
       - critter: KNIGHT
-        slots: 38
+        slots: 33
 
   - name: "Feudal Army"
     travel_time: 12800
@@ -581,9 +582,9 @@ armies:
       - critter: CONDOTTERI
         slots: 34
       - critter: CRUSADER
-        slots: 36
+        slots: 31
       - critter: CRUSADER
-        slots: 38
+        slots: 33
 
   - name: "Holy Crusade"
     travel_time: 11400
@@ -621,13 +622,11 @@ armies:
       - critter: KNIGHT
         slots: 32
       - critter: HANDGUNNER
+        slots: 31
+      - critter: CRUSADER
+        slots: 28
+      - critter: CRUSADER
         slots: 34
-      - critter: CRUSADER
-        slots: 36
-      - critter: CRUSADER
-        slots: 38
-      - critter: CRUSADER
-        slots: 40
 
   # ──────────────────────────────────────────────────────────
   #   RENAISSANCE  (Effort 100.000 – 500.000)
@@ -651,15 +650,15 @@ armies:
       - critter: MUSKETEER
         slots: 20
       - critter: SMALL_TANK
-        slots: 6
+        slots: 22
       - critter: MUSKETEER
         slots: 21
       - critter: DRAGOONER
         slots: 22
       - critter: NINJA
         slots: 23
-      - critter: SOLDIER
-        slots: 9
+      - critter: DRAGOONER
+        slots: 20
       - critter: DRAGOONER
         slots: 24
       - critter: NINJA
@@ -675,11 +674,11 @@ armies:
       - critter: THE_KING
         slots: 36
       - critter: MUSKETEER
-        slots: 38
+        slots: 35
       - critter: DRAGOONER
-        slots: 38
+        slots: 36
       - critter: DRAGOONER
-        slots: 38
+        slots: 35
 
   - name: "Musketeer Brigade"
     travel_time: 3400
@@ -721,13 +720,13 @@ armies:
       - critter: MUSKETEER
         slots: 36
       - critter: MUSKETEER
-        slots: 38
+        slots: 36
       - critter: NINJA
-        slots: 38
+        slots: 35
       - critter: NINJA
         slots: 38
       - critter: DRAGOONER
-        slots: 38
+        slots: 34
 
   - name: "Ninja Infiltration"
     travel_time: 12300
@@ -771,9 +770,9 @@ armies:
       - critter: THE_KING
         slots: 38
       - critter: NINJA
-        slots: 38
+        slots: 36
       - critter: NINJA
-        slots: 38
+        slots: 35
       - critter: SOLDIER
         slots: 22
 
@@ -817,13 +816,13 @@ armies:
       - critter: DRAGOONER
         slots: 36
       - critter: DRAGOONER
-        slots: 38
+        slots: 36
       - critter: DRAGOONER
-        slots: 38
+        slots: 36
       - critter: MUSKETEER
-        slots: 38
+        slots: 36
       - critter: MUSKETEER
-        slots: 38
+        slots: 35
 
   # ──────────────────────────────────────────────────────────
   #   INDUSTRIAL  (Effort 500.000 – 2.000.000)
@@ -918,16 +917,12 @@ armies:
         slots: 29
       - critter: TRANSPORTER
         slots: 30
-      - critter: SOLDIER
-        slots: 34
       - critter: MOTORBIKE
         slots: 34
       - critter: SMALL_TANK
-        slots: 37
+        slots: 35
       - critter: SOLDIER
-        slots: 38
-      - critter: TRANSPORTER
-        slots: 38
+        slots: 35
 
   - name: "Steam Assault"
     travel_time: 14500
@@ -974,14 +969,10 @@ armies:
         slots: 30
       - critter: SMALL_TANK
         slots: 33
-      - critter: SOLDIER
-        slots: 36
       - critter: TRANSPORTER
         slots: 35
       - critter: TRANSPORTER
         slots: 37
-      - critter: TRANSPORTER
-        slots: 40
 
   - name: "Tank Column"
     travel_time: 15200
@@ -1033,9 +1024,7 @@ armies:
       - critter: TRANSPORTER
         slots: 38
       - critter: SOLDIER
-        slots: 40
-      - critter: SMALL_TANK
-        slots: 40
+        slots: 34
 
   - name: "Factory Raid"
     travel_time: 10000
@@ -1083,11 +1072,11 @@ armies:
       - critter: SMALL_TANK
         slots: 38
       - critter: SOLDIER
-        slots: 38
+        slots: 36
       - critter: SMALL_TANK
-        slots: 40
+        slots: 33
       - critter: SMALL_TANK
-        slots: 42
+        slots: 36
 
   # ──────────────────────────────────────────────────────────
   #   MODERN  (Effort 2.000.000 – 5.300.000)
@@ -1152,10 +1141,6 @@ armies:
         slots: 40
       - critter: HELI
         slots: 34
-      - critter: SPECOPS
-        slots: 35
-      - critter: SPECOPS
-        slots: 38
 
   - name: "Special Ops"
     travel_time: 15300
@@ -1216,10 +1201,6 @@ armies:
         slots: 33
       - critter: SIEGE_TANK
         slots: 36
-      - critter: SPECOPS
-        slots: 38
-      - critter: HELI
-        slots: 38
 
   - name: "Heli Strike"
     travel_time: 16200
@@ -1280,8 +1261,6 @@ armies:
         slots: 36
       - critter: SIEGE_TANK
         slots: 36
-      - critter: SPECOPS
-        slots: 38
       - critter: HELI
         slots: 40
 
@@ -1338,14 +1317,8 @@ armies:
         slots: 30
       - critter: SPECOPS
         slots: 30
-      - critter: HELI
-        slots: 34
       - critter: THE_GENERAL
         slots: 40
-      - critter: HELI
-        slots: 37
-      - critter: SPECOPS
-        slots: 39
       - critter: SIEGE_TANK
         slots: 40
 
@@ -1408,10 +1381,6 @@ armies:
         slots: 36
       - critter: SPECOPS
         slots: 37
-      - critter: SIEGE_TANK
-        slots: 39
-      - critter: HELI
-        slots: 40
 
   - name: "Cyber Strike"
     travel_time: 16800
@@ -1469,21 +1438,9 @@ armies:
       - critter: DRAGOONER
         slots: 29
       - critter: SIEGE_TANK
-        slots: 29
-      - critter: SIEGE_TANK
-        slots: 30
-      - critter: DRAGOONER
         slots: 30
       - critter: THE_GENERAL
         slots: 35
-      - critter: SIEGE_TANK
-        slots: 36
-      - critter: SPECOPS
-        slots: 38
-      - critter: HELI
-        slots: 39
-      - critter: SPECOPS
-        slots: 40
 
   # ──────────────────────────────────────────────────────────
   #   FUTURE  (Effort 40.000.000 – 100.000.000)
@@ -1669,6 +1626,4 @@ armies:
       - critter: DRONE
         slots: 29
       - critter: MECH_WARRIOR
-        slots: 30
-      - critter: DRONE
         slots: 30

@@ -1941,6 +1941,45 @@
         ]
       }
     },
+    "/api/rulers": {
+      "get": {
+        "summary": "Get Rulers",
+        "operationId": "get_rulers_api_rulers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Rulers Api Rulers Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Rulers",
+        "operationId": "save_rulers_api_rulers_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Save Rulers Api Rulers Post"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/era-items": {
       "get": {
         "summary": "Get Era Items",
@@ -3446,6 +3485,11 @@
             "type": "string",
             "title": "Empire Name",
             "default": ""
+          },
+          "is_bot": {
+            "type": "boolean",
+            "title": "Is Bot",
+            "default": false
           }
         },
         "type": "object",

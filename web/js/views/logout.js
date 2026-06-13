@@ -52,6 +52,10 @@ async function enter() {
 
     </div>
 
+    <div style="text-align:center;padding:8px 0 24px;font-size:11px;">
+      <a href="#legal" style="color:var(--text-dim);opacity:0.6;text-decoration:none;">Legal / Impressum</a>
+    </div>
+
     <div id="rename-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
       <div style="background:var(--surface);border-radius:var(--radius);padding:24px;min-width:280px;max-width:360px;width:90%;position:relative;display:flex;flex-direction:column;gap:12px;">
         <button id="rename-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;">✕</button>

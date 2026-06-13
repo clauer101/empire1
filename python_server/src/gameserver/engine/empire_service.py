@@ -44,7 +44,7 @@ def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int, aura_effects: "
         "speed":       _lerp(ruler_cfg["speed_min"],   ruler_cfg["speed_max"]),
         "health":      _lerp(ruler_cfg["health_min"],  ruler_cfg["health_max"]),
         "armour":      _lerp(ruler_cfg["armour_min"],  ruler_cfg["armour_max"]),
-        "damage":      _lerp(ruler_cfg["damage_min"],  ruler_cfg["damage_max"]),
+        "damage":      round(_lerp(ruler_cfg["damage_min"],  ruler_cfg["damage_max"])),
         "value":       _lerp(ruler_cfg["value_min"],   ruler_cfg["value_max"]),
         "scale":        ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
         "animation":    ruler_cfg["animation"],

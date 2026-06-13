@@ -38,3 +38,25 @@ CMD ["/app/entrypoint.sh", "/app/data/gameserver.db", "/app/data/state.yaml"]
 FROM base AS webserver
 EXPOSE 8000
 CMD ["/app/.venv/bin/python", "/app/web/fastapi_server.py", "--host", "0.0.0.0", "--port", "8000"]
+
+# ── ai_players stage ──────────────────────────────────────────────────────────
+FROM python:3.12-slim AS bots
+
+WORKDIR /app
+
+COPY ai_players/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ai_players/ ./
+
+RUN useradd -r -u 1000 -s /sbin/nologin appuser \
+    && mkdir -p /app/states /app/logs \
+    && chown -R appuser:appuser /app
+USER appuser
+
+ENV PYTHONUNBUFFERED=1
+
+# BOT_COUNT controls how many bots fleet.py spawns (default: 3)
+ENV BOT_COUNT=3
+
+CMD ["sh", "-c", "python fleet.py --count ${BOT_COUNT}"]

@@ -202,7 +202,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
           <div class="item-header" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;overflow:hidden;height:100%;padding:8px 12px;box-sizing:border-box;${exclusiveGlow}">
             ${imgUrl ? `<div class="item-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;" data-bg="${imgUrl}"></div><div class="item-bg-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;"></div>` : ''}
             <div style="flex:1;position:relative;">
-              <div><strong style="font-size:1.1em;">${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong>${info.era ? `<span style="font-size:0.75em;color:#c9a84c;margin-left:6px;font-weight:400;">${ERA_ROMAN[ERA_YAML_TO_KEY[info.era]] || ''}</span>` : ''}</div>
+              <div><strong style="font-size:1.1em;">${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong>${info.era ? `<span style="font-size:0.75em;color:#c9a84c;margin-left:6px;font-weight:400;">${ERA_ROMAN[ERA_YAML_TO_KEY[info.era]] || ''}</span>` : ''}${info.advances_era ? '<span class="badge badge--era-advance" title="Completing this item advances your empire to a new era">⬆ New Era</span>' : ''}</div>
               <div class="${cfg.msgClass}"></div>
               <div class="item-description" style="font-size:0.9em; color:#aaa; margin-top:4px;">${info.description || '—'}</div>
             </div>
@@ -222,7 +222,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
           <div style="background:var(--border-color,#333);border-radius:3px;height:6px;margin:2px 0 4px"><div class="queue-progress-bar" style="background:${cfg.progressColor};width:${pct.toFixed(1)}%;height:100%;border-radius:3px;transition:width .5s"></div></div>
           ${info.costs && Object.keys(info.costs).length > 0 ? `<div class="detail-row"><span class="detail-label">Costs:</span> ${_fmtCosts(info.costs, summary, wasStarted, cfg.categoryKey === 'buildings' ? (summary?.effects?.building_cost_modifier ?? 0) : 0)}</div>` : ''}
           ${info.effects && Object.keys(info.effects).length > 0 ? `<div class="detail-row"><span class="detail-label">Effects:</span>${_fmtEffects(info.effects)}</div>` : ''}
-          ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map((u) => _overlay.linkBadge(u.iid, u.name, u.category)).join('')}</div>` : ''}
+          ${(unlocksMap[iid] || []).length > 0 ? `<div class="detail-row"><span class="detail-label">Required for:</span> ${(unlocksMap[iid] || []).map((u) => { const hypothetical = new Set([...completed, iid]); const allMet = (catalog[u.iid]?.requirements || []).every((r) => hypothetical.has(r)); return _overlay.linkBadge(u.iid, u.name, u.category, allMet ? 'tt-ubadge-ready' : 'tt-ubadge-blocked'); }).join('')}</div>` : ''}
           ${(info.excludes || []).length > 0 ? `<div class="detail-row"><span class="detail-label" style="color:#c9a84c;text-shadow:0 0 6px rgba(201,168,76,0.6);font-weight:600;">✦ Epic Building</span> <span style="color:var(--text-dim,#888);font-size:0.85em;">excludes:</span> ${(info.excludes).map((e) => { const ci = catalog[e]; return ci ? _overlay.linkBadge(e, ci.name || e, ci.item_type || 'building') : `<span class="tt-ubadge">${e}</span>`; }).join('')}</div>` : ''}
         </td>
       </tr>`;

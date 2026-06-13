@@ -254,6 +254,18 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "base_artifact_steal_defeat": svc.game_config.base_artifact_steal_defeat if svc.game_config else 0.0,
         "current_era": svc.empire_service.get_current_era(empire),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
+        # Next per-iid item-upgrade price (cost is independent of which stat is
+        # bought — it depends only on the item's era and total levels already on
+        # the iid). Covers placed towers plus any already-upgraded item so the
+        # client/bots can weigh a workshop upgrade against other spending without
+        # re-deriving the formula. Stat "damage" is a representative valid stat.
+        "item_upgrade_prices": {
+            iid: round(svc.empire_service._item_upgrade_price(empire, iid, "damage"), 2)
+            for iid in (
+                {s.iid for s in empire.structures.values()}
+                | set(empire.item_upgrades.keys())
+            )
+        },
         "end_rally": _build_end_rally_info(svc.game_config, svc.empire_service),
         "ruler": {
             "name": empire.ruler.name,
@@ -362,26 +374,22 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
     The initial tiles are shifted to the empire's assigned global spawn position.
     """
     from gameserver.models.empire import Empire
-    from gameserver.models.hex import HexCoord
     svc = _svc()
     assert svc.empire_service is not None
     starting_res = dict(svc.game_config.starting_resources) if svc.game_config else {"gold": 0.0, "culture": 0.0, "life": 10.0}
     starting_max_life = svc.game_config.starting_max_life if svc.game_config else 10.0
 
     # Compute global spawn position for this new empire
-    spawn_offset = HexCoord(0, 0)
-    try:
-        spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
-        existing_castles: list[tuple[int, int]] = []
-        for emp in svc.empire_service.all_empires.values():
-            for key, tile_type in emp.hex_map.items():
-                if tile_type == "castle":
-                    q, r = map(int, key.split(","))
-                    existing_castles.append((q, r))
-        spawn_offset = _next_spawn_point(spacing=spacing, existing_castles=existing_castles)
-        log.info("New empire uid=%d spawn offset q=%d r=%d (spacing=%d, existing=%d)", uid, spawn_offset.q, spawn_offset.r, spacing, len(existing_castles))
-    except Exception as exc:
-        log.warning("Could not compute spawn position for uid=%d: %s", uid, exc)
+    spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
+    existing_tiles: list[tuple[int, int]] = []
+    for emp in svc.empire_service.all_empires.values():
+        for key in emp.hex_map:
+            q, r = map(int, key.split(","))
+            existing_tiles.append((q, r))
+    if not existing_tiles:
+        log.warning("No existing tiles found when placing uid=%d — this should not happen in a live game", uid)
+    spawn_offset = _next_spawn_point(spacing=spacing, existing_castles=existing_tiles)
+    log.info("New empire uid=%d spawn offset q=%d r=%d (spacing=%d, existing_tiles=%d)", uid, spawn_offset.q, spawn_offset.r, spacing, len(existing_tiles))
 
     oq, or_ = spawn_offset.q, spawn_offset.r
     empire = Empire(

@@ -29,6 +29,7 @@ import signupView from './views/signup.js';
 import replayView from './views/replay.js';
 import workshopView from './views/workshop.js';
 import logoutView from './views/logout.js';
+import legalView from './views/legal.js';
 import globalmapView from './views/globalmap.js';
 import globalempiresView from './views/globalempires.js';
 import rulerView from './views/ruler.js';
@@ -68,6 +69,7 @@ eventBus.on('rest:unauthorized', () => {
   rulerView,
   seasonResultsView,
   logoutView,
+  legalView,
 ].forEach((v) => router.register(v));
 
 // ── Toast notifications for push messages ──────────────────

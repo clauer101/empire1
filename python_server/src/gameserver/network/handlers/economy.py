@@ -100,7 +100,16 @@ async def handle_item_request(
     completed.update(empire.artifacts)
 
     from gameserver.models.items import ItemType
+    from gameserver.util.eras import ERA_ITEM_TO_INDEX, ERA_ORDER
     up = svc.upgrade_provider
+
+    # Completing any knowledge/building of a higher era advances the empire
+    # into that era (see EmpireService.get_current_era) — flag those items.
+    current_era = svc.empire_service.get_current_era(empire)
+    current_era_idx = ERA_ORDER.index(current_era) if current_era in ERA_ORDER else 0
+
+    def _advances_era(item: Any) -> bool:
+        return ERA_ITEM_TO_INDEX.get(item.era, 0) > current_era_idx
 
     buildings = {}
     for item in up.available_items(ItemType.BUILDING, completed):
@@ -114,6 +123,7 @@ async def handle_item_request(
             "effects": dict(item.effects),
             "image": item.image,
             "era": item.era,
+            "advances_era": _advances_era(item),
         }
 
     knowledge = {}
@@ -128,6 +138,7 @@ async def handle_item_request(
             "effects": dict(item.effects),
             "image": item.image,
             "era": item.era,
+            "advances_era": _advances_era(item),
         }
 
     # Structures (towers) — available based on research
@@ -772,16 +783,16 @@ async def handle_buy_tile_request(
             "error": f"Tile {tile_key} is not a void tile (current type: {current_type})",
         }
 
-    # Check if the tile is already owned by another empire in world coordinates
-    world_key = (q, r)
-    tile_owner = svc.empire_service.world_tile_owner()
-    existing_owner = tile_owner.get(world_key)
-    if existing_owner is not None and existing_owner != target_uid:
-        return {
-            "type": "buy_tile_response",
-            "success": False,
-            "error": "This tile belongs to another empire",
-        }
+    # Check if the tile is already claimed by another empire (in their hex_map, any type)
+    for other_emp in svc.empire_service.all_empires.values():
+        if other_emp.uid == target_uid:
+            continue
+        if tile_key in other_emp.hex_map:
+            return {
+                "type": "buy_tile_response",
+                "success": False,
+                "error": "This tile belongs to another empire",
+            }
 
     # Require adjacency to an existing owned (non-void) tile to keep territory contiguous
     neighbor_offsets = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1))

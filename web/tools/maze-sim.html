@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maze Simulator</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --danger:      #ef5350;
+      --success:     #66bb6a;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #topbar a { color: var(--text-dim); text-decoration: none; font-size: 12px; }
+    #topbar a:hover { color: var(--text); }
+
+    /* ── Controls ── */
+    #controls {
+      display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+      padding: 12px 20px; background: var(--surface-alt); border-bottom: 1px solid var(--border);
+    }
+    .ctl { display: flex; flex-direction: column; gap: 3px; }
+    .ctl label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px; }
+    .ctl input, .ctl select {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: 4px; padding: 5px 8px; font-family: var(--mono); font-size: 12px; width: 110px;
+    }
+    .ctl input:focus, .ctl select:focus { outline: none; border-color: var(--accent); }
+    #run-btn {
+      padding: 7px 22px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px;
+      background: var(--accent); color: #000; border: none; border-radius: 4px; cursor: pointer;
+    }
+    #run-btn:disabled { opacity: 0.5; cursor: wait; }
+    #status { font-size: 11px; color: var(--text-dim); align-self: center; }
+    #status.error { color: var(--danger); }
+
+    /* ── Layout ── */
+    #content {
+      max-width: 1400px; margin: 0 auto; padding: 16px;
+      display: grid; grid-template-columns: minmax(420px, 1fr) minmax(320px, 480px); gap: 16px;
+    }
+    @media (max-width: 900px) { #content { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .panel-header {
+      padding: 8px 12px; background: var(--surface-alt); border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 12px; display: flex; align-items: baseline; gap: 10px;
+    }
+    .panel-header .sub { font-weight: 400; font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+    #log-toggle { cursor: pointer; user-select: none; }
+    #log-toggle:hover { background: #20202e; }
+    #log-toggle .chev { color: var(--text-dim); font-size: 11px; }
+
+    #map-wrap {
+      background: #0a0a12; display: flex; justify-content: center; align-items: center;
+      padding: 14px; min-height: 320px;
+    }
+    #map-wrap svg { display: block; }
+
+    /* ── Timeline ── */
+    #timeline { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    #timeline input[type=range] { flex: 1; accent-color: var(--accent); }
+    #cycle-lbl { font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 92px; text-align: right; }
+    #play-btn {
+      background: var(--surface-alt); color: var(--text); border: 1px solid var(--border);
+      border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 12px;
+    }
+
+    /* ── Stats row ── */
+    #stats { padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px 20px; border-top: 1px solid var(--border); }
+    .stat { display: flex; flex-direction: column; gap: 1px; min-width: 70px; }
+    .stat .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat .val { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; color: var(--accent); }
+    .stat .val.gold { color: var(--warning); }
+    .stat .val.path { color: var(--success); }
+
+    /* ── Action log ── */
+    #log { max-height: 560px; overflow-y: auto; font-family: var(--mono); font-size: 11px; }
+    .log-row {
+      display: flex; gap: 10px; padding: 3px 12px; border-bottom: 1px solid #1a1a26;
+      cursor: pointer; white-space: nowrap;
+    }
+    .log-row:hover { background: var(--surface-alt); }
+    .log-row.current { background: #1c2a3a; }
+    .log-row .c { color: var(--text-dim); min-width: 44px; text-align: right; }
+    .log-row .g { color: var(--warning); min-width: 62px; text-align: right; }
+    .log-row .a { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+    .log-row .a.fail { color: var(--danger); }
+    .log-row .a.save { color: var(--text-dim); font-style: italic; }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>🧩 MAZE SIMULATOR</h1>
+    <a href="index.html">← Tools</a>
+  </div>
+
+  <div id="controls">
+    <div class="ctl"><label>Era</label>
+      <select id="in-era"></select>
+    </div>
+    <div class="ctl"><label>Cycles</label><input id="in-cycles" type="number" value="300" min="1" max="2000"></div>
+    <div class="ctl"><label>Start gold</label><input id="in-gold" type="number" value="200" min="0"></div>
+    <div class="ctl"><label>Gold / cycle</label><input id="in-income" type="number" value="100" min="0"></div>
+    <div class="ctl"><label>Top-N pick</label><input id="in-topn" type="number" value="2" min="1" max="5"></div>
+    <div class="ctl"><label>Seed (blank = random)</label><input id="in-seed" type="number" placeholder="random" min="1"></div>
+    <button id="run-btn">▶ Run</button>
+    <span id="status"></span>
+  </div>
+
+  <div id="content">
+    <div class="panel">
+      <div class="panel-header">Map <span class="sub" id="map-sub"></span></div>
+      <div id="map-wrap"><span style="color:var(--text-dim)">Run a simulation to see the maze.</span></div>
+      <div id="timeline" hidden>
+        <button id="play-btn">▶</button>
+        <input id="slider" type="range" min="0" max="0" value="0">
+        <span id="cycle-lbl"></span>
+      </div>
+      <div id="stats" hidden>
+        <div class="stat"><span class="lbl">Path length</span><span class="val path" id="st-path">—</span></div>
+        <div class="stat"><span class="lbl">Towers</span><span class="val" id="st-towers">—</span></div>
+        <div class="stat"><span class="lbl">Tiles</span><span class="val" id="st-tiles">—</span></div>
+        <div class="stat"><span class="lbl">Gold</span><span class="val gold" id="st-gold">—</span></div>
+        <div class="stat"><span class="lbl">Tile price</span><span class="val gold" id="st-tileprice">—</span></div>
+      </div>
+    </div>
+
+    <div class="panel" id="log-panel">
+      <div class="panel-header" id="log-toggle">
+        <span class="chev" id="log-chev">▸</span> Action log
+        <span class="sub" id="log-sub"></span>
+      </div>
+      <div id="log" hidden></div>
+    </div>
+  </div>
+
+<script>
+const ERAS = ['stone', 'neolithic', 'bronze', 'iron', 'middle_ages',
+              'renaissance', 'industrial', 'modern', 'future'];
+const eraSel = document.getElementById('in-era');
+for (const e of ERAS) {
+  const o = document.createElement('option');
+  o.value = e;
+  o.textContent = e.replace('_', ' ');
+  eraSel.appendChild(o);
+}
+
+// ── Hex geometry (flat-top, axial) — same as map-overview.html ──
+function hexCenter(q, r, size) {
+  return {
+    x: size * 1.5 * q,
+    y: size * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r),
+  };
+}
+function hexCornerPoints(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i);
+    pts.push(`${(cx + size * Math.cos(a)).toFixed(2)},${(cy + size * Math.sin(a)).toFixed(2)}`);
+  }
+  return pts.join(' ');
+}
+const FIXED_COLORS = {
+  '':          { fill: '#1a1a2a', stroke: '#1e1e2e' },
+  empty:       { fill: '#1a1a2a', stroke: '#1e1e2e' },
+  void:        { fill: '#0a0a14', stroke: '#0e0e18' },
+  path:        { fill: '#5c4a32', stroke: '#7a6545' },
+  castle:      { fill: '#7a7a30', stroke: '#aaaa44' },
+  spawnpoint:  { fill: '#8a2020', stroke: '#cc4040' },
+};
+const TOWER_PALETTE = [
+  { fill: '#1a5c2a', stroke: '#28884a' },
+  { fill: '#1a3a6a', stroke: '#2a5aaa' },
+  { fill: '#6a2a00', stroke: '#aa4a10' },
+  { fill: '#5a1a5a', stroke: '#8a3a8a' },
+  { fill: '#5a5a00', stroke: '#9a9a10' },
+  { fill: '#00504a', stroke: '#10847c' },
+  { fill: '#5a0020', stroke: '#8a1040' },
+  { fill: '#003a5a', stroke: '#1060a0' },
+];
+const towerColorMap = {};   // stable across the whole run
+let towerColorIdx = 0;
+function towerColor(type) {
+  if (!(type in towerColorMap)) {
+    towerColorMap[type] = TOWER_PALETTE[towerColorIdx % TOWER_PALETTE.length];
+    towerColorIdx++;
+  }
+  return towerColorMap[type];
+}
+
+function renderMapSVG(tilesObj, maxPx = 520) {
+  const tiles = Object.entries(tilesObj).map(([k, type]) => {
+    const [q, r] = k.split(',').map(Number);
+    return { q, r, type };
+  });
+  if (!tiles.length) return '<svg width="120" height="60"></svg>';
+
+  const SIZE = 14;
+  const centers = tiles.map(t => ({ ...t, ...hexCenter(t.q, t.r, SIZE) }));
+  const xs = centers.map(c => c.x);
+  const ys = centers.map(c => c.y);
+  const minX = Math.min(...xs) - SIZE;
+  const minY = Math.min(...ys) - SIZE;
+  const rawW = Math.max(...xs) + SIZE - minX;
+  const rawH = Math.max(...ys) + SIZE - minY;
+  const scale = Math.min(maxPx / rawW, (maxPx * 0.8) / rawH, 2.2);
+  const W = Math.ceil(rawW * scale + 4);
+  const H = Math.ceil(rawH * scale + 4);
+  const ox = -minX * scale + 2;
+  const oy = -minY * scale + 2;
+
+  const polys = centers.map(({ q, r, x, y, type }) => {
+    const cx = x * scale + ox;
+    const cy = y * scale + oy;
+    const pts = hexCornerPoints(cx, cy, SIZE * scale);
+    const col = FIXED_COLORS[type] ?? towerColor(type);
+    return `<polygon points="${pts}" fill="${col.fill}" stroke="${col.stroke}" stroke-width="0.7"><title>${type} (${q},${r})</title></polygon>`;
+  });
+  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${polys.join('')}</svg>`;
+}
+
+// ── Run + timeline state ──
+let steps = [];            // steps[i].tilesResolved carries the forward-filled map
+let playTimer = null;
+
+const $ = id => document.getElementById(id);
+
+async function run() {
+  const btn = $('run-btn');
+  const status = $('status');
+  btn.disabled = true;
+  status.className = '';
+  status.textContent = 'simulating…';
+  stopPlay();
+  try {
+    const body = {
+      era: $('in-era').value,
+      cycles: Number($('in-cycles').value),
+      start_gold: Number($('in-gold').value),
+      gold_per_cycle: Number($('in-income').value),
+      top_n: Number($('in-topn').value),
+    };
+    if ($('in-seed').value) body.seed = Number($('in-seed').value);
+    const r = await fetch('/api/tools/maze-sim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    const data = await r.json();
+
+    // Forward-fill tile snapshots so every step has a map
+    let last = null;
+    steps = data.steps.map(s => {
+      if (s.tiles) last = s.tiles;
+      return { ...s, tilesResolved: last };
+    });
+
+    renderLog();
+    $('timeline').hidden = false;
+    $('stats').hidden = false;
+    const slider = $('slider');
+    slider.max = steps.length - 1;
+    slider.value = steps.length - 1;
+    showStep(steps.length - 1);
+    status.textContent =
+      `done — seed ${data.seed}, final path ${data.final_path_len}, ` +
+      `${data.final_towers} towers, ${data.gold_left}g left`;
+  } catch (err) {
+    status.className = 'error';
+    status.textContent = String(err.message || err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderLog() {
+  const log = $('log');
+  log.innerHTML = '';
+  let actions = 0;
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (!s.action) continue;
+    actions++;
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.dataset.idx = i;
+    const cls = s.action.startsWith('FAILED') ? 'a fail'
+              : s.action.startsWith('saving') ? 'a save' : 'a';
+    row.innerHTML =
+      `<span class="c">${s.cycle}</span><span class="g">${s.gold}g</span>` +
+      `<span class="${cls}"></span>`;
+    row.lastChild.textContent = s.action;
+    row.addEventListener('click', () => {
+      $('slider').value = i;
+      showStep(i);
+    });
+    log.appendChild(row);
+  }
+  $('log-sub').textContent = `${actions} actions / ${steps.length} cycles`;
+}
+
+function showStep(i) {
+  const s = steps[i];
+  if (!s) return;
+  $('map-wrap').innerHTML = renderMapSVG(s.tilesResolved || {});
+  $('cycle-lbl').textContent = `cycle ${s.cycle}`;
+  $('st-path').textContent = s.path_len;
+  $('st-towers').textContent = s.towers;
+  $('st-tiles').textContent = Object.keys(s.tilesResolved || {}).length;
+  $('st-gold').textContent = `${s.gold}g`;
+  $('st-tileprice').textContent = `${s.tile_price}g`;
+  $('map-sub').textContent = s.action || '';
+  for (const row of document.querySelectorAll('.log-row')) {
+    row.classList.toggle('current', Number(row.dataset.idx) === i);
+  }
+  const cur = document.querySelector('.log-row.current');
+  if (cur) cur.scrollIntoView({ block: 'nearest' });
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; $('play-btn').textContent = '▶'; }
+}
+
+$('play-btn').addEventListener('click', () => {
+  if (playTimer) { stopPlay(); return; }
+  const slider = $('slider');
+  if (Number(slider.value) >= Number(slider.max)) slider.value = 0;
+  $('play-btn').textContent = '⏸';
+  playTimer = setInterval(() => {
+    const v = Number(slider.value);
+    if (v >= Number(slider.max)) { stopPlay(); return; }
+    slider.value = v + 1;
+    showStep(v + 1);
+  }, 60);
+});
+
+$('log-toggle').addEventListener('click', () => {
+  const log = $('log');
+  log.hidden = !log.hidden;
+  $('log-chev').textContent = log.hidden ? '▸' : '▾';
+});
+
+$('slider').addEventListener('input', e => { stopPlay(); showStep(Number(e.target.value)); });
+$('run-btn').addEventListener('click', run);
+</script>
+</body>
+</html>

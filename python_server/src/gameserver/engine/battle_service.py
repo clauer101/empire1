@@ -188,14 +188,21 @@ class BattleService:
         """
         battle.broadcast_interval_ms = broadcast_interval_ms
         battle.broadcast_timer_ms = broadcast_interval_ms
-        
-        log.info("[battle_loop] Starting battle (bid=%d, defender=%d, attackers=%s)",
-                 battle.bid, battle.defender.uid if battle.defender else None, battle.attacker_uids)
-        
+
+        # Speedup makes the simulation advance N× more game time per wall-clock
+        # second (same mechanism as the global game loop). The frontend is not
+        # speedup-aware: it just receives whatever frames the sim produces, so a
+        # sped-up battle simply plays out faster for live observers.
+        speedup = max(float(self._gc.speedup_factor), 0.01) if self._gc else 1.0
+
+        log.info("[battle_loop] Starting battle (bid=%d, defender=%d, attackers=%s, speedup=%.2fx)",
+                 battle.bid, battle.defender.uid if battle.defender else None,
+                 battle.attacker_uids, speedup)
+
         last = time.monotonic()
         while battle.keep_alive:
             now = time.monotonic()
-            dt_ms = (now - last) * 1000.0
+            dt_ms = (now - last) * 1000.0 * speedup
             last = now
 
             self.tick(battle, dt_ms)
@@ -859,18 +866,9 @@ class BattleService:
         battle.defender_losses["life"] = battle.defender_losses.get("life", 0.0) + life_damage
 
         # Flag if a ruler critter reached the castle
-        if not battle.ruler_reached_goal:
-            try:
-                from gameserver.network.handlers._core import _svc as _core_svc
-                _s = _core_svc()
-                for _uid in battle.attacker_uids:
-                    _emp = _s.empire_service.get(_uid) if _s.empire_service else None
-                    if _emp and _emp.ruler and _emp.ruler.type == critter.iid:
-                        battle.ruler_reached_goal = True
-                        log.info("[battle] Ruler critter '%s' reached the castle (bid=%d)", critter.iid, battle.bid)
-                        break
-            except Exception:
-                pass
+        if not battle.ruler_reached_goal and critter.is_ruler:
+            battle.ruler_reached_goal = True
+            log.info("[battle] Ruler critter '%s' reached the castle (bid=%d)", critter.iid, battle.bid)
 
         # Give capture resources to the owning attacker
         owner_uid = critter.owner_uid or (battle.attacker_uids[0] if battle.attacker_uids else 0)

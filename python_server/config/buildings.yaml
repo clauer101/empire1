@@ -800,7 +800,7 @@ MEDICS_CORPS:
   excludes: [PATENT_OFFICE]
   effects:
     restore_life_during_battle_modifier: 0.03
-    max_life_modifier: 10
+    max_life_modifier: 20
 
 # ============================================================
 #   INDUSTRIAL  (Effort 500.000 – 2.000.000)

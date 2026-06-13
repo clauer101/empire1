@@ -163,6 +163,8 @@ class TestRulerCombatScaling:
         mid = (RULER_MAX_LEVEL + 1) // 2
         t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** 2
         expected = MAJA_CFG[key_min] + (MAJA_CFG[key_max] - MAJA_CFG[key_min]) * t
+        if attr == "damage":
+            expected = round(expected)
         stats = ruler_critter_stats(MAJA_CFG, level=mid)
         assert stats[attr] == pytest.approx(expected)
 

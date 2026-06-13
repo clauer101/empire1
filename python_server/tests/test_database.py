@@ -142,10 +142,10 @@ class TestMessages:
         assert len(inbox) == 1
         assert inbox[0]["body"] == "Hello!"
 
-    async def test_system_message_is_pre_read(self, db: Database):
+    async def test_system_message_is_unread(self, db: Database):
         uid = await db.create_user("player", "pw")
         msg = await db.send_message(from_uid=0, to_uid=uid, body="System msg")
-        assert msg["read"] is True
+        assert msg["read"] is False
 
     async def test_get_sent(self, db: Database):
         uid1 = await db.create_user("s1", "pw")
@@ -209,11 +209,10 @@ class TestMessages:
         assert count == 1
 
     async def test_unread_count_battle(self, db: Database):
-        # system messages (from_uid=0) are pre-marked as read, so count stays 0
         uid = await db.create_user("ucb1", "pw")
         await db.send_message(from_uid=0, to_uid=uid, body="battle report")
         count = await db.unread_count_battle(uid)
-        assert count == 0  # auto-read
+        assert count == 1
 
 
 

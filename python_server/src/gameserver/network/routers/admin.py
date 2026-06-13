@@ -231,7 +231,26 @@ def make_router(services: "Services") -> APIRouter:
             "empire_count": len(empires_out),
             "empires": empires_out,
             "attacks": attacks_out,
+            "speedup": services.game_loop.speedup if services.game_loop else 1.0,
         }
+
+    @router.post("/api/admin/speedup")
+    async def admin_set_speedup(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Set the game-time multiplier at runtime.
+
+        Not persisted: after a server restart the speedup_factor from
+        game.yaml applies again.
+        """
+        if services.game_loop is None:
+            return {"success": False, "error": "game loop not initialized"}
+        try:
+            factor = float(body.get("factor", 1.0))
+        except (TypeError, ValueError):
+            return {"success": False, "error": "factor must be a number"}
+        if not 0.01 <= factor <= 1000:
+            return {"success": False, "error": "factor must be between 0.01 and 1000"}
+        services.game_loop.set_speedup(factor)
+        return {"success": True, "speedup": services.game_loop.speedup}
 
     def _state_file_path() -> str:
         from gameserver.persistence.state_save import DEFAULT_STATE_PATH
@@ -282,9 +301,7 @@ def make_router(services: "Services") -> APIRouter:
 
     @router.get("/api/admin/device-clusters")
     async def admin_device_clusters(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
-        if services.database is None:
-            return []
-        return await services.database.get_device_clusters()
+        return []
 
     @router.get("/api/admin/users")
     async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:

@@ -669,7 +669,7 @@ class AIService:
         """Construct a random era-appropriate Army using the shared army_generator logic."""
         from gameserver.models.army import Army, CritterWave
         from gameserver.util.army_generator import (
-            generate_army, parse_critter_era_groups, parse_slot_by_iid,
+            generate_army, parse_boss_iids, parse_critter_era_groups, parse_slot_by_iid,
         )
         import os
 
@@ -682,6 +682,7 @@ class AIService:
         try:
             critter_era_groups = parse_critter_era_groups(critters_yaml)
             slot_by_iid = parse_slot_by_iid(critters_yaml)
+            boss_iids = parse_boss_iids(critters_yaml)
         except (OSError, KeyError, ValueError, TypeError):
             log.exception("Failed to parse critters.yaml for AI wave generation")
             return None
@@ -695,6 +696,7 @@ class AIService:
                 critter_era_groups=critter_era_groups,
                 slot_by_iid=slot_by_iid,
                 name=army_name if army_name != "AI Assault" else None,
+                boss_iids=boss_iids,
             )
         except ValueError as exc:
             log.warning("[AI_ATTACK] army generation failed: %s", exc)

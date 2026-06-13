@@ -125,9 +125,12 @@ Register a new account and create a fresh empire.
   "username": "myuser",
   "password": "s3cret",
   "email": "",          // optional
-  "empire_name": "The Iron Throne"
+  "empire_name": "The Iron Throne",
+  "is_bot": false       // optional — AI players / bots must set true to self-declare
 }
 ```
+
+Accounts created with `is_bot: true` are permanently flagged as bots (visible via `is_bot` / `bot_probability` in `GET /api/empires`) and bypass the heuristic bot detection.
 
 **Response**
 ```json

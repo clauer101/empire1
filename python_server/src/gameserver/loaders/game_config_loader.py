@@ -88,6 +88,9 @@ class GameConfig:
 
     # -- Timing ------------------------------------------------------
     step_length_ms: float = 1000.0
+    # Game-time multiplier: 10 = the game loop ticks 10x faster and each
+    # tick advances 10x as much game time. Default 1 (real time).
+    speedup_factor: float = 1.0
     battle_tick_ms: float = 15.0
     broadcast_interval_ms: float = 250.0
     min_keep_alive_ms: float = 10_000.0
@@ -155,6 +158,7 @@ class GameConfig:
     max_lose_knowledge: float = 0.15
     min_lose_culture: float = 0.01
     max_lose_culture: float = 0.05
+    ai_culture_steal_modifier: float = 1.0
     culture_era_advantage_ratio: float = 0.5
     culture_steal_per_life_and_era: float = 2000.0
     artifact_steal_chance: float = 0.33

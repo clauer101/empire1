@@ -432,6 +432,7 @@ from gameserver.util.army_generator import (
     generate_army as _gen_army,
     parse_critter_era_groups as _parse_critter_era_groups,
     parse_slot_by_iid as _parse_slot_by_iid,
+    parse_boss_iids as _parse_boss_iids,
 )
 
 
@@ -447,6 +448,7 @@ def _generate_army(era: str, seed: int) -> dict:
         critter_era_groups=critter_era_groups,
         slot_by_iid=slot_by_iid,
         seed=seed,
+        boss_iids=_parse_boss_iids(CRITTERS_PATH),
     )
     return {"era": era, "seed": seed, "name": result["name"], "waves": result["waves"]}
 
@@ -1111,6 +1113,8 @@ async def get_rulers():
                 "value_min":  data.get("value_min",  10),
                 "value_max":  data.get("value_max",  1000),
                 "scale_base": data.get("scale_base", 1.0),
+                "aura_min":   data.get("aura_min",   0.0),
+                "aura_max":   data.get("aura_max",   0.0),
                 "animation":  data.get("animation",  ""),
                 "q": _ability(data.get("q", {})),
                 "w": _ability(data.get("w", {})),
@@ -1155,6 +1159,8 @@ async def save_rulers(request: Request):
                 "value_min":  float(item.get("value_min",  10)),
                 "value_max":  float(item.get("value_max",  1000)),
                 "scale_base": float(item.get("scale_base", 1.0)),
+                "aura_min":   float(item.get("aura_min",   0.0)),
+                "aura_max":   float(item.get("aura_max",   0.0)),
                 "animation":  item.get("animation", ""),
                 "q": _ability_out(item.get("q", {})),
                 "w": _ability_out(item.get("w", {})),
@@ -1501,6 +1507,258 @@ async def admin_deploy(body: dict = Body(...)):
 
     asyncio.create_task(_run())
     return JSONResponse({"ok": True, "message": f"Deploy of '{env}' started …"})
+
+
+@app.get("/api/tools/bots")
+async def get_bot_status() -> JSONResponse:
+    """Read all ai_players/states/*.yaml files and last 48 h of each bot log."""
+    import re as _re
+    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+
+    # Works both in repo layout and Docker (web/ sits next to ai_players/)
+    base = Path(__file__).parent.parent
+    states_dir = base / "ai_players" / "states"
+    logs_dir = base / "ai_players" / "logs"
+    cutoff = _dt.now(_tz.utc) - _td(hours=48)
+
+    if not states_dir.exists():
+        return JSONResponse({"bots": []})
+
+    # Personality → per-strategy weight multipliers (every bot has ALL skills;
+    # personality only re-weights how often each strategy is chosen).
+    personalities: dict = {}
+    cfg_path = base / "ai_players" / "config.yaml"
+    if cfg_path.exists():
+        try:
+            personalities = (yaml.safe_load(cfg_path.read_text()) or {}).get(
+                "personalities", {})
+        except Exception:
+            personalities = {}
+
+    bots = []
+    for f in sorted(states_dir.glob("*.yaml")):
+        try:
+            state = yaml.safe_load(f.read_text())
+        except Exception:
+            continue
+        name = f.stem
+        log_path = logs_dir / f"{name}.log"
+
+        strategy_history: list[dict] = []
+        triggers: list[dict] = []
+        if log_path.exists():
+            for line in log_path.read_text(errors="replace").splitlines():
+                m = _re.match(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),\d+ \[.*?\] (.*)", line)
+                if not m:
+                    continue
+                try:
+                    ts = _dt.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=_tz.utc)
+                except ValueError:
+                    continue
+                if ts < cutoff:
+                    continue
+                msg = m.group(2)
+                sm = _re.search(r"new strategy: (\w+) until (\S+)", msg)
+                if sm:
+                    strategy_history.append({"type": sm.group(1), "until": sm.group(2), "ts": m.group(1)})
+                sm2 = _re.search(r"strategy override: (\w+)", msg)
+                if sm2:
+                    strategy_history.append({"type": sm2.group(1), "source": "override", "ts": m.group(1)})
+                if "breach detected" in msg:
+                    triggers.append({"event": "breach_defense_switch", "ts": m.group(1)})
+                    # A breach forces a defense strategy; surface it on the
+                    # timeline too (the message isn't a "new strategy:" line).
+                    bu = _re.search(r"until (\S+)", msg)
+                    if "forced defense" in msg:
+                        strategy_history.append({
+                            "type": "defense", "source": "breach", "ts": m.group(1),
+                            "until": bu.group(1) if bu else None})
+                elif "breach response" in msg.lower():
+                    triggers.append({"event": "breach_response", "ts": m.group(1)})
+                elif "analyzed replay" in msg:
+                    segs = _re.search(r"weak segments (\[.*?\])", msg)
+                    triggers.append({"event": "replay_analyzed", "ts": m.group(1),
+                                     "detail": segs.group(1) if segs else ""})
+                elif "savings goal set" in msg:
+                    triggers.append({"event": "savings_goal", "ts": m.group(1),
+                                     "detail": msg.split("savings goal set:")[-1].strip()})
+
+        memory = state.get("memory") or {}
+        bots.append({
+            "name": name,
+            "account": state.get("account", {}),
+            "personality": state.get("personality", "balanced"),
+            "strategy": state.get("strategy"),
+            "runtime": state.get("runtime"),
+            "memory_summary": {
+                "breaches": (memory.get("defense_weak_waves") or {}).get("breaches", 0),
+                "pending_breach": memory.get("pending_breach", False),
+                "savings_goal": memory.get("savings_goal"),
+                "defense_analysis": {
+                    k: v for k, v in (memory.get("defense_analysis") or {}).items()
+                    if k != "path"
+                } if memory.get("defense_analysis") else None,
+                "attack_history_count": len(memory.get("attack_history") or []),
+                "analyzed_replays": len(memory.get("analyzed_replay_keys") or []),
+            },
+            "strategy_history_48h": strategy_history[-30:],
+            "triggers_48h": triggers[-50:],
+        })
+    return JSONResponse({"bots": bots, "personalities": personalities})
+
+
+@app.post("/api/tools/bots")
+async def spawn_bot(body: dict = Body(default={})) -> JSONResponse:
+    """Create a new bot state file. The fleet will pick it up on next restart."""
+    import random as _random
+    import secrets as _secrets
+
+    base = Path(__file__).parent.parent
+    states_dir = base / "ai_players" / "states"
+    states_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate a unique fantasy name (adjective+noun, like the Python state module).
+    adjectives = [
+        "Gilded", "Crimson", "Shadow", "Frost", "Ember", "Silent", "Storm",
+        "Iron", "Velvet", "Obsidian", "Radiant", "Thorn", "Mystic", "Azure",
+        "Ravenous", "Gleaming", "Wandering", "Eternal", "Hollow", "Verdant",
+        "Brazen", "Cinder", "Dusk", "Gloom", "Hallowed", "Lunar", "Onyx",
+        "Scarlet", "Solar", "Whispering", "Wild", "Amber", "Glacial", "Searing",
+    ]
+    nouns = [
+        "Raven", "Wolf", "Drake", "Sphinx", "Phoenix", "Griffin", "Basilisk",
+        "Wyrm", "Falcon", "Serpent", "Hydra", "Golem", "Specter", "Warden",
+        "Sentinel", "Reaver", "Oracle", "Marauder", "Harbinger", "Tempest",
+        "Talon", "Fang", "Crown", "Bastion", "Citadel", "Vortex", "Ember",
+        "Wraith", "Cobra", "Stag", "Lynx", "Kraken", "Manticore", "Nomad",
+    ]
+    existing = {p.stem for p in states_dir.glob("*.yaml")}
+    name = body.get("name", "").strip()
+    if name:
+        # Validate caller-supplied name
+        if not name.replace("_", "").replace("-", "").isalnum():
+            return JSONResponse({"ok": False, "detail": "Invalid name"}, status_code=400)
+    else:
+        for _ in range(100):
+            candidate = _random.choice(adjectives) + _random.choice(nouns)
+            if len(candidate) <= 15 and candidate not in existing:
+                name = candidate
+                break
+        if not name:
+            return JSONResponse({"ok": False, "detail": "Could not generate unique name"}, status_code=500)
+
+    if name in existing:
+        return JSONResponse({"ok": False, "detail": f"Bot '{name}' already exists"}, status_code=409)
+
+    personalities = ["economy", "aggressive", "defensive", "balanced"]
+    personality = body.get("personality", "")
+    if personality not in personalities:
+        personality = _random.choice(personalities)
+
+    suffix = f"_{_secrets.token_hex(2)}"
+    username = name[: 20 - len(suffix)] + suffix
+    state = {
+        "account": {
+            "username": username,
+            "password": _secrets.token_urlsafe(16),
+            "email": "",
+            "empire_name": f"{name}'s Dominion",
+            "uid": None,
+        },
+        "personality": personality,
+        "strategy": None,
+        "memory": {
+            "last_seen_message_id": 0,
+            "defense_weak_waves": {},
+            "opponents": {},
+            "attack_history": [],
+        },
+        "runtime": {"cycles": 0, "last_cycle": ""},
+    }
+    (states_dir / f"{name}.yaml").write_text(yaml.dump(state, allow_unicode=True))
+    return JSONResponse({"ok": True, "name": name, "personality": personality,
+                         "username": username})
+
+
+@app.delete("/api/tools/bots/{name}")
+async def delete_bot(name: str) -> JSONResponse:
+    """Remove a bot's state file (and log if present). Irreversible."""
+    import re as _re
+    if not _re.match(r'^[\w\-]+$', name):
+        return JSONResponse({"ok": False, "detail": "Invalid name"}, status_code=400)
+
+    base = Path(__file__).parent.parent
+    states_dir = base / "ai_players" / "states"
+    logs_dir = base / "ai_players" / "logs"
+
+    state_file = states_dir / f"{name}.yaml"
+    if not state_file.exists():
+        return JSONResponse({"ok": False, "detail": "Not found"}, status_code=404)
+
+    state_file.unlink()
+    log_file = logs_dir / f"{name}.log"
+    if log_file.exists():
+        log_file.unlink()
+    return JSONResponse({"ok": True, "name": name})
+
+
+@app.post("/api/tools/maze-sim")
+async def run_maze_sim(body: dict) -> JSONResponse:
+    """Time-accelerated maze simulation using the REAL bot DefensePlanner.
+
+    Body: {era, cycles, start_gold, gold_per_cycle, top_n}.
+    Imports the identical implementation from ai_players/bot (mounted ro in
+    Docker next to web/) and runs it against an in-memory map.
+    """
+    ai_players_dir = Path(__file__).parent.parent / "ai_players"
+    if not ai_players_dir.exists():
+        return JSONResponse({"error": "ai_players not available"}, status_code=503)
+    if str(ai_players_dir) not in _sys.path:
+        _sys.path.insert(0, str(ai_players_dir))
+    from bot.sim import simulate_defense
+
+    era = str(body.get("era", "stone"))
+    from gameserver.util.army_generator import ERA_ORDER_INTERNAL
+    if era not in ERA_ORDER_INTERNAL:
+        return JSONResponse({"error": f"unknown era {era!r}"}, status_code=400)
+    era_idx = ERA_ORDER_INTERNAL.index(era)
+    cycles = max(1, min(2000, int(body.get("cycles", 300))))
+    start_gold = float(body.get("start_gold", 200.0))
+    gold_per_cycle = float(body.get("gold_per_cycle", 100.0))
+    top_n = max(1, min(5, int(body.get("top_n", 1))))
+    seed = int(body["seed"]) if body.get("seed") else None
+
+    def _era_filter(catalog: dict) -> dict:
+        return {iid: it for iid, it in catalog.items()
+                if isinstance(it, dict)
+                and it.get("era", "stone") in ERA_ORDER_INTERNAL
+                and ERA_ORDER_INTERNAL.index(it.get("era", "stone")) <= era_idx}
+
+    structures = _era_filter(
+        yaml.safe_load(STRUCTURES_PATH.read_text(encoding="utf-8")) or {})
+    buildings = _era_filter(
+        yaml.safe_load(BUILDINGS_PATH.read_text(encoding="utf-8")) or {})
+    game_cfg = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+    tile_params = (game_cfg.get("prices") or {}).get(
+        "tile", {"u": 0, "y": 0.7, "z": 1, "v": 2.1})
+    upgrade_bases = game_cfg.get("item_upgrade_base_costs") or []
+
+    def _upgrade_base(it: dict) -> float:
+        idx = ERA_ORDER_INTERNAL.index(it.get("era", "stone"))
+        return float(upgrade_bases[idx]) if idx < len(upgrade_bases) else 100.0
+
+    # Everything of the chosen era counts as researched/unlocked
+    completed = {req for it in {**structures, **buildings}.values()
+                 for req in (it.get("requirements") or [])}
+    result = simulate_defense(
+        structures, buildings,
+        cycles=cycles, start_gold=start_gold, gold_per_cycle=gold_per_cycle,
+        completed=completed, tile_params=tile_params,
+        upgrade_base_by_iid={iid: _upgrade_base(it)
+                             for iid, it in structures.items()},
+        top_n=top_n, seed=seed,
+    )
+    return JSONResponse(result)
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

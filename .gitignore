@@ -23,3 +23,6 @@ data/prod/admin_token
 data/prod/states/gameserver.db
 python_server/state*.yaml
 python_server/gameserver*.db
+ai_players/states/
+ai_players/logs/*
+!ai_players/logs/.gitkeep

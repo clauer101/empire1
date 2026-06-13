@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bot Status</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --purple:      #ab47bc;
+      --teal:        #26c6da;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 20px; font-weight: 600; color: var(--accent); }
+    h2 { font-size: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+    h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+
+    .page-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-header .refresh-btn {
+      margin-left: auto;
+      background: var(--surface-alt); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--radius); padding: 5px 14px;
+      cursor: pointer; font-size: 12px;
+    }
+    .page-header .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .last-updated { font-size: 11px; color: var(--text-dim); margin-left: 4px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 20px; padding: 20px 24px; }
+
+    .bot-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .bot-card.offline { opacity: .55; }
+
+    .card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+    .bot-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+    .bot-dot.offline { background: var(--text-dim); box-shadow: none; }
+    .card-header .bot-name { font-size: 15px; font-weight: 600; }
+    .card-header .bot-meta { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+    .card-header .delete-btn {
+      flex-shrink: 0;
+      background: none; border: 1px solid transparent;
+      color: var(--text-dim); border-radius: var(--radius); padding: 2px 8px;
+      cursor: pointer; font-size: 11px; transition: all .15s;
+    }
+    .card-header .delete-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    .card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Strategy badge */
+    .strategy-now {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .strat-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .strat-badge.economy  { background: #1b2a1b; border: 1px solid var(--success);  color: var(--success); }
+    .strat-badge.defense  { background: #1a1a2e; border: 1px solid var(--accent);   color: var(--accent); }
+    .strat-badge.attack   { background: #2a1a1a; border: 1px solid var(--danger);   color: var(--danger); }
+    .strat-badge.artifact { background: #22162a; border: 1px solid var(--purple);   color: var(--purple); }
+    .strat-badge.unknown  { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-dim); }
+
+    .source-tag {
+      font-size: 10px; padding: 2px 7px; border-radius: 10px;
+      background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .source-tag.breach { border-color: var(--danger); color: var(--danger); }
+    .source-tag.override { border-color: var(--warning); color: var(--warning); }
+
+    .valid-until { font-size: 11px; color: var(--text-dim); }
+
+    /* Stats row */
+    .stats-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .stat-box {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 14px; min-width: 90px;
+    }
+    .stat-box .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+    .stat-box .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .stat-box .value.danger { color: var(--danger); }
+    .stat-box .value.warning { color: var(--warning); }
+    .stat-box .value.accent { color: var(--accent); }
+
+    /* Strategy timeline */
+    .timeline { display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto; }
+    .tl-row { display: flex; gap: 8px; align-items: baseline; }
+    .tl-ts { font-size: 10px; color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
+    .tl-badge { font-size: 11px; }
+    .tl-src { font-size: 10px; color: var(--text-dim); }
+    .tl-row.breach .tl-badge { color: var(--danger); }
+    .tl-row.override .tl-badge { color: var(--warning); }
+
+    /* Strategy Gantt chart (last 24 h) */
+    .gantt { margin-top: 8px; }
+    .gantt-track {
+      position: relative; height: 22px; width: 100%;
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: 4px; overflow: hidden;
+    }
+    .gantt-bar {
+      position: absolute; top: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden;
+      border-right: 1px solid rgba(0,0,0,.35); cursor: default;
+    }
+    .gantt-bar.economy  { background: #1b2a1b; color: var(--success); }
+    .gantt-bar.defense  { background: #1a1a2e; color: var(--accent); }
+    .gantt-bar.attack   { background: #2a1a1a; color: var(--danger); }
+    .gantt-bar.artifact { background: #22162a; color: var(--purple); }
+    .gantt-bar.unknown  { background: var(--surface-alt); color: var(--text-dim); }
+    .gantt-bar.breach { box-shadow: inset 0 -3px 0 var(--danger); }
+    .gantt-axis {
+      display: flex; justify-content: space-between;
+      font-size: 9px; color: var(--text-dim); font-family: var(--mono);
+      margin-top: 3px;
+    }
+
+    /* Triggers */
+    .triggers { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+    .trigger {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 4px 8px; border-radius: 4px; background: var(--surface-alt);
+    }
+    .trigger-icon { font-size: 13px; flex-shrink: 0; }
+    .trigger-ts { font-size: 10px; color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
+    .trigger-detail { font-size: 11px; color: var(--text-dim); }
+
+    /* Defense memory */
+    .histogram { display: flex; gap: 2px; align-items: flex-end; height: 36px; }
+    .histogram .bar {
+      flex: 1; background: var(--accent); border-radius: 2px 2px 0 0;
+      min-height: 2px; opacity: .7; transition: opacity .2s;
+    }
+    .histogram .bar.weak { background: var(--danger); opacity: 1; }
+    .histogram .bar:hover { opacity: 1; }
+
+    /* Skills */
+    .skills { display: flex; flex-direction: column; gap: 6px; }
+    .skill {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 8px 10px; border-radius: var(--radius);
+      background: var(--surface-alt); border: 1px solid var(--border);
+    }
+    .skill-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .skill-name { font-size: 12px; font-weight: 600; }
+    .skill-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; line-height: 1.5; }
+
+    /* Capabilities (collapsible) */
+    .capabilities {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px;
+    }
+    .capabilities > summary {
+      cursor: pointer; list-style: none; display: flex; align-items: baseline;
+      gap: 10px; user-select: none;
+    }
+    .capabilities > summary::-webkit-details-marker { display: none; }
+    .capabilities > summary::before {
+      content: '▸'; color: var(--text-dim); font-size: 11px;
+      transition: transform .15s; display: inline-block;
+    }
+    .capabilities[open] > summary::before { transform: rotate(90deg); }
+    .cap-hint { font-size: 10px; color: var(--text-dim); font-style: italic; }
+
+    .skill-group { margin-top: 8px; }
+    .skill-group-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; font-size: 11px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .weight-badge {
+      font-size: 10px; font-weight: 600; font-family: var(--mono);
+      padding: 1px 7px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .weight-badge.up   { color: var(--success); border-color: var(--success); }
+    .weight-badge.down { color: var(--danger);  border-color: var(--danger); }
+
+    /* Personality tag in header */
+    .personality-tag {
+      font-size: 10px; font-weight: 600; text-transform: capitalize;
+      padding: 2px 9px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface-alt); color: var(--text-dim);
+    }
+    .personality-tag.aggressive { color: var(--danger);  border-color: var(--danger); }
+    .personality-tag.defensive  { color: var(--accent);  border-color: var(--accent); }
+    .personality-tag.economy    { color: var(--success); border-color: var(--success); }
+    .personality-tag.balanced   { color: var(--text-dim); }
+
+    /* Savings goal */
+    .savings-goal {
+      background: #1f1a0e; border: 1px solid var(--warning);
+      border-radius: var(--radius); padding: 8px 12px;
+      display: flex; gap: 10px; align-items: center;
+    }
+    .savings-goal .sg-amount { font-size: 16px; font-weight: 700; color: var(--warning); }
+    .savings-goal .sg-meta { font-size: 11px; color: var(--text-dim); }
+
+    /* Section labels */
+    .section-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-dim);
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+
+    /* Code + markdown block */
+    .md-block {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      font-size: 11px; color: var(--text-dim); line-height: 1.6;
+    }
+    .md-block code { font-family: var(--mono); color: var(--accent); }
+    .md-block strong { color: var(--text); }
+
+    .empty-msg { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+    /* Spawn modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px; width: 340px; display: flex;
+      flex-direction: column; gap: 14px;
+    }
+    .modal h3 { font-size: 15px; font-weight: 600; color: var(--accent); }
+    .modal label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 5px; }
+    .modal input, .modal select {
+      width: 100%; background: var(--surface-alt); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--radius); padding: 7px 10px;
+      font-size: 13px;
+    }
+    .modal input:focus, .modal select:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+    .btn-primary {
+      background: var(--accent); color: #000; border: none;
+      border-radius: var(--radius); padding: 7px 18px; font-size: 13px;
+      font-weight: 600; cursor: pointer;
+    }
+    .btn-primary:hover { opacity: .85; }
+    .btn-primary:disabled { opacity: .5; cursor: default; }
+    .btn-cancel {
+      background: none; border: 1px solid var(--border); color: var(--text-dim);
+      border-radius: var(--radius); padding: 7px 14px; font-size: 13px; cursor: pointer;
+    }
+    .btn-cancel:hover { border-color: var(--text-dim); }
+    .spawn-btn {
+      background: var(--surface-alt); border: 1px solid var(--accent);
+      color: var(--accent); border-radius: var(--radius); padding: 5px 14px;
+      cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+    .spawn-btn:hover { background: var(--accent); color: #000; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🤖 Bot Status</h1>
+  <span class="last-updated" id="lastUpdated"></span>
+  <button class="spawn-btn" onclick="openSpawnModal()">+ Spawn bot</button>
+  <button class="refresh-btn" onclick="load()">↻ Refresh</button>
+</div>
+
+<div class="grid" id="grid"><p style="padding:24px;color:var(--text-dim)">Loading…</p></div>
+
+<!-- Spawn bot modal -->
+<div class="modal-overlay hidden" id="spawnModal" onclick="if(event.target===this)closeSpawnModal()">
+  <div class="modal">
+    <h3>🤖 Spawn new bot</h3>
+    <div>
+      <label for="spawnName">Name <span style="color:var(--text-dim);font-weight:400">(optional — leave blank for random)</span></label>
+      <input id="spawnName" type="text" placeholder="e.g. GildedRaven" maxlength="15" />
+    </div>
+    <div>
+      <label for="spawnPersonality">Personality</label>
+      <select id="spawnPersonality">
+        <option value="">Random</option>
+        <option value="economy">💹 Economy</option>
+        <option value="aggressive">⚔️ Aggressive</option>
+        <option value="defensive">🛡️ Defensive</option>
+        <option value="balanced">⚖️ Balanced</option>
+      </select>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim)">The state file will be created immediately. The bot will start on the next fleet restart.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSpawnModal()">Cancel</button>
+      <button class="btn-primary" id="spawnSubmit" onclick="spawnBot()">Spawn</button>
+    </div>
+  </div>
+</div>
+
+<script src="nav.js"></script>
+<script>
+// Bot status is served by the web server (has direct fs access), not the gameserver
+const GS_BASE = window.location.protocol + '//' + window.location.host;
+
+// Personality → strategy-weight multipliers, filled from the API each load.
+let PERSONALITIES = {};
+
+// ── Skills catalogue — mirrors ai_players/docs/strategies/ ─────────────────
+const SKILLS = {
+  all: [
+    { icon: '🏰', name: 'Defense floor (baseline)',
+      desc: 'Minimum <code>2 + 2×era_rank</code> towers at all times — buys tiles and places towers in <em>every</em> strategy. Counts live from the map, not the battle snapshot.' },
+    { icon: '🔥', name: 'Breach response (baseline)',
+      desc: 'One defensive action (tower / tile / upgrade) runs before the strategy on the very next cycle after any breach. A full <strong>defense strategy switch</strong> may also fire, gated by personality (<code>breach_response_chance</code>): defensive bots always react, aggressive/economy often shrug it off.' },
+    { icon: '📚', name: 'Idle-queue fill (baseline)',
+      desc: 'Keeps research and build queues busy at all times — cheapest affordable item each cycle. Paused while a savings goal is active.' },
+    { icon: '💰', name: 'Savings goals',
+      desc: 'When a desired purchase (tower, tile, army) is unaffordable, a goal is declared. Non-owning spenders only use gold above the goal amount. TTL = min(strategy remainder, 2 h).' },
+    { icon: '👑', name: 'Claim ruler (baseline)',
+      desc: 'Claims a ruler as soon as one is unlocked — free and strategy-independent, so defense/artifact bots get one too. Skill points are then spent by the active strategy in <code>SKILL_ORDER</code> (R→Q→W→E).' },
+  ],
+  economy: [
+    { icon: '📈', name: 'Economy strategy',
+      desc: 'Maximises gold/culture income — prefers economy-effect buildings, citizens, ruler skills. Duration 4–10 h.' },
+  ],
+  defense: [
+    { icon: '🗺️', name: 'Path lengthening',
+      desc: 'Relocates spawnpoint + castle (free) to maximise the critter walk distance. Tries all own-tile combos via BFS; fires when gain ≥ 2 tiles. Resets replay analysis when fired.' },
+    { icon: '🔭', name: 'Replay analysis',
+      desc: 'Downloads each battle replay once. Bins critter deaths across 10 path-progress buckets; marks weak segments (zero kills or late bins &lt;50 % of mean). Weak points weight 3× in coverage scoring.' },
+    { icon: '📐', name: 'Coverage-optimised placement',
+      desc: 'Scores every owned empty tile and purchasable void (including implicit void derived from hex adjacency). Tiles that would block the only path are excluded. Best coverage score wins.' },
+    { icon: '⚖️', name: 'Tower-mix balancing',
+      desc: 'Steers placed towers to <strong>damage : slow : splash ≈ 3:1:1</strong>. Picks best tower in the most under-represented class by <code>damage/reload_time × (1+range/4)</code>.' },
+    { icon: '📊', name: 'Density cap',
+      desc: 'Above <strong>2.0 towers per path tile</strong> no further towers are placed (prod data: win% collapses above 2.0). Investment shifts to upgrades instead.' },
+    { icon: '⬆️', name: 'Targeted upgrades',
+      desc: 'Upgrades the tower with highest weak-segment coverage. Stat: <em>range</em> if coverage &lt;4 path points, else <em>damage</em>. Skips stats already at server cap (level 20).' },
+  ],
+  attack: [
+    { icon: '⚔️', name: 'Attack strategy',
+      desc: 'Spy → attack weakest opponent (lower era). Army cost triggers a savings goal. Victory adds loot; defeat re-rolls strategy. Duration 1–3 h.' },
+  ],
+  artifact: [
+    { icon: '🏺', name: 'Artifact strategy',
+      desc: 'Like attack but targets opponents holding artifacts. Duration 1–3 h.' },
+  ],
+};
+
+const TRIGGER_META = {
+  breach_defense_switch: { icon: '🚨', label: 'Breach → defense switch' },
+  breach_response:       { icon: '🛡️', label: 'Breach response action' },
+  replay_analyzed:       { icon: '🎬', label: 'Replay analyzed' },
+  savings_goal:          { icon: '💰', label: 'Savings goal set' },
+  forced_defense:        { icon: '⚡', label: 'Forced defense' },
+};
+
+function strat(type) {
+  const map = { economy:'💹 Economy', defense:'🛡️ Defense', attack:'⚔️ Attack', artifact:'🏺 Artifact' };
+  return map[type] || type;
+}
+
+function fmtTs(s) {
+  if (!s) return '—';
+  const d = new Date(s.includes('T') ? s : s.replace(' ','T') + 'Z');
+  const now = Date.now();
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 120) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return d.toLocaleDateString();
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  const d = new Date(s.includes('T') ? s : s.replace(' ','T') + 'Z');
+  return d.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function buildHistogram(analysis) {
+  if (!analysis || !analysis.death_bins) return '';
+  const bins = analysis.death_bins;
+  const weak = new Set((analysis.weak_segments || []).map(([a]) => Math.floor(a * 10)));
+  const max = Math.max(...bins, 1);
+  const bars = bins.map((v, i) => {
+    const h = Math.max(2, Math.round((v / max) * 36));
+    const cls = weak.has(i) ? 'bar weak' : 'bar';
+    const title = `Bin ${i*10}–${(i+1)*10}%: ${v} kills${weak.has(i) ? ' ⚠ weak' : ''}`;
+    return `<div class="${cls}" style="height:${h}px" title="${title}"></div>`;
+  });
+  return `
+    <div>
+      <div class="section-label">Kill histogram (last replay) — red = weak segment</div>
+      <div class="histogram">${bars.join('')}</div>
+    </div>`;
+}
+
+// Base strategy weights (config.yaml strategy.weights). Personality multipliers
+// from the API re-scale these; every bot has ALL capabilities regardless.
+const BASE_WEIGHTS = { economy: 4, defense: 3, attack: 2, artifact: 1 };
+
+const PERSONALITY_ICON = {
+  economy: '💹', aggressive: '⚔️', defensive: '🛡️', balanced: '⚖️',
+};
+
+function skillGroup(title, items, weightBadge) {
+  const rows = items.map(s => `
+    <div class="skill">
+      <span class="skill-icon">${s.icon}</span>
+      <div>
+        <div class="skill-name">${s.name}</div>
+        <div class="skill-desc">${s.desc}</div>
+      </div>
+    </div>`).join('');
+  return `<div class="skill-group">
+    <div class="skill-group-head">
+      <span>${title}</span>${weightBadge || ''}
+    </div>
+    ${rows}
+  </div>`;
+}
+
+// Every bot has ALL skills; personality only re-weights strategy frequency.
+function buildSkills(bot) {
+  const mult = (PERSONALITIES[bot.personality] || {});
+  const stratOrder = ['economy', 'defense', 'attack', 'artifact'];
+  const groups = [skillGroup('Always-on (baseline)', SKILLS.all)];
+  for (const t of stratOrder) {
+    const base = BASE_WEIGHTS[t] || 0;
+    const m = (mult[t] != null) ? mult[t] : 1;
+    const eff = +(base * m).toFixed(1);
+    const cls = m > 1.2 ? 'up' : m < 0.8 ? 'down' : '';
+    const badge = `<span class="weight-badge ${cls}" title="base ${base} × ${m} personality">`
+      + `weight ${eff}${m !== 1 ? ` (×${m})` : ''}</span>`;
+    groups.push(skillGroup(strat(t), SKILLS[t] || [], badge));
+  }
+  return groups.join('');
+}
+
+// Strategy Gantt chart for the last 24 h. Each history entry's `ts` is its
+// start; a strategy runs until the next entry starts (or until now for the
+// last one). Segments are clipped to the 24 h window and laid out as
+// proportionally-sized bars.
+function buildGantt(bot) {
+  const WINDOW_MS = 24 * 3600 * 1000;
+  const now = Date.now();
+  const start = now - WINDOW_MS;
+  const parse = s => new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z').getTime();
+
+  // Dedup + sort ascending by start time.
+  const seen = new Set();
+  const hist = (bot.strategy_history_48h || []).filter(h => {
+    const k = h.ts + h.type + (h.source || '');
+    if (seen.has(k)) return false; seen.add(k); return true;
+  }).map(h => ({ ...h, t: parse(h.ts) }))
+    .sort((a, b) => a.t - b.t);
+
+  if (hist.length === 0)
+    return `<p class="empty-msg">No strategy changes in the last 24 h</p>`;
+
+  // Build [from, to) segments; last runs to now.
+  const segs = hist.map((h, i) => ({
+    type: h.type, source: h.source,
+    from: h.t, to: i + 1 < hist.length ? hist[i + 1].t : now,
+  })).filter(s => s.to > start && s.from < now);
+
+  if (segs.length === 0)
+    return `<p class="empty-msg">No strategy changes in the last 24 h</p>`;
+
+  const bars = segs.map(s => {
+    const from = Math.max(s.from, start);
+    const to = Math.min(s.to, now);
+    const left = (from - start) / WINDOW_MS * 100;
+    const width = (to - from) / WINDOW_MS * 100;
+    const isBreach = s.source === 'breach';
+    const cls = `gantt-bar ${s.type || 'unknown'}${isBreach ? ' breach' : ''}`;
+    const dur = Math.round((to - from) / 60000);
+    const label = width > 8 ? strat(s.type) : '';
+    const title = `${strat(s.type)}${s.source ? ' (' + s.source + ')' : ''} · `
+      + `${fmtDate(new Date(from).toISOString())} → ${fmtDate(new Date(to).toISOString())} · ${dur} min`;
+    return `<div class="${cls}" style="left:${left}%;width:${width}%" title="${title}">${label}</div>`;
+  }).join('');
+
+  return `<div class="gantt">
+    <div class="gantt-track">${bars}</div>
+    <div class="gantt-axis"><span>24 h ago</span><span>12 h</span><span>now</span></div>
+  </div>`;
+}
+
+function buildCard(bot) {
+  const stgy = bot.strategy || {};
+  const type = stgy.type || 'unknown';
+  const src = stgy.source || '';
+  const srcTag = src === 'breach' ? `<span class="source-tag breach">breach</span>` :
+                 src === 'override' ? `<span class="source-tag override">override</span>` :
+                 `<span class="source-tag">${src}</span>`;
+  const validUntil = stgy.valid_until
+    ? `<span class="valid-until">until ${fmtDate(stgy.valid_until)}</span>` : '';
+
+  const runtime = bot.runtime || {};
+  const mem = bot.memory_summary || {};
+  const breaches = mem.breaches || 0;
+  const bClass = breaches > 20 ? 'danger' : breaches > 5 ? 'warning' : 'accent';
+
+  // Strategy timeline
+  // Strategy history — dedup
+  const seenHist = new Set();
+  const hist = (bot.strategy_history_48h || []).filter(h => {
+    const k = h.ts + h.type + (h.source||'');
+    if (seenHist.has(k)) return false;
+    seenHist.add(k); return true;
+  });
+  const histHtml = hist.length === 0
+    ? `<p class="empty-msg">No strategy changes in the last 48 h</p>`
+    : hist.slice().reverse().map(h => {
+        const isBreach = h.source === 'breach' || (bot.triggers_48h || []).some(t =>
+          t.event === 'breach_defense_switch' && t.ts === h.ts);
+        const rowCls = h.source === 'override' ? 'override' : isBreach ? 'breach' : '';
+        const srcLbl = h.source ? `<span class="tl-src">(${h.source})</span>` : '';
+        const until = h.until ? ` → ${fmtDate(h.until)}` : '';
+        return `<div class="tl-row ${rowCls}">
+          <span class="tl-ts">${h.ts.slice(5,16)}</span>
+          <span class="tl-badge">${strat(h.type)}</span>
+          ${srcLbl}
+          <span class="tl-src">${until}</span>
+        </div>`;
+      }).join('');
+
+  // Triggers — dedup by ts+event (double-logging when bot restarts)
+  const seenTrig = new Set();
+  const triggers = (bot.triggers_48h || []).filter(t => {
+    const k = t.ts + t.event;
+    if (seenTrig.has(k)) return false;
+    seenTrig.add(k); return true;
+  }).slice().reverse();
+  const trigHtml = triggers.length === 0
+    ? `<p class="empty-msg">No triggers in the last 48 h</p>`
+    : triggers.slice(0, 25).map(t => {
+        const m = TRIGGER_META[t.event] || { icon: '•', label: t.event };
+        const det = t.detail ? `<span class="trigger-detail">${t.detail.slice(0, 60)}</span>` : '';
+        return `<div class="trigger">
+          <span class="trigger-icon">${m.icon}</span>
+          <span class="trigger-ts">${t.ts.slice(5,16)}</span>
+          <span>${m.label}</span>
+          ${det}
+        </div>`;
+      }).join('');
+
+  // Savings goal
+  const goal = mem.savings_goal;
+  const goalHtml = goal ? `
+    <div class="savings-goal">
+      <span>💰</span>
+      <div>
+        <span class="sg-amount">${goal.amount.toLocaleString(undefined, {maximumFractionDigits:0})} gold</span>
+        <div class="sg-meta">Saving for <strong>${goal.item}</strong> · expires ${fmtDate(goal.expires_at)}</div>
+      </div>
+    </div>` : '';
+
+  const defAnal = mem.defense_analysis;
+  const histogramHtml = defAnal ? buildHistogram(defAnal) : '';
+  const reached = defAnal ? defAnal.reach_count : null;
+
+  return `
+  <div class="bot-card" id="bot-${bot.name}">
+    <div class="card-header">
+      <div class="bot-dot"></div>
+      <span class="bot-name">${bot.account?.empire_name || bot.name}</span>
+      <span class="personality-tag ${bot.personality || 'balanced'}">${PERSONALITY_ICON[bot.personality] || '🎲'} ${bot.personality || 'balanced'}</span>
+      <span class="bot-meta">
+        uid ${bot.account?.uid || '?'} ·
+        ${runtime.cycles?.toLocaleString() || 0} cycles ·
+        last ${fmtTs(runtime.last_cycle)}
+      </span>
+      <button class="delete-btn" onclick="deleteBot('${bot.name.replace(/'/g,"\\'")}', event)" title="Delete bot">✕</button>
+    </div>
+    <div class="card-body">
+
+      <!-- Capabilities (collapsible, default collapsed) -->
+      <details class="capabilities">
+        <summary>
+          <span class="section-label" style="border:0;padding:0;margin:0">Capabilities</span>
+          <span class="cap-hint">all bots share every skill · personality re-weights strategy choice</span>
+        </summary>
+        <div class="skills" style="margin-top:10px">${buildSkills(bot)}</div>
+      </details>
+
+      <!-- Current strategy -->
+      <div>
+        <div class="section-label">Current strategy</div>
+        <div class="strategy-now" style="margin-top:8px">
+          <span class="strat-badge ${type}">${strat(type)}</span>
+          ${srcTag}
+          ${validUntil}
+        </div>
+      </div>
+
+      <!-- Key stats -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="label">Breaches</div>
+          <div class="value ${bClass}">${breaches}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Replays</div>
+          <div class="value accent">${mem.analyzed_replays || 0}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Attacks</div>
+          <div class="value">${mem.attack_history_count || 0}</div>
+        </div>
+        ${reached !== null ? `<div class="stat-box">
+          <div class="label">Last breach</div>
+          <div class="value ${reached > 0 ? 'danger' : 'accent'}">${reached > 0 ? '🚨 '+reached : '✓ 0'}</div>
+        </div>` : ''}
+      </div>
+
+      ${goalHtml}
+
+      ${histogramHtml}
+
+      <!-- Strategy Gantt — last 24 h -->
+      <div>
+        <div class="section-label">Strategy timeline — last 24 h</div>
+        ${buildGantt(bot)}
+      </div>
+
+      <!-- Strategy history 48 h -->
+      <div>
+        <div class="section-label">Strategy history — last 48 h</div>
+        <div class="timeline" style="margin-top:6px">${histHtml}</div>
+      </div>
+
+      <!-- Triggers 48 h -->
+      <div>
+        <div class="section-label">Triggers — last 48 h (newest first)</div>
+        <div class="triggers" style="margin-top:6px">${trigHtml}</div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function openSpawnModal() {
+  document.getElementById('spawnModal').classList.remove('hidden');
+  document.getElementById('spawnName').value = '';
+  document.getElementById('spawnPersonality').value = '';
+  document.getElementById('spawnSubmit').disabled = false;
+  setTimeout(() => document.getElementById('spawnName').focus(), 50);
+}
+
+function closeSpawnModal() {
+  document.getElementById('spawnModal').classList.add('hidden');
+}
+
+async function spawnBot() {
+  const name = document.getElementById('spawnName').value.trim();
+  const personality = document.getElementById('spawnPersonality').value;
+  const btn = document.getElementById('spawnSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Spawning…';
+  try {
+    const res = await fetch(`${GS_BASE}/api/tools/bots`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name: name || undefined, personality: personality || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Failed: ${data.detail || res.status}`);
+      btn.disabled = false;
+      btn.textContent = 'Spawn';
+      return;
+    }
+    closeSpawnModal();
+    await load();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = 'Spawn';
+  }
+}
+
+async function deleteBot(name, ev) {
+  ev.stopPropagation();
+  if (!confirm(`Delete bot "${name}"? This removes the state file and log permanently.`)) return;
+  try {
+    const res = await fetch(`${GS_BASE}/api/tools/bots/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Failed: ${data.detail || res.status}`);
+      return;
+    }
+    await load();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function load() {
+  try {
+    const res = await fetch(`${GS_BASE}/api/tools/bots`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    PERSONALITIES = data.personalities || {};
+    const bots = data.bots || [];
+    const grid = document.getElementById('grid');
+    if (bots.length === 0) {
+      grid.innerHTML = '<p style="padding:24px;color:var(--text-dim)">No bot state files found in ai_players/states/.</p>';
+    } else {
+      grid.innerHTML = bots.map(buildCard).join('');
+    }
+    document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    document.getElementById('grid').innerHTML =
+      `<p style="padding:24px;color:var(--danger)">Error: ${e.message}</p>`;
+  }
+}
+
+load();
+setInterval(load, 30_000);
+</script>
+</body>
+</html>

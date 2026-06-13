@@ -255,6 +255,19 @@
         <span class="stat-label">Active Attacks</span>
         <span class="stat-value" id="stat-atk">—</span>
       </div>
+      <div class="stat">
+        <span class="stat-label">Speedup (not persisted)</span>
+        <span class="stat-value">
+          <input type="number" id="speedup-input" min="0.01" max="1000" step="1"
+                 style="width: 70px; background: var(--bg); color: var(--text);
+                        border: 1px solid var(--border); border-radius: 3px;
+                        padding: 2px 5px; font: inherit;">
+          <button id="speedup-set"
+                  style="background: var(--surface-alt); color: var(--text);
+                         border: 1px solid var(--border); border-radius: 3px;
+                         padding: 2px 8px; cursor: pointer; font: inherit;">Set</button>
+        </span>
+      </div>
     </div>
   </div>
 
@@ -796,6 +809,12 @@ async function poll() {
     document.getElementById('stat-emp').textContent  = d.empire_count ?? '—';
     document.getElementById('stat-atk').textContent  = d.attacks?.length ?? '—';
 
+    // Don't clobber the speedup field while the user is editing it
+    const speedupInput = document.getElementById('speedup-input');
+    if (document.activeElement !== speedupInput && d.speedup != null) {
+      speedupInput.value = d.speedup;
+    }
+
     renderEmpires(d.empires || []);
     renderAttacks(d.attacks || []);
 
@@ -816,6 +835,30 @@ async function loadItems() {
     }
   } catch (_) {}
 }
+
+// ── Speedup (runtime only — resets to game.yaml value on server restart) ──
+document.getElementById('speedup-set').addEventListener('click', async () => {
+  const input = document.getElementById('speedup-input');
+  const factor = parseFloat(input.value);
+  if (!Number.isFinite(factor)) return;
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/speedup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      },
+      body: JSON.stringify({ factor }),
+    });
+    const d = await r.json();
+    if (!r.ok || d.success === false) throw new Error(d.error || `HTTP ${r.status}`);
+    input.value = d.speedup;
+    input.blur();
+  } catch (e) {
+    alert('Failed to set speedup: ' + e.message);
+  }
+});
 
 Promise.all([loadEraMap(), loadItems()]).then(poll);
 setInterval(poll, 3000);

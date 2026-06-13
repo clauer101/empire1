@@ -514,9 +514,10 @@ async function saveToServer() {
   });
 
   try {
+    const _tok = localStorage.getItem('e3_jwt_token') || '';
     const r = await fetch('/api/ai-generator', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(_tok ? { Authorization: `Bearer ${_tok}` } : {}) },
       body: JSON.stringify(payload),
     });
     let data;
@@ -688,9 +689,10 @@ async function saveBarbarians() {
   status.textContent = '…';
   status.className = '';
   try {
+    const _tok2 = localStorage.getItem('e3_jwt_token') || '';
     const r = await fetch('/api/barbarians-aggressiveness', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(_tok2 ? { Authorization: `Bearer ${_tok2}` } : {}) },
       body: JSON.stringify(barbValues),
     });
     const data = await r.json();

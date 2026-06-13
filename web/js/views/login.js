@@ -185,6 +185,10 @@ function init(el, _api, _state) {
       </div>
 
     </div>
+
+    <div style="text-align:center;padding:16px 0 24px;font-size:11px;">
+      <a href="#legal" style="color:var(--text-dim);opacity:0.6;text-decoration:none;">Legal</a>
+    </div>
   `;
 
   const track = container.querySelector('#lp-rulers-track');

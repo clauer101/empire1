@@ -30,16 +30,18 @@ function init(el, _api, _state) {
   _renderShell();
 }
 
-const _T3 = {
-  opponent: { vals: ['both', 'player', 'ai'],     labels: ['Any opponent', 'vs. Player', 'vs. AI'] },
-  outcome:  { vals: ['both', 'victory', 'defeat'], labels: ['Any outcome',  'Victory', 'Defeat'] },
+const _TN = {
+  opponent: { vals: ['both', 'player', 'ai'],              labels: ['Any opponent', 'vs. Player', 'vs. AI'] },
+  outcome:  { vals: ['both', 'victory', 'defeat', 'spy'],  labels: ['Any outcome',  'Victory',   'Defeat',  'Spy Attacks'] },
 };
 
-function _toggle3Html(group) {
+function _toggleNHtml(group) {
+  const n = _TN[group].vals.length;
+  const w = n * 22;
   return `
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="br-t3" data-group="${group}" data-pos="0" style="
-        position:relative;width:66px;height:22px;border-radius:11px;flex-shrink:0;
+        position:relative;width:${w}px;height:22px;border-radius:11px;flex-shrink:0;
         background:transparent;border:1px solid rgba(255,255,255,0.2);
         cursor:pointer;
         -webkit-tap-highlight-color:transparent;user-select:none;">
@@ -48,18 +50,20 @@ function _toggle3Html(group) {
           background:var(--accent,#4fc3f7);
           transition:left .15s ease;pointer-events:none;"></div>
       </div>
-      <span class="br-t3-val" style="font-size:12px;color:var(--text-dim);">${_T3[group].labels[0]}</span>
+      <span class="br-t3-val" style="font-size:12px;color:var(--text-dim);">${_TN[group].labels[0]}</span>
     </div>`;
 }
 
-function _setToggle3(track, pos) {
+function _setToggleN(track, pos) {
   const group = track.dataset.group;
+  const n = _TN[group].vals.length;
   track.dataset.pos = String(pos);
   track.querySelector('.br-t3-knob').style.left = `${pos * 22}px`;
-  track.parentElement.querySelector('.br-t3-val').textContent = _T3[group].labels[pos];
-  if (group === 'opponent') _filterOpponent = _T3[group].vals[pos];
-  else _filterOutcome = _T3[group].vals[pos];
+  track.parentElement.querySelector('.br-t3-val').textContent = _TN[group].labels[pos];
+  if (group === 'opponent') _filterOpponent = _TN[group].vals[pos];
+  else _filterOutcome = _TN[group].vals[pos];
   _applyFilters();
+  return n;
 }
 
 function _applyFilters() {
@@ -68,9 +72,9 @@ function _applyFilters() {
   let visible = 0;
   el.querySelectorAll('.br-panel').forEach((panel) => {
     const ai = panel.dataset.ai === '1';
-    const won = panel.dataset.won === '1';
+    const outcome = panel.dataset.outcome; // 'victory' | 'defeat' | 'draw'
     const showOpponent = _filterOpponent === 'both' || (_filterOpponent === 'ai' ? ai : !ai);
-    const showOutcome  = _filterOutcome  === 'both' || (_filterOutcome  === 'victory' ? won : !won);
+    const showOutcome  = _filterOutcome  === 'both' || _filterOutcome === outcome;
     const show = showOpponent && showOutcome;
     panel.style.display = show ? '' : 'none';
     if (show) visible++;
@@ -88,8 +92,8 @@ function _renderShell() {
       padding:8px 4px 4px;
       -webkit-tap-highlight-color:transparent;
     ">
-      ${_toggle3Html('opponent')}
-      ${_toggle3Html('outcome')}
+      ${_toggleNHtml('opponent')}
+      ${_toggleNHtml('outcome')}
     </div>
     <div id="message-list" style="
       flex:1;
@@ -105,8 +109,9 @@ function _renderShell() {
 
   container.querySelectorAll('.br-t3').forEach((track) => {
     track.addEventListener('click', () => {
-      const pos = ((+track.dataset.pos) + 1) % 3;
-      _setToggle3(track, pos);
+      const n = _TN[track.dataset.group].vals.length;
+      const pos = ((+track.dataset.pos) + 1) % n;
+      _setToggleN(track, pos);
     });
   });
 }
@@ -153,14 +158,6 @@ function _render(data) {
 
   const myUid = st.auth?.uid;
   _renderBattleReports(el, data.battle_reports || [], myUid);
-  // Mark battle reports read
-  (data.battle_reports || [])
-    .filter((m) => !m.read)
-    .forEach((m) => {
-      rest.markMessageRead(m.id).catch(() => {});
-      m.read = true;
-    });
-  if (data.unread_battle !== undefined) data.unread_battle = 0;
 }
 
 function _parseBattleReportSummary(body) {
@@ -188,15 +185,18 @@ function _renderBattleReports(el, messages, myUid) {
       : messages
         .map((m, idx) => {
           const unreadDot = !m.read
-            ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
+            ? '<span class="br-unread-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
             : '';
           const { result, opponent } = _parseBattleReportSummary(m.body || '');
           const detailId = 'br-detail-' + idx;
-          const won = /Won/i.test(result) || /^🕵/u.test(result);
+          const isSpy = /^🕵/u.test(result);
+          const isDraw = !isSpy && /Draw/i.test(result);
+          const won = !isSpy && !isDraw && /Won/i.test(result);
+          const outcome = isSpy ? 'spy' : isDraw ? 'draw' : won ? 'victory' : 'defeat';
           const isAi = _isAiBattle(m.body);
-          const resultColor = won ? 'var(--success,#66bb6a)' : 'var(--danger,#ef5350)';
+          const resultColor = isSpy ? 'var(--text-dim)' : won ? 'var(--success,#66bb6a)' : isDraw ? 'var(--warning,#ffa726)' : 'var(--danger,#ef5350)';
           return `
-      <div class="panel br-panel" data-ai="${isAi ? 1 : 0}" data-won="${won ? 1 : 0}"
+      <div class="panel br-panel" data-ai="${isAi ? 1 : 0}" data-outcome="${outcome}"
            style="margin-bottom:6px;padding:0;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
         <button class="br-header" data-target="${detailId}" data-msg-id="${m.id}"
           style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -238,8 +238,18 @@ function _renderBattleReports(el, messages, myUid) {
       btn.querySelector('.br-chevron').textContent = open ? '▼' : '▲';
       const msgId = btn.dataset.msgId;
       if (msgId) {
-        if (open) _openBattleReportIds.delete(msgId);
-        else _openBattleReportIds.add(msgId);
+        if (open) {
+          _openBattleReportIds.delete(msgId);
+        } else {
+          _openBattleReportIds.add(msgId);
+          // Mark as read visually and on server when opening
+          const panel = btn.closest('.br-panel');
+          if (panel) {
+            panel.style.borderLeft = '';
+            btn.querySelector('.br-unread-dot')?.remove();
+          }
+          rest.markMessageRead(Number(msgId)).catch(() => {});
+        }
       }
     });
   });

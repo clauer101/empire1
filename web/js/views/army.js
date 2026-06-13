@@ -994,12 +994,14 @@ function _initWaveDragDrop(wavesContainer, aid) {
     requestAnimationFrame(() => tiles().forEach(t => { t.style.transition = ''; }));
 
     if (newIds) {
+      const _disableBtns = () => wavesContainer.querySelectorAll('.wave-critter-btn').forEach(b => { b.disabled = true; });
+      const _enableBtns  = () => wavesContainer.querySelectorAll('.wave-critter-btn').forEach(b => { b.disabled = false; });
       if (!newIds.some(isNaN) && new Set(newIds).size === newIds.length) {
-        rest.reorderWaves(aid, newIds).then(r => {
-          if (!r?.success) rest.getMilitary();
-        });
+        _disableBtns();
+        rest.reorderWaves(aid, newIds).then(() => rest.getMilitary()).finally(_enableBtns);
       } else {
-        rest.getMilitary();
+        _disableBtns();
+        rest.getMilitary().finally(_enableBtns);
       }
     }
   }
@@ -1771,6 +1773,7 @@ function renderArmies(data) {
           ${btnContent}
         </button>
       </div>
+      ${a.steal_multiplier != null && a.steal_multiplier < 1.0 ? `<div style="font-size:10px;color:#555;margin-top:-4px;margin-bottom:4px;">Trash army factor ${a.steal_multiplier.toFixed(2)}: reduced artifact steal chance</div>` : ''}
       <div class="army-attack-row">
         <div class="army-attack-error" style="font-size:11px;color:var(--danger);min-height:14px;"></div>
       </div>

@@ -1115,6 +1115,11 @@ export class HexGrid {
     this._lastBattleUpdateTs = performance.now();
   }
 
+  /** Set playback speed multiplier (1 = realtime, 2 = 2x, etc.). Used by replay. */
+  setPlaybackSpeed(speed) {
+    this._playbackSpeed = speed;
+  }
+
   /** Update the set of tower sids under ruler aura debuff. */
   setDebuffedSids(sids) {
     this._debuffedSids = new Set(sids);
@@ -1536,7 +1541,7 @@ export class HexGrid {
     const ctx = this.ctx;
     const sz = this.hexSize;
     const ts = performance.now();
-    const dtFrameMs = this._lastFrameTs != null ? ts - this._lastFrameTs : 16;
+    const dtFrameMs = (this._lastFrameTs != null ? ts - this._lastFrameTs : 16) * (this._playbackSpeed ?? 1);
     this._lastFrameTs = ts;
 
     for (const [cid, critter] of this.battleCritters) {
@@ -1582,25 +1587,6 @@ export class HexGrid {
         ctx.restore();
       }
 
-      // ── Status effect glow (drawn behind sprite) ──────────
-      if (critter.slow_remaining_ms > 0) {
-        ctx.save();
-        ctx.globalAlpha = 0.4;
-        ctx.fillStyle = '#4fc3f7';
-        ctx.beginPath();
-        ctx.arc(x, drawY, spriteSize * 0.65, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-      if (critter.burn_remaining_ms > 0) {
-        ctx.save();
-        ctx.globalAlpha = 0.2 + 0.15 * Math.sin(ts * 0.008);
-        ctx.fillStyle = '#ff5500';
-        ctx.beginPath();
-        ctx.arc(x, drawY, spriteSize * 0.65, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
 
       if (sprite && sprite !== 'loading') {
         // ── Sprite animation ──────────────────────────────

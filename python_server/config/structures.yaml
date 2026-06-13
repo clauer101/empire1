@@ -237,9 +237,9 @@ CANNON_TOWER:
   era: middle_ages
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 20
+  damage: 18
   range: 2
-  reload_time: 3900
+  reload_time: 4000
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -323,7 +323,7 @@ FLAME_THROWER:
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 3000, burn_dps: 6}   # burns 
+  effects: {burn_duration: 3000, burn_dps: 8}   # burns 
   requirements: [HEAVY_EQUIPMENT, MECHANICAL_ENGINEERING]
 
 SHOCK_TOWER:

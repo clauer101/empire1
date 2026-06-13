@@ -62,7 +62,10 @@ class GameLoop:
         self._state_file = state_file
         self._running = False
         self._gc = game_config
-        self._step_interval = (game_config.step_length_ms / 1000.0) if game_config else 1.0
+        # speedup_factor: ticks run N× faster AND each tick advances N× as
+        # much game time, so one tick still covers step_length_ms of game time.
+        self._speedup = max(float(game_config.speedup_factor), 0.01) if game_config else 1.0
+        self._step_interval = ((game_config.step_length_ms / 1000.0) if game_config else 1.0) / self._speedup
         self._save_every_n_ticks = max(1, int(self.STATE_SAVE_INTERVAL_S / self._step_interval))
 
         self._database: Any | None = None
@@ -87,7 +90,7 @@ class GameLoop:
             last = now
 
             t0 = time.monotonic()
-            self._step(dt)
+            self._step(dt * self._speedup)
             elapsed_ms = (time.monotonic() - t0) * 1000
 
             self.tick_count += 1
@@ -99,6 +102,28 @@ class GameLoop:
             self.avg_tick_duration_ms = self._tick_duration_sum / self.tick_count
 
             await asyncio.sleep(self._step_interval)
+
+    @property
+    def speedup(self) -> float:
+        """Current game-time multiplier (1.0 = real time)."""
+        return self._speedup
+
+    def set_speedup(self, factor: float) -> None:
+        """Change the game-time multiplier at runtime.
+
+        Not persisted — after a server restart the value from game.yaml
+        applies again.
+        """
+        self._speedup = max(float(factor), 0.01)
+        base = (self._gc.step_length_ms / 1000.0) if self._gc else 1.0
+        self._step_interval = base / self._speedup
+        self._save_every_n_ticks = max(1, int(self.STATE_SAVE_INTERVAL_S / self._step_interval))
+        # Write back to the shared GameConfig so other services reading
+        # gc.speedup_factor (e.g. BattleService) pick up runtime changes too.
+        if self._gc is not None:
+            self._gc.speedup_factor = self._speedup
+        _log.info("speedup set to %.2fx (tick interval %.3fs)",
+                  self._speedup, self._step_interval)
 
     @property
     def uptime_seconds(self) -> float:

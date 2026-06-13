@@ -39,6 +39,9 @@ services:
       - "127.0.0.1:8100:8000"
     volumes:
       - ./python_server/config:/app/config
+      - ./ai_players:/app/ai_players:ro
+      - ./data/dev/bot_states:/app/ai_players/states
+      - ./data/dev/bot_logs:/app/ai_players/logs
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -46,6 +49,22 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  bots:
+    build:
+      context: .
+      target: bots
+    image: empire1-bots-dev
+    restart: unless-stopped
+    environment:
+      SERVER_URL: http://gameserver:8080
+      BOT_COUNT: "3"
+    volumes:
+      - ./data/dev/bot_states:/app/states
+      - ./data/dev/bot_logs:/app/logs
+    depends_on:
+      gameserver:
+        condition: service_healthy
 
 volumes:
   gameserver_dev_logs:

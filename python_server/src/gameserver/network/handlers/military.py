@@ -56,11 +56,21 @@ async def handle_military_request(
             })
 
         army_wave_count = len(army.waves)
+        try:
+            from gameserver.network.handlers.battle_task import _army_steal_multiplier as _asm
+            from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
+            era_key = svc.empire_service.get_current_era(empire)
+            era_idx = _ERA_ORDER.index(era_key) if era_key in _ERA_ORDER else 0
+            items_by_iid = svc.upgrade_provider.items if svc.upgrade_provider else {}
+            steal_mult = round(_asm(army, era_idx, items_by_iid, svc.game_config), 4)
+        except Exception:
+            steal_mult = 1.0
         armies.append({
             "aid": army.aid,
             "name": army.name,
             "waves": waves,
             "next_wave_price": round(svc.empire_service.wave_price_for(empire, army_wave_count + 1), 2),
+            "steal_multiplier": steal_mult,
         })
 
     # Get available critters based on completed research AND buildings

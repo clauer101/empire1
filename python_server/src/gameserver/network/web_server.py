@@ -32,6 +32,7 @@ CRITTERS_PATH   = _CONFIG_DIR / "critters.yaml"
 STRUCTURES_PATH = _CONFIG_DIR / "structures.yaml"
 ARTIFACTS_PATH  = _CONFIG_DIR / "artifacts.yaml"
 _SAVED_MAPS_PATH = _CONFIG_DIR / "saved_maps.yaml"
+RULERS_PATH     = _CONFIG_DIR / "rulers.yaml"
 
 _ITEM_IID_RE = re.compile(r'^([A-Z][A-Z0-9_]+):')
 
@@ -645,6 +646,7 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
         generate_army as _gen_army,
         parse_critter_era_groups as _parse_critter_era_groups,
         parse_slot_by_iid as _parse_slot_by_iid,
+        parse_boss_iids as _parse_boss_iids,
     )
 
     def _generate_army(era: str, seed: int) -> dict[str, Any]:
@@ -658,6 +660,7 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
             critter_era_groups=critter_era_groups,
             slot_by_iid=slot_by_iid,
             seed=seed,
+            boss_iids=_parse_boss_iids(CRITTERS_PATH),
         )
         return {"era": era, "seed": seed, "name": result["name"], "waves": result["waves"]}
 
@@ -677,6 +680,33 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
         try:
             body = await request.json()
             AI_WAVES_PATH.write_text(_write_ai_waves(body.get("waves") or []), encoding="utf-8")
+            return JSONResponse({"success": True})
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
+    @app.get("/api/rulers")
+    async def get_rulers() -> Any:
+        try:
+            data = yaml.safe_load(RULERS_PATH.read_text(encoding="utf-8")) or {}
+            result = [{"iid": iid, **v} for iid, v in data.items() if isinstance(v, dict)]
+            return JSONResponse(result)
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
+    @app.post("/api/rulers")
+    async def save_rulers(request: Request, _uid: int = Depends(require_admin)) -> Any:
+        try:
+            rulers_list: list[dict[str, Any]] = await request.json()
+            out: dict[str, Any] = {}
+            for ruler in rulers_list:
+                iid = ruler.pop("iid", None)
+                if iid:
+                    out[iid] = ruler
+            RULERS_PATH.write_text(
+                "# Ruler definitions\n# Q/W/E: 5 levels of ability effects\n# R: 3 levels of ability effects\n\n"
+                + yaml.dump(out, default_flow_style=False, allow_unicode=True, sort_keys=False),
+                encoding="utf-8",
+            )
             return JSONResponse({"success": True})
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)

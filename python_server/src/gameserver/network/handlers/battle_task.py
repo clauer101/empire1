@@ -216,6 +216,8 @@ async def _run_battle_task(
         attacker_won = battle.defender_won is False
         if attacker_won:
             loot = _compute_and_apply_loot(battle, svc)
+        if battle.critters_reached > 0:
+            _apply_culture_life_steal(battle, svc, loot)
         stolen_artifacts, steal_chances, army_multipliers = _apply_artifact_steal(battle, svc, attacker_won)
         if stolen_artifacts:
             loot["artifacts"] = [{"iid": iid, "winner_uid": uid} for iid, uid in stolen_artifacts]
@@ -347,6 +349,8 @@ async def _run_battle_task(
                     f"⚡ PvP Bonus:  +{int(pvp_gold_bonus)} gold (×2 vs player)\n"
                     if pvp_gold_bonus > 0 else ""
                 )
+                life_lost = float(battle.defender_losses.get("life", 0.0))
+                life_lost_line = f"❤ Life lost:  -{life_lost:g}\n" if life_lost > 0 else ""
                 def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
                 def_body = (
                     f"{def_result}\n"
@@ -357,6 +361,7 @@ async def _run_battle_task(
                     f"🐛 Spawned:   {battle.critters_spawned}\n"
                     f"💀 Killed:    {battle.critters_killed}\n"
                     f"🏰 Reached:   {battle.critters_reached}\n"
+                    f"{life_lost_line}"
                     f"🗼 Towers:    {len(battle.structures)}\n"
                     f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
                     f"{pvp_bonus_line}"
@@ -424,9 +429,9 @@ async def _run_battle_task(
                     if uid in steal_chances:
                         _final = steal_chances[uid]
                         _mult = army_multipliers.get(uid, 1.0)
-                        _final_pct = int(_final * 100)
+                        _final_pct = round(_final * 100, 1)
                         if _mult < 1.0 and _mult > 0:
-                            _raw_pct = int(round(_final / _mult * 100))
+                            _raw_pct = round(_final / _mult * 100, 1)
                             steal_chance_line = f"⚜ Steal chance: {_final_pct}% ({_raw_pct}% x {_mult:.2f})\n"
                         else:
                             steal_chance_line = f"⚜ Steal chance: {_final_pct}%\n"
@@ -440,6 +445,7 @@ async def _run_battle_task(
                         f"🐛 Spawned:   {battle.critters_spawned}\n"
                         f"💀 Killed:    {battle.critters_killed}\n"
                         f"🏰 Reached:   {battle.critters_reached}\n"
+                        f"{life_lost_line}"
                         f"{loot_atk_lines}"
                         f"{steal_chance_line}"
                         f"{ruler_xp_line}"
@@ -647,6 +653,71 @@ def _apply_artifact_steal(
     return stolen, steal_chances, army_multipliers
 
 
+def _apply_culture_life_steal(battle: "BattleState", svc: Any, loot: dict) -> None:
+    """Steal culture based on the life the defender lost in THIS battle.
+
+    Only called when critters_reached > 0. Missing life carried over from
+    earlier battles is never re-billed.
+    """
+    from gameserver.engine.ai_service import AI_UID as _AI_UID
+    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
+
+    defender = battle.defender
+    if not defender:
+        return
+    human_uids = [uid for uid in battle.attacker_uids if uid != _AI_UID]
+    if not human_uids:
+        return
+
+    cfg = svc.game_config
+    defender_era = svc.empire_service.get_current_era(defender) if svc.empire_service else _ERA_ORDER[0]
+    defender_era_idx = _ERA_ORDER.index(defender_era) if defender_era in _ERA_ORDER else 0
+    culture_pool = float(defender.resources.get("culture", 0.0))
+
+    # Only life lost in THIS battle counts — never re-bill missing life
+    # carried over from earlier battles that has not regenerated yet.
+    life_missing = max(0.0, float(battle.defender_losses.get("life", 0.0)))
+    rate_raw = getattr(cfg, "culture_steal_per_life_and_era", 2000.0) if cfg else 2000.0
+    rate = float(rate_raw) if isinstance(rate_raw, (int, float)) else 2000.0
+    total_culture_stolen = min(life_missing * (defender_era_idx + 1) * rate, culture_pool)
+
+    if total_culture_stolen <= 0.01:
+        return
+
+    n_winners = len(human_uids)
+    base_per_winner = total_culture_stolen / n_winners
+    payout_total = 0.0
+    era_ratio = getattr(cfg, "culture_era_advantage_ratio", 0.5) if cfg else 0.5
+    for uid in human_uids:
+        w_emp = svc.empire_service.get(uid) if svc.empire_service else None
+        if w_emp is None:
+            continue
+        attacker_era = svc.empire_service.get_current_era(w_emp)
+        attacker_era_idx = _ERA_ORDER.index(attacker_era) if attacker_era in _ERA_ORDER else 0
+        era_penalty = attacker_era_idx > defender_era_idx
+        payout = round(base_per_winner * (era_ratio if era_penalty else 1.0), 2)
+        w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + payout
+        payout_total += payout
+        loot.setdefault("per_attacker", {}).setdefault(uid, {})
+        loot["per_attacker"][uid]["culture"] = loot["per_attacker"][uid].get("culture", 0.0) + payout
+        if era_penalty:
+            loot["per_attacker"][uid]["culture_era_penalty"] = True
+            loot["per_attacker"][uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
+        battle.attacker_gains.setdefault(uid, {})
+        battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + payout
+        if era_penalty:
+            battle.attacker_gains[uid]["culture_era_penalty"] = True
+            battle.attacker_gains[uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
+
+    defender.resources["culture"] = max(0.0, culture_pool - payout_total)
+    battle.defender_losses["culture"] = battle.defender_losses.get("culture", 0.0) + payout_total
+    loot["culture"] = loot.get("culture", 0.0) + payout_total
+    log.info(
+        "[LOOT] Culture (life-based) stolen from uid=%d: %.1f (life_missing=%.1f era_idx=%d rate=%.0f, %d attackers)",
+        defender.uid, payout_total, life_missing, defender_era_idx + 1, rate, n_winners,
+    )
+
+
 def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
     """Compute and apply loot on defender loss. Returns loot dict.
 
@@ -743,30 +814,23 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                     )
                     defender.build_queue = None
 
-    # --- Culture steal ---
+    # --- Culture steal: attacker win only ---
     from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
     defender_era = svc.empire_service.get_current_era(defender) if svc.empire_service else _ERA_ORDER[0]
     defender_era_idx = _ERA_ORDER.index(defender_era) if defender_era in _ERA_ORDER else 0
     culture_pool = float(defender.resources.get("culture", 0.0))
 
-    if winners:
-        # Human attack: life-based + random percentage, capped at culture pool
-        life_lost = float(battle.defender_losses.get("life", 0.0))
-        rate_raw = getattr(cfg, "culture_steal_per_life_and_era", 2000.0) if cfg else 2000.0
-        rate = float(rate_raw) if isinstance(rate_raw, (int, float)) else 2000.0
+    from gameserver.engine.ai_service import AI_UID as _AI_UID_C
+    _is_ai_attack = _AI_UID_C in battle.attacker_uids
+    if winners or _is_ai_attack:
         min_c = getattr(cfg, "min_lose_culture", 0.01) if cfg else 0.01
         max_c = getattr(cfg, "max_lose_culture", 0.05) if cfg else 0.05
         pct_culture = _random.uniform(min_c, max_c)
-        total_culture_stolen = min(
-            life_lost * (defender_era_idx + 1) * rate + culture_pool * pct_culture,
-            culture_pool,
-        )
+        ai_modifier = float(getattr(cfg, "ai_culture_steal_modifier", 1.0)) if cfg else 1.0
+        modifier = ai_modifier if _is_ai_attack else 1.0
+        total_culture_stolen = min(culture_pool * pct_culture * modifier, culture_pool)
     else:
-        # AI attack: random percentage of defender's culture
-        min_c = getattr(cfg, "min_lose_culture", 0.01) if cfg else 0.01
-        max_c = getattr(cfg, "max_lose_culture", 0.05) if cfg else 0.05
-        pct_culture = _random.uniform(min_c, max_c)
-        total_culture_stolen = culture_pool * pct_culture
+        total_culture_stolen = 0.0
 
     if total_culture_stolen > 0.01:
         payout_total = 0.0
@@ -793,8 +857,8 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                     battle.attacker_gains[uid]["culture_era_penalty"] = True
                     battle.attacker_gains[uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
             log.info(
-                "[LOOT] Culture stolen from uid=%d: %.1f (life_lost=%.1f era_idx=%d rate=%.0f + %.2f%% pool, %d winners)",
-                defender.uid, payout_total, life_lost, defender_era_idx + 1, rate, pct_culture * 100, n_winners,
+                "[LOOT] Culture (pool%%) stolen from uid=%d: %.1f (%.2f%% of pool, %d winners)",
+                defender.uid, payout_total, pct_culture * 100, n_winners,
             )
         else:
             # AI: culture lost by defender, not credited to anyone
@@ -803,7 +867,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                      defender.uid, payout_total, pct_culture * 100)
         defender.resources["culture"] = max(0.0, culture_pool - payout_total)
         battle.defender_losses["culture"] = battle.defender_losses.get("culture", 0.0) + payout_total
-        loot["culture"] = payout_total
+        loot["culture"] = loot.get("culture", 0.0) + payout_total
 
     # --- Life restore (once per battle for defender) ---
     from gameserver.util.effects import RESTORE_LIFE_AFTER_LOSS_OFFSET

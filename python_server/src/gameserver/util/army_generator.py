@@ -61,6 +61,13 @@ def parse_slot_by_iid(critters_yaml: Path) -> dict[str, float]:
     return {iid: max(0.1, float(v.get("slots", 1))) for iid, v in data.items() if isinstance(v, dict)}
 
 
+def parse_boss_iids(critters_yaml: Path) -> set[str]:
+    """Return the iids of all boss critters from critters.yaml."""
+    import yaml
+    data = yaml.safe_load(critters_yaml.read_text(encoding="utf-8")) or {}
+    return {iid for iid, v in data.items() if isinstance(v, dict) and v.get("is_boss")}
+
+
 # ── Army generation ───────────────────────────────────────────────────────────
 
 def generate_army(
@@ -70,6 +77,7 @@ def generate_army(
     slot_by_iid: dict[str, float],
     seed: int | None = None,
     name: str | None = None,
+    boss_iids: set[str] | None = None,
 ) -> dict[str, Any]:
     """Generate a random army for the given internal era key.
 
@@ -80,6 +88,7 @@ def generate_army(
         slot_by_iid: {iid: slot_cost} lookup.
         seed: Optional RNG seed. Uses random.randint if None.
         name: Optional army name override.
+        boss_iids: Boss critter iids; at most one boss critter per army.
 
     Returns:
         dict with keys: name, waves (list of {critter, slots}), era_internal, seed.
@@ -114,9 +123,21 @@ def generate_army(
         hi = max(lo, hi)
         return lo + int(rng() * (hi - lo + 1))
 
+    bosses = boss_iids or set()
+    boss_used = False
+
     def make_wave(pool: list[str]) -> dict[str, Any]:
-        iid = pool[int(rng() * len(pool))]
+        nonlocal boss_used
+        pick_pool = pool
+        if boss_used:
+            # At most one boss critter per army — re-pick from non-boss critters
+            pick_pool = [i for i in pool if i not in bosses] \
+                or [i for i in main_pool if i not in bosses] or pool
+        iid = pick_pool[int(rng() * len(pick_pool))]
         slot_unit = slot_by_iid.get(iid, 1)
+        if iid in bosses:
+            boss_used = True
+            return {"critter": iid, "slots": slot_unit}  # exactly one boss spawns
         raw_s = min_slots + rng() * (max_slots - min_slots)
         slots = max(slot_unit, round(raw_s / slot_unit) * slot_unit)
         return {"critter": iid, "slots": slots}

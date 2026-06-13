@@ -415,7 +415,7 @@ class Database:
     async def send_message(self, from_uid: int, to_uid: int, body: str) -> dict[str, Any]:
         """Store a new message and return it as a dict."""
         assert self._conn is not None
-        read = 1 if from_uid == 0 else 0  # system/AI messages pre-read
+        read = 0
         async with self._conn.execute(
             "INSERT INTO messages (from_uid, to_uid, body, read) VALUES (?, ?, ?, ?)",
             (from_uid, to_uid, body, read),

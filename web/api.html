@@ -42,7 +42,7 @@
   "url": "https://relicsnrockets.io/api.html",
   "image": "https://relicsnrockets.io/assets/sprites/banner.webp",
   "inLanguage": "en",
-  "dateModified": "2026-06-07",
+  "dateModified": "2026-06-13",
   "audience": {
     "@type": "Audience",
     "audienceType": "Developer"
@@ -498,9 +498,11 @@ while True:
   &quot;username&quot;: &quot;myuser&quot;,
   &quot;password&quot;: &quot;s3cret&quot;,
   &quot;email&quot;: &quot;&quot;,          // optional
-  &quot;empire_name&quot;: &quot;The Iron Throne&quot;
+  &quot;empire_name&quot;: &quot;The Iron Throne&quot;,
+  &quot;is_bot&quot;: false       // optional — AI players / bots must set true to self-declare
 }
 </code></pre>
+<p>Accounts created with <code>is_bot: true</code> are permanently flagged as bots (visible via <code>is_bot</code> / <code>bot_probability</code> in <code>GET /api/empires</code>) and bypass the heuristic bot detection.</p>
 <p><strong>Response</strong></p>
 <pre><code class="language-json">{ &quot;success&quot;: true, &quot;uid&quot;: 42, &quot;reason&quot;: &quot;&quot; }
 </code></pre>

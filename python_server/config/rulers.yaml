@@ -9,8 +9,8 @@ MAJA:
   type: ''
   health_min: 16.0
   health_max: 3000.0
-  armour_min: 1.0
-  armour_max: 15.0
+  armour_min: 2.0
+  armour_max: 16.0
   speed_min: 0.5
   speed_max: 1.1
   damage_min: 1.0
@@ -18,9 +18,9 @@ MAJA:
   value_min: 10.0
   value_max: 10000.0
   scale_base: 1.0
-  animation: assets/sprites/ruler/maja
   aura_min: 1.5
-  aura_max: 4.0
+  aura_max: 2.5
+  animation: assets/sprites/ruler/maja
   q:
     name: Chrono-Scholar’s Insight
     description: ''
@@ -64,7 +64,7 @@ NANDI:
   health_min: 18.0
   health_max: 3100.0
   armour_min: 1.0
-  armour_max: 15.0
+  armour_max: 16.0
   speed_min: 0.8
   speed_max: 1.2
   damage_min: 1.0
@@ -72,9 +72,9 @@ NANDI:
   value_min: 10.0
   value_max: 10000.0
   scale_base: 1.0
-  animation: assets/sprites/ruler/nandi
   aura_min: 1.5
-  aura_max: 4.5
+  aura_max: 2.5
+  animation: assets/sprites/ruler/nandi
   q:
     name: Voice of the Commons
     description: ''
@@ -117,7 +117,7 @@ LUCIEN:
   type: ''
   health_min: 18.0
   health_max: 3200.0
-  armour_min: 1.0
+  armour_min: 2.0
   armour_max: 15.0
   speed_min: 0.6
   speed_max: 1.1
@@ -126,9 +126,9 @@ LUCIEN:
   value_min: 10.0
   value_max: 10000.0
   scale_base: 1.0
-  animation: assets/sprites/ruler/lucien
   aura_min: 1.5
-  aura_max: 4.0
+  aura_max: 2.5
+  animation: assets/sprites/ruler/lucien
   q:
     name: Golden Interest
     description: ''
@@ -172,7 +172,7 @@ BORIN:
   health_min: 18.0
   health_max: 3800.0
   armour_min: 2.0
-  armour_max: 16.0
+  armour_max: 17.0
   speed_min: 0.6
   speed_max: 1.0
   damage_min: 1.0
@@ -180,9 +180,9 @@ BORIN:
   value_min: 10.0
   value_max: 10000.0
   scale_base: 1.0
+  aura_min: 1.5
+  aura_max: 2.5
   animation: assets/sprites/ruler/borin
-  aura_min: 2.0
-  aura_max: 5.0
   q:
     name: Juggernauts Resolve
     description: ''
@@ -224,7 +224,7 @@ ALRIC:
   type: ''
   health_min: 22.0
   health_max: 3700.0
-  armour_min: 1.0
+  armour_min: 2.0
   armour_max: 19.0
   speed_min: 0.5
   speed_max: 1.0
@@ -233,9 +233,9 @@ ALRIC:
   value_min: 10.0
   value_max: 10000.0
   scale_base: 1.0
-  animation: assets/sprites/ruler/alric
   aura_min: 1.5
-  aura_max: 4.5
+  aura_max: 2.5
+  animation: assets/sprites/ruler/alric
   q:
     name: Shadow Conscription
     description: ''
