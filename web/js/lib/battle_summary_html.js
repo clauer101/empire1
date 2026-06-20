@@ -202,6 +202,33 @@ export function buildBattleSummaryHtml(msg, catalog = {}, opts = {}) {
     html += '</ul></div>';
   }
 
+  // ── Defender won but still lost culture via life-steal ───────────────────
+  if (won && loot.culture > 0) {
+    const perAtk = loot.per_attacker || {};
+    html += `<div ${sep}>`;
+    html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">🎭 Culture Stolen via Life Damage</strong>`;
+    html += `<ul style="list-style:none;padding:0;margin:5px 0 0 0">`;
+    html += `<li ${liSt}>🎭 Culture lost: <strong>-${Math.round(loot.culture)}</strong></li>`;
+    if (attackerUids.length > 0) {
+      if (multiAttacker) {
+        for (const uid of attackerUids) {
+          const c = perAtk[uid]?.culture ?? 0;
+          if (c > 0) {
+            const pen = perAtk[uid]?.culture_era_penalty_lost ?? 0;
+            const penStr = pen > 0.5 ? ` <span style="color:var(--muted,#888);font-size:0.88em">(-${Math.round(pen)} era penalty)</span>` : '';
+            html += `<li ${mutedSt}>→ ${_esc(empireNames[uid] || `uid ${uid}`)}: +${Math.round(c)}${penStr}</li>`;
+          }
+        }
+      } else {
+        const c = perAtk[firstUid]?.culture ?? loot.culture;
+        const pen = perAtk[firstUid]?.culture_era_penalty_lost ?? 0;
+        const penStr = pen > 0.5 ? ` <span style="color:var(--muted,#888);font-size:0.88em">(-${Math.round(pen)} era penalty)</span>` : '';
+        html += `<li ${mutedSt}>→ ${_esc(empireNames[firstUid] || 'attacker')}: +${Math.round(c)}${penStr}</li>`;
+      }
+    }
+    html += '</ul></div>';
+  }
+
   if (!won && loot.life_restored > 0) {
     html += `<div ${sep}>`;
     html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">❤️ Life Restored after Battle</strong>`;

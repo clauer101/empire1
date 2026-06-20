@@ -405,6 +405,349 @@ def next_maze_tile(tiles: dict, seed: int = 0) -> tuple[int, int] | None:
     return None
 
 
+# ── Spiral maze (alternating path / tower rings) ─────────────────────────────
+#
+# Dead simple and fully deterministic: rings around the castle alternate between
+# a row of PATH (odd radius) and a row of TOWERS (even radius). Each tower ring
+# has exactly one gap; the gap rotates a little ring-to-ring so the critter route
+# threads gap-to-gap and spirals down to the castle. Every tile is either path or
+# tower — no dead-ends, no empty pockets — and there is no randomness.
+#
+# Build order (per cycle, one action): place a tower wherever the plan calls for
+# one and the path survives (towers first), else buy the next field tile, else
+# park the spawn at the outer mouth. The plan depends only on the tile's ring, so
+# the same spiral just extends outward as the field grows.
+
+# Outermost ring the spiral grows to (each ring adds ~6·r tiles).
+SPIRAL_MAX_RADIUS = 11
+# Fraction of a ring the single gap rotates per successive tower ring, so the
+# gaps line up into a spiral rather than a straight radial seam.
+SPIRAL_GAP_STEP = 0.125
+
+
+def _hex_distance(q: int, r: int) -> int:
+    """Axial hex distance from the origin to (q, r)."""
+    return (abs(q) + abs(r) + abs(q + r)) // 2
+
+
+def _hex_angle(q: int, r: int) -> float:
+    """Angle (radians, [0, 2π)) of tile (q, r) around the origin in hex world."""
+    x = 1.5 * q
+    y = math.sqrt(3) * (r + 0.5 * q)
+    a = math.atan2(y, x)
+    return a + 2 * math.pi if a < 0 else a
+
+
+def hex_ring(radius: int) -> list[tuple[int, int]]:
+    """Ordered offsets of the 6·radius hexes at hex-distance `radius` from origin.
+
+    Walks the ring using HEX_DIRS (red-blob ordering): start at direction[4]
+    scaled by `radius`, then step `radius` tiles along each of the 6 directions.
+    `radius <= 0` returns the single origin tile.
+    """
+    if radius <= 0:
+        return [(0, 0)]
+    results: list[tuple[int, int]] = []
+    sq, sr = HEX_DIRS[4]
+    q, r = sq * radius, sr * radius
+    for dq, dr in HEX_DIRS:
+        for _ in range(radius):
+            results.append((q, r))
+            q, r = q + dq, r + dr
+    return results
+
+
+def _spiral_gap_offset(radius: int) -> tuple[int, int]:
+    """The single gap tile (offset from castle) of the tower ring at `radius`."""
+    ring = hex_ring(radius)
+    gap_idx = int(round((radius // 2) * SPIRAL_GAP_STEP * len(ring))) % len(ring)
+    return ring[gap_idx]
+
+
+def spiral_is_wall(dq: int, dr: int, seed: int = 0) -> bool:
+    """True if the tile at offset (dq, dr) from the castle is a planned tower.
+
+    Even-radius rings are tower rows (minus their one gap); odd-radius rings and
+    the castle are path. Fully deterministic — `seed` is accepted only for a
+    uniform interface with the other planners and is ignored.
+    """
+    k = _hex_distance(dq, dr)
+    if k == 0 or k % 2 == 1:
+        return False
+    return (dq, dr) != _spiral_gap_offset(k)
+
+
+def _spiral_path_len(tiles: dict, spawn_key: str) -> int:
+    """Spawn→castle BFS length with the spawnpoint moved to `spawn_key` (0 = no path)."""
+    sim = dict(tiles)
+    for k, v in sim.items():
+        if _tile_type(v) == "spawnpoint":
+            sim[k] = "empty"
+    sim[spawn_key] = "spawnpoint"
+    path = bfs_path(sim)
+    return len(path) if path else 0
+
+
+def _best_spawn(tiles: dict, castle: tuple[int, int],
+                seed: int) -> tuple[int, int] | None:
+    """Owned corridor tile that maximises the spawn→castle path (the design goal).
+
+    Restricted to the outermost owned ring so the mouth stays at the field edge;
+    ties broken deterministically. Only tiles that keep a valid path qualify.
+    """
+    cq, cr = castle
+    corridor = [(q, r) for (q, r) in
+                (_parse_key(k) for k, v in tiles.items() if _tile_type(v) != "void")
+                if (q, r) != castle and not spiral_is_wall(q - cq, r - cr, seed)]
+    if not corridor:
+        return None
+    outer = max(_hex_distance(q - cq, r - cr) for q, r in corridor)
+    ring = [(q, r) for q, r in corridor
+            if _hex_distance(q - cq, r - cr) == outer]
+    best: tuple[int, int] | None = None
+    best_key = (-1, 0.0)
+    for q, r in ring:
+        plen = _spiral_path_len(tiles, f"{q},{r}")
+        if plen == 0:
+            continue
+        key = (plen, -_hex_angle(q - cq, r - cr))
+        if key > best_key:
+            best_key, best = key, (q, r)
+    return best
+
+
+def next_spiral_action(tiles: dict, *, seed: int = 0,
+                       max_radius: int = SPIRAL_MAX_RADIUS) -> dict | None:
+    """Next single build step toward the snail-shell spiral, or None.
+
+    Priority (per the strategy): place a wall tower whenever one fits, else buy
+    the next field tile, else park the spawn at the outer mouth. Returns one of
+    {"kind":"tower"|"buy"|"spawn", "q", "r"} or None when the snail is complete
+    out to `max_radius` (or the path has reached MAZE_MAX_PATH_LEN).
+    """
+    castle = next((_parse_key(k) for k, v in tiles.items()
+                   if _tile_type(v) == "castle"), None)
+    if castle is None:
+        return None
+    cq, cr = castle
+    spawn = next((_parse_key(k) for k, v in tiles.items()
+                  if _tile_type(v) == "spawnpoint"), None)
+
+    owned = [(q, r) for (q, r) in
+             (_parse_key(k) for k, v in tiles.items() if _tile_type(v) != "void")]
+    max_r = max((_hex_distance(q - cq, r - cr) for q, r in owned), default=0)
+
+    # 0. Park the spawn at the mouth that maximises the spawn→castle path (the
+    #    optimisation target), so the BFS guard below protects the real coil
+    #    rather than a trivial spawn-adjacent-to-castle path. Only relocate when
+    #    it strictly improves, and only to a tile that keeps a valid path.
+    mouth = _best_spawn(tiles, castle, seed)
+    if mouth is not None and spawn != mouth:
+        cur_len = (_spiral_path_len(tiles, f"{spawn[0]},{spawn[1]}")
+                   if spawn is not None else 0)
+        if _spiral_path_len(tiles, f"{mouth[0]},{mouth[1]}") > cur_len:
+            return {"kind": "spawn", "q": mouth[0], "r": mouth[1]}
+
+    # 1. TOWER-FIRST: wherever three empty tiles touch (a spot wider than one
+    #    tile), wall one of them — provided it keeps a valid spawn→castle path.
+    #    This tightens the maze to a width-1 coil and lengthens the path. Prefer
+    #    the snail's wall tile, then nearest the castle, for a stable spiral.
+    triangle = _empty_triangle_tiles(tiles)
+    candidates = sorted(
+        triangle,
+        key=lambda t: (0 if spiral_is_wall(t[0] - cq, t[1] - cr, seed) else 1,
+                       _hex_distance(t[0] - cq, t[1] - cr)))
+    for q, r in candidates:
+        sim = dict(tiles)
+        sim[f"{q},{r}"] = "blocked"
+        if bfs_path(sim) is not None:
+            return {"kind": "tower", "q": q, "r": r}
+
+    # 2. BUY (no tower placeable): grow the field inside-out out to the radius
+    #    cap (maximising the path is the goal, so we fill the whole snail), but
+    #    always finish owning the current frontier ring first.
+    target = max_r if max_r >= max_radius else max_r + 1
+    for rad in range(1, target + 1):
+        for dq, dr in hex_ring(rad):
+            q, r = cq + dq, cr + dr
+            key = f"{q},{r}"
+            if key not in tiles or _tile_type(tiles[key]) == "void":
+                return {"kind": "buy", "q": q, "r": r}
+
+    return None
+
+
+# ── Boustrophedon comb (space-filling-curve maze) ────────────────────────────
+#
+# A space-filling curve is a single continuous path that visits every cell of a
+# region; the simplest one is the boustrophedon ("ox-plough") serpentine, where
+# lanes snake back and forth and connect at alternating ends. This builds that
+# maze explicitly: every OTHER line (columns of constant q, or rows of constant
+# r when the seed flips orientation) is a full tower wall with one traversable
+# gap, so the corridor must double back and every corridor lane is flanked by
+# tower walls on BOTH sides. Full wall lines are used (rather than scattered
+# blockers) because they also block the two diagonal hex neighbours that would
+# otherwise let critters leak sideways between parallel lanes.
+#
+# Build order per cycle (one action): park the spawn at the field corner that
+# maximises the path, then place a wall tower wherever one fits (towers first),
+# otherwise buy the next field tile to grow the region out to COMB_MAX_EXTENT.
+
+# Hex-distance the comb grows the owned field to (each ring adds ~6·r tiles).
+COMB_MAX_EXTENT = 5
+
+
+def plan_comb_walls(tiles: dict, seed: int = 0) -> list[tuple[int, int]]:
+    """Ordered wall tiles for a dense boustrophedon comb over the owned field.
+
+    Every other line is walled full-height with a single traversable gap; gaps
+    alternate ends line-to-line so the route zig-zags (U-turns) and each corridor
+    lane ends up flanked by tower walls on both sides. Spawn and castle lines are
+    never walled. Tiles are ordered gap-outward so a partially built wall already
+    constrains the route, which suits one-tower-per-cycle play. `seed` picks the
+    orientation (columns vs rows) and start offset for per-bot variety; the plan
+    is a pure function of (tiles, seed), and seed=0 is the deterministic layout.
+    """
+    rng = random.Random(seed) if seed else None
+    owned = {_parse_key(k) for k, v in tiles.items() if _tile_type(v) != "void"}
+    spawn = next((_parse_key(k) for k, v in tiles.items()
+                  if _tile_type(v) == "spawnpoint"), None)
+    castle = next((_parse_key(k) for k, v in tiles.items()
+                   if _tile_type(v) == "castle"), None)
+    if spawn is None or castle is None or len(owned) < 9:
+        return []
+
+    # Wall lines run along constant `axis` (0 = columns of constant q, 1 = rows
+    # of constant r); `cross` is the coordinate that varies along a wall line.
+    axis = rng.randint(0, 1) if rng else 0
+    cross = 1 - axis
+    lines = sorted({t[axis] for t in owned})
+    lo, hi = lines[0], lines[-1]
+    start = lo + 1 + (rng.choice((0, 1)) if rng else 0)
+    wall_lines = [n for n in range(start, hi, 2)
+                  if n not in (spawn[axis], castle[axis])]
+
+    walls: list[tuple[int, int]] = []
+    for i, n in enumerate(wall_lines):
+        line = sorted(t for t in owned if t[axis] == n)
+        open_tiles = [t for t in line
+                      if _tile_type(tiles.get(f"{t[0]},{t[1]}")) in
+                      ("empty", "path", "spawnpoint", "castle")]
+        if len(line) < 2 or not open_tiles:
+            continue
+        open_vals = [t[cross] for t in open_tiles]
+        # First gap sits at the end far from the spawn (a near-side gap aligns
+        # with the natural diagonal and yields no path gain); then alternate.
+        far_is_max = (abs(max(open_vals) - spawn[cross])
+                      >= abs(min(open_vals) - spawn[cross]))
+        at_max = far_is_max if i % 2 == 0 else not far_is_max
+        gap = max(open_vals) if at_max else min(open_vals)
+        line_tiles = [t for t in line if t[cross] != gap]
+        line_tiles.sort(key=lambda t: -abs(t[cross] - gap))
+        walls.extend(line_tiles)
+
+    if rng:
+        # A randomized orientation must actually lengthen the path; if it does
+        # not, fall back to the deterministic layout (mirrors plan_maze_walls).
+        sim = dict(tiles)
+        for q, r in walls:
+            if _tile_type(sim.get(f"{q},{r}")) == "empty":
+                sim[f"{q},{r}"] = "blocked"
+        base_path, new_path = bfs_path(tiles), bfs_path(sim)
+        if (base_path is not None and
+                (new_path is None or len(new_path) <= len(base_path))):
+            return plan_comb_walls(tiles, 0)
+    return walls
+
+
+def _best_comb_spawn(tiles: dict,
+                     castle: tuple[int, int]) -> tuple[int, int] | None:
+    """Owned outer-ring tile that maximises the spawn→castle path.
+
+    Mirrors _best_spawn but without a wall classification: restrict to the
+    outermost owned ring (so the mouth stays at the field edge), keep only tiles
+    that leave a valid path, and break ties deterministically by angle.
+    """
+    cq, cr = castle
+    owned = [(q, r) for (q, r) in
+             (_parse_key(k) for k, v in tiles.items() if _tile_type(v) != "void")
+             if (q, r) != castle]
+    if not owned:
+        return None
+    outer = max(_hex_distance(q - cq, r - cr) for q, r in owned)
+    ring = [(q, r) for q, r in owned if _hex_distance(q - cq, r - cr) == outer]
+    best: tuple[int, int] | None = None
+    best_key = (-1, 0.0)
+    for q, r in ring:
+        plen = _spiral_path_len(tiles, f"{q},{r}")
+        if plen == 0:
+            continue
+        key = (plen, -_hex_angle(q - cq, r - cr))
+        if key > best_key:
+            best_key, best = key, (q, r)
+    return best
+
+
+def next_comb_action(tiles: dict, *, seed: int = 0,
+                     max_extent: int = COMB_MAX_EXTENT) -> dict | None:
+    """Next single build step toward the boustrophedon comb, or None.
+
+    Priority (one action per call): park the spawn at the mouth that maximises
+    the path, else place a wall tower wherever one fits (towers first), else buy
+    the next field tile out to `max_extent`. Returns one of
+    {"kind":"spawn"|"tower"|"buy", "q", "r"} or None when the comb is complete
+    (or the path has reached MAZE_MAX_PATH_LEN).
+    """
+    castle = next((_parse_key(k) for k, v in tiles.items()
+                   if _tile_type(v) == "castle"), None)
+    if castle is None:
+        return None
+    cq, cr = castle
+    spawn = next((_parse_key(k) for k, v in tiles.items()
+                  if _tile_type(v) == "spawnpoint"), None)
+
+    base = bfs_path(tiles)
+    if base is not None and len(base) >= MAZE_MAX_PATH_LEN:
+        return None
+
+    owned = [(q, r) for (q, r) in
+             (_parse_key(k) for k, v in tiles.items() if _tile_type(v) != "void")]
+
+    # 0. Park the spawn at the mouth that maximises the path, so the BFS guard
+    #    below protects the real corridor rather than a spawn-adjacent shortcut.
+    mouth = _best_comb_spawn(tiles, castle)
+    if mouth is not None and spawn != mouth:
+        cur_len = (_spiral_path_len(tiles, f"{spawn[0]},{spawn[1]}")
+                   if spawn is not None else 0)
+        if _spiral_path_len(tiles, f"{mouth[0]},{mouth[1]}") > cur_len:
+            return {"kind": "spawn", "q": mouth[0], "r": mouth[1]}
+
+    # 1. TOWER-FIRST: convert the first planned wall tile that is still empty and
+    #    whose placement keeps a valid spawn→castle path.
+    for q, r in plan_comb_walls(tiles, seed):
+        key = f"{q},{r}"
+        if _tile_type(tiles.get(key)) != "empty":
+            continue
+        sim = dict(tiles)
+        sim[key] = "blocked"
+        if bfs_path(sim) is not None:
+            return {"kind": "tower", "q": q, "r": r}
+
+    # 2. BUY (no tower placeable): grow the field ring-by-ring out to the extent
+    #    cap, always finishing the current frontier ring first (hex_ring keeps
+    #    every new tile adjacent to owned land, the server purchase rule).
+    max_r = max((_hex_distance(q - cq, r - cr) for q, r in owned), default=0)
+    target = max_r if max_r >= max_extent else max_r + 1
+    for rad in range(1, target + 1):
+        for dq, dr in hex_ring(rad):
+            q, r = cq + dq, cr + dr
+            key = f"{q},{r}"
+            if key not in tiles or _tile_type(tiles[key]) == "void":
+                return {"kind": "buy", "q": q, "r": r}
+
+    return None
+
+
 # ── Tower selection ──────────────────────────────────────────────────────────
 
 # Desired ratio among placed towers: damage-focused vs. slow vs. splash

@@ -439,7 +439,7 @@ RADAR_TOWER:
   name: "Radar Tower"
   sprite: "assets/sprites/structures/radar_tower/radar_tower.webp"
   damage: 23
-  range: 4
+  range: 3
   reload_time: 2900
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/radio.webp"

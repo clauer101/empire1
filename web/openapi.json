@@ -909,6 +909,32 @@
         ]
       }
     },
+    "/api/empire/trophies": {
+      "get": {
+        "summary": "Get Trophies",
+        "description": "Return all trophies: earned (with timestamp) and unearned (condition info).",
+        "operationId": "get_trophies_api_empire_trophies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Trophies Api Empire Trophies Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/army": {
       "post": {
         "summary": "Create Army",

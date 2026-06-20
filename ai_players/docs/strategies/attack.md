@@ -40,30 +40,41 @@ cleared.
 6. **Evaluate result** — read the battle report from `memory.attack_history`;
    on defeat, strengthen the army and try again (see below).
 
-## Build up before attacking
+## Build toward the era template
 
-A fresh attack strategy first enters the `build_up` phase and strengthens the
-army up to a **power target** before spying, so the first attack fields a
-reasonable army instead of a single weak wave. Build-up reuses
-`army_building.strengthen_plan()` (the same ranked fill-waves / buy-slot /
-buy-era / add-wave / second-army options as the post-defeat strengthening) and
-takes one option per cycle; unaffordable options declare a (sticky) savings goal.
+While the attack strategy is active the bot strengthens its army toward an
+**era-matched template** before spying, so the first attack fields a structured
+army instead of a single weak wave. The template is derived from the server's
+`python_server/config/ai_waves.yaml`: one representative army per era (median by
+total slots), condensed by `ai_players/scripts/gen_army_templates.py` into
+`ai_players/config/army_templates.yaml` and loaded via
+`army_templates.load_templates()`. `template_for_era(era_rank)` picks the
+template for the bot's current era (clamping down if the exact era is absent).
 
-The target is **opponent-relative** with an era-scaled cold-start
-(`army_building.build_up_target`):
+The template is a **loose guideline**, not a rigid copy. It supplies three
+things to `army_building.strengthen_plan(..., template, defeats)`:
 
-- No prior battle against this target → era-scaled baseline
-  `BUILD_BASE_POWER + BUILD_POWER_PER_ERA * era_rank`.
-- A previous **defeat** against this target → `max(baseline, current_power ×
-  (1 + est_strength × BUILD_STRENGTH_K))`, where `est_strength` is the
-  killed/spawned ratio recorded in `memory.opponents[name]` (how hard the
-  defense repelled the last attack).
+- **Critter type per wave** — each wave aims at its template critter
+  (`resolve_template_critter`): use it when unlocked and era-fitting, otherwise
+  fall back to the strongest fitting critter (best-effort).
+- **Slots per wave** — `buy_slot` stops once a wave reaches its template slot
+  count.
+- **Wave count** — `add_wave` grows the army toward `len(template)` waves.
 
-Current army power is `army_building.army_power()` (sum of `critter_power × slots`
-over all filled, non-ruler waves). Build-up ends — setting
-`params.built_up = True` and moving to `spy` — when the target is met, when
-`strengthen_plan` has no more options, or after `MAX_BUILD_UP_ROUNDS` (12)
-purchases, so it can never loop forever.
+Era climbing (`buy_wave_era`) stays template-independent so an outdated wave
+always advances toward current-era critters first.
+
+The build-up **power target** is `army_building.template_target_power()` — the
+sum of `critter_power(resolved) × slots` over the template's waves. Strengthening
+ends and moves to `spy` when current `army_building.army_power()` meets that
+target, when `strengthen_plan` has no more options, or when the cheapest option
+exceeds `STRENGTHEN_GOLD_CAP` and is unaffordable. Unaffordable options declare a
+(sticky) savings goal.
+
+**Exceeding the template after a defeat:** the template is the floor, not the
+ceiling. Each defeat (`params.defeats`) loosens the caps so the army overshoots
+the template — per-wave slot cap grows by `OVERSHOOT_SLOTS_PER_DEFEAT` (×0.25)
+per defeat and the wave-count cap rises by one wave per defeat.
 
 The army/wave/build-up savings goals are **sticky** (`savings.set_goal(...,
 sticky=True)`): unlike normal goals they survive a strategy-type change and are
@@ -117,10 +128,13 @@ The ruler wave is never touched.
 Stored in `strategy.params.phase`:
 
 ```
-build_up → spy → wait_spy → attack → wait_result ──victory──▶ completed
-                              ▲                 └─defeat──▶ strengthen ─┘ (≤6 rounds)
-                              └─────────────────────────────────┘
+strengthen → spy → wait_spy → attack → wait_result ──victory──▶ completed
+    ▲                            ▲                  └─defeat──▶ strengthen ─┘ (≤6 rounds)
+    └────────────────────────────┘
 ```
+
+The strategy starts in `strengthen` (build toward the era template), advancing
+to `spy` once the template power target is met or no affordable option remains.
 
 ## Success / termination criteria
 

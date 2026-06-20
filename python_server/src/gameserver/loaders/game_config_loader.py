@@ -198,6 +198,8 @@ class GameConfig:
     end_rally_effects: Dict[str, float] = field(default_factory=dict)
     # Duration of the rally in seconds (after activation, game ends)
     end_rally_duration: float = 604800.0  # 1 week default
+    # How long before next_season_start the empire wipe fires (seconds)
+    season_leadtime: float = 259200.0  # 3 days default
 
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower

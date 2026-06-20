@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 from gameserver.models.messages import GameMessage
 import gameserver.engine.global_state as _gs
+from gameserver.settings import settings as _settings
 
 log = logging.getLogger(__name__)
 
@@ -286,9 +287,10 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "season_number": _gs.get_season_number(),
         "season_title": _gs.get_season_title(),
         "next_season_start": _gs.get_next_season_start(),
-        "next_season_leadtime": _gs.get_next_season_leadtime(),
+        "next_season_leadtime": _gs.get_next_season_leadtime(svc.game_config.season_leadtime) if svc.game_config else "",
         "next_season_title": _gs.get_next_season_title(),
         "season_reset_triggered": _gs.is_season_reset_triggered(),
+        "is_dev": _settings.is_dev,
     }
 
 
@@ -349,6 +351,12 @@ def handle_effect_sources_request(uid: int) -> dict[str, Any]:
     # Ruler effects
     for key, value in svc.empire_service.get_ruler_effects(empire).items():
         _add(key, "ruler", value)
+
+    # Trophies
+    upgrades_map = svc.empire_service._upgrades
+    for iid in empire.trophies:
+        for key, value in upgrades_map.get_effects(iid).items():
+            _add(key, "trophies", value, iid)
 
     # Citizens
     citizen_effect = svc.empire_service.effective_citizen_effect(empire)
@@ -420,6 +428,11 @@ async def _maybe_grant_last_season_artifact(uid: int, empire: Any) -> None:
     chosen = random.choice(last_arts)
     if chosen not in empire.artifacts:
         empire.artifacts.append(chosen)
+        import asyncio as _aart
+        import time as _time
+        _aart.get_running_loop().create_task(
+            svc.database.record_artifact_acquired(uid, chosen, _time.time())
+        )
     log.info(
         "Last-season artifact bonus: uid=%d had %d artifact(s), granted %s",
         uid, len(last_arts), chosen,

@@ -8,7 +8,7 @@
 import { eventBus } from '../events.js';
 import { pageTitle } from '../lib/page_title.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
-import { fmtEffectRow, fmtEffectValue, fmtEffectLabel } from '../lib/format.js';
+import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition } from '../lib/format.js';
 import { escHtml } from '../lib/html.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
@@ -22,6 +22,8 @@ let container;
 let _unsub = [];
 /** @type {Array|null} cached empire list */
 let _empiresData = null;
+/** @type {Array|null} cached trophy list */
+let _trophiesData = null;
 let _onLeaderUpdated = null;
 let _empiresTimer = null;
 let _tickTimer = null;
@@ -49,6 +51,7 @@ function init(el, _api, _state) {
       <div class="empty-state"><div class="empty-icon">◈</div><p>Loading empire data…</p></div>
     </div>
     <div id="empires-section" style="margin-top:8px"></div>
+    <div id="trophies-section" style="margin-top:8px"></div>
   `;
 }
 
@@ -82,12 +85,31 @@ function enter() {
   // Load empire rankings and poll for new players every 30s
   refreshEmpires();
   _empiresTimer = setInterval(refreshEmpires, 30_000);
+
+  // Load trophies once on dev only; re-load when a new trophy is awarded
+  const _maybeLoadTrophies = () => {
+    if (st.summary?.is_dev) {
+      refreshTrophies();
+    }
+  };
+  if (st.summary) {
+    _maybeLoadTrophies();
+  } else {
+    const _unsubTrophyInit = eventBus.on('state:summary', () => {
+      _unsubTrophyInit();
+      _maybeLoadTrophies();
+    });
+  }
+  _unsub.push(eventBus.on('trophy_awarded', () => {
+    if (st.summary?.is_dev) refreshTrophies();
+  }));
 }
 
 function leave() {
   _unsub.forEach((fn) => fn());
   _unsub = [];
   _empiresData = null;
+  _trophiesData = null;
   if (_empiresTimer) {
     clearInterval(_empiresTimer);
     _empiresTimer = null;
@@ -683,7 +705,7 @@ function _showArtifactOverlay(iid) {
   const desc = a.description || '';
   const type = a.type || 'normal';
   const effects = a.effects || {};
-  const sprite = a.sprite ? '/' + a.sprite : null;
+  const sprite = a.image ? '/' + a.image : null;
   const typeColor = type === 'legendary' ? '#ab47bc' : '#c9a84c';
 
   const effectRows = Object.entries(effects)
@@ -1166,6 +1188,7 @@ const _SRC_COLOR_ARTIFACT = '#FFD700';   // gold
 const _SRC_COLOR_RULER    = '#FFD700';   // gold
 const _SRC_COLOR_RALLY    = '#87CEEB';   // light blue
 const _SRC_COLOR_ERA      = '#87CEEB';   // light blue
+const _SRC_COLOR_TROPHY   = '#cd7f32';   // bronze
 
 function _resolveName(iid, items) {
   return items?.buildings?.[iid]?.name
@@ -1186,6 +1209,8 @@ function _renderOffsetSourceRows(effectSources, key, fmtVal, rulerName, items) {
     if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value">${_resolveName(iid, items)}</span></div>`;
   for (const [iid, v] of Object.entries(src.artifacts || {}))
     if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value" style="color:${_SRC_COLOR_ARTIFACT}">⚜ ${_resolveName(iid, items)}</span></div>`;
+  for (const [iid, v] of Object.entries(src.trophies || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value" style="color:${_SRC_COLOR_TROPHY}">🏆 ${_resolveName(iid, items)}</span></div>`;
   if (src.ruler > 0.0005 && rulerName)
     html += `<div class="panel-row"><span class="label">${fmtVal(src.ruler)}</span><span class="value" style="color:${_SRC_COLOR_RULER}">👑 ${rulerName}</span></div>`;
   if (src.end_rally > 0.0005)
@@ -1207,6 +1232,8 @@ function _renderModifierSourceRows(effectSources, key, rulerName, skipCategories
     if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value">${_resolveName(iid, items)}</span></div>`;
   for (const [iid, v] of Object.entries(src.artifacts || {}))
     if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_ARTIFACT}">⚜ ${_resolveName(iid, items)}</span></div>`;
+  for (const [iid, v] of Object.entries(src.trophies || {}))
+    if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_TROPHY}">🏆 ${_resolveName(iid, items)}</span></div>`;
   if (src.ruler > 0.0005 && rulerName)
     html += `<div class="panel-row"><span class="label">+${(src.ruler * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_RULER}">👑 ${rulerName}</span></div>`;
   if (src.end_rally > 0.0005)
@@ -1591,6 +1618,85 @@ function _empireRowHtml(e, i, selfEra, armyEnabled = false) {
       </div>
     </div>
   `;
+}
+
+async function refreshTrophies() {
+  try {
+    const resp = await rest.getTrophies();
+    _trophiesData = resp?.trophies ?? [];
+    const sec = container.querySelector('#trophies-section');
+    if (sec) sec.innerHTML = renderTrophiesSection(_trophiesData);
+    bindTrophyEvents();
+  } catch (err) {
+    console.error('[dashboard] getTrophies failed:', err);
+  }
+}
+
+function renderTrophiesSection(trophies) {
+  if (!trophies || trophies.length === 0) return '';
+  const tiles = trophies.map((t) => {
+    const effectStr = fmtEffectsInline(t.effects || {});
+    const lockedClass = t.earned ? '' : ' trophy-tile--locked';
+    return `
+      <div class="trophy-tile${lockedClass}" data-iid="${t.iid}" title="${t.name}">
+        <div class="trophy-tile-img">
+          ${t.image ? `<img src="${t.image}" alt="${t.name}" class="trophy-tile-img-src">` : '<span class="trophy-tile-icon">🏆</span>'}
+        </div>
+        <div class="trophy-tile-title">${t.name}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="panel">
+      <div class="panel-header">Trophies <span style="color:#666;font-size:0.8em;font-weight:normal">${trophies.filter(t => t.earned).length}/${trophies.length}</span></div>
+      <div class="trophy-tile-grid">${tiles}</div>
+    </div>
+  `;
+}
+
+function bindTrophyEvents() {
+  const sec = container.querySelector('#trophies-section');
+  if (!sec) return;
+  sec.querySelectorAll('.trophy-tile').forEach((tile) => {
+    tile.addEventListener('click', () => _showTrophyOverlay(tile.dataset.iid));
+  });
+}
+
+function _showTrophyOverlay(iid) {
+  const trophy = _trophiesData?.find((t) => t.iid === iid);
+  if (!trophy) return;
+  document.querySelector('.trophy-detail-overlay')?.remove();
+
+  const effectRows = Object.entries(trophy.effects || {}).map(([k, v]) =>
+    `<div class="tt-dp-row tt-dp-effects">${fmtEffectRow(k, v)}</div>`
+  ).join('');
+
+  const earnedLine = trophy.earned && trophy.earned_at
+    ? `<div style="color:#66bb6a;font-size:0.85em;margin-bottom:8px">✓ Earned ${new Date(trophy.earned_at * 1000).toLocaleDateString()}</div>`
+    : `<div style="color:#888;font-size:0.85em;margin-bottom:8px">Locked</div>`;
+
+  const conditionLabel = fmtTrophyCondition(trophy.condition);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'trophy-detail-overlay tt-overlay visible';
+  overlay.innerHTML = `
+    <div class="tt-panel">
+      <button class="tt-close">&times;</button>
+      <div class="trophy-overlay-img">
+        ${trophy.image ? `<img src="${trophy.image}" alt="${trophy.name}" class="trophy-overlay-img-src">` : '<span class="trophy-overlay-icon">🏆</span>'}
+      </div>
+      <div class="tt-dp-name">${trophy.name}</div>
+      ${earnedLine}
+      <div class="tt-dp-desc">${trophy.description}</div>
+      <div style="font-size:0.82em;color:#888;margin-bottom:10px">Condition: ${conditionLabel}</div>
+      ${effectRows ? `<div style="font-size:0.82em;color:#9999a8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Bonus</div><div class="tt-dp-props">${effectRows}</div>` : ''}
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
 }
 
 function renderEmpiresSection(empires) {

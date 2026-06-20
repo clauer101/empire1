@@ -121,10 +121,17 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 uid_to_user[row["uid"]] = row["username"]
                 uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
         connected_uids: list[int] = services.server.connected_uids if services.server else []
+        _week_s = 7 * 24 * 3600
         empires = []
         for empire in empire_service.all_empires.values():
             if empire.uid != uid and empire.uid not in uid_to_user:
                 continue
+            # Hide inactive accounts with 0 culture (> 1 week without login)
+            if empire.uid != uid:
+                culture = empire.resources.get("culture", 0.0)
+                last_seen = uid_to_last_seen.get(empire.uid, "")
+                if culture <= 0 and not _is_recently_active(last_seen, _week_s):
+                    continue
             era_key = empire_service.get_current_era(empire)
             era_idx = empire_service._ERA_ORDER.index(era_key) + 1 if era_key in empire_service._ERA_ORDER else 1
             bot_prob = (
@@ -238,7 +245,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             "season_number": get_season_number(),
             "season_title": get_season_title(),
             "next_season_start": get_next_season_start(),
-            "next_season_leadtime": get_next_season_leadtime(),
+            "next_season_leadtime": get_next_season_leadtime(gc.season_leadtime) if gc else "",
             "next_season_title": get_next_season_title(),
             "season_reset_triggered": is_season_reset_triggered(),
         }
@@ -612,5 +619,44 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             "era_firsts": era_firsts,
             "era_order": _ERA_ORDER_LIST,
         }
+
+    @router.get("/api/empire/trophies")
+    async def get_trophies(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Return all trophies: earned (with timestamp) and unearned (condition info)."""
+        if services.trophy_service is None:
+            return {"trophies": []}
+        empire = empire_service.get(uid)
+        # Snapshot check so ruler_level / path_length / era_firsts / meta trophies
+        # get evaluated even without a recent battle.
+        if empire is not None:
+            newly_awarded = await services.trophy_service.check_and_award(uid, empire)
+            if newly_awarded:
+                empire_service.recalculate_effects(empire)
+        earned_rows = await services.trophy_service.get_trophy_rows(uid, empire)
+        earned_iids = {r["iid"] for r in earned_rows}
+
+        from gameserver.models.items import ItemType
+        all_trophies = [
+            item for item in empire_service._upgrades.items.values()
+            if item.item_type == ItemType.TROPHY
+        ]
+
+        result = []
+        for trophy in all_trophies:
+            earned_row = next((r for r in earned_rows if r["iid"] == trophy.iid), None)
+            result.append({
+                "iid": trophy.iid,
+                "name": trophy.name,
+                "image": trophy.image,
+                "description": trophy.description,
+                "effects": trophy.effects,
+                "condition": trophy.condition,
+                "earned": trophy.iid in earned_iids,
+                "earned_at": earned_row["earned_at"] if earned_row else None,
+                "season": earned_row["season"] if earned_row else None,
+            })
+
+        result.sort(key=lambda x: (0 if x["earned"] else 1, x["iid"]))
+        return {"trophies": result}
 
     return router

@@ -12,7 +12,16 @@ from __future__ import annotations
 from typing import Any
 
 from bot.planners.base import BotContext
+from bot.planners.comb_defense import CombDefensePlanner
 from bot.planners.defense import DefensePlanner
+from bot.planners.spiral_defense import SpiralDefensePlanner
+
+# Selectable defense-build strategies (all share the Planner interface).
+DEFENSE_STRATEGIES: dict[str, type] = {
+    "coverage": DefensePlanner,       # replay-driven serpentine (the default)
+    "spiral": SpiralDefensePlanner,   # simple concentric-ring spiral
+    "comb": CombDefensePlanner,       # space-filling boustrophedon comb
+}
 
 START_TILES = {"0,0": "castle", "0,1": "spawnpoint", "1,0": "empty"}
 
@@ -92,6 +101,53 @@ class SimApi:
         raise RuntimeError("no replays in simulation")
 
 
+def _run_cycle(planner, api: "SimApi", items: dict, memory: dict, state: dict,
+               structures: dict, tiles: dict, cycle: int, top_n: int) -> dict:
+    """Run exactly one DefensePlanner cycle and return its step record.
+
+    The step always carries a `tiles` snapshot; callers that diff successive
+    snapshots (simulate_defense) drop it when unchanged.
+    """
+    from bot.defense_analysis import bfs_path
+
+    strategy = {"type": "defense", "params": {},
+                "valid_until": "2099-01-01T00:00:00Z"}
+    summary = {
+        "resources": {"gold": state["gold"], "culture": 0.0},
+        "tile_price": state["tile_price"],
+        "tower_sell_refund": TOWER_SELL_REFUND,
+        "item_upgrades": {k: dict(v) for k, v in state["item_upgrades"].items()},
+        "buildings": dict(state["completed"]),
+        "knowledge": {},
+        "artifacts": [],
+        "build_queue": [],
+        "research_queue": [],
+    }
+    ctx = BotContext(summary, items, memory, strategy, api,
+                     selection={"top_n": top_n})
+    action = planner.propose(ctx)
+    desc = None
+    if action is not None:
+        result = action.run(api)
+        ok = not (isinstance(result, dict) and result.get("success") is False)
+        desc = action.description if ok else f"FAILED: {action.description}"
+    elif memory.get("savings_goal"):
+        goal = memory["savings_goal"]
+        desc = f"saving for {goal['action']} {goal['item']} ({goal['amount']:.0f}g)"
+
+    path = bfs_path(tiles) or []
+    towers = sum(1 for v in tiles.values() if v in structures)
+    return {
+        "cycle": cycle,
+        "gold": round(state["gold"], 1),
+        "action": desc,
+        "path_len": len(path),
+        "towers": towers,
+        "tile_price": round(state["tile_price"], 1),
+        "tiles": dict(tiles),
+    }
+
+
 def simulate_defense(
     structures: dict,
     buildings: dict,
@@ -105,6 +161,7 @@ def simulate_defense(
     upgrade_base_by_iid: dict | None = None,
     top_n: int = 1,
     seed: int | None = None,
+    strategy: str = "coverage",
 ) -> dict[str, Any]:
     """Run `cycles` defense-planner cycles; return the step log + final map.
 
@@ -116,8 +173,6 @@ def simulate_defense(
     used is returned in the result.
     """
     import random
-
-    from bot.defense_analysis import bfs_path
 
     tiles = dict(start_tiles or START_TILES)
     tile_params = tile_params or {"u": 0, "y": 0.7, "z": 1, "v": 2.1}
@@ -137,51 +192,18 @@ def simulate_defense(
     # it, so the whole run is reproducible from `seed`.
     random.seed(maze_seed)
     memory: dict[str, Any] = {"maze_seed": maze_seed}
-    strategy = {"type": "defense", "params": {},
-                "valid_until": "2099-01-01T00:00:00Z"}
-    planner = DefensePlanner()
+    planner = DEFENSE_STRATEGIES.get(strategy, DefensePlanner)()
 
     steps: list[dict] = []
     last_snapshot: dict | None = None
     for cycle in range(cycles):
         state["gold"] += gold_per_cycle
-        summary = {
-            "resources": {"gold": state["gold"], "culture": 0.0},
-            "tile_price": state["tile_price"],
-            "tower_sell_refund": TOWER_SELL_REFUND,
-            "item_upgrades": {k: dict(v) for k, v in state["item_upgrades"].items()},
-            "buildings": dict(state["completed"]),
-            "knowledge": {},
-            "artifacts": [],
-            "build_queue": [],
-            "research_queue": [],
-        }
-        ctx = BotContext(summary, items, memory, strategy, api,
-                         selection={"top_n": top_n})
-        action = planner.propose(ctx)
-        desc = None
-        if action is not None:
-            result = action.run(api)
-            ok = not (isinstance(result, dict) and result.get("success") is False)
-            desc = action.description if ok else f"FAILED: {action.description}"
-        elif memory.get("savings_goal"):
-            goal = memory["savings_goal"]
-            desc = f"saving for {goal['action']} {goal['item']} ({goal['amount']:.0f}g)"
-
-        path = bfs_path(tiles) or []
-        towers = sum(1 for v in tiles.values() if v in structures)
-        snapshot = dict(tiles)
-        step = {
-            "cycle": cycle,
-            "gold": round(state["gold"], 1),
-            "action": desc,
-            "path_len": len(path),
-            "towers": towers,
-            "tile_price": round(state["tile_price"], 1),
-        }
-        if snapshot != last_snapshot:
-            step["tiles"] = snapshot
-            last_snapshot = snapshot
+        step = _run_cycle(planner, api, items, memory, state, structures,
+                          tiles, cycle, top_n)
+        if step["tiles"] == last_snapshot:
+            del step["tiles"]
+        else:
+            last_snapshot = step["tiles"]
         steps.append(step)
 
     return {
@@ -192,4 +214,87 @@ def simulate_defense(
         "item_upgrades": state["item_upgrades"],
         "gold_left": round(state["gold"], 1),
         "seed": maze_seed,
+    }
+
+
+def step_defense(
+    structures: dict,
+    buildings: dict,
+    *,
+    tiles: dict | None = None,
+    state: dict | None = None,
+    memory: dict | None = None,
+    cycle: int = 0,
+    completed: set[str] | None = None,
+    tile_params: dict | None = None,
+    upgrade_base_by_iid: dict | None = None,
+    top_n: int = 1,
+    seed: int | None = None,
+    strategy: str = "coverage",
+) -> dict[str, Any]:
+    """Run a SINGLE defense-planner cycle, resuming from caller-supplied state.
+
+    Unlike `simulate_defense` (which runs the whole run in one call), this is the
+    iterative entry point: the caller persists `tiles`, `state` and `memory`
+    between calls and feeds them back in, so the planner builds the maze one
+    action per call. Pass `tiles=None`/`state=None` on the first call to start
+    from the default map; the returned `tiles`/`state`/`memory`/`cycle` are the
+    inputs for the next call.
+
+    Infinite gold: callers seed `state["gold"]` with a large number and never add
+    income, so the planner never enters savings mode and always acts.
+    """
+    import random
+
+    from bot.defense_analysis import bfs_path
+
+    tile_params = tile_params or {"u": 0, "y": 0.7, "z": 1, "v": 2.1}
+    first = tiles is None or state is None
+    tiles = dict(tiles) if tiles is not None else dict(START_TILES)
+
+    maze_seed = int(seed) if seed else (
+        (memory or {}).get("maze_seed")
+        or random.SystemRandom().getrandbits(32) or 1)
+
+    if state is None:
+        state = {
+            "gold": float("inf"),
+            "tiles_bought": 0,
+            "tile_price": tile_price(len(tiles) + 1, tile_params),
+            "item_upgrades": {},
+            "completed": {iid: 0.0 for iid in (completed or set())},
+            "upgrade_base_by_iid": upgrade_base_by_iid or {},
+        }
+    else:
+        # Caller round-trips state as JSON; restore the non-JSON gold sentinel.
+        state.setdefault("gold", float("inf"))
+        if state["gold"] is None:
+            state["gold"] = float("inf")
+
+    memory = dict(memory) if memory else {}
+    memory["maze_seed"] = maze_seed
+    # Reseed the global RNG per call so identical (seed, cycle) inputs are
+    # reproducible regardless of intervening runs in the same process.
+    random.seed(maze_seed + cycle)
+
+    api = SimApi(tiles, structures, buildings, state, tile_params)
+    items = {"structures": structures, "buildings": buildings, "knowledge": {}}
+    planner = DEFENSE_STRATEGIES.get(strategy, DefensePlanner)()
+
+    step = _run_cycle(planner, api, items, memory, state, structures,
+                      tiles, cycle, top_n)
+
+    # gold is infinite in maze-only mode; emit null so the JSON stays valid.
+    out_gold = None if state["gold"] == float("inf") else round(state["gold"], 1)
+    out_state = dict(state)
+    out_state["gold"] = out_gold
+    return {
+        "step": {**step, "gold": out_gold},
+        "tiles": dict(tiles),
+        "state": out_state,
+        "memory": memory,
+        "cycle": cycle + 1,
+        "seed": maze_seed,
+        "first": first,
+        "path_len": len(bfs_path(tiles) or []),
     }

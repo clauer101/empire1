@@ -19,10 +19,9 @@ MAX_STRENGTHEN_ROUNDS = 6       # defeats against one target before giving up
 MIN_WAVES_FOR_SECOND_ARMY = 4   # first army needs this many waves first
 ADD_WAVE_MIN_SLOTS = 4          # existing waves must be this well-stocked first
 
-# Proactive build-up tuning (before the first attack)
-MAX_BUILD_UP_ROUNDS = 12        # safety cap on proactive build-up purchases
-BUILD_BASE_POWER = 40.0         # lean army-power floor (one filled current-era wave)
-BUILD_STRENGTH_K = 1.0          # how hard est_strength scales the target on defeat
+# How far each defeat lets the army grow beyond the era template (the template
+# is a guideline, not a ceiling): slot cap ×(1+defeats·K), wave cap +defeats.
+OVERSHOOT_SLOTS_PER_DEFEAT = 0.25
 
 
 def pick_ruler(rulers_catalog: dict) -> str | None:
@@ -87,18 +86,41 @@ def army_power(military: dict, ruler_iids: set[str]) -> float:
     return total
 
 
-def build_up_target(summary: dict, opp_memory: dict, cur_power: float) -> float:
-    """Army power to reach before attacking (spy-relative, era-independent).
+def resolve_template_critter(template_iid: str, fitting: list[dict]) -> dict | None:
+    """Pick the wave's critter for a template slot.
 
-    Lean by default: field a basic current-era army and attack. Once a prior
-    battle against this opponent was a defeat, scale the target above the army
-    power that just lost by the estimated defensive strength (killed/spawned
-    ratio, 0..1) so the next attempt fields a meaningfully stronger army.
+    Prefer the template's critter when it is unlocked and fits the wave era
+    (present in ``fitting``); otherwise fall back to the strongest fitting
+    critter so the bot still fields a current-era wave.
     """
-    if opp_memory.get("last_outcome") == "defeat":
-        est_strength = float(opp_memory.get("est_strength", 0.0) or 0.0)
-        return max(BUILD_BASE_POWER, cur_power * (1.0 + est_strength * BUILD_STRENGTH_K))
-    return BUILD_BASE_POWER
+    if not fitting:
+        return None
+    for c in fitting:
+        if c.get("iid") == template_iid:
+            return c
+    return max(fitting, key=critter_power)
+
+
+def template_target_power(template: list[dict], military: dict,
+                          ruler_iids: set[str]) -> float:
+    """Target army power for the era template.
+
+    Sums ``critter_power(resolved) × slots`` over the template's waves, where
+    each template critter is resolved against the unlocked catalog (falling
+    back to the strongest available). This is the power the bot strengthens
+    toward before attacking.
+    """
+    critters = list({c["iid"]: c for c in military.get("available_critters", [])
+                     if c.get("iid") not in ruler_iids}.values())
+    if not critters:
+        return 0.0
+    total = 0.0
+    for slot in template:
+        resolved = resolve_template_critter(str(slot.get("critter", "")), critters)
+        if resolved is None:
+            continue
+        total += critter_power(resolved) * int(slot.get("slots", 0) or 0)
+    return total
 
 
 @dataclass
@@ -114,13 +136,26 @@ class StrengthenOption:
     tier: int = 2      # priority tier, lower wins (0=reach current era, 3=widen breadth)
 
 
-def strengthen_plan(military: dict, summary: dict,
-                    ruler_iids: set[str]) -> list[StrengthenOption]:
+def _slot_cap(template_slots: int, defeats: int) -> int:
+    """Per-wave slot ceiling from the template, grown by each defeat."""
+    return int(template_slots * (1.0 + defeats * OVERSHOOT_SLOTS_PER_DEFEAT))
+
+
+def strengthen_plan(military: dict, summary: dict, ruler_iids: set[str],
+                    template: list[dict] | None = None,
+                    defeats: int = 0) -> list[StrengthenOption]:
     """Ranked strengthening options (best first: gain per gold, free first).
 
     Uses the military response only: armies[].waves[] with iid/slots/max_era/
     next_slot_price/next_era_price, armies[].next_wave_price and
     available_critters (health/armour/speed/slots/era_index).
+
+    When ``template`` (era-matched wave shape from army_templates) is given it
+    steers composition: each wave aims at its template critter (best-effort,
+    falling back to the strongest fitting one), slot buys stop at the template's
+    per-wave slot count, and wave count grows toward ``len(template)``. After a
+    defeat (``defeats`` > 0) those caps are loosened so the army overshoots the
+    template — the template is a guideline, not a ceiling.
     """
     armies = military.get("armies", [])
     critters = {c["iid"]: c for c in military.get("available_critters", [])}
@@ -141,11 +176,16 @@ def strengthen_plan(military: dict, summary: dict,
             cur = critters.get(iid)
             cur_power = critter_power(cur) * slots if cur else 0.0
 
-            # a) free: switch to the strongest critter that fits this wave's era
+            # a) free: switch to the template critter for this wave (best-effort,
+            #    falls back to the strongest critter that fits the wave's era).
             fitting = [c for c in critters.values()
                        if int(c.get("era_index", 0)) <= max_era]
             if fitting:
-                best = max(fitting, key=critter_power)
+                if template is not None and wn < len(template):
+                    best = resolve_template_critter(
+                        str(template[wn].get("critter", "")), fitting)
+                else:
+                    best = max(fitting, key=critter_power)
                 gain = critter_power(best) * slots - cur_power
                 if best["iid"] != iid and gain > 0:
                     options.append(StrengthenOption(
@@ -156,11 +196,16 @@ def strengthen_plan(military: dict, summary: dict,
 
             # b) buy a slot: +1 slot of the current (or best fitting) critter.
             #    Deprioritized while the wave is below the current era — climb
-            #    the era first instead of widening an outdated wave.
+            #    the era first instead of widening an outdated wave. With a
+            #    template, stop once the wave reaches its template slot count.
             slot_price = float(wave.get("next_slot_price", 0.0) or 0.0)
             per_slot = critter_power(cur) if cur else (
                 max((critter_power(c) for c in fitting), default=0.0))
-            if slot_price > 0 and per_slot > 0:
+            at_slot_cap = False
+            if template is not None and wn < len(template):
+                cap = _slot_cap(int(template[wn].get("slots", 0) or 0), defeats)
+                at_slot_cap = slots >= cap
+            if slot_price > 0 and per_slot > 0 and not at_slot_cap:
                 options.append(StrengthenOption(
                     kind="buy_slot", tier=2 if below_current else 1,
                     description=f"buy slot on wave {wn} of army {aid}",
@@ -186,10 +231,13 @@ def strengthen_plan(military: dict, summary: dict,
                         price=era_price, aid=aid, wave_number=wn, gain=gain))
 
     # d) add a wave only once every wave is at the current era and well-stocked
-    #    with slots (prefer few strong waves over many weak ones)
+    #    with slots (prefer few strong waves over many weak ones). With a
+    #    template, grow toward its wave count (plus one extra wave per defeat).
     first = armies[0]
     waves = first.get("waves", [])
-    if (waves and all(w.get("iid") for w in waves)
+    wave_cap = (len(template) + defeats) if template is not None else None
+    below_wave_cap = wave_cap is None or len(waves) < wave_cap
+    if (waves and below_wave_cap and all(w.get("iid") for w in waves)
             and all(int(w.get("max_era", 0) or 0) >= current_era_rank for w in waves)
             and all(int(w.get("slots", 1) or 1) >= ADD_WAVE_MIN_SLOTS for w in waves)):
         wave_price = float(first.get("next_wave_price", 0.0) or 0.0)

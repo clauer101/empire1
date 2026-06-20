@@ -36,6 +36,7 @@ from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.game_loop import GameLoop
 from gameserver.engine.statistics import StatisticsService
 from gameserver.engine.upgrade_provider import UpgradeProvider
+from gameserver.engine.trophy_service import TrophyService
 from gameserver.loaders.ai_loader import load_ai_waves
 from gameserver.loaders.item_loader import load_items
 from gameserver.loaders.map_loader import load_map
@@ -107,6 +108,7 @@ class Services:
     server: Optional[Server] = None
     database: Optional[Database] = None
     bot_detector: Optional[BotDetector] = None
+    trophy_service: Optional[TrophyService] = None
     # Set during start_network — present after startup
     _rest_server: Optional[object] = None
     _rest_task: Optional[asyncio.Task[None]] = None
@@ -292,7 +294,6 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "st
             restored.season_number,
             restored.season_title,
             restored.next_season_start,
-            restored.next_season_leadtime,
             restored.next_season_title,
         )
         set_season_reset_triggered(restored.season_reset_triggered)
@@ -353,6 +354,7 @@ def create_services(config: Configuration, database: Database, state_file: str =
 
     auth_service = AuthService(database, gc)
     bot_detector = BotDetector(database)
+    trophy_service = TrophyService(database, upgrade_provider, empire_service)
     router = Router()
     server = Server(router, port=gc.ws_port, bot_detector=bot_detector)
 
@@ -378,6 +380,7 @@ def create_services(config: Configuration, database: Database, state_file: str =
         server=server,
         database=database,
         bot_detector=bot_detector,
+        trophy_service=trophy_service,
     )
 
     return svc
@@ -507,7 +510,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                 await save_state(
                     empires=services.empire_service.all_empires,
                     attacks=services.attack_service.get_all_attacks() if services.attack_service else [],
-                    battles=[],
+                    battles=list(_active_battles.values()),
                     path=_state_file,
                 )
                 now = datetime.now(timezone.utc)
@@ -583,13 +586,13 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
     # --- Cleanup after loop exits ---
     log.info("Shutting down …")
 
-    # Persist complete game state to YAML
+    # Persist complete game state to YAML (including ongoing battles)
     if services.empire_service is not None and services.attack_service is not None:
         try:
             await save_state(
                 empires=services.empire_service.all_empires,
                 attacks=services.attack_service.get_all_attacks(),
-                battles=[],
+                battles=list(_active_battles.values()),
                 path=state_file,
             )
             log.info("Game state saved")
@@ -607,7 +610,7 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
             await save_state(
                 empires=services.empire_service.all_empires,
                 attacks=services.attack_service.get_all_attacks(),
-                battles=[],
+                battles=list(_active_battles.values()),
                 path=state_file,
             )
             log.info("Game state saved (post-server-stop)")
@@ -646,7 +649,7 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
         state_file: Path to the state YAML file for restoration.
     """
     from gameserver.util.logging import configure_logging
-    configure_logging(log_file="gameserver.log", level=logging.INFO)
+    configure_logging(log_file="/app/logs/gameserver.log", level=logging.INFO)
     logging.getLogger("gameserver.network.handlers").setLevel(logging.INFO)
     logging.getLogger("gameserver.engine.battle_service").setLevel(logging.INFO)
     log.info("=== Game Server starting ===")
@@ -677,6 +680,8 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
         for empire in saved_state.empires.values():
             services.empire_service.register(empire)
             empire.ruler.level = services.empire_service.ruler_level_from_xp(empire.ruler.xp)
+            if services.trophy_service is not None:
+                await services.trophy_service.load_trophies_into_empire(empire.uid, empire)
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
         services.empire_service.sync_aid_counter()
@@ -700,11 +705,57 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
         services.empire_service.register(ai_empire)
         log.info("AI empire pre-registered (uid=%d)", AI_UID)
 
+    # Resume battles that were in-progress at last shutdown
+    if saved_state is not None and saved_state.battles:
+        _resume_battles(saved_state.battles, services)
+
     # 6. Start network
     await start_network(services, state_file=state_file)
 
     # 7. Start game loop (blocks until shutdown)
     await start_game_loop(services, state_file=state_file)
+
+
+def _resume_battles(battles: list[Any], services: Services) -> None:
+    """Re-register and resume battles that were running at last shutdown."""
+    from gameserver.network.handlers.battle_task import _run_battle_task
+
+    if services.empire_service is None or services.battle_service is None:
+        return
+
+    items = services.upgrade_provider.items if services.upgrade_provider else {}
+    gc = services.empire_service._gc if services.empire_service else None
+    rulers = services.empire_service._rulers if services.empire_service else {}
+    broadcast_interval_ms = gc.broadcast_interval_ms if gc and hasattr(gc, "broadcast_interval_ms") else 250.0
+
+    for battle in battles:
+        if battle.is_finished:
+            continue
+
+        # Re-link defender empire
+        defender_uid = battle.defender.uid if battle.defender else None
+        if defender_uid is None:
+            log.warning("[resume_battles] battle %d has no defender_uid — skipping", battle.bid)
+            continue
+        defender_empire = services.empire_service.get(defender_uid)
+        if defender_empire is None:
+            log.warning("[resume_battles] defender uid=%d not found for battle %d — skipping", defender_uid, battle.bid)
+            continue
+        battle.defender = defender_empire
+
+        _active_battles[defender_uid] = battle
+
+        battle_svc = BattleService(items=items, gc=gc, rulers=rulers)
+
+        async def _send_fn(uid: int, data: dict[str, Any]) -> bool:
+            svc = services
+            if svc.server:
+                return bool(await svc.server.send_to(uid, data))
+            return False
+
+        asyncio.ensure_future(_run_battle_task(battle.bid, battle, battle_svc, _send_fn, broadcast_interval_ms))
+        log.info("[resume_battles] Resumed battle bid=%d defender=%d attackers=%s elapsed=%.0fms",
+                 battle.bid, defender_uid, battle.attacker_uids, battle.elapsed_ms)
 
 
 def _add_test_empire(services: Services) -> None:

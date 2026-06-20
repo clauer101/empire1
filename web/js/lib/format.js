@@ -29,9 +29,9 @@ const EFFECT_META = {
   workshop_cost_modifier:         ['🔧', 'Workshop discount',        (v) => `-${(v * 100).toFixed(0)}%`,                                                                'Reduces the gold cost of workshop item upgrades'],
   travel_time_modifier:           ['🚀', 'Travel speed',             (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Reduces travel time of armies by a percentage'],
   travel_offset:                  ['🚀', 'Travel time',              (v) => `${v > 0 ? '+' : ''}${v}s`,                                                                 'Modifies travel time of armies'],
-  siege_offset:                   ['⚔️', 'Siege time',               (v) => `${v > 0 ? '+' : ''}${v}s`,                                                                 'Modifies siege time of armies'],
+  siege_offset:                   ['⚔️', 'Siege time',               (v) => `${v > 0 ? '+' : ''}${(v / 3600).toFixed(1)}h`,                                          'Modifies siege time of armies'],
   siege_time_modifier:            ['⚔️', 'Siege speed',              (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Accelerates siege by a multiplier'],
-  wave_delay_offset:              ['⏳', 'Wave delay',               (v) => `${v > 0 ? '+' : ''}${v}s`,                                                                 'Increases delay between incoming waves'],
+  wave_delay_offset:              ['⏳', 'Wave delay',               (v) => `${v > 0 ? '+' : ''}${(v / 1000).toFixed(0)}s`,                                          'Increases delay between incoming waves'],
   artifact_steal_victory_modifier:['⚜',  'Max. Artifact steal (victory)', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases artifact maximum steal chance on victory'],
   artifact_steal_defeat_modifier: ['⚜',  'Max. Artifact steal (defeat)',  (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases artifact maximum steal chance on defeat'],
   tower_sell_refund_modifier:     ['💰', 'Tower refund',             (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases tower sell refund'],
@@ -140,6 +140,59 @@ export function fmtEffectsInline(effects, { labeled = false } = {}) {
       return `${label}: ${val}`;
     })
     .join(', ');
+}
+
+// Trophy condition display metadata: {type → [icon, labelFn(threshold, condition)]}
+export const CONDITION_META = {
+  // Legacy combined counters
+  defense_won:     ['🛡', (t) => `Defend successfully ${t} time${t !== 1 ? 's' : ''}`],
+  attacks_won:     ['⚔️', (t) => `Win ${t} attack${t !== 1 ? 's' : ''}`],
+  critters_killed: ['💀', (t) => `Kill ${t} enemy critters`],
+  hexes_owned:     ['🗺️', (t) => `Own ${t} hex tiles at once`],
+  // Per-type win/loss
+  defense_won_ai:    ['🛡', (t) => `Defend ${t} time${t !== 1 ? 's' : ''} vs AI`],
+  defense_won_human: ['🛡', (t) => `Defend ${t} time${t !== 1 ? 's' : ''} vs human`],
+  attacks_won_ai:    ['⚔️', (t) => `Win ${t} attack${t !== 1 ? 's' : ''} vs AI`],
+  attacks_won_human: ['⚔️', (t) => `Win ${t} attack${t !== 1 ? 's' : ''} vs human`],
+  // Cowardice / punching up
+  coward_attacks:           ['🐔', (t) => `Attack below your own era ${t} time${t !== 1 ? 's' : ''} in a season`],
+  max_lucky_punch_levels:   ['🍀', (t) => `Beat a defender ${t} era${t !== 1 ? 's' : ''} above you`],
+  // Espionage
+  spies_sent:      ['🔍', (t) => `Send ${t} spy mission${t !== 1 ? 's' : ''} in a season`],
+  // Loot
+  artifacts_stolen:               ['⚜', (t) => `Steal ${t} artifact${t !== 1 ? 's' : ''} in a season`],
+  max_artifacts_stolen_one_battle:['⚜', (t) => `Steal ${t}+ artifacts in a single battle`],
+  max_artifacts_lost_one_battle:  ['😱', (t) => `Lose ${t}+ artifacts in a single battle`],
+  culture_won:     ['🎭', (t) => `Win ${t} culture in a season`],
+  culture_stolen:  ['🎭', (t) => `Lose ${t} culture to raiders in a season`],
+  research_won:    ['📖', (t) => `Win ${t} research in a season`],
+  research_stolen: ['📖', (t) => `Lose ${t} research to raiders in a season`],
+  longest_battle_ms: ['⏱', (t) => `Survive a battle lasting ${Math.round(t / 1000)}s`],
+  // Map / path
+  path_length: ['🗺️', (t) => `Build a maze with ${t}+ path tiles`],
+  // Ruler
+  ruler_level: ['👑', (t) => `Reach ruler level ${t}`],
+  // Era firsts (condition carries an `era` field)
+  first_in_era: ['🏅', (t, c) => {
+    const ERA_LABEL_EN = {
+      stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age',
+      iron: 'Iron Age', middle_ages: 'Middle Ages', renaissance: 'Renaissance',
+      industrial: 'Industrial Age', modern: 'Modern Age', future: 'Future',
+    };
+    return `First to reach the ${ERA_LABEL_EN[c?.era] ?? c?.era ?? '?'}`;
+  }],
+  // Meta
+  all_era_firsts: ['🌟', () => 'Earn all "First in Era" trophies'],
+  all_trophies:   ['🏆', () => 'Earn every other trophy'],
+};
+
+/** Format a trophy condition object → human-readable string. */
+export function fmtTrophyCondition(condition) {
+  if (!condition?.type) return '—';
+  const meta = CONDITION_META[condition.type];
+  const t = condition.threshold ?? 1;
+  if (meta) return `${meta[0]} ${meta[1](t, condition)}`;
+  return condition.type;
 }
 
 /** Tower combat effects: burn / slow / splash */

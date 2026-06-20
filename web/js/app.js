@@ -34,6 +34,7 @@ import globalmapView from './views/globalmap.js';
 import globalempiresView from './views/globalempires.js';
 import rulerView from './views/ruler.js';
 import seasonResultsView from './views/seasonresults.js';
+import trophiesView from './views/trophies.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
@@ -68,6 +69,7 @@ eventBus.on('rest:unauthorized', () => {
   globalempiresView,
   rulerView,
   seasonResultsView,
+  trophiesView,
   logoutView,
   legalView,
 ].forEach((v) => router.register(v));
@@ -77,6 +79,7 @@ eventBus.on('quick_message', (data) =>
   showToast(data.message || data.text || JSON.stringify(data))
 );
 eventBus.on('notification', (data) => showToast(data.message || data.text || JSON.stringify(data)));
+eventBus.on('trophy_awarded', (data) => showToast(`🏆 Trophy unlocked: ${data.iid?.replace(/_/g, ' ')}`, 'trophy'));
 eventBus.on('ui:gold:spend', (amount) => { _liveGold = Math.max(0, _liveGold - amount); _tickTitleResources(); });
 
 // ── Item completed: immediately refresh items + summary ────
@@ -140,6 +143,7 @@ const navArmy = document.getElementById('nav-army');
 const navTechtree = document.getElementById('nav-techtree');
 const navWorkshop = document.getElementById('nav-workshop');
 const navMessages = document.getElementById('nav-messages');
+const navTrophies = document.getElementById('nav-trophies');
 
 // When the user explicitly clicks the defense nav link while already on the
 // defense view (e.g. after spectating an outgoing attack), force a full
@@ -160,9 +164,10 @@ let _eraEffects = {}; // loaded from /api/era-map
 let _eraMap = null;
 let _endRally = null; // { active, effects, seconds_remaining, end_criterion } from summary
 let _selfName = '';
+let _lastSummary = null; // last summary payload — for banner re-renders outside polling
 
 onLeaderUpdated(() => {
-  if (_endRally?.active) _updateRallyBanner(_endRally, _selfName);
+  if (_endRally?.active) _updateRallyBanner(_endRally, _selfName, _lastSummary);
 });
 
 function _fmtOffset(secs) {
@@ -283,6 +288,7 @@ eventBus.on('state:summary', (data) => {
     _currentEra = data.current_era;
     navBrand.textContent = ERA_ROMAN[data.current_era] || data.current_era;
   }
+  _lastSummary = data;
   if (data?.end_rally) {
     _endRally = data.end_rally;
     _selfName = data.name || _selfName;
@@ -303,6 +309,7 @@ eventBus.on('state:summary', (data) => {
   if (navTechtree) navTechtree.style.display = (ef2.enable_techtree ?? 0) > 0 ? '' : 'none';
   if (navWorkshop) navWorkshop.style.display = (ef2.enable_workshop ?? 0) > 0 ? '' : 'none';
   if (navMessages) navMessages.style.display = (ef2.enable_messages ?? 0) > 0 ? '' : 'none';
+  if (navTrophies) navTrophies.style.display = data.is_dev ? '' : 'none';
 
   // Unread messages badge
   const unread = data?.unread_messages || 0;
@@ -348,10 +355,10 @@ function _updateGameOverBanner(rally, data) {
   const nsl = data?.next_season_leadtime;
   const _utcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
   const inLeadtime = nsl && Date.now() >= _utcMs(nsl);
-  // Also hide if wipe already happened (nsl cleared, no rally criterion left)
   const resetTriggered = !!data?.season_reset_triggered;
-  const postWipe = resetTriggered && !nsl;
-  if (!frozen || inLeadtime || postWipe) { banner.style.display = 'none'; return; }
+  // Hide once leadtime is reached (season-reset banner takes over), or if no rally end yet
+  // Keep showing when reset triggered but next_season_start not yet configured
+  if (!frozen || inLeadtime) { banner.style.display = 'none'; return; }
   const winner = rally.culture_leader_name || getCultureLeaderName() || rally.triggered_by_name || '?';
   const winnerSafe = winner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   banner.innerHTML = `🏆 <strong>${winnerSafe}</strong> has won the season — Congratulations! <a href="#season-results" style="color:#ffd700;font-weight:bold;margin-left:10px;text-decoration:underline;">(view results)</a>`;
@@ -364,6 +371,16 @@ function _updateGameOverBanner(rally, data) {
 function _updateRallyBanner(rally, selfName, data) {
   const banner = document.getElementById('rally-banner');
   if (!banner) return;
+  // Once the leadtime window opens, the season-reset banner takes over —
+  // hide the rally banner regardless of whether the rally is still active.
+  const _toUtcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
+  const nsl = data?.next_season_leadtime;
+  const inLeadtime = nsl && Date.now() >= _toUtcMs(nsl);
+  if (inLeadtime || data?.season_reset_triggered) {
+    banner.style.display = 'none';
+    if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
+    return;
+  }
   if (!rally?.active) {
     banner.style.display = 'none';
     if (!rally?.activated_at) document.documentElement.style.setProperty('--rally-banner-h', '0px');
@@ -434,9 +451,7 @@ function _updateSeasonResetBanner(data) {
   const nsl = data?.next_season_leadtime;
   const _toUtcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
   const inLeadtime = nsl && Date.now() >= _toUtcMs(nsl);
-  // Show only once the leadtime timestamp is reached; resetTriggered alone
-  // (set at rally end) is not enough — the game-over banner owns that phase.
-  const shouldShow = inLeadtime || (resetTriggered && !nsl);
+  const shouldShow = inLeadtime;
 
   setSeasonResetActive(resetTriggered);
 

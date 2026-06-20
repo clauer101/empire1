@@ -5,14 +5,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bot.army_building import (  # noqa: E402
     ADD_WAVE_MIN_SLOTS,
-    BUILD_BASE_POWER,
     army_power,
-    build_up_target,
     critter_power,
     next_skill,
     pick_ruler,
+    resolve_template_critter,
     ruler_wave_target,
     strengthen_plan,
+    template_target_power,
 )
 from bot.planners.attack import AttackPlanner  # noqa: E402
 from bot.planners.base import BotContext  # noqa: E402
@@ -161,20 +161,71 @@ def test_army_power_sums_filled_non_ruler_waves():
     assert army_power(mil, RULER_IIDS) == 20.0
 
 
-def test_build_up_target_lean_when_no_history():
-    # Lean, era-independent floor: high era still returns the base target.
-    assert build_up_target({"era": "stone"}, {}, 0.0) == BUILD_BASE_POWER
-    assert build_up_target({"era": "renaissance"}, {}, 0.0) == BUILD_BASE_POWER
+def test_resolve_template_critter_prefers_template_then_falls_back():
+    weak, strong = _critter("WEAK", health=5), _critter("STRONG", health=50)
+    fitting = [weak, strong]
+    # template critter is unlocked → used even though it is weaker
+    assert resolve_template_critter("WEAK", fitting)["iid"] == "WEAK"
+    # template critter not unlocked → strongest fitting fallback
+    assert resolve_template_critter("MISSING", fitting)["iid"] == "STRONG"
+    # nothing fits → None
+    assert resolve_template_critter("WEAK", []) is None
 
 
-def test_build_up_target_scales_above_current_after_defeat():
-    summary = {"era": "stone"}
-    opp = {"last_outcome": "defeat", "est_strength": 0.5}
-    # cur_power high enough that opponent-relative beats baseline
-    target = build_up_target(summary, opp, 200.0)
-    assert target == 200.0 * 1.5  # cur * (1 + 0.5*K), K=1 ; > lean base
-    # a victory / no defeat keeps the lean base target
-    assert build_up_target(summary, {"last_outcome": "victory"}, 200.0) == BUILD_BASE_POWER
+def test_template_target_power_sums_resolved_waves():
+    a = _critter("A", health=10, speed=0.0)   # power 10
+    b = _critter("B", health=20, speed=0.0)   # power 20
+    mil = _military([], [a, b])
+    template = [{"critter": "A", "slots": 3}, {"critter": "B", "slots": 2}]
+    # 10*3 + 20*2 = 70
+    assert template_target_power(template, mil, RULER_IIDS) == 70.0
+    # missing critter falls back to strongest fitting (B, power 20)
+    template2 = [{"critter": "MISSING", "slots": 1}]
+    assert template_target_power(template2, mil, RULER_IIDS) == 20.0
+
+
+def test_template_steers_switch_critter_choice():
+    weak, strong = _critter("WEAK", health=5), _critter("STRONG", health=50)
+    mil = _military([{"iid": "", "slots": 2, "max_era": 0,
+                      "next_slot_price": 100.0, "next_era_price": 0.0}],
+                    [weak, strong])
+    template = [{"critter": "WEAK", "slots": 2}]
+    switch = next(o for o in strengthen_plan(mil, {}, RULER_IIDS, template=template)
+                  if o.kind == "switch_critter")
+    assert switch.critter_iid == "WEAK"  # template wins over strongest
+    # without a template the strongest is chosen
+    switch2 = next(o for o in strengthen_plan(mil, {}, RULER_IIDS)
+                   if o.kind == "switch_critter")
+    assert switch2.critter_iid == "STRONG"
+
+
+def test_template_caps_slot_buys_at_template_count():
+    cur = _critter("CUR", health=10)
+    # wave already at the template's 2 slots → no buy_slot offered
+    mil = _military([{"iid": "CUR", "slots": 2, "max_era": 0,
+                      "next_slot_price": 100.0, "next_era_price": 0.0}], [cur])
+    template = [{"critter": "CUR", "slots": 2}]
+    assert "buy_slot" not in {
+        o.kind for o in strengthen_plan(mil, {}, RULER_IIDS, template=template)}
+    # one defeat lifts the cap (2 * 1.25 = 2) → still capped; two defeats → cap 3
+    assert "buy_slot" in {
+        o.kind for o in strengthen_plan(mil, {}, RULER_IIDS,
+                                        template=template, defeats=2)}
+
+
+def test_template_caps_wave_count_until_defeats():
+    cur = _critter("CUR", health=10)
+    wave = {"iid": "CUR", "slots": ADD_WAVE_MIN_SLOTS, "max_era": 0,
+            "next_slot_price": 100.0, "next_era_price": 0.0}
+    mil = _military([dict(wave), dict(wave)], [cur])  # 2 waves
+    template = [{"critter": "CUR", "slots": ADD_WAVE_MIN_SLOTS}] * 2
+    # at the template's wave count → no add_wave
+    assert "add_wave" not in {
+        o.kind for o in strengthen_plan(mil, {}, RULER_IIDS, template=template)}
+    # a defeat raises the wave cap → add_wave allowed
+    assert "add_wave" in {
+        o.kind for o in strengthen_plan(mil, {}, RULER_IIDS,
+                                        template=template, defeats=1)}
 
 
 def test_critter_power_per_slot():
@@ -216,11 +267,14 @@ def _full_summary(ruler_type="MAJA", gold=1000):
             "ruler": {"type": ruler_type, "q": 5, "w": 5, "e": 5, "r": 3}}
 
 
-def test_defeat_switches_to_strengthen_then_attack():
+def test_defeat_switches_to_strengthen_then_spy():
     cur = _critter("CUR", health=10)
+    # next_era_price=0 and next_slot_price above STRENGTHEN_GOLD_CAP → no affordable
+    # options in the cheap range → strengthen exhausts immediately → spy
+    from bot.planners.attack import STRENGTHEN_GOLD_CAP
     mil = _military([{"iid": "MAJA", "slots": 1, "max_era": 0},  # ruler wave
                      {"iid": "CUR", "slots": 1, "max_era": 0,
-                      "next_slot_price": 100.0, "next_era_price": 0.0}])
+                      "next_slot_price": STRENGTHEN_GOLD_CAP + 1, "next_era_price": 0.0}])
     mil["available_critters"] = [cur]
     ctx = _ctx(mil, summary=_full_summary(),
                memory={"attack_history": [{"opponent": "victim",
@@ -229,9 +283,10 @@ def test_defeat_switches_to_strengthen_then_attack():
     assert AttackPlanner().propose(ctx) is None
     assert ctx.strategy["params"]["phase"] == "strengthen"
     assert ctx.strategy["params"]["defeats"] == 1
+    # Strengthen: slot too expensive (above cap, gold < price) → skip to spy
     action = AttackPlanner().propose(ctx)
-    assert action is not None
-    assert ctx.strategy["params"]["phase"] == "attack"
+    assert action is None
+    assert ctx.strategy["params"]["phase"] == "spy"
 
 
 def test_gives_up_after_max_defeats():

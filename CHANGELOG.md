@@ -18,3 +18,12 @@ Der gestohlene Culture-Betrag setzt sich aus zwei Teilen zusammen:
    Zusätzlich ein zufälliger Prozentsatz (1–5 %) des gesamten Culture-Pools des Verteidigers.
 
 **Era-Penalty:** Greift ein Spieler eine Empire in einer niedrigeren Era an, erhält er nur 50 % der gestohlenen Culture — kultureller Fortschritt schützt.
+
+
+# S3
+* industry einheiten zu stark
+* cannon tower zu stark
+* ninja, samurai zu schwach
+* rennai damage tower fehlt
+* geld in neuen eras schneller steigen
+* bauzeiten/ forschung auch

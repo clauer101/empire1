@@ -156,7 +156,7 @@ class BattleService:
 
         critter_slot_cost = self._get_wave_critter_slot_cost(wave)
         if critter_slot_cost > remaining_slots:
-            log.info(
+            log.debug(
                 "[SPAWN] Wave %d completed early: remaining_slots=%.2f cannot fit critter %s (cost=%.2f)",
                 wave.wave_id,
                 remaining_slots,
@@ -859,7 +859,7 @@ class BattleService:
             new_life = max(0.0, current_life - life_damage)
             battle.defender.resources["life"] = new_life
             
-            log.info("[FINISHED] Critter cid=%d (%s) reached goal, defender life: %.1f -> %.1f (damage: %.1f)",
+            log.debug("[FINISHED] Critter cid=%d (%s) reached goal, defender life: %.1f -> %.1f (damage: %.1f)",
                      critter.cid, critter.iid, current_life, new_life, life_damage)
         
         # Track defender losses for summary
@@ -903,7 +903,7 @@ class BattleService:
             gold = battle.defender.resources.get("gold", 0.0)
             battle.defender.resources["gold"] = gold + critter.value
             battle.defender_gold_earned += critter.value
-            log.info("[KILLED] Critter cid=%d (%s) killed — defender awarded %.1f gold (total: %.1f)",
+            log.debug("[KILLED] Critter cid=%d (%s) killed — defender awarded %.1f gold (total: %.1f)",
                      critter.cid, critter.iid, critter.value, battle.defender.resources["gold"])
         else:
             log.debug("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f",
@@ -1144,7 +1144,9 @@ class BattleService:
         # Transfer losses from defender
         for resource_key, amount in battle.defender_losses.items():
             if resource_key in defender_empire.resources:
-                defender_empire.resources[resource_key] = max(0, 
+                if resource_key == "life":
+                    amount = min(amount, defender_empire.max_life)
+                defender_empire.resources[resource_key] = max(0,
                     defender_empire.resources[resource_key] - amount)
                 log.debug("Defender lost %.0f %s", amount, resource_key)
         

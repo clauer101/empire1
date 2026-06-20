@@ -50,7 +50,7 @@ CRAFTSMANSHIP:
   costs: {}
   requirements: [HUNTING, MYSTIC]
   effects:
-    build_speed_offset: 0.1
+    build_speed_offset: 0.15
 
 # ============================================================
 #   NEOLITIC  (Effort 800 – 1.500)
@@ -95,7 +95,7 @@ ALPHABET_WRITING:
   costs: {}
   requirements: [CRAFTSMANSHIP]
   effects:
-    research_speed_offset: 0.1
+    research_speed_offset: 0.15
 
 TRIBAL_LEADERSHIP:
   era: neolithic
@@ -476,7 +476,7 @@ OPTICS:
   image: assets/sprites/knowledge/optics
   name: "Optics"
   description: "Lens crafting, telescopes, and periscopes technology."
-  effort: 511490
+  effort: 485916
   costs: {}
   requirements: [MECHANICAL_ENGINEERING, PHYSICS]
   effects: {}
@@ -486,7 +486,7 @@ BALLISTICS:
   image: assets/sprites/knowledge/ballistics
   name: "Ballistics"
   description: "Science of projectile trajectories and artillery."
-  effort: 459056
+  effort: 436103
   costs: {}
   requirements: [STRATEGIC_WARFARE, CHEMISTRY]
   effects: {}
@@ -496,7 +496,7 @@ STEAM_ENGINE:
   image: assets/sprites/knowledge/steam_engine
   name: "Steam Engine"
   description: "Industrial steam power technology and machines."
-  effort: 459056
+  effort: 436103
   costs: {}
   requirements: [PHYSICS, CHEMISTRY]
   effects: {}
@@ -506,7 +506,7 @@ SANITATION:
   image: assets/sprites/knowledge/sanitation
   name: "Sanitation"
   description: "Public hygiene and sanitary infrastructure systems."
-  effort: 546500
+  effort: 519175
   costs: {}
   requirements: [CHEMISTRY, STEAM_ENGINE]
   effects: {}
@@ -516,7 +516,7 @@ ELECTRICITY:
   image: assets/sprites/knowledge/electricity
   name: "Electricity"
   description: "Electrical power generation and transmission."
-  effort: 479580
+  effort: 455601
   costs: {}
   requirements: [PHYSICS, STEAM_ENGINE]
   effects: {}
@@ -526,7 +526,7 @@ COMBUSTION_ENGINE:
   image: assets/sprites/knowledge/combustion_engine
   name: "Combustion Engine"
   description: "Internal combustion engine technology development."
-  effort: 570929
+  effort: 542383
   costs: {}
   requirements: [STEAM_ENGINE]
   effects: {}
@@ -536,7 +536,7 @@ SOCIAL_SCIENCES:
   image: assets/sprites/knowledge/social_sciences
   name: "Social Sciences"
   description: "Human behavior and societal development studies."
-  effort: 583654
+  effort: 554471
   costs: {}
   requirements: [CONSTITUTION, SANITATION]
   effects: {}
@@ -546,7 +546,7 @@ MEDICINE:
   image: assets/sprites/knowledge/medicine
   name: "Medicine"
   description: "Advanced medical science and treatment techniques."
-  effort: 672235
+  effort: 638623
   costs: {}
   requirements: [HERBOLOGY, SANITATION]
   effects: {}
@@ -561,7 +561,7 @@ KNO_ARMOUR:
   image: assets/sprites/knowledge/kno_armour
   name: "KNO Armour"
   description: "Advanced body protection and defensive equipment."
-  effort: 722843
+  effort: 652366
   costs: {}
   requirements: [BALLISTICS, ELECTRICITY]
   effects: {}
@@ -571,7 +571,7 @@ CRYPTOLOGY:
   image: assets/sprites/knowledge/cryptology
   name: "Cryptology"
   description: "Code making and code breaking science."
-  effort: 828533
+  effort: 747751
   costs: {}
   requirements: [MATHMATICS, SOCIAL_SCIENCES]
   effects: {}
@@ -581,7 +581,7 @@ MILITARY_SERVICE:
   image: assets/sprites/knowledge/military_service
   name: "Military Service"
   description: "Organized military conscription and service systems."
-  effort: 828533
+  effort: 747751
   costs: {}
   requirements: [CRYPTOLOGY, GLOBALIZATION_STRATEGIES]
   effects: {}
@@ -591,7 +591,7 @@ AVIATION:
   image: assets/sprites/knowledge/aviation
   name: "Aviation"
   description: "Fixed-wing aircraft design and flight technology."
-  effort: 828533
+  effort: 747751
   costs: {}
   requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
   effects: {}
@@ -601,7 +601,7 @@ ELECTRONICS:
   image: assets/sprites/knowledge/electronics
   name: "Electronics"
   description: "Electronic components and circuits development."
-  effort: 828533
+  effort: 747751
   costs: {}
   requirements: [ELECTRICITY, OPTICS]
   effects: {}
@@ -611,7 +611,7 @@ MASS_PRODUCTION:
   image: assets/sprites/knowledge/mass_production
   name: "Mass Production"
   description: "Industrial assembly line and standardization."
-  effort: 1246245
+  effort: 1124736
   costs: {}
   requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
   effects: 
@@ -622,7 +622,7 @@ NUCLEAR_REACTION:
   image: assets/sprites/knowledge/nuclear_reaction
   name: "Nuclear Reaction"
   description: "Nuclear fission and atomic energy principles."
-  effort: 1311837
+  effort: 1183933
   costs: {}
   requirements: [PHYSICS, CHEMISTRY, ELECTRONICS]
   effects: {}
@@ -632,7 +632,7 @@ CHEMICAL_WARFARE:
   image: assets/sprites/knowledge/chemical_warfare
   name: "Chemical Warfare"
   description: "Chemical weapons development and deployment."
-  effort: 1246245
+  effort: 1124736
   costs: {}
   requirements: [CHEMISTRY, BOMBING_AREA]
   effects: {}
@@ -642,7 +642,7 @@ ROCKET_SCIENCE:
   image: assets/sprites/knowledge/rocket_science
   name: "Rocket Science"
   description: "Propulsion and rocket engineering technology."
-  effort: 1311837
+  effort: 1183933
   costs: {}
   requirements: [AVIATION, ELECTRONICS]
   effects: {}
@@ -652,7 +652,7 @@ AERO_DYNAMICS:
   image: assets/sprites/knowledge/aero_dynamics
   name: "Aero Dynamics"
   description: "Physics of flight and aeronautical engineering."
-  effort: 1380885
+  effort: 1246249
   costs: {}
   requirements: [PHYSICS, AVIATION]
   effects: {}
@@ -662,7 +662,7 @@ GLOBALIZATION_STRATEGIES:
   image: assets/sprites/knowledge/globalization_strategies
   name: "Globalization Strategies"
   description: "International trade and global economic integration."
-  effort: 1311837
+  effort: 1183933
   costs: {}
   requirements: [ECONOMY, ELECTRONICS, SOCIAL_SCIENCES]
   effects: 
@@ -673,7 +673,7 @@ CIVIL_ENGINEERING:
   image: assets/sprites/knowledge/civil_engineering
   name: "Civil Engineering"
   description: "Infrastructure design and large-scale construction."
-  effort: 1380885
+  effort: 1246249
   costs: {}
   requirements: [SOCIAL_SCIENCES, STEAM_ENGINE]
   effects: {}
@@ -683,7 +683,7 @@ SATELLITE_SYSTEMS:
   image: assets/sprites/knowledge/satellite_systems
   name: "Satellite Systems"
   description: "Orbiting spacecraft for communication and observation."
-  effort: 1380885
+  effort: 1246249
   costs: {}
   requirements: [ELECTRONICS, AVIATION]
   effects: {}
@@ -693,7 +693,7 @@ COMPUTER_TECHNOLOGY:
   image: assets/sprites/knowledge/computer_technology
   name: "Computer Technology"
   description: "Electronic computing machines and algorithms."
-  effort: 1227664
+  effort: 1107967
   costs: {}
   requirements: [ELECTRONICS, MATHMATICS]
   effects: {}
@@ -703,7 +703,7 @@ SPECIAL_FORCES:
   image: assets/sprites/knowledge/special_forces
   name: "Special Forces"
   description: "Elite military units with advanced training."
-  effort: 1570892
+  effort: 1417730
   costs: {}
   requirements: [MILITARY_SERVICE, SATELLITE_SYSTEMS]
   effects: {}
@@ -717,7 +717,7 @@ BIONICS:
   image: assets/sprites/knowledge/bionics
   name: "Bionics"
   description: "Integration of biological and mechanical systems."
-  effort: 1813964
+  effort: 1555248
   costs: {}
   requirements: [MILITARY_SERVICE, COMPUTER_TECHNOLOGY]
   effects: {}
@@ -727,7 +727,7 @@ FIBER_COMPOSITE:
   image: assets/sprites/knowledge/fiber_composite
   name: "Fiber Composite"
   description: "Advanced composite material engineering technology."
-  effort: 1813964
+  effort: 1555248
   costs: {}
   requirements: [AERO_DYNAMICS, MASS_PRODUCTION, KNO_ARMOUR]
   effects: {}
@@ -737,7 +737,7 @@ COLD_FUSION:
   image: assets/sprites/knowledge/cold_fusion
   name: "Cold Fusion"
   description: "Low-temperature nuclear fusion research and development."
-  effort: 1909431
+  effort: 1637098
   costs: {}
   requirements: [NUCLEAR_REACTION, ROCKET_SCIENCE]
   effects: {}

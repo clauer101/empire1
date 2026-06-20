@@ -331,6 +331,9 @@ class ApiClient {
       case 'spy_report':
         eventBus.emit('server:spy_report', msg);
         break;
+      case 'trophy_awarded':
+        eventBus.emit('trophy_awarded', msg);
+        break;
       case 'attack_response':
         console.warn(
           '[ApiClient] ⚠️  attack_response received as PUSH (request_id missing!):',

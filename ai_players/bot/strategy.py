@@ -42,6 +42,22 @@ def _personality_weights(config: dict, state: BotState) -> dict[str, float]:
     return weights
 
 
+_VARIETY_WINDOW = 3   # look back this many strategies for the variety boost
+_VARIETY_BOOST  = 3.0 # multiply weight of types not seen in the window
+
+
+def _variety_weights(weights: dict[str, float], memory: dict) -> dict[str, float]:
+    """Boost strategy types not played in the last _VARIETY_WINDOW rounds.
+
+    Keeps the population rotating through all strategy types without forcing a
+    strict round-robin: the roll is still random, just steered toward variety.
+    """
+    history = memory.get("strategy_history", [])
+    recent = set(history[-_VARIETY_WINDOW:])
+    return {t: (w if t in recent else w * _VARIETY_BOOST)
+            for t, w in weights.items()}
+
+
 def roll_strategy(config: dict, state: BotState, context: dict[str, Any]) -> dict:
     """Pick a new random strategy, modulated by current context.
 
@@ -78,7 +94,14 @@ def roll_strategy(config: dict, state: BotState, context: dict[str, Any]) -> dic
     types = [t for t in STRATEGY_TYPES if weights.get(t, 0) > 0]
     if not types:
         types, weights = ["economy"], {"economy": 1}
+    # Boost types not seen recently so all strategies get played over time.
+    weights = _variety_weights(weights, state.memory)
     chosen = random.choices(types, weights=[weights[t] for t in types], k=1)[0]
+
+    # Record for variety tracking (keep last 10)
+    history = state.memory.setdefault("strategy_history", [])
+    history.append(chosen)
+    state.memory["strategy_history"] = history[-10:]
 
     params: dict[str, Any] = {}
     if chosen in ("attack", "artifact"):
@@ -90,7 +113,8 @@ def roll_strategy(config: dict, state: BotState, context: dict[str, Any]) -> dic
         # toward the best) so different bots pick different opponents.
         top_n = int((config.get("selection") or {}).get("top_n", 1) or 1)
         target = weighted_top_n(targets, key=lambda t: t.get("score", 0.0), n=top_n)
-        params = {"target_uid": target["uid"], "target_name": target["name"], "phase": "spy"}
+        params = {"target_uid": target["uid"], "target_name": target["name"],
+                  "phase": "strengthen"}
 
     return {
         "type": chosen,
@@ -169,7 +193,7 @@ def attack_defeat_strategy(config: dict, target_uid: int, target_name: str) -> d
     return {
         "type": "attack",
         "params": {"target_uid": target_uid, "target_name": target_name,
-                   "phase": "spy"},
+                   "phase": "strengthen"},
         "valid_until": _valid_until(config, "attack"),
         "source": "revenge",
         "started_at": now_iso(),

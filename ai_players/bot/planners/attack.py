@@ -1,8 +1,11 @@
-"""Attack strategy planner: spy → attack state machine against a chosen target.
+"""Attack strategy planner: strengthen → spy → attack state machine.
 
-Extras: ruler deployment (choose → skill-up → place in a wave) and
-strengthen-on-defeat (slots / wave eras / waves / armies) — see
-bot/army_building.py and docs/strategies/attack.md.
+Phase order: strengthen → spy → wait_spy → attack → wait_result → strengthen → …
+
+Strengthen runs between every attack cycle (not only after defeat), buying era
+upgrades, slots, and critter switches until all options are unaffordable or
+exhausted, then transitions to spy. This ensures the army continuously improves
+rather than staying at the initial SLAVE/SCOUT configuration.
 
 Emits at most one Option per cycle. Sequencing actions (army/wave setup, spy,
 attack, strengthen) are mandatory so they win their tier when attack is the
@@ -16,21 +19,27 @@ from __future__ import annotations
 import logging
 import time
 
+from bot.analyzer import ERA_RANK
 from bot.api_client import ApiError
 from bot.army_building import (
     MAX_STRENGTHEN_ROUNDS,
+    army_power,
     next_skill,
+    resolve_template_critter,
     ruler_wave_target,
     strengthen_plan,
+    template_target_power,
 )
+from bot.army_templates import template_for_era
 from bot.savings import clear_goal
 
-from .base import BotContext, Option, Planner, weighted_top_n
+from .base import BotContext, Option, Planner
 
 log = logging.getLogger("bot.planner.attack")
 
-SKILL_RETRY_S = 3600.0  # retry skill-up an hour after a "no points" rejection
-PRIO_ATTACK = 10        # mandatory priority for attack sequencing options
+SKILL_RETRY_S = 3600.0   # retry skill-up an hour after a "no points" rejection
+PRIO_ATTACK = 10         # mandatory priority for attack sequencing options
+STRENGTHEN_GOLD_CAP = 5000.0  # stop spending on army once options cost more than this
 
 
 def _mandatory(description: str, run, *, price: float = 0.0, gain: float = 1.0,
@@ -42,7 +51,7 @@ def _mandatory(description: str, run, *, price: float = 0.0, gain: float = 1.0,
 
 class AttackPlanner(Planner):
     """Phases stored in strategy.params["phase"]:
-    spy → wait_spy → attack → wait_result (→ strengthen → attack)."""
+    strengthen → spy → wait_spy → attack → wait_result → strengthen → …"""
 
     def __init__(self, prefer_artifacts: bool = False):
         self.prefer_artifacts = prefer_artifacts
@@ -82,6 +91,8 @@ class AttackPlanner(Planner):
         army = armies[0]
         aid = army["aid"]
         ruler_iids = set(ctx.items.get("rulers") or {})
+        era_rank = ERA_RANK.get(ctx.summary.get("era", "stone"), 0)
+        template = template_for_era(era_rank)
 
         # 1b. A fresh army has no waves yet — buy the first one
         if not army.get("waves"):
@@ -103,30 +114,37 @@ class AttackPlanner(Planner):
             if ruler_opt is not None:
                 return ruler_opt
 
-        # 3. Fill empty waves with the strongest affordable critter (idempotent,
-        #    so it is allowed even as a secondary strategy).
+        # 3. Fill empty waves toward the era template: the wave's template
+        #    critter (best-effort, falls back to the strongest fitting one).
+        #    Idempotent, so allowed even as a secondary strategy.
         critters = ctx.items.get("critters", {})
-        unlocked = [(iid, c) for iid, c in critters.items() if ctx.is_unlocked(c)]
+        unlocked = [dict(c, iid=iid) for iid, c in critters.items()
+                    if iid not in ruler_iids and ctx.is_unlocked(c)]
         if unlocked:
-            picked = weighted_top_n(
-                unlocked,
-                key=lambda c: float((c[1].get("costs") or {}).get("gold", 0.0)),
-                n=ctx.top_n)
-            best_iid = picked[0]
             for wn, wave in enumerate(army.get("waves", [])):
-                if not wave.get("iid"):
-                    slots = int(wave.get("slots", 1) or 1)
-                    return _mandatory(
-                        f"set wave {wn} to {best_iid}",
-                        lambda api, wn=wn, slots=slots:
-                            api.set_wave(aid, wn, best_iid, slots))
+                if wave.get("iid"):
+                    continue
+                max_era = int(wave.get("max_era", 0) or 0)
+                fitting = [c for c in unlocked
+                           if int(c.get("era_index", 0)) <= max_era]
+                tmpl_iid = (str(template[wn].get("critter", ""))
+                            if wn < len(template) else "")
+                picked = resolve_template_critter(tmpl_iid, fitting)
+                if picked is None:
+                    continue
+                best_iid = picked["iid"]
+                slots = int(wave.get("slots", 1) or 1)
+                return _mandatory(
+                    f"set wave {wn} to {best_iid}",
+                    lambda api, wn=wn, slots=slots, best_iid=best_iid:
+                        api.set_wave(aid, wn, best_iid, slots))
 
         # Everything past here is phase sequencing — never as a secondary.
         if not advance_phase:
             return None
 
         # 4. Phase machine
-        phase = params.get("phase", "spy")
+        phase = params.get("phase", "strengthen")
         outgoing = ctx.summary.get("attacks_outgoing", [])
 
         if phase == "spy":
@@ -152,7 +170,7 @@ class AttackPlanner(Planner):
             return None
 
         if phase == "strengthen":
-            return self._strengthen_step(ctx, military, ruler_iids, params)
+            return self._strengthen_step(ctx, military, ruler_iids, params, template)
 
         return None
 
@@ -176,7 +194,8 @@ class AttackPlanner(Planner):
                     log.info("defeat #%d vs %s — strengthening army", defeats, target_name)
                     params["phase"] = "strengthen"
             else:
-                params["phase"] = "attack"  # victory but goal not met: again
+                # Victory but goal not met: strengthen first, then attack again
+                params["phase"] = "strengthen"
             return
 
     # ── ruler deployment ──────────────────────────────────────────────────
@@ -219,19 +238,40 @@ class AttackPlanner(Planner):
     # ── strengthen on defeat ──────────────────────────────────────────────
 
     def _strengthen_step(self, ctx: BotContext, military: dict,
-                         ruler_iids: set[str], params: dict) -> Option | None:
-        options = strengthen_plan(military, ctx.summary, ruler_iids)
+                         ruler_iids: set[str], params: dict,
+                         template: list[dict] | None = None) -> Option | None:
+        defeats = int(params.get("defeats", 0) or 0)
+
+        # Stop strengthening once the army reaches the era template's power
+        # (scaled up after defeats); the template is the build-up target.
+        if template:
+            target = template_target_power(template, military, ruler_iids)
+            if target > 0 and army_power(military, ruler_iids) >= target:
+                clear_goal(ctx.memory)
+                params["phase"] = "spy"
+                return None
+
+        options = strengthen_plan(military, ctx.summary, ruler_iids,
+                                  template=template or None, defeats=defeats)
         if not options:
-            params["phase"] = "attack"
+            # Nothing left to buy — proceed to attack
+            clear_goal(ctx.memory)
+            params["phase"] = "spy"
             return None
         best = options[0]
-        if best.price > ctx.gold:
+        if best.price > STRENGTHEN_GOLD_CAP:
+            # Option is expensive — only proceed if we have a big surplus, otherwise spy
+            if best.price > ctx.gold:
+                params["phase"] = "spy"
+                return None
+        elif best.price > ctx.gold:
+            # Affordable range but currently insufficient — save and wait
             return _mandatory(
                 f"{best.description} (saving)", lambda api: None, price=best.price,
                 saves_for=best.price,
                 goal_meta={"item": best.kind, "action": best.description, "sticky": True})
         clear_goal(ctx.memory)
-        params["phase"] = "attack"
+        # Stay in strengthen — next cycle will re-evaluate and buy the next option
         return self._execute_strengthen(best)
 
     @staticmethod

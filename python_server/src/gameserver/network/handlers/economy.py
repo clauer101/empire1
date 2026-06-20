@@ -227,7 +227,7 @@ async def handle_item_request(
                 "effects": dict(item.effects),
                 "description": item.description,
                 "type": item.subtype or 'normal',
-                "sprite": item.sprite,
+                "image": item.image,
             })
         catalog[item.iid] = entry
 
@@ -783,16 +783,15 @@ async def handle_buy_tile_request(
             "error": f"Tile {tile_key} is not a void tile (current type: {current_type})",
         }
 
-    # Check if the tile is already claimed by another empire (in their hex_map, any type)
-    for other_emp in svc.empire_service.all_empires.values():
-        if other_emp.uid == target_uid:
-            continue
-        if tile_key in other_emp.hex_map:
-            return {
-                "type": "buy_tile_response",
-                "success": False,
-                "error": "This tile belongs to another empire",
-            }
+    # Check if the tile is already claimed by another empire using the world tile index
+    world_owner = svc.empire_service.world_tile_owner()
+    owner_uid = world_owner.get((q, r))
+    if owner_uid is not None and owner_uid != target_uid:
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": "This tile belongs to another empire",
+        }
 
     # Require adjacency to an existing owned (non-void) tile to keep territory contiguous
     neighbor_offsets = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1))

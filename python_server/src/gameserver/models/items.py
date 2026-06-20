@@ -19,6 +19,7 @@ class ItemType(Enum):
     CRITTER = "critter"
     ARTIFACT = "artifact"
     WONDER = "wonder"
+    TROPHY = "trophy"
 
 
 @dataclass(frozen=True)
@@ -98,3 +99,4 @@ class ItemDetails:
     image: str = ""  # Image path prefix, e.g. assets/sprites/buildings/hangar
     era: str = ""    # Era key from YAML (e.g. "stone")
     subtype: str = ""  # Artifact rarity: "normal" | "legendary"
+    condition: dict[str, object] = field(default_factory=dict)  # Trophy unlock condition

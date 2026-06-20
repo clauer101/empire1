@@ -44,11 +44,13 @@
       border-radius: 4px; padding: 5px 8px; font-family: var(--mono); font-size: 12px; width: 110px;
     }
     .ctl input:focus, .ctl select:focus { outline: none; border-color: var(--accent); }
-    #run-btn {
-      padding: 7px 22px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px;
+    #controls button {
+      padding: 7px 18px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px;
       background: var(--accent); color: #000; border: none; border-radius: 4px; cursor: pointer;
     }
-    #run-btn:disabled { opacity: 0.5; cursor: wait; }
+    #reset-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    #auto-btn.running { background: var(--warning); }
+    #controls button:disabled { opacity: 0.4; cursor: not-allowed; }
     #status { font-size: 11px; color: var(--text-dim); align-self: center; }
     #status.error { color: var(--danger); }
 
@@ -116,13 +118,19 @@
     <div class="ctl"><label>Era</label>
       <select id="in-era"></select>
     </div>
-    <div class="ctl"><label>Cycles</label><input id="in-cycles" type="number" value="300" min="1" max="2000"></div>
-    <div class="ctl"><label>Start gold</label><input id="in-gold" type="number" value="200" min="0"></div>
-    <div class="ctl"><label>Gold / cycle</label><input id="in-income" type="number" value="100" min="0"></div>
+    <div class="ctl"><label>Strategy</label>
+      <select id="in-strategy">
+        <option value="coverage">Coverage (serpentine)</option>
+        <option value="spiral">Spiral (snail shell)</option>
+        <option value="comb">Space-filling (comb)</option>
+      </select>
+    </div>
     <div class="ctl"><label>Top-N pick</label><input id="in-topn" type="number" value="2" min="1" max="5"></div>
     <div class="ctl"><label>Seed (blank = random)</label><input id="in-seed" type="number" placeholder="random" min="1"></div>
-    <button id="run-btn">▶ Run</button>
-    <span id="status"></span>
+    <button id="reset-btn">↺ Reset</button>
+    <button id="step-btn" disabled>▶ Step</button>
+    <button id="auto-btn" disabled>⏩ Auto</button>
+    <span id="status">Infinite gold · click Reset to start, then Step to build the maze one action at a time.</span>
   </div>
 
   <div id="content">
@@ -237,29 +245,51 @@ function renderMapSVG(tilesObj, maxPx = 520) {
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${polys.join('')}</svg>`;
 }
 
-// ── Run + timeline state ──
-let steps = [];            // steps[i].tilesResolved carries the forward-filled map
+// ── Iterative run state ──
+// Maze-only mode: infinite gold, one DefensePlanner action per Step call. The
+// previous map/state/memory is fed back into the next call so the strategy
+// builds the maze incrementally — exactly like the live bot loop, but gold-free.
+let steps = [];            // steps[i].tilesResolved carries the per-step map
 let playTimer = null;
+let sim = null;            // { era, top_n, seed, tiles, state, memory, cycle } | null
+let stepping = false;      // re-entrancy guard for Auto
 
 const $ = id => document.getElementById(id);
 
-async function run() {
-  const btn = $('run-btn');
+function resetSim() {
+  stopAuto();
+  const seedInput = $('in-seed').value;
+  sim = {
+    era: $('in-era').value,
+    strategy: $('in-strategy').value,
+    top_n: Number($('in-topn').value),
+    seed: seedInput ? Number(seedInput) : null,
+    tiles: null, state: null, memory: null, cycle: 0,
+  };
+  steps = [];
+  renderLog();
+  $('timeline').hidden = false;
+  $('stats').hidden = false;
+  $('slider').max = 0;
+  $('step-btn').disabled = false;
+  $('auto-btn').disabled = false;
+  $('map-wrap').innerHTML =
+    '<span style="color:var(--text-dim)">Press ▶ Step to build the first part of the maze.</span>';
+  $('status').className = '';
+  $('status').textContent = 'ready — infinite gold. Step to add one maze action.';
+}
+
+async function step() {
+  if (!sim || stepping) return false;
+  stepping = true;
   const status = $('status');
-  btn.disabled = true;
-  status.className = '';
-  status.textContent = 'simulating…';
-  stopPlay();
   try {
     const body = {
-      era: $('in-era').value,
-      cycles: Number($('in-cycles').value),
-      start_gold: Number($('in-gold').value),
-      gold_per_cycle: Number($('in-income').value),
-      top_n: Number($('in-topn').value),
+      era: sim.era, strategy: sim.strategy, top_n: sim.top_n,
+      tiles: sim.tiles, state: sim.state, memory: sim.memory, cycle: sim.cycle,
     };
-    if ($('in-seed').value) body.seed = Number($('in-seed').value);
-    const r = await fetch('/api/tools/maze-sim', {
+    if (sim.seed != null) body.seed = sim.seed;
+    const r = await fetch('/api/tools/maze-sim/step', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -267,55 +297,67 @@ async function run() {
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const data = await r.json();
 
-    // Forward-fill tile snapshots so every step has a map
-    let last = null;
-    steps = data.steps.map(s => {
-      if (s.tiles) last = s.tiles;
-      return { ...s, tilesResolved: last };
-    });
+    // Persist the returned state as the input for the next call.
+    sim.tiles = data.tiles;
+    sim.state = data.state;
+    sim.memory = data.memory;
+    sim.cycle = data.cycle;
+    sim.seed = data.seed;            // pin the seed the backend actually used
 
-    renderLog();
-    $('timeline').hidden = false;
-    $('stats').hidden = false;
+    const s = { ...data.step, tilesResolved: data.tiles };
+    steps.push(s);
+    appendLogRow(steps.length - 1);
+
     const slider = $('slider');
+    const wasAtEnd = Number(slider.value) >= Number(slider.max);
     slider.max = steps.length - 1;
-    slider.value = steps.length - 1;
-    showStep(steps.length - 1);
+    if (wasAtEnd) { slider.value = steps.length - 1; showStep(steps.length - 1); }
+
+    status.className = '';
     status.textContent =
-      `done — seed ${data.seed}, final path ${data.final_path_len}, ` +
-      `${data.final_towers} towers, ${data.gold_left}g left`;
+      `seed ${data.seed} · cycle ${data.cycle} · path ${data.path_len} · ` +
+      `${s.towers} towers · ${Object.keys(data.tiles).length} tiles`;
+    return true;
   } catch (err) {
     status.className = 'error';
     status.textContent = String(err.message || err);
+    stopAuto();
+    return false;
   } finally {
-    btn.disabled = false;
+    stepping = false;
   }
 }
 
-function renderLog() {
-  const log = $('log');
-  log.innerHTML = '';
-  let actions = 0;
-  for (let i = 0; i < steps.length; i++) {
-    const s = steps[i];
-    if (!s.action) continue;
-    actions++;
-    const row = document.createElement('div');
-    row.className = 'log-row';
-    row.dataset.idx = i;
-    const cls = s.action.startsWith('FAILED') ? 'a fail'
-              : s.action.startsWith('saving') ? 'a save' : 'a';
-    row.innerHTML =
-      `<span class="c">${s.cycle}</span><span class="g">${s.gold}g</span>` +
-      `<span class="${cls}"></span>`;
-    row.lastChild.textContent = s.action;
-    row.addEventListener('click', () => {
-      $('slider').value = i;
-      showStep(i);
-    });
-    log.appendChild(row);
-  }
+function appendLogRow(i) {
+  const s = steps[i];
+  if (!s || !s.action) { updateLogSub(); return; }
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.dataset.idx = i;
+  const cls = s.action.startsWith('FAILED') ? 'a fail'
+            : s.action.startsWith('saving') ? 'a save' : 'a';
+  row.innerHTML =
+    `<span class="c">${s.cycle}</span><span class="g">∞</span>` +
+    `<span class="${cls}"></span>`;
+  row.lastChild.textContent = s.action;
+  row.addEventListener('click', () => {
+    stopPlay();
+    $('slider').value = i;
+    showStep(i);
+  });
+  $('log').appendChild(row);
+  updateLogSub();
+}
+
+function updateLogSub() {
+  const actions = steps.filter(s => s.action).length;
   $('log-sub').textContent = `${actions} actions / ${steps.length} cycles`;
+}
+
+function renderLog() {
+  $('log').innerHTML = '';
+  for (let i = 0; i < steps.length; i++) appendLogRow(i);
+  updateLogSub();
 }
 
 function showStep(i) {
@@ -326,7 +368,7 @@ function showStep(i) {
   $('st-path').textContent = s.path_len;
   $('st-towers').textContent = s.towers;
   $('st-tiles').textContent = Object.keys(s.tilesResolved || {}).length;
-  $('st-gold').textContent = `${s.gold}g`;
+  $('st-gold').textContent = '∞';
   $('st-tileprice').textContent = `${s.tile_price}g`;
   $('map-sub').textContent = s.action || '';
   for (const row of document.querySelectorAll('.log-row')) {
@@ -336,6 +378,7 @@ function showStep(i) {
   if (cur) cur.scrollIntoView({ block: 'nearest' });
 }
 
+// ── Timeline replay (scrub already-built steps) ──
 function stopPlay() {
   if (playTimer) { clearInterval(playTimer); playTimer = null; $('play-btn').textContent = '▶'; }
 }
@@ -353,6 +396,31 @@ $('play-btn').addEventListener('click', () => {
   }, 60);
 });
 
+// ── Auto: keep stepping until the planner runs out of actions ──
+let autoTimer = null;
+let idleStreak = 0;        // consecutive cycles the planner did nothing
+function stopAuto() {
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  $('auto-btn').classList.remove('running');
+  $('auto-btn').textContent = '⏩ Auto';
+}
+async function autoTick() {
+  const ok = await step();
+  if (!ok || !autoTimer) return;        // error or stopped mid-flight
+  // The planner is done building once it stops emitting actions for a while
+  // (placing towers keeps the tile count flat, so we key off the action).
+  idleStreak = steps[steps.length - 1].action ? 0 : idleStreak + 1;
+  if (idleStreak >= 5 || sim.cycle >= 2000) { stopAuto(); return; }
+  autoTimer = setTimeout(autoTick, 120);
+}
+$('auto-btn').addEventListener('click', () => {
+  if (autoTimer) { stopAuto(); return; }
+  idleStreak = 0;
+  $('auto-btn').classList.add('running');
+  $('auto-btn').textContent = '⏸ Stop';
+  autoTimer = setTimeout(autoTick, 0);
+});
+
 $('log-toggle').addEventListener('click', () => {
   const log = $('log');
   log.hidden = !log.hidden;
@@ -360,7 +428,8 @@ $('log-toggle').addEventListener('click', () => {
 });
 
 $('slider').addEventListener('input', e => { stopPlay(); showStep(Number(e.target.value)); });
-$('run-btn').addEventListener('click', run);
+$('reset-btn').addEventListener('click', resetSim);
+$('step-btn').addEventListener('click', () => { stopPlay(); step(); });
 </script>
 </body>
 </html>

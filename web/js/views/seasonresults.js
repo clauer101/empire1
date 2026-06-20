@@ -230,4 +230,4 @@ function _esc(str) {
 
 // ── Export ──────────────────────────────────────────────────
 
-export default { id: 'season-results', init, enter, leave };
+export default { id: 'season-results', title: 'Season Results', init, enter, leave };

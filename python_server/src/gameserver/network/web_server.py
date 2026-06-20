@@ -951,7 +951,8 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
             raw = yaml.safe_load(ARTIFACTS_PATH.read_text(encoding="utf-8")) or {}
             result = [
                 {"iid": iid, "name": data.get("name", ""), "description": data.get("description", ""),
-                 "type": data.get("type", ""), "effects": data.get("effects") or {}}
+                 "type": data.get("type", ""), "effects": data.get("effects") or {},
+                 "image": data.get("image", "")}
                 for iid, data in raw.items() if isinstance(data, dict)
             ]
             return JSONResponse(result)
@@ -965,10 +966,13 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
             raw = {}
             for item in items:
                 iid = item["iid"].strip().upper().replace(" ", "_")
-                raw[iid] = {
+                entry: dict[str, Any] = {
                     "name": item.get("name", ""), "description": item.get("description", ""),
                     "type": item.get("type", ""), "effects": item.get("effects") or {},
                 }
+                if item.get("image"):
+                    entry["image"] = item["image"]
+                raw[iid] = entry
             header = "# Artifact definitions (collectible passive effect items)\n# effects: passive bonuses while the artifact is owned\n# description: flavour text\n\n"
             ARTIFACTS_PATH.write_text(
                 header + yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),

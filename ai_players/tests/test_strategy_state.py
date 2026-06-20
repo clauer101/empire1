@@ -51,7 +51,7 @@ def test_roll_without_army_but_rich_can_attack():
                                           "army_price": 500, "targets": targets})
         if s["type"] in ("attack", "artifact"):
             assert s["params"]["target_uid"] == 42
-            assert s["params"]["phase"] == "spy"
+            assert s["params"]["phase"] == "strengthen"
             found = True
     assert found
 
@@ -72,7 +72,7 @@ def test_roll_attack_picks_target():
                                           "targets": targets})
         if s["type"] in ("attack", "artifact"):
             assert s["params"]["target_uid"] == 42
-            assert s["params"]["phase"] == "spy"
+            assert s["params"]["phase"] == "strengthen"
             found = True
     assert found
 
@@ -112,7 +112,7 @@ def test_attack_defeat_strategy():
     from bot.strategy import attack_defeat_strategy
     s = attack_defeat_strategy(CONFIG, 42, "Weak")
     assert s["type"] == "attack" and s["source"] == "revenge"
-    assert s["params"] == {"target_uid": 42, "target_name": "Weak", "phase": "spy"}
+    assert s["params"] == {"target_uid": 42, "target_name": "Weak", "phase": "strengthen"}
     assert not is_expired(s)
 
 

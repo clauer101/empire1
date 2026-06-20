@@ -82,9 +82,14 @@ def _make_attack() -> Attack:
 
 
 def _make_battle() -> BattleState:
-    return BattleState(
+    wave = CritterWave(wave_id=0, iid="orc", slots=5.0, num_critters_spawned=3.0, next_critter_ms=800.0)
+    army = Army(aid=42, uid=1, name="TestArmy", waves=[wave])
+    battle = BattleState(
         bid=7,
         defender=None,
+        attacker_uids=[1],
+        attack_ids=[42],
+        armies={42: army},
         critters={
             200: Critter(cid=200, iid="orc", health=20.0, max_health=20.0,
                          speed=1.0, armour=1.0,
@@ -99,11 +104,18 @@ def _make_battle() -> BattleState:
             Shot(damage=5.0, target_cid=200, source_sid=10,
                  effects={"slow": 0.2}, flight_remaining_ms=300.0),
         ],
+        critter_path=[HexCoord(0, 0), HexCoord(1, 0)],
         elapsed_ms=5000.0,
         observer_uids={1, 2, 3},
         attacker_gains={1: {"gold": 10.0}},
         defender_losses={"life": 2.0},
     )
+    battle.critters_spawned = 3
+    battle.critters_killed = 1
+    battle.critters_reached = 0
+    battle.kills_era_xp_sum = 2.5
+    battle.ruler_reached_goal = False
+    return battle
 
 
 # -------------------------------------------------------------------
@@ -260,6 +272,50 @@ class TestSaveLoad:
         assert b.observer_uids == {1, 2, 3}
         assert b.attacker_gains[1]["gold"] == 10.0
         assert b.defender_losses["life"] == 2.0
+        # armies + wave runtime state
+        assert 42 in b.armies
+        assert b.armies[42].name == "TestArmy"
+        assert len(b.armies[42].waves) == 1
+        wave = b.armies[42].waves[0]
+        assert wave.iid == "orc"
+        assert wave.num_critters_spawned == 3.0
+        assert wave.next_critter_ms == 800.0
+        # counters
+        assert b.critters_spawned == 3
+        assert b.critters_killed == 1
+        assert b.kills_era_xp_sum == 2.5
+        # critter_path restored on critters
+        assert len(b.critters[200].path) == 2
+
+    def test_battle_completed_waves_not_reset(self, tmp_path: Path) -> None:
+        """Completed battle waves must keep num_critters_spawned == slots after load
+        so _mark_wave_complete_if_blocked blocks them and they don't re-spawn."""
+        path = str(tmp_path / "state.yaml")
+        done_wave = CritterWave(wave_id=0, iid="orc", slots=5.0, num_critters_spawned=5.0, next_critter_ms=0.0)
+        partial_wave = CritterWave(wave_id=1, iid="orc", slots=5.0, num_critters_spawned=2.0, next_critter_ms=600.0)
+        army = Army(aid=99, uid=1, name="A", waves=[done_wave, partial_wave])
+        battle = BattleState(bid=8, defender=None, armies={99: army},
+                             attacker_uids=[1], attack_ids=[99])
+        self._run(save_state({}, battles=[battle], path=path))
+        restored = self._run(load_state(path))
+        b = restored.battles[0]
+        w0, w1 = b.armies[99].waves
+        # completed wave: num_critters_spawned must stay at slots
+        assert w0.num_critters_spawned == 5.0, "completed wave was incorrectly reset to 0"
+        # partial wave: progress preserved
+        assert w1.num_critters_spawned == 2.0
+        assert w1.next_critter_ms == 600.0
+
+    def test_empire_army_waves_reset_on_load(self, tmp_path: Path) -> None:
+        """Empire army waves must be reset to 0 on load so they can be reused."""
+        path = str(tmp_path / "state.yaml")
+        empire = _make_empire()
+        done_wave = CritterWave(wave_id=0, iid="orc", slots=4.0, num_critters_spawned=4.0)
+        empire.armies = [Army(aid=1, uid=empire.uid, name="Vet", waves=[done_wave])]
+        self._run(save_state({empire.uid: empire}, path=path))
+        restored = self._run(load_state(path))
+        emp = restored.empires[empire.uid]
+        assert emp.armies[0].waves[0].num_critters_spawned == 0, "empire army wave should reset after load"
 
     def test_multiple_empires(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")

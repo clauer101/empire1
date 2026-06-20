@@ -19,7 +19,6 @@ _end_criterion_empire_name: str = ""
 _season_number: int = 1
 _season_title: str = ""
 _next_season_start: str = ""
-_next_season_leadtime: str = ""
 _next_season_title: str = ""
 _season_reset_triggered: bool = False
 _season_wipe_time: float = 0.0  # unix timestamp of last empire wipe
@@ -93,8 +92,29 @@ def get_next_season_start() -> str:
     return _next_season_start
 
 
-def get_next_season_leadtime() -> str:
-    return _next_season_leadtime
+def parse_iso_utc(value: str) -> Optional[datetime]:
+    """Parse an ISO-8601 timestamp as UTC. Returns None if empty or malformed."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value)
+    except (ValueError, OverflowError):
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def get_next_season_leadtime(season_leadtime: float) -> str:
+    """Leadtime is derived: next_season_start minus season_leadtime seconds.
+
+    Returns the ISO-8601 UTC leadtime, or "" if next_season_start is unset/malformed.
+    """
+    start = parse_iso_utc(_next_season_start)
+    if start is None:
+        return ""
+    from datetime import timedelta
+    return (start - timedelta(seconds=season_leadtime)).isoformat()
 
 
 def get_next_season_title() -> str:
@@ -105,14 +125,12 @@ def set_season(
     _number: int,
     _title: str,
     _next_start: str = "",
-    _next_leadtime: str = "",
     _next_title: str = "",
 ) -> None:
-    global _season_number, _season_title, _next_season_start, _next_season_leadtime, _next_season_title
+    global _season_number, _season_title, _next_season_start, _next_season_title
     _season_number = _number
     _season_title = _title
     _next_season_start = _next_start
-    _next_season_leadtime = _next_leadtime
     _next_season_title = _next_title
 
 

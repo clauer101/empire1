@@ -4,10 +4,10 @@
 
 AWE_INSPIRING_GRAIL:
   name: Awe-Inspiring Grail
+  image: assets/sprites/artifacts/awe_inspiring_grail.webp
   description: Forged in a forgotten age, those who behold it fall silent. No one
     remembers who drank from it last.
   type: ''
-  sprite: assets/sprites/artifacts/awe_inspiring_grail.webp
   effects:
     gold_modifier: 0.5
     gold_offset: 0.3
@@ -16,10 +16,10 @@ AWE_INSPIRING_GRAIL:
     max_life_modifier: 10
 LOST_ALMANAC:
   name: Lost Almanac
+  image: assets/sprites/artifacts/lost_almanac.webp
   description: A water-stained tome filled with diagrams of machines that do not yet
     exist. The last page is always blank.
   type: ''
-  sprite: assets/sprites/artifacts/lost_almanac.webp
   effects:
     research_speed_offset: 0.2
     research_speed_modifier: 0.4
@@ -29,10 +29,10 @@ LOST_ALMANAC:
     life_regen_modifier: 0.003
 ANCIENT_RELIQUE:
   name: Ancient Relique
+  image: assets/sprites/artifacts/ancient_relique.webp
   description: Excavated from beneath three civilisations. Scholars argue about its
     purpose; merchants argue about its price.
   type: ''
-  sprite: assets/sprites/artifacts/ancient_relique.webp
   effects:
     max_siege_construction_speed_modifier: 0.1
     siege_construction_speed_per_army_modifier: 0.02
@@ -40,9 +40,9 @@ ANCIENT_RELIQUE:
     culture_offset: 0.3
 ASSASSINS_DAGGER:
   name: Assassin's Dagger
+  image: assets/sprites/artifacts/assassins_dagger.webp
   description: The blade is clean. It has always been clean. Nobody knows why.
   type: ''
-  sprite: assets/sprites/artifacts/assassins_dagger.webp
   effects:
     enemy_siege_time_modifier: 0.1
     travel_time_modifier: 0.33
@@ -50,21 +50,21 @@ ASSASSINS_DAGGER:
     wave_slot_cost_modifier: 0.1
 BATTLE_DRUMS:
   name: Battle Drums
+  image: assets/sprites/artifacts/battle_drums.webp
   description: Said to have been beaten at the founding of the first empire. The leather
     is older than memory.
   type: ''
-  sprite: assets/sprites/artifacts/battle_drums.webp
   effects:
     siege_offset: 3600
     restore_life_during_battle_modifier: 0.02
-    wave_delay_offset: 0.5
+    wave_delay_offset: 1000
     tile_cost_modifier: 0.1
 BOOK_OF_HEROES:
   name: Book of Heroes
+  image: assets/sprites/artifacts/book_of_heroes.webp
   description: Every name written inside belongs to someone who died young. The last
     entry is smudged beyond reading.
   type: ''
-  sprite: assets/sprites/artifacts/book_of_heroes.webp
   effects:
     max_life_modifier: 10
     research_speed_offset: 0.3
@@ -72,20 +72,20 @@ BOOK_OF_HEROES:
     culture_offset: 0.4
 FINE_TROWEL:
   name: Fine Trowel
+  image: assets/sprites/artifacts/fine_trowel.webp
   description: Unremarkable at first glance. Yet every wall built with it has outlasted
     the empire that raised it.
   type: ''
-  sprite: assets/sprites/artifacts/fine_trowel.webp
   effects:
     build_speed_offset: 0.3
     build_speed_modifier: 0.5
-    building_cost_modifier: 0.08
+    building_cost_modifier: 0.2
 GOLDEN_ARC:
   name: Golden Arc
+  image: assets/sprites/artifacts/golden_arc.webp
   description: A curved fragment of something much larger. Whatever it once framed,
     no record survives.
   type: ''
-  sprite: assets/sprites/artifacts/golden_arc.webp
   effects:
     wave_era_cost_modifier: 0.3
     workshop_cost_modifier: 0.1
@@ -94,19 +94,19 @@ GOLDEN_ARC:
     life_regen_modifier: 0.001
 MERCIFUL_ARMOUR:
   name: Merciful Armour
+  image: assets/sprites/artifacts/merciful_armour.webp
   description: Not a single dent. Whoever wore it never needed to be struck twice
     — or perhaps was never struck at all.
   type: ''
-  sprite: assets/sprites/artifacts/merciful_armor.webp
   effects:
-    wave_delay_offset: 2
-    siege_offset: -3600
+    wave_delay_offset: 2000
+    siege_offset: 3600
 SCROLLS_OF_WISDOM:
   name: Scrolls of Wisdom
+  image: assets/sprites/artifacts/scrolls_of_wisdom.webp
   description: Forty-seven scrolls, tightly bound. The forty-eighth is missing. Everyone
     who reads them goes looking for it.
   type: ''
-  sprite: assets/sprites/artifacts/scrolls_of_wisdom.webp
   effects:
     research_speed_offset: 0.4
     research_speed_modifier: 0.8

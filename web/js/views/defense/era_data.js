@@ -83,11 +83,14 @@ export const STRUCTURE_COLORS = [
   { color: '#4a5a4a', stroke: '#6a7a6a' },
 ];
 
-export function _buildEraStatsHTML(tiles) {
+export function _buildEraStatsHTML(tiles, pathLength) {
   if (!tiles) return '';
+  const pathRow = pathLength != null
+    ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Path length: <span style="color:var(--text);font-family:monospace">${pathLength} tiles</span></div>`
+    : '';
   const towers = tiles.filter((t) => !_NON_TOWER.has(t.type));
   if (!towers.length)
-    return '<div style="color:var(--text-dim);font-size:11px;padding:4px 0;">No towers placed</div>';
+    return pathRow + '<div style="color:var(--text-dim);font-size:11px;padding:4px 0;">No towers placed</div>';
   const byEra = {};
   for (const t of towers) {
     const era = _TOWER_ERA[t.type] || '?';
@@ -110,5 +113,5 @@ export function _buildEraStatsHTML(tiles) {
       </div>`;
     })
     .join('');
-  return `<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${towers.length} towers total</div><div class="age-bars">${rows}</div>`;
+  return pathRow + `<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${towers.length} towers total</div><div class="age-bars">${rows}</div>`;
 }

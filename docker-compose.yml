@@ -16,7 +16,7 @@ services:
       - "127.0.0.1:8765:8765"
     volumes:
       - ./data/prod:/app/data
-      - gameserver_logs:/app/logs
+      - ./data/prod/logs:/app/logs
       - ./python_server/config:/app/config
     healthcheck:
       test: ["CMD", "python", "-c",
@@ -48,5 +48,3 @@ services:
       retries: 3
       start_period: 10s
 
-volumes:
-  gameserver_logs:

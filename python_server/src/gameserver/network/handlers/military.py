@@ -99,6 +99,7 @@ async def handle_military_request(
             "is_boss": critter.is_boss,
             "animation": critter.animation,
             "sprite": critter.sprite,
+            "spawn_on_death": dict(critter.spawn_on_death or {}),
         })
 
     # Sprite lookup for all critters (including locked) so the frontend

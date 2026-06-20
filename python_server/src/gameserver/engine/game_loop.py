@@ -232,76 +232,63 @@ class GameLoop:
 
     def _step(self, dt: float) -> None:
         """One tick of the game loop."""
+        from datetime import datetime, timezone
         from gameserver.engine.global_state import (
             get_end_criterion_activated, is_end_rally_active,
             get_next_season_leadtime, get_next_season_start,
             get_next_season_title, get_season_number, get_season_title,
             is_season_reset_triggered, set_season_reset_triggered, set_season,
-            clear_end_criterion,
+            clear_end_criterion, parse_iso_utc,
         )
-        # Season reset: wipe all empires when the leadtime window opens.
-        # Runs regardless of season_reset_triggered — the presence of
-        # next_season_leadtime is the gate; clearing it prevents re-triggering.
-        nsl = get_next_season_leadtime()
-        if nsl:
-            from datetime import datetime, timezone
-            try:
-                reset_at = datetime.fromisoformat(nsl)
-                if reset_at.tzinfo is None:
-                    reset_at = reset_at.replace(tzinfo=timezone.utc)
-                if datetime.now(timezone.utc) >= reset_at:
-                    set_season_reset_triggered(True)
-                    import time as _time
-                    from gameserver.engine.global_state import set_season_wipe_time
-                    set_season_wipe_time(_time.time())
-                    uids = self._empires.wipe_all_empires()
-                    attack_count = self._attacks.wipe_all_attacks()
-                    clear_end_criterion()
-                    if self._database is not None:
-                        asyncio.ensure_future(self._database.wipe_season_stats())
-                    # Clear leadtime so this block won't re-trigger, but keep
-                    # next_season_start/title — the game stays frozen with a
-                    # countdown banner until next_season_start is reached.
-                    set_season(
-                        get_season_number(),
-                        get_season_title(),
-                        get_next_season_start(),
-                        "",
-                        get_next_season_title(),
-                    )
-                    self._season_snapshot_done = False
-                    _log.info(
-                        "Season leadtime: wiped %d empires, %d attacks; "
-                        "frozen until %s",
-                        len(uids), attack_count, get_next_season_start(),
-                    )
-            except (ValueError, OverflowError):
-                pass  # malformed next_season_leadtime — ignore
+        now = datetime.now(timezone.utc)
+        season_start = parse_iso_utc(get_next_season_start())
 
-        # When season_reset_triggered, check if next_season_start is reached →
-        # advance season and unfreeze; otherwise block all game ticks (return early).
+        # Phase 2 — Leadtime wipe: when the derived leadtime window opens
+        # (next_season_start minus season_leadtime), wipe once. Gated on
+        # not-yet-reset so it fires a single time; Phase 3/4 take over after.
+        if season_start is not None and self._gc is not None and not is_season_reset_triggered():
+            leadtime = get_next_season_leadtime(self._gc.season_leadtime)
+            reset_at = parse_iso_utc(leadtime)
+            if reset_at is not None and now >= reset_at:
+                set_season_reset_triggered(True)
+                import time as _time
+                from gameserver.engine.global_state import set_season_wipe_time
+                set_season_wipe_time(_time.time())
+                uids = self._empires.wipe_all_empires()
+                attack_count = self._attacks.wipe_all_attacks()
+                clear_end_criterion()
+                if self._database is not None:
+                    asyncio.ensure_future(self._database.wipe_season_stats())
+                self._season_snapshot_done = False
+                _log.info(
+                    "Season leadtime: wiped %d empires, %d attacks; "
+                    "frozen until %s",
+                    len(uids), attack_count, get_next_season_start(),
+                )
+
+        # Phase 3/4 — While reset is triggered, stay frozen until
+        # next_season_start is reached, then advance the season and unfreeze.
         if is_season_reset_triggered():
-            nss = get_next_season_start()
-            if nss:
-                from datetime import datetime, timezone
-                try:
-                    season_start = datetime.fromisoformat(nss)
-                    if season_start.tzinfo is None:
-                        season_start = season_start.replace(tzinfo=timezone.utc)
-                    if datetime.now(timezone.utc) >= season_start:
-                        new_title = get_next_season_title() or get_season_title()
-                        set_season(get_season_number() + 1, new_title)
-                        set_season_reset_triggered(False)
-                        _log.info(
-                            "New season started: season %d '%s'",
-                            get_season_number(), get_season_title(),
-                        )
-                    else:
-                        return  # frozen — next_season_start not yet reached
-                except (ValueError, OverflowError):
-                    pass
+            if season_start is None:
+                # No (or malformed) next_season_start: stay frozen rather than
+                # falling through to the end-criterion block, which would
+                # re-trigger the reset every tick. Surface the misconfiguration.
+                if get_next_season_start():
+                    _log.warning(
+                        "season_reset_triggered but next_season_start is malformed: %r",
+                        get_next_season_start(),
+                    )
+                return  # frozen
+            if now >= season_start:
+                new_title = get_next_season_title() or get_season_title()
+                set_season(get_season_number() + 1, new_title)
+                set_season_reset_triggered(False)
+                _log.info(
+                    "New season started: season %d '%s'",
+                    get_season_number(), get_season_title(),
+                )
             else:
-                return  # frozen — no next_season_start configured yet
+                return  # frozen — next_season_start not yet reached
 
         if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
             if not self._season_snapshot_done:

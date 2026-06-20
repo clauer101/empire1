@@ -41,7 +41,11 @@ CREATE TABLE IF NOT EXISTS empire_stats (
     first_era_reached        INTEGER DEFAULT 0,
     peak_artifacts_held      INTEGER DEFAULT 0,
     critter_upgrade_levels   INTEGER DEFAULT 0,
-    tower_upgrade_levels     INTEGER DEFAULT 0
+    tower_upgrade_levels     INTEGER DEFAULT 0,
+    coward_attacks                    INTEGER DEFAULT 0,
+    max_lucky_punch_levels            INTEGER DEFAULT 0,
+    max_artifacts_stolen_one_battle   INTEGER DEFAULT 0,
+    max_artifacts_lost_one_battle     INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS era_firsts (
     era_key     TEXT PRIMARY KEY,
@@ -102,6 +106,12 @@ CREATE TABLE IF NOT EXISTS bot_signals (
     bot_probability     REAL    NOT NULL DEFAULT 0.5,
     user_agent          TEXT    NOT NULL DEFAULT '',
     updated_at          TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS player_trophies (
+    uid         INTEGER NOT NULL,
+    iid         TEXT    NOT NULL,
+    earned_at   INTEGER NOT NULL,
+    PRIMARY KEY (uid, iid)
 );
 CREATE TABLE IF NOT EXISTS ai_battle_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -167,6 +177,26 @@ class Database:
             await self._conn.execute("SELECT last_seen FROM users LIMIT 1")
         except aiosqlite.OperationalError:
             await self._conn.execute("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP")
+        # Migrate: add season column to player_trophies if missing
+        try:
+            await self._conn.execute("SELECT season FROM player_trophies LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute(
+                "ALTER TABLE player_trophies ADD COLUMN season INTEGER NOT NULL DEFAULT 1"
+            )
+        # Migrate: add new empire_stats columns for era-comparison and multi-artifact trophies
+        for _col, _type in [
+            ("coward_attacks", "INTEGER DEFAULT 0"),
+            ("max_lucky_punch_levels", "INTEGER DEFAULT 0"),
+            ("max_artifacts_stolen_one_battle", "INTEGER DEFAULT 0"),
+            ("max_artifacts_lost_one_battle", "INTEGER DEFAULT 0"),
+        ]:
+            try:
+                await self._conn.execute(f"SELECT {_col} FROM empire_stats LIMIT 1")
+            except aiosqlite.OperationalError:
+                await self._conn.execute(
+                    f"ALTER TABLE empire_stats ADD COLUMN {_col} {_type}"
+                )
         # Migrate: add device_id column to login_events if missing
         try:
             await self._conn.execute("SELECT device_id FROM login_events LIMIT 1")
@@ -826,6 +856,39 @@ class Database:
         ) as cur:
             rows = await cur.fetchall()
             return [r["artifact_iid"] for r in rows]
+
+    # -- Trophy operations ---------------------------------------------------
+
+    async def get_earned_trophy_iids(self, uid: int) -> set[str]:
+        """Return IIDs of all trophies earned by this player."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT iid FROM player_trophies WHERE uid = ?", (uid,)
+        ) as cur:
+            rows = await cur.fetchall()
+        return {r["iid"] for r in rows}
+
+    async def award_trophy(self, uid: int, iid: str, earned_at: int, season: int = 1) -> None:
+        """Record a newly earned trophy. Silently ignores duplicates."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                "INSERT OR IGNORE INTO player_trophies (uid, iid, earned_at, season) VALUES (?, ?, ?, ?)",
+                (uid, iid, earned_at, season),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("award_trophy failed uid=%d iid=%s", uid, iid, exc_info=True)
+
+    async def get_trophy_rows(self, uid: int) -> list[dict[str, Any]]:
+        """Return full rows (iid, earned_at, season) for all trophies earned by uid."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT iid, earned_at, season FROM player_trophies WHERE uid = ? ORDER BY earned_at",
+            (uid,),
+        ) as cur:
+            rows = await cur.fetchall()
+        return [dict(r) for r in rows]
 
     async def wipe_season_stats(self) -> None:
         """Delete all per-season runtime stats (empire_stats, era_firsts, artifact_holds).

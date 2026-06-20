@@ -46,7 +46,7 @@ end_ralley_effects:
 
 ## Phase 2 — Leadtime Wipe
 
-**Trigger:** `next_season_leadtime` is reached (ISO-8601 UTC timestamp, set via `state.yaml` or the admin API). This is typically configured a short time before `next_season_start` so a maintenance window exists between the wipe and the new season opening.
+**Trigger:** the leadtime window opens. The leadtime is **derived**, not stored: it is `next_season_start − season_leadtime`, where `season_leadtime` is a fixed duration in `game.yaml` (default 3 days = 259200s). Only `next_season_start` is configured in `state.yaml`; the wipe fires `season_leadtime` seconds before it, leaving a maintenance window before the new season opens.
 
 **What happens (in `game_loop._step()`):**
 1. `set_season_reset_triggered(True)` — marks the game as "between seasons".
@@ -54,8 +54,9 @@ end_ralley_effects:
 3. `attacks.wipe_all_attacks()` — all in-flight attacks cancelled.
 4. `clear_end_criterion()` — resets the end-criterion state.
 5. `database.wipe_season_stats()` (async) — deletes `empire_stats`, `era_firsts`, `artifact_holds`.
-6. `next_season_leadtime` is cleared from global state so this block does not re-trigger.
-7. `_season_snapshot_done = False` — allows the snapshot to run.
+6. `_season_snapshot_done = False` — allows the snapshot to run.
+
+The wipe is gated on `not is_season_reset_triggered()`, so it fires exactly once; Phase 3/4 take over afterward. A malformed `next_season_start` is treated as "unset" (logged), and the game stays frozen rather than re-triggering the reset every tick.
 
 **Season snapshot (`_take_season_snapshot()`)** runs concurrently:
 - Copies `state.yaml` and `gameserver.db` (via `VACUUM INTO`) to `data/{env}/results/season1/`.
@@ -80,7 +81,6 @@ After the wipe the game loop **returns early every tick** (game is frozen). Clie
 |-----|-------------|
 | `season_reset_triggered` | True while frozen between seasons |
 | `next_season_start` | ISO-8601 UTC — when the new season opens |
-| `next_season_leadtime` | ISO-8601 UTC — when the wipe fires (cleared after use) |
 | `next_season_title` | Title string for the new season |
 | `season_number` | Current season number (incremented at Phase 4) |
 | `season_title` | Current season title |
@@ -110,15 +110,15 @@ After the wipe the game loop **returns early every tick** (game is frozen). Clie
 | `end_criterion` | string | Item IID that triggers the end rally |
 | `end_ralley_duration` | int (seconds) | How long the rally lasts |
 | `end_ralley_effects` | dict | Bonus effects active during the rally |
-| `next_season_start` | ISO-8601 string | When the new season opens |
-| `next_season_leadtime` | ISO-8601 string | When the wipe fires (set via admin/state.yaml) |
+| `next_season_start` | ISO-8601 string | When the new season opens (in `state.yaml`) |
+| `season_leadtime` | int (seconds) | Fixed duration before `next_season_start` when the wipe fires (default 3 days) |
 | `empire_spawn_spacing` | int | Hex distance between spawn points for new empires |
 
 ---
 
 ## State Persistence
 
-All season state is persisted in `state.yaml` (saved periodically and on shutdown) under the `global:` section. On server restart, `main.py` restores the full season state including `end_criterion_activated`, `season_reset_triggered`, `next_season_start`, and `next_season_leadtime` so a server restart during any phase is safe and resumes exactly where it left off.
+All season state is persisted in `state.yaml` (saved periodically and on shutdown) under the `global:` section. On server restart, `main.py` restores the full season state including `end_criterion_activated`, `season_reset_triggered`, and `next_season_start` so a server restart during any phase is safe and resumes exactly where it left off. The leadtime is recomputed from `next_season_start − season_leadtime` (game.yaml), so it is never persisted.
 
 ---
 

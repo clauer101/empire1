@@ -427,6 +427,11 @@ class EmpireService:
         self.recalculate_effects(empire)
         log.info("Artifact granted for era3: uid=%d artifact=%s", empire.uid, artifact_iid)
         if self._database is not None:
+            import asyncio as _adb
+            import time as _time
+            _adb.get_running_loop().create_task(
+                self._database.record_artifact_acquired(empire.uid, artifact_iid, _time.time())
+            )
             artifact_item = self._upgrades.get(artifact_iid)
             artifact_name = artifact_item.name if artifact_item else artifact_iid
             body = (
@@ -441,11 +446,7 @@ class EmpireService:
             )
 
     def recalculate_effects(self, empire: Empire) -> None:
-        """Rebuild empire effects from all completed buildings, knowledge, and current era.
-
-        Call this on server startup / state restore to ensure effects
-        match the actually completed items.
-        """
+        """Rebuild empire effects from all completed buildings, knowledge, current era, and trophies."""
         empire.effects.clear()
         for iid, remaining in empire.buildings.items():
             if remaining <= 0:
@@ -483,6 +484,11 @@ class EmpireService:
         # Apply ruler skill effects
         for key, value in self.get_ruler_effects(empire).items():
             empire.effects[key] = empire.effects.get(key, 0.0) + value
+        # Apply trophy effects from empire state
+        for iid in empire.trophies:
+            effects = self._upgrades.get_effects(iid)
+            for key, value in effects.items():
+                empire.effects[key] = empire.effects.get(key, 0.0) + value
         self._recalculate_max_life(empire)
         log.info("Empire %d: recalculated effects → %s", empire.uid, empire.effects)
 

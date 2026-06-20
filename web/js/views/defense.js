@@ -250,6 +250,8 @@ async function _showDefenseEffectsOverlay() {
       if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value">${_name(iid)}</span></div>`;
     for (const [iid, v] of Object.entries(src.artifacts || {}))
       if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value" style="color:#FFD700">⚜ ${_name(iid)}</span></div>`;
+    for (const [iid, v] of Object.entries(src.trophies || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value" style="color:#cd7f32">🏆 ${_name(iid)}</span></div>`;
     if (src.ruler && rulerName)
       html += `<div class="panel-row"><span class="label">${fmt(src.ruler)}</span><span class="value" style="color:#FFD700">👑 ${rulerName}</span></div>`;
     if (src.end_rally)
@@ -259,7 +261,7 @@ async function _showDefenseEffectsOverlay() {
     return html || `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
   }
 
-  let siegeRows = sourceRows('siege_offset', (v) => `${v > 0 ? '+' : ''}${v.toFixed(0)}s`);
+  let siegeRows = sourceRows('siege_offset', (v) => `${v > 0 ? '+' : ''}${(v / 3600).toFixed(1)}h`);
   siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   siegeRows += sourceRows('siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`);
   const siegeFinal = siegeTotal * (1 - siegeModifier);
@@ -281,7 +283,8 @@ async function _showDefenseEffectsOverlay() {
   const refundRows = refundBaseRow + (refundModifier > 0 ? refundModRows.replace(/<div style="color:#555.*?<\/div>/, '') : '');
 
   const tiles = grid ? [...grid.tiles.values()] : [];
-  const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles)}</div>`;
+  const pathLen = grid?.battlePath ? grid.battlePath.length - 1 : null;
+  const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles, pathLen)}</div>`;
 
   // ── Siege Construction Disruption section ──────────────────
   let siegeConstrRows = '';

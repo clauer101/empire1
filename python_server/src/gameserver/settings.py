@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Auth
     jwt_secret: str  # required — no default, fails fast on missing
 
+    # Dev flag — set IS_DEV=true in docker-compose.dev.yml, never in prod
+    is_dev: bool = False
+
     # Optional TLS / VAPID paths (operational — not used by game logic)
     tls_cert_path: str = ""
     tls_key_path: str = ""

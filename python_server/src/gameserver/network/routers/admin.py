@@ -111,9 +111,15 @@ def make_router(services: "Services") -> APIRouter:
         up = services.empire_service._upgrades
         _gc = services.empire_service._gc
 
+        _week_s = 7 * 24 * 3600
         empires_out: list[dict[str, Any]] = []
         for empire in services.empire_service.all_empires.values():
             if empire.uid == 0:
+                continue
+            # Hide inactive accounts with 0 culture (> 1 week without login)
+            culture = empire.resources.get("culture", 0.0)
+            last_seen = uid_to_last_seen.get(empire.uid, "")
+            if culture <= 0 and not _is_recently_active(last_seen, _week_s):
                 continue
 
             buildings_done = [iid for iid, v in empire.buildings.items() if v == 0.0]
@@ -176,6 +182,7 @@ def make_router(services: "Services") -> APIRouter:
                 "knowledge_done": knowledge_done,
                 "knowledge_wip": knowledge_wip,
                 "armies": armies_out,
+                "item_upgrades": empire.item_upgrades,
                 "hex_tiles": hex_tiles,
                 "path_length": _pl,
                 "power": power,

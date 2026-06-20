@@ -67,6 +67,17 @@ function _buildCritterEraRoman() {
   }
 }
 
+function _spawnOnDeathHtml(spawn) {
+  const entries = Object.entries(spawn || {}).filter(([, n]) => n > 0);
+  if (!entries.length) return '';
+  const critters = st.items?.critters || {};
+  const parts = entries.map(([iid, n]) => {
+    const name = critters[iid]?.name || iid;
+    return `${n}× ${name}`;
+  });
+  return `<span class="cpt-stat cpt-spawn" title="Spawns on death">↳ ${parts.join(', ')}</span>`;
+}
+
 function _armyEffectRows(effectKey, completedBuildings, completedResearch, items, fmt) {
   const rows = [];
   for (const iid of completedBuildings || []) {
@@ -133,6 +144,8 @@ async function _showArmyEffectsOverlay() {
       if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value">${_name(iid)}</span></div>`;
     for (const [iid, v] of Object.entries(src.artifacts || {}))
       if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value" style="color:#FFD700">⚜ ${_name(iid)}</span></div>`;
+    for (const [iid, v] of Object.entries(src.trophies || {}))
+      if (v) html += `<div class="panel-row"><span class="label">${fmt(v)}</span><span class="value" style="color:#cd7f32">🏆 ${_name(iid)}</span></div>`;
     if (src.ruler && rulerName)
       html += `<div class="panel-row"><span class="label">${fmt(src.ruler)}</span><span class="value" style="color:#FFD700">👑 ${rulerName}</span></div>`;
     if (src.end_rally)
@@ -851,6 +864,7 @@ function _openCritterOverlay(
               <span class="cpt-stat cpt-spd" title="Speed">⚡ ${(u.speed || 0).toFixed(2)}</span>
               ${c.slots > 1 ? `<span class="cpt-stat cpt-slots" title="Slot cost">${c.slots} Slots</span>` : ''}
               ${c.time_between_ms ? `<span class="cpt-stat cpt-interval" title="Time between spawns">⏱ ${(c.time_between_ms / 1000).toFixed(1)}s</span>` : ''}
+              ${_spawnOnDeathHtml(c.spawn_on_death)}
             </div>
           </button>`;
         })

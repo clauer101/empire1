@@ -471,33 +471,6 @@ export function createBattleUi(ctx) {
     const feedbackRow = container.querySelector('#summary-feedback-row');
     if (feedbackRow) feedbackRow.remove();
 
-    if (msg.attacker_uid === 0 && msg.army_name) {
-      const row = document.createElement('div');
-      row.id = 'summary-feedback-row';
-      row.style.cssText = 'display:flex;gap:8px;margin-top:12px;justify-content:center;';
-      row.innerHTML = `
-        <button id="feedback-easy" style="background:var(--green,#388e3c);color:#fff;border:none;padding:6px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;">✓ Too Easy</button>
-        <button id="feedback-hard" style="background:var(--red,#d32f2f);color:#fff;border:none;padding:6px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;">✗ Too Hard</button>
-      `;
-      content.appendChild(row);
-
-      const sendFeedback = async (rating) => {
-        row.querySelectorAll('button').forEach((b) => {
-          b.disabled = true;
-          b.style.opacity = '0.6';
-        });
-        try {
-          await ctx.rest.battleFeedback(msg.army_name, rating);
-        } catch (e) {
-          console.warn('[feedback] failed:', e);
-        }
-        row.innerHTML =
-          '<span style="color:var(--text-muted);font-size:12px;">✓ Feedback sent</span>';
-      };
-
-      row.querySelector('#feedback-easy').addEventListener('click', () => sendFeedback('too_easy'));
-      row.querySelector('#feedback-hard').addEventListener('click', () => sendFeedback('too_hard'));
-    }
 
     overlay.style.display = 'flex';
   }

@@ -404,6 +404,10 @@ class RestClient {
     return this._get('/api/messages');
   }
 
+  async getTrophies() {
+    return this._get('/api/empire/trophies');
+  }
+
   /**
    * Send a message to another player.
    * @param {number} toUid

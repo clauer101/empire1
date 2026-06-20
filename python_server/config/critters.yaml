@@ -598,7 +598,7 @@ SIEGE_TANK:
   name: "Siege Tank"
   description: "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy."
   speed: 0.35
-  health: 223
+  health: 350
   value: 857
   damage: 2
   armour: 15
@@ -616,13 +616,13 @@ SPECOPS:
   era: modern
   name: "Special Ops"
   description: "Elite special forces with advanced armor and tactical precision. Balanced speed and durability."
-  speed: 0.6
-  health: 211
+  speed: 0.8
+  health: 230
   value: 941
   damage: 2
   armour: 8
   slots: 1
-  time_between: 900
+  time_between: 700
   is_boss: false
   capture: {}
   bonus: {}

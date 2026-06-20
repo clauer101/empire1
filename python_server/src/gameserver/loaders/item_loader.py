@@ -19,12 +19,17 @@ import yaml
 from gameserver.models.items import ItemDetails, ItemType
 
 # Category keys and the file stems they map to.
-_CATEGORIES = ("buildings", "knowledge", "structures", "critters", "artifacts", "wonders")
+_CATEGORIES = ("buildings", "knowledge", "structures", "critters", "artifacts", "wonders", "trophies")
+
+
+_CATEGORY_TO_TYPE: dict[str, str] = {
+    "trophies": "trophy",
+}
 
 
 def _type_for_category(cat: str) -> ItemType:
     """Map a plural category key to its ItemType enum value."""
-    singular = cat.rstrip("s")  # buildings → building
+    singular = _CATEGORY_TO_TYPE.get(cat, cat.rstrip("s"))  # buildings → building
     return ItemType(singular)
 
 
@@ -71,6 +76,7 @@ def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
             image=attrs.get("image", ""),
             era=attrs.get("era", ""),
             subtype=attrs.get("type", ""),
+            condition=attrs.get("condition") or {},
         ))
     return items
 

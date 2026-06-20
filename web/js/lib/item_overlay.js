@@ -183,7 +183,7 @@ export class ItemOverlay {
       const reqs = this._reqLinks(a?.requirements);
       const eraLabel = this._getEraLabel(iid);
       const typeColor = type === 'legendary' ? '#ab47bc' : '#c9a84c';
-      spriteUrl = a?.sprite ? '/' + a.sprite : null;
+      spriteUrl = a?.image ? '/' + a.image : null;
 
       html += `
         <div class="tt-dp-name" style="color:${typeColor}">⚜ ${name}</div>

@@ -21,7 +21,6 @@ from gameserver.engine.global_state import (
     get_season_number,
     get_season_title,
     get_next_season_start,
-    get_next_season_leadtime,
     get_next_season_title,
     is_season_reset_triggered,
 )
@@ -111,7 +110,6 @@ def _serialize_global() -> dict[str, Any]:
         "season_number": get_season_number(),
         "season_title": get_season_title(),
         "next_season_start": get_next_season_start(),
-        "next_season_leadtime": get_next_season_leadtime(),
         "next_season_title": get_next_season_title(),
         "season_reset_triggered": is_season_reset_triggered(),
         "end_criterion_activated": eca.isoformat() if eca is not None else None,
@@ -153,6 +151,7 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
         "effects": dict(empire.effects),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
         "artifacts": list(empire.artifacts),
+        "trophies": {iid: dict(t) for iid, t in empire.trophies.items()},
         "max_life": empire.max_life,
         "structures": {
             sid: _serialize_structure(s)
@@ -320,18 +319,15 @@ def _serialize_shot(shot: Shot) -> dict[str, Any]:
 
 
 def _serialize_battle(battle: BattleState) -> dict[str, Any]:
-    """Serialize a running battle.
-
-    TODO: BattleService.run_battle() is not yet fully implemented.
-          Active battles are lost on shutdown for now.
-          Once implemented, battles should either be saved and resumed
-          or gracefully ended before shutdown.
-    """
+    """Serialize a running battle including full runtime state for resumption."""
     return {
         "bid": battle.bid,
         "defender_uid": battle.defender.uid if battle.defender else 0,
         "attacker_uids": list(battle.attacker_uids),
-        "attacker": None,  # TODO: battles are not persisted yet
+        "attack_ids": list(battle.attack_ids),
+        "armies": {
+            str(aid): _serialize_army(army) for aid, army in battle.armies.items()
+        },
         "critters": {
             str(cid): _serialize_critter(c) for cid, c in battle.critters.items()
         },
@@ -348,4 +344,9 @@ def _serialize_battle(battle: BattleState) -> dict[str, Any]:
             str(uid): dict(gains) for uid, gains in battle.attacker_gains.items()
         },
         "defender_losses": dict(battle.defender_losses),
+        "critters_spawned": battle.critters_spawned,
+        "critters_killed": battle.critters_killed,
+        "critters_reached": battle.critters_reached,
+        "kills_era_xp_sum": battle.kills_era_xp_sum,
+        "ruler_reached_goal": battle.ruler_reached_goal,
     }

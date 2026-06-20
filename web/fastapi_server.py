@@ -1680,6 +1680,49 @@ async def spawn_bot(body: dict = Body(default={})) -> JSONResponse:
                          "username": username})
 
 
+@app.post("/api/tools/bots/{name}/strategy")
+async def override_bot_strategy(name: str, body: dict = Body(default={})) -> JSONResponse:
+    """Send a strategy override to a running bot via its control-port HTTP server."""
+    import re as _re
+    import urllib.request as _req
+    import urllib.error as _uerr
+
+    if not _re.match(r'^[\w\-]+$', name):
+        return JSONResponse({"ok": False, "detail": "Invalid name"}, status_code=400)
+
+    base = Path(__file__).parent.parent
+    states_dir = base / "ai_players" / "states"
+    cfg_path = base / "ai_players" / "config.yaml"
+
+    if not (states_dir / f"{name}.yaml").exists():
+        return JSONResponse({"ok": False, "detail": "Bot not found"}, status_code=404)
+
+    try:
+        cfg = yaml.safe_load(cfg_path.read_text()) or {}
+    except Exception:
+        return JSONResponse({"ok": False, "detail": "Could not read bot config"}, status_code=500)
+
+    base_port = int(cfg.get("control_port_base", 9300))
+    sorted_names = sorted(p.stem for p in states_dir.glob("*.yaml"))
+    try:
+        port = base_port + sorted_names.index(name) + 1
+    except ValueError:
+        return JSONResponse({"ok": False, "detail": "Bot not in sorted list"}, status_code=500)
+
+    payload = json.dumps(body).encode()
+    bots_host = os.environ.get("BOTS_HOST", "127.0.0.1")
+    try:
+        r = _req.urlopen(
+            _req.Request(f"http://{bots_host}:{port}/strategy", data=payload,
+                         headers={"Content-Type": "application/json"}, method="POST"),
+            timeout=3)
+        resp = json.loads(r.read())
+        return JSONResponse({"ok": True, "port": port, "response": resp})
+    except _uerr.URLError as e:
+        return JSONResponse({"ok": False, "detail": f"Control port {port} unreachable: {e.reason}"},
+                            status_code=502)
+
+
 @app.delete("/api/tools/bots/{name}")
 async def delete_bot(name: str) -> JSONResponse:
     """Remove a bot's state file (and log if present). Irreversible."""
@@ -1704,29 +1747,60 @@ async def delete_bot(name: str) -> JSONResponse:
 
 @app.post("/api/tools/maze-sim")
 async def run_maze_sim(body: dict) -> JSONResponse:
-    """Time-accelerated maze simulation using the REAL bot DefensePlanner.
+    """Time-accelerated maze simulation using a REAL bot defense strategy.
 
-    Body: {era, cycles, start_gold, gold_per_cycle, top_n}.
-    Imports the identical implementation from ai_players/bot (mounted ro in
-    Docker next to web/) and runs it against an in-memory map.
+    Body: {era, cycles, start_gold, gold_per_cycle, top_n, strategy}.
+    `strategy` selects the build planner (coverage | spiral). Imports the
+    identical implementation from ai_players/bot (mounted ro in Docker next to
+    web/) and runs it against an in-memory map.
+    """
+    try:
+        cfg = _maze_sim_config(body)
+    except _MazeSimError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=exc.status)
+    from bot.sim import simulate_defense
+
+    cycles = max(1, min(2000, int(body.get("cycles", 300))))
+    start_gold = float(body.get("start_gold", 200.0))
+    gold_per_cycle = float(body.get("gold_per_cycle", 100.0))
+    result = simulate_defense(
+        cfg["structures"], cfg["buildings"],
+        cycles=cycles, start_gold=start_gold, gold_per_cycle=gold_per_cycle,
+        completed=cfg["completed"], tile_params=cfg["tile_params"],
+        upgrade_base_by_iid=cfg["upgrade_base_by_iid"],
+        top_n=cfg["top_n"], seed=cfg["seed"], strategy=cfg["strategy"],
+    )
+    return JSONResponse(result)
+
+
+class _MazeSimError(Exception):
+    def __init__(self, message: str, status: int = 400):
+        super().__init__(message)
+        self.status = status
+
+
+def _maze_sim_config(body: dict) -> dict:
+    """Load era-filtered structures/buildings + price params for the maze sim.
+
+    Shared by the batch (`/maze-sim`) and iterative (`/maze-sim/step`) endpoints.
+    Raises _MazeSimError on a bad era or missing ai_players.
     """
     ai_players_dir = Path(__file__).parent.parent / "ai_players"
     if not ai_players_dir.exists():
-        return JSONResponse({"error": "ai_players not available"}, status_code=503)
+        raise _MazeSimError("ai_players not available", status=503)
     if str(ai_players_dir) not in _sys.path:
         _sys.path.insert(0, str(ai_players_dir))
-    from bot.sim import simulate_defense
 
     era = str(body.get("era", "stone"))
     from gameserver.util.army_generator import ERA_ORDER_INTERNAL
     if era not in ERA_ORDER_INTERNAL:
-        return JSONResponse({"error": f"unknown era {era!r}"}, status_code=400)
+        raise _MazeSimError(f"unknown era {era!r}")
     era_idx = ERA_ORDER_INTERNAL.index(era)
-    cycles = max(1, min(2000, int(body.get("cycles", 300))))
-    start_gold = float(body.get("start_gold", 200.0))
-    gold_per_cycle = float(body.get("gold_per_cycle", 100.0))
-    top_n = max(1, min(5, int(body.get("top_n", 1))))
-    seed = int(body["seed"]) if body.get("seed") else None
+
+    from bot.sim import DEFENSE_STRATEGIES
+    strategy = str(body.get("strategy", "coverage"))
+    if strategy not in DEFENSE_STRATEGIES:
+        raise _MazeSimError(f"unknown strategy {strategy!r}")
 
     def _era_filter(catalog: dict) -> dict:
         return {iid: it for iid, it in catalog.items()
@@ -1747,16 +1821,43 @@ async def run_maze_sim(body: dict) -> JSONResponse:
         idx = ERA_ORDER_INTERNAL.index(it.get("era", "stone"))
         return float(upgrade_bases[idx]) if idx < len(upgrade_bases) else 100.0
 
-    # Everything of the chosen era counts as researched/unlocked
     completed = {req for it in {**structures, **buildings}.values()
                  for req in (it.get("requirements") or [])}
-    result = simulate_defense(
-        structures, buildings,
-        cycles=cycles, start_gold=start_gold, gold_per_cycle=gold_per_cycle,
-        completed=completed, tile_params=tile_params,
-        upgrade_base_by_iid={iid: _upgrade_base(it)
-                             for iid, it in structures.items()},
-        top_n=top_n, seed=seed,
+    return {
+        "structures": structures,
+        "buildings": buildings,
+        "tile_params": tile_params,
+        "completed": completed,
+        "upgrade_base_by_iid": {iid: _upgrade_base(it)
+                                for iid, it in structures.items()},
+        "top_n": max(1, min(5, int(body.get("top_n", 1)))),
+        "seed": int(body["seed"]) if body.get("seed") else None,
+        "strategy": strategy,
+    }
+
+
+@app.post("/api/tools/maze-sim/step")
+async def run_maze_sim_step(body: dict) -> JSONResponse:
+    """Run ONE defense-planner cycle, resuming from caller-supplied state.
+
+    Iterative maze-only mode: the client persists `tiles`, `state` and `memory`
+    between calls and feeds them back, so each call builds the next part of the
+    maze with infinite gold. Body: {era, top_n, seed, tiles?, state?, memory?,
+    cycle?}. Returns {step, tiles, state, memory, cycle, seed, path_len}.
+    """
+    try:
+        cfg = _maze_sim_config(body)
+    except _MazeSimError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=exc.status)
+    from bot.sim import step_defense
+
+    result = step_defense(
+        cfg["structures"], cfg["buildings"],
+        tiles=body.get("tiles"), state=body.get("state"),
+        memory=body.get("memory"), cycle=int(body.get("cycle", 0)),
+        completed=cfg["completed"], tile_params=cfg["tile_params"],
+        upgrade_base_by_iid=cfg["upgrade_base_by_iid"],
+        top_n=cfg["top_n"], seed=cfg["seed"], strategy=cfg["strategy"],
     )
     return JSONResponse(result)
 

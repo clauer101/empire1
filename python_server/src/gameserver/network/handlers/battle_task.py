@@ -105,9 +105,11 @@ async def _log_battle_stats(
     database: Any,
     loot: dict[str, Any],
     stolen_artifacts: "list[tuple[str, int]]",
+    empire_service: Any = None,
 ) -> None:
     """Record post-battle empire stats to the database (fire-and-forget safe)."""
     from gameserver.engine.ai_service import AI_UID as _AI_UID
+    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER_STATS
 
     is_ai = _AI_UID in battle.attacker_uids
     opp = "ai" if is_ai else "human"
@@ -119,11 +121,30 @@ async def _log_battle_stats(
     if battle.defender_won:
         await database.record_empire_stat(def_uid, **{f"defense_won_{opp}": 1})
         for auid in human_atk_uids:
-            await database.record_empire_stat(auid, attacks_lost_human=1)
+            await database.record_empire_stat(auid, **{f"attacks_lost_{opp}": 1})
     else:
         await database.record_empire_stat(def_uid, **{f"defense_lost_{opp}": 1})
         for auid in human_atk_uids:
-            await database.record_empire_stat(auid, attacks_won_human=1)
+            await database.record_empire_stat(auid, **{f"attacks_won_{opp}": 1})
+
+    # Era-comparison stats for human attackers
+    if empire_service is not None and battle.defender is not None:
+        def_emp = battle.defender
+        def_era = empire_service.get_current_era(def_emp)
+        def_era_idx = _ERA_ORDER_STATS.index(def_era) if def_era in _ERA_ORDER_STATS else 0
+        for auid in human_atk_uids:
+            atk_emp = empire_service.get(auid)
+            if atk_emp is None:
+                continue
+            atk_era = empire_service.get_current_era(atk_emp)
+            atk_era_idx = _ERA_ORDER_STATS.index(atk_era) if atk_era in _ERA_ORDER_STATS else 0
+            if atk_era_idx > def_era_idx:
+                # Attacker is in a higher era — cowardly downward attack
+                await database.record_empire_stat(auid, coward_attacks=1)
+            if not battle.defender_won and def_era_idx > atk_era_idx:
+                # Attacker won against a higher-era defender — lucky punch
+                levels = def_era_idx - atk_era_idx
+                await database.record_empire_stat_max(auid, "max_lucky_punch_levels", levels)
 
     await database.record_empire_stat_max(def_uid, "longest_battle_ms", elapsed_ms)
 
@@ -154,10 +175,49 @@ async def _log_battle_stats(
                 if r_won > 0:
                     await database.record_empire_stat_float(auid, "research_won", r_won)
 
+    # Per-winner stolen count for this battle (for multi-steal trophy)
+    stolen_per_winner: dict[int, int] = {}
     for stolen_iid, winner_uid in stolen_artifacts:
         await database.record_empire_stat(winner_uid, artifacts_stolen=1)
         await database.record_artifact_acquired(winner_uid, stolen_iid, now)
         await database.record_artifact_lost(def_uid, stolen_iid, now)
+        stolen_per_winner[winner_uid] = stolen_per_winner.get(winner_uid, 0) + 1
+    if stolen_artifacts:
+        # Track max stolen/lost in a single battle
+        for winner_uid, count in stolen_per_winner.items():
+            await database.record_empire_stat_max(winner_uid, "max_artifacts_stolen_one_battle", count)
+        await database.record_empire_stat_max(def_uid, "max_artifacts_lost_one_battle", len(stolen_artifacts))
+
+
+async def _check_battle_trophies(battle: "BattleState", svc: Any) -> None:
+    """Fire-and-forget: check and award trophies for all participants after a battle."""
+    from gameserver.engine.ai_service import AI_UID as _AI_UID
+
+    # Give _log_battle_stats a moment to commit its increments
+    await asyncio.sleep(0.1)
+
+    uids_to_check: list[int] = []
+    if battle.defender and battle.defender.uid != _AI_UID:
+        uids_to_check.append(battle.defender.uid)
+    for uid in battle.attacker_uids:
+        if uid != _AI_UID:
+            uids_to_check.append(uid)
+
+    for uid in uids_to_check:
+        try:
+            empire = svc.empire_service.get(uid) if svc.empire_service else None
+            newly_awarded = await svc.trophy_service.check_and_award(uid, empire)
+            if newly_awarded and svc.empire_service and empire is not None:
+                svc.empire_service.recalculate_effects(empire)
+                # Push notification to connected player
+                if svc.server is not None:
+                    for iid in newly_awarded:
+                        try:
+                            await svc.server.send_to(uid, {"type": "trophy_awarded", "iid": iid})
+                        except Exception:
+                            pass
+        except Exception:
+            log.warning("_check_battle_trophies failed for uid=%d", uid, exc_info=True)
 
 
 async def _run_battle_task(
@@ -253,7 +313,7 @@ async def _run_battle_task(
                     )
                     break
 
-        if attacker_won or stolen_artifacts:
+        if attacker_won or stolen_artifacts or loot:
             await battle_svc.send_summary(battle, send_fn, loot, ruler_xp_gained, pvp_gold_bonus, ruler_xp_pvp_bonus, artifact_steal_chances=steal_chances, army_steal_multipliers=army_multipliers)
         elif not _summary_sent:
             await battle_svc.send_summary(battle, send_fn, loot={}, ruler_xp_gained=ruler_xp_gained, pvp_gold_bonus=pvp_gold_bonus, ruler_xp_pvp_bonus=ruler_xp_pvp_bonus, artifact_steal_chances=steal_chances, army_steal_multipliers=army_multipliers)
@@ -286,8 +346,12 @@ async def _run_battle_task(
 
         if svc.database is not None:
             asyncio.ensure_future(
-                _log_battle_stats(battle, svc.database, loot, stolen_artifacts)
+                _log_battle_stats(battle, svc.database, loot, stolen_artifacts, svc.empire_service)
             )
+            if svc.trophy_service is not None and svc.empire_service is not None:
+                asyncio.ensure_future(
+                    _check_battle_trophies(battle, svc)
+                )
 
         if AI_UID in battle.attacker_uids and svc.database is not None and svc.empire_service is not None:
             from gameserver.util.ai_battle_log import log_ai_battle
@@ -1274,12 +1338,9 @@ def _create_battle_start_handler() -> Callable[..., Any]:
             _wave_delay_offset_ms = (
                 defender_empire.get_effect(fx.WAVE_DELAY_OFFSET, 0.0) if defender_empire else 0.0
             )
-            log.info("[battle:wave_timers] defender=%d wave_delay_offset=%.0fms initial_delay=%.0fms",
-                     defender_uid, _wave_delay_offset_ms, _initial_delay_ms)
             for _i, _wave in enumerate(attacking_army.waves):
                 _wave.next_critter_ms = int(_i * (_initial_delay_ms + _wave_delay_offset_ms))
                 _wave.num_critters_spawned = 0
-                log.info("[battle:wave_timers] wave[%d] next_critter_ms=%.0f", _i, _wave.next_critter_ms)
 
             items = svc.upgrade_provider.items if svc.upgrade_provider else {}
             battle_svc = BattleService(items=items, gc=svc.empire_service._gc if svc.empire_service else None, rulers=svc.empire_service._rulers if svc.empire_service else {})

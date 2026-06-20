@@ -62,7 +62,7 @@ class ControlServer:
                 else:
                     self._json(404, {"error": "not found"})
 
-        self._httpd = ThreadingHTTPServer(("127.0.0.1", self.port), Handler)
+        self._httpd = ThreadingHTTPServer(("0.0.0.0", self.port), Handler)
         thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         thread.start()
         log.info("control server on 127.0.0.1:%d", self.port)

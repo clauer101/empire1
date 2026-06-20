@@ -178,15 +178,18 @@ function _renderBattleReports(el, messages, myUid) {
   const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
   messages = messages.filter((m) => new Date(m.sent_at).getTime() >= cutoff);
 
+  // Mark all unread messages as read immediately on page view
+  messages.filter((m) => !m.read).forEach((m) => {
+    rest.markMessageRead(Number(m.id)).catch(() => {});
+    m.read = true;
+  });
+
   el.innerHTML =
     '<div id="br-empty" class="empty-state" style="display:none"><div class="empty-icon">⚔</div><p>No matching battle reports.</p></div>' +
     (messages.length === 0
       ? '<div class="empty-state"><div class="empty-icon">⚔</div><p>No battle reports in the last 3 days.</p></div>'
       : messages
         .map((m, idx) => {
-          const unreadDot = !m.read
-            ? '<span class="br-unread-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning,#ffa726);margin-right:5px;flex-shrink:0;"></span>'
-            : '';
           const { result, opponent } = _parseBattleReportSummary(m.body || '');
           const detailId = 'br-detail-' + idx;
           const isSpy = /^🕵/u.test(result);
@@ -197,12 +200,12 @@ function _renderBattleReports(el, messages, myUid) {
           const resultColor = isSpy ? 'var(--text-dim)' : won ? 'var(--success,#66bb6a)' : isDraw ? 'var(--warning,#ffa726)' : 'var(--danger,#ef5350)';
           return `
       <div class="panel br-panel" data-ai="${isAi ? 1 : 0}" data-outcome="${outcome}"
-           style="margin-bottom:6px;padding:0;${!m.read ? 'border-left:3px solid var(--warning,#ffa726);' : ''}">
+           style="margin-bottom:6px;padding:0;">
         <button class="br-header" data-target="${detailId}" data-msg-id="${m.id}"
           style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
                  padding:10px 14px;background:none;border:none;cursor:pointer;text-align:left;">
           <span style="display:flex;align-items:center;gap:6px;min-width:0;">
-            ${unreadDot}
+
             <span style="font-weight:600;color:${resultColor};word-break:break-word;">${_esc(result)}</span>
             ${opponent ? '<span style="color:var(--text-dim);font-size:12px;word-break:break-word;">vs ' + _esc(opponent) + '</span>' : ''}
           </span>
@@ -238,18 +241,8 @@ function _renderBattleReports(el, messages, myUid) {
       btn.querySelector('.br-chevron').textContent = open ? '▼' : '▲';
       const msgId = btn.dataset.msgId;
       if (msgId) {
-        if (open) {
-          _openBattleReportIds.delete(msgId);
-        } else {
-          _openBattleReportIds.add(msgId);
-          // Mark as read visually and on server when opening
-          const panel = btn.closest('.br-panel');
-          if (panel) {
-            panel.style.borderLeft = '';
-            btn.querySelector('.br-unread-dot')?.remove();
-          }
-          rest.markMessageRead(Number(msgId)).catch(() => {});
-        }
+        if (open) _openBattleReportIds.delete(msgId);
+        else _openBattleReportIds.add(msgId);
       }
     });
   });

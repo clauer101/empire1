@@ -129,6 +129,10 @@ function _currentValue(baseVal, stat, level, defs) {
     // Reload time decreases via division (matches defense.js and battle_service)
     return baseVal / (1 + (bonusPerLevel / 100) * level);
   }
+  if (stat === 'slow_value') {
+    // slow_ratio decreases per level (smaller = stronger slow, matches battle_service)
+    return baseVal * (1 - (bonusPerLevel / 100) * level);
+  }
   return baseVal * (1 + (bonusPerLevel / 100) * level);
 }
 

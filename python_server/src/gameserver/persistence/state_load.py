@@ -52,7 +52,6 @@ class RestoredState:
     season_number: int = 1
     season_title: str = ""
     next_season_start: str = ""
-    next_season_leadtime: str = ""
     next_season_title: str = ""
     season_reset_triggered: bool = False
 
@@ -113,7 +112,6 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     result.season_number = int(global_dict.get("season_number") or 1)
     result.season_title = str(global_dict.get("season_title") or "")
     result.next_season_start = str(global_dict.get("next_season_start") or "")
-    result.next_season_leadtime = str(global_dict.get("next_season_leadtime") or "")
     result.next_season_title = str(global_dict.get("next_season_title") or "")
     result.season_reset_triggered = bool(global_dict.get("season_reset_triggered") or False)
 
@@ -204,6 +202,7 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
         effects=dict(d.get("effects", {})),
         item_upgrades={iid: dict(stats) for iid, stats in d.get("item_upgrades", {}).items()},
         artifacts=list(d.get("artifacts", [])),
+        trophies={iid: dict(t) for iid, t in d.get("trophies", {}).items()},
         max_life=d.get("max_life", 10.0),
         structures=structures,
         armies=armies,
@@ -270,29 +269,30 @@ def _deserialize_critter(d: dict[str, Any]) -> Critter:
     )
 
 
-def _deserialize_critter_wave(d: dict[str, Any]) -> CritterWave:
+def _deserialize_critter_wave(d: dict[str, Any], preserve_runtime: bool = False) -> CritterWave:
     slots = d.get("slots", 0)
     num_spawned = d.get("num_critters_spawned", d.get("critters_spawned", 0))
-    # Reset spawn count on load — a completed wave from a past battle must not
-    # prevent the army from being used again after a server restart.
-    if num_spawned >= slots:
-        num_spawned = 0
+    if not preserve_runtime:
+        # Reset spawn count for empire armies — a completed wave from a past battle
+        # must not prevent the army from being reused after a server restart.
+        if num_spawned >= slots:
+            num_spawned = 0
     return CritterWave(
         wave_id=d["wave_id"],
         iid=d.get("iid", "SLAVE"),
         slots=slots,
         max_era=d.get("max_era", 0),
         num_critters_spawned=num_spawned,
-        next_critter_ms=d.get("next_critter_ms", 0.0),
+        next_critter_ms=d.get("next_critter_ms", 0.0) if preserve_runtime else 0.0,
     )
 
 
-def _deserialize_army(d: dict[str, Any]) -> Army:
+def _deserialize_army(d: dict[str, Any], preserve_runtime: bool = False) -> Army:
     return Army(
         aid=d["aid"],
         uid=d["uid"],
         name=d.get("name", ""),
-        waves=[_deserialize_critter_wave(w) for w in d.get("waves", [])],
+        waves=[_deserialize_critter_wave(w, preserve_runtime=preserve_runtime) for w in d.get("waves", [])],
     )
 
 
@@ -370,13 +370,7 @@ def _deserialize_shot(d: dict[str, Any]) -> Shot:
 
 
 def _deserialize_battle(d: dict[str, Any]) -> BattleState:
-    """Deserialize a battle.
-
-    TODO: BattleService.run_battle() is not yet fully implemented.
-          Restored battles cannot be resumed as async tasks yet.
-          Once BattleService supports resumption, add a
-          ``resume_battle(state: BattleState)`` method.
-    """
+    """Deserialize a battle with full runtime state for resumption."""
     critters: dict[int, Critter] = {}
     for cid_str, c_dict in d.get("critters", {}).items():
         critters[int(cid_str)] = _deserialize_critter(c_dict)
@@ -390,12 +384,11 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
     attacker_gains: dict[int, dict[str, float]] = {}
     for uid_str, gains in d.get("attacker_gains", {}).items():
         attacker_gains[int(uid_str)] = dict(gains)
-    
-    # Load critter path if present
+
     critter_path = []
     if "critter_path" in d:
         from gameserver.models.hex import HexCoord
-        critter_path = [HexCoord(int(c.get("q", 0)), int(c.get("r", 0))) 
+        critter_path = [HexCoord(int(c.get("q", 0)), int(c.get("r", 0)))
                         for c in d.get("critter_path", [])]
 
     attacker_uids = [int(u) for u in d.get("attacker_uids", [])]
@@ -404,11 +397,21 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
         attack_ids_raw = [d["attack_id"]]
     attack_ids = [int(a) for a in attack_ids_raw]
 
-    return BattleState(
+    armies: dict[int, Any] = {}
+    for aid_str, army_dict in d.get("armies", {}).items():
+        army = _deserialize_army(army_dict, preserve_runtime=True)
+        armies[int(aid_str)] = army
+
+    # Restore critter paths from the shared critter_path list
+    for critter in critters.values():
+        critter.path = critter_path
+
+    battle = BattleState(
         bid=d["bid"],
         defender=None,  # resolved by caller
         attacker_uids=attacker_uids,
         attack_ids=attack_ids,
+        armies=armies,
         critters=critters,
         structures=structures,
         pending_shots=pending_shots,
@@ -420,3 +423,9 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
         attacker_gains=attacker_gains,
         defender_losses=dict(d.get("defender_losses", {})),
     )
+    battle.critters_spawned = d.get("critters_spawned", 0)
+    battle.critters_killed = d.get("critters_killed", 0)
+    battle.critters_reached = d.get("critters_reached", 0)
+    battle.kills_era_xp_sum = d.get("kills_era_xp_sum", 0.0)
+    battle.ruler_reached_goal = d.get("ruler_reached_goal", False)
+    return battle

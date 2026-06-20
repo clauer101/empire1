@@ -249,6 +249,7 @@
     .md-block strong { color: var(--text); }
 
     .empty-msg { font-size: 12px; color: var(--text-dim); font-style: italic; }
+    .hidden { display: none !important; }
 
     /* Spawn modal */
     .modal-overlay {
@@ -290,6 +291,14 @@
     }
     .spawn-btn:hover { background: var(--accent); color: #000; }
 
+    /* Override strategy button */
+    .override-btn {
+      background: none; border: 1px solid var(--warning);
+      color: var(--warning); border-radius: var(--radius); padding: 2px 8px;
+      cursor: pointer; font-size: 11px; transition: all .15s;
+    }
+    .override-btn:hover { background: var(--warning); color: #000; }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -329,6 +338,38 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSpawnModal()">Cancel</button>
       <button class="btn-primary" id="spawnSubmit" onclick="spawnBot()">Spawn</button>
+    </div>
+  </div>
+</div>
+
+<!-- Strategy override modal -->
+<div class="modal-overlay hidden" id="overrideModal" onclick="if(event.target===this)closeOverrideModal()">
+  <div class="modal" style="width:380px">
+    <h3>⚡ Override strategy — <span id="overrideBotName" style="color:var(--text)"></span></h3>
+    <div>
+      <label for="overrideType">Strategy</label>
+      <select id="overrideType" onchange="updateOverrideFields()">
+        <option value="economy">💹 Economy</option>
+        <option value="defense">🛡️ Defense</option>
+        <option value="attack">⚔️ Attack</option>
+        <option value="artifact">🏺 Artifact</option>
+      </select>
+    </div>
+    <div id="overrideTargetRow" class="hidden">
+      <label for="overrideTarget">Target empire</label>
+      <select id="overrideTarget">
+        <option value="">Loading…</option>
+      </select>
+    </div>
+    <div>
+      <label for="overrideDuration">Duration (hours)</label>
+      <input id="overrideDuration" type="number" min="0.5" max="24" step="0.5" value="2" />
+    </div>
+    <p style="font-size:11px;color:var(--text-dim)">Sent immediately to the bot's control port. Takes effect on its next cycle (~15 s).</p>
+    <div id="overrideError" style="font-size:12px;color:var(--danger);display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeOverrideModal()">Cancel</button>
+      <button class="btn-primary" id="overrideSubmit" onclick="submitOverride()">Override</button>
     </div>
   </div>
 </div>
@@ -608,6 +649,7 @@ function buildCard(bot) {
         ${runtime.cycles?.toLocaleString() || 0} cycles ·
         last ${fmtTs(runtime.last_cycle)}
       </span>
+      <button class="override-btn" onclick="openOverrideModal('${bot.name.replace(/'/g,"\\'")}', event)" title="Override strategy">⚡ Strategy</button>
       <button class="delete-btn" onclick="deleteBot('${bot.name.replace(/'/g,"\\'")}', event)" title="Delete bot">✕</button>
     </div>
     <div class="card-body">
@@ -730,6 +772,90 @@ async function deleteBot(name, ev) {
     await load();
   } catch (e) {
     alert(`Error: ${e.message}`);
+  }
+}
+
+// ── Strategy override ──────────────────────────────────────────────────────
+let _overrideBotName = '';
+let _empireList = [];
+
+async function openOverrideModal(name, ev) {
+  ev.stopPropagation();
+  _overrideBotName = name;
+  document.getElementById('overrideBotName').textContent = name;
+  document.getElementById('overrideType').value = 'attack';
+  document.getElementById('overrideDuration').value = '2';
+  document.getElementById('overrideError').style.display = 'none';
+  document.getElementById('overrideSubmit').disabled = false;
+  document.getElementById('overrideSubmit').textContent = 'Override';
+  updateOverrideFields();
+
+  // Fetch empire list for target selector
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    const res = await fetch(`${GS_BASE}/api/empires`, { headers });
+    const data = await res.json();
+    _empireList = (data.empires || []).filter(e => !e.is_self);
+  } catch { _empireList = []; }
+  const sel = document.getElementById('overrideTarget');
+  sel.innerHTML = _empireList.length
+    ? _empireList.map(e => `<option value="${e.uid}:${e.name.replace(/"/g,'')}">${e.name}</option>`).join('')
+    : '<option value="">No empires found</option>';
+
+  document.getElementById('overrideModal').classList.remove('hidden');
+}
+
+function closeOverrideModal() {
+  document.getElementById('overrideModal').classList.add('hidden');
+}
+
+function updateOverrideFields() {
+  const type = document.getElementById('overrideType').value;
+  const needsTarget = type === 'attack' || type === 'artifact';
+  document.getElementById('overrideTargetRow').classList.toggle('hidden', !needsTarget);
+}
+
+async function submitOverride() {
+  const type = document.getElementById('overrideType').value;
+  const hours = parseFloat(document.getElementById('overrideDuration').value) || 2;
+  const errEl = document.getElementById('overrideError');
+  errEl.style.display = 'none';
+
+  const payload = { type, duration_hours: hours };
+
+  if (type === 'attack' || type === 'artifact') {
+    const val = document.getElementById('overrideTarget').value;
+    if (!val) { errEl.textContent = 'Select a target.'; errEl.style.display = ''; return; }
+    const [uid, ...nameParts] = val.split(':');
+    payload.params = { target_uid: parseInt(uid), target_name: nameParts.join(':'), phase: 'strengthen' };
+  }
+
+  const btn = document.getElementById('overrideSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const res = await fetch(`${GS_BASE}/api/tools/bots/${encodeURIComponent(_overrideBotName)}/strategy`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      errEl.textContent = data.detail || `Error ${res.status}`;
+      errEl.style.display = '';
+      btn.disabled = false;
+      btn.textContent = 'Override';
+      return;
+    }
+    closeOverrideModal();
+    await load();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = '';
+    btn.disabled = false;
+    btn.textContent = 'Override';
   }
 }
 

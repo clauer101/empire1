@@ -848,6 +848,9 @@
   color: var(--accent);
   font-weight: 700;
 }
+.cpt-spawn {
+  color: #ffb74d;
+}
 
 /* ── Army Separator ────────────────────────────────────────– */
 .army-separator {

@@ -248,6 +248,10 @@ function renderAll() {
             ${ARTIFACT_TYPES.map(t => `<option value="${t}" ${(art.type || 'normal') === t ? 'selected' : ''}>${t}</option>`).join('')}
           </select>
         </div>
+        <div class="field-row">
+          <span class="field-label">Image</span>
+          <input class="field-input" data-field="image" value="${art.image || ''}" placeholder="path/to/image.webp" />
+        </div>
         <div class="effects-section">
           <div class="effects-label">Effects</div>
           <div class="effects-rows"></div>
