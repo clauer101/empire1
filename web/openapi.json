@@ -250,6 +250,54 @@
             "HTTPBearer": []
           }
         ]
+      },
+      "delete": {
+        "summary": "Cancel Build",
+        "operationId": "cancel_build_api_empire_build_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Cancel Build Api Empire Build Delete"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/empire/research": {
+      "delete": {
+        "summary": "Cancel Research",
+        "operationId": "cancel_research_api_empire_research_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Cancel Research Api Empire Research Delete"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/empire/citizen/upgrade": {
@@ -2420,6 +2468,52 @@
               "application/json": {
                 "schema": {
                   "title": "Response Patch Critter Era Api Critter Era Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/item-type": {
+      "patch": {
+        "summary": "Patch Item Type",
+        "description": "Set critter_type or tower_type field. body: {iid: {item_kind: 'critter'|'tower', type_value: str}}",
+        "operationId": "patch_item_type_api_item_type_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Patch Item Type Api Item Type Patch"
                 }
               }
             }

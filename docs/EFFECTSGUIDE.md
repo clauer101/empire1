@@ -262,7 +262,15 @@ Falls eine schönere Darstellung gewünscht ist, dort eigene Labels eintragen.
 
 ### 8. Textbeschreibung für neue effects:
 
-Neue efeects bekommen eine textbeschreibung in web/js/i18n.js
+Neue effects bekommen einen Eintrag in `web/js/lib/format.js` → `EFFECT_META`:
+
+```js
+my_new_effect: ['🔧', 'My label', (v) => `+${(v * 100).toFixed(0)}%`, 'Description shown in tooltips'],
+```
+
+Format: `[icon, label, valueFn, description]`
+
+`i18n.js` re-exportiert nur `formatEffect` als Legacy-Shim — **alle Effect-Beschreibungen gehören in `format.js`**, nicht in `i18n.js`.
 
 
 ### 9. Testing

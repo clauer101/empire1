@@ -1195,7 +1195,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     const res = await fetch('/api/ai-waves', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ waves: armies }),
+      body: JSON.stringify({ waves: armies.map(a => ({ ...a, waves: a.waves ?? [] })) }),
     });
     const data = await res.json();
     if (data.success) {

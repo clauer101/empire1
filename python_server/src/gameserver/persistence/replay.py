@@ -60,6 +60,34 @@ class ReplayRecorder:
         dt = datetime.datetime.utcfromtimestamp(self.created_at)
         self.replay_key = dt.strftime("%Y%m%d_%H%M%S") + f"_{bid}"
 
+    @classmethod
+    def from_existing(cls, replay_key: str, bid: int,
+                      defender_uid: int = 0, attacker_uid: int = 0,
+                      attacker_uids: list[int] | None = None,
+                      replay_dir: str = DEFAULT_REPLAY_DIR) -> "ReplayRecorder":
+        """Resume recording into an existing partial replay file.
+
+        Loads previously recorded events so they are included in the final save.
+        If the file cannot be loaded the recorder starts fresh with the same key.
+        """
+        rec = cls.__new__(cls)
+        rec.bid = bid
+        rec.defender_uid = defender_uid
+        rec.attacker_uid = attacker_uid
+        rec.attacker_uids = attacker_uids if attacker_uids is not None else ([attacker_uid] if attacker_uid else [])
+        rec._replay_dir = Path(replay_dir)
+        rec.replay_key = replay_key
+        existing = load_replay(replay_key, replay_dir)
+        if existing:
+            rec._events = existing.get("events", [])
+            rec.created_at = existing.get("created_at", time.time())
+            log.info("ReplayRecorder resumed: key=%s (%d existing events)", replay_key, len(rec._events))
+        else:
+            rec._events = []
+            rec.created_at = time.time()
+            log.info("ReplayRecorder resumed (no existing file): key=%s", replay_key)
+        return rec
+
     def record(self, timestamp_ms: float, event: dict[str, Any]) -> None:
         """Record a battle event with timestamp."""
         self._events.append({"t": timestamp_ms, **event})

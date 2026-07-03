@@ -138,6 +138,7 @@ export class ItemOverlay {
       const excl = this._excludesLinks(b?.excludes || catInfo.excludes);
       const costsStr = this._fmtCosts(b?.costs || catInfo.costs, 'building');
       const eraLabel = this._getEraLabel(iid);
+      const itemUnlocks = unlocks[iid] || [];
 
       html += `
         <div class="tt-dp-name">🏗 ${name}</div>
@@ -151,6 +152,7 @@ export class ItemOverlay {
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}
         ${reqs ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Requirements</div><div class="tt-dp-unlocks">${reqs}</div></div>` : ''}
         ${excl ? `<div class="tt-dp-section"><div class="tt-dp-section-title" style="color:var(--danger,#ef5350)">Excludes</div><div class="tt-dp-unlocks">${excl}</div></div>` : ''}
+        ${itemUnlocks.length > 0 ? `<div class="tt-dp-section"><div class="tt-dp-section-title">Unlocks</div><div class="tt-dp-unlocks">${itemUnlocks.map((u) => this.linkBadge(u.iid, u.name, u.category)).join('')}</div></div>` : ''}
       `;
     } else if (category === 'structure') {
       const s = structures[iid] || catInfo;

@@ -15,6 +15,7 @@
 # ============================================================
 
 SLAVE:
+  critter_type: spread
   era: stone
   name: "Slave"
   description: "Weak and expendable, sent in swarms to overwhelm defenses. Costs almost nothing to field."
@@ -34,6 +35,7 @@ SLAVE:
   requirements: [BASE_CAMP, HUNTING]
 
 CLUBMAN:
+  critter_type: tank
   era: stone
   name: "Clubman"
   description: "A basic melee brawler that takes up extra wave capacity. Stronger than a Slave but equally slow."
@@ -53,6 +55,7 @@ CLUBMAN:
   requirements: [HUNTING]
 
 SCOUT:
+  critter_type: fast
   era: stone
   name: "Scout"
   description: "Fast and fragile, dashes through defenses before towers can react. Best used in large swarms."
@@ -76,6 +79,7 @@ SCOUT:
 # ============================================================
 
 WARRIOR:
+  critter_type: tank
   era: neolithic
   name: "Warrior"
   description: "Reliable all-rounder with basic armor and decent health. A solid first-era attacker."
@@ -95,6 +99,7 @@ WARRIOR:
   requirements: [CRAFTSMANSHIP, GRANARY]
 
 CART:
+  critter_type: carrier
   era: neolithic
   name: "Cart"
   description: "A carrier that fills three slots but releases five Clubmen on death. Hard to stop once rolling."
@@ -118,6 +123,7 @@ CART:
 # ============================================================
 
 BOWMAN:
+  critter_type: health
   era: bronze
   name: "Bowman"
   description: "Fast enough to outpace slow towers, with decent health for its era. A versatile Bronze Age attacker."
@@ -137,6 +143,7 @@ BOWMAN:
   requirements: [CRAFTSMANSHIP, BOW_MAKER, COPPER_BRONZE]
 
 SWORDMAN:
+  critter_type: tank
   era: bronze
   name: "Swordman"
   description: "Well-armored melee fighter with steady movement. A dependable all-purpose attacker."
@@ -156,6 +163,7 @@ SWORDMAN:
   requirements: [COPPER_BRONZE, SWORD_MAKER]
 
 CHARIOT:
+  critter_type: fast
   era: bronze
   name: "Chariot"
   description: "The fastest Bronze Age unit, charging through defenses before they can react. Light armor but hard to intercept."
@@ -179,6 +187,7 @@ CHARIOT:
 # ============================================================
 
 PIKENEER:
+  critter_type: bulk
   era: iron
   name: "Pikeneer"
   description: "Disciplined spearman who moves quickly in tight formation. Low damage but relentless in numbers."
@@ -198,6 +207,7 @@ PIKENEER:
   requirements: [COPPER_BRONZE, DRILL, IRON]
 
 HORSEMAN_SLOW:
+  critter_type: tank
   era: iron
   name: "Heavy Horseman"
   description: "Heavily armored cavalry that shrugs off most damage. Slow but nearly unstoppable."
@@ -217,6 +227,7 @@ HORSEMAN_SLOW:
   requirements: [HORSEBACK_RIDING, STABLES]
 
 HORSEMAN_FAST:
+  critter_type: fast
   era: iron
   name: "Light Horseman"
   description: "Swift cavalry that outpaces most tower fire. Fragile but nearly impossible to intercept."
@@ -236,6 +247,7 @@ HORSEMAN_FAST:
   requirements: [HORSEBACK_RIDING, RACE_COURSE]
 
 LEGIONARY:
+  critter_type: health
   era: iron
   name: "Legionary"
   description: "Rome's elite infantry with excellent armor and methodical advance. Relentless and hard to stop."
@@ -255,6 +267,7 @@ LEGIONARY:
   requirements: [FORGE, LORE_COLLECTION, MECHANICS]
 
 LARGE_CART:
+  critter_type: carrier
   era: iron
   name: "Large Cart"
   description: "A massive carrier that deploys three Pikeneers on destruction. Four slots but delivers a dangerous payload."
@@ -274,6 +287,7 @@ LARGE_CART:
   requirements: [BOOT_CAMP, IRON]
 
 THE_SWORDMASTER:
+  critter_type: boss
   era: iron
   name: "The Swordmaster"
   description: "An ancient legend who fills an entire wave alone. Enormous health and damage that no single tower can handle."
@@ -297,6 +311,7 @@ THE_SWORDMASTER:
 # ============================================================
 
 CRUSADER:
+  critter_type: spread
   era: middle_ages
   name: "Crusader"
   description: "A well-rounded holy warrior with solid armor and decent speed. The backbone of medieval assaults."
@@ -316,6 +331,7 @@ CRUSADER:
   requirements: [HOLY_WAR]
 
 KNIGHT:
+  critter_type: tank
   era: middle_ages
   name: "Knight"
   description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
@@ -335,6 +351,7 @@ KNIGHT:
   requirements: [FEUDALISM, COMMAND_CHAIN]
 
 SAMURAI:
+  critter_type: fast
   era: middle_ages
   name: "Samurai"
   description: "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker."
@@ -354,6 +371,7 @@ SAMURAI:
   requirements: [TACTICS, FENCING_SCHOOL]
 
 SIEGE_RAM:
+  critter_type: carrier
   era: middle_ages
   name: "Siege Ram"
   description: "A slow carrier that carries Crusaders and deals massive damage. Three slots of nearly unstoppable force."
@@ -373,6 +391,7 @@ SIEGE_RAM:
   requirements: [MECHANICS, THE_KINGS_LAIR]
 
 CONDOTTERI:
+  critter_type: health
   era: middle_ages
   name: "Condotteri"
   description: "A battle-hardened mercenary with above-average health and good speed. Reliable all-rounder of the medieval era."
@@ -392,6 +411,7 @@ CONDOTTERI:
   requirements: [STEEL, FANATISM]
 
 HANDGUNNER:
+  critter_type: bulk
   era: middle_ages
   name: "Handgunner"
   description: "Early gunpowder unit combining strong armor with high speed. Blends firepower with surprising mobility."
@@ -415,6 +435,7 @@ HANDGUNNER:
 # ============================================================
 
 THE_KING:
+  critter_type: boss
   era: renaissance
   name: "The King"
   description: "A legendary ruler who fills an entire wave with impossible health and crushing damage. Bring your best defenses."
@@ -434,6 +455,7 @@ THE_KING:
   requirements: [PARLIAMENT, CONSTITUTION]
 
 NINJA:
+  critter_type: fast
   era: renaissance
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
@@ -453,6 +475,7 @@ NINJA:
   requirements: [STEALTH_SECRECY, SECRET_ORDER]
 
 MUSKETEER:
+  critter_type: bulk
   era: renaissance
   name: "Musketeer"
   description: "Well-armored gunner that advances steadily under fire. Good balance of health, speed, and durability."
@@ -472,6 +495,7 @@ MUSKETEER:
   requirements: [CONSTITUTION, GUNSMITH]
 
 DRAGOONER:
+  critter_type: tank
   era: renaissance
   name: "Dragoon"
   description: "Mounted gunner combining speed with solid armor. A well-rounded attacker that hits hard and moves fast."
@@ -491,6 +515,7 @@ DRAGOONER:
   requirements: [STRATEGIC_WARFARE,  GUNSMITH]
 
 CARGO:
+  critter_type: carrier
   era: renaissance
   name: "Cargo"
   description: "A heavy transport that deploys three Musketeers on death. Takes four slots but delivers a fearsome payload."
@@ -514,6 +539,7 @@ CARGO:
 # ============================================================
 
 SOLDIER:
+  critter_type: bulk
   era: industrial
   name: "Soldier"
   description: "Industrial-era infantry with solid health and armor. The dependable backbone of modern assaults."
@@ -533,10 +559,11 @@ SOLDIER:
   requirements: [BARRACKS, CONSTITUTION, BALLISTICS]
 
 MOTORBIKE:
+  critter_type: fast
   era: industrial
   name: "Motorbike"
   description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
-  speed: 1.25
+  speed: 1.3
   health: 91
   value: 264
   damage: 3
@@ -552,6 +579,7 @@ MOTORBIKE:
   requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
 
 SMALL_TANK:
+  critter_type: tank
   era: industrial
   name: "Small Tank"
   description: "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage."
@@ -571,6 +599,7 @@ SMALL_TANK:
   requirements: [COMBUSTION_ENGINE, FACTORY]
 
 TRANSPORTER:
+  critter_type: carrier
   era: industrial
   name: "Transporter"
   description: "A hulking carrier that deploys eight Soldiers on death. Takes ten slots but delivers a full squad."
@@ -594,14 +623,15 @@ TRANSPORTER:
 # ============================================================
 
 SIEGE_TANK:
+  critter_type: tank
   era: modern
   name: "Siege Tank"
   description: "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy."
-  speed: 0.35
+  speed: 0.4
   health: 350
-  value: 857
+  value: 1833
   damage: 2
-  armour: 15
+  armour: 14.5
   slots: 2
   time_between: 1100
   is_boss: false
@@ -613,6 +643,7 @@ SIEGE_TANK:
   requirements: [KNO_ARMOUR, COMPUTER_TECHNOLOGY]
 
 SPECOPS:
+  critter_type: bulk
   era: modern
   name: "Special Ops"
   description: "Elite special forces with advanced armor and tactical precision. Balanced speed and durability."
@@ -622,7 +653,7 @@ SPECOPS:
   damage: 2
   armour: 8
   slots: 1
-  time_between: 700
+  time_between: 800
   is_boss: false
   capture: {}
   bonus: {}
@@ -632,12 +663,13 @@ SPECOPS:
   requirements: [SPECIAL_FORCES, ELITE_ACADEMY]
 
 HELI:
+  critter_type: fast
   era: modern
   name: "Helicopter"
   description: "The fastest modern unit, deploying Soldiers on crash. Weak armor but nearly impossible to intercept."
   speed: 1.5
   health: 120
-  value: 812
+  value: 1012
   damage: 3
   armour: 4
   slots: 2
@@ -651,6 +683,7 @@ HELI:
   requirements: [AVIATION, HANGAR]
 
 THE_GENERAL:
+  critter_type: boss
   era: modern
   name: "The General"
   description: "Supreme commander with devastating power and near-impenetrable armor. A wave-filling behemoth of modern warfare."
@@ -675,6 +708,7 @@ THE_GENERAL:
 
 
 DRONE:
+  critter_type: fast
   era: future
   name: "Drone"
   description: "A fast and agile flying unit with light armor. Difficult to hit but vulnerable to area damage."
@@ -694,6 +728,7 @@ DRONE:
   requirements: [FIBER_COMPOSITE]
 
 MECH_WARRIOR:
+  critter_type: tank
   era: future
   name: "Mech Warrior"
   description: "A two-slot combat mech with heavy armor that releases Special Ops on destruction. The pinnacle of future warfare."

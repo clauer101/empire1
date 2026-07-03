@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from bot.analyzer import ERA_RANK
 
 SKILL_CAPS = {"q": 5, "w": 5, "e": 5, "r": 3}
-SKILL_ORDER = ["r", "q", "w", "e"]  # R first (strongest), then Q/W/E
+SKILL_ORDER = ["q", "w", "e", "r"]  # R requires higher ruler level, so last
 
 # Strengthen-on-defeat tuning
 MAX_STRENGTHEN_ROUNDS = 6       # defeats against one target before giving up

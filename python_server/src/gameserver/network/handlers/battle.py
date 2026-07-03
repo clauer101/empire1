@@ -376,7 +376,7 @@ async def handle_battle_register(
     if battle:
         battle.observer_uids.add(sender_uid)
 
-    log.info("battle_register: uid=%d registered for attack %d (phase=%s)",
+    log.debug("battle_register: uid=%d registered for attack %d (phase=%s)",
              sender_uid, attack.attack_id, attack.phase.value)
 
     # Send battle_setup to initialize the map view

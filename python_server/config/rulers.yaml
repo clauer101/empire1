@@ -34,10 +34,10 @@ MAJA:
     name: Scholar’s Bounty
     description: ''
     levels:
-    - gold_lump_sum_after_research: 100
-    - gold_lump_sum_after_research: 6000
-    - gold_lump_sum_after_research: 70000
-    - gold_lump_sum_after_research: 200000
+    - gold_lump_sum_after_research: 1000
+    - gold_lump_sum_after_research: 30000
+    - gold_lump_sum_after_research: 100000
+    - gold_lump_sum_after_research: 400000
     - gold_lump_sum_after_research: 800000
   e:
     name: Erudite Synergy
@@ -65,8 +65,8 @@ NANDI:
   health_max: 3100.0
   armour_min: 1.0
   armour_max: 16.0
-  speed_min: 0.8
-  speed_max: 1.2
+  speed_min: 0.6
+  speed_max: 1.1
   damage_min: 1.0
   damage_max: 30.0
   value_min: 10.0
@@ -88,20 +88,20 @@ NANDI:
     name: Symphony of Toil
     description: ''
     levels:
-    - citizen_effect_modifier: 0.006
+    - citizen_effect_modifier: 0.004
+    - citizen_effect_modifier: 0.008
     - citizen_effect_modifier: 0.012
-    - citizen_effect_modifier: 0.018
-    - citizen_effect_modifier: 0.024
-    - citizen_effect_modifier: 0.03
+    - citizen_effect_modifier: 0.016
+    - citizen_effect_modifier: 0.02
   e:
     name: Cultural Footprint
     description: ''
     levels:
-    - tile_cost_modifier: 0.04
-    - tile_cost_modifier: 0.08
+    - tile_cost_modifier: 0.03
+    - tile_cost_modifier: 0.06
+    - tile_cost_modifier: 0.09
     - tile_cost_modifier: 0.12
-    - tile_cost_modifier: 0.16
-    - tile_cost_modifier: 0.2
+    - tile_cost_modifier: 0.15
   r:
     name: Grand Apotheosis
     description: ''
@@ -162,7 +162,7 @@ LUCIEN:
     levels:
     - gold_lump_sum_on_skill_up: 1000000
     - gold_lump_sum_on_skill_up: 5000000
-    - gold_lump_sum_on_skill_up: 10000000
+    - gold_lump_sum_on_skill_up: 20000000
 BORIN:
   name: Borin Stonehelm
   description: A battle-hardened warlord and master builder. Borin turns defense into
@@ -196,11 +196,11 @@ BORIN:
     name: Scrap and Salvage
     description: ''
     levels:
-    - tower_sell_refund_modifier: 0.1
-    - tower_sell_refund_modifier: 0.2
-    - tower_sell_refund_modifier: 0.3
-    - tower_sell_refund_modifier: 0.4
-    - tower_sell_refund_modifier: 0.5
+    - wave_delay_offset: 0.4
+    - wave_delay_offset: 0.8
+    - wave_delay_offset: 1.2
+    - wave_delay_offset: 1.6
+    - wave_delay_offset: 2
   e:
     name: Undying Defiance
     description: ''
@@ -214,9 +214,9 @@ BORIN:
     name: Fortress Bastion
     description: ''
     levels:
-    - wave_delay_offset: 1000
-    - wave_delay_offset: 1500
-    - wave_delay_offset: 2000
+    - artifact_retention_time: 43200
+    - artifact_retention_time: 86400
+    - artifact_retention_time: 129600
 ALRIC:
   name: Alric Shadowmere
   description: A shadowy tactician who moves armies like shadows across the map. Alric

@@ -127,16 +127,22 @@ class BotContext:
 
     def __init__(self, summary: dict, items: dict, memory: dict,
                  strategy: dict, api: Any, selection: dict | None = None,
-                 personality: str = "balanced"):
+                 personality: str = "balanced",
+                 map_data: dict | None = None):
         self.summary = summary
         self.items = items
         self.memory = memory
         self.strategy = strategy
         self.api = api
         self.personality = personality
-        # Sampling config: top_n controls weighted top-N selection across
-        # planners. Default {"top_n": 1} = deterministic (old behavior).
         self.selection = selection or {"top_n": 1}
+        self._map_cache: dict | None = map_data
+
+    def get_map(self) -> dict:
+        """Return cached map or fetch once (caller should pre-populate via map_data)."""
+        if self._map_cache is None:
+            self._map_cache = self.api.get_map()
+        return self._map_cache
 
     @property
     def top_n(self) -> int:

@@ -184,6 +184,11 @@ class RestClient {
     return this._fetch('PUT', path, body);
   }
 
+  /** @returns {Promise<object>} */
+  _delete(path) {
+    return this._fetch('DELETE', path, null);
+  }
+
   // ── Auth ──────────────────────────────────────────────────
 
   /**
@@ -489,6 +494,14 @@ class RestClient {
    */
   async buildItem(iid) {
     return this._post('/api/empire/build', { iid });
+  }
+
+  async cancelBuild() {
+    return this._delete('/api/empire/build');
+  }
+
+  async cancelResearch() {
+    return this._delete('/api/empire/research');
   }
 
   async renameEmpire(name) {

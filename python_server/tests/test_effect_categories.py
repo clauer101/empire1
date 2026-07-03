@@ -575,6 +575,7 @@ class TestRestoreLifeAfterLossOffset:
 
         attacker = Empire(uid=2, name="Attacker")
         battle = BattleState(bid=1, defender=defender, attacker_uids=[2], attacker_gains={2: {}})
+        battle.defender_won = False
 
         cfg = MagicMock()
         cfg.restore_life_after_loss_offset = base_restore

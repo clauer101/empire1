@@ -776,14 +776,22 @@ def pick_tower(structures: dict, placed_counts: dict[str, int],
                top_n: int = 1, rng: Any = random) -> str | None:
     """Pick the IID of a usable tower in the most under-represented class.
 
+    Always picks from the highest available era. Within that era, class-mix
+    balancing (damage/slow/splash) determines which tower class to place.
+
     placed_counts: tower class → number currently placed.
     usable: predicate (unlocked + affordable), supplied by the planner.
     top_n: among the usable towers in the chosen class, sample one of the best
     `top_n` by quality (weighted toward the best). top_n=1 → deterministic best.
     """
+    from bot.analyzer import ERA_RANK  # local import to avoid circular dependency
     candidates = [(iid, it) for iid, it in structures.items() if usable(it)]
     if not candidates:
         return None
+    # Restrict to highest era available so new towers are always best-era.
+    best_era_rank = max(ERA_RANK.get(it.get("era", "stone"), 0) for _, it in candidates)
+    candidates = [(iid, it) for iid, it in candidates
+                  if ERA_RANK.get(it.get("era", "stone"), 0) == best_era_rank]
     total_target = sum(MIX_TARGET.values())
     total_placed = sum(placed_counts.values()) or 1
 

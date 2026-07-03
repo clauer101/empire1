@@ -372,7 +372,7 @@ def create_app(services: "Services") -> FastAPI:
             "via": "rest_ws",
         })
 
-        log.info("REST-WS client connected: uid=%d", sender_uid)
+        log.debug("REST-WS client connected: uid=%d", sender_uid)
 
         try:
             while True:
@@ -412,7 +412,7 @@ def create_app(services: "Services") -> FastAPI:
                         sender_uid = real_uid
 
         except WebSocketDisconnect:
-            log.info("REST-WS client disconnected: uid=%d", sender_uid)
+            log.debug("REST-WS client disconnected: uid=%d", sender_uid)
         except Exception as e:
             log.error("REST-WS error: uid=%d error=%s", sender_uid, e)
         finally:

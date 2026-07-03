@@ -135,52 +135,89 @@ function _allAwardsHtml(empires, myUid) {
   const me = myUid != null ? empires.find(e => e.uid == myUid) : null;
 
   const awards = [
-    { icon: '🏺', label: 'Most Artifacts Secured',       key: 'artifacts',        fmt: n => `${n}` },
-    { icon: '🏰', label: 'Most Powerful Defense',         key: 'tower_gold',       fmt: n => `${fmtRes(n)} gold` },
-    { icon: '⚔',  label: 'Most Powerful Army',            key: 'army_gold',        fmt: n => `${fmtRes(n)} gold` },
-    { icon: '🗺',  label: 'Most Territory',                key: 'tile_count',       fmt: n => `${n} tiles` },
-    { icon: '⚙',  label: 'Most Workshop Investment',      key: 'workshop_gold',    fmt: n => `${fmtRes(n)} gold` },
-    { icon: '🔬', label: 'Most Research Done',             key: 'research_effort',  fmt: (n, e) => `${fmtRes(n)} effort, ${e.research_count} items` },
-    { icon: '🏛',  label: 'Most Buildings Done',           key: 'buildings_effort', fmt: (n, e) => `${fmtRes(n)} effort, ${e.buildings_count} items` },
-    { icon: '💀', label: 'Most Critters Killed',           key: 'critters_killed',  fmt: n => fmtRes(n) },
-    { icon: '🏗', label: 'Most Towers Placed',             key: 'towers_placed',    fmt: n => `${n}` },
-    { icon: '💸', label: 'Most Towers Sold',               key: 'towers_sold',      fmt: n => `${n}` },
-    { icon: '🕵', label: 'Most Spies Sent',                key: 'spies_sent',       fmt: n => `${n}` },
-    { icon: '🏺', label: 'Most Artifacts Stolen',          key: 'artifacts_stolen', fmt: n => `${n}` },
-    { icon: '🏆', label: 'Peak Artifacts Held',            key: 'peak_artifacts_held', fmt: n => `${n} at once` },
-    { icon: '💰', label: 'Most Gold Earned from Defense',  key: 'defense_gold_earned', fmt: n => `${fmtRes(n)} gold` },
-    { icon: '🎭', label: 'Most Culture Stolen',            key: 'culture_stolen',   fmt: n => fmtRes(n) },
-    { icon: '🔬', label: 'Most Research Stolen',           key: 'research_stolen',  fmt: n => `${fmtRes(n)} effort` },
-    { icon: '🎭', label: 'Most Culture Won',               key: 'culture_won',      fmt: n => fmtRes(n) },
-    { icon: '⏱', label: 'Longest Battle Survived',        key: 'longest_battle_ms', fmt: n => fmtSecs(Math.round(n / 1000)) },
-    { icon: '🌟', label: 'First to Reach New Eras',        key: 'first_era_reached', fmt: n => `${n} era${n !== 1 ? 's' : ''}` },
-    { icon: '🐉', label: 'Most Upgraded Critter',            key: 'critter_upgrade_levels', fmt: n => `${n} levels` },
-    { icon: '🗼', label: 'Most Upgraded Tower',              key: 'tower_upgrade_levels',   fmt: n => `${n} levels` },
-    { icon: '⏳', label: 'Longest Artifact Hold',           key: 'longest_artifact_hold_secs', fmt: n => fmtSecs(n) },
-    { icon: '⚔',  label: 'Most Attacks Sent (Human)',       key: 'attacks_sent_human',     fmt: n => `${n}` },
-    { icon: '🛡', label: 'Most Attacks Suffered (Human)',   key: 'attacks_received_human', fmt: n => `${n}` },
-    { icon: '🤖', label: 'Most AI Attacks Defeated',        key: 'defense_won_ai',         fmt: n => `${n}` },
-    { icon: '💀', label: 'Most AI Attacks Lost',            key: 'defense_lost_ai',        fmt: n => `${n}` },
+    { icon: '🏺', label: 'Most Artifacts Secured',        desc: 'Artifacts held at season end.',                                              key: 'artifacts',                   fmt: n => `${n}` },
+    { icon: '🏰', label: 'Most Powerful Defense',          desc: 'Sum of gold costs of all towers placed on the map.',                         key: 'tower_gold',                  fmt: n => `${fmtRes(n)} gold` },
+    { icon: '⚔',  label: 'Most Powerful Army',             desc: 'Estimated critter combat value: critter worth × critter count per wave.',    key: 'army_gold',                   fmt: n => `${fmtRes(n)} gold` },
+    { icon: '🗺',  label: 'Most Territory',                 desc: 'Number of non-void tiles owned.',                                            key: 'tile_count',                  fmt: n => `${n} tiles` },
+    { icon: '⚙',  label: 'Most Workshop Investment',       desc: 'Total gold spent on all item upgrades across towers and critters.',          key: 'workshop_gold',               fmt: n => `${fmtRes(n)} gold` },
+    { icon: '⚔',  label: 'Most Army Gold Invested',        desc: 'Total gold spent on waves, slots, and era upgrades (cumulative cost).',      key: 'peak_army_cost',              fmt: n => `${fmtRes(n)} gold` },
+    { icon: '🗼', label: 'Most Upgraded Single Tower',     desc: 'Highest total upgrade levels on a single tower type.',   key: 'max_tower_upgrade_sum',   fmt: n => `${n} levels`, nameExtra: e => e.max_tower_upgrade_name  || '' },
+    { icon: '🐉', label: 'Most Upgraded Single Critter',   desc: 'Highest total upgrade levels on a single critter type.', key: 'max_critter_upgrade_sum', fmt: n => `${n} levels`, nameExtra: e => e.max_critter_upgrade_name || '' },
+    { icon: '🔬', label: 'Most Research Done',              desc: 'Total research effort of all completed knowledge items.',                    key: 'research_effort',             fmt: (n, e) => `${fmtRes(n)} effort, ${e.research_count} items` },
+    { icon: '🏛',  label: 'Most Buildings Done',            desc: 'Total build effort of all completed buildings.',                             key: 'buildings_effort',            fmt: (n, e) => `${fmtRes(n)} effort, ${e.buildings_count} items` },
+    { icon: '💀', label: 'Most Critters Killed',            desc: 'Total critters defeated in defense battles.',                               key: 'critters_killed',             fmt: n => fmtRes(n) },
+    { icon: '🏗', label: 'Most Towers Placed',              desc: 'Total towers ever placed on the map, including replacements.',              key: 'towers_placed',               fmt: n => `${n}` },
+    { icon: '💸', label: 'Most Towers Sold',                desc: 'Total towers ever sold or removed.',                                        key: 'towers_sold',                 fmt: n => `${n}` },
+    { icon: '🕵', label: 'Most Spies Sent',                 desc: 'Total spy missions launched against other players.',                        key: 'spies_sent',                  fmt: n => `${n}` },
+    { icon: '🏺', label: 'Most Artifacts Stolen',           desc: 'Total artifacts taken from other players.',                                 key: 'artifacts_stolen',            fmt: n => `${n}` },
+    { icon: '🏆', label: 'Peak Artifacts Held',             desc: 'Most artifacts held simultaneously at any point during the season.',        key: 'peak_artifacts_held',         fmt: n => `${n} at once` },
+    { icon: '💰', label: 'Most Gold Earned from Defense',   desc: 'Gold collected from critter kills via tower bonus rewards.',                key: 'defense_gold_earned',         fmt: n => `${fmtRes(n)} gold` },
+    { icon: '🎭', label: 'Most Culture Lost to Attackers',  desc: 'Total culture taken away by successful enemy attacks.',                     key: 'culture_stolen',              fmt: n => fmtRes(n) },
+    { icon: '🔬', label: 'Most Research Plundered',         desc: 'Total research effort stolen from other players.',                          key: 'research_stolen',             fmt: n => `${fmtRes(n)} effort` },
+    { icon: '🎭', label: 'Most Culture Won',                desc: 'Total culture gained from winning attack battles.',                         key: 'culture_won',                 fmt: n => fmtRes(n) },
+    { icon: '⏱', label: 'Longest Battle Survived',         desc: 'Duration of the longest defense battle without a breach.',                  key: 'longest_battle_ms',           fmt: n => fmtSecs(Math.round(n / 1000)) },
+    { icon: '🐉', label: 'Most Upgraded Critter',           desc: 'Total workshop upgrade levels across all critter types combined.',          key: 'critter_upgrade_levels',      fmt: n => `${n} levels` },
+    { icon: '🗼', label: 'Most Upgraded Tower',             desc: 'Total workshop upgrade levels across all tower types combined.',            key: 'tower_upgrade_levels',        fmt: n => `${n} levels` },
+    { icon: '⏳', label: 'Longest Artifact Hold',           desc: 'Longest time a single artifact was held without being stolen.',             key: 'longest_artifact_hold_secs',  fmt: n => fmtSecs(n) },
+    { icon: '⚔',  label: 'Most Attacks Sent (Human)',       desc: 'Total attack missions launched against human players.',                     key: 'attacks_sent_human',          fmt: n => `${n}` },
+    { icon: '🛡', label: 'Most Attacks Suffered (Human)',   desc: 'Total incoming attacks received from human players.',                       key: 'attacks_received_human',      fmt: n => `${n}` },
+    { icon: '🤖', label: 'Most AI Attacks Defeated',        desc: 'Total AI wave attacks successfully repelled.',                              key: 'defense_won_ai',              fmt: n => `${n}` },
+    { icon: '💀', label: 'Most AI Attacks Lost',            desc: 'Total AI wave attacks that breached the castle.',                           key: 'defense_lost_ai',             fmt: n => `${n}` },
+    { icon: '🛡', label: 'Most Attackers at Once',          desc: 'Peak number of distinct attackers in a single battle.',                     key: 'peak_incoming_attacks',       fmt: n => `${n}` },
+    { icon: '⚔',  label: 'Most Incoming Armies at Once',   desc: 'Peak number of simultaneously active incoming attacks (including queued).', key: 'peak_incoming',               fmt: n => `${n}` },
   ];
 
-  return awards.map(({ icon, label, key, fmt }) => {
-    const top = Math.max(...empires.map(e => e[key] ?? 0));
-    const winners = empires.filter(e => (e[key] ?? 0) >= top);
+  return awards.map(({ icon, label, desc, key, fmt, nameExtra }) => {
+    const eName = (e) => {
+      const extra = nameExtra ? nameExtra(e) : '';
+      return extra ? `${_esc(e.name)} (${_esc(extra)})` : _esc(e.name);
+    };
+
+    const sorted = [...empires].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0));
+    const top = sorted[0]?.[key] ?? 0;
+    const rank1 = sorted.filter(e => (e[key] ?? 0) >= top);
+    const rest2 = sorted.filter(e => !rank1.some(w => w.uid === e.uid));
+    const top2val = rest2[0]?.[key] ?? null;
+    const rank2 = top2val != null ? rest2.filter(e => (e[key] ?? 0) >= top2val) : [];
+    const rest3 = rest2.filter(e => !rank2.some(w => w.uid === e.uid));
+    const top3val = rest3[0]?.[key] ?? null;
+    const rank3 = top3val != null ? rest3.filter(e => (e[key] ?? 0) >= top3val) : [];
+
     // eslint-disable-next-line eqeqeq
-    const isWinner = me && winners.some(e => e.uid == me.uid);
-    const nameStr = winners.length
-      ? winners.map(e => `<strong>${_esc(e.name)}</strong>`).join(', ')
+    const myRankGroup = me
+      ? (rank1.some(e => e.uid == me.uid) ? 1
+        : rank2.some(e => e.uid == me.uid) ? 2
+        : rank3.some(e => e.uid == me.uid) ? 3
+        : null)
+      : null;
+    const myPos = me
+      ? sorted.findIndex(e => e.uid == me.uid) + 1 // eslint-disable-line eqeqeq
+      : null;
+
+    const nameStr = rank1.length
+      ? rank1.map(e => `<strong>${eName(e)}</strong>`).join(', ')
       : '<span class="sr-none">—</span>';
-    const valStr = fmt(top, winners[0]);
-    const myValStr = (!isWinner && me)
-      ? `<span class="sr-my-value">(You: ${fmt(me[key] ?? 0, me)})</span>`
+    const valStr = fmt(top, rank1[0]);
+
+    const sub2 = rank2.length
+      ? `<span class="sr-award-sub">2nd: ${rank2.map(e => eName(e)).join(', ')} (${fmt(top2val, rank2[0])})</span>`
       : '';
+    const sub3 = rank3.length
+      ? `<span class="sr-award-sub">3rd: ${rank3.map(e => eName(e)).join(', ')} (${fmt(top3val, rank3[0])})</span>`
+      : '';
+    const myValStr = (me && myRankGroup == null && myPos != null)
+      ? `<span class="sr-my-value">You: #${myPos} (${fmt(me[key] ?? 0, me)})</span>`
+      : (me && myRankGroup != null && myRankGroup > 1)
+      ? `<span class="sr-my-value">You: #${myRankGroup}</span>`
+      : '';
+
     return `
       <div class="sr-award-row">
         <span class="sr-award-icon">${icon}</span>
-        <span class="sr-award-label">${label}</span>
+        <span class="sr-award-label">${label}<span class="sr-award-desc">${_esc(desc)}</span></span>
         <span class="sr-award-winner">
           <span class="sr-award-top">${nameStr}: ${valStr}</span>
+          ${sub2}${sub3}
           ${myValStr}
         </span>
       </div>`;

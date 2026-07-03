@@ -47,7 +47,7 @@ from gameserver.network.router import Router
 from gameserver.network.server import Server
 from gameserver.persistence.database import Database
 from gameserver.persistence.state_load import load_state
-from gameserver.engine.global_state import set_season, set_season_reset_triggered
+from gameserver.engine.global_state import set_season, set_season_reset_triggered, set_this_season_start_date, set_season_snapshot_done, set_season_leadtime
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire
@@ -296,7 +296,9 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "st
             restored.next_season_start,
             restored.next_season_title,
         )
-        set_season_reset_triggered(restored.season_reset_triggered)
+        set_this_season_start_date(restored.this_season_start_date)
+        set_season_reset_triggered(restored.game_frozen)
+        set_season_snapshot_done(restored.season_snapshot_done)
         if restored.end_criterion_activated:
             log.info(
                 "  end criterion activated at %s by empire '%s'",
@@ -521,9 +523,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                 if db_path and Path(db_path).exists():
                     hourly_db = hourly_dir / f"gameserver_{slot}.db"
                     hourly_db.unlink(missing_ok=True)
-                    services.database._conn and await services.database._conn.execute(  # type: ignore[union-attr]
-                        f"VACUUM INTO '{hourly_db}'"
-                    )
+                    shutil.copy2(db_path, str(hourly_db))
                 log.info("Hourly backup written: slot %s", slot)
                 hour_slot = (hour_slot + 1) % 24
 
@@ -535,9 +535,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                     if db_path and Path(db_path).exists():
                         daily_db = daily_dir / f"gameserver_{day}.db"
                         daily_db.unlink(missing_ok=True)
-                        services.database._conn and await services.database._conn.execute(  # type: ignore[union-attr]
-                            f"VACUUM INTO '{daily_db}'"
-                        )
+                        shutil.copy2(db_path, str(daily_db))
                     log.info("Daily backup written: slot %s", day)
                     last_daily_day = today
 
@@ -574,7 +572,7 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
         log.info("Shutdown signal received — stopping …")
         if _active_battles:
             uids = ", ".join(str(uid) for uid in _active_battles)
-            log.warning("Shutdown mid-battle! %d active battle(s) will be interrupted (defender UIDs: %s)", len(_active_battles), uids)
+            log.info("Shutdown with %d active battle(s) — will serialize for resumption (defender UIDs: %s)", len(_active_battles), uids)
         _game_loop.stop()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -586,7 +584,13 @@ async def start_game_loop(services: Services, state_file: str = "state.yaml") ->
     # --- Cleanup after loop exits ---
     log.info("Shutting down …")
 
-    # Persist complete game state to YAML (including ongoing battles)
+    # Save partial replays for all active battles so they can be continued after restart
+    for battle in _active_battles.values():
+        if battle.recorder is not None:
+            battle.recorder.save()
+            log.info("[shutdown] Partial replay saved for bid=%d key=%s", battle.bid, battle.recorder.replay_key)
+
+    # Persist complete game state to YAML (including mid-battle state for resumption)
     if services.empire_service is not None and services.attack_service is not None:
         try:
             await save_state(
@@ -667,6 +671,14 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
     # 3. Create services
     services = create_services(config, database, state_file=state_file)
 
+    # Sync season_leadtime into global_state (always, so every save_state call captures it)
+    _gc = services.empire_service._gc if services.empire_service else None
+    if _gc is not None:
+        if saved_state is not None and saved_state.season_leadtime is not None:
+            _gc.season_leadtime = saved_state.season_leadtime
+            log.info("season_leadtime restored from state: %.0fs", saved_state.season_leadtime)
+        set_season_leadtime(_gc.season_leadtime)
+
     # Migrate messages from old YAML file to DB (one-time, no-op if already done)
     await database.migrate_messages_from_yaml(DEFAULT_MESSAGES_PATH)
 
@@ -687,6 +699,20 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
         services.empire_service.sync_aid_counter()
         from gameserver.network.handlers._core import sync_wid_counter
         sync_wid_counter(services.empire_service.all_empires)
+        # Seed peak_army_cost for all restored empires
+        _svc = services
+        async def _seed_peak_army_costs() -> None:
+            assert _svc.empire_service is not None and _svc.database is not None
+            for _emp in _svc.empire_service.all_empires.values():
+                if _emp.uid == 0 or not _emp.armies:
+                    continue
+                _peak = max(
+                    _svc.empire_service.army_cumulative_cost_for(a, _emp)
+                    for a in _emp.armies
+                )
+                await _svc.database.record_empire_stat_max(_emp.uid, "peak_army_cost", _peak)
+        import asyncio as _asyncio_main
+        _asyncio_main.ensure_future(_seed_peak_army_costs())
         # Restore attacks (also advances the ID counter)
         if saved_state.attacks:
             services.attack_service.restore_attacks(saved_state.attacks)
@@ -708,6 +734,8 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
     # Resume battles that were in-progress at last shutdown
     if saved_state is not None and saved_state.battles:
         _resume_battles(saved_state.battles, services)
+        from gameserver.network.handlers._core import sync_bid_counter
+        sync_bid_counter(saved_state.battles)
 
     # 6. Start network
     await start_network(services, state_file=state_file)
@@ -742,6 +770,17 @@ def _resume_battles(battles: list[Any], services: Services) -> None:
             log.warning("[resume_battles] defender uid=%d not found for battle %d — skipping", defender_uid, battle.bid)
             continue
         battle.defender = defender_empire
+
+        # Restore replay recorder so the resumed battle continues the same replay file
+        if battle.replay_key:
+            from gameserver.persistence.replay import ReplayRecorder
+            battle.recorder = ReplayRecorder.from_existing(
+                replay_key=battle.replay_key,
+                bid=battle.bid,
+                defender_uid=defender_uid,
+                attacker_uid=battle.attacker_uids[0] if battle.attacker_uids else 0,
+                attacker_uids=list(battle.attacker_uids),
+            )
 
         _active_battles[defender_uid] = battle
 

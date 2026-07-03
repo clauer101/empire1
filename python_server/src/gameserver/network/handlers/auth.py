@@ -29,6 +29,27 @@ def _svc() -> "Services":
     return _core_svc()
 
 
+def _artifact_protected(empire: Any) -> "dict[str, bool]":
+    import datetime as _dt
+    retention_secs = empire.get_effect("artifact_retention_time", 0.0)
+    if retention_secs <= 0:
+        return {}
+    now = _dt.datetime.now(_dt.timezone.utc)
+    result: dict[str, bool] = {}
+    for iid in empire.artifacts:
+        acq_str = empire.artifact_acquired_at.get(iid, "")
+        if not acq_str:
+            result[iid] = False
+            continue
+        try:
+            acq_dt = _dt.datetime.fromisoformat(acq_str)
+            age_secs = (now - acq_dt).total_seconds()
+            result[iid] = age_secs < retention_secs
+        except Exception:
+            result[iid] = False
+    return result
+
+
 def _ruler_aura_effects(svc: Any) -> "dict[str, float]":
     return dict(svc.empire_service._gc.ruler_aura_effects)
 
@@ -236,6 +257,8 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "max_life": empire.max_life,
         "effects": dict(empire.effects),
         "artifacts": list(empire.artifacts),
+        "artifact_acquired_at": dict(empire.artifact_acquired_at),
+        "artifact_protected": _artifact_protected(empire),
         "buildings": dict(empire.buildings),  # iid -> remaining effort
         "knowledge": dict(empire.knowledge),  # iid -> remaining effort
         "active_buildings": active_buildings,
@@ -289,7 +312,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "next_season_start": _gs.get_next_season_start(),
         "next_season_leadtime": _gs.get_next_season_leadtime(svc.game_config.season_leadtime) if svc.game_config else "",
         "next_season_title": _gs.get_next_season_title(),
-        "season_reset_triggered": _gs.is_season_reset_triggered(),
+        "game_frozen": _gs.is_season_reset_triggered(),
         "is_dev": _settings.is_dev,
     }
 
@@ -414,29 +437,6 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
     )
     svc.empire_service.register(empire)
 
-
-async def _maybe_grant_last_season_artifact(uid: int, empire: Any) -> None:
-    """If the user held artifacts at the end of last season, grant one randomly."""
-    import random
-
-    svc = _svc()
-    if svc.database is None:
-        return
-    last_arts = await svc.database.get_last_season_artifacts(uid)
-    if not last_arts:
-        return
-    chosen = random.choice(last_arts)
-    if chosen not in empire.artifacts:
-        empire.artifacts.append(chosen)
-        import asyncio as _aart
-        import time as _time
-        _aart.get_running_loop().create_task(
-            svc.database.record_artifact_acquired(uid, chosen, _time.time())
-        )
-    log.info(
-        "Last-season artifact bonus: uid=%d had %d artifact(s), granted %s",
-        uid, len(last_arts), chosen,
-    )
 
 
 

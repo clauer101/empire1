@@ -8,7 +8,7 @@
 import { eventBus } from '../events.js';
 import { pageTitle } from '../lib/page_title.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
-import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition } from '../lib/format.js';
+import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition, showIconLegend } from '../lib/format.js';
 import { escHtml } from '../lib/html.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
@@ -45,6 +45,9 @@ function init(el, _api, _state) {
   container = el;
   api = _api;
   st = _state;
+  container.addEventListener('click', e => {
+    if (e.target.closest('.icon-legend-trigger')) showIconLegend();
+  });
 
   container.innerHTML = `
     <div id="dashboard-content">
@@ -86,23 +89,9 @@ function enter() {
   refreshEmpires();
   _empiresTimer = setInterval(refreshEmpires, 30_000);
 
-  // Load trophies once on dev only; re-load when a new trophy is awarded
-  const _maybeLoadTrophies = () => {
-    if (st.summary?.is_dev) {
-      refreshTrophies();
-    }
-  };
-  if (st.summary) {
-    _maybeLoadTrophies();
-  } else {
-    const _unsubTrophyInit = eventBus.on('state:summary', () => {
-      _unsubTrophyInit();
-      _maybeLoadTrophies();
-    });
-  }
-  _unsub.push(eventBus.on('trophy_awarded', () => {
-    if (st.summary?.is_dev) refreshTrophies();
-  }));
+  // Load trophies on enter; re-load when a new trophy is awarded
+  refreshTrophies();
+  _unsub.push(eventBus.on('trophy_awarded', () => refreshTrophies()));
 }
 
 function leave() {
@@ -219,11 +208,13 @@ function render(data) {
           const arts = data.artifacts || [];
           if (!arts.length) return '';
           const catalog = st?.items?.catalog || {};
+          const protectedMap = data.artifact_protected || {};
           const badges = arts
             .map((iid) => {
               const name = catalog[iid]?.name || iid;
               const type = catalog[iid]?.type || 'normal';
-              return `<span class="art-badge art-badge-${type} art-badge-clickable" data-iid="${iid}">⚜ ${name}</span>`;
+              const glowStyle = protectedMap[iid] ? ' style="box-shadow:0 0 8px 2px #4fc3f7,0 0 2px #4fc3f7;border-color:#4fc3f7;"' : '';
+              return `<span class="art-badge art-badge-${type} art-badge-clickable" data-iid="${iid}"${glowStyle}>⚜ ${name}</span>`;
             })
             .join('');
           return `<div class="panel-header">Artifacts</div><div class="art-badge-list">${badges}</div><div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>`;
@@ -521,15 +512,26 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
   // Start with first ruler selected
   let selectedIid = rulers[0][0];
 
+  function _skillEffectLines(skill) {
+    const lvl0 = skill?.levels?.[0] || {};
+    return Object.entries(lvl0).map(([k, v]) => {
+      const label = formatEffect(k, v).replace(/ \(.*\)$/, '');
+      const val = fmtEffectValue(k, v);
+      return `<div style="font-size:0.7em;color:#81c784;margin-top:1px">${label}: <span style="color:#a5d6a7">${val}</span></div>`;
+    }).join('');
+  }
+
   function _rulerCardHtml(iid, def) {
     const splash = def.splash || '';
     const skills = ['q', 'w', 'e', 'r'];
     const skillRows = skills.map((sk) => {
       const s = def.skills?.[sk];
       if (!s || !s.name) return '';
+      const effects = _skillEffectLines(s);
       return `<div style="margin-top:5px">
         <div style="font-size:0.78em;color:#ccc;font-weight:600">${s.name}</div>
         ${s.description ? `<div style="font-size:0.73em;color:#888;line-height:1.3;margin-top:1px">${s.description}</div>` : ''}
+        ${effects}
       </div>`;
     }).join('');
 
@@ -567,9 +569,13 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
       const skillRows = skills.map((sk) => {
         const s = def.skills?.[sk];
         if (!s || !s.name) return '';
-        return `<div style="display:flex;gap:6px;align-items:baseline;margin-top:4px">
-          <span style="font-size:0.78em;color:#ffa726;font-weight:700;white-space:nowrap">${s.name}</span>
-          ${s.description ? `<span style="font-size:0.73em;color:#888;line-height:1.3">${s.description}</span>` : ''}
+        const effects = _skillEffectLines(s);
+        return `<div style="margin-top:4px">
+          <div style="display:flex;gap:6px;align-items:baseline">
+            <span style="font-size:0.78em;color:#ffa726;font-weight:700;white-space:nowrap">${s.name}</span>
+            ${s.description ? `<span style="font-size:0.73em;color:#888;line-height:1.3">${s.description}</span>` : ''}
+          </div>
+          ${effects}
         </div>`;
       }).join('');
       const dots = rulers.map((_, i) =>
@@ -1605,8 +1611,8 @@ function _empireRowHtml(e, i, selfEra, armyEnabled = false) {
         <span style="color:#888;font-size:0.8em;min-width:16px;">${i + 1}</span>
         ${dot(e.online)}
         <div style="min-width:0;">
-          <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username}${e.is_bot ? ' 🤖' : ''})</span>` : ''}${e.is_self ? ' ★' : ''}</div>
-          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artifact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;color:#c9a84c;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artifacts?">${'⚜'.repeat(e.artifact_count)}</span>` : ''}</div>
+          <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? (() => { const _cm = e.season_place === 1 ? '🥇' : e.season_place === 2 ? '🥈' : e.season_place === 3 ? '🥉' : ''; const _pm = e.past_champion ? '🎖️' : ''; const _icons = (e.is_bot ? ' 🤖' : '') + (_cm ? ' ' + _cm : '') + (_pm ? ' ' + _pm : ''); return ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username}${_icons ? `<span class="icon-legend-trigger" style="cursor:pointer;">${_icons}</span>` : ''})</span>`; })() : ''}${e.is_self ? ' ★' : ''}</div>
+          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artifact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artifacts?">${(() => { const p = e.artifact_protected_count || 0; const u = (e.artifact_count || 0) - p; return '<span style="color:#4fc3f7;text-shadow:0 0 8px #4fc3f7;">⚜</span>'.repeat(p) + '<span style="color:#c9a84c;">⚜</span>'.repeat(u); })()}</span>` : ''}</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:row;align-items:center;gap:4px;">
@@ -1642,15 +1648,18 @@ function renderTrophiesSection(trophies) {
         <div class="trophy-tile-img">
           ${t.image ? `<img src="${t.image}" alt="${t.name}" class="trophy-tile-img-src">` : '<span class="trophy-tile-icon">🏆</span>'}
         </div>
-        <div class="trophy-tile-title">${t.name}</div>
+        <div class="trophy-tile-title">${t.name}${Object.keys(t.effects || {}).length > 0 ? ' <span style="color:#4fc3f7;font-size:0.8em;">◆</span>' : ''}</div>
       </div>
     `;
   }).join('');
 
   return `
     <div class="panel">
-      <div class="panel-header">Trophies <span style="color:#666;font-size:0.8em;font-weight:normal">${trophies.filter(t => t.earned).length}/${trophies.length}</span></div>
-      <div class="trophy-tile-grid">${tiles}</div>
+      <div class="panel-header" style="cursor:pointer;user-select:none" id="trophy-panel-header">
+        Trophies <span style="color:#666;font-size:0.8em;font-weight:normal">${trophies.filter(t => t.earned).length}/${trophies.length}</span>
+        <span id="trophy-expand-toggle" style="margin-left:auto;font-size:0.75em;color:#555;font-weight:normal">▸ Show all</span>
+      </div>
+      <div class="trophy-tile-grid trophy-tile-grid--collapsed">${tiles}</div>
     </div>
   `;
 }
@@ -1658,45 +1667,92 @@ function renderTrophiesSection(trophies) {
 function bindTrophyEvents() {
   const sec = container.querySelector('#trophies-section');
   if (!sec) return;
+
+  const grid = sec.querySelector('.trophy-tile-grid');
+
+  // Expand / collapse toggle
+  const header = sec.querySelector('#trophy-panel-header');
+  const toggle = sec.querySelector('#trophy-expand-toggle');
+  if (header && grid && toggle) {
+    header.addEventListener('click', () => {
+      const collapsed = grid.classList.toggle('trophy-tile-grid--collapsed');
+      toggle.textContent = collapsed ? '▸ Show all' : '▾ Collapse';
+    });
+  }
+
+  // Click tile: open overlay
   sec.querySelectorAll('.trophy-tile').forEach((tile) => {
     tile.addEventListener('click', () => _showTrophyOverlay(tile.dataset.iid));
   });
+
 }
 
 function _showTrophyOverlay(iid) {
-  const trophy = _trophiesData?.find((t) => t.iid === iid);
-  if (!trophy) return;
+  const trophies = _trophiesData;
+  if (!trophies?.length) return;
+  let idx = trophies.findIndex((t) => t.iid === iid);
+  if (idx < 0) return;
+
   document.querySelector('.trophy-detail-overlay')?.remove();
-
-  const effectRows = Object.entries(trophy.effects || {}).map(([k, v]) =>
-    `<div class="tt-dp-row tt-dp-effects">${fmtEffectRow(k, v)}</div>`
-  ).join('');
-
-  const earnedLine = trophy.earned && trophy.earned_at
-    ? `<div style="color:#66bb6a;font-size:0.85em;margin-bottom:8px">✓ Earned ${new Date(trophy.earned_at * 1000).toLocaleDateString()}</div>`
-    : `<div style="color:#888;font-size:0.85em;margin-bottom:8px">Locked</div>`;
-
-  const conditionLabel = fmtTrophyCondition(trophy.condition);
 
   const overlay = document.createElement('div');
   overlay.className = 'trophy-detail-overlay tt-overlay visible';
-  overlay.innerHTML = `
-    <div class="tt-panel">
-      <button class="tt-close">&times;</button>
-      <div class="trophy-overlay-img">
-        ${trophy.image ? `<img src="${trophy.image}" alt="${trophy.name}" class="trophy-overlay-img-src">` : '<span class="trophy-overlay-icon">🏆</span>'}
-      </div>
-      <div class="tt-dp-name">${trophy.name}</div>
-      ${earnedLine}
-      <div class="tt-dp-desc">${trophy.description}</div>
-      <div style="font-size:0.82em;color:#888;margin-bottom:10px">Condition: ${conditionLabel}</div>
-      ${effectRows ? `<div style="font-size:0.82em;color:#9999a8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Bonus</div><div class="tt-dp-props">${effectRows}</div>` : ''}
-    </div>
-  `;
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
-  });
   document.body.appendChild(overlay);
+
+  function render() {
+    const trophy = trophies[idx];
+    const effectRows = Object.entries(trophy.effects || {}).map(([k, v]) =>
+      `<div class="tt-dp-row tt-dp-effects">${fmtEffectRow(k, v)}</div>`
+    ).join('');
+    const earnedLine = trophy.earned && trophy.earned_at
+      ? `<div style="color:#66bb6a;font-size:0.85em;margin-bottom:8px">✓ Earned ${new Date(trophy.earned_at * 1000).toLocaleDateString()}</div>`
+      : `<div style="color:#888;font-size:0.85em;margin-bottom:8px">Locked</div>`;
+    const conditionLabel = fmtTrophyCondition(trophy.condition);
+    const counter = `<div style="font-size:0.75em;color:#555;text-align:center;margin-bottom:6px">${idx + 1} / ${trophies.length}</div>`;
+    overlay.innerHTML = `
+      <button class="trophy-nav trophy-nav--prev" title="Previous">&#8249;</button>
+      <div class="tt-panel">
+        <button class="tt-close">&times;</button>
+        ${counter}
+        <div class="trophy-overlay-img">
+          ${trophy.image ? `<img src="${trophy.image}" alt="${trophy.name}" class="trophy-overlay-img-src">` : '<span class="trophy-overlay-icon">🏆</span>'}
+        </div>
+        <div class="tt-dp-name">${trophy.name}</div>
+        ${earnedLine}
+        <div class="tt-dp-desc">${trophy.description}</div>
+        <div style="font-size:0.82em;color:#888;margin-bottom:10px">Condition: ${conditionLabel}</div>
+        ${effectRows ? `<div style="font-size:0.82em;color:#9999a8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Bonus</div><div class="tt-dp-props">${effectRows}</div>` : ''}
+      </div>
+      <button class="trophy-nav trophy-nav--next" title="Next">&#8250;</button>
+    `;
+    overlay.querySelector('.tt-close').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('.trophy-nav--prev').addEventListener('click', (e) => { e.stopPropagation(); idx = (idx - 1 + trophies.length) % trophies.length; render(); });
+    overlay.querySelector('.trophy-nav--next').addEventListener('click', (e) => { e.stopPropagation(); idx = (idx + 1) % trophies.length; render(); });
+  }
+
+  render();
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Keyboard navigation
+  function onKey(e) {
+    if (e.key === 'ArrowRight') { idx = (idx + 1) % trophies.length; render(); }
+    else if (e.key === 'ArrowLeft') { idx = (idx - 1 + trophies.length) % trophies.length; render(); }
+    else if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); }
+  }
+  document.addEventListener('keydown', onKey);
+  overlay.addEventListener('remove', () => document.removeEventListener('keydown', onKey));
+
+  // Touch swipe
+  let _tx = 0;
+  overlay.addEventListener('touchstart', (e) => { _tx = e.touches[0].clientX; }, { passive: true });
+  overlay.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - _tx;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) idx = (idx + 1) % trophies.length;
+    else idx = (idx - 1 + trophies.length) % trophies.length;
+    render();
+  });
 }
 
 function renderEmpiresSection(empires) {
@@ -1721,7 +1777,7 @@ function renderEmpiresSection(empires) {
 
   return `
     <div class="panel">
-      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
+      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a> <a href="#empirestats" class="badge badge--in-progress" style="margin-left:4px;text-decoration:none;font-weight:normal;">📊</a> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
       <div id="empires-scroll">
         <div id="empires-rows">${rows}</div>
       </div>
@@ -1749,32 +1805,8 @@ function bindEmpiresEvents() {
   });
 
   sec.querySelectorAll('.art-info-trigger').forEach((el) => {
-    el.onclick = (e) => {
-      e.stopPropagation();
-      _showArtifactInfoOverlay();
-    };
+    el.onclick = (e) => { e.stopPropagation(); showIconLegend(); };
   });
-}
-
-function _showArtifactInfoOverlay() {
-  document.querySelector('.art-info-overlay')?.remove();
-  const overlay = document.createElement('div');
-  overlay.className = 'art-info-overlay tt-overlay visible';
-  overlay.innerHTML = `
-    <div class="tt-panel">
-      <button class="tt-close">&times;</button>
-      <div class="tt-dp-name" style="color:#c9a84c">⚜ Artifacts</div>
-      <div class="tt-dp-desc" style="margin-top:10px;font-style:normal;line-height:1.7;font-size:0.92em">
-        <p style="margin-bottom:10px">Artifacts are powerful ancient objects that grant their owner extraordinary advantages — boosting gold income, culture, research speed, and more.</p>
-        <p style="margin-bottom:10px">They are rare and highly coveted. When you defeat an enemy empire in battle, there is a chance to seize one of their artifacts for yourself.</p>
-        <p>Even in defeat, a small chance remains: a skilled attacker may still manage to claim an artifact from the defender — so no raid is ever truly wasted.</p>
-      </div>
-    </div>
-  `;
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
-  });
-  document.body.appendChild(overlay);
 }
 
 function onMessageClick(btn) {

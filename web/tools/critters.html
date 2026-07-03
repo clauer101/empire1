@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Critter Sprites</title>
+  <title>Critters</title>
   <style>
     :root {
       --bg:       #0d0d14;
       --surface:  #14141f;
+      --surface-alt: #1a1a28;
       --border:   #2a2a3a;
       --accent:   #4fc3f7;
       --text:     #e0e0e6;
@@ -15,373 +16,747 @@
       --radius:   6px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; min-height: 100vh; }
 
+    /* ── Topbar ─────────────────────────────────────────────────── */
     #topbar {
-      position: sticky; top: 0; z-index: 100;
+      position: sticky; top: 38px; z-index: 100;
       background: var(--surface); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+      display: flex; align-items: center; gap: 14px; padding: 10px 20px; flex-wrap: wrap;
     }
-    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; min-width: 120px; }
     #topbar label { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
     #topbar input[type=range] { width: 110px; }
+    #topbar select, #topbar input[type=number] {
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-size: 12px; padding: 3px 7px;
+    }
     #zoom-val { font-size: 12px; color: var(--accent); min-width: 28px; }
+    #gallery-status, #inspector-status { font-size: 12px; color: var(--text-dim); }
+    .btn {
+      cursor: pointer; border: none; border-radius: var(--radius);
+      padding: 5px 12px; font-size: 12px; font-weight: 600;
+    }
+    .btn-primary { background: var(--accent); color: #0d0d14; }
+    .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
 
-    #content { padding: 24px 20px 60px; }
+    /* ── Tabs ───────────────────────────────────────────────────── */
+    #tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--surface); padding: 0 20px;
+      position: sticky; top: calc(38px + 48px); z-index: 90;
+    }
+    .tab {
+      padding: 9px 18px; cursor: pointer; font-size: 12px; font-weight: 600;
+      color: var(--text-dim); border-bottom: 2px solid transparent; user-select: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Gallery controls (shown in topbar when on gallery tab) ── */
+    .gallery-ctrl, .inspector-ctrl { display: none; }
+    .gallery-ctrl.visible, .inspector-ctrl.visible { display: contents; }
+
+    /* ── Gallery ────────────────────────────────────────────────── */
+    #panel-gallery { padding: 24px 20px 60px; }
     .era-section { margin-bottom: 32px; }
     .era-heading {
       font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
       color: var(--text-dim); padding-bottom: 6px; margin-bottom: 10px;
       border-bottom: 1px solid var(--border);
     }
-
     .grid-canvas-wrap { position: relative; }
     canvas.grid-canvas { display: block; image-rendering: pixelated; }
+    .gif-overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+    .gif-overlay img { position: absolute; image-rendering: pixelated; transform: translate(-50%, -50%); }
 
-    /* GIF overlay grid */
-    .gif-overlay {
-      position: absolute; top: 0; left: 0; pointer-events: none;
+    /* ── Inspector ──────────────────────────────────────────────── */
+    #panel-inspector {
+      display: none; /* overridden by .panel.active */
+      flex-direction: row;
+      height: calc(100vh - 38px - 48px - 36px); /* viewport minus nav, topbar, tabs */
+      overflow: hidden;
     }
-    .gif-overlay img {
-      position: absolute;
+    #panel-inspector.active { display: flex; }
+
+    #insp-left {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      padding: 20px 16px; width: 50%; overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+    #insp-right {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 20px 16px; width: 50%; overflow-y: auto;
+    }
+
+    #insp-left h2, #insp-right h2 {
+      font-size: 1rem; color: var(--accent); letter-spacing: 1px; align-self: flex-start;
+    }
+
+    .insp-controls {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;
+    }
+    .insp-controls label { font-size: 12px; color: var(--text-dim); }
+    .insp-controls input[type=range] { width: 110px; }
+    .insp-controls select {
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-size: 12px; padding: 4px 8px; cursor: pointer;
+    }
+
+    .dir-btn {
+      background: var(--surface-alt); color: var(--text-dim);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 5px 12px; cursor: pointer; font-size: 12px;
+    }
+    .dir-btn:hover { background: #3a3a6a; }
+    .dir-btn.active { background: #4466cc; color: #fff; border-color: var(--accent); }
+
+    #insp-main-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    #insp-main-canvas {
+      background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius);
       image-rendering: pixelated;
-      transform: translate(-50%, -50%);
+    }
+    #insp-main-img {
+      background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius);
+      image-rendering: pixelated; display: none;
+    }
+    #insp-dir-label { font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+
+    .section-title { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; align-self: flex-start; }
+    #insp-sheet-grid { display: grid; gap: 4px; width: 100%; }
+    .frame-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .frame-cell canvas, .frame-cell img {
+      background: #0d1117; border: 1px solid var(--border); border-radius: 3px;
+      image-rendering: pixelated; width: 100%; height: auto;
+    }
+    .frame-cell canvas.current-frame { border-color: #4466cc; box-shadow: 0 0 6px #4466cc88; }
+    .frame-label { font-size: 10px; color: var(--text-dim); }
+    .row-label {
+      grid-column: 1 / -1; font-size: 11px; color: var(--accent); text-transform: uppercase;
+      letter-spacing: 1px; padding: 4px 0 2px; border-top: 1px solid var(--border);
+      text-align: left; width: 100%;
+    }
+    .row-label:first-child { border-top: none; }
+
+    .walker-controls { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .walker-controls label { font-size: 12px; color: var(--text-dim); }
+    .walker-controls input[type=range] { width: 130px; }
+    #insp-scale-label { min-width: 4ch; color: var(--accent); }
+
+    #insp-dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+    .dir-cell {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 8px;
+    }
+    .dir-canvas, .dir-img { image-rendering: pixelated; max-width: 100%; }
+    .dir-cell-label { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+
+    @media (max-width: 900px) {
+      #panel-inspector { flex-direction: column; height: auto; overflow: visible; }
+      #insp-left { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      #insp-right { width: 100%; }
     }
   </style>
 </head>
 <body>
+<script src="nav.js"></script>
 
 <div id="topbar">
-  <h1>CRITTER SPRITES</h1>
-  <label>
-    Zoom
-    <input type="range" id="zoom-slider" min="1" max="8" step="0.5" value="4" />
-    <span id="zoom-val">4×</span>
-  </label>
-  <label>
-    Direction
-    <select id="dir-select">
-      <option value="forward">Forward</option>
-      <option value="left">Left</option>
-      <option value="right">Right</option>
-      <option value="backward">Backward</option>
-    </select>
-  </label>
-  <label>
-    Target height
-    <input type="number" id="target-h" value="13" min="1" max="200" style="width:52px;background:#1a1a28;border:1px solid #2a2a3a;border-radius:4px;color:#e0e0e6;font-size:12px;padding:3px 6px;" />
-    px
-  </label>
-  <button id="btn-normalize" class="btn-primary" style="cursor:pointer;border:none;border-radius:6px;padding:5px 12px;font-size:12px;background:#4fc3f7;color:#0d0d14;font-weight:600;">Normalize scales</button>
-  <span id="status" style="font-size:12px;color:var(--text-dim)">Loading…</span>
+  <h1>🐾 Critters</h1>
+
+  <!-- Gallery controls -->
+  <span class="gallery-ctrl visible" id="gallery-ctrls">
+    <label>
+      Zoom
+      <input type="range" id="zoom-slider" min="1" max="8" step="0.5" value="4" />
+      <span id="zoom-val">4×</span>
+    </label>
+    <label>
+      Direction
+      <select id="dir-select">
+        <option value="forward">Forward</option>
+        <option value="left">Left</option>
+        <option value="right">Right</option>
+        <option value="backward">Backward</option>
+      </select>
+    </label>
+    <label>
+      Target height
+      <input type="number" id="target-h" value="13" min="1" max="200" style="width:52px;" />
+      px
+    </label>
+    <button id="btn-normalize" class="btn btn-primary">Normalize scales</button>
+    <span id="gallery-status">Loading…</span>
+  </span>
+
+  <!-- Inspector controls -->
+  <span class="inspector-ctrl" id="inspector-ctrls">
+    <label>Critter:
+      <select id="critter-select"><option>Loading…</option></select>
+    </label>
+    <span id="inspector-status"></span>
+  </span>
 </div>
 
-<div id="content"></div>
+<div id="tabs">
+  <div class="tab" data-tab="gallery">📋 Gallery</div>
+  <div class="tab active" data-tab="inspector">🔍 Inspector</div>
+</div>
 
+<!-- Gallery panel -->
+<div id="panel-gallery" class="panel"></div>
+
+<!-- Inspector panel -->
+<div id="panel-inspector" class="panel active"
+  <div id="insp-left">
+    <h2 id="insp-panel-title">Critter Preview</h2>
+
+    <div class="insp-controls">
+      <label>Direction:</label>
+      <button class="dir-btn active" data-dir="forward">▼ Forward</button>
+      <button class="dir-btn" data-dir="left">◀ Left</button>
+      <button class="dir-btn" data-dir="right">▶ Right</button>
+      <button class="dir-btn" data-dir="backward">▲ Backward</button>
+
+      <label>Size:
+        <select id="insp-size-select">
+          <option value="64">64 px</option>
+          <option value="128" selected>128 px</option>
+          <option value="192">192 px</option>
+          <option value="256">256 px</option>
+        </select>
+      </label>
+      <label>FPS: <span id="insp-fps-label">8</span>
+        <input type="range" id="insp-fps-range" min="1" max="24" value="8" />
+      </label>
+    </div>
+
+    <div id="insp-main-wrap">
+      <canvas id="insp-main-canvas" width="160" height="160"></canvas>
+      <img id="insp-main-img" alt="" />
+      <div id="insp-dir-label">forward</div>
+    </div>
+
+    <div style="width:100%">
+      <div class="section-title" id="insp-sheet-title">All Frames</div>
+      <div id="insp-sheet-grid"></div>
+    </div>
+  </div>
+
+  <div id="insp-right">
+    <h2 id="insp-walker-title">All Directions</h2>
+    <div class="walker-controls">
+      <label>Size: <span id="insp-scale-label">64</span> px
+        <input type="range" id="insp-scale-range" min="16" max="256" value="64" step="4" />
+      </label>
+    </div>
+    <div id="insp-dir-grid">
+      <div class="dir-cell">
+        <canvas class="dir-canvas" data-dir="forward"></canvas>
+        <img class="dir-img" data-dir="forward" alt="forward" style="display:none">
+        <div class="dir-cell-label">Forward</div>
+      </div>
+      <div class="dir-cell">
+        <canvas class="dir-canvas" data-dir="left"></canvas>
+        <img class="dir-img" data-dir="left" alt="left" style="display:none">
+        <div class="dir-cell-label">Left</div>
+      </div>
+      <div class="dir-cell">
+        <canvas class="dir-canvas" data-dir="right"></canvas>
+        <img class="dir-img" data-dir="right" alt="right" style="display:none">
+        <div class="dir-cell-label">Right</div>
+      </div>
+      <div class="dir-cell">
+        <canvas class="dir-canvas" data-dir="backward"></canvas>
+        <img class="dir-img" data-dir="backward" alt="backward" style="display:none">
+        <div class="dir-cell-label">Backward</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ GALLERY ═══ -->
 <script type="module">
-  import { CritterSprite } from '../js/lib/critter_sprite.js';
+import { CritterSprite } from '../js/lib/critter_sprite.js';
 
-  const HEX_SIZE   = 28;
-  const BASE_SCALE = 0.467;
+const HEX_SIZE   = 28;
+const BASE_SCALE = 0.467;
+const ERA_ORDER  = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future','rulers'];
+const ERA_LABELS = {
+  stone:'Stone Age', neolithic:'Neolithic', bronze:'Bronze Age', iron:'Iron Age',
+  middle_ages:'Middle Ages', renaissance:'Renaissance', industrial:'Industrial',
+  modern:'Modern', future:'Future', rulers:'Rulers',
+};
 
-  const ERA_ORDER = [
-    'stone', 'neolithic', 'bronze', 'iron',
-    'middle_ages', 'renaissance', 'industrial', 'modern', 'future', 'rulers',
-  ];
-  const ERA_LABELS = {
-    stone:        'Stone Age',
-    neolithic:    'Neolithic',
-    bronze:       'Bronze Age',
-    iron:         'Iron Age',
-    middle_ages:  'Middle Ages',
-    renaissance:  'Renaissance',
-    industrial:   'Industrial',
-    modern:       'Modern',
-    future:       'Future',
-    rulers:       'Rulers',
-  };
+let zoomFactor = 4;
+let direction  = 'forward';
+let critters   = [];
+let rafId      = null;
 
-  let zoomFactor = 4;
-  let direction  = 'forward';
-  let critters   = [];   // { name, sprite, scale, era }
-  let rafId      = null;
+async function loadAll() {
+  const [manifestResp, statsArr] = await Promise.all([
+    fetch('/api/critters').then(r => r.json()),
+    fetch('/api/critter-stats').then(r => r.json()).catch(() => []),
+  ]);
+  const statsMap = new Map();
+  for (const c of (Array.isArray(statsArr) ? statsArr : [])) statsMap.set(c.iid.toLowerCase(), c);
+  const entries = manifestResp.critters || [];
+  document.getElementById('gallery-status').textContent = `${entries.length} critters`;
 
-  // ── Load ──────────────────────────────────────────────────────────────────
-  async function loadAll() {
-    const [manifestResp, statsArr] = await Promise.all([
-      fetch('/api/critters').then(r => r.json()),
-      fetch('/api/critter-stats').then(r => r.json()).catch(() => []),
-    ]);
-    const statsMap = new Map();
-    for (const c of (Array.isArray(statsArr) ? statsArr : [])) {
-      statsMap.set(c.iid.toLowerCase(), c);
-    }
-    const entries = manifestResp.critters || [];
-    document.getElementById('status').textContent = `${entries.length} critters`;
+  critters = await Promise.all(entries.map(async entry => {
+    const sprite = CritterSprite.fromManifest(entry);
+    await sprite.load().catch(() => {});
+    const st = statsMap.get(entry.name.toLowerCase());
+    const era = entry.name.startsWith('ruler_') ? 'rulers' : (st?.era ?? 'stone');
+    return { name: entry.name, sprite, scale: st?.scale ?? 1.0, era };
+  }));
 
-    critters = await Promise.all(entries.map(async entry => {
-      const sprite = CritterSprite.fromManifest(entry);
-      await sprite.load().catch(() => {});
-      const st = statsMap.get(entry.name.toLowerCase());
-      const isRuler = entry.name.startsWith('ruler_');
-      const era = isRuler ? 'rulers' : (st?.era ?? 'stone');
-      return { name: entry.name, sprite, scale: st?.scale ?? 1.0, era };
-    }));
+  buildGrid();
+  startLoop();
+}
 
-    buildGrid();
-    startLoop();
+function cellSize() {
+  let maxH = 1;
+  for (const c of critters) {
+    const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
+    const aspect  = (c.sprite.frameW > 0 && c.sprite.frameH > 0) ? c.sprite.frameH / c.sprite.frameW : 1;
+    maxH = Math.max(maxH, spriteW * aspect);
+  }
+  return Math.ceil(maxH) + 12;
+}
+
+const COLS = 8;
+
+function buildGrid() {
+  const content = document.getElementById('panel-gallery');
+  content.innerHTML = '';
+
+  const byEra = new Map(ERA_ORDER.map(e => [e, []]));
+  for (const c of critters) {
+    const era = c.era || 'stone';
+    if (!byEra.has(era)) byEra.set(era, []);
+    byEra.get(era).push(c);
   }
 
-  // ── Layout helpers ─────────────────────────────────────────────────────────
-  // Cell size = tallest sprite across all loaded critters at current zoom + padding
-  function cellSize() {
-    let maxH = 1;
-    for (const c of critters) {
-      const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
-      const aspect  = (c.sprite.frameW > 0 && c.sprite.frameH > 0)
-        ? c.sprite.frameH / c.sprite.frameW : 1;
-      maxH = Math.max(maxH, spriteW * aspect);
-    }
-    return Math.ceil(maxH) + 12;
+  const cell = cellSize();
+
+  for (const era of ERA_ORDER) {
+    const group = byEra.get(era) || [];
+    if (group.length === 0) continue;
+
+    const section = document.createElement('div');
+    section.className = 'era-section';
+    const heading = document.createElement('div');
+    heading.className = 'era-heading';
+    heading.textContent = `${ERA_LABELS[era] ?? era}  (${group.length})`;
+    section.appendChild(heading);
+
+    const cols = Math.min(COLS, group.length);
+    const rows = Math.ceil(group.length / COLS);
+    const W    = cols * cell;
+    const H    = rows * cell;
+    const dpr  = window.devicePixelRatio || 1;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'grid-canvas-wrap';
+    wrap.style.width = W + 'px';
+    wrap.style.height = H + 'px';
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'grid-canvas';
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.dataset.era  = era;
+    wrap.appendChild(canvas);
+
+    const gifDiv = document.createElement('div');
+    gifDiv.className = 'gif-overlay';
+    gifDiv.style.width  = W + 'px';
+    gifDiv.style.height = H + 'px';
+    gifDiv.dataset.era  = era;
+
+    group.forEach((c, i) => {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      const cx  = col * cell + cell / 2;
+      const cy  = row * cell + cell / 2;
+      if (c.sprite.type === 'gifs') {
+        const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
+        const img = c.sprite.getImg(direction);
+        if (img) {
+          const el = img.cloneNode();
+          el.style.width  = spriteW + 'px';
+          el.style.height = 'auto';
+          el.style.left   = cx + 'px';
+          el.style.top    = cy + 'px';
+          gifDiv.appendChild(el);
+        }
+      }
+    });
+
+    wrap.appendChild(gifDiv);
+    section.appendChild(wrap);
+    content.appendChild(section);
   }
+}
 
-  const COLS = 8;  // critters per row per era
+function startLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  const byEra = new Map(ERA_ORDER.map(e => [e, []]));
+  for (const c of critters) {
+    const era = c.era || 'stone';
+    if (!byEra.has(era)) byEra.set(era, []);
+    byEra.get(era).push(c);
+  }
+  const dpr = window.devicePixelRatio || 1;
 
-  // ── Build DOM ──────────────────────────────────────────────────────────────
-  function buildGrid() {
-    const content = document.getElementById('content');
-    content.innerHTML = '';
-
-    const byEra = new Map(ERA_ORDER.map(e => [e, []]));
-    for (const c of critters) {
-      const era = c.era || 'stone';
-      if (!byEra.has(era)) byEra.set(era, []);
-      byEra.get(era).push(c);
-    }
-
+  function loop(ts) {
     const cell = cellSize();
-
     for (const era of ERA_ORDER) {
       const group = byEra.get(era) || [];
       if (group.length === 0) continue;
-
-      const section = document.createElement('div');
-      section.className = 'era-section';
-
-      const heading = document.createElement('div');
-      heading.className = 'era-heading';
-      heading.textContent = `${ERA_LABELS[era] ?? era}  (${group.length})`;
-      section.appendChild(heading);
-
-      const cols  = Math.min(COLS, group.length);
-      const rows  = Math.ceil(group.length / COLS);
-      const W     = cols * cell;
-      const H     = rows * cell;
-      const dpr   = window.devicePixelRatio || 1;
-
-      const wrap = document.createElement('div');
-      wrap.className = 'grid-canvas-wrap';
-      wrap.style.width  = W + 'px';
-      wrap.style.height = H + 'px';
-
-      // ── Canvas for spritesheet critters ──
-      const canvas = document.createElement('canvas');
-      canvas.className = 'grid-canvas';
-      canvas.width  = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-      canvas.style.width  = W + 'px';
-      canvas.style.height = H + 'px';
-      canvas.dataset.era  = era;
-      wrap.appendChild(canvas);
-
-      // ── GIF overlay ──
-      const gifDiv = document.createElement('div');
-      gifDiv.className = 'gif-overlay';
-      gifDiv.style.width  = W + 'px';
-      gifDiv.style.height = H + 'px';
-      gifDiv.dataset.era  = era;
-
+      const canvas = document.querySelector(`canvas.grid-canvas[data-era="${era}"]`);
+      if (!canvas) continue;
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#1e1e2e';
+      ctx.lineWidth = 1;
+      const cols = Math.min(COLS, group.length);
+      const rows = Math.ceil(group.length / COLS);
+      for (let c = 0; c <= cols; c++) {
+        ctx.beginPath(); ctx.moveTo(c * cell, 0); ctx.lineTo(c * cell, rows * cell); ctx.stroke();
+      }
+      for (let r = 0; r <= rows; r++) {
+        ctx.beginPath(); ctx.moveTo(0, r * cell); ctx.lineTo(cols * cell, r * cell); ctx.stroke();
+      }
       group.forEach((c, i) => {
         const col = i % COLS;
         const row = Math.floor(i / COLS);
         const cx  = col * cell + cell / 2;
         const cy  = row * cell + cell / 2;
-
-        if (c.sprite.type === 'gifs') {
+        if (c.sprite.type === 'spritesheet' && c.sprite.ready) {
           const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
-          const img = c.sprite.getImg(direction);
-          if (img) {
-            const el = img.cloneNode();
-            el.style.width  = spriteW + 'px';
-            el.style.height = 'auto';
-            el.style.left   = cx + 'px';
-            el.style.top    = cy + 'px';
-            el.dataset.critter = c.name;
-            gifDiv.appendChild(el);
-          }
+          c.sprite.draw(ctx, direction, ts, cx, cy, spriteW);
         }
-
-        // draw label below sprite on canvas (done in RAF loop for consistency)
+        const labelY = row * cell + cell - 3;
+        ctx.font      = `${Math.max(8, Math.round(cell * 0.11))}px monospace`;
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText(c.name, cx, labelY);
       });
-
-      wrap.appendChild(gifDiv);
-      section.appendChild(wrap);
-      content.appendChild(section);
-    }
-  }
-
-  // ── RAF loop: draw spritesheet critters + labels onto each era canvas ──────
-  function startLoop() {
-    if (rafId) cancelAnimationFrame(rafId);
-
-    const byEra = new Map(ERA_ORDER.map(e => [e, []]));
-    for (const c of critters) {
-      const era = c.era || 'stone';
-      if (!byEra.has(era)) byEra.set(era, []);
-      byEra.get(era).push(c);
-    }
-
-    const dpr = window.devicePixelRatio || 1;
-
-    function loop(ts) {
-      const cell = cellSize();
-
-      for (const era of ERA_ORDER) {
-        const group = byEra.get(era) || [];
-        if (group.length === 0) continue;
-
-        const canvas = document.querySelector(`canvas.grid-canvas[data-era="${era}"]`);
-        if (!canvas) continue;
-        const ctx = canvas.getContext('2d');
-
-        ctx.save();
-        ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Grid lines
-        ctx.strokeStyle = '#1e1e2e';
-        ctx.lineWidth   = 1;
-        const cols = Math.min(COLS, group.length);
-        const rows = Math.ceil(group.length / COLS);
-        for (let c = 0; c <= cols; c++) {
-          ctx.beginPath(); ctx.moveTo(c * cell, 0); ctx.lineTo(c * cell, rows * cell); ctx.stroke();
-        }
-        for (let r = 0; r <= rows; r++) {
-          ctx.beginPath(); ctx.moveTo(0, r * cell); ctx.lineTo(cols * cell, r * cell); ctx.stroke();
-        }
-
-        group.forEach((c, i) => {
-          const col = i % COLS;
-          const row = Math.floor(i / COLS);
-          const cx  = col * cell + cell / 2;
-          const cy  = row * cell + cell / 2;
-
-          // Spritesheet: draw animated frame
-          if (c.sprite.type === 'spritesheet' && c.sprite.ready) {
-            const spriteW = HEX_SIZE * BASE_SCALE * c.scale * zoomFactor;
-            c.sprite.draw(ctx, direction, ts, cx, cy, spriteW);
-          }
-
-          // Label: name below center
-          const labelY = row * cell + cell - 3;
-          ctx.font      = `${Math.max(8, Math.round(cell * 0.11))}px monospace`;
-          ctx.fillStyle = '#666';
-          ctx.textAlign = 'center';
-          ctx.fillText(c.name, cx, labelY);
-        });
-
-        ctx.restore();
-      }
-
-      rafId = requestAnimationFrame(loop);
+      ctx.restore();
     }
     rafId = requestAnimationFrame(loop);
   }
+  rafId = requestAnimationFrame(loop);
+}
 
-  // ── Rebuild on control change ──────────────────────────────────────────────
-  function rebuild() {
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    buildGrid();
-    startLoop();
+function rebuild() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  buildGrid();
+  startLoop();
+}
+
+document.getElementById('zoom-slider').addEventListener('input', e => {
+  zoomFactor = parseFloat(e.target.value);
+  document.getElementById('zoom-val').textContent = zoomFactor + '×';
+  rebuild();
+});
+document.getElementById('dir-select').addEventListener('change', e => {
+  direction = e.target.value;
+  rebuild();
+});
+
+document.getElementById('btn-normalize').addEventListener('click', async () => {
+  const targetH = parseFloat(document.getElementById('target-h').value) || 13;
+  const btn = document.getElementById('btn-normalize');
+  const changes = {};
+  const preview = [];
+  for (const c of critters) {
+    if (!c.sprite.ready || c.sprite.frameW === 0 || c.sprite.frameH === 0) continue;
+    const aspectRatio = c.sprite.frameH / c.sprite.frameW;
+    const newScale    = targetH / (HEX_SIZE * BASE_SCALE * aspectRatio);
+    const rounded     = Math.round(newScale * 100) / 100;
+    changes[c.name.toUpperCase()] = { scale: rounded };
+    preview.push(`${c.name}: ${c.scale} → ${rounded}`);
   }
-
-  document.getElementById('zoom-slider').addEventListener('input', e => {
-    zoomFactor = parseFloat(e.target.value);
-    document.getElementById('zoom-val').textContent = zoomFactor + '×';
-    rebuild();
-  });
-  document.getElementById('dir-select').addEventListener('change', e => {
-    direction = e.target.value;
-    rebuild();
-  });
-
-  // ── Normalize scales ────────────────────────────────────────────────────────
-  document.getElementById('btn-normalize').addEventListener('click', async () => {
-    const targetH = parseFloat(document.getElementById('target-h').value) || 13;
-    const btn = document.getElementById('btn-normalize');
-
-    // Compute required scale per critter:
-    //   renderedH = HEX_SIZE * BASE_SCALE * scale * (frameH / frameW)
-    //   => scale = targetH / (HEX_SIZE * BASE_SCALE * (frameH / frameW))
-    const changes = {};
-    const preview = [];
-    for (const c of critters) {
-      if (!c.sprite.ready || c.sprite.frameW === 0 || c.sprite.frameH === 0) continue;
-      const aspectRatio = c.sprite.frameH / c.sprite.frameW;
-      const newScale    = targetH / (HEX_SIZE * BASE_SCALE * aspectRatio);
-      const rounded     = Math.round(newScale * 100) / 100;
-      changes[c.name.toUpperCase()] = { scale: rounded };
-      preview.push(`${c.name}: ${c.scale} → ${rounded}`);
-    }
-
-    if (Object.keys(changes).length === 0) {
-      alert('No sprites loaded yet.');
-      return;
-    }
-
-    const msg = `Normalizing ${Object.keys(changes).length} critters to ${targetH}px height.\n\nFirst few:\n${preview.slice(0, 8).join('\n')}\n\nApply?`;
-    if (!confirm(msg)) return;
-
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-    try {
-      const resp = await fetch('/api/critter-stats', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify(changes),
-      });
-      const result = await resp.json();
-      if (result.ok) {
-        // Update local scale values and re-render
-        const newScaleMap = new Map(
-          Object.entries(changes).map(([iid, v]) => [iid.toLowerCase(), v.scale])
-        );
-        for (const c of critters) {
-          const s = newScaleMap.get(c.name.toLowerCase());
-          if (s != null) c.scale = s;
-        }
-        rebuild();
-        document.getElementById('status').textContent = `✓ ${Object.keys(changes).length} scales updated`;
-      } else {
-        alert('Error: ' + JSON.stringify(result));
-      }
-    } catch (e) {
-      alert('Request failed: ' + e.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Normalize scales';
-    }
-  });
-
-  function authHeaders() {
+  if (Object.keys(changes).length === 0) { alert('No sprites loaded yet.'); return; }
+  const msg = `Normalizing ${Object.keys(changes).length} critters to ${targetH}px height.\n\nFirst few:\n${preview.slice(0, 8).join('\n')}\n\nApply?`;
+  if (!confirm(msg)) return;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
     const token = localStorage.getItem('e3_jwt_token');
-    return token ? { 'Authorization': 'Bearer ' + token } : {};
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const resp = await fetch('/api/critter-stats', { method: 'PATCH', headers, body: JSON.stringify(changes) });
+    const result = await resp.json();
+    if (result.ok) {
+      const newScaleMap = new Map(Object.entries(changes).map(([iid, v]) => [iid.toLowerCase(), v.scale]));
+      for (const c of critters) {
+        const s = newScaleMap.get(c.name.toLowerCase());
+        if (s != null) c.scale = s;
+      }
+      rebuild();
+      document.getElementById('gallery-status').textContent = `✓ ${Object.keys(changes).length} scales updated`;
+    } else {
+      alert('Error: ' + JSON.stringify(result));
+    }
+  } catch (e) {
+    alert('Request failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Normalize scales';
   }
+});
 
-  loadAll();
+// Expose for tab switch
+window._galleryLoaded = false;
+window._loadGallery = async () => {
+  if (window._galleryLoaded) return;
+  window._galleryLoaded = true;
+  await loadAll();
+};
+window._loadGallery();
 </script>
 
-<script src="nav.js"></script>
+<!-- ═══════════════════════════════════════════════════════ INSPECTOR ══ -->
+<script type="module">
+import { Sprite, DIRECTIONS, COLS, ROWS } from '../js/lib/sprite.js';
+
+let critterData    = [];
+let currentCritter = null;
+let sprite         = null;
+let currentDir     = 'forward';
+let fps            = 8;
+let displaySize    = 128;
+let walkerSize     = 64;
+
+const critterSelect  = document.getElementById('critter-select');
+const mainCanvas     = document.getElementById('insp-main-canvas');
+const mainImg        = document.getElementById('insp-main-img');
+const mainCtx        = mainCanvas.getContext('2d');
+const dirLabel       = document.getElementById('insp-dir-label');
+const fpsRange       = document.getElementById('insp-fps-range');
+const fpsLabel       = document.getElementById('insp-fps-label');
+const sizeSelect     = document.getElementById('insp-size-select');
+const sheetGrid      = document.getElementById('insp-sheet-grid');
+const sheetTitle     = document.getElementById('insp-sheet-title');
+const scaleRange     = document.getElementById('insp-scale-range');
+const scaleLabel     = document.getElementById('insp-scale-label');
+
+const dirCanvases = {};
+const dirImgs     = {};
+document.querySelectorAll('.dir-canvas').forEach(c => { dirCanvases[c.dataset.dir] = c; });
+document.querySelectorAll('.dir-img').forEach(i  => { dirImgs[i.dataset.dir]    = i; });
+
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDir = btn.dataset.dir;
+    dirLabel.textContent = currentDir;
+    if (currentCritter?.type === 'gifs') mainImg.src = currentCritter.files[currentDir];
+  });
+});
+
+fpsRange.addEventListener('input', () => {
+  fps = parseInt(fpsRange.value);
+  fpsLabel.textContent = fps;
+  if (sprite) sprite.fps = fps;
+});
+
+sizeSelect.addEventListener('change', () => {
+  displaySize = parseInt(sizeSelect.value);
+  if (currentCritter?.type === 'spritesheet' && sprite) updateMainCanvasSize();
+  else applyGifSize();
+});
+
+scaleRange.addEventListener('input', () => {
+  walkerSize = parseInt(scaleRange.value);
+  scaleLabel.textContent = walkerSize;
+  applyWalkerSize();
+});
+
+critterSelect.addEventListener('change', () => {
+  const c = critterData.find(c => c.name === critterSelect.value);
+  if (c) selectCritter(c);
+});
+
+async function inspectorInit() {
+  const res  = await fetch('/api/critters');
+  const data = await res.json();
+  critterData = data.critters || [];
+  critterSelect.innerHTML = '';
+  critterData.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.name;
+    opt.textContent = c.name + (c.type === 'gifs' ? '' : ' [sheet]');
+    critterSelect.appendChild(opt);
+  });
+  if (critterData.length > 0) await selectCritter(critterData[0]);
+}
+
+async function selectCritter(c) {
+  currentCritter = c;
+  document.getElementById('insp-panel-title').textContent = c.name;
+  document.getElementById('insp-walker-title').textContent = c.name + ' — All Directions';
+  if (c.type === 'gifs') await switchToGif(c);
+  else await switchToSheet(c);
+  updateWalker(c);
+}
+
+async function switchToGif(c) {
+  mainCanvas.style.display = 'none';
+  mainImg.style.display    = 'block';
+  mainImg.src              = c.files[currentDir];
+  applyGifSize();
+  sheetTitle.textContent = 'All Directions';
+  sheetGrid.innerHTML    = '';
+  sheetGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+  [['forward','Forward'],['left','Left'],['right','Right'],['backward','Backward']].forEach(([dir, lbl]) => {
+    const cell = document.createElement('div');
+    cell.className = 'frame-cell';
+    const img = document.createElement('img');
+    img.src = c.files[dir]; img.alt = dir;
+    const label = document.createElement('div');
+    label.className = 'frame-label';
+    label.textContent = lbl;
+    cell.append(img, label);
+    sheetGrid.appendChild(cell);
+  });
+}
+
+function applyGifSize() {
+  mainImg.style.width  = displaySize + 'px';
+  mainImg.style.height = displaySize + 'px';
+}
+
+async function switchToSheet(c) {
+  mainCanvas.style.display = 'block';
+  mainImg.style.display    = 'none';
+  sprite = new Sprite(c.file);
+  await sprite.load();
+  sprite.fps = fps;
+  updateMainCanvasSize();
+  sheetTitle.textContent = 'All Frames (Sprite Sheet)';
+  sheetGrid.innerHTML    = '';
+  sheetGrid.style.gridTemplateColumns = `repeat(${COLS}, max-content)`;
+  const DIR_LABELS = ['Forward', 'Left', 'Right', 'Backward'];
+  for (let row = 0; row < ROWS; row++) {
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'row-label';
+    rowLabel.textContent = `Row ${row} — ${DIR_LABELS[row]}`;
+    sheetGrid.appendChild(rowLabel);
+    for (let col = 0; col < COLS; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'frame-cell';
+      const fc  = document.createElement('canvas');
+      fc.width  = sprite.frameW;
+      fc.height = sprite.frameH;
+      const ctx = fc.getContext('2d');
+      sprite.drawFrame(ctx, row, col, sprite.frameW / 2, sprite.frameH / 2, sprite.frameW);
+      const lbl = document.createElement('div');
+      lbl.className = 'frame-label';
+      lbl.textContent = col + 1;
+      cell.append(fc, lbl);
+      sheetGrid.appendChild(cell);
+    }
+  }
+}
+
+function updateMainCanvasSize() {
+  const pad    = 32;
+  const aspect = sprite.frameH / sprite.frameW;
+  mainCanvas.width  = displaySize + pad;
+  mainCanvas.height = Math.round(displaySize * aspect) + pad;
+}
+
+function applyWalkerSize() {
+  if (!sprite || currentCritter?.type !== 'spritesheet') return;
+  const aspect = sprite.frameH / sprite.frameW;
+  const h = Math.round(walkerSize * aspect);
+  for (const canvas of Object.values(dirCanvases)) {
+    canvas.width  = walkerSize; canvas.height = h;
+    canvas.style.width = walkerSize + 'px'; canvas.style.height = h + 'px';
+  }
+}
+
+function updateWalker(c) {
+  if (c.type === 'gifs') {
+    for (const dir of ['forward', 'left', 'right', 'backward']) {
+      dirCanvases[dir].style.display = 'none';
+      dirImgs[dir].style.display     = 'block';
+      dirImgs[dir].src               = c.files[dir] || '';
+      dirImgs[dir].style.width       = walkerSize + 'px';
+    }
+  } else {
+    for (const dir of ['forward', 'left', 'right', 'backward']) {
+      dirCanvases[dir].style.display = 'block';
+      dirImgs[dir].style.display     = 'none';
+    }
+    applyWalkerSize();
+  }
+}
+
+function spriteLoop(ts) {
+  if (currentCritter?.type === 'spritesheet' && sprite) {
+    mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    sprite.draw(mainCtx, currentDir, ts, mainCanvas.width / 2, mainCanvas.height / 2, displaySize);
+    for (const [dir, canvas] of Object.entries(dirCanvases)) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      sprite.draw(ctx, dir, ts, canvas.width / 2, canvas.height / 2, walkerSize);
+    }
+  }
+  requestAnimationFrame(spriteLoop);
+}
+
+window._inspectorLoaded = false;
+window._loadInspector = async () => {
+  if (window._inspectorLoaded) return;
+  window._inspectorLoaded = true;
+  try {
+    await inspectorInit();
+    requestAnimationFrame(spriteLoop);
+  } catch (e) {
+    document.getElementById('inspector-status').textContent = 'Error: ' + e.message;
+  }
+};
+</script>
+
+<!-- ═══════════════════════════════════════════════════════ TABS ════════ -->
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const t = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + t).classList.add('active');
+
+    // Topbar controls
+    document.getElementById('gallery-ctrls').style.display  = t === 'gallery'   ? '' : 'none';
+    document.getElementById('inspector-ctrls').style.display = t === 'inspector' ? '' : 'none';
+
+    if (t === 'inspector') window._loadInspector?.();
+  });
+});
+// Show inspector controls by default, hide gallery controls
+document.getElementById('gallery-ctrls').style.display = 'none';
+// Defer until module scripts have registered _loadInspector
+setTimeout(() => window._loadInspector?.(), 0);
+</script>
 </body>
 </html>

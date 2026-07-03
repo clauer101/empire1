@@ -76,6 +76,7 @@ class Empire:
     effects: dict[str, float] = field(default_factory=dict)
     item_upgrades: dict[str, dict[str, int]] = field(default_factory=dict)
     artifacts: list[str] = field(default_factory=list)
+    artifact_acquired_at: dict[str, str] = field(default_factory=dict)  # iid → UTC ISO string
     # {iid: {"earned_at": unix_ts, "season": int}}
     trophies: dict[str, dict[str, Any]] = field(default_factory=dict)
     bosses: dict[str, Critter] = field(default_factory=dict)

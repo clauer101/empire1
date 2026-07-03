@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Season Transition</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #20202e;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --gold:        #ffca28;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--gold); letter-spacing: 1px; flex: 1; }
+    #status-msg { font-size: 12px; font-family: var(--mono); }
+    #status-msg.ok  { color: var(--success); }
+    #status-msg.err { color: var(--danger); }
+
+    #content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 10px 16px;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .field-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+      .field-label { margin-top: 8px; }
+      .editable-row { flex-wrap: wrap; }
+      .editable-row input { min-width: 0; width: 100%; }
+      #content { padding: 14px 12px 40px; }
+      .card { padding: 14px 14px; }
+    }
+    .field-label {
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+    .field-value {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .field-value.highlight { color: var(--gold); font-weight: 700; }
+    .field-value.active    { color: var(--success); font-weight: 700; }
+    .field-value.frozen    { color: var(--warning); font-weight: 700; }
+    .field-value.inactive  { color: #3a3a4a; }
+
+    .editable-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .editable-row input {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      outline: none;
+      flex: 1;
+      min-width: 0;
+    }
+    .editable-row input:focus { border-color: var(--accent); }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      padding: 5px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      transition: opacity .15s;
+      white-space: nowrap;
+    }
+    button:hover { opacity: .8; }
+    button:disabled { opacity: .4; cursor: default; }
+    .btn-primary { background: var(--accent);  color: #0d0d14; font-weight: 600; }
+    .btn-save    { background: var(--success); color: #0d0d14; font-weight: 600; }
+    .btn-danger  { background: var(--danger);  color: #fff;    font-weight: 600; }
+
+    /* Timeline */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+      padding-left: 24px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px; top: 12px; bottom: 12px;
+      width: 2px;
+      background: var(--border);
+    }
+    .tl-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 10px 0;
+      position: relative;
+    }
+    .tl-dot {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      margin-left: -24px;
+      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+    }
+    .tl-dot.done    { background: var(--success); border-color: var(--success); }
+    .tl-dot.active  { background: var(--warning); border-color: var(--warning); box-shadow: 0 0 8px var(--warning); }
+    .tl-dot.next    { background: var(--accent);  border-color: var(--accent); }
+    .tl-dot.future  { background: var(--border);  border-color: #444; }
+
+    .tl-body { flex: 1; }
+    .tl-title { font-weight: 600; font-size: 13px; color: var(--text); }
+    .tl-title.done   { color: var(--success); }
+    .tl-title.active { color: var(--warning); }
+    .tl-title.next   { color: var(--accent); }
+    .tl-title.future { color: var(--text-dim); }
+    .tl-time { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .tl-desc { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-active  { background: rgba(255,167,38,.2);  color: var(--warning); }
+    .badge-done    { background: rgba(102,187,106,.15); color: var(--success); }
+    .badge-frozen  { background: rgba(79,195,247,.15);  color: var(--accent); }
+    .badge-pending { background: rgba(153,153,168,.1);  color: var(--text-dim); }
+
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+    #live-clock { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+    /* Dev-only danger zone */
+    .dev-zone {
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      background: rgba(239,83,80,.05);
+    }
+    .dev-zone .section-title { color: var(--danger); }
+    .dev-zone p { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+    #btn-force-wipe {
+      background: var(--danger); color: #fff; font-weight: 700;
+      font-size: 13px; padding: 8px 20px;
+    }
+    #btn-force-wipe:disabled { opacity: .4; cursor: default; }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>🗓 SEASON TRANSITION</h1>
+    <span id="live-clock"></span>
+    <span id="status-msg">—</span>
+    <button class="btn-primary" onclick="load()">Refresh</button>
+  </div>
+
+  <div id="content">
+
+    <!-- Timeline -->
+    <div class="card">
+      <div class="section-title">Timeline</div>
+      <div id="timeline" class="timeline">
+        <div style="color:var(--text-dim);font-size:12px">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Current Season -->
+    <div class="card">
+      <div class="section-title">Current Season</div>
+      <div class="field-grid" id="current-season-grid">
+        <span class="field-label">Season #</span><span class="field-value highlight" id="f-season-number">—</span>
+        <span class="field-label">Season title</span><span class="field-value" id="f-season-title">—</span>
+        <span class="field-label">Started at</span><span class="field-value" id="f-season-start">—</span>
+        <span class="field-label">Game frozen</span><span class="field-value" id="f-game-frozen">—</span>
+      </div>
+    </div>
+
+    <!-- End Rally -->
+    <div class="card">
+      <div class="section-title">End Rally</div>
+      <div class="field-grid">
+        <span class="field-label">End criterion item</span><span class="field-value" id="f-end-criterion">—</span>
+        <span class="field-label">Triggered by</span><span class="field-value" id="f-triggered-by">—</span>
+        <span class="field-label">Activated at</span><span class="field-value" id="f-eca">—</span>
+        <span class="field-label">Rally active</span><span class="field-value" id="f-rally-active">—</span>
+        <span class="field-label">Time remaining</span><span class="field-value" id="f-rally-remaining">—</span>
+        <span class="field-label">Rally duration (config)</span><span class="field-value" id="f-rally-duration">—</span>
+        <span class="field-label">Next start after end (config)</span><span class="field-value" id="f-next-start-after">—</span>
+      </div>
+    </div>
+
+    <!-- Editable: Next Season -->
+    <div class="card">
+      <div class="section-title">Next Season — Editable</div>
+      <div class="field-grid">
+
+        <span class="field-label">Next season title</span>
+        <div class="editable-row">
+          <input type="text" id="e-next-title" placeholder="e.g. The Age of Steam" />
+          <button class="btn-save" onclick="saveField('next_season_title', document.getElementById('e-next-title').value)">Save</button>
+        </div>
+
+        <span class="field-label">Next season start</span>
+        <div class="editable-row">
+          <input type="datetime-local" id="e-next-start" step="60" />
+          <button class="btn-save" onclick="saveNextStart()">Save</button>
+        </div>
+
+        <span class="field-label">Lead time duration</span>
+        <div class="editable-row">
+          <input type="number" id="e-leadtime-days" min="0" max="30" step="0.5" style="width:80px;flex:none" />
+          <span style="color:var(--text-dim);font-size:12px">days &nbsp;=&nbsp;</span>
+          <input type="number" id="e-leadtime-secs" min="0" step="3600" style="width:100px;flex:none" />
+          <span style="color:var(--text-dim);font-size:12px">s</span>
+          <button class="btn-save" onclick="saveLeadtime()">Save</button>
+        </div>
+
+        <span class="field-label">Leadtime window opens at</span>
+        <span class="field-value" id="f-leadtime-computed">—</span>
+
+      </div>
+    </div>
+
+    <!-- Dev-only: Force new season -->
+    <div class="dev-zone" id="dev-zone" style="display:none">
+      <div class="section-title">⚠ Dev Only — Danger Zone</div>
+      <p>Immediately wipes all empires and starts a new season — no snapshot, no rally, no leadtime. Uses the "Next season title" field if set.</p>
+      <button id="btn-force-wipe" onclick="forceNewSeason()">⚡ Wipe &amp; Start New Season Now</button>
+      <span id="wipe-status" style="margin-left:12px;font-size:12px;font-family:var(--mono)"></span>
+    </div>
+
+  </div>
+
+  <script src="nav.js"></script>
+  <script>
+    const API = window.location.origin;
+
+    // Show dev zone only on dev host
+    const _host = window.location.hostname;
+    const _isDev = _host === 'localhost' || _host.startsWith('dev.');
+    if (_isDev) document.getElementById('dev-zone').style.display = '';
+    let DATA = null;
+
+    function authHeaders() {
+      const tok = localStorage.getItem('e3_jwt_token');
+      return tok ? { 'Authorization': 'Bearer ' + tok } : {};
+    }
+
+    async function apiFetch(method, path, body) {
+      const opts = { method, headers: { ...authHeaders(), 'Content-Type': 'application/json' } };
+      if (body !== undefined) opts.body = JSON.stringify(body);
+      const r = await fetch(API + path, opts);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
+    function setStatus(msg, ok) {
+      const el = document.getElementById('status-msg');
+      el.textContent = msg;
+      el.className = ok ? 'ok' : 'err';
+    }
+
+    // ── Formatting ───────────────────────────────────────────────────────────
+
+    function fmtUtc(iso) {
+      if (!iso) return '—';
+      return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z')
+        .toLocaleString('en-GB', { timeZone: 'UTC', year: 'numeric', month: '2-digit',
+          day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC';
+    }
+
+    function fmtDuration(secs) {
+      if (secs == null) return '—';
+      const d = Math.floor(secs / 86400);
+      const h = Math.floor((secs % 86400) / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const parts = [];
+      if (d) parts.push(`${d}d`);
+      if (h) parts.push(`${h}h`);
+      if (m) parts.push(`${m}m`);
+      return parts.length ? parts.join(' ') : `${secs}s`;
+    }
+
+    function fmtRemaining(secs) {
+      if (!secs || secs <= 0) return 'Expired';
+      return fmtDuration(secs) + ' remaining';
+    }
+
+    function isoToLocal(iso) {
+      // Convert ISO string to datetime-local input format (local time)
+      if (!iso) return '';
+      const d = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z');
+      if (isNaN(d)) return '';
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function localToUtcIso(localStr) {
+      // datetime-local → UTC ISO
+      if (!localStr) return '';
+      return new Date(localStr).toISOString();
+    }
+
+    // ── Render ───────────────────────────────────────────────────────────────
+
+    function render() {
+      if (!DATA) return;
+      const d = DATA;
+
+      // Current season
+      document.getElementById('f-season-number').textContent = d.season_number ?? '—';
+      document.getElementById('f-season-title').textContent  = d.season_title || '—';
+      document.getElementById('f-season-start').textContent  = fmtUtc(d.this_season_start_date);
+      const frozenEl = document.getElementById('f-game-frozen');
+      if (d.game_frozen) {
+        frozenEl.innerHTML = '<span class="badge badge-frozen">🧊 Frozen</span>';
+      } else {
+        frozenEl.innerHTML = '<span class="badge badge-pending">Running</span>';
+      }
+
+      // End rally
+      document.getElementById('f-end-criterion').textContent = d.end_criterion || '—';
+      document.getElementById('f-triggered-by').textContent  =
+        d.end_criterion_empire_name
+          ? `${d.end_criterion_empire_name} (uid ${d.end_criterion_empire_uid})`
+          : '— not triggered yet';
+      document.getElementById('f-eca').textContent = fmtUtc(d.end_criterion_activated);
+      const rallyEl = document.getElementById('f-rally-active');
+      if (d.end_rally_active) {
+        rallyEl.innerHTML = '<span class="badge badge-active">⚔ Active</span>';
+      } else if (d.end_criterion_activated) {
+        rallyEl.innerHTML = '<span class="badge badge-done">Ended</span>';
+      } else {
+        rallyEl.innerHTML = '<span class="badge badge-pending">Not triggered</span>';
+      }
+      document.getElementById('f-rally-remaining').textContent =
+        d.end_rally_active ? fmtRemaining(d.end_rally_seconds_remaining) : '—';
+      document.getElementById('f-rally-duration').textContent   = fmtDuration(d.end_rally_duration_secs);
+      document.getElementById('f-next-start-after').textContent = fmtDuration(d.next_season_start_after_end_secs);
+
+      // Editable fields — only pre-fill if not already edited
+      const titleInput = document.getElementById('e-next-title');
+      if (!titleInput.dataset.dirty) titleInput.value = d.next_season_title || '';
+
+      const startInput = document.getElementById('e-next-start');
+      if (!startInput.dataset.dirty) startInput.value = isoToLocal(d.next_season_start);
+
+      const ltDays = document.getElementById('e-leadtime-days');
+      const ltSecs = document.getElementById('e-leadtime-secs');
+      if (!ltDays.dataset.dirty) {
+        ltDays.value = (d.season_leadtime_secs / 86400).toFixed(1);
+        ltSecs.value = d.season_leadtime_secs;
+      }
+
+      // Derived leadtime window
+      document.getElementById('f-leadtime-computed').textContent = fmtUtc(d.next_season_leadtime);
+
+      renderTimeline(d);
+    }
+
+    function renderTimeline(d) {
+      const now = Date.now();
+
+      function tsMs(iso) {
+        if (!iso) return null;
+        return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
+      }
+
+      const rallyEnd    = d.end_criterion_activated ? tsMs(d.end_criterion_activated) + d.end_rally_duration_secs * 1000 : null;
+      const rallyEndIso = rallyEnd ? new Date(rallyEnd).toISOString() : null;
+      const leadtimeMs  = tsMs(d.next_season_leadtime);
+      const seasonMs    = tsMs(d.next_season_start);
+
+      const rallyDone       = rallyEnd !== null && now >= rallyEnd;
+      const leadtimeReached = leadtimeMs !== null && now >= leadtimeMs;
+      const seasonReached   = seasonMs !== null && now >= seasonMs;
+
+      const items = [
+        {
+          key: 'criterion',
+          title: 'End Criterion Triggered',
+          desc: d.end_criterion_empire_name
+            ? `${d.end_criterion_empire_name} built ${d.end_criterion}`
+            : `Waiting for ${d.end_criterion || 'end criterion'} to be built`,
+          time: d.end_criterion_activated,
+          state: d.end_criterion_activated ? 'done' : 'future',
+        },
+        {
+          key: 'rally',
+          title: 'End Rally',
+          desc: `${fmtDuration(d.end_rally_duration_secs)} rally — bonus effects & attack incentive`,
+          time: rallyEndIso,
+          timeLabel: 'ends',
+          state: d.end_rally_active ? 'active' : (rallyDone ? 'done' : 'future'),
+        },
+        {
+          key: 'season-end',
+          title: 'Season End Phase',
+          desc: 'Game frozen — season results visible, empires still intact, wipe pending',
+          time: rallyEndIso,
+          timeLabel: 'since',
+          // active: rally done, game frozen, but leadtime not yet reached (no wipe yet)
+          state: !rallyDone ? 'future'
+               : leadtimeReached ? 'done'
+               : d.game_frozen   ? 'active'
+               : 'future',
+        },
+        {
+          key: 'wipe',
+          title: 'Empire Wipe',
+          desc: `All empires deleted, attacks cancelled — fires ${fmtDuration(d.season_leadtime_secs)} before season start`,
+          time: d.next_season_leadtime,
+          state: leadtimeReached ? 'done' : (rallyDone ? 'next' : 'future'),
+        },
+        {
+          key: 'frozen',
+          title: 'Frozen Countdown',
+          desc: 'Empires wiped — countdown banner shown, login recreates empire',
+          time: d.next_season_start,
+          timeLabel: 'until',
+          state: !leadtimeReached ? 'future'
+               : seasonReached    ? 'done'
+               : 'active',
+        },
+        {
+          key: 'newseason',
+          title: `Season ${(d.season_number || 1) + 1} Starts`,
+          desc: d.next_season_title ? `"${d.next_season_title}"` : 'Title not set',
+          time: d.next_season_start,
+          state: seasonReached ? 'done' : (leadtimeReached ? 'next' : 'future'),
+        },
+      ];
+
+      // Mark first non-done as "next" if nothing is active
+      const hasActive = items.some(i => i.state === 'active');
+      if (!hasActive) {
+        const first = items.find(i => i.state === 'next' || i.state === 'future');
+        if (first) first.state = 'next';
+      }
+
+      document.getElementById('timeline').innerHTML = items.map(item => `
+        <div class="tl-item">
+          <div class="tl-dot ${item.state}"></div>
+          <div class="tl-body">
+            <div class="tl-title ${item.state}">${item.title}
+              ${item.state === 'active' ? ' <span class="badge badge-active">now</span>' : ''}
+              ${item.state === 'done'   ? ' <span class="badge badge-done">done</span>'  : ''}
+            </div>
+            ${item.time ? `<div class="tl-time">${item.timeLabel || 'at'} ${fmtUtc(item.time)}</div>` : ''}
+            <div class="tl-desc">${item.desc}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── Sync leadtime fields ─────────────────────────────────────────────────
+
+    document.getElementById('e-leadtime-days').addEventListener('input', function() {
+      this.dataset.dirty = '1';
+      document.getElementById('e-leadtime-secs').value = Math.round(parseFloat(this.value || 0) * 86400);
+    });
+    document.getElementById('e-leadtime-secs').addEventListener('input', function() {
+      this.dataset.dirty = '1';
+      document.getElementById('e-leadtime-days').value = (parseFloat(this.value || 0) / 86400).toFixed(2);
+    });
+    document.getElementById('e-next-title').addEventListener('input', function() { this.dataset.dirty = '1'; });
+    document.getElementById('e-next-start').addEventListener('input', function() { this.dataset.dirty = '1'; });
+
+    // ── Save helpers ─────────────────────────────────────────────────────────
+
+    async function saveField(field, value) {
+      try {
+        setStatus('Saving…', true);
+        const res = await apiFetch('PATCH', '/api/admin/season', { [field]: value });
+        setStatus(`Saved: ${res.changed.join(', ')}`, true);
+        // clear dirty so refresh re-populates
+        document.getElementById('e-next-title').dataset.dirty = '';
+        load();
+      } catch (e) {
+        setStatus('Save failed: ' + e.message, false);
+      }
+    }
+
+    async function saveNextStart() {
+      const raw = document.getElementById('e-next-start').value;
+      if (!raw) { setStatus('Enter a date/time first', false); return; }
+      const iso = localToUtcIso(raw);
+      try {
+        setStatus('Saving…', true);
+        const res = await apiFetch('PATCH', '/api/admin/season', { next_season_start: iso });
+        setStatus(`Saved: ${res.changed.join(', ')}`, true);
+        document.getElementById('e-next-start').dataset.dirty = '';
+        load();
+      } catch (e) {
+        setStatus('Save failed: ' + e.message, false);
+      }
+    }
+
+    async function saveLeadtime() {
+      const secs = parseFloat(document.getElementById('e-leadtime-secs').value);
+      if (isNaN(secs) || secs < 0) { setStatus('Invalid value', false); return; }
+      try {
+        setStatus('Saving…', true);
+        const res = await apiFetch('PATCH', '/api/admin/season', { season_leadtime_secs: secs });
+        setStatus(`Saved: ${res.changed.join(', ')}`, true);
+        document.getElementById('e-leadtime-days').dataset.dirty = '';
+        document.getElementById('e-leadtime-secs').dataset.dirty = '';
+        load();
+      } catch (e) {
+        setStatus('Save failed: ' + e.message, false);
+      }
+    }
+
+    // ── Live clock ───────────────────────────────────────────────────────────
+
+    function tickClock() {
+      const now = new Date();
+      document.getElementById('live-clock').textContent =
+        now.toUTCString().replace('GMT', 'UTC');
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    // ── Load ─────────────────────────────────────────────────────────────────
+
+    async function load() {
+      try {
+        DATA = await apiFetch('GET', '/api/admin/season');
+        setStatus('Loaded', true);
+        render();
+      } catch (e) {
+        setStatus('Cannot connect to gameserver', false);
+        document.getElementById('timeline').innerHTML =
+          '<div style="color:var(--danger);font-size:12px">Failed to load — check authentication.</div>';
+      }
+    }
+
+    // ── Force new season (dev only) ──────────────────────────────────────────
+
+    async function forceNewSeason() {
+      const newTitle = document.getElementById('e-next-title').value.trim() || undefined;
+      const label = newTitle ? `"${newTitle}"` : 'the next season title';
+      if (!confirm(`This will immediately wipe ALL empires and start Season ${(DATA?.season_number ?? 0) + 1} (${label}).\n\nAre you sure?`)) return;
+      const btn = document.getElementById('btn-force-wipe');
+      const status = document.getElementById('wipe-status');
+      btn.disabled = true;
+      status.textContent = 'Wiping…';
+      try {
+        const res = await apiFetch('POST', '/api/admin/season/force-new', { new_title: newTitle });
+        status.textContent = `✓ Season ${res.season_number} "${res.season_title}" started — ${res.wiped_empires} empires wiped`;
+        await load();
+      } catch (e) {
+        status.textContent = '✗ ' + e.message;
+        btn.disabled = false;
+      }
+    }
+
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

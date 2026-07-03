@@ -29,4 +29,5 @@ export default createQueueView({
   btnClass: 'research-btn',
   successMsg: '✓ Research started!',
   apiAction: (iid) => rest.buildItem(iid),
+  cancelAction: () => rest.cancelResearch(),
 });

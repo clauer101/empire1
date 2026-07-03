@@ -20,9 +20,12 @@ from gameserver.engine.global_state import (
     get_end_criterion_empire_name,
     get_season_number,
     get_season_title,
+    get_this_season_start_date,
     get_next_season_start,
     get_next_season_title,
     is_season_reset_triggered,
+    is_season_snapshot_done,
+    get_season_leadtime,
 )
 from gameserver.models.army import Army, CritterWave, SpyArmy
 from gameserver.models.attack import Attack
@@ -106,16 +109,22 @@ def _serialize_meta() -> dict[str, Any]:
 
 def _serialize_global() -> dict[str, Any]:
     eca = get_end_criterion_activated()
-    return {
+    lt = get_season_leadtime()
+    d: dict[str, Any] = {
         "season_number": get_season_number(),
         "season_title": get_season_title(),
+        "this_season_start_date": get_this_season_start_date(),
         "next_season_start": get_next_season_start(),
         "next_season_title": get_next_season_title(),
-        "season_reset_triggered": is_season_reset_triggered(),
+        "game_frozen": is_season_reset_triggered(),
+        "season_snapshot_done": is_season_snapshot_done(),
         "end_criterion_activated": eca.isoformat() if eca is not None else None,
         "end_criterion_empire_uid": get_end_criterion_empire_uid(),
         "end_criterion_empire_name": get_end_criterion_empire_name(),
     }
+    if lt is not None:
+        d["season_leadtime"] = lt
+    return d
 
 
 # ===================================================================
@@ -150,8 +159,10 @@ def _serialize_empire(empire: Empire) -> dict[str, Any]:
         "citizens": dict(empire.citizens),
         "effects": dict(empire.effects),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
-        "artifacts": list(empire.artifacts),
-        "trophies": {iid: dict(t) for iid, t in empire.trophies.items()},
+        "artifacts": [
+            {"iid": iid, "acquired_at": empire.artifact_acquired_at.get(iid, "1970-01-01T00:00:00+00:00")}
+            for iid in empire.artifacts
+        ],
         "max_life": empire.max_life,
         "structures": {
             sid: _serialize_structure(s)
@@ -344,9 +355,12 @@ def _serialize_battle(battle: BattleState) -> dict[str, Any]:
             str(uid): dict(gains) for uid, gains in battle.attacker_gains.items()
         },
         "defender_losses": dict(battle.defender_losses),
+        "replay_key": battle.replay_key,
         "critters_spawned": battle.critters_spawned,
         "critters_killed": battle.critters_killed,
         "critters_reached": battle.critters_reached,
+        "critters_reached_slots": battle.critters_reached_slots,
         "kills_era_xp_sum": battle.kills_era_xp_sum,
         "ruler_reached_goal": battle.ruler_reached_goal,
+        "defender_gold_earned": battle.defender_gold_earned,
     }

@@ -36,6 +36,36 @@ for arg in "$@"; do
 done
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 
+force_stop_containers() {
+    local project="$1"
+    local compose_file="$2"
+
+    # Find containers by compose project label — avoids `docker compose stop` which can hang.
+    local ids
+    ids=$(docker ps -q --filter "label=com.docker.compose.project=$project" 2>/dev/null || true)
+    if [[ -z "$ids" ]]; then
+        # Nothing running — just remove any leftover networks/volumes
+        docker compose -p "$project" -f "$compose_file" down --remove-orphans 2>/dev/null || true
+        return 0
+    fi
+
+    # SIGTERM with 8 s timeout, then SIGKILL anything still alive.
+    echo "  Stopping containers (timeout 8s)..."
+    docker stop --timeout 8 $ids 2>/dev/null || true
+
+    # Force-kill survivors
+    local still_up
+    still_up=$(docker ps -q --filter "label=com.docker.compose.project=$project" 2>/dev/null || true)
+    if [[ -n "$still_up" ]]; then
+        echo -e "${YELLOW}  Force-killing stubborn containers${NC}"
+        docker kill $still_up 2>/dev/null || true
+        sleep 1
+    fi
+
+    # Remove containers + networks (all containers already stopped, so this is instant)
+    docker compose -p "$project" -f "$compose_file" down --remove-orphans 2>/dev/null || true
+}
+
 save_state_before_stop() {
     local env="$1"
     local port="$2"
@@ -56,7 +86,7 @@ save_state_before_stop() {
     token=$(cat "$token_file")
     echo "  Saving state before stop ($env)..."
     local resp
-    resp=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+    resp=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" -X POST \
         "http://localhost:${port}/api/admin/save-state" \
         -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json" 2>/dev/null || echo "000")
@@ -88,7 +118,7 @@ _get_battle_count() {
 
     local token resp
     token=$(cat "$token_file")
-    resp=$(curl -s --connect-timeout 2 \
+    resp=$(curl -s --connect-timeout 2 --max-time 10 \
         "http://localhost:${port}/api/admin/status" \
         -H "Authorization: Bearer $token" 2>/dev/null || echo "{}")
     echo "$resp" | python3 -c \
@@ -183,7 +213,7 @@ deploy() {
     docker compose -p "$project" -f "$compose_file" build
 
     save_state_before_stop "$env" "$port"
-    docker compose -p "$project" -f "$compose_file" down
+    force_stop_containers "$project" "$compose_file"
 
     docker compose -p "$project" -f "$compose_file" up -d
     docker compose -p "$project" -f "$compose_file" ps
@@ -206,7 +236,7 @@ stop_env() {
     echo -e "========================================${NC}"
 
     save_state_before_stop "$env" "$port"
-    docker compose -p "$project" -f "$compose_file" down
+    force_stop_containers "$project" "$compose_file"
 
     echo -e "${GREEN}[OK] $env stopped${NC}"
 }

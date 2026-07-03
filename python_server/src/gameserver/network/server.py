@@ -97,7 +97,10 @@ class Server:
         """Stop the WebSocket server and close all connections."""
         if self._server is not None:
             self._server.close()
-            await self._server.wait_closed()
+            try:
+                await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
+            except asyncio.TimeoutError:
+                log.warning("WebSocket server did not close cleanly within 5s — forcing")
             log.info("WebSocket server stopped")
 
     # -- Session management ----------------------------------------------
@@ -129,7 +132,7 @@ class Server:
 
         self._connections[uid] = ws
         self._ws_to_uid[id(ws)] = uid
-        log.info("Session registered: uid=%d", uid)
+        log.debug("Session registered: uid=%d", uid)
 
     def unregister_session(self, ws: ServerConnection) -> Optional[int]:
         """Remove a WebSocket from the session table. Returns the UID.

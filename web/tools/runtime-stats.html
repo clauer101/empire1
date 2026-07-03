@@ -249,8 +249,17 @@
     { key: 'research_stolen',    label: 'Research Lost',   fmt: fmtFloat },
     { key: 'research_won',       label: 'Research Won',    fmt: fmtFloat },
     { key: 'defense_gold_earned',label: 'Gold Earned',     fmt: fmtFloat },
-    { key: 'longest_battle_ms',  label: 'Longest Battle',  fmt: fmtMs },
-    { key: 'first_era_reached',  label: '1st Era',         fmt: fmtInt },
+    { key: 'longest_battle_ms',              label: 'Longest Battle',     fmt: fmtMs },
+    { key: 'attacks_won_ai',                 label: 'Atk Won (AI)',       fmt: fmtInt },
+    { key: 'attacks_lost_ai',                label: 'Atk Lost (AI)',      fmt: fmtInt },
+    { key: 'coward_attacks',                 label: 'Coward Atks',        fmt: fmtInt },
+    { key: 'max_lucky_punch_levels',         label: 'Lucky Punch',        fmt: fmtInt },
+    { key: 'max_artifacts_stolen_one_battle',label: 'Max Arts/Battle',    fmt: fmtInt },
+    { key: 'max_artifacts_lost_one_battle',  label: 'Max Arts Lost/Btl',  fmt: fmtInt },
+    { key: 'one_hp_def_wins',                label: '1hp Def Win',        fmt: fmtInt },
+    { key: 'peak_incoming_attacks',          label: 'Peak Atkrs/Battle',  fmt: fmtInt },
+    { key: 'peak_incoming',                  label: 'Peak Incoming',      fmt: fmtInt },
+    { key: 'peak_army_cost',                 label: 'Peak Army Cost',     fmt: fmtFloat },
   ];
 
   function fmtInt(v)   { return v == null ? '—' : Number(v).toLocaleString(); }
@@ -286,6 +295,7 @@
   let empireRows  = [];
   let holdsRows   = [];
   let eraFirstRows = [];
+  let seasonStartDate = '';
   let sortCol    = 'attacks_won_human';
   let sortDir    = -1; // -1 = desc, 1 = asc
   let hlN        = 5;
@@ -303,9 +313,10 @@
     const msg = document.getElementById('status-msg');
     try {
       const data = await load();
-      empireRows   = data.empire_stats || [];
+      empireRows   = (data.empire_stats || []).filter(r => r.uid !== 0);
       holdsRows    = data.artifact_holds || [];
       eraFirstRows = data.era_firsts || [];
+      seasonStartDate = data.this_season_start_date || '';
       msg.textContent = '● Live';
       msg.className = 'ok';
       document.getElementById('last-update').textContent =
@@ -424,24 +435,35 @@
   function renderEraFirsts() {
     const byEra = {};
     for (const row of eraFirstRows) byEra[row.era_key] = row;
+    const startSecs = seasonStartDate ? Date.parse(seasonStartDate.endsWith('Z') || /[+-]\d\d:?\d\d$/.test(seasonStartDate) ? seasonStartDate : seasonStartDate + 'Z') / 1000 : NaN;
     const rows = ERA_ORDER.map(key => ({ key, label: ERA_LABEL[key] || key, ...byEra[key] }));
     const trs = rows.map((r, i) => {
       const claimed = !!byEra[r.key];
+      let elapsed = '—';
+      if (claimed && !isNaN(startSecs) && r.reached_at) {
+        elapsed = fmtHeldSecs(Math.max(0, r.reached_at - startSecs));
+      }
       return `<tr>
         <td style="text-align:left;color:var(--text-dim);font-size:11px">${i + 1}</td>
         <td style="text-align:left">${r.label}</td>
         <td style="text-align:left;color:${claimed ? 'var(--warning)' : 'var(--text-dim)'};font-weight:${claimed ? 700 : 400}">${r.empire_name || '—'}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--text-dim)">${elapsed}</td>
       </tr>`;
     }).join('');
+    const startLabel = seasonStartDate
+      ? new Date(startSecs * 1000).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : 'unknown';
     document.getElementById('era-firsts-wrap').innerHTML = `
       <table>
         <thead><tr>
           <th style="text-align:left;width:32px">#</th>
           <th style="text-align:left">Era</th>
           <th style="text-align:left">First Empire</th>
+          <th style="text-align:right" title="Time from season start to reaching this era">Since Start</th>
         </tr></thead>
         <tbody>${trs}</tbody>
-      </table>`;
+      </table>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">Season start: ${startLabel}</div>`;
   }
 
   // ── Artifact Holds Table ───────────────────────────────────────────────────

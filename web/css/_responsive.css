@@ -130,6 +130,13 @@
     top: var(--lp-topnav-h, 80px);
   }
 
+  /* Push login/signup scroll content below the fixed banner.
+     top:0 is set as inline style by router.js on login/signup;
+     padding-top shifts content down only when a banner is active. */
+  body.view-login #app {
+    padding-top: var(--rally-banner-h);
+  }
+
   /* Main column: fixed below nav, flex column — header + app stack vertically */
   #main-col {
     position: fixed;

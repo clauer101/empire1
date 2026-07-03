@@ -157,6 +157,7 @@ async def handle_item_request(
             "sprite": item.sprite,
             "requirements": list(item.requirements),
             "effects": dict(item.effects),
+            "tower_type": item.tower_type,
             "era": item.era,
         }
 
@@ -173,6 +174,7 @@ async def handle_item_request(
             "slots": item.slots,
             "is_boss": item.is_boss,
             "era": item.era,
+            "critter_type": item.critter_type,
         }
 
     # Full catalog — ALL items regardless of requirements, used by client
@@ -195,6 +197,7 @@ async def handle_item_request(
                 "description": item.description,
                 "sprite": item.sprite,
                 "select": item.select,
+                "tower_type": item.tower_type,
             })
         elif item.item_type == ItemType.CRITTER:
             entry.update({
@@ -204,6 +207,7 @@ async def handle_item_request(
                 "damage": item.critter_damage,
                 "slots": item.slots,
                 "is_boss": item.is_boss,
+                "critter_type": item.critter_type,
             })
         elif item.item_type == ItemType.KNOWLEDGE:
             entry.update({

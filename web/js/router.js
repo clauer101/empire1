@@ -171,6 +171,8 @@ class Router {
       if (mainCol) mainCol.style.gridColumn = isLogin ? '1 / -1' : '';
       // On mobile, #main-col is fixed at top:52px (nav height). With nav hidden, collapse that gap.
       if (mainCol) mainCol.style.top = isLogin ? '0' : '';
+      // On login/signup, ensure no leftover banner space from a previous authenticated session.
+      if (isLogin) document.documentElement.style.setProperty('--rally-banner-h', '0px');
       document.body.classList.toggle('view-login', isLogin);
     }
     view.enter();

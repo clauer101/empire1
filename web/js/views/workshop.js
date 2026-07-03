@@ -219,7 +219,7 @@ function _statRows(iid, statDefs, upgradeDefs) {
       const btn = isMaxed
         ? `<span style="font-size:11px;color:var(--text-dim,#888);padding:2px 8px;">maxed</span>`
         : price > 0
-          ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}"
+          ? `<button class="ws-upgrade-btn" data-stat="${key}" data-iid="${iid}" data-label="💰${price.toFixed(2)}"
                style="background:transparent;color:${btnColor};border:1px solid ${btnColor};
                       border-radius:var(--radius,4px);padding:2px 10px;font-size:12px;
                       cursor:${canAfford ? 'pointer' : 'not-allowed'};
@@ -474,6 +474,18 @@ function _bindEvents() {
   });
 }
 
+function _showBtnError(btn, msg) {
+  let errEl = btn.parentElement.querySelector('.ws-btn-error');
+  if (!errEl) {
+    errEl = document.createElement('div');
+    errEl.className = 'ws-btn-error';
+    errEl.style.cssText = 'color:#ef5350;font-size:11px;margin-top:4px;';
+    btn.parentElement.appendChild(errEl);
+  }
+  errEl.textContent = msg;
+  setTimeout(() => errEl.remove(), 3000);
+}
+
 async function _onUpgradeClick(e) {
   const btn = e.currentTarget;
   const iid = btn.dataset.iid;
@@ -500,13 +512,13 @@ async function _onUpgradeClick(e) {
       _render();
     } else {
       btn.disabled = false;
-      btn.textContent = resp.error ?? 'Error';
-      setTimeout(() => _renderDetail(), 1500);
+      btn.textContent = btn.dataset.label ?? 'Upgrade';
+      _showBtnError(btn, resp.error ?? 'Error');
     }
   } catch (err) {
     btn.disabled = false;
-    btn.textContent = 'Error';
-    setTimeout(() => _renderDetail(), 1500);
+    btn.textContent = btn.dataset.label ?? 'Upgrade';
+    _showBtnError(btn, 'Error');
   }
 }
 
@@ -517,6 +529,13 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  if (!((state.summary?.effects?.enable_workshop ?? 0) > 0)) {
+    pageTitle.set('⚙ Workshop');
+    _container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔒</div>
+      <p>The Workshop unlocks as your empire progresses.<br>
+      Advance through eras and complete research to unlock upgrades.</p></div>`;
+    return;
+  }
   pageTitle.set('⚙ Workshop');
   _unsubSummary = eventBus.on('state:summary', () => {
     _itemUpgrades = state.summary?.item_upgrades ?? _itemUpgrades;

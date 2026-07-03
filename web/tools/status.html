@@ -215,6 +215,34 @@
     .age-bar-inner { height: 100%; border-radius: 3px; }
     .age-pct { width: 38px; text-align: right; font-family: var(--mono); color: var(--text-dim); }
 
+    /* ── Trophies ── */
+    .trophy-controls { display: flex; gap: 10px; align-items: center; padding: 10px 14px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+    .trophy-controls input[type="text"] {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: var(--mono); font-size: 12px;
+      padding: 5px 10px; outline: none; min-width: 200px; flex: 1;
+    }
+    .trophy-controls input:focus { border-color: var(--accent); }
+    .trophy-controls label { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--text-dim); cursor: pointer; white-space: nowrap; }
+    .trophy-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.trophy-matrix { width: auto; border-collapse: collapse; background: var(--surface); font-size: 12px; white-space: nowrap; }
+    table.trophy-matrix th, table.trophy-matrix td { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    table.trophy-matrix th.tcol { background: var(--surface-alt); padding: 6px 2px; width: 34px; min-width: 34px; max-width: 34px; text-align: center; vertical-align: bottom; }
+    table.trophy-matrix th.tcol img { width: 26px; height: 26px; object-fit: contain; display: block; margin: 0 auto; }
+    table.trophy-matrix th.tcol .thname { font-size: 9px; color: var(--text-dim); font-weight: 500; writing-mode: vertical-rl; transform: rotate(180deg); margin: 4px auto 0; max-height: 90px; overflow: hidden; }
+    table.trophy-matrix th.ehead, table.trophy-matrix td.ecell { position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left; padding: 6px 10px; }
+    table.trophy-matrix th.ehead { background: var(--surface-alt); color: var(--text-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
+    table.trophy-matrix td.ecell .ename { font-weight: 600; color: var(--text); }
+    table.trophy-matrix td.ecell .uname { color: var(--text-dim); font-family: var(--mono); font-size: 10px; margin-left: 6px; }
+    table.trophy-matrix th.cnt, table.trophy-matrix td.cnt { text-align: center; padding: 6px 8px; font-family: var(--mono); color: #ffca28; font-weight: 700; }
+    table.trophy-matrix th.cnt { background: var(--surface-alt); color: var(--text-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 1px; font-weight: 600; }
+    table.trophy-matrix tbody tr:hover td { background: var(--surface-hover); }
+    table.trophy-matrix tbody tr:hover td.ecell { background: var(--surface-hover); }
+    table.trophy-matrix td.cell { text-align: center; padding: 5px 2px; }
+    table.trophy-matrix td.cell.has { color: var(--success); font-weight: 700; }
+    table.trophy-matrix td.cell.no  { color: #33333f; }
+
     /* ── Mobile ── */
     @media (max-width: 700px) {
       #content { padding: 12px 8px 40px; gap: 14px; }
@@ -332,6 +360,20 @@
     <div id="no-attacks" style="display:none">No active attacks.</div>
   </div>
 
+  <!-- Trophies -->
+  <div class="card">
+    <div class="card-header">
+      🏆 Trophies
+      <span class="badge" id="trophy-count">—</span>
+      <button style="margin-left:auto;cursor:pointer;border:none;border-radius:4px;padding:3px 10px;font-size:11px;background:var(--accent);color:#0d0d14;font-weight:600" onclick="loadTrophies()">Refresh</button>
+    </div>
+    <div class="trophy-controls">
+      <input type="text" id="trophy-filter" placeholder="Filter by empire / username…" oninput="renderTrophies()" />
+      <label><input type="checkbox" id="trophy-only-earned" checked onchange="renderTrophies()" /> Only empires with trophies</label>
+    </div>
+    <div class="trophy-table-wrap"><div id="trophy-table"></div></div>
+  </div>
+
 </div>
 
 <script>
@@ -423,12 +465,19 @@ function buildDetailHTML(e) {
   // Upgrades
   const upgrades = e.item_upgrades || {};
   const upgradeEntries = Object.entries(upgrades);
+  let totalUpgradeCost = 0;
   let upgradesHTML = upgradeEntries.length === 0
     ? '<span style="color:var(--text-dim);font-size:11px">none</span>'
     : upgradeEntries.map(([iid, stats]) => {
         const statStr = Object.entries(stats).map(([s, lv]) => `${s} +${lv}`).join(', ');
-        return `<div class="detail-row"><span class="detail-key">${iid}</span><span class="detail-val" style="font-size:10px;color:var(--text-dim)">${statStr}</span></div>`;
-      }).join('');
+        const n = Object.values(stats).reduce((a, b) => a + b, 0);
+        const eraIdx = e.item_era_index?.[iid] ?? 0;
+        const cost = calcUpgradeCost(eraIdx, n);
+        totalUpgradeCost += cost;
+        return `<div class="detail-row"><span class="detail-key">${iid}</span><span class="detail-val" style="font-size:10px;color:var(--text-dim)">${statStr} · 💰${fmtPow(cost)}</span></div>`;
+      }).join('') + (upgradeEntries.length > 1
+        ? `<div class="detail-row" style="border-top:1px solid var(--border);margin-top:3px;padding-top:3px"><span class="detail-key">Total invested</span><span class="detail-val" style="color:var(--warning)">💰${fmtPow(totalUpgradeCost)}</span></div>`
+        : '');
 
   // Artifacts
   const artCount = e.artifact_count ?? (e.artifacts?.length ?? 0);
@@ -507,6 +556,35 @@ function buildDetailHTML(e) {
   </div>`;
 }
 
+// ── Season medals ─────────────────────────────────────────────────
+const _MEDAL_OVERLAY_HTML = `
+<div id="medal-overlay" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+  <div style="background:var(--bg2,#1e1e2e);border:1px solid var(--border,#333);border-radius:10px;padding:24px 32px;max-width:360px;cursor:default;" onclick="event.stopPropagation()">
+    <h3 style="margin:0 0 16px;font-size:1.1em;">Season Medal Legend</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:0.95em;">
+      <div><span style="font-size:1.3em;">🥇🥈🥉</span> &nbsp;Top 3 of the <strong>current season</strong></div>
+      <div><span style="font-size:1.3em;">🎖️</span> &nbsp;Winner of a <strong>past season</strong></div>
+    </div>
+    <button onclick="document.getElementById('medal-overlay').style.display='none'" style="margin-top:20px;padding:6px 18px;border-radius:6px;border:1px solid var(--border,#555);background:var(--bg3,#2a2a3a);color:inherit;cursor:pointer;">Close</button>
+  </div>
+</div>`;
+
+function _ensureMedalOverlay() {
+  if (!document.getElementById('medal-overlay')) {
+    document.body.insertAdjacentHTML('beforeend', _MEDAL_OVERLAY_HTML);
+    document.getElementById('medal-overlay').addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
+    });
+  }
+}
+
+function _medalHtml(e) {
+  const current = e.season_place === 1 ? '🥇' : e.season_place === 2 ? '🥈' : e.season_place === 3 ? '🥉' : '';
+  const past = e.past_champion ? '🎖️' : '';
+  if (!current && !past) return '';
+  return ` <span style="cursor:pointer;font-size:1em;" title="Click for legend" onclick="event.stopPropagation();_ensureMedalOverlay();document.getElementById('medal-overlay').style.display='flex'">${current}${past}</span>`;
+}
+
 // ── Render ────────────────────────────────────────────────────────
 function renderEmpires(empires) {
   document.getElementById('emp-count').textContent = empires.length;
@@ -544,7 +622,7 @@ function renderEmpires(empires) {
     mainRow.dataset.uid = e.uid;
     mainRow.innerHTML = `
       <td><span class="expand-arrow ${isOpen ? 'open-arrow' : ''}">▶</span><span class="dot ${e.online ? 'online' : 'offline'}"></span></td>
-      <td>${e.username || '—'}</td>
+      <td>${e.username || '—'}${_medalHtml(e)}</td>
       <td style="color:var(--accent)">${e.name}</td>
       <td style="color:var(--text-dim);font-size:11px">${calcEra(e.knowledge_done)}</td>
       <td>${fmtBotProb(e.bot_probability)}</td>
@@ -784,7 +862,7 @@ let ERA_ORDER = [];
 let ERA_KNOWLEDGE = {};  // era key → [iid, ...]
 let ERA_LABELS_EN = {};
 let ARTIFACT_NAMES = {};  // iid → name
-
+let UPGRADE_BASE_COSTS = [];  // era_index → base gold cost
 
 async function loadEraMap() {
   try {
@@ -792,7 +870,14 @@ async function loadEraMap() {
     ERA_ORDER    = d.eras || [];
     ERA_KNOWLEDGE = d.knowledge || {};
     ERA_LABELS_EN = d.labels_en || {};
+    UPGRADE_BASE_COSTS = d.item_upgrade_base_costs || [];
   } catch (_) {}
+}
+
+// Cumulative cost to reach N total upgrade levels on an item: base × Σ k² for k=1..N = base × N(N+1)(2N+1)/6
+function calcUpgradeCost(eraIdx, totalLevels) {
+  const base = UPGRADE_BASE_COSTS[eraIdx] ?? (UPGRADE_BASE_COSTS[UPGRADE_BASE_COSTS.length - 1] ?? 0);
+  return base * totalLevels * (totalLevels + 1) * (2 * totalLevels + 1) / 6;
 }
 
 // Returns the highest era where at least one knowledge iid is completed.
@@ -877,6 +962,87 @@ document.getElementById('speedup-set').addEventListener('click', async () => {
 
 Promise.all([loadEraMap(), loadItems()]).then(poll);
 setInterval(poll, 3000);
+
+// ── Trophies ─────────────────────────────────────────────────────────────────
+let TROPHY_DATA = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function fmtBerlin(epochSecs) {
+  if (!epochSecs) return '—';
+  return new Date(epochSecs * 1000).toLocaleString('de-DE', {
+    timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function renderTrophies() {
+  if (!TROPHY_DATA) return;
+  const catalog = TROPHY_DATA.catalog || [];
+  const filter = document.getElementById('trophy-filter').value.trim().toLowerCase();
+  const onlyEarned = document.getElementById('trophy-only-earned').checked;
+  let empires = TROPHY_DATA.empires || [];
+  if (onlyEarned) empires = empires.filter(e => e.earned_count > 0);
+  if (filter) empires = empires.filter(e =>
+    (e.name || '').toLowerCase().includes(filter) ||
+    (e.username || '').toLowerCase().includes(filter) ||
+    String(e.uid).includes(filter)
+  );
+  if (!empires.length) {
+    document.getElementById('trophy-table').innerHTML = '<div style="padding:18px 14px;color:var(--text-dim);font-size:12px">No matching empires.</div>';
+    return;
+  }
+  const headCols = catalog.map(t => {
+    const img = t.image ? `/${t.image.replace(/^\//, '')}` : '';
+    return `<th class="tcol" title="${esc(t.name)} — ${esc(t.description)}">
+      ${img ? `<img src="${esc(img)}" alt="" loading="lazy" />` : ''}
+      <div class="thname">${esc(t.name)}</div>
+    </th>`;
+  }).join('');
+  const rows = empires.map(e => {
+    const earnedMap = {};
+    (e.earned || []).forEach(et => { earnedMap[et.iid] = et; });
+    const cells = catalog.map(t => {
+      const et = earnedMap[t.iid];
+      return et
+        ? `<td class="cell has" title="${esc(t.name)} · ${fmtBerlin(et.earned_at)}${et.season ? ' · S' + et.season : ''}">✓</td>`
+        : `<td class="cell no">·</td>`;
+    }).join('');
+    return `<tr>
+      <td class="ecell"><span class="ename">${esc(e.name) || '—'}</span><span class="uname">${esc(e.username) || ''}</span></td>
+      <td class="cnt">${e.earned_count}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  document.getElementById('trophy-table').innerHTML = `
+    <table class="trophy-matrix">
+      <thead><tr>
+        <th class="ehead">Empire</th>
+        <th class="cnt" title="Trophies earned / ${TROPHY_DATA.total_trophies} total">🏆</th>
+        ${headCols}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function loadTrophies() {
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    TROPHY_DATA = await fetch(`${GS_BASE}/api/admin/trophies`, { headers }).then(r => r.json());
+    const earned = (TROPHY_DATA.empires || []).filter(e => e.earned_count > 0).length;
+    document.getElementById('trophy-count').textContent =
+      `${earned} empires · ${TROPHY_DATA.total_trophies} total`;
+    renderTrophies();
+  } catch (_) {
+    document.getElementById('trophy-table').innerHTML =
+      '<div style="padding:18px 14px;color:var(--danger);font-size:12px">Failed to load trophies.</div>';
+  }
+}
+
+loadTrophies();
 </script>
 </body>
 </html>

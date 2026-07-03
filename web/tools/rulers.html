@@ -196,20 +196,7 @@
 </div>
 
 <script>
-const ALL_EFFECT_IDS = [
-  'gold_modifier','gold_offset','culture_modifier','culture_offset',
-  'life_modifier','life_regen_modifier','restore_life','max_life_modifier',
-  'build_speed_modifier','build_speed_offset','research_speed_modifier','research_speed_offset',
-  'damage_modifier','range_modifier','reload_modifier',
-  'slow_target','slow_target_duration','burn_target','burn_target_duration',
-  'splash_damage','splash_radius',
-  'speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level',
-  'travel_offset','siege_offset','siege_time_modifier','restore_life_after_loss_offset',
-  'wave_delay_offset','wave_delay_modifier',
-  'capture_gold','capture_culture','lose_knowledge','lose_artifact','destroy_wonder_percent',
-  'culture_steal_modifier','artifact_steal_chance_modifier','knowledge_steal_modifier',
-  'spy_disguise_chance',
-];
+let ALL_EFFECT_IDS = [];
 
 // rulers: [{ iid, name, type, q: {name, levels: [{...}x5]}, w: ..., e: ..., r: {levels: x3} }]
 let rulers = [];
@@ -516,9 +503,14 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 // ── Load ──────────────────────────────────────────────────────
 (async () => {
   try {
-    const resp = await fetch('/api/rulers');
-    const data = await resp.json();
-    if (!resp.ok || !Array.isArray(data)) throw new Error(data.error || `Server returned ${resp.status}`);
+    const [rulersResp, effectKeysResp] = await Promise.all([
+      fetch('/api/rulers'),
+      fetch('/api/effect-keys'),
+    ]);
+    const data = await rulersResp.json();
+    if (!rulersResp.ok || !Array.isArray(data)) throw new Error(data.error || `Server returned ${rulersResp.status}`);
+    const ekData = await effectKeysResp.json();
+    ALL_EFFECT_IDS = (ekData.effect_keys || []).map(e => e.key);
     // Ensure correct level counts
     rulers = data.map(r => ({
       ...r,

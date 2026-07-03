@@ -51,9 +51,12 @@ class RestoredState:
     end_criterion_empire_name: str = ""
     season_number: int = 1
     season_title: str = ""
+    this_season_start_date: str = ""
     next_season_start: str = ""
     next_season_title: str = ""
-    season_reset_triggered: bool = False
+    game_frozen: bool = False
+    season_snapshot_done: bool = False
+    season_leadtime: Optional[float] = None  # None = use game.yaml default
 
 
 # ===================================================================
@@ -111,9 +114,13 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     result.end_criterion_empire_name = str(global_dict.get("end_criterion_empire_name") or "")
     result.season_number = int(global_dict.get("season_number") or 1)
     result.season_title = str(global_dict.get("season_title") or "")
+    result.this_season_start_date = str(global_dict.get("this_season_start_date") or "")
     result.next_season_start = str(global_dict.get("next_season_start") or "")
     result.next_season_title = str(global_dict.get("next_season_title") or "")
-    result.season_reset_triggered = bool(global_dict.get("season_reset_triggered") or False)
+    result.game_frozen = bool(global_dict.get("game_frozen") or global_dict.get("season_reset_triggered") or False)
+    result.season_snapshot_done = bool(global_dict.get("season_snapshot_done") or False)
+    _lt = global_dict.get("season_leadtime")
+    result.season_leadtime = float(_lt) if _lt is not None else None
 
     # ---- Empires ----
     for empire_dict in raw.get("empires", []):
@@ -201,8 +208,13 @@ def _deserialize_empire(d: dict[str, Any]) -> Empire:
         citizens=dict(d.get("citizens", {"merchant": 0, "scientist": 0, "artist": 0})),
         effects=dict(d.get("effects", {})),
         item_upgrades={iid: dict(stats) for iid, stats in d.get("item_upgrades", {}).items()},
-        artifacts=list(d.get("artifacts", [])),
-        trophies={iid: dict(t) for iid, t in d.get("trophies", {}).items()},
+        artifacts=[e if isinstance(e, str) else e["iid"] for e in d.get("artifacts", [])],
+        artifact_acquired_at={
+            e["iid"]: str(e["acquired_at"])
+            for e in d.get("artifacts", [])
+            if isinstance(e, dict) and e.get("acquired_at")
+        },
+        trophies={},
         max_life=d.get("max_life", 10.0),
         structures=structures,
         armies=armies,
@@ -423,9 +435,12 @@ def _deserialize_battle(d: dict[str, Any]) -> BattleState:
         attacker_gains=attacker_gains,
         defender_losses=dict(d.get("defender_losses", {})),
     )
+    battle.replay_key = d.get("replay_key", "")
     battle.critters_spawned = d.get("critters_spawned", 0)
     battle.critters_killed = d.get("critters_killed", 0)
     battle.critters_reached = d.get("critters_reached", 0)
+    battle.critters_reached_slots = d.get("critters_reached_slots", 0)
     battle.kills_era_xp_sum = d.get("kills_era_xp_sum", 0.0)
     battle.ruler_reached_goal = d.get("ruler_reached_goal", False)
+    battle.defender_gold_earned = d.get("defender_gold_earned", 0.0)
     return battle

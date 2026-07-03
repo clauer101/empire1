@@ -7,11 +7,11 @@ const LABEL = 'font-size:0.75em;font-weight:600;text-transform:uppercase;letter-
 const BTN = 'width:100%;padding:9px 0;font-size:0.95em;text-align:center;';
 
 function _renameAllowed(summary) {
-  if (!summary?.season_reset_triggered) return false;
+  if (!summary?.game_frozen) return false;
   const toUtcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
   const now = Date.now();
   const leadtime = toUtcMs(summary.next_season_leadtime);
-  // Allow rename after wipe; season_reset_triggered is cleared by server once new season starts
+  // Allow rename after wipe; game_frozen is cleared by server once new season starts
   return now >= leadtime;
 }
 

@@ -316,6 +316,11 @@ class AttackService:
                     ))
                     attack.phase = AttackPhase.FINISHED
                 else:
+                    if self._empire_service:
+                        for uid in (attack.attacker_uid, attack.defender_uid):
+                            emp = self._empire_service.get(uid)
+                            if emp is not None:
+                                self._empire_service.recalculate_effects(emp)
                     siege_duration = self._calculate_siege_duration(
                         attack.attacker_uid, attack.defender_uid
                     )

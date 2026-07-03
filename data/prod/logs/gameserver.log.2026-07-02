@@ -1,0 +1,40 @@
+2026-07-02T00:15:35.914210Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('17',)
+2026-07-02T00:15:35.934445Z [info     ] Daily backup written: slot %s  [__main__] positional_args=('day3',)
+2026-07-02T01:15:36.497893Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('18',)
+2026-07-02T02:15:37.105286Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('19',)
+2026-07-02T03:15:37.673240Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('20',)
+2026-07-02T03:31:48.002692Z [info     ] _send_battle_setup: sent to uid=75 (attack_id=14000) [gameserver.network.handlers.battle]
+2026-07-02T03:31:49.705112Z [info     ] Siege skipped: attack_id=14000 defender=75 attacker=0 [gameserver.engine.attack_service] request_id=c6e3d19a-c70d-4781-880c-2e71fbb78d02
+2026-07-02T03:31:51.329394Z [info     ] battle_unregister: uid=75 unregistered from attack 14000 [gameserver.network.handlers.battle]
+2026-07-02T04:15:38.278904Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('21',)
+2026-07-02T05:15:38.812780Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('22',)
+2026-07-02T05:29:29.090613Z [info     ] change_citizen request from uid=58 [gameserver.network.handlers.economy] request_id=d26e7cac-bc70-4dff-8fa3-54d3841b0657
+2026-07-02T05:29:29.090858Z [info     ] change_citizen success uid=58: {'merchant': 0, 'scientist': 47, 'artist': 0} [gameserver.network.handlers.economy] request_id=d26e7cac-bc70-4dff-8fa3-54d3841b0657
+2026-07-02T05:29:32.486927Z [info     ] change_citizen request from uid=58 [gameserver.network.handlers.economy] request_id=35a4e2ff-657a-4335-9fe8-0fac257d5e04
+2026-07-02T05:29:32.487191Z [info     ] change_citizen success uid=58: {'merchant': 47, 'scientist': 0, 'artist': 0} [gameserver.network.handlers.economy] request_id=35a4e2ff-657a-4335-9fe8-0fac257d5e04
+2026-07-02T05:29:34.312411Z [info     ] change_citizen request from uid=58 [gameserver.network.handlers.economy] request_id=fbc17e4d-d667-48cd-b122-3c2fef069a70
+2026-07-02T05:29:34.312536Z [info     ] change_citizen success uid=58: {'merchant': 0, 'scientist': 47, 'artist': 0} [gameserver.network.handlers.economy] request_id=fbc17e4d-d667-48cd-b122-3c2fef069a70
+2026-07-02T05:29:35.686884Z [info     ] change_citizen request from uid=58 [gameserver.network.handlers.economy] request_id=c49a3098-10a1-412a-af55-411dec547d78
+2026-07-02T05:29:35.687131Z [info     ] change_citizen success uid=58: {'merchant': 0, 'scientist': 0, 'artist': 47} [gameserver.network.handlers.economy] request_id=c49a3098-10a1-412a-af55-411dec547d78
+2026-07-02T06:15:06.864640Z [info     ] _send_battle_setup: sent to uid=7 (attack_id=14033) [gameserver.network.handlers.battle]
+2026-07-02T06:15:08.253855Z [info     ] battle_unregister: uid=7 unregistered from attack 14033 [gameserver.network.handlers.battle]
+2026-07-02T06:15:39.390376Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('23',)
+2026-07-02T07:15:39.945793Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('00',)
+2026-07-02T07:44:06.797827Z [info     ] _send_battle_setup: sent to uid=55 (attack_id=14030) [gameserver.network.handlers.battle]
+2026-07-02T07:45:24.847437Z [info     ] battle_unregister: uid=55 unregistered from attack 14030 [gameserver.network.handlers.battle]
+2026-07-02T08:15:40.580832Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('01',)
+2026-07-02T09:15:41.130709Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('02',)
+2026-07-02T10:15:41.634847Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('03',)
+2026-07-02T11:15:42.165743Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('04',)
+2026-07-02T12:15:42.724104Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('05',)
+2026-07-02T13:15:43.336803Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('06',)
+2026-07-02T14:15:44.064541Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('07',)
+2026-07-02T15:15:44.662588Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('08',)
+2026-07-02T16:15:45.230395Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('09',)
+2026-07-02T17:15:45.763770Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('10',)
+2026-07-02T18:15:46.385884Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('11',)
+2026-07-02T19:15:46.949290Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('12',)
+2026-07-02T20:15:47.462807Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('13',)
+2026-07-02T21:15:48.086425Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('14',)
+2026-07-02T22:15:48.607182Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('15',)
+2026-07-02T23:15:49.161539Z [info     ] Hourly backup written: slot %s [__main__] positional_args=('16',)

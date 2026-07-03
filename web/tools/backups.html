@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backup Overview</title>
+  <style>
+    :root {
+      --bg: #0d0d14; --surface: #14141f; --surface-alt: #1a1a28;
+      --border: #2a2a3a; --accent: #4fc3f7; --success: #66bb6a;
+      --danger: #ef5350; --warning: #ffa726; --text: #e0e0e6;
+      --text-dim: #9999a8; --radius: 6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; padding: 20px; }
+    h1 { font-size: 1.1rem; color: var(--accent); margin-bottom: 20px; }
+    h2 { font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 8px; }
+    h3 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 6px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    th { background: var(--surface); color: var(--text-dim); font-weight: 600; font-size: 11px; text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+    tr:hover td { background: var(--surface-alt); }
+    .ok  { color: var(--success); }
+    .err { color: var(--danger); }
+    .warn { color: var(--warning); }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge-ok   { background: rgba(102,187,106,0.15); color: var(--success); }
+    .badge-warn { background: rgba(255,167,38,0.15);  color: var(--warning); }
+    .badge-err  { background: rgba(239,83,80,0.15);   color: var(--danger); }
+    .dim { color: var(--text-dim); }
+    #loading { color: var(--text-dim); padding: 40px; text-align: center; }
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+    .refresh-btn { background: var(--accent); color: #000; border: none; border-radius: var(--radius); padding: 6px 16px; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: 12px; }
+    .refresh-btn:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+  <h1>💾 Backup Overview <button class="refresh-btn" onclick="load()">↻ Refresh</button></h1>
+  <div id="content"><div id="loading">Loading…</div></div>
+
+  <script>
+    async function load() {
+      const el = document.getElementById('content');
+      try {
+        const resp = await fetch('/api/backups');
+        const data = await resp.json();
+        el.innerHTML = renderAll(data);
+      } catch (e) {
+        el.innerHTML = `<div class="err" style="padding:20px">Error: ${e.message}</div>`;
+      }
+    }
+
+    function renderAll(data) {
+      return ['prod', 'dev'].map(env => {
+        const d = data[env];
+        if (!d) return '';
+        return `
+          <h2>${env.toUpperCase()}</h2>
+          <h3>Daily</h3>
+          <div class="section">${renderTable(d.daily)}</div>
+          <h3>Hourly</h3>
+          <div class="section">${renderTable(d.hourly)}</div>
+        `;
+      }).join('');
+    }
+
+    function renderTable(slots) {
+      if (!slots || !slots.length) return '<div class="dim" style="padding:12px">No backups found.</div>';
+      const rows = [...slots].sort((a, b) => (b.db_mtime || b.yaml_mtime || '').localeCompare(a.db_mtime || a.yaml_mtime || '')).map(s => {
+        const dbOk   = s.db_exists;
+        const yamlOk = s.yaml_exists;
+        const bothOk = dbOk && yamlOk;
+        const consistent = s.consistent;
+
+        const matchBadge = !bothOk
+          ? `<span class="badge badge-err">missing file</span>`
+          : consistent
+            ? `<span class="badge badge-ok">✓ match</span>`
+            : `<span class="badge badge-warn">⚠ mismatch</span>`;
+
+        const dbCell   = dbOk   ? `<span class="ok">${s.db_mtime}</span>`   : `<span class="err">—</span>`;
+        const yamlCell = yamlOk ? `<span class="ok">${s.yaml_mtime}</span>` : `<span class="err">—</span>`;
+        const usersCell   = s.db_users   != null ? s.db_users   : '<span class="dim">—</span>';
+        const empiresCell = s.yaml_empires != null ? s.yaml_empires : '<span class="dim">—</span>';
+
+        return `<tr>
+          <td><code>${s.slot}</code></td>
+          <td>${matchBadge}</td>
+          <td>${dbCell}</td>
+          <td>${yamlCell}</td>
+          <td>${usersCell}</td>
+          <td>${empiresCell}</td>
+        </tr>`;
+      }).join('');
+      return `
+        <table>
+          <thead><tr>
+            <th>Slot</th>
+            <th>Match</th>
+            <th>DB timestamp</th>
+            <th>State.yaml timestamp</th>
+            <th>Users (DB)</th>
+            <th>Empires (yaml)</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    load();
+  </script>
+</body>
+</html>

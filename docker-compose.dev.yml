@@ -44,6 +44,7 @@ services:
       - ./ai_players:/app/ai_players:ro
       - ./data/dev/bot_states:/app/ai_players/states
       - ./data/dev/bot_logs:/app/ai_players/logs
+      - ./data:/app/data:ro
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -67,4 +68,3 @@ services:
     depends_on:
       gameserver:
         condition: service_healthy
-

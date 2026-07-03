@@ -2,230 +2,256 @@
 
 Phase order: strengthen → spy → wait_spy → attack → wait_result → strengthen → …
 
-Strengthen runs between every attack cycle (not only after defeat), buying era
-upgrades, slots, and critter switches until all options are unaffordable or
-exhausted, then transitions to spy. This ensures the army continuously improves
-rather than staying at the initial SLAVE/SCOUT configuration.
-
-Emits at most one Option per cycle. Sequencing actions (army/wave setup, spy,
-attack, strengthen) are mandatory so they win their tier when attack is the
-active strategy. As a SECONDARY strategy (advance_phase=False) only idempotent,
-non-phase options (fill empty waves) are emitted so the phase machine is never
-advanced out of turn.
+Strengthen phase buys era upgrades for all waves first, then adds waves up to
+max(2, era_rank × 2), then transitions to spy. Slot buying and critter workshop
+upgrades are always emitted (also as secondary strategy) so gold is never idle.
 """
 
 from __future__ import annotations
 
 import logging
-import time
 
 from bot.analyzer import ERA_RANK
-from bot.api_client import ApiError
-from bot.army_building import (
-    MAX_STRENGTHEN_ROUNDS,
-    army_power,
-    next_skill,
-    resolve_template_critter,
-    ruler_wave_target,
-    strengthen_plan,
-    template_target_power,
-)
-from bot.army_templates import template_for_era
+from bot.army_building import critter_power, next_skill, ruler_wave_target
 from bot.savings import clear_goal
 
 from .base import BotContext, Option, Planner
 
 log = logging.getLogger("bot.planner.attack")
 
-SKILL_RETRY_S = 3600.0   # retry skill-up an hour after a "no points" rejection
-PRIO_ATTACK = 10         # mandatory priority for attack sequencing options
-STRENGTHEN_GOLD_CAP = 5000.0  # stop spending on army once options cost more than this
+PRIO_ERA_UPGRADE = 14   # get all waves to current era — highest strengthen prio
+PRIO_ADD_WAVE    = 13   # add waves up to max(2, era_rank * 2)
+PRIO_ATTACK      = 10   # phase sequencing (spy, attack)
+PRIO_BUY_SLOT    =  8   # always buy slots (also as secondary)
+PRIO_CRITTER_UPG =  7   # workshop critter upgrade (also as secondary)
+
+CRITTER_UPGRADE_STATS = ["health", "speed", "armour"]
+MAX_UPGRADE_LEVEL = 20
 
 
 def _mandatory(description: str, run, *, price: float = 0.0, gain: float = 1.0,
+               priority: int = PRIO_ATTACK,
                saves_for: float = 0.0, goal_meta: dict | None = None) -> Option:
     return Option(category="attack", description=description, run=run,
-                  price=price, gain=gain, mandatory=True, priority=PRIO_ATTACK,
+                  price=price, gain=gain, mandatory=True, priority=priority,
                   saves_for=saves_for, goal_meta=goal_meta)
+
+
+def _current_era_critters(critters: dict, era_rank: int,
+                           ruler_iids: set, ctx: BotContext) -> list[str]:
+    """IIDs of unlocked critters at the highest available era <= era_rank, by power."""
+    candidates = [
+        (iid, c) for iid, c in critters.items()
+        if iid not in ruler_iids
+        and int(c.get("era_index", 0)) <= era_rank
+        and ctx.is_unlocked(c)
+    ]
+    if not candidates:
+        return []
+    best_era = max(int(c.get("era_index", 0)) for _, c in candidates)
+    at_best = [(iid, c) for iid, c in candidates
+               if int(c.get("era_index", 0)) == best_era]
+    return [iid for iid, _ in sorted(at_best,
+            key=lambda x: critter_power(x[1]), reverse=True)]
+
+
+def _critter_upgrade_option(ctx: BotContext, iid: str) -> Option | None:
+    """Next workshop upgrade (health → speed → armour) for a critter iid, or None."""
+    upgrades = (ctx.summary.get("item_upgrades") or {}).get(iid, {})
+    prices = ctx.summary.get("item_upgrade_prices") or {}
+    for stat in CRITTER_UPGRADE_STATS:
+        level = int(upgrades.get(stat, 0) or 0)
+        if level >= MAX_UPGRADE_LEVEL:
+            continue
+        price = float(((prices.get(iid) or {})).get(stat, 0.0) or 0.0)
+        if price <= 0:
+            continue
+        return Option(
+            category="attack",
+            description=f"upgrade critter {iid} {stat} (lv{level + 1})",
+            price=price, gain=0.5, mandatory=True, priority=PRIO_CRITTER_UPG,
+            run=lambda api, iid=iid, stat=stat: api.buy_item_upgrade(iid, stat))
+    return None
 
 
 class AttackPlanner(Planner):
     """Phases stored in strategy.params["phase"]:
     strengthen → spy → wait_spy → attack → wait_result → strengthen → …"""
 
-    def __init__(self, prefer_artifacts: bool = False):
-        self.prefer_artifacts = prefer_artifacts
-
     def propose_options(self, ctx: BotContext, *,
                         advance_phase: bool = True) -> list[Option]:
-        opt = self._propose_one(ctx, advance_phase=advance_phase)
-        return [opt] if opt is not None else []
-
-    def _propose_one(self, ctx: BotContext, *, advance_phase: bool) -> Option | None:
+        options: list[Option] = []
         params = ctx.strategy.setdefault("params", {})
         target_uid = params.get("target_uid")
         target_name = params.get("target_name", "")
+
         if target_uid is None:
             if advance_phase:
                 ctx.strategy["completed"] = True
-            return None
+            return options
 
         military = ctx.api.military()
         armies = military.get("armies", [])
+        critters = ctx.items.get("critters", {})
+        ruler_iids = set(ctx.items.get("rulers") or {})
+        era_rank = ERA_RANK.get(ctx.summary.get("era", "stone"), 0)
+        max_waves = max(2, era_rank * 2)
 
-        # 1. Ensure an army exists; save toward it when unaffordable
+        # 1. Create army if none exists
         if not armies:
             if not advance_phase:
-                return None  # don't create armies as a secondary strategy
+                return options
             army_price = float(ctx.summary.get("army_price", 0.0) or 0.0)
-            if ctx.gold >= army_price:
-                clear_goal(ctx.memory)
-                return _mandatory("create army",
-                                  lambda api: api.create_army("Raiders"),
-                                  price=army_price)
-            return _mandatory(
-                "create army (saving)", lambda api: None, price=army_price,
-                saves_for=army_price if army_price > 0 else 0.0,
-                goal_meta={"item": "army", "action": "army", "sticky": True})
+            options.append(_mandatory(
+                "create army", lambda api: api.create_army("Raiders"),
+                price=army_price, saves_for=army_price,
+                goal_meta={"item": "army", "action": "army", "sticky": True}))
+            return options
 
         army = armies[0]
         aid = army["aid"]
-        ruler_iids = set(ctx.items.get("rulers") or {})
-        era_rank = ERA_RANK.get(ctx.summary.get("era", "stone"), 0)
-        template = template_for_era(era_rank)
+        waves = army.get("waves", [])
 
-        # 1b. A fresh army has no waves yet — buy the first one
-        if not army.get("waves"):
+        # 2. Add first wave if army is empty
+        if not waves:
             if not advance_phase:
-                return None
+                return options
             wave_price = float(army.get("next_wave_price", 0.0) or 0.0)
-            if ctx.gold >= wave_price:
-                clear_goal(ctx.memory)
-                return _mandatory(f"add first wave to army {aid}",
-                                  lambda api: api.add_wave(aid), price=wave_price)
-            return _mandatory(
-                f"add first wave to army {aid} (saving)", lambda api: None,
-                price=wave_price, saves_for=wave_price if wave_price > 0 else 0.0,
-                goal_meta={"item": "wave", "action": "add wave", "sticky": True})
+            options.append(_mandatory(
+                f"add first wave to army {aid}",
+                lambda api: api.add_wave(aid),
+                price=wave_price, saves_for=wave_price,
+                goal_meta={"item": "wave", "action": "add_wave", "sticky": True}))
+            return options
 
-        # 2. Ruler: choose, level skills, place into a wave
+        # 3. Place ruler (advance_phase only)
         if advance_phase:
             ruler_opt = self._ruler_step(ctx, armies, ruler_iids)
             if ruler_opt is not None:
-                return ruler_opt
+                options.append(ruler_opt)
 
-        # 3. Fill empty waves toward the era template: the wave's template
-        #    critter (best-effort, falls back to the strongest fitting one).
-        #    Idempotent, so allowed even as a secondary strategy.
-        critters = ctx.items.get("critters", {})
+        # 4. Fill empty waves with best fitting critter (always, also as secondary)
         unlocked = [dict(c, iid=iid) for iid, c in critters.items()
                     if iid not in ruler_iids and ctx.is_unlocked(c)]
-        if unlocked:
-            for wn, wave in enumerate(army.get("waves", [])):
-                if wave.get("iid"):
-                    continue
-                max_era = int(wave.get("max_era", 0) or 0)
-                fitting = [c for c in unlocked
-                           if int(c.get("era_index", 0)) <= max_era]
-                tmpl_iid = (str(template[wn].get("critter", ""))
-                            if wn < len(template) else "")
-                picked = resolve_template_critter(tmpl_iid, fitting)
-                if picked is None:
-                    continue
-                best_iid = picked["iid"]
-                slots = int(wave.get("slots", 1) or 1)
-                return _mandatory(
-                    f"set wave {wn} to {best_iid}",
-                    lambda api, wn=wn, slots=slots, best_iid=best_iid:
-                        api.set_wave(aid, wn, best_iid, slots))
+        for wn, wave in enumerate(waves):
+            if wave.get("iid"):
+                continue
+            max_era = int(wave.get("max_era", 0) or 0)
+            fitting = [c for c in unlocked if int(c.get("era_index", 0)) <= max_era]
+            if not fitting:
+                continue
+            best = max(fitting, key=critter_power)
+            best_iid = best["iid"]
+            slots = int(wave.get("slots", 1) or 1)
+            options.append(_mandatory(
+                f"set wave {wn} to {best_iid}",
+                lambda api, wn=wn, slots=slots, iid=best_iid:
+                    api.set_wave(aid, wn, iid, slots),
+                priority=PRIO_ATTACK))
+            break  # one fill per tick
 
-        # Everything past here is phase sequencing — never as a secondary.
+        # 5. Buy cheapest slot across all waves (always, also as secondary)
+        if waves:
+            cheapest_wave = min(waves,
+                                key=lambda w: float(w.get("next_slot_price", 1e9)))
+            slot_price = float(cheapest_wave.get("next_slot_price", 0.0) or 0.0)
+            if slot_price > 0:
+                wn = waves.index(cheapest_wave)
+                options.append(_mandatory(
+                    f"buy slot on wave {wn} (army {aid})",
+                    lambda api, wn=wn: api.buy_critter_slot(aid, wn),
+                    price=slot_price, gain=1.0, priority=PRIO_BUY_SLOT))
+
+        # 6. Critter workshop upgrade — current-era critter (always, also as secondary)
+        era_critters = _current_era_critters(critters, era_rank, ruler_iids, ctx)
+        for iid in era_critters:
+            upg_opt = _critter_upgrade_option(ctx, iid)
+            if upg_opt is not None:
+                options.append(upg_opt)
+                break
+
+        # --- Phase sequencing: only when advance_phase=True ---
         if not advance_phase:
-            return None
+            return options
 
-        # 4. Phase machine
         phase = params.get("phase", "strengthen")
         outgoing = ctx.summary.get("attacks_outgoing", [])
 
-        if phase == "spy":
-            params["phase"] = "wait_spy"
-            return _mandatory(f"spy on {target_name} ({target_uid})",
-                              lambda api: api.spy_attack(target_uid, target_name))
+        if phase == "strengthen":
+            options += self._strengthen_options(
+                ctx, army, aid, waves, era_rank, max_waves, params)
 
-        if phase == "wait_spy":
+        elif phase == "spy":
+            params["phase"] = "wait_spy"
+            options.append(_mandatory(
+                f"spy on {target_name} ({target_uid})",
+                lambda api: api.spy_attack(target_uid, target_name)))
+
+        elif phase == "wait_spy":
             if not outgoing:
                 params["phase"] = "attack"
-            return None
 
-        if phase == "attack":
-            if outgoing:
-                return None  # army busy
-            params["phase"] = "wait_result"
-            return _mandatory(
-                f"attack {target_name} ({target_uid}) with army {aid}",
-                lambda api: api.attack(target_uid, target_name, aid))
+        elif phase == "attack":
+            if not outgoing:
+                params["phase"] = "wait_result"
+                options.append(_mandatory(
+                    f"attack {target_name} ({target_uid}) with army {aid}",
+                    lambda api: api.attack(target_uid, target_name, aid)))
 
-        if phase == "wait_result":
+        elif phase == "wait_result":
             self._resolve_result(ctx, params, target_name)
-            return None
 
-        if phase == "strengthen":
-            return self._strengthen_step(ctx, military, ruler_iids, params, template)
+        return options
 
-        return None
+    # ── strengthen ────────────────────────────────────────────────────────
 
-    # ── result resolution ────────────────────────────────────────────────
-    def _resolve_result(self, ctx: BotContext, params: dict, target_name: str) -> None:
-        history = ctx.memory.get("attack_history", [])
-        for entry in reversed(history):
-            if entry.get("opponent") != target_name:
-                continue
-            if self._goal_reached(entry):
-                clear_goal(ctx.memory)
-                ctx.strategy["completed"] = True
-            elif entry["outcome"] == "defeat":
-                defeats = int(params.get("defeats", 0)) + 1
-                params["defeats"] = defeats
-                if defeats > MAX_STRENGTHEN_ROUNDS:
-                    log.info("giving up on %s after %d defeats", target_name, defeats)
-                    clear_goal(ctx.memory)
-                    ctx.strategy["completed"] = True  # triggers re-roll
-                else:
-                    log.info("defeat #%d vs %s — strengthening army", defeats, target_name)
-                    params["phase"] = "strengthen"
-            else:
-                # Victory but goal not met: strengthen first, then attack again
-                params["phase"] = "strengthen"
-            return
+    def _strengthen_options(self, ctx: BotContext, army: dict, aid: int,
+                            waves: list, era_rank: int, max_waves: int,
+                            params: dict) -> list[Option]:
+        """Era upgrades first, then add waves, then transition to spy."""
+        options: list[Option] = []
 
-    # ── ruler deployment ──────────────────────────────────────────────────
+        # Era-upgrade every wave that is below current era (highest priority)
+        for wn, wave in enumerate(waves):
+            if int(wave.get("max_era", 0) or 0) < era_rank:
+                price = float(wave.get("next_era_price", 0.0) or 0.0)
+                options.append(_mandatory(
+                    f"era-upgrade wave {wn} → era {era_rank}",
+                    lambda api, wn=wn: api.buy_wave_era(aid, wn),
+                    price=price, gain=2.0, priority=PRIO_ERA_UPGRADE,
+                    saves_for=price,
+                    goal_meta={"item": f"era-wave-{wn}", "action": "buy_wave_era"}))
+
+        # All waves at current era?
+        all_at_era = all(int(w.get("max_era", 0) or 0) >= era_rank for w in waves)
+        if not all_at_era:
+            return options  # keep saving / upgrading era before adding waves
+
+        # Add waves up to max_waves
+        if len(waves) < max_waves:
+            price = float(army.get("next_wave_price", 0.0) or 0.0)
+            options.append(_mandatory(
+                f"add wave ({len(waves)}/{max_waves})",
+                lambda api: api.add_wave(aid),
+                price=price, gain=3.0, priority=PRIO_ADD_WAVE,
+                saves_for=price,
+                goal_meta={"item": "wave", "action": "add_wave"}))
+        else:
+            # All waves at era and at max count → proceed to attack
+            clear_goal(ctx.memory)
+            params["phase"] = "spy"
+
+        return options
+
+    # ── ruler placement ───────────────────────────────────────────────────
 
     def _ruler_step(self, ctx: BotContext, armies: list[dict],
                     ruler_iids: set[str]) -> Option | None:
         ruler = ctx.summary.get("ruler") or {}
-
-        # a) ruler claiming is handled by the baseline planner.
         if not ruler.get("type"):
             return None
 
-        # b) spend skill points (server answers success:false when none available)
-        blocked_until = float(ctx.memory.get("ruler_skill_blocked_until", 0.0) or 0.0)
-        skill = next_skill(ruler)
-        if skill and time.time() >= blocked_until:
-            def run_skill_up(api, skill=skill):
-                try:
-                    result = api.ruler_skill_up(skill)
-                except ApiError as e:
-                    if not 400 <= e.status < 500:
-                        raise
-                    result = {"success": False, "error": e.body}
-                if isinstance(result, dict) and result.get("success") is False:
-                    ctx.memory["ruler_skill_blocked_until"] = time.time() + SKILL_RETRY_S
-                    log.info("skill-up %s rejected, retry in 1h", skill)
-                return result
-            return _mandatory(f"ruler skill-up {skill}", run_skill_up)
-
-        # c) place the ruler into a wave
+        # Ruler skill-up is handled by baseline; only handle placement here
         target = ruler_wave_target(armies, ruler_iids)
         if target is not None:
             t_aid, t_wn = target
@@ -235,70 +261,21 @@ class AttackPlanner(Planner):
                 lambda api: api.set_ruler_wave(t_aid, t_wn, ruler_type))
         return None
 
-    # ── strengthen on defeat ──────────────────────────────────────────────
+    # ── result resolution ─────────────────────────────────────────────────
 
-    def _strengthen_step(self, ctx: BotContext, military: dict,
-                         ruler_iids: set[str], params: dict,
-                         template: list[dict] | None = None) -> Option | None:
-        defeats = int(params.get("defeats", 0) or 0)
-
-        # Stop strengthening once the army reaches the era template's power
-        # (scaled up after defeats); the template is the build-up target.
-        if template:
-            target = template_target_power(template, military, ruler_iids)
-            if target > 0 and army_power(military, ruler_iids) >= target:
+    def _resolve_result(self, ctx: BotContext, params: dict,
+                        target_name: str) -> None:
+        history = ctx.memory.get("attack_history", [])
+        for entry in reversed(history):
+            if entry.get("opponent") != target_name:
+                continue
+            if entry.get("outcome") == "victory":
                 clear_goal(ctx.memory)
-                params["phase"] = "spy"
-                return None
-
-        options = strengthen_plan(military, ctx.summary, ruler_iids,
-                                  template=template or None, defeats=defeats)
-        if not options:
-            # Nothing left to buy — proceed to attack
-            clear_goal(ctx.memory)
-            params["phase"] = "spy"
-            return None
-        best = options[0]
-        if best.price > STRENGTHEN_GOLD_CAP:
-            # Option is expensive — only proceed if we have a big surplus, otherwise spy
-            if best.price > ctx.gold:
-                params["phase"] = "spy"
-                return None
-        elif best.price > ctx.gold:
-            # Affordable range but currently insufficient — save and wait
-            return _mandatory(
-                f"{best.description} (saving)", lambda api: None, price=best.price,
-                saves_for=best.price,
-                goal_meta={"item": best.kind, "action": best.description, "sticky": True})
-        clear_goal(ctx.memory)
-        # Stay in strengthen — next cycle will re-evaluate and buy the next option
-        return self._execute_strengthen(best)
-
-    @staticmethod
-    def _execute_strengthen(best) -> Option | None:
-        """Map a StrengthenOption to its mandatory Option (shared by build-up
-        and post-defeat strengthening). Cheap high-ROI buys (e.g. a slot on a
-        near-empty wave) are ranked first by strengthen_plan."""
-        if best.kind == "switch_critter":
-            return _mandatory(
-                best.description, price=best.price, gain=best.gain,
-                run=lambda api: api.set_wave(best.aid, best.wave_number,
-                                             best.critter_iid, best.slots))
-        if best.kind == "buy_slot":
-            return _mandatory(
-                best.description, price=best.price, gain=best.gain,
-                run=lambda api: api.buy_critter_slot(best.aid, best.wave_number))
-        if best.kind == "buy_wave_era":
-            return _mandatory(
-                best.description, price=best.price, gain=best.gain,
-                run=lambda api: api.buy_wave_era(best.aid, best.wave_number))
-        if best.kind == "add_wave":
-            return _mandatory(best.description, price=best.price, gain=best.gain,
-                              run=lambda api: api.add_wave(best.aid))
-        if best.kind == "create_army":
-            return _mandatory(best.description, price=best.price, gain=best.gain,
-                              run=lambda api: api.create_army("Raiders II"))
-        return None
+                ctx.strategy["completed"] = True
+            else:
+                # Defeat → strengthen again before next attack
+                params["phase"] = "strengthen"
+            return
 
     def _goal_reached(self, history_entry: dict) -> bool:
         return history_entry.get("outcome") == "victory"

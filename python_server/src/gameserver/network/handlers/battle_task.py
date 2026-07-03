@@ -122,6 +122,8 @@ async def _log_battle_stats(
         await database.record_empire_stat(def_uid, **{f"defense_won_{opp}": 1})
         for auid in human_atk_uids:
             await database.record_empire_stat(auid, **{f"attacks_lost_{opp}": 1})
+        if battle.defender_life_at_end is not None and battle.defender_life_at_end < 2.0:
+            await database.record_empire_stat(def_uid, one_hp_def_wins=1)
     else:
         await database.record_empire_stat(def_uid, **{f"defense_lost_{opp}": 1})
         for auid in human_atk_uids:
@@ -147,6 +149,9 @@ async def _log_battle_stats(
                 await database.record_empire_stat_max(auid, "max_lucky_punch_levels", levels)
 
     await database.record_empire_stat_max(def_uid, "longest_battle_ms", elapsed_ms)
+    # Distinct attackers in this single battle; the AI counts as at most one attacker.
+    distinct_attackers = len(human_atk_uids) + (1 if is_ai else 0)
+    await database.record_empire_stat_max(def_uid, "peak_incoming_attacks", distinct_attackers)
 
     ckilled = int(battle.critters_killed or 0)
     if ckilled > 0:
@@ -228,6 +233,11 @@ async def _run_battle_task(
     broadcast_interval_ms: float = 250.0,
 ) -> None:
     """Wrapper for the async battle loop with cleanup and resource transfer."""
+    task = asyncio.current_task()
+    if task is not None:
+        import gameserver.network.handlers._core as _core_mod
+        _core_mod._battle_tasks[bid] = task
+
     svc = _svc()
     _summary_sent = False
 
@@ -274,10 +284,12 @@ async def _run_battle_task(
 
         loot: dict[str, Any] = {}
         attacker_won = battle.defender_won is False
+        if battle.defender is not None:
+            battle.defender_life_at_end = float(battle.defender.resources.get("life", 0.0))
         if attacker_won:
             loot = _compute_and_apply_loot(battle, svc)
-        if battle.critters_reached > 0:
-            _apply_culture_life_steal(battle, svc, loot)
+        elif battle.critters_reached > 0:
+            loot = _compute_and_apply_loot(battle, svc)
         stolen_artifacts, steal_chances, army_multipliers = _apply_artifact_steal(battle, svc, attacker_won)
         if stolen_artifacts:
             loot["artifacts"] = [{"iid": iid, "winner_uid": uid} for iid, uid in stolen_artifacts]
@@ -362,168 +374,176 @@ async def _run_battle_task(
         if svc.ai_service is not None:
             svc.ai_service.cleanup_inactive_armies(svc.empire_service, svc.attack_service)
 
+        replay_key = ""
         if battle.recorder is not None:
             saved_path = battle.recorder.save()
-            replay_key = battle.recorder.replay_key
+            replay_key = battle.recorder.replay_key or ""
             if not saved_path:
                 log.warning("[battle] bid=%d replay not saved — sending inbox messages anyway", bid)
-            if svc.database:
-                def_name = battle.defender.name if battle.defender else "?"
-                total_waves = sum(len(a.waves) for a in battle.armies.values())
-                dur_s = battle.elapsed_ms / 1000
-                dur_m, dur_sec = int(dur_s // 60), int(dur_s % 60)
-                dur_str = f"{dur_m}m {dur_sec}s" if dur_m > 0 else f"{dur_sec}s"
-                defender_won = bool(battle.defender_won)
+        if svc.database:
+            def_name = battle.defender.name if battle.defender else "?"
+            total_waves = sum(len(a.waves) for a in battle.armies.values())
+            dur_s = battle.elapsed_ms / 1000
+            dur_m, dur_sec = int(dur_s // 60), int(dur_s % 60)
+            dur_str = f"{dur_m}m {dur_sec}s" if dur_m > 0 else f"{dur_sec}s"
+            defender_won = bool(battle.defender_won)
 
-                # Build defender inbox body (lists all attackers)
-                atk_names = []
-                for uid in battle.attacker_uids:
-                    emp = svc.empire_service.get(uid) if svc.empire_service else None
-                    atk_names.append(emp.name if emp else str(uid))
-                atk_names_str = ", ".join(atk_names) if atk_names else "?"
+            # Build defender inbox body (lists all attackers with their army names)
+            atk_names = []
+            for uid in battle.attacker_uids:
+                emp = svc.empire_service.get(uid) if svc.empire_service else None
+                emp_name = emp.name if emp else str(uid)
+                uid_army_names = [a.name for a in battle.armies.values() if a.uid == uid and a.name]
+                if uid_army_names:
+                    atk_names.append(f"{emp_name} ({', '.join(uid_army_names)})")
+                else:
+                    atk_names.append(emp_name)
+            atk_names_str = ", ".join(atk_names) if atk_names else "?"
 
-                loot_def_lines = ""
+            loot_def_lines = ""
+            if loot:
+                culture_stolen = loot.get("culture", 0.0)
+                knowledge_loot = loot.get("knowledge")
+                artifacts_loot = loot.get("artifacts", [])
+                if culture_stolen > 0:
+                    per_atk_all = loot.get("per_attacker", {})
+                    total_penalty_lost = sum(v.get("culture_era_penalty_lost", 0.0) for v in per_atk_all.values())
+                    if total_penalty_lost > 0.01:
+                        era_note = f" ({total_penalty_lost:.1f} reduced due to era penalty)"
+                    else:
+                        era_note = ""
+                    loot_def_lines += f"🎭 Culture: -{culture_stolen:.1f}{era_note}\n"
+                if knowledge_loot:
+                    k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
+                    k_pct  = knowledge_loot.get("pct", 0.0)
+                    k_amt  = knowledge_loot.get("amount", 0.0)
+                    loot_def_lines += f"📖 {k_pct:.0f}% of {k_name} → -{k_amt:.0f} research effort\n"
+                for art in artifacts_loot:
+                    art_iid = art.get("iid", "")
+                    art_item = svc.upgrade_provider.items.get(art_iid) if svc.upgrade_provider else None
+                    art_name = art_item.name if art_item else art_iid
+                    art_winner_uid = art.get("winner_uid")
+                    art_winner_emp = svc.empire_service.get(art_winner_uid) if svc.empire_service and art_winner_uid else None
+                    art_winner_name = art_winner_emp.name if art_winner_emp else str(art_winner_uid)
+                    loot_def_lines += f"⚜ {art_name} stolen by {art_winner_name}\n"
+
+            pvp_bonus_line = (
+                f"⚡ PvP Bonus:  +{int(pvp_gold_bonus)} gold (×2 vs player)\n"
+                if pvp_gold_bonus > 0 else ""
+            )
+            life_lost = float(battle.defender_losses.get("life", 0.0))
+            life_lost_line = f"❤ Life lost:  -{life_lost:g}\n" if life_lost > 0 else ""
+            def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
+            def_body = (
+                f"{def_result}\n"
+                f"────────────────────\n"
+                f"⚔ Attacker(s): {atk_names_str}\n"
+                f"📋 Waves:      {total_waves}\n"
+                f"────────────────────\n"
+                f"🐛 Spawned:   {battle.critters_spawned}\n"
+                f"💀 Killed:    {battle.critters_killed}\n"
+                f"🏰 Reached:   {battle.critters_reached}\n"
+                f"{life_lost_line}"
+                f"🗼 Towers:    {len(battle.structures)}\n"
+                f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
+                f"{pvp_bonus_line}"
+                f"{loot_def_lines}"
+                f"⏱ Duration:  {dur_str}\n"
+                f"────────────────────\n"
+                f"▶ Replay: #replay/{replay_key}"
+            )
+            if battle.defender:
+                await svc.database.send_message(0, battle.defender.uid, def_body)
+
+            # Build per-attacker inbox body (one message per unique attacker uid)
+            seen_inbox_uids: set[int] = set()
+            for uid in battle.attacker_uids:
+                if uid == AI_UID or uid in seen_inbox_uids:
+                    continue
+                seen_inbox_uids.add(uid)
+                emp = svc.empire_service.get(uid) if svc.empire_service else None
+                if emp is None:
+                    continue
+                # Aggregate all armies for this uid
+                uid_armies = [a for a in battle.armies.values() if a.uid == uid]
+                army_name = uid_armies[0].name if uid_armies else "?"
+                army_waves = sum(len(a.waves) for a in uid_armies)
+                loot_atk_lines = ""
                 if loot:
-                    culture_stolen = loot.get("culture", 0.0)
+                    per_atk = loot.get("per_attacker", {}).get(uid, {})
+                    atk_culture = per_atk.get("culture", 0.0)
                     knowledge_loot = loot.get("knowledge")
                     artifacts_loot = loot.get("artifacts", [])
-                    if culture_stolen > 0:
-                        per_atk_all = loot.get("per_attacker", {})
-                        total_penalty_lost = sum(v.get("culture_era_penalty_lost", 0.0) for v in per_atk_all.values())
-                        if total_penalty_lost > 0.01:
-                            era_note = f" ({total_penalty_lost:.1f} reduced due to era penalty)"
+                    if atk_culture > 0:
+                        if per_atk.get("culture_era_penalty"):
+                            lost = per_atk.get("culture_era_penalty_lost", 0.0)
+                            era_note = f" (-{lost:.1f} era penalty)"
                         else:
                             era_note = ""
-                        loot_def_lines += f"🎭 Culture: -{culture_stolen:.1f}{era_note}\n"
+                        loot_atk_lines += f"🎭 Culture: +{atk_culture:.1f}{era_note}\n"
                     if knowledge_loot:
                         k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                         k_pct  = knowledge_loot.get("pct", 0.0)
+                        k_per  = knowledge_loot.get("per_winner")
                         k_amt  = knowledge_loot.get("amount", 0.0)
-                        loot_def_lines += f"📖 {k_pct:.0f}% of {k_name} → -{k_amt:.0f} research effort\n"
+                        if k_per is not None and len(battle.attacker_uids) > 1:
+                            loot_atk_lines += f"📖 +{k_per:.0f} {k_name} research (+{k_amt:.0f} total shared)\n"
+                        else:
+                            loot_atk_lines += f"📖 +{k_amt:.0f} {k_name} research ({k_pct:.0f}%)\n"
                     for art in artifacts_loot:
-                        art_iid = art.get("iid", "")
-                        art_item = svc.upgrade_provider.items.get(art_iid) if svc.upgrade_provider else None
-                        art_name = art_item.name if art_item else art_iid
-                        art_winner_uid = art.get("winner_uid")
-                        art_winner_emp = svc.empire_service.get(art_winner_uid) if svc.empire_service and art_winner_uid else None
-                        art_winner_name = art_winner_emp.name if art_winner_emp else str(art_winner_uid)
-                        loot_def_lines += f"⚜ {art_name} stolen by {art_winner_name}\n"
+                        if art.get("winner_uid") == uid:
+                            art_iid = art.get("iid", "")
+                            art_item = svc.upgrade_provider.items.get(art_iid) if svc.upgrade_provider else None
+                            art_name = art_item.name if art_item else art_iid
+                            loot_atk_lines += f"⚜ {art_name} acquired\n"
 
-                pvp_bonus_line = (
-                    f"⚡ PvP Bonus:  +{int(pvp_gold_bonus)} gold (×2 vs player)\n"
-                    if pvp_gold_bonus > 0 else ""
-                )
-                life_lost = float(battle.defender_losses.get("life", 0.0))
-                life_lost_line = f"❤ Life lost:  -{life_lost:g}\n" if life_lost > 0 else ""
-                def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
-                def_body = (
-                    f"{def_result}\n"
+                ruler_xp_line = ""
+                if uid in ruler_xp_gained:
+                    xp_bonus = ruler_xp_pvp_bonus.get(uid, 0.0) if ruler_xp_pvp_bonus else 0.0
+                    xp_bonus_note = f" (incl. ⚡+{int(xp_bonus)} era bonus)" if xp_bonus > 0 else ""
+                    ruler_xp_line = f"👑 Ruler XP:  +{int(ruler_xp_gained[uid])}{xp_bonus_note}\n"
+                ruler_steal_line = ""
+                if battle.ruler_reached_goal:
+                    _cfg_default = getattr(svc.game_config, "ruler_artifact_steal_bonus", 0.15) if svc.game_config else 0.15
+                    _steal_pct = int(emp.get_effect("ruler_artifact_steal_bonus", _cfg_default) * 100) if emp is not None else int(_cfg_default * 100)
+                    ruler_steal_line = f"⚜ Ruler bonus: +{_steal_pct}% artifact steal chance\n"
+                steal_chance_line = ""
+                if uid in steal_chances:
+                    _final = steal_chances[uid]
+                    _mult = army_multipliers.get(uid, 1.0)
+                    _final_pct = round(_final * 100, 1)
+                    if _mult < 1.0 and _mult > 0:
+                        _raw_pct = round(_final / _mult * 100, 1)
+                        steal_chance_line = f"⚜ Steal chance: {_final_pct}% ({_raw_pct}% x {_mult:.2f})\n"
+                    else:
+                        steal_chance_line = f"⚜ Steal chance: {_final_pct}%\n"
+                atk_result = "⚔ You Won!" if not defender_won else "⚔ You Lost!"
+                atk_body = (
+                    f"{atk_result}\n"
                     f"────────────────────\n"
-                    f"⚔ Attacker(s): {atk_names_str}\n"
-                    f"📋 Waves:      {total_waves}\n"
+                    f"🛡 Defender:  {def_name}\n"
+                    f"📋 Army:      {army_name} ({army_waves} waves)\n"
                     f"────────────────────\n"
                     f"🐛 Spawned:   {battle.critters_spawned}\n"
                     f"💀 Killed:    {battle.critters_killed}\n"
                     f"🏰 Reached:   {battle.critters_reached}\n"
                     f"{life_lost_line}"
-                    f"🗼 Towers:    {len(battle.structures)}\n"
-                    f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
-                    f"{pvp_bonus_line}"
-                    f"{loot_def_lines}"
+                    f"{loot_atk_lines}"
+                    f"{steal_chance_line}"
+                    f"{ruler_xp_line}"
+                    f"{ruler_steal_line}"
                     f"⏱ Duration:  {dur_str}\n"
                     f"────────────────────\n"
                     f"▶ Replay: #replay/{replay_key}"
                 )
-                if battle.defender:
-                    await svc.database.send_message(0, battle.defender.uid, def_body)
-
-                # Build per-attacker inbox body (one message per unique attacker uid)
-                seen_inbox_uids: set[int] = set()
-                for uid in battle.attacker_uids:
-                    if uid == AI_UID or uid in seen_inbox_uids:
-                        continue
-                    seen_inbox_uids.add(uid)
-                    emp = svc.empire_service.get(uid) if svc.empire_service else None
-                    if emp is None:
-                        continue
-                    # Aggregate all armies for this uid
-                    uid_armies = [a for a in battle.armies.values() if a.uid == uid]
-                    army_name = uid_armies[0].name if uid_armies else "?"
-                    army_waves = sum(len(a.waves) for a in uid_armies)
-                    loot_atk_lines = ""
-                    if loot:
-                        per_atk = loot.get("per_attacker", {}).get(uid, {})
-                        atk_culture = per_atk.get("culture", 0.0)
-                        knowledge_loot = loot.get("knowledge")
-                        artifacts_loot = loot.get("artifacts", [])
-                        if atk_culture > 0:
-                            if per_atk.get("culture_era_penalty"):
-                                lost = per_atk.get("culture_era_penalty_lost", 0.0)
-                                era_note = f" (-{lost:.1f} era penalty)"
-                            else:
-                                era_note = ""
-                            loot_atk_lines += f"🎭 Culture: +{atk_culture:.1f}{era_note}\n"
-                        if knowledge_loot:
-                            k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
-                            k_pct  = knowledge_loot.get("pct", 0.0)
-                            k_per  = knowledge_loot.get("per_winner")
-                            k_amt  = knowledge_loot.get("amount", 0.0)
-                            if k_per is not None and len(battle.attacker_uids) > 1:
-                                loot_atk_lines += f"📖 +{k_per:.0f} {k_name} research (+{k_amt:.0f} total shared)\n"
-                            else:
-                                loot_atk_lines += f"📖 +{k_amt:.0f} {k_name} research ({k_pct:.0f}%)\n"
-                        for art in artifacts_loot:
-                            if art.get("winner_uid") == uid:
-                                art_iid = art.get("iid", "")
-                                art_item = svc.upgrade_provider.items.get(art_iid) if svc.upgrade_provider else None
-                                art_name = art_item.name if art_item else art_iid
-                                loot_atk_lines += f"⚜ {art_name} acquired\n"
-
-                    ruler_xp_line = ""
-                    if uid in ruler_xp_gained:
-                        xp_bonus = ruler_xp_pvp_bonus.get(uid, 0.0) if ruler_xp_pvp_bonus else 0.0
-                        xp_bonus_note = f" (incl. ⚡+{int(xp_bonus)} era bonus)" if xp_bonus > 0 else ""
-                        ruler_xp_line = f"👑 Ruler XP:  +{int(ruler_xp_gained[uid])}{xp_bonus_note}\n"
-                    ruler_steal_line = ""
-                    if battle.ruler_reached_goal:
-                        _cfg_default = getattr(svc.game_config, "ruler_artifact_steal_bonus", 0.15) if svc.game_config else 0.15
-                        _steal_pct = int(emp.get_effect("ruler_artifact_steal_bonus", _cfg_default) * 100) if emp is not None else int(_cfg_default * 100)
-                        ruler_steal_line = f"⚜ Ruler bonus: +{_steal_pct}% artifact steal chance\n"
-                    steal_chance_line = ""
-                    if uid in steal_chances:
-                        _final = steal_chances[uid]
-                        _mult = army_multipliers.get(uid, 1.0)
-                        _final_pct = round(_final * 100, 1)
-                        if _mult < 1.0 and _mult > 0:
-                            _raw_pct = round(_final / _mult * 100, 1)
-                            steal_chance_line = f"⚜ Steal chance: {_final_pct}% ({_raw_pct}% x {_mult:.2f})\n"
-                        else:
-                            steal_chance_line = f"⚜ Steal chance: {_final_pct}%\n"
-                    atk_result = "⚔ You Won!" if not defender_won else "⚔ You Lost!"
-                    atk_body = (
-                        f"{atk_result}\n"
-                        f"────────────────────\n"
-                        f"🛡 Defender:  {def_name}\n"
-                        f"📋 Army:      {army_name} ({army_waves} waves)\n"
-                        f"────────────────────\n"
-                        f"🐛 Spawned:   {battle.critters_spawned}\n"
-                        f"💀 Killed:    {battle.critters_killed}\n"
-                        f"🏰 Reached:   {battle.critters_reached}\n"
-                        f"{life_lost_line}"
-                        f"{loot_atk_lines}"
-                        f"{steal_chance_line}"
-                        f"{ruler_xp_line}"
-                        f"{ruler_steal_line}"
-                        f"⏱ Duration:  {dur_str}\n"
-                        f"────────────────────\n"
-                        f"▶ Replay: #replay/{replay_key}"
-                    )
-                    await svc.database.send_message(0, uid, atk_body)
+                await svc.database.send_message(0, uid, atk_body)
 
     except Exception:
         import traceback
         log.error("[battle] bid=%d post-battle cleanup crashed: %s", bid, traceback.format_exc())
     finally:
+        import gameserver.network.handlers._core as _core_mod
+        _core_mod._battle_tasks.pop(bid, None)
         if battle.defender:
             _get_active_battles().pop(battle.defender.uid, None)
 
@@ -564,7 +584,7 @@ def _award_ruler_xp(
         xp_victory = gc.ruler_xp_victory_per_era if gc else 50.0
         xp = 0.0
         xp += float(battle.kills_era_xp_sum) * xp_per_kill
-        xp += float(battle.critters_reached) * xp_per_reached * def_era_idx
+        xp += float(battle.critters_reached_slots) * xp_per_reached * def_era_idx
         if attacker_won:
             xp += xp_victory * def_era_idx * def_era_idx
         # Double XP when the defender is in a higher era than the attacker
@@ -691,7 +711,25 @@ def _apply_artifact_steal(
 
     stolen: list[tuple[str, int]] = []
 
+    retention_secs = victim.get_effect("artifact_retention_time", 0.0) if svc.empire_service else 0.0
+
     for artifact in list(victim.artifacts):
+        if retention_secs > 0:
+            acquired_str = victim.artifact_acquired_at.get(artifact, "")
+            if acquired_str:
+                try:
+                    import datetime as _dt
+                    acquired_dt = _dt.datetime.fromisoformat(acquired_str)
+                    age_secs = (_dt.datetime.now(_dt.timezone.utc) - acquired_dt).total_seconds()
+                    if age_secs < retention_secs:
+                        log.info(
+                            "[LOOT] Artifact protected by retention: %s  victim uid=%d  age=%.0fs < %.0fs",
+                            artifact, victim.uid, age_secs, retention_secs,
+                        )
+                        continue
+                except Exception:
+                    pass
+
         for uid, chance in attacker_chances:
             roll = _random.random()
             if roll < chance:
@@ -699,7 +737,10 @@ def _apply_artifact_steal(
                 if thief_empire is None:
                     continue
                 victim.artifacts.remove(artifact)
+                victim.artifact_acquired_at.pop(artifact, None)
                 thief_empire.artifacts.append(artifact)
+                import datetime as _dt
+                thief_empire.artifact_acquired_at[artifact] = _dt.datetime.now(_dt.timezone.utc).isoformat()
                 log.info(
                     "[LOOT] Artifact stolen: %s  thief uid=%d  victim uid=%d  roll=%.3f < chance=%.2f (attacker_won=%s)",
                     artifact, uid, victim.uid, roll, chance, attacker_won,
@@ -716,70 +757,6 @@ def _apply_artifact_steal(
 
     return stolen, steal_chances, army_multipliers
 
-
-def _apply_culture_life_steal(battle: "BattleState", svc: Any, loot: dict) -> None:
-    """Steal culture based on the life the defender lost in THIS battle.
-
-    Only called when critters_reached > 0. Missing life carried over from
-    earlier battles is never re-billed.
-    """
-    from gameserver.engine.ai_service import AI_UID as _AI_UID
-    from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
-
-    defender = battle.defender
-    if not defender:
-        return
-    human_uids = [uid for uid in battle.attacker_uids if uid != _AI_UID]
-    if not human_uids:
-        return
-
-    cfg = svc.game_config
-    defender_era = svc.empire_service.get_current_era(defender) if svc.empire_service else _ERA_ORDER[0]
-    defender_era_idx = _ERA_ORDER.index(defender_era) if defender_era in _ERA_ORDER else 0
-    culture_pool = float(defender.resources.get("culture", 0.0))
-
-    # Only life lost in THIS battle counts — never re-bill missing life
-    # carried over from earlier battles that has not regenerated yet.
-    life_missing = max(0.0, float(battle.defender_losses.get("life", 0.0)))
-    rate_raw = getattr(cfg, "culture_steal_per_life_and_era", 2000.0) if cfg else 2000.0
-    rate = float(rate_raw) if isinstance(rate_raw, (int, float)) else 2000.0
-    total_culture_stolen = min(life_missing * (defender_era_idx + 1) * rate, culture_pool)
-
-    if total_culture_stolen <= 0.01:
-        return
-
-    n_winners = len(human_uids)
-    base_per_winner = total_culture_stolen / n_winners
-    payout_total = 0.0
-    era_ratio = getattr(cfg, "culture_era_advantage_ratio", 0.5) if cfg else 0.5
-    for uid in human_uids:
-        w_emp = svc.empire_service.get(uid) if svc.empire_service else None
-        if w_emp is None:
-            continue
-        attacker_era = svc.empire_service.get_current_era(w_emp)
-        attacker_era_idx = _ERA_ORDER.index(attacker_era) if attacker_era in _ERA_ORDER else 0
-        era_penalty = attacker_era_idx > defender_era_idx
-        payout = round(base_per_winner * (era_ratio if era_penalty else 1.0), 2)
-        w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + payout
-        payout_total += payout
-        loot.setdefault("per_attacker", {}).setdefault(uid, {})
-        loot["per_attacker"][uid]["culture"] = loot["per_attacker"][uid].get("culture", 0.0) + payout
-        if era_penalty:
-            loot["per_attacker"][uid]["culture_era_penalty"] = True
-            loot["per_attacker"][uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
-        battle.attacker_gains.setdefault(uid, {})
-        battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + payout
-        if era_penalty:
-            battle.attacker_gains[uid]["culture_era_penalty"] = True
-            battle.attacker_gains[uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
-
-    defender.resources["culture"] = max(0.0, culture_pool - payout_total)
-    battle.defender_losses["culture"] = battle.defender_losses.get("culture", 0.0) + payout_total
-    loot["culture"] = loot.get("culture", 0.0) + payout_total
-    log.info(
-        "[LOOT] Culture (life-based) stolen from uid=%d: %.1f (life_missing=%.1f era_idx=%d rate=%.0f, %d attackers)",
-        defender.uid, payout_total, life_missing, defender_era_idx + 1, rate, n_winners,
-    )
 
 
 def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
@@ -804,24 +781,40 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
     loot: dict[str, Any] = {"knowledge": None, "culture": 0.0, "artifact": None, "life_restored": 0.0,
                              "per_attacker": {}}
 
-    # --- Knowledge steal (one chosen iid; effort divided by n_winners) ---
-    # For AI-only battles use the legacy AI path; for human battles use first human attacker
+    # --- Knowledge steal ---
+    # Select the in-progress item with most progress (effort - remaining).
+    # Human: prefer that item only if attacker still needs it; otherwise fall back
+    #        to the highest-progress item the attacker still needs.
+    # AI: always takes the highest-progress item.
+    # Completed research (remaining <= 0) is protected — never stealable.
+    # Defender always loses progress (selected item is always in-progress by definition).
     _first_human = svc.empire_service.get(winners[0]) if winners and svc.empire_service else None
     _is_ai_only = not winners and bool(ai_uids)
 
-    if _is_ai_only:
-        active = [
-            (iid, rem) for iid, rem in defender.knowledge.items()
-            if rem > 0 and items.get(iid)
-        ]
-        stealable_iids = [max(active, key=lambda x: (items[x[0]].effort - x[1]))[0]] if active else []
-    elif _first_human:
-        stealable_iids = [iid for iid in defender.knowledge if _first_human.knowledge.get(iid, 1.0) > 0.0]
-    else:
-        stealable_iids = []
+    active = [
+        (iid, rem) for iid, rem in defender.knowledge.items()
+        if rem > 0 and items.get(iid)
+    ]
 
-    if stealable_iids:
-        chosen_iid = _random.choice(stealable_iids)
+    def _by_progress(iid_rem: tuple) -> float:
+        iid, rem = iid_rem
+        return (items[iid].effort if items.get(iid) else 0.0) - rem
+
+    if _is_ai_only:
+        chosen_iid = max(active, key=_by_progress)[0] if active else None
+    elif _first_human and active:
+        best_iid = max(active, key=_by_progress)[0]
+        if _first_human.knowledge.get(best_iid, 1.0) > 0.0:
+            # Attacker still needs the best item — take it
+            chosen_iid = best_iid
+        else:
+            # Attacker already has the best item — pick highest-progress item they still need
+            needs = [(iid, rem) for iid, rem in active if _first_human.knowledge.get(iid, 1.0) > 0.0]
+            chosen_iid = max(needs, key=_by_progress)[0] if needs else None
+    else:
+        chosen_iid = None
+
+    if chosen_iid:
         item = items.get(chosen_iid)
         effort = item.effort if item else 0.0
         min_pct = getattr(cfg, "min_lose_knowledge", 0.03) if cfg else 0.03
@@ -832,9 +825,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
         total_gain = already_researched * pct
         per_winner_gain = total_gain / n_winners
 
-        if _is_ai_only:
-            pass  # AI does not receive knowledge
-        else:
+        if not _is_ai_only:
             for uid in winners:
                 w_emp = svc.empire_service.get(uid) if svc.empire_service else None
                 if w_emp is None:
@@ -878,23 +869,40 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                     )
                     defender.build_queue = None
 
-    # --- Culture steal: attacker win only ---
+    # --- Culture steal ---
+    # Formula:
+    #   base   = uniform(min_c, max_c) * culture_pool
+    #   scaled = base * (life_lost / max_life)   — proportional to life damage dealt
+    #   if attacker won:    × 2
+    #   if attacker era > defender era:  × 0.5  (per attacker)
     from gameserver.util.eras import ERA_ORDER as _ERA_ORDER
     defender_era = svc.empire_service.get_current_era(defender) if svc.empire_service else _ERA_ORDER[0]
     defender_era_idx = _ERA_ORDER.index(defender_era) if defender_era in _ERA_ORDER else 0
     culture_pool = float(defender.resources.get("culture", 0.0))
+    life_lost = float(battle.defender_losses.get("life", 0.0))
+    life_ratio = min(1.0, life_lost / max(1.0, float(defender.max_life)))
 
     from gameserver.engine.ai_service import AI_UID as _AI_UID_C
     _is_ai_attack = _AI_UID_C in battle.attacker_uids
-    if winners or _is_ai_attack:
+    attacker_won = not battle.defender_won
+
+    if (winners or _is_ai_attack) and life_ratio > 0:
         min_c = getattr(cfg, "min_lose_culture", 0.01) if cfg else 0.01
         max_c = getattr(cfg, "max_lose_culture", 0.05) if cfg else 0.05
         pct_culture = _random.uniform(min_c, max_c)
         ai_modifier = float(getattr(cfg, "ai_culture_steal_modifier", 1.0)) if cfg else 1.0
-        modifier = ai_modifier if _is_ai_attack else 1.0
-        total_culture_stolen = min(culture_pool * pct_culture * modifier, culture_pool)
+        win_multiplier = 2.0 if attacker_won else 1.0
+        base_stolen = culture_pool * pct_culture * life_ratio * win_multiplier
+        if _is_ai_attack and not winners:
+            base_stolen *= ai_modifier
+        total_culture_stolen = min(base_stolen, culture_pool)
+        log.info(
+            "[LOOT] Culture calc uid=%d: pool=%.1f pct=%.3f life_ratio=%.2f win_mult=%.1f → base=%.1f",
+            defender.uid, culture_pool, pct_culture, life_ratio, win_multiplier, total_culture_stolen,
+        )
     else:
         total_culture_stolen = 0.0
+        pct_culture = 0.0
 
     if total_culture_stolen > 0.01:
         payout_total = 0.0
@@ -907,8 +915,7 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                 attacker_era = svc.empire_service.get_current_era(w_emp)
                 attacker_era_idx = _ERA_ORDER.index(attacker_era) if attacker_era in _ERA_ORDER else 0
                 era_penalty = attacker_era_idx > defender_era_idx
-                era_ratio = getattr(cfg, "culture_era_advantage_ratio", 0.5) if cfg else 0.5
-                payout = round(base_per_winner * (era_ratio if era_penalty else 1.0), 2)
+                payout = round(base_per_winner * (0.5 if era_penalty else 1.0), 2)
                 w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + payout
                 payout_total += payout
                 loot["per_attacker"].setdefault(uid, {})["culture"] = payout
@@ -921,31 +928,30 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                     battle.attacker_gains[uid]["culture_era_penalty"] = True
                     battle.attacker_gains[uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
             log.info(
-                "[LOOT] Culture (pool%%) stolen from uid=%d: %.1f (%.2f%% of pool, %d winners)",
-                defender.uid, payout_total, pct_culture * 100, n_winners,
+                "[LOOT] Culture stolen from uid=%d: %.1f (pct=%.2f%% life_ratio=%.2f %d winners)",
+                defender.uid, payout_total, pct_culture * 100, life_ratio, n_winners,
             )
         else:
-            # AI: culture lost by defender, not credited to anyone
             payout_total = round(total_culture_stolen, 2)
-            log.info("[LOOT] Culture stolen from uid=%d by AI: %.1f (%.2f%%)",
-                     defender.uid, payout_total, pct_culture * 100)
+            log.info("[LOOT] Culture stolen from uid=%d by AI: %.1f", defender.uid, payout_total)
         defender.resources["culture"] = max(0.0, culture_pool - payout_total)
         battle.defender_losses["culture"] = battle.defender_losses.get("culture", 0.0) + payout_total
         loot["culture"] = loot.get("culture", 0.0) + payout_total
 
-    # --- Life restore (once per battle for defender) ---
-    from gameserver.util.effects import RESTORE_LIFE_AFTER_LOSS_OFFSET
-    base_restore = getattr(cfg, "restore_life_after_loss_offset", 1.0) if cfg else 1.0
-    effect_restore = defender.effects.get(RESTORE_LIFE_AFTER_LOSS_OFFSET, 0.0)
-    total_restore = base_restore + effect_restore
-    current_life = defender.resources.get("life", 0.0)
-    max_life = getattr(defender, "max_life", 10.0)
-    life_restored = min(total_restore, max(0.0, max_life - current_life))
-    if life_restored > 0:
-        defender.resources["life"] = current_life + life_restored
-        loot["life_restored"] = round(life_restored, 2)
-        log.info("[LOOT] Life restored to uid=%d: %.2f (base=%.1f + effect=%.1f)",
-                 defender.uid, life_restored, base_restore, effect_restore)
+    # --- Life restore (only on defender defeat) ---
+    if battle.defender_won is False:
+        from gameserver.util.effects import RESTORE_LIFE_AFTER_LOSS_OFFSET
+        base_restore = getattr(cfg, "restore_life_after_loss_offset", 1.0) if cfg else 1.0
+        effect_restore = defender.effects.get(RESTORE_LIFE_AFTER_LOSS_OFFSET, 0.0)
+        total_restore = base_restore + effect_restore
+        current_life = defender.resources.get("life", 0.0)
+        max_life = getattr(defender, "max_life", 10.0)
+        life_restored = min(total_restore, max(0.0, max_life - current_life))
+        if life_restored > 0:
+            defender.resources["life"] = current_life + life_restored
+            loot["life_restored"] = round(life_restored, 2)
+            log.info("[LOOT] Life restored to uid=%d: %.2f (base=%.1f + effect=%.1f)",
+                     defender.uid, life_restored, base_restore, effect_restore)
 
     return loot
 
@@ -1034,8 +1040,16 @@ def _create_spy_arrived_handler() -> Callable[..., Any]:
             log.warning("[spy] Empire not found: attacker=%d defender=%d", attacker_uid, defender_uid)
             return
 
+        svc.empire_service.recalculate_effects(defender)
+        svc.empire_service.recalculate_effects(attacker_empire)
+
         from gameserver.network.handlers.military import _build_spy_report
         report_text, report_data = _build_spy_report(defender, svc, attacker=attacker_empire)
+
+        siege_duration = (
+            svc.attack_service._calculate_siege_duration(attacker_uid, defender_uid)
+            if svc.attack_service else None
+        )
 
         finished_msg = {
             "type": "attack_phase_changed",
@@ -1055,6 +1069,19 @@ def _create_spy_arrived_handler() -> Callable[..., Any]:
                 **report_data,
             })
 
+        if siege_duration is not None:
+            h = int(siege_duration // 3600)
+            m = int((siege_duration % 3600) // 60)
+            s = int(siege_duration % 60)
+            parts = ([f"{h}h"] if h else []) + ([f"{m}m"] if m else []) + ([f"{s}s"] if s or (not h and not m) else [])
+            siege_str = " ".join(parts)
+            first_sep = report_text.find("─" * 32)
+            if first_sep != -1:
+                report_text = (
+                    report_text[:first_sep + 32]
+                    + f"\n  ⚔ Siege time: {siege_str}"
+                    + report_text[first_sep + 32:]
+                )
         inbox_body = report_text
         await svc.database.send_message(from_uid=0, to_uid=attacker_uid, body=inbox_body)
         log.info("[spy] Report sent: attacker=%d defender=%d era=%s",
@@ -1291,6 +1318,7 @@ def _create_battle_start_handler() -> Callable[..., Any]:
                 structures=structures_dict,
                 observer_uids={attacker_uid, defender_uid} | existing_observers,
                 critter_path=critter_path,
+                replay_key=replay_rec.replay_key,
                 recorder=replay_rec,
             )
             _get_active_battles()[defender_uid] = battle

@@ -40,6 +40,7 @@ services:
       - ./ai_players:/app/ai_players:ro
       - ./data/prod/bot_states:/app/ai_players/states
       - ./data/prod/bot_logs:/app/ai_players/logs
+      - ./data:/app/data:ro
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trophies</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #20202e;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --gold:        #ffca28;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+      --radius:      6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--gold); letter-spacing: 1px; flex: 1; }
+    #status-msg { font-size: 12px; font-family: var(--mono); }
+    #status-msg.ok  { color: var(--success); }
+    #status-msg.err { color: var(--danger); }
+
+    #content {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .controls input[type="text"] {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 6px 10px;
+      outline: none;
+      min-width: 220px;
+    }
+    .controls input:focus { border-color: var(--accent); }
+    .controls label { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--text-dim); cursor: pointer; }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      padding: 5px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .8; }
+    .btn-primary { background: var(--accent);  color: #0d0d14; font-weight: 600; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    table.matrix {
+      border-collapse: collapse;
+      background: var(--surface);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    table.matrix th, table.matrix td {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    /* Trophy column headers — image, vertical name on hover via title */
+    table.matrix thead th.tcol {
+      background: var(--surface-alt);
+      padding: 6px 2px;
+      width: 34px; min-width: 34px; max-width: 34px;
+      text-align: center;
+      vertical-align: bottom;
+    }
+    table.matrix thead th.tcol img { width: 26px; height: 26px; object-fit: contain; display: block; margin: 0 auto; }
+    table.matrix thead th.tcol .thname {
+      font-size: 9px; color: var(--text-dim); font-weight: 500;
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      margin: 4px auto 0; max-height: 90px; overflow: hidden;
+    }
+
+    /* Empire (left) columns — sticky */
+    table.matrix th.ehead, table.matrix td.ecell {
+      position: sticky; left: 0; z-index: 2;
+      background: var(--surface);
+      text-align: left;
+      padding: 6px 10px;
+    }
+    table.matrix th.ehead { background: var(--surface-alt); color: var(--text-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
+    table.matrix td.ecell .ename { font-weight: 600; color: var(--text); }
+    table.matrix td.ecell .uname { color: var(--text-dim); font-family: var(--mono); font-size: 10px; margin-left: 6px; }
+
+    table.matrix th.cnt, table.matrix td.cnt {
+      text-align: center; padding: 6px 8px;
+      font-family: var(--mono); color: var(--gold); font-weight: 700;
+    }
+    table.matrix th.cnt { background: var(--surface-alt); color: var(--text-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 1px; font-weight: 600; }
+
+    table.matrix tbody tr:hover td { background: var(--surface-hover); }
+    table.matrix tbody tr:hover td.ecell { background: var(--surface-hover); }
+
+    table.matrix td.cell { text-align: center; padding: 5px 2px; }
+    table.matrix td.cell.has { color: var(--success); font-weight: 700; }
+    table.matrix td.cell.no  { color: #33333f; }
+
+    .empty { color: var(--text-dim); text-align: center; padding: 30px; }
+
+    @media (max-width: 600px) {
+      #content { padding: 12px 8px 40px; gap: 18px; }
+      #topbar { padding: 8px 10px; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>🏆 TROPHIES</h1>
+    <span id="status-msg">—</span>
+    <button class="btn-primary" onclick="loadAll()">Refresh</button>
+  </div>
+
+  <div id="content">
+    <div>
+      <div class="controls">
+        <input type="text" id="filter" placeholder="Filter by empire / username…" oninput="render()" />
+        <label><input type="checkbox" id="only-earned" checked onchange="render()" /> Only empires with trophies</label>
+      </div>
+      <div class="table-wrap"><div id="empires"></div></div>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script>
+    const API = window.location.origin;
+    let DATA = null;
+
+    function authHeaders() {
+      const token = localStorage.getItem('e3_jwt_token');
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    async function api(method, path) {
+      const r = await fetch(API + path, { method, headers: { ...authHeaders() } });
+      return r.json();
+    }
+
+    function setStatus(msg, ok) {
+      const el = document.getElementById('status-msg');
+      el.textContent = msg;
+      el.className = ok ? 'ok' : 'err';
+    }
+
+    function fmtBerlin(epochSecs) {
+      if (!epochSecs) return '—';
+      return new Date(epochSecs * 1000).toLocaleString('de-DE', {
+        timeZone: 'Europe/Berlin',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    function render() {
+      if (!DATA) return;
+      const container = document.getElementById('empires');
+      const catalog = DATA.catalog || [];
+
+      const filter = document.getElementById('filter').value.trim().toLowerCase();
+      const onlyEarned = document.getElementById('only-earned').checked;
+
+      let empires = DATA.empires || [];
+      if (onlyEarned) empires = empires.filter(e => e.earned_count > 0);
+      if (filter) empires = empires.filter(e =>
+        (e.name || '').toLowerCase().includes(filter) ||
+        (e.username || '').toLowerCase().includes(filter) ||
+        String(e.uid).includes(filter)
+      );
+
+      if (!empires.length) {
+        container.innerHTML = '<div class="empty">No matching empires.</div>';
+        return;
+      }
+
+      // Header: empire | count | one column per trophy (image + vertical name)
+      const headCols = catalog.map(t => {
+        const img = t.image ? `/${t.image.replace(/^\//, '')}` : '';
+        return `<th class="tcol" title="${esc(t.name)} — ${esc(t.description)}">
+          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" />` : ''}
+          <div class="thname">${esc(t.name)}</div>
+        </th>`;
+      }).join('');
+
+      const rows = empires.map(e => {
+        const earnedMap = {};
+        (e.earned || []).forEach(et => { earnedMap[et.iid] = et; });
+        const cells = catalog.map(t => {
+          const et = earnedMap[t.iid];
+          if (et) {
+            return `<td class="cell has" title="${esc(t.name)} · ${fmtBerlin(et.earned_at)}${et.season ? ' · S' + et.season : ''}">✓</td>`;
+          }
+          return `<td class="cell no">·</td>`;
+        }).join('');
+        return `<tr>
+          <td class="ecell"><span class="ename">${esc(e.name) || '—'}</span><span class="uname">${esc(e.username) || ''}</span></td>
+          <td class="cnt">${e.earned_count}</td>
+          ${cells}
+        </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th class="ehead">Empire</th>
+              <th class="cnt" title="Trophies earned / ${DATA.total_trophies} total">🏆</th>
+              ${headCols}
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    async function loadAll() {
+      try {
+        DATA = await api('GET', '/api/admin/trophies');
+        const earned = (DATA.empires || []).filter(e => e.earned_count > 0).length;
+        setStatus(`${earned} empires with trophies · ${DATA.total_trophies} total trophies`, true);
+        render();
+      } catch (e) {
+        setStatus('Cannot connect to gameserver', false);
+        document.getElementById('empires').innerHTML = '<div class="empty" style="color:var(--danger)">Failed to load.</div>';
+      }
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>

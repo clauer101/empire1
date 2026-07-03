@@ -33,6 +33,7 @@ _DIRECT_STAT_CONDITIONS: frozenset[str] = frozenset({
     "max_lucky_punch_levels",
     "max_artifacts_stolen_one_battle",
     "max_artifacts_lost_one_battle",
+    "one_hp_def_wins",
 })
 
 
@@ -140,12 +141,19 @@ class TrophyService:
         """
         if empire is None:
             return []
-        already_earned = set(empire.trophies.keys())
+        from gameserver.engine.global_state import get_season_number, is_season_reset_triggered
+        if is_season_reset_triggered():
+            return []
+        # Source of truth: DB rows, not in-memory state (guards against stale empire.trophies)
+        db_rows = await self._database.get_trophy_rows(uid)
+        already_earned = {r["iid"] for r in db_rows}
+        # Sync any DB-earned trophies missing from in-memory state
+        for row in db_rows:
+            if row["iid"] not in empire.trophies:
+                empire.trophies[row["iid"]] = {"earned_at": row["earned_at"], "season": row["season"]}
         unearned = [t for t in self._trophies() if t.iid not in already_earned]
         if not unearned:
             return []
-
-        from gameserver.engine.global_state import get_season_number
         stats = await self._database.get_empire_stats(uid) or {}
         era_firsts_rows = await self._database.get_era_firsts()
         era_firsts: dict[str, int] = {r["era_key"]: r["uid"] for r in era_firsts_rows}

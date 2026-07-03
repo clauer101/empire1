@@ -195,6 +195,11 @@ class BattleService:
         # sped-up battle simply plays out faster for live observers.
         speedup = max(float(self._gc.speedup_factor), 0.01) if self._gc else 1.0
 
+        if battle.loop_running:
+            log.warning("[battle_loop] bid=%d already has a running loop — ignoring duplicate start", battle.bid)
+            return
+        battle.loop_running = True
+
         log.info("[battle_loop] Starting battle (bid=%d, defender=%d, attackers=%s, speedup=%.2fx)",
                  battle.bid, battle.defender.uid if battle.defender else None,
                  battle.attacker_uids, speedup)
@@ -214,6 +219,8 @@ class BattleService:
                 break  # Caller (_run_battle_task) sends summary after computing loot
 
             await asyncio.sleep(0.015)
+
+        battle.loop_running = False
 
     # ── Deterministic tick (also used by tests) ────────────────
 
@@ -618,6 +625,7 @@ class BattleService:
             scale=getattr(item, 'scale', 1.0) if item else 1.0,
             value=getattr(item, 'value', getattr(item, 'health', 1.0) if item else 1.0) if item else 1.0,
             damage=getattr(item, 'critter_damage', 1.0) if item else 1.0,
+            slots=max(1, int(getattr(item, 'slots', 1) or 1)) if item else 1,
             spawn_on_death=dict(getattr(item, 'spawn_on_death', None) or {}),
         )
 
@@ -847,6 +855,7 @@ class BattleService:
         """
         battle.removed_critters.append({"cid": critter.cid, "reason": "reached", "path_progress": critter.path_progress, "damage": critter.damage})
         battle.critters_reached += 1
+        battle.critters_reached_slots += critter.slots
         # Remove critter from battle
         del battle.critters[critter.cid]
         

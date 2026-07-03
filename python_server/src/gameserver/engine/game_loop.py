@@ -70,6 +70,7 @@ class GameLoop:
 
         self._database: Any | None = None
         self._season_snapshot_done: bool = False
+        self._wipe_done: bool = False
 
         # --- Debug / monitoring counters ---
         self.tick_count: int = 0
@@ -148,8 +149,9 @@ class GameLoop:
         """
         import csv
         import shutil
+        from gameserver.engine.global_state import get_season_number
 
-        results_dir = Path(self._state_file).parent / "results" / "season1"
+        results_dir = Path(self._state_file).parent / "results" / f"season{get_season_number()}"
         try:
             results_dir.mkdir(parents=True, exist_ok=True)
             if (results_dir / "gameserver.db").exists() and (results_dir / "state.yaml").exists():
@@ -162,13 +164,15 @@ class GameLoop:
                 shutil.copy2(state_src, results_dir / "state.yaml")
                 _log.info("Season snapshot: copied state.yaml")
 
-            # 2. gameserver.db
+            # 2. gameserver.db — use shutil.copy2 to avoid VACUUM conflicts
             if self._database is not None:
                 db_src = Path(self._database._db_path)
                 if db_src.exists():
                     dest_db = results_dir / "gameserver.db"
-                    await self._database._conn.execute(f"VACUUM INTO '{dest_db}'")
-                    _log.info("Season snapshot: copied gameserver.db via VACUUM INTO")
+                    await asyncio.get_running_loop().run_in_executor(
+                        None, shutil.copy2, db_src, dest_db
+                    )
+                    _log.info("Season snapshot: copied gameserver.db")
 
             # 3. empire_stats CSV
             if self._database is not None:
@@ -201,15 +205,29 @@ class GameLoop:
                     writer.writerows(holds_rows)
                 _log.info("Season snapshot: wrote artifact_holds.csv (%d rows)", len(holds_rows))
 
-            # 5. Save end-of-season artifact snapshot for next-season bonus
+
+            # 5. Record top-3 winners in the live DB
             if self._database is not None:
-                uid_to_arts = {
-                    e.uid: list(e.artifacts)
-                    for e in self._empires.all_empires.values()
-                    if e.artifacts
-                }
-                await self._database.save_last_season_artifacts(uid_to_arts)
-                _log.info("Season snapshot: saved last_season_artifacts (%d empires)", len(uid_to_arts))
+                from gameserver.engine.global_state import get_season_title
+                empires = list(self._empires.all_empires.values())
+                ranked = sorted(
+                    (e for e in empires if e.uid != 0),
+                    key=lambda e: e.resources.get("culture", 0.0), reverse=True,
+                )
+                winners = [
+                    {
+                        "place": i + 1,
+                        "empire_uid": e.uid,
+                        "empire_name": e.name,
+                        "culture": e.resources.get("culture", 0.0),
+                    }
+                    for i, e in enumerate(ranked[:3])
+                ]
+                await self._database.record_season_winners(
+                    season_number=get_season_number(),
+                    season_title=get_season_title(),
+                    winners=winners,
+                )
 
             _log.info("Season snapshot complete → %s", results_dir)
         except Exception:
@@ -232,25 +250,48 @@ class GameLoop:
 
     def _step(self, dt: float) -> None:
         """One tick of the game loop."""
-        from datetime import datetime, timezone
+        from datetime import datetime, timezone, timedelta
         from gameserver.engine.global_state import (
             get_end_criterion_activated, is_end_rally_active,
             get_next_season_leadtime, get_next_season_start,
             get_next_season_title, get_season_number, get_season_title,
             is_season_reset_triggered, set_season_reset_triggered, set_season,
-            clear_end_criterion, parse_iso_utc,
+            clear_end_criterion, parse_iso_utc, set_this_season_start_date,
+            is_season_snapshot_done, set_season_snapshot_done,
         )
         now = datetime.now(timezone.utc)
         season_start = parse_iso_utc(get_next_season_start())
 
-        # Phase 2 — Leadtime wipe: when the derived leadtime window opens
-        # (next_season_start minus season_leadtime), wipe once. Gated on
-        # not-yet-reset so it fires a single time; Phase 3/4 take over after.
-        if season_start is not None and self._gc is not None and not is_season_reset_triggered():
+        # Phase 1 → 2: Rally ended — freeze game and take snapshot once.
+        if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
+            if not is_season_snapshot_done():
+                set_season_snapshot_done(True)
+                set_season_reset_triggered(True)
+                # Auto-set next_season_start if not already configured.
+                if not get_next_season_start() and self._gc is not None:
+                    activated = get_end_criterion_activated()
+                    if isinstance(activated, datetime):
+                        next_start = (activated + timedelta(seconds=float(self._gc.next_season_start_after_end))).isoformat()
+                        set_season(get_season_number(), get_season_title(), _next_start=next_start)
+                        _log.info(
+                            "Auto-set next_season_start: %s (activated + %.0fs)",
+                            next_start, self._gc.next_season_start_after_end,
+                        )
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self._take_season_snapshot())
+                except RuntimeError:
+                    pass  # no running event loop in tests
+
+        # Phase 2 → 3: Wipe when leadtime is reached (next_season_start minus
+        # season_leadtime). Fires once regardless of whether game_frozen is
+        # already True (set by rally end above). Gated on _season_snapshot_done
+        # so snapshot runs first, and on wipe not having happened yet.
+        if season_start is not None and self._gc is not None and not self._wipe_done:
             leadtime = get_next_season_leadtime(self._gc.season_leadtime)
             reset_at = parse_iso_utc(leadtime)
             if reset_at is not None and now >= reset_at:
-                set_season_reset_triggered(True)
+                self._wipe_done = True
                 import time as _time
                 from gameserver.engine.global_state import set_season_wipe_time
                 set_season_wipe_time(_time.time())
@@ -259,47 +300,36 @@ class GameLoop:
                 clear_end_criterion()
                 if self._database is not None:
                     asyncio.ensure_future(self._database.wipe_season_stats())
-                self._season_snapshot_done = False
                 _log.info(
-                    "Season leadtime: wiped %d empires, %d attacks; "
+                    "Season wipe: wiped %d empires, %d attacks; "
                     "frozen until %s",
                     len(uids), attack_count, get_next_season_start(),
                 )
+                return  # empires wiped — skip step_all this tick
 
-        # Phase 3/4 — While reset is triggered, stay frozen until
-        # next_season_start is reached, then advance the season and unfreeze.
+        # Phase 2/3: While frozen, stay frozen until next_season_start is
+        # reached, then advance the season and unfreeze (Phase 4).
         if is_season_reset_triggered():
             if season_start is None:
-                # No (or malformed) next_season_start: stay frozen rather than
-                # falling through to the end-criterion block, which would
-                # re-trigger the reset every tick. Surface the misconfiguration.
                 if get_next_season_start():
                     _log.warning(
-                        "season_reset_triggered but next_season_start is malformed: %r",
+                        "game_frozen but next_season_start is malformed: %r",
                         get_next_season_start(),
                     )
-                return  # frozen
+                return  # frozen — waiting for admin to set next_season_start
             if now >= season_start:
                 new_title = get_next_season_title() or get_season_title()
                 set_season(get_season_number() + 1, new_title)
+                set_this_season_start_date(season_start.isoformat())
                 set_season_reset_triggered(False)
+                set_season_snapshot_done(False)
+                self._wipe_done = False
                 _log.info(
                     "New season started: season %d '%s'",
                     get_season_number(), get_season_title(),
                 )
             else:
                 return  # frozen — next_season_start not yet reached
-
-        if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
-            if not self._season_snapshot_done:
-                self._season_snapshot_done = True
-                set_season_reset_triggered(True)
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._take_season_snapshot())
-                except RuntimeError:
-                    pass  # no running event loop in tests
-            return
 
         # 1. Advance all empires (resources, build progress, research)
         self._empires.step_all(dt)
@@ -319,8 +349,23 @@ class GameLoop:
             )
             self._events.emit(event)
 
-        # 4. Update statistics
-        # TODO: self._stats.update()
+        # 4. Update statistics: peak simultaneous incoming attacks per defender.
+        # Counts distinct in-flight attackers (AI counts as at most one).
+        if self._database is not None:
+            from gameserver.engine.ai_service import AI_UID
+            from gameserver.models.attack import AttackPhase
+            incoming: dict[int, set[int]] = {}
+            for atk in self._attacks.get_all_attacks():
+                if atk.phase == AttackPhase.FINISHED:
+                    continue
+                attacker = AI_UID if atk.attacker_uid == AI_UID else atk.attacker_uid
+                incoming.setdefault(atk.defender_uid, set()).add(attacker)
+            for def_uid, attackers in incoming.items():
+                asyncio.ensure_future(
+                    self._database.record_empire_stat_max(
+                        def_uid, "peak_incoming", len(attackers)
+                    )
+                )
 
         # 5. Barbarian periodic attacks (Bernoulli trial every 60 s per player)
         if self._ai is not None:

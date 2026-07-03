@@ -1,4 +1,18 @@
-"""Test siege duration calculation based on defender effects."""
+"""Comprehensive tests for _calculate_siege_duration in AttackService.
+
+Formula:
+    result = max(1.0,
+        (base + defender.siege_offset)
+        * (1 - defender.siege_time_modifier)
+        * (1 - attacker.enemy_siege_time_modifier)
+    )
+
+where:
+  base               = base_override if given, else 0.0  (AI waves supply this)
+  siege_offset       = flat seconds added by defender buildings/knowledge/rally
+  siege_time_modifier = % reduction applied by defender (rally gives this to all)
+  enemy_siege_time_modifier = % reduction applied by attacker (siege corruption)
+"""
 
 import pytest
 from gameserver.engine.attack_service import AttackService
@@ -7,91 +21,290 @@ from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.loaders.game_config_loader import GameConfig
 from gameserver.models.empire import Empire
 from gameserver.util.events import EventBus
-from gameserver.util import effects
+from gameserver.util import effects as fx
 
 
 ATTACKER_UID = 1
 DEFENDER_UID = 100
-BASE = 30.0
 
 
 @pytest.fixture
-def services():
-    """Create minimal services for testing."""
+def svc():
     event_bus = EventBus()
     upgrade_provider = UpgradeProvider()
     gc = GameConfig()
     empire_service = EmpireService(upgrade_provider, event_bus, gc)
     attack_service = AttackService(event_bus, gc, empire_service)
     attacker = Empire(uid=ATTACKER_UID, name="Attacker")
+    defender = Empire(uid=DEFENDER_UID, name="Defender")
     empire_service.register(attacker)
+    empire_service.register(defender)
     return attack_service, empire_service
 
 
-def test_siege_duration_default_no_effects(services):
-    """Siege duration with no defender effects and a base_override."""
-    attack_service, empire_service = services
-
-    defender = Empire(uid=DEFENDER_UID, name="Defender")
-    empire_service.register(defender)
-
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
-    assert duration == BASE
+def _calc(svc, base_override=None):
+    attack_service, _ = svc
+    return attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=base_override)
 
 
-def test_siege_duration_with_modifier_only(services):
-    """Siege duration with positive SIEGE_TIME_OFFSET (additive)."""
-    attack_service, empire_service = services
-
-    defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = 15.0
-    empire_service.register(defender)
-
-    # 30 + 15 = 45
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
-    assert duration == 45.0
+def _atk(svc) -> Empire:
+    _, empire_service = svc
+    return empire_service.get(ATTACKER_UID)
 
 
-def test_siege_duration_with_doubled_modifier(services):
-    """Siege duration when SIEGE_TIME_OFFSET equals the base (doubles it)."""
-    attack_service, empire_service = services
-
-    defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = 30.0
-    empire_service.register(defender)
-
-    # 30 + 30 = 60
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
-    assert duration == 60.0
+def _def(svc) -> Empire:
+    _, empire_service = svc
+    return empire_service.get(DEFENDER_UID)
 
 
-def test_siege_duration_with_negative_modifier(services):
-    """Siege duration with negative SIEGE_TIME_OFFSET (faster siege)."""
-    attack_service, empire_service = services
+# ── baseline ──────────────────────────────────────────────────────────────────
 
-    defender = Empire(uid=DEFENDER_UID, name="Defender")
-    defender.effects[effects.SIEGE_TIME_OFFSET] = -9.0
-    empire_service.register(defender)
+class TestBaseline:
+    def test_no_effects_no_base_returns_minimum(self, svc):
+        """With no base and no effects, result is clamped to 1.0."""
+        assert _calc(svc) == 1.0
 
-    # 30 - 9 = 21
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID, base_override=BASE)
-    assert duration == 21.0
+    def test_base_only_no_effects(self, svc):
+        """base_override is used verbatim when no effects are set."""
+        assert _calc(svc, base_override=300.0) == pytest.approx(300.0)
+
+    def test_no_base_offset_only(self, svc):
+        """siege_offset alone (no base_override) sets the siege time."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 3600.0
+        assert _calc(svc) == pytest.approx(3600.0)
+
+    def test_base_plus_offset(self, svc):
+        """base_override and siege_offset are summed before multipliers."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        assert _calc(svc, base_override=500.0) == pytest.approx(1500.0)
+
+    def test_missing_defender_falls_back_to_base(self, svc):
+        attack_service, _ = svc
+        result = attack_service._calculate_siege_duration(ATTACKER_UID, 9999, base_override=60.0)
+        assert result == pytest.approx(60.0)
+
+    def test_missing_attacker_skips_corruption(self, svc):
+        """If attacker is not found, corruption defaults to 0 (no reduction)."""
+        attack_service, empire_service = svc
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        result = attack_service._calculate_siege_duration(9999, DEFENDER_UID)
+        assert result == pytest.approx(1000.0)
 
 
-def test_siege_duration_no_base_no_effects(services):
-    """Without base_override and no defender effects, siege duration is 1 (clamped)."""
-    attack_service, empire_service = services
+# ── siege_offset (defender flat bonus) ───────────────────────────────────────
 
-    defender = Empire(uid=DEFENDER_UID, name="Defender")
-    empire_service.register(defender)
+class TestSiegeOffset:
+    def test_zero_offset(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 0.0
+        assert _calc(svc) == 1.0
 
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
-    assert duration == 1.0  # max(1.0, 0.0)
+    def test_large_offset(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        assert _calc(svc) == pytest.approx(23520.0)
+
+    def test_negative_offset_reduces_base(self, svc):
+        """Negative offset shortens siege time (base 300 - 200 = 100)."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = -200.0
+        assert _calc(svc, base_override=300.0) == pytest.approx(100.0)
+
+    def test_negative_offset_clamped_to_minimum(self, svc):
+        """Offset so negative that result < 1.0 is clamped to 1.0."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = -500.0
+        assert _calc(svc, base_override=100.0) == 1.0
 
 
-def test_siege_duration_nonexistent_defender(services):
-    """Siege duration for nonexistent defender should fall back to base_override."""
-    attack_service, empire_service = services
+# ── siege_time_modifier (defender % reduction) ───────────────────────────────
 
-    duration = attack_service._calculate_siege_duration(ATTACKER_UID, 999, base_override=BASE)
-    assert duration == BASE
+class TestSiegeTimeModifier:
+    def test_no_modifier(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        assert _calc(svc) == pytest.approx(1000.0)
+
+    def test_50_pct_modifier_halves(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        assert _calc(svc) == pytest.approx(500.0)
+
+    def test_25_pct_modifier(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 2000.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.25
+        assert _calc(svc) == pytest.approx(1500.0)
+
+    def test_100_pct_modifier_clamps_to_minimum(self, svc):
+        """Full modifier (1.0) reduces result to 0, clamped at 1.0."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 1.0
+        assert _calc(svc) == 1.0
+
+    def test_modifier_applies_to_base_plus_offset(self, svc):
+        """Modifier applies after base and offset are summed."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 500.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        # (300 + 500) * 0.5 = 400
+        assert _calc(svc, base_override=300.0) == pytest.approx(400.0)
+
+    def test_rally_modifier_50_pct(self, svc):
+        """Simulate rally effect: siege_time_modifier=0.5 added to defender."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        # 23520 * 0.5 = 11760
+        assert _calc(svc) == pytest.approx(11760.0)
+
+
+# ── enemy_siege_time_modifier (attacker siege corruption) ────────────────────
+
+class TestAttackerCorruption:
+    def test_no_corruption(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        assert _calc(svc) == pytest.approx(1000.0)
+
+    def test_28_pct_corruption(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.28
+        assert _calc(svc) == pytest.approx(720.0)
+
+    def test_38_pct_corruption(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.38
+        assert _calc(svc) == pytest.approx(620.0)
+
+    def test_100_pct_corruption_clamps(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 1.0
+        assert _calc(svc) == 1.0
+
+    def test_corruption_only_affects_attacker_not_defender(self, svc):
+        """Attacker A's corruption does not influence the value when A is the defender."""
+        # Defender has no corruption set
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.5
+        # Defender is NOT the one with corruption — corruption is attacker-side
+        assert _calc(svc) == pytest.approx(500.0)
+
+
+# ── combined modifier + corruption ───────────────────────────────────────────
+
+class TestCombined:
+    def test_modifier_and_corruption_multiply(self, svc):
+        """Modifier and corruption apply multiplicatively."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.28
+        # 23520 * 0.5 * 0.72 = 8467.2
+        assert _calc(svc) == pytest.approx(8467.2)
+
+    def test_dravithar_eem_28pct_scenario(self, svc):
+        """Reproduce the actual prod scenario: Dravithar 23520 offset, rally 0.5, eem 28%."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.28
+        assert _calc(svc) == pytest.approx(8467.2)
+
+    def test_dravithar_eem_38pct_scenario(self, svc):
+        """Prod scenario after ASSASSINS_DAGGER artifact: eem 38% corruption."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.38
+        # 23520 * 0.5 * 0.62 = 7291.2
+        assert _calc(svc) == pytest.approx(7291.2)
+
+    def test_modifier_100pct_overrides_corruption(self, svc):
+        """When modifier=1.0, result is 0 regardless of corruption → clamped to 1.0."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 23520.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 1.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.5
+        assert _calc(svc) == 1.0
+
+    def test_high_offset_high_modifier_high_corruption(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 50000.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.6
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.4
+        # 50000 * 0.4 * 0.6 = 12000
+        assert _calc(svc) == pytest.approx(12000.0)
+
+    def test_base_override_with_modifier_and_corruption(self, svc):
+        """AI-style: base_override + offset both reduced by modifier and corruption."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 200.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.2
+        # (100 + 200) * 0.5 * 0.8 = 120
+        assert _calc(svc, base_override=100.0) == pytest.approx(120.0)
+
+
+# ── siege_time_modifier is read from DEFENDER (design note) ──────────────────
+
+class TestModifierSourceIsDefender:
+    def test_attacker_siege_time_modifier_is_ignored(self, svc):
+        """siege_time_modifier on the ATTACKER has no effect — only defender's is used.
+
+        Per current implementation (attack_service.py line 435), modifier is
+        read from the defender. If this test fails, the read source has changed.
+        """
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.9  # attacker has it — should be ignored
+        # Only defender's modifier (unset = 0) applies → 1000.0
+        assert _calc(svc) == pytest.approx(1000.0)
+
+    def test_defender_siege_time_modifier_is_applied(self, svc):
+        """siege_time_modifier on the DEFENDER is what reduces siege time."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.9
+        # 1000 * 0.1 = 100
+        assert _calc(svc) == pytest.approx(100.0)
+
+    def test_both_have_modifier_only_defender_counts(self, svc):
+        """When both have siege_time_modifier, only defender's is applied."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5   # → halved
+        _atk(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.9   # → ignored
+        assert _calc(svc) == pytest.approx(500.0)
+
+
+# ── minimum clamp ─────────────────────────────────────────────────────────────
+
+class TestMinimumClamp:
+    def test_result_never_below_one(self, svc):
+        """Result is always at least 1.0 regardless of effects."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 0.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 1.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 1.0
+        assert _calc(svc) == 1.0
+
+    def test_result_is_exactly_one_when_offset_zero(self, svc):
+        assert _calc(svc) == 1.0
+
+    def test_small_result_clamped(self, svc):
+        """Offset=2 * (1-0.9) * (1-0.9) = 0.02 → clamped to 1.0."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 2.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.9
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.9
+        assert _calc(svc) == 1.0
+
+
+# ── AI base_override scenarios ────────────────────────────────────────────────
+
+class TestAiBaseOverride:
+    def test_ai_base_only_no_defender_effects(self, svc):
+        assert _calc(svc, base_override=600.0) == pytest.approx(600.0)
+
+    def test_ai_base_with_defender_offset(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 300.0
+        # (600 + 300) = 900
+        assert _calc(svc, base_override=600.0) == pytest.approx(900.0)
+
+    def test_ai_base_with_all_effects(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 300.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.5
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.1
+        # (600 + 300) * 0.5 * 0.9 = 405
+        assert _calc(svc, base_override=600.0) == pytest.approx(405.0)
+
+    def test_ai_base_zero_with_offset(self, svc):
+        """Explicit base_override=0.0 still uses offset."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 500.0
+        assert _calc(svc, base_override=0.0) == pytest.approx(500.0)
+
+    def test_no_base_override_uses_zero(self, svc):
+        """Without base_override, base defaults to 0 (human attack)."""
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 500.0
+        assert _calc(svc) == pytest.approx(500.0)

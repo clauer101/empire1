@@ -1,70 +1,47 @@
 # AI player bot configuration (dev environment ONLY)
 server_url: http://localhost:8180
-poll_interval_s: 15
-jitter_s: 5
-items_cache_s: 300
+cycle_interval_s: 10
 control_port_base: 9300
 
 strategy:
   weights:
-    economy: 4
     defense: 3
-    attack: 3
-    artifact: 1
-  # Strategy lifetime as a wall-clock window [min, max] hours. The bot runs as
-  # an external process independent of the server game tick.
+    attack: 2
+  # Strategy lifetime as a wall-clock window [min, max] hours.
   duration_hours:
-    economy: [4, 10]
     defense: [3, 8]
     attack: [1, 3]
-    artifact: [1, 3]
 
 # Per-bot temperament: multipliers applied to the base strategy weights above.
-# A bot's personality is rolled once at account creation (see bot/state.py) so
-# different instances drift into distinct play styles. Missing personality →
-# "balanced" (all x1.0).
+# A bot's personality is rolled once at account creation (see bot/state.py).
+# Missing personality → "balanced" (all x1.0).
 personalities:
-  economy:    {economy: 3.0, defense: 1.0, attack: 0.5, artifact: 0.7}
-  aggressive: {economy: 0.7, defense: 0.5, attack: 3.0, artifact: 1.5}
-  defensive:  {economy: 1.0, defense: 3.0, attack: 0.5, artifact: 0.5}
-  balanced:   {economy: 1.0, defense: 1.0, attack: 1.0, artifact: 1.0}
+  aggressive: {defense: 0.5, attack: 3.0}
+  defensive:  {defense: 3.0, attack: 0.5}
+  balanced:   {defense: 1.0, attack: 1.0}
 
 # Probability that a bot reacts to an AI breach by force-switching to defense.
-# Without this, weak bots that get breached every wave are permanently pinned to
-# defense and never express their personality. Defensive bots always respond;
-# aggressive/economy bots often shrug it off and keep their current plan.
 breach_response_chance:
-  economy:    0.3
   aggressive: 0.2
   defensive:  1.0
   balanced:   0.6
 
-# Offensive analog to the breach response: probability that a LOST attack
-# force-switches the bot back to the attack strategy against the same
-# opponent (revenge). Aggressive bots almost always retaliate; defensive
-# bots rather go back to building.
+# Probability that a LOST attack force-switches the bot back to attack (revenge).
 attack_defeat_response_chance:
-  economy:    0.3
   aggressive: 0.9
   defensive:  0.2
   balanced:   0.6
 
 # Weighted top-N sampling: instead of always taking the single best candidate,
 # planners sample from the best `top_n` options (better = higher probability).
-# top_n: 1 reproduces the old deterministic behavior.
 selection:
   top_n: 3
 
-# Dispatcher option scoring: each cycle every planner emits scored options
-# (gain/price); the dispatcher multiplies an option's base score by the
-# category weight for the bot's personality. Missing entry → 1.0.
+# Dispatcher option scoring: multiplier per category per personality.
 category_weights:
-  economy:    {economy: 1.5, defense: 1.0, attack: 0.6, baseline: 1.0}
-  aggressive: {economy: 0.8, defense: 0.7, attack: 1.6, baseline: 1.0}
-  defensive:  {economy: 1.0, defense: 1.6, attack: 0.6, baseline: 1.0}
-  balanced:   {economy: 1.0, defense: 1.0, attack: 1.0, baseline: 1.0}
+  aggressive: {defense: 0.7, attack: 1.6, baseline: 1.0}
+  defensive:  {defense: 1.6, attack: 0.6, baseline: 1.0}
+  balanced:   {defense: 1.0, attack: 1.0, baseline: 1.0}
 
-# Extra multiplier applied to options whose category matches the ACTIVE strategy,
-# so the chosen focus stays primary while secondary-strategy options can still
-# win on ROI.
+# Extra multiplier for options matching the active strategy.
 active_strategy_boost: 1.5

@@ -29,4 +29,5 @@ export default createQueueView({
   btnClass: 'build-btn',
   successMsg: '✓ Building started!',
   apiAction: (iid) => rest.buildItem(iid),
+  cancelAction: () => rest.cancelBuild(),
 });

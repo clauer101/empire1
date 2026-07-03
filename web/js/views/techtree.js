@@ -40,6 +40,13 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  if (!((st.summary?.effects?.enable_techtree ?? 0) > 0)) {
+    pageTitle.set('⬡ Tech Tree');
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔒</div>
+      <p>The Tech Tree unlocks once your empire reaches a certain size.<br>
+      Keep building and researching to unlock it.</p></div>`;
+    return;
+  }
   pageTitle.set('⬡ Tech Tree');
   _unsub.push(eventBus.on('state:summary', _updateStatus));
   _unsub.push(eventBus.on('state:items', render));

@@ -132,34 +132,7 @@
 </div>
 
 <script>
-const ALL_EFFECT_IDS = [
-  // Resources
-  'gold_modifier', 'gold_offset', 'culture_modifier', 'culture_offset',
-  'life_regen_modifier', 'max_life_modifier',
-  // Building & Research
-  'build_speed_modifier', 'build_speed_offset',
-  'research_speed_modifier', 'research_speed_offset',
-  'building_cost_modifier', 'tower_sell_refund_modifier',
-  // Workshop
-  'workshop_cost_modifier',
-  // Travel & Siege
-  'travel_offset', 'travel_time_modifier',
-  'siege_offset', 'siege_time_modifier',
-  'enemy_siege_time_modifier',
-  // Battle / Defense
-  'restore_life_after_loss_offset', 'restore_life_during_battle_modifier',
-  'wave_delay_offset',
-  // Army costs
-  'wave_cost_modifier', 'wave_era_cost_modifier', 'wave_slot_cost_modifier',
-  // Other costs
-  'citizen_cost_modifier', 'tile_cost_modifier', 'land_cost_modifier',
-  // Citizens
-  'citizen_effect_modifier', 'other_citizen_gold_modifier',
-  // Steal / Spy
-  'artifact_steal_victory_modifier', 'artifact_steal_defeat_modifier',
-  'culture_steal_modifier', 'knowledge_steal_modifier',
-  'spy_workshop',
-];
+let ALL_EFFECT_IDS = [];
 
 const ARTIFACT_TYPES = ['normal', 'legendary'];
 
@@ -383,12 +356,17 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 // ── Load ─────────────────────────────────────────────────────
 (async () => {
   try {
-    const resp = await fetch('/api/artifacts');
-    const data = await resp.json();
-    if (!resp.ok || !Array.isArray(data)) {
-      throw new Error(data.error || `Server returned ${resp.status}`);
+    const [artifactsResp, effectKeysResp] = await Promise.all([
+      fetch('/api/artifacts'),
+      fetch('/api/effect-keys'),
+    ]);
+    const data = await artifactsResp.json();
+    if (!artifactsResp.ok || !Array.isArray(data)) {
+      throw new Error(data.error || `Server returned ${artifactsResp.status}`);
     }
     artifacts = data;
+    const ekData = await effectKeysResp.json();
+    ALL_EFFECT_IDS = (ekData.effect_keys || []).map(e => e.key);
     document.getElementById('loading').remove();
     renderAll();
     document.getElementById('save-btn').disabled = true;

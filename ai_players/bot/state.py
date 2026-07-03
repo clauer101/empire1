@@ -18,7 +18,7 @@ STATES_DIR = Path(__file__).resolve().parent.parent / "states"
 # Per-bot strategic temperament, rolled once at account creation and persisted.
 # Biases strategy selection (see config.yaml `personalities`) so multiple bot
 # instances develop into distinct, recognizable play styles.
-PERSONALITIES = ["economy", "aggressive", "defensive", "balanced"]
+PERSONALITIES = ["aggressive", "defensive", "balanced"]
 
 # Whimsical fantasy name parts. A new bot gets a random adjective + noun
 # (e.g. "GildedRaven"), which becomes its state-file key, username and empire
@@ -108,6 +108,18 @@ class BotState:
         state.personality = random.choice(PERSONALITIES)
         state.dirty = True
         return state
+
+    def reset(self) -> None:
+        """Clear transient state (strategy, memory, runtime) — keep account + personality."""
+        self.strategy = None
+        self.memory = {
+            "last_seen_message_id": 0,
+            "defense_weak_waves": {},
+            "opponents": {},
+            "attack_history": [],
+        }
+        self.runtime = {"cycles": 0, "last_cycle": ""}
+        self.dirty = True
 
     def save(self) -> None:
         STATES_DIR.mkdir(parents=True, exist_ok=True)

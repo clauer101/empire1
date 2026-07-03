@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trophy Config</title>
+  <style>
+    :root {
+      --bg:            #0d0d14;
+      --surface:       #14141f;
+      --surface-alt:   #1a1a28;
+      --surface-hover: #22222f;
+      --border:        #2a2a3a;
+      --accent:        #4fc3f7;
+      --gold:          #c9a84c;
+      --success:       #66bb6a;
+      --danger:        #ef5350;
+      --warning:       #ffa726;
+      --text:          #e0e0e6;
+      --text-dim:      #9999a8;
+      --radius:        6px;
+      --mono:          'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px; flex-wrap: wrap;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--gold); letter-spacing: 1px; flex: 1; }
+    #status { font-size: 12px; font-family: var(--mono); }
+    #status.ok  { color: var(--success); }
+    #status.err { color: var(--danger); }
+    #dirty-count { font-size: 11px; color: var(--warning); }
+    #save-btn {
+      padding: 6px 18px; background: var(--accent); color: #000;
+      border: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 13px;
+    }
+    #save-btn:disabled { opacity: 0.4; cursor: default; }
+
+    main { max-width: 900px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 28px; }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); padding-bottom: 8px; margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trophy-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .trophy-card.dirty { border-color: var(--warning); }
+    .trophy-head {
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+      padding: 8px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;
+    }
+    .trophy-head .key { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+    .trophy-head .tname { font-weight: 700; font-size: 13px; color: var(--accent); flex: 1; }
+    .trophy-head .cond-badge {
+      font-size: 10px; font-family: var(--mono); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--text-dim);
+    }
+    .trophy-head .toggle { font-size: 10px; color: var(--text-dim); }
+    .btn-delete {
+      background: none; border: 1px solid transparent; border-radius: var(--radius);
+      color: var(--text-dim); font-size: 11px; padding: 2px 6px; cursor: pointer;
+      line-height: 1;
+    }
+    .btn-delete:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,83,80,.08); }
+    .trophy-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .trophy-card.collapsed .trophy-body { display: none; }
+
+    .field-row { display: flex; flex-direction: column; gap: 4px; }
+    .field-row label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+    .field-row select {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 6px 10px;
+      font-size: 13px; width: 100%; font-family: inherit;
+    }
+    .field-row select:focus { outline: none; border-color: var(--accent); }
+    .field-row select.changed { border-color: var(--warning); }
+    .field-row input[type="text"], .field-row input[type="number"], .field-row textarea {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 6px 10px;
+      font-size: 13px; width: 100%; font-family: inherit;
+    }
+    .field-row textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+    .field-row input:focus, .field-row textarea:focus { outline: none; border-color: var(--accent); }
+    .field-row input.changed, .field-row textarea.changed { border-color: var(--warning); }
+
+    /* Effects editor */
+    .effects-section { display: flex; flex-direction: column; gap: 4px; }
+    .effects-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+    .effect-row { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+    .effect-key-wrap { position: relative; flex: 1; min-width: 0; overflow: visible; }
+    .effect-key {
+      background: var(--surface-alt); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 5px 8px; font-size: 12px; font-family: var(--mono);
+      width: 100%; outline: none;
+    }
+    .effect-key:focus { border-color: var(--accent); }
+    .effect-val {
+      background: var(--surface-alt); color: var(--warning);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 5px 8px; font-size: 12px; font-family: var(--mono);
+      width: 80px; outline: none; text-align: right; flex-shrink: 0;
+    }
+    .effect-val:focus { border-color: var(--warning); }
+    .effect-del { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 15px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+    .effect-del:hover { color: var(--danger); }
+    .add-effect-btn {
+      background: none; border: 1px dashed var(--border); border-radius: var(--radius);
+      color: var(--text-dim); font-size: 11px; padding: 3px 10px; cursor: pointer; margin-top: 2px;
+    }
+    .add-effect-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .ac-list {
+      position: absolute; top: 100%; left: 0; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); min-width: 200px; max-height: 160px;
+      overflow-y: auto; display: none; margin-top: 2px;
+    }
+    .ac-item { padding: 4px 8px; cursor: pointer; font-size: 11px; font-family: var(--mono); }
+    .ac-item:hover, .ac-item.active { background: var(--surface-hover); color: var(--accent); }
+
+    .cond-info {
+      font-size: 11px; font-family: var(--mono); color: var(--text-dim);
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 6px 10px; display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .cond-info span { white-space: nowrap; }
+    .cond-info .val { color: var(--gold); }
+
+    .filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .filter-bar input[type="text"] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 6px 10px;
+      font-size: 12px; min-width: 220px;
+    }
+    .filter-bar input:focus { outline: none; border-color: var(--accent); }
+
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 20px; font-size: 13px; opacity: 0; pointer-events: none;
+      transition: opacity .2s; z-index: 9999;
+    }
+    #toast.show { opacity: 1; pointer-events: auto; }
+    #toast.ok  { border-color: var(--success); color: var(--success); }
+    #toast.err { border-color: var(--danger);  color: var(--danger);  }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>🏆 TROPHY CONFIG</h1>
+    <span id="dirty-count"></span>
+    <span id="status"></span>
+    <button id="save-btn" disabled onclick="saveAll()">Save All</button>
+  </div>
+
+  <main>
+    <div class="filter-bar">
+      <input type="text" id="filter" placeholder="Filter by name / key / condition…" oninput="renderAll()" />
+    </div>
+    <div id="groups"></div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script src="nav.js"></script>
+  <script>
+  const BASE = window.location.origin;
+  let TROPHIES = [];
+  const PENDING = {};  // key → {name?, description?, condition?, effects?}
+  let ALL_EFFECT_IDS = [];
+
+  function attachAc(input, listEl) {
+    function show() {
+      const q = input.value.toLowerCase();
+      const matches = ALL_EFFECT_IDS.filter(id => !q || id.includes(q));
+      if (!matches.length) { listEl.style.display = 'none'; return; }
+      listEl.innerHTML = matches.slice(0, 24).map((id, i) =>
+        `<div class="ac-item" data-idx="${i}">${id}</div>`
+      ).join('');
+      listEl.style.display = 'block';
+      listEl.querySelectorAll('.ac-item').forEach(el => {
+        el.addEventListener('mousedown', ev => {
+          ev.preventDefault();
+          input.value = el.textContent;
+          listEl.style.display = 'none';
+          input.dispatchEvent(new Event('change'));
+        });
+      });
+    }
+    input.addEventListener('focus', show);
+    input.addEventListener('input', show);
+    input.addEventListener('blur', () => setTimeout(() => { listEl.style.display = 'none'; }, 150));
+    input.addEventListener('keydown', e => {
+      const items = listEl.querySelectorAll('.ac-item');
+      let active = listEl.querySelector('.ac-item.active');
+      let idx = active ? parseInt(active.dataset.idx) : -1;
+      if (e.key === 'ArrowDown') idx = Math.min(idx + 1, items.length - 1);
+      else if (e.key === 'ArrowUp') idx = Math.max(idx - 1, 0);
+      else if (e.key === 'Enter' && active) { input.value = active.textContent; listEl.style.display = 'none'; input.dispatchEvent(new Event('change')); e.preventDefault(); return; }
+      else if (e.key === 'Escape') { listEl.style.display = 'none'; return; }
+      else return;
+      items.forEach((el, i) => el.classList.toggle('active', i === idx));
+    });
+  }
+
+  function renderEffects(container, effects, key) {
+    container.innerHTML = '';
+    Object.entries(effects).forEach(([ek, ev]) => {
+      const row = document.createElement('div');
+      row.className = 'effect-row';
+      row.innerHTML = `
+        <div class="effect-key-wrap">
+          <input class="effect-key" value="${esc(ek)}" placeholder="effect_key" />
+          <div class="ac-list"></div>
+        </div>
+        <input class="effect-val" type="number" step="0.01" value="${ev}" />
+        <button class="effect-del" title="Remove">×</button>
+      `;
+      const keyInp = row.querySelector('.effect-key');
+      const valInp = row.querySelector('.effect-val');
+      attachAc(keyInp, row.querySelector('.ac-list'));
+
+      function onEffectChange() {
+        const cur = {};
+        container.querySelectorAll('.effect-row').forEach(r => {
+          const k = r.querySelector('.effect-key').value.trim();
+          const v = parseFloat(r.querySelector('.effect-val').value);
+          if (k) cur[k] = isNaN(v) ? 0 : v;
+        });
+        if (!PENDING[key]) PENDING[key] = {};
+        PENDING[key].effects = cur;
+        const card = document.getElementById(`card-${key}`);
+        if (card) card.classList.add('dirty');
+        updateDirtyUI();
+      }
+
+      keyInp.addEventListener('change', onEffectChange);
+      valInp.addEventListener('input', onEffectChange);
+      row.querySelector('.effect-del').addEventListener('click', () => {
+        row.remove();
+        onEffectChange();
+      });
+      container.appendChild(row);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-effect-btn';
+    addBtn.textContent = '+ Add Effect';
+    addBtn.addEventListener('click', () => {
+      effects[''] = 0;
+      renderEffects(container, effects, key);
+      // focus the last key input
+      const inputs = container.querySelectorAll('.effect-key');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+    container.appendChild(addBtn);
+  }
+
+  const ERA_KEYS = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future'];
+
+  const COND_TYPES = [
+    'defense_won','defense_won_ai','defense_won_human',
+    'attacks_won','attacks_won_ai','attacks_won_human',
+    'critters_killed','hexes_owned','path_length',
+    'coward_attacks','max_lucky_punch_levels','spies_sent',
+    'artifacts_stolen','max_artifacts_stolen_one_battle','max_artifacts_lost_one_battle',
+    'culture_won','culture_stolen','research_won','research_stolen',
+    'longest_battle_ms','ruler_level','one_hp_def_wins',
+    'first_in_era','all_era_firsts','all_trophies',
+  ];
+  // Types that take no threshold and no era
+  const NO_PARAM_TYPES = new Set(['all_era_firsts','all_trophies']);
+  // Types that use era instead of threshold
+  const ERA_TYPES = new Set(['first_in_era']);
+
+  const SECTION_ORDER = [
+    { label: 'Defense', types: ['defense_won','defense_won_ai','defense_won_human'] },
+    { label: 'Attack', types: ['attacks_won','attacks_won_ai','attacks_won_human'] },
+    { label: 'Critter Kills', types: ['critters_killed'] },
+    { label: 'Map', types: ['hexes_owned','path_length'] },
+    { label: 'Era Comparison', types: ['coward_attacks','max_lucky_punch_levels'] },
+    { label: 'Espionage', types: ['spies_sent'] },
+    { label: 'Artifacts', types: ['artifacts_stolen','max_artifacts_stolen_one_battle','max_artifacts_lost_one_battle'] },
+    { label: 'Culture & Research', types: ['culture_won','culture_stolen','research_won','research_stolen'] },
+    { label: 'Endurance', types: ['longest_battle_ms'] },
+    { label: 'Ruler', types: ['ruler_level'] },
+    { label: 'Narrow Escape', types: ['one_hp_def_wins'] },
+    { label: 'First in Era', types: ['first_in_era'] },
+    { label: 'Meta', types: ['all_era_firsts','all_trophies'] },
+  ];
+
+  function token() {
+    return localStorage.getItem('e3_jwt_token') || sessionStorage.getItem('e3_jwt_token') || '';
+  }
+  async function apiFetch(method, path, body) {
+    const res = await fetch(BASE + path, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  function showToast(msg, ok = true) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show ${ok ? 'ok' : 'err'}`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  function setStatus(msg, cls = '') {
+    const el = document.getElementById('status');
+    el.textContent = msg; el.className = cls;
+  }
+
+  function updateDirtyUI() {
+    const count = Object.keys(PENDING).length;
+    document.getElementById('save-btn').disabled = count === 0;
+    document.getElementById('dirty-count').textContent = count ? `${count} change${count > 1 ? 's' : ''}` : '';
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  function condBadge(t) {
+    const c = t.condition || {};
+    const parts = [c.type || '?'];
+    if (c.threshold != null) parts.push(`≥ ${c.threshold}`);
+    if (c.era) parts.push(c.era);
+    return parts.join(' · ');
+  }
+
+  function renderAll() {
+    const filter = document.getElementById('filter').value.trim().toLowerCase();
+    const container = document.getElementById('groups');
+
+    const filtered = filter ? TROPHIES.filter(t =>
+      (t.key || '').toLowerCase().includes(filter) ||
+      (t.name || '').toLowerCase().includes(filter) ||
+      ((t.condition?.type) || '').toLowerCase().includes(filter)
+    ) : TROPHIES;
+
+    const typeIndex = {};
+    SECTION_ORDER.forEach((s, i) => s.types.forEach(ty => { typeIndex[ty] = i; }));
+
+    const buckets = SECTION_ORDER.map(s => ({ label: s.label, items: [] }));
+    const misc = { label: 'Other', items: [] };
+    filtered.forEach(t => {
+      const ty = t.condition?.type || '';
+      const idx = typeIndex[ty];
+      (idx != null ? buckets[idx] : misc).items.push(t);
+    });
+    if (misc.items.length) buckets.push(misc);
+
+    container.innerHTML = buckets.filter(b => b.items.length).map(b => `
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+        <div class="section-title">${esc(b.label)}</div>
+        ${b.items.map(t => cardHtml(t)).join('')}
+      </div>`).join('');
+
+    container.querySelectorAll('.trophy-head').forEach(head => {
+      head.addEventListener('click', () => {
+        head.closest('.trophy-card').classList.toggle('collapsed');
+        head.querySelector('.toggle').textContent = head.closest('.trophy-card').classList.contains('collapsed') ? '▸' : '▾';
+      });
+    });
+
+    // Render effects editors (after innerHTML is set)
+    container.querySelectorAll('.effects-container').forEach(ec => {
+      const key = ec.dataset.key;
+      const trophy = TROPHIES.find(t => t.key === key);
+      renderEffects(ec, Object.assign({}, trophy?.effects || {}), key);
+    });
+
+    container.querySelectorAll('input[data-key], textarea[data-key], select[data-key]').forEach(el => {
+      el.addEventListener('input', () => {
+        const key = el.dataset.key;
+        const field = el.dataset.field;
+        const trophy = TROPHIES.find(t => t.key === key);
+
+        if (field === 'cond_type') {
+          // Switch extras panel based on new type
+          const newType = el.value;
+          const extrasEl = el.closest('.trophy-body').querySelector('.cond-extras');
+          const isEra = ERA_TYPES.has(newType);
+          const isNone = NO_PARAM_TYPES.has(newType);
+          const thresholdUnit = newType === 'longest_battle_ms' ? 'ms' : '';
+          const origThreshold = extrasEl.dataset.threshold;
+          const origEra = extrasEl.dataset.era;
+          extrasEl.innerHTML = !isNone && !isEra ? `
+            <div class="field-row">
+              <label>Threshold${thresholdUnit ? ' (' + thresholdUnit + ')' : ''}</label>
+              <input type="number" data-key="${esc(key)}" data-field="threshold" data-orig="${origThreshold}" value="${origThreshold}" step="1" min="0" />
+            </div>` : isEra ? `
+            <div class="field-row">
+              <label>Era</label>
+              <select data-key="${esc(key)}" data-field="era" data-orig="${origEra}">
+                ${ERA_KEYS.map(e => `<option value="${e}"${e === origEra ? ' selected' : ''}>${e}</option>`).join('')}
+              </select>
+            </div>` : '';
+          // Re-attach listeners for new children
+          extrasEl.querySelectorAll('input[data-key],select[data-key]').forEach(child => {
+            child.addEventListener('input', () => child.dispatchEvent(new Event('_inner')));
+          });
+        }
+
+        // Determine orig and current value
+        let origVal, curVal;
+        if (field === 'name' || field === 'description') {
+          origVal = String(trophy?.[field] ?? '');
+          curVal = el.value;
+        } else if (field === 'cond_type') {
+          origVal = String(trophy?.condition?.type ?? '');
+          curVal = el.value;
+        } else if (field === 'threshold') {
+          origVal = String(trophy?.condition?.threshold ?? '');
+          curVal = el.value;
+        } else if (field === 'era') {
+          origVal = String(trophy?.condition?.era ?? '');
+          curVal = el.value;
+        }
+
+        if (!PENDING[key]) PENDING[key] = {};
+        if (curVal !== origVal) {
+          el.classList.add('changed');
+          if (field === 'name' || field === 'description') {
+            PENDING[key][field] = curVal;
+          } else {
+            if (!PENDING[key].condition) PENDING[key].condition = {};
+            if (field === 'cond_type') PENDING[key].condition.type = curVal;
+            else if (field === 'threshold') PENDING[key].condition.threshold = Number(curVal);
+            else if (field === 'era') PENDING[key].condition.era = curVal;
+          }
+          el.closest('.trophy-card').classList.add('dirty');
+        } else {
+          el.classList.remove('changed');
+          if (field === 'name' || field === 'description') delete PENDING[key][field];
+          else if (PENDING[key].condition) {
+            const fk = field === 'cond_type' ? 'type' : field;
+            delete PENDING[key].condition[fk];
+            if (!Object.keys(PENDING[key].condition).length) delete PENDING[key].condition;
+          }
+          if (!Object.keys(PENDING[key]).length) {
+            delete PENDING[key];
+            el.closest('.trophy-card').classList.remove('dirty');
+          }
+        }
+        updateDirtyUI();
+      });
+    });
+  }
+
+  function cardHtml(t) {
+    const key = t.key;
+    const cond = t.condition || {};
+    const hasThreshold = cond.threshold != null;
+    const isEraType = ERA_TYPES.has(cond.type);
+    const isNoParam = NO_PARAM_TYPES.has(cond.type);
+    const thresholdUnit = cond.type === 'longest_battle_ms' ? 'ms' : '';
+
+    const typeOptions = COND_TYPES.map(ty =>
+      `<option value="${ty}"${ty === cond.type ? ' selected' : ''}>${ty}</option>`
+    ).join('');
+
+    const eraOptions = ERA_KEYS.map(e =>
+      `<option value="${e}"${e === cond.era ? ' selected' : ''}>${e}</option>`
+    ).join('');
+
+    return `
+    <div class="trophy-card collapsed" id="card-${esc(key)}">
+      <div class="trophy-head">
+        <span class="tname">${esc(t.name || key)}${Object.keys(t.effects || {}).length > 0 ? ' <span style="color:#4fc3f7;font-size:0.8em;">◆</span>' : ''}</span>
+        <span class="key">${esc(key)}</span>
+        <span class="cond-badge">${esc(condBadge(t))}</span>
+        <button class="btn-delete" data-key="${esc(key)}" title="Delete trophy" onclick="deleteTrophy(event, '${esc(key)}')">✕</button>
+        <span class="toggle">▸</span>
+      </div>
+      <div class="trophy-body">
+        <div class="field-row">
+          <label>Name</label>
+          <input type="text" data-key="${esc(key)}" data-field="name" data-orig="${esc(t.name || '')}" value="${esc(t.name || '')}" />
+        </div>
+        <div class="field-row">
+          <label>Description</label>
+          <textarea data-key="${esc(key)}" data-field="description" data-orig="${esc(t.description || '')}">${esc(t.description || '')}</textarea>
+        </div>
+        <div class="field-row">
+          <label>Condition Type</label>
+          <select data-key="${esc(key)}" data-field="cond_type" data-orig="${esc(cond.type || '')}">${typeOptions}</select>
+        </div>
+        <div class="cond-extras" data-key="${esc(key)}" data-condtype="${esc(cond.type || '')}" data-threshold="${hasThreshold ? cond.threshold : ''}" data-era="${esc(cond.era || '')}">
+          ${!isNoParam && !isEraType ? `
+          <div class="field-row">
+            <label>Threshold${thresholdUnit ? ' (' + thresholdUnit + ')' : ''}</label>
+            <input type="number" data-key="${esc(key)}" data-field="threshold" data-orig="${hasThreshold ? cond.threshold : ''}" value="${hasThreshold ? cond.threshold : ''}" step="1" min="0" />
+          </div>` : ''}
+          ${isEraType ? `
+          <div class="field-row">
+            <label>Era</label>
+            <select data-key="${esc(key)}" data-field="era" data-orig="${esc(cond.era || '')}">${eraOptions}</select>
+          </div>` : ''}
+        </div>
+        <div class="effects-section">
+          <div class="effects-label">Effects</div>
+          <div class="effects-container" data-key="${esc(key)}"></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  async function saveAll() {
+    const keys = Object.keys(PENDING);
+    if (!keys.length) return;
+    document.getElementById('save-btn').disabled = true;
+    setStatus('Saving…');
+    let saved = 0, failed = 0;
+    for (const key of keys) {
+      try {
+        await apiFetch('PATCH', `/api/admin/trophy-config/${encodeURIComponent(key)}`, PENDING[key]);
+        const trophy = TROPHIES.find(t => t.key === key);
+        if (trophy) {
+          if (PENDING[key].name != null) trophy.name = PENDING[key].name;
+          if (PENDING[key].description != null) trophy.description = PENDING[key].description;
+          if (PENDING[key].effects != null) trophy.effects = PENDING[key].effects;
+          if (PENDING[key].condition) {
+            if (!trophy.condition) trophy.condition = {};
+            const pc = PENDING[key].condition;
+            if (pc.type != null) trophy.condition.type = pc.type;
+            if (pc.threshold != null) trophy.condition.threshold = pc.threshold;
+            if (pc.era != null) trophy.condition.era = pc.era;
+            if (pc.era === null) delete trophy.condition.era;
+            if (pc.threshold === null) delete trophy.condition.threshold;
+          }
+        }
+        delete PENDING[key];
+        saved++;
+      } catch (e) {
+        console.error(key, e);
+        failed++;
+      }
+    }
+    if (failed === 0) {
+      setStatus(`Saved ${saved}`, 'ok');
+      showToast(`${saved} trophy${saved > 1 ? 's' : ''} saved`, true);
+    } else {
+      setStatus(`${saved} saved, ${failed} failed`, 'err');
+      showToast(`${failed} save(s) failed`, false);
+    }
+    renderAll();
+    updateDirtyUI();
+  }
+
+  async function deleteTrophy(e, key) {
+    e.stopPropagation();
+    const trophy = TROPHIES.find(t => t.key === key);
+    if (!confirm(`Delete "${trophy?.name || key}"? This cannot be undone.`)) return;
+    try {
+      await apiFetch('DELETE', `/api/admin/trophy-config/${encodeURIComponent(key)}`);
+      TROPHIES = TROPHIES.filter(t => t.key !== key);
+      delete PENDING[key];
+      updateDirtyUI();
+      renderAll();
+      showToast(`Deleted "${trophy?.name || key}"`, true);
+    } catch (err) {
+      showToast(`Delete failed: ${err.message}`, false);
+    }
+  }
+
+  async function load() {
+    setStatus('Loading…');
+    try {
+      const [data, ekData] = await Promise.all([
+        apiFetch('GET', '/api/admin/trophy-config'),
+        fetch(BASE + '/api/effect-keys').then(r => r.json()).catch(() => ({ effect_keys: [] })),
+      ]);
+      ALL_EFFECT_IDS = (ekData.effect_keys || []).map(e => e.key);
+      TROPHIES = data.trophies || [];
+      setStatus(`${TROPHIES.length} trophies`, 'ok');
+      renderAll();
+    } catch (e) {
+      setStatus('Failed to load', 'err');
+    }
+  }
+
+  load();
+  </script>
+</body>
+</html>

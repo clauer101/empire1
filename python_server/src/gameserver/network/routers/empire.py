@@ -38,6 +38,26 @@ import gameserver.network.rest_api as _rest_api
 
 log = logging.getLogger(__name__)
 
+
+def _count_protected_artifacts(empire: Any) -> int:
+    import datetime as _dt
+    retention = empire.get_effect("artifact_retention_time", 0.0)
+    if retention <= 0:
+        return 0
+    now = _dt.datetime.now(_dt.timezone.utc)
+    count = 0
+    for iid in empire.artifacts:
+        acq_str = empire.artifact_acquired_at.get(iid, "")
+        if not acq_str:
+            continue
+        try:
+            age = (now - _dt.datetime.fromisoformat(acq_str)).total_seconds()
+            if age < retention:
+                count += 1
+        except Exception:
+            pass
+    return count
+
 if TYPE_CHECKING:
     from gameserver.main import Services
 
@@ -116,12 +136,33 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         """Return all known empires sorted by culture points descending."""
         uid_to_user: dict[int, str] = {}
         uid_to_last_seen: dict[int, str] = {}
+        uid_to_stats: dict[int, dict[str, Any]] = {}
+        winner_place: dict[int, int] = {}
+        past_champions: set[int] = set()
         if services.database is not None:
             for row in await services.database.list_users():
                 uid_to_user[row["uid"]] = row["username"]
                 uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
+            for row in await services.database.get_all_empire_stats():
+                uid_to_stats[row["uid"]] = row
+            all_winners = await services.database.get_season_winners()
+            if all_winners:
+                latest = max(w["season_number"] for w in all_winners)
+                past_champions = set()
+                for w in all_winners:
+                    if w["season_number"] == latest:
+                        winner_place[w["empire_uid"]] = w["place"]
+                    elif w["place"] == 1:
+                        past_champions.add(w["empire_uid"])
         connected_uids: list[int] = services.server.connected_uids if services.server else []
         _week_s = 7 * 24 * 3600
+        _STAT_KEYS = [
+            "attacks_won_human", "attacks_lost_human", "attacks_won_ai", "attacks_lost_ai",
+            "defense_won_human", "defense_lost_human", "defense_won_ai", "defense_lost_ai",
+            "critters_killed", "artifacts_stolen", "culture_won", "culture_stolen",
+            "research_won", "research_stolen", "defense_gold_earned",
+            "spies_sent", "longest_battle_ms",
+        ]
         empires = []
         for empire in empire_service.all_empires.values():
             if empire.uid != uid and empire.uid not in uid_to_user:
@@ -143,6 +184,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 if services.bot_detector else False
             )
             empire.is_bot = is_bot  # sync back so state.yaml stays current
+            stats = uid_to_stats.get(empire.uid, {})
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -152,8 +194,12 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "era": era_idx,
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "artifact_count": len(empire.artifacts),
+                "artifact_protected_count": _count_protected_artifacts(empire),
                 "bot_probability": round(bot_prob, 3),
                 "is_bot": is_bot,
+                "season_place": winner_place.get(empire.uid),
+                "past_champion": empire.uid in past_champions,
+                **{k: stats.get(k, 0) for k in _STAT_KEYS},
             })
         empires.sort(key=lambda e: float(e.get("culture") or 0),  # type: ignore[arg-type]
                      reverse=True)
@@ -166,6 +212,28 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         msg = _stub_message(iid=body.iid)
         resp = await handle_new_item(msg, uid)
         return resp or {"success": False, "error": "No response"}
+
+    @router.delete("/api/empire/build")
+    @limiter.limit("30/minute")
+    async def cancel_build(request: Request, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        empire = services.empire_service.all_empires.get(uid) if services.empire_service else None
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        if not empire.build_queue:
+            return {"success": False, "error": "No active build"}
+        empire.build_queue = None
+        return {"success": True}
+
+    @router.delete("/api/empire/research")
+    @limiter.limit("30/minute")
+    async def cancel_research(request: Request, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        empire = services.empire_service.all_empires.get(uid) if services.empire_service else None
+        if empire is None:
+            return {"success": False, "error": "Empire not found"}
+        if not empire.research_queue:
+            return {"success": False, "error": "No active research"}
+        empire.research_queue = None
+        return {"success": True}
 
     @router.post("/api/empire/citizen/upgrade")
     async def citizen_upgrade(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
@@ -247,7 +315,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             "next_season_start": get_next_season_start(),
             "next_season_leadtime": get_next_season_leadtime(gc.season_leadtime) if gc else "",
             "next_season_title": get_next_season_title(),
-            "season_reset_triggered": is_season_reset_triggered(),
+            "game_frozen": is_season_reset_triggered(),
         }
 
     @router.post("/api/empire/ruler/skill-up")
@@ -538,7 +606,12 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
 
             # Workshop: total gold invested (base_cost × Σn² for n=1..N per item)
             costs_list = empire_service._gc.item_upgrade_base_costs if empire_service._gc else []
+            from gameserver.models.items import ItemType as _ItemType
             workshop_gold = 0.0
+            max_tower_upgrade_sum = 0
+            max_tower_upgrade_name = ""
+            max_critter_upgrade_sum = 0
+            max_critter_upgrade_name = ""
             for iid, stats in e.item_upgrades.items():
                 n = sum(stats.values())
                 if n <= 0:
@@ -546,6 +619,14 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 era_idx = empire_service._item_era_index.get(iid, 0)
                 base_cost = costs_list[era_idx] if era_idx < len(costs_list) else (costs_list[-1] if costs_list else 0.0)
                 workshop_gold += base_cost * n * (n + 1) * (2 * n + 1) / 6
+                item_def = upgrades.get(iid)
+                if item_def is not None:
+                    if item_def.item_type == _ItemType.STRUCTURE and n > max_tower_upgrade_sum:
+                        max_tower_upgrade_sum = n
+                        max_tower_upgrade_name = item_def.name or iid
+                    elif item_def.item_type == _ItemType.CRITTER and n > max_critter_upgrade_sum:
+                        max_critter_upgrade_sum = n
+                        max_critter_upgrade_name = item_def.name or iid
 
 
             # Research: total effort and count of completed knowledge items
@@ -573,6 +654,10 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "army_gold": round(army_gold, 1),
                 "tile_count": tile_count,
                 "workshop_gold": round(workshop_gold),
+                "max_tower_upgrade_sum": max_tower_upgrade_sum,
+                "max_tower_upgrade_name": max_tower_upgrade_name,
+                "max_critter_upgrade_sum": max_critter_upgrade_sum,
+                "max_critter_upgrade_name": max_critter_upgrade_name,
                 "research_effort": round(research_effort),
                 "research_count": research_count,
                 "buildings_effort": round(buildings_effort),
@@ -598,9 +683,12 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "culture_stolen", "research_stolen", "culture_won", "research_won",
                 "longest_battle_ms", "first_era_reached", "peak_artifacts_held",
                 "attacks_won_human", "attacks_lost_human",
+                "attacks_won_ai", "attacks_lost_ai",
                 "defense_won_human", "defense_lost_human",
                 "defense_won_ai", "defense_lost_ai",
                 "critter_upgrade_levels", "tower_upgrade_levels",
+                "peak_army_cost",
+                "peak_incoming_attacks", "peak_incoming",
             ]
             for r in results:
                 row = stats_by_uid.get(r["uid"]) or {}
@@ -656,7 +744,6 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "season": earned_row["season"] if earned_row else None,
             })
 
-        result.sort(key=lambda x: (0 if x["earned"] else 1, x["iid"]))
         return {"trophies": result}
 
     return router

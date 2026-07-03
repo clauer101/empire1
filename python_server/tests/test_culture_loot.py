@@ -47,13 +47,14 @@ def _svc(empires: dict, era_by_uid: dict, *,
     )
 
 
-def _battle(defender, attacker_uids):
+def _battle(defender, attacker_uids, life_lost: float = 10.0):
     return SimpleNamespace(
         defender=defender,
         attacker_uids=attacker_uids,
         attacker_gains={},
-        defender_losses={},
+        defender_losses={"life": life_lost},
         defender_won=False,
+        critters_reached=int(life_lost > 0),
     )
 
 
@@ -66,8 +67,8 @@ def test_ai_only_steals_pool_pct_times_modifier():
 
     loot = _compute_and_apply_loot(battle, svc)
 
-    # 10000 * 0.04 * 0.33 = 132.0
-    expected = round(10_000.0 * 0.04 * 0.33, 2)
+    # 10000 * 0.04 * life_ratio=1.0 * win_mult=2.0 * ai_modifier=0.33 = 264.0
+    expected = round(10_000.0 * 0.04 * 1.0 * 2.0 * 0.33, 2)
     assert loot["culture"] == expected
     assert defender.resources["culture"] == 10_000.0 - expected
     assert battle.defender_losses["culture"] == expected
@@ -99,7 +100,7 @@ def test_human_attack_ignores_ai_modifier():
 
     loot = _compute_and_apply_loot(battle, svc)
 
-    # Full pct, no AI modifier: 10000 * 0.04 = 400, credited to the human.
-    expected = round(10_000.0 * 0.04, 2)
+    # Full pct, life_ratio=1.0, win_mult=2.0, no AI modifier: 10000*0.04*2.0 = 800
+    expected = round(10_000.0 * 0.04 * 1.0 * 2.0, 2)
     assert attacker.resources["culture"] == expected
     assert loot["per_attacker"][1]["culture"] == expected

@@ -77,6 +77,8 @@ def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
             era=attrs.get("era", ""),
             subtype=attrs.get("type", ""),
             condition=attrs.get("condition") or {},
+            critter_type=attrs.get("critter_type", ""),
+            tower_type=attrs.get("tower_type", ""),
         ))
     return items
 

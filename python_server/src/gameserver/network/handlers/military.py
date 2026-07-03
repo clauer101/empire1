@@ -457,14 +457,29 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
             lines.append("  (none)")
 
     # Artifacts — always included
+    import datetime as _dt
     artifact_iids: list[str] = defender.artifacts or []
-    artifact_names = [items[iid].name for iid in artifact_iids if iid in items]
+    _retention = defender.get_effect("artifact_retention_time", 0.0)
+    _now = _dt.datetime.now(_dt.timezone.utc)
+    def _is_protected(iid: str) -> bool:
+        if _retention <= 0:
+            return False
+        acq_str = defender.artifact_acquired_at.get(iid, "")
+        if not acq_str:
+            return False
+        try:
+            age = (_now - _dt.datetime.fromisoformat(acq_str)).total_seconds()
+            return age < _retention
+        except Exception:
+            return False
+    artifact_list = [{"name": items[iid].name if iid in items else iid, "protected": _is_protected(iid)} for iid in artifact_iids]
 
     lines.append("─" * 32)
     lines.append("⚜ Artifacts")
-    if artifact_names:
-        for aname in artifact_names:
-            lines.append(f"  ⚜ {aname}")
+    if artifact_list:
+        for a in artifact_list:
+            prot = " 🔒" if a["protected"] else ""
+            lines.append(f"  ⚜ {a['name']}{prot}")
     else:
         lines.append("  (none)")
 
@@ -483,7 +498,7 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         "era_idx": era_idx,
         "placed_towers": placed_towers,
         "path_length": path_length,
-        "artifacts": artifact_names,
+        "artifacts": artifact_list,
         "ruler": ruler_info,
     }
     if has_workshop_intel:
@@ -926,6 +941,18 @@ async def handle_end_siege(
     return None
 
 
+def _update_peak_army_cost(svc: Any, empire: Any) -> None:
+    """Recalculate army costs for all armies and persist the highest value."""
+    if svc.database is None or empire.uid == 0:
+        return
+    peak = max(
+        (svc.empire_service.army_cumulative_cost_for(army, empire) for army in empire.armies),
+        default=0.0,
+    )
+    import asyncio as _asyncio
+    _asyncio.ensure_future(svc.database.record_empire_stat_max(empire.uid, "peak_army_cost", peak))
+
+
 async def handle_buy_wave_request(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
@@ -999,6 +1026,7 @@ async def handle_buy_wave_request(
     army.waves.append(new_wave)
 
     log.info(f"Wave purchased for army {aid} by empire {empire.name} (uid={target_uid}) for {wave_price:.1f} gold")
+    _update_peak_army_cost(svc, empire)
 
     return {
         "type": "buy_wave_response",
@@ -1082,6 +1110,7 @@ async def handle_buy_critter_slot_request(
     wave.slots += 1
 
     log.info(f"Critter slot purchased for army {aid} wave {wave_number} by empire {empire.name} (uid={target_uid}) for {slot_price:.1f} gold (slots: {old_slots} → {wave.slots})")
+    _update_peak_army_cost(svc, empire)
 
     return {
         "type": "buy_critter_slot_response",
@@ -1137,6 +1166,7 @@ async def handle_buy_wave_era_request(
 
     next_price = svc.empire_service.wave_era_price_for(empire, wave.max_era + 1) if wave.max_era < MAX_ERA_INDEX else None
     log.info(f"Wave era upgraded for army {aid} wave {wave_number} by uid={target_uid}: era {old_era} → {wave.max_era} for {era_price:.1f} gold")
+    _update_peak_army_cost(svc, empire)
 
     return {
         "type": "buy_wave_era_response",

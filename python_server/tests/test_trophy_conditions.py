@@ -120,6 +120,26 @@ class TestHexesOwned:
         assert not _check(svc, _cond("hexes_owned", 1), {}, None)
 
 
+# ── 1 HP defense win (counter) ────────────────────────────────────────────────
+
+class TestOneHpDefenseWin:
+    def test_passes_at_threshold(self):
+        svc = _svc()
+        assert _check(svc, _cond("one_hp_def_wins", 1), {"one_hp_def_wins": 1})
+
+    def test_passes_above_threshold(self):
+        svc = _svc()
+        assert _check(svc, _cond("one_hp_def_wins", 1), {"one_hp_def_wins": 3})
+
+    def test_fails_below_threshold(self):
+        svc = _svc()
+        assert not _check(svc, _cond("one_hp_def_wins", 2), {"one_hp_def_wins": 1})
+
+    def test_fails_when_column_missing(self):
+        svc = _svc()
+        assert not _check(svc, _cond("one_hp_def_wins", 1), {})
+
+
 # ── Per-type win/loss (direct stat columns) ────────────────────────────────────
 
 class TestDirectStatConditions:
@@ -379,6 +399,7 @@ class TestCheckAndAward:
     def _make_svc_with_one_trophy(self, ctype: str, threshold: int = 1) -> TrophyService:
         svc = TrophyService.__new__(TrophyService)
         svc._database = MagicMock()
+        svc._database.get_trophy_rows = AsyncMock(return_value=[])
         svc._database.get_empire_stats = AsyncMock(return_value={"defense_won_human": threshold})
         svc._database.get_era_firsts = AsyncMock(return_value=[])
         svc._database.award_trophy = AsyncMock()
@@ -451,6 +472,7 @@ class TestCheckAndAward:
         uid = 5
         # All 9 era-firsts belong to uid=5
         era_firsts_rows = [{"era_key": era, "uid": uid} for era in era_keys]
+        svc._database.get_trophy_rows = AsyncMock(return_value=[])
         svc._database.get_empire_stats = AsyncMock(return_value={})
         svc._database.get_era_firsts = AsyncMock(return_value=era_firsts_rows)
         svc._database.award_trophy = AsyncMock()

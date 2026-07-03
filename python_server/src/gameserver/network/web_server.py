@@ -322,6 +322,7 @@ def _parse_critters(web_dir: Path, path: Path) -> list[dict[str, Any]]:
             "animation": animation,
             "sprite": _resolve_sprite(web_dir, animation),
             "spawn_on_death": item.get("spawn_on_death") or {},
+            "critter_type": item.get("critter_type", ""),
         })
     return result
 
@@ -343,6 +344,7 @@ def _parse_structures(path: Path) -> list[dict[str, Any]]:
             "sprite": item.get("sprite", ""),
             "costs": item.get("costs", {}),
             "requirements": item.get("requirements", []),
+            "tower_type": item.get("tower_type", ""),
         })
     return result
 
@@ -509,6 +511,34 @@ def _patch_requirements_in_yaml(path: Path, iid: str, new_reqs: list[str]) -> bo
     lines.insert(start + 1, f"{indent}requirements: {new_val}\n")
     path.write_text("".join(lines), encoding="utf-8")
     return True
+
+
+def _set_string_field_in_yaml(path: Path, iid: str, field: str, value: str) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+    start = None
+    next_start = None
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            if m.group(1) == iid:
+                start = i
+            elif start is not None:
+                next_start = i
+                break
+    if start is None:
+        return
+    end = next_start if next_start is not None else len(lines)
+    field_re = re.compile(r'^(\s+' + re.escape(field) + r':\s*).*$')
+    for j in range(start + 1, end):
+        m = field_re.match(lines[j].rstrip("\r\n"))
+        if m:
+            eol = "\n" if lines[j].endswith("\n") else ""
+            lines[j] = m.group(1) + value + eol
+            path.write_text("".join(lines), encoding="utf-8")
+            return
+    lines.insert(start + 1, f"  {field}: {value}\n")
+    path.write_text("".join(lines), encoding="utf-8")
 
 
 def _set_era_field_in_yaml(path: Path, iid: str, era: str) -> None:
@@ -861,6 +891,18 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
     async def patch_critter_era(changes: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
         for iid, era in changes.items():
             _set_era_field_in_yaml(CRITTERS_PATH, str(iid), str(era))
+        return {"ok": True}
+
+    @app.patch("/api/item-type")
+    async def patch_item_type(body: dict[str, Any] = Body(...), _uid: int = Depends(require_admin)) -> Any:
+        """Set critter_type or tower_type field. body: {iid: {item_kind: 'critter'|'tower', type_value: str}}"""
+        for iid, info in body.items():
+            kind = info.get("item_kind", "")
+            value = str(info.get("type_value", ""))
+            if kind == "critter":
+                _set_string_field_in_yaml(CRITTERS_PATH, str(iid), "critter_type", value)
+            elif kind == "tower":
+                _set_string_field_in_yaml(STRUCTURES_PATH, str(iid), "tower_type", value)
         return {"ok": True}
 
     @app.get("/api/structure-stats")

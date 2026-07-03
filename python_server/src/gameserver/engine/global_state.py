@@ -18,10 +18,13 @@ _end_criterion_empire_uid: Optional[int] = None
 _end_criterion_empire_name: str = ""
 _season_number: int = 1
 _season_title: str = ""
+_this_season_start_date: str = ""  # ISO-8601 UTC start of the currently running season
 _next_season_start: str = ""
 _next_season_title: str = ""
-_season_reset_triggered: bool = False
+_game_frozen: bool = False
 _season_wipe_time: float = 0.0  # unix timestamp of last empire wipe
+_season_snapshot_done: bool = False
+_season_leadtime: Optional[float] = None  # None = use game.yaml default
 
 
 def get_end_criterion_activated() -> Optional[datetime]:
@@ -92,6 +95,16 @@ def get_next_season_start() -> str:
     return _next_season_start
 
 
+def get_this_season_start_date() -> str:
+    """ISO-8601 UTC timestamp of when the currently running season started."""
+    return _this_season_start_date
+
+
+def set_this_season_start_date(value: str) -> None:
+    global _this_season_start_date
+    _this_season_start_date = value
+
+
 def parse_iso_utc(value: str) -> Optional[datetime]:
     """Parse an ISO-8601 timestamp as UTC. Returns None if empty or malformed."""
     if not value:
@@ -135,12 +148,12 @@ def set_season(
 
 
 def is_season_reset_triggered() -> bool:
-    return _season_reset_triggered
+    return _game_frozen
 
 
 def set_season_reset_triggered(value: bool) -> None:
-    global _season_reset_triggered
-    _season_reset_triggered = value
+    global _game_frozen
+    _game_frozen = value
 
 
 def get_season_wipe_time() -> float:
@@ -150,6 +163,24 @@ def get_season_wipe_time() -> float:
 def set_season_wipe_time(t: float) -> None:
     global _season_wipe_time
     _season_wipe_time = t
+
+
+def is_season_snapshot_done() -> bool:
+    return _season_snapshot_done
+
+
+def set_season_snapshot_done(value: bool) -> None:
+    global _season_snapshot_done
+    _season_snapshot_done = value
+
+
+def get_season_leadtime() -> Optional[float]:
+    return _season_leadtime
+
+
+def set_season_leadtime(value: Optional[float]) -> None:
+    global _season_leadtime
+    _season_leadtime = value
 
 
 def try_claim_first_era(era_key: str) -> bool:

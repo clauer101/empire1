@@ -34,11 +34,11 @@ end_ralley_effects:
   gold_offset: 2
   siege_time_modifier: 0.5
 end_ralley_duration: 604800
-# How long before next_season_start the empire wipe fires (seconds). 3 days.
 season_leadtime: 259200
+next_season_start_after_end: 1209600
 era_effects:
   stone:
-    travel_offset: 300.0
+    travel_offset: 300
     max_siege_construction_speed_modifier: 0.1
   neolithic:
     travel_offset: 900
@@ -155,7 +155,7 @@ prices:
   - 730000
 structure_upgrades:
   damage: 2.3
-  range: 2.0
+  range: 3.0
   reload: 2.3
   effect_duration: 2.0
   effect_value: 2.5
@@ -261,7 +261,7 @@ ai_generator:
     max_previous_era: 3
     min_next_era: 0
     max_next_era: 0
-empire_spawn_spacing: 9
+empire_spawn_spacing: 10
 base_map_vision_radius: 1
 min_username_length: 2
 max_username_length: 20

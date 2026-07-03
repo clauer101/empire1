@@ -1,200 +1,128 @@
-"""Tests for culture life-steal on attack (_apply_culture_life_steal).
+"""Tests for the unified culture steal mechanic.
 
-Culture is stolen from a defender based on the life lost in THIS battle
-(battle.defender_losses["life"]), scaled by the defender's era. Missing life
-carried over from earlier battles is never re-billed. Only *human* attackers
-receive culture — pure AI attacks steal nothing. Attackers in a later era
-than the defender suffer a penalty.
+Formula:
+  base   = uniform(min_c, max_c) * culture_pool * life_ratio
+  win    ×2 if attacker won
+  era    ×0.5 per attacker if attacker era > defender era
+  cap    at culture_pool
 """
 
 from types import SimpleNamespace
+from unittest.mock import patch
+import pytest
 
-from gameserver.engine.ai_service import AI_UID
-from gameserver.network.handlers.battle_task import _apply_culture_life_steal
+
+PCT = 0.03  # fixed pct for deterministic tests
 
 
-def _empire(uid: int, era: str = "stone", culture: float = 0.0,
-            life: float = 10.0, max_life: float = 10.0):
+def _empire(uid: int, era: str = "stone", culture: float = 10_000.0, max_life: float = 10.0):
     return SimpleNamespace(
         uid=uid,
-        resources={"culture": culture, "life": life},
+        resources={"culture": culture},
         max_life=max_life,
+        artifacts=[],
+        artifact_acquired_at={},
+        effects={},
+        get_effect=lambda k, d=0.0: d,
+        knowledge={},
+        buildings={},
+        item_upgrades={},
     )
 
 
-def _svc(empires: dict, era_by_uid: dict, *,
-         rate: float = 2000.0, era_ratio: float = 0.5):
+def _svc(empires: dict, era_by_uid: dict, min_c: float = PCT, max_c: float = PCT):
     cfg = SimpleNamespace(
-        culture_steal_per_life_and_era=rate,
-        culture_era_advantage_ratio=era_ratio,
+        min_lose_culture=min_c,
+        max_lose_culture=max_c,
+        ai_culture_steal_modifier=1.0,
     )
     empire_service = SimpleNamespace(
         get=lambda uid: empires.get(uid),
-        get_current_era=lambda emp: era_by_uid[emp.uid],
+        get_current_era=lambda emp: era_by_uid.get(emp.uid, "stone"),
     )
-    return SimpleNamespace(game_config=cfg, empire_service=empire_service)
+    return SimpleNamespace(game_config=cfg, empire_service=empire_service, upgrade_provider=SimpleNamespace(items={}))
 
 
-def _battle(defender, attacker_uids, life_lost: float = 4.0):
+def _battle(defender, attacker_uids, life_lost: float = 3.0, defender_won: bool = False):
     return SimpleNamespace(
         defender=defender,
         attacker_uids=attacker_uids,
+        defender_won=defender_won,
         attacker_gains={},
-        defender_losses={"life": life_lost} if life_lost else {},
+        defender_losses={"life": life_lost},
+        critters_reached=int(life_lost > 0),
     )
 
 
-def test_steals_correct_amount_single_human_same_era():
-    # defender: stone (idx 0), missing 4 life, rate 2000 -> 4 * 1 * 2000 = 8000
-    defender = _empire(99, era="stone", culture=100_000, life=6.0, max_life=10.0)
-    attacker = _empire(1, era="stone", culture=0.0)
+def _run_loot(battle, svc):
+    from gameserver.network.handlers.battle_task import _compute_and_apply_loot
+    with patch("random.uniform", return_value=PCT), \
+         patch("random.choice", return_value=None), \
+         patch("random.random", return_value=1.0):
+        return _compute_and_apply_loot(battle, svc)
+
+
+def test_attacker_loses_same_era():
+    # base = 10000 × 0.03 × (3/10) × 1.0 = 90
+    defender = _empire(99, culture=10_000.0, max_life=10.0)
+    attacker = _empire(1, culture=0.0)
     svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "stone"})
-    battle = _battle(defender, [1])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert attacker.resources["culture"] == 8000.0
-    assert defender.resources["culture"] == 92_000.0
-    assert loot["culture"] == 8000.0
-    assert battle.defender_losses["culture"] == 8000.0
+    battle = _battle(defender, [1], life_lost=3.0, defender_won=True)
+    loot = _run_loot(battle, svc)
+    assert loot.get("culture", 0.0) == pytest.approx(90.0, abs=1.0)
+    assert attacker.resources["culture"] == pytest.approx(90.0, abs=1.0)
 
 
-def test_capped_by_defender_culture_pool():
-    # Would steal 8000 but defender only has 500.
-    defender = _empire(99, era="stone", culture=500.0, life=6.0, max_life=10.0)
-    attacker = _empire(1, era="stone", culture=0.0)
+def test_attacker_wins_same_era_doubles_loot():
+    # base = 10000 × 0.03 × (3/10) × 2.0 = 180
+    defender = _empire(99, culture=10_000.0, max_life=10.0)
+    attacker = _empire(1, culture=0.0)
     svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "stone"})
-    battle = _battle(defender, [1])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert attacker.resources["culture"] == 500.0
-    assert defender.resources["culture"] == 0.0
+    battle = _battle(defender, [1], life_lost=3.0, defender_won=False)
+    loot = _run_loot(battle, svc)
+    assert loot.get("culture", 0.0) == pytest.approx(180.0, abs=1.0)
 
 
-def test_scales_with_defender_era():
-    # defender: iron (idx 3) -> 4 * (3+1) * 2000 = 32000
-    defender = _empire(99, era="iron", culture=100_000, life=6.0, max_life=10.0)
+def test_attacker_wins_higher_era_halved():
+    # 10000 × 0.03 × 0.3 × 2.0 = 180 → ×0.5 = 90
+    defender = _empire(99, era="stone", culture=10_000.0, max_life=10.0)
     attacker = _empire(1, era="iron", culture=0.0)
-    svc = _svc({99: defender, 1: attacker}, {99: "iron", 1: "iron"})
-    battle = _battle(defender, [1])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert attacker.resources["culture"] == 32_000.0
+    svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "iron"})
+    battle = _battle(defender, [1], life_lost=3.0, defender_won=False)
+    loot = _run_loot(battle, svc)
+    assert loot.get("culture", 0.0) == pytest.approx(90.0, abs=1.0)
+    assert loot["per_attacker"][1].get("culture_era_penalty") is True
 
 
-def test_era_penalty_for_more_advanced_attacker():
-    # defender stone (idx 0), attacker industrial (idx 6 > 0) -> 0.5 penalty.
-    defender = _empire(99, era="stone", culture=100_000, life=6.0, max_life=10.0)
-    attacker = _empire(1, era="industrial", culture=0.0)
-    svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "industrial"})
-    battle = _battle(defender, [1])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    # base 8000 * 0.5 = 4000
-    assert attacker.resources["culture"] == 4000.0
-    assert loot["per_attacker"][1]["culture_era_penalty"] is True
-    assert loot["per_attacker"][1]["culture_era_penalty_lost"] == 4000.0
-    assert battle.attacker_gains[1]["culture_era_penalty"] is True
-
-
-def test_split_between_multiple_human_winners():
-    # 8000 split between two same-era winners -> 4000 each.
-    defender = _empire(99, era="stone", culture=100_000, life=6.0, max_life=10.0)
-    a1 = _empire(1, era="stone", culture=0.0)
-    a2 = _empire(2, era="stone", culture=0.0)
-    svc = _svc({99: defender, 1: a1, 2: a2},
-               {99: "stone", 1: "stone", 2: "stone"})
-    battle = _battle(defender, [1, 2])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert a1.resources["culture"] == 4000.0
-    assert a2.resources["culture"] == 4000.0
-    assert loot["culture"] == 8000.0
-
-
-def test_ai_only_attack_no_life_steal():
-    # Life-based steal is human-only; AI culture steal goes through the
-    # pool-% path in _compute_and_apply_loot instead (see test_culture_loot.py).
-    defender = _empire(99, era="stone", culture=100_000, life=6.0, max_life=10.0)
-    svc = _svc({99: defender}, {99: "stone"})
-    battle = _battle(defender, [AI_UID])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert defender.resources["culture"] == 100_000.0
-    assert "culture" not in loot
-
-
-def test_ai_winner_excluded_human_gets_full_pool_share():
-    # Mixed attack: AI_UID is filtered out, so the single human is the only
-    # winner and receives the full stolen amount (not a split with the AI).
-    defender = _empire(99, era="stone", culture=100_000, life=6.0, max_life=10.0)
-    attacker = _empire(1, era="stone", culture=0.0)
+def test_no_life_lost_no_steal():
+    defender = _empire(99, culture=10_000.0, max_life=10.0)
+    attacker = _empire(1, culture=0.0)
     svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "stone"})
-    battle = _battle(defender, [AI_UID, 1])
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert attacker.resources["culture"] == 8000.0
+    battle = _battle(defender, [1], life_lost=0.0, defender_won=False)
+    loot = _run_loot(battle, svc)
+    assert loot.get("culture", 0.0) == 0.0
 
 
-def test_no_life_lost_steals_nothing():
-    defender = _empire(99, era="stone", culture=100_000, life=10.0, max_life=10.0)
-    attacker = _empire(1, era="stone", culture=0.0)
+def test_full_life_loss_with_win():
+    # 10000 × 0.03 × 1.0 × 2.0 = 600
+    defender = _empire(99, culture=10_000.0, max_life=10.0)
+    attacker = _empire(1, culture=0.0)
     svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "stone"})
-    battle = _battle(defender, [1], life_lost=0.0)
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert attacker.resources["culture"] == 0.0
-    assert "culture" not in loot
+    battle = _battle(defender, [1], life_lost=10.0, defender_won=False)
+    loot = _run_loot(battle, svc)
+    assert loot.get("culture", 0.0) == pytest.approx(600.0, abs=1.0)
 
 
-def test_consecutive_battles_bill_each_leak_only_once():
-    # Player report: repeated (even won) defenses kept losing huge culture
-    # because the old formula re-billed ALL missing life every battle.
-    # Two battles without life regen in between: battle 1 leaks 4 life,
-    # battle 2 leaks 1 -> total stolen must be (4 + 1) * 2000, not
-    # 4*2000 + (4+1)*2000.
-    defender = _empire(99, era="stone", culture=100_000, life=10.0, max_life=10.0)
-    attacker = _empire(1, era="stone", culture=0.0)
+def test_capped_at_culture_pool():
+    # pct mocked to 5.0 (500%) → base = 100 * 5.0 * 1.0 * 2.0 = 1000, cap at 100
+    defender = _empire(99, culture=100.0, max_life=10.0)
+    attacker = _empire(1, culture=0.0)
     svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "stone"})
-
-    battle1 = _battle(defender, [1], life_lost=4.0)
-    defender.resources["life"] -= 4.0  # damage applied by the battle loop
-    _apply_culture_life_steal(battle1, svc, {})
-    assert attacker.resources["culture"] == 8000.0
-
-    battle2 = _battle(defender, [1], life_lost=1.0)
-    defender.resources["life"] -= 1.0  # life from battle 1 not regenerated
-    _apply_culture_life_steal(battle2, svc, {})
-
-    assert attacker.resources["culture"] == 10_000.0  # +2000, not +10_000
-    assert defender.resources["culture"] == 90_000.0
-
-
-def test_preexisting_missing_life_is_not_rebilled():
-    # Defender enters the battle already missing 8 life from earlier battles;
-    # this battle leaks only 1 damage -> steal is 1 * 1 * 2000, not 9 * 2000.
-    defender = _empire(99, era="stone", culture=100_000, life=1.0, max_life=10.0)
-    attacker = _empire(1, era="stone", culture=0.0)
-    svc = _svc({99: defender, 1: attacker}, {99: "stone", 1: "stone"})
-    battle = _battle(defender, [1], life_lost=1.0)
-    loot: dict = {}
-
-    _apply_culture_life_steal(battle, svc, loot)
-
-    assert attacker.resources["culture"] == 2000.0
-    assert defender.resources["culture"] == 98_000.0
+    battle = _battle(defender, [1], life_lost=10.0, defender_won=False)
+    from gameserver.network.handlers.battle_task import _compute_and_apply_loot
+    with patch("random.uniform", return_value=5.0), \
+         patch("random.choice", return_value=None), \
+         patch("random.random", return_value=1.0):
+        loot = _compute_and_apply_loot(battle, svc)
+    assert loot.get("culture", 0.0) == pytest.approx(100.0, abs=0.1)
+    assert defender.resources["culture"] == pytest.approx(0.0, abs=0.1)

@@ -229,6 +229,10 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
       })
       .join('');
 
+    const cancelBtn = activeQueue
+      ? `<button id="queue-cancel-btn" style="padding:2px 10px;font-size:11px;line-height:1.6;background:transparent;color:var(--text-dim,#9999a8);border:1px solid var(--border-color,#2a2a3a);border-radius:4px;cursor:pointer;" title="Pause current ${cfg.actionLabel.toLowerCase()}">⏸ Pause</button>`
+      : '';
+
     el.innerHTML = `
       <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
         <label class="toggle-switch">
@@ -236,6 +240,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
           <span class="toggle-slider"></span>
         </label>
         <label for="${cfg.toggleId}" style="font-size: 13px; cursor: pointer;">Hide completed &amp; excluded</label>
+        ${cancelBtn}
       </div>
       <table class="items-table">
         <thead><tr><th>Name</th><th>Details</th></tr></thead>
@@ -273,6 +278,19 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
       hideCompleted = e.target.checked;
       render();
     });
+
+    const cancelBtnEl = el.querySelector('#queue-cancel-btn');
+    if (cancelBtnEl) {
+      cancelBtnEl.addEventListener('click', async () => {
+        cancelBtnEl.disabled = true;
+        try {
+          await cfg.cancelAction();
+          await rest.getSummary();
+        } finally {
+          cancelBtnEl.disabled = false;
+        }
+      });
+    }
 
     _overlay.bindBadgeClicks(el);
 

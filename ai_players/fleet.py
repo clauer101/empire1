@@ -20,16 +20,36 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from bot.state import random_fantasy_name  # noqa: E402
+from bot.state import BotState, random_fantasy_name  # noqa: E402
+
+
+def reset_all_states(here: Path) -> None:
+    """Clear transient state (strategy, memory, savings goals) from all bot state files.
+
+    Keeps account credentials and personality so bots can log back in after a season reset.
+    """
+    states_dir = here / "states"
+    for path in sorted(states_dir.glob("*.yaml")):
+        state = BotState.load_or_create(path.stem)
+        state.reset()
+        state.save()
+        print(f"reset {path.stem}")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--count", type=int, default=3)
     ap.add_argument("--fast", action="store_true")
+    ap.add_argument("--reset-states", action="store_true",
+                    help="Clear strategy/memory/savings from all bot state files, then exit")
     args = ap.parse_args()
 
     here = Path(__file__).resolve().parent
+
+    if args.reset_states:
+        reset_all_states(here)
+        return 0
+
     config = yaml.safe_load((here / "config.yaml").read_text())
     base_port = config["control_port_base"]
 

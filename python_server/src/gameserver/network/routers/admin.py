@@ -96,10 +96,20 @@ def make_router(services: "Services") -> APIRouter:
     async def admin_status(_uid: int = Depends(require_admin)) -> dict[str, Any]:
         uid_to_user: dict[int, str] = {}
         uid_to_last_seen: dict[int, str] = {}
+        winner_place: dict[int, int] = {}
+        past_champions: set[int] = set()
         if services.database is not None:
             for row in await services.database.list_users():
                 uid_to_user[row["uid"]] = row["username"]
                 uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
+            all_winners = await services.database.get_season_winners()
+            if all_winners:
+                latest = max(w["season_number"] for w in all_winners)
+                for w in all_winners:
+                    if w["season_number"] == latest:
+                        winner_place[w["empire_uid"]] = w["place"]
+                    elif w["place"] == 1:
+                        past_champions.add(w["empire_uid"])
 
         connected_uids: list[int] = (
             services.server.connected_uids if services.server else []
@@ -168,6 +178,8 @@ def make_router(services: "Services") -> APIRouter:
                 "uid": empire.uid,
                 "name": empire.name,
                 "username": uid_to_user.get(empire.uid, ""),
+                "season_place": winner_place.get(empire.uid),
+                "past_champion": empire.uid in past_champions,
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "bot_probability": round(bot_prob, 3),
                 "resources": {k: round(v, 1) for k, v in empire.resources.items()},
@@ -183,6 +195,7 @@ def make_router(services: "Services") -> APIRouter:
                 "knowledge_wip": knowledge_wip,
                 "armies": armies_out,
                 "item_upgrades": empire.item_upgrades,
+                "item_era_index": {iid: services.empire_service._item_era_index.get(iid, 0) for iid in empire.item_upgrades},
                 "hex_tiles": hex_tiles,
                 "path_length": _pl,
                 "power": power,
@@ -241,6 +254,60 @@ def make_router(services: "Services") -> APIRouter:
             "speedup": services.game_loop.speedup if services.game_loop else 1.0,
         }
 
+    @router.get("/api/admin/trophies")
+    async def admin_trophies(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return earned trophies grouped per empire, plus full trophy catalog."""
+        from gameserver.models.items import ItemType
+
+        assert services.empire_service is not None
+        assert services.database is not None
+
+        uid_to_user: dict[int, str] = {}
+        uid_to_name: dict[int, str] = {}
+        for row in await services.database.list_users():
+            uid_to_user[row["uid"]] = row["username"]
+        for empire in services.empire_service.all_empires.values():
+            uid_to_name[empire.uid] = empire.name
+
+        up = services.empire_service._upgrades
+        catalog = [
+            {
+                "iid": item.iid,
+                "name": item.name,
+                "image": item.image,
+                "description": item.description,
+                "effects": item.effects,
+                "condition": item.condition,
+            }
+            for item in up.items.values()
+            if item.item_type == ItemType.TROPHY
+        ]
+        catalog.sort(key=lambda t: str(t["name"]))
+        total = len(catalog)
+
+        rows = await services.database.get_all_trophy_rows()
+        by_uid: dict[int, list[dict[str, Any]]] = {}
+        for row in rows:
+            by_uid.setdefault(row["uid"], []).append(row)
+
+        empires_out: list[dict[str, Any]] = []
+        for euid, trophy_rows in by_uid.items():
+            if euid <= 0:
+                continue
+            empires_out.append({
+                "uid": euid,
+                "username": uid_to_user.get(euid, ""),
+                "name": uid_to_name.get(euid, ""),
+                "earned": [
+                    {"iid": r["iid"], "earned_at": r["earned_at"], "season": r["season"]}
+                    for r in trophy_rows
+                ],
+                "earned_count": len(trophy_rows),
+            })
+        empires_out.sort(key=lambda e: e["earned_count"], reverse=True)
+
+        return {"total_trophies": total, "catalog": catalog, "empires": empires_out}
+
     @router.post("/api/admin/speedup")
     async def admin_set_speedup(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
         """Set the game-time multiplier at runtime.
@@ -248,6 +315,11 @@ def make_router(services: "Services") -> APIRouter:
         Not persisted: after a server restart the speedup_factor from
         game.yaml applies again.
         """
+        import os as _os
+        if _os.environ.get("IS_DEV", "").lower() not in ("1", "true", "yes"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="speedup is only available in dev environments")
+
         if services.game_loop is None:
             return {"success": False, "error": "game loop not initialized"}
         try:
@@ -266,16 +338,10 @@ def make_router(services: "Services") -> APIRouter:
 
     @router.post("/api/admin/save-state")
     async def admin_save_state(_uid: int = Depends(require_admin)) -> dict[str, Any]:
-        if services.empire_service is None:
-            return {"ok": False, "error": "empire_service not initialized"}
-        assert services.attack_service is not None
-        from gameserver.persistence.state_save import save_state
-        await save_state(
-            empires=services.empire_service.all_empires,
-            attacks=services.attack_service.get_all_attacks(),
-            battles=[],
-            path=_state_file_path(),
-        )
+        gl = services.game_loop
+        if gl is None:
+            return {"ok": False, "error": "game_loop not initialized"}
+        await gl._save_state()
         return {"ok": True, "message": "State saved"}
 
     @router.post("/api/admin/restart")
@@ -287,14 +353,8 @@ def make_router(services: "Services") -> APIRouter:
             await asyncio.sleep(0.5)
             if services.empire_service is not None:
                 try:
-                    from gameserver.persistence.state_save import save_state
-                    assert services.attack_service is not None
-                    await save_state(
-                        empires=services.empire_service.all_empires,
-                        attacks=services.attack_service.get_all_attacks(),
-                        battles=[],
-                        path=_state_file_path(),
-                    )
+                    if services.game_loop is not None:
+                        await services.game_loop._save_state()
                 except Exception:
                     # Save failure must not block restart — log and proceed
                     log.exception("State save failed before restart")
@@ -989,6 +1049,77 @@ def make_router(services: "Services") -> APIRouter:
             services.attack_service._game_config = new_gc
         return {"success": True}
 
+    @router.get("/api/admin/trophy-config")
+    async def get_trophy_config(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        import yaml as _yaml
+        p = _CONFIG_DIR / "trophies.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        trophies = []
+        for key, t in raw.items():
+            entry: dict[str, Any] = {"key": key, **t}
+            trophies.append(entry)
+        return {"trophies": trophies}
+
+    @router.patch("/api/admin/trophy-config/{key}")
+    async def patch_trophy_config(
+        key: str, body: dict[str, Any], _uid: int = Depends(require_admin)
+    ) -> dict[str, Any]:
+        import yaml as _yaml
+        p = _CONFIG_DIR / "trophies.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        if key not in raw:
+            raise HTTPException(status_code=404, detail=f"Trophy '{key}' not found")
+        trophy = raw[key]
+        if "name" in body:
+            trophy["name"] = str(body["name"])
+        if "description" in body:
+            trophy["description"] = str(body["description"])
+        if "condition" in body:
+            cond_patch: dict[str, Any] = body["condition"]
+            if "condition" not in trophy or not isinstance(trophy["condition"], dict):
+                trophy["condition"] = {}
+            if "type" in cond_patch:
+                trophy["condition"]["type"] = str(cond_patch["type"])
+            if "threshold" in cond_patch:
+                if cond_patch["threshold"] is None:
+                    trophy["condition"].pop("threshold", None)
+                else:
+                    trophy["condition"]["threshold"] = cond_patch["threshold"]
+            if "era" in cond_patch:
+                if cond_patch["era"] is None:
+                    trophy["condition"].pop("era", None)
+                else:
+                    trophy["condition"]["era"] = str(cond_patch["era"])
+        if "effects" in body:
+            effects_patch: dict[str, Any] = body["effects"]
+            if not isinstance(effects_patch, dict):
+                raise HTTPException(status_code=422, detail="effects must be a dict")
+            trophy["effects"] = {
+                str(k): float(v) for k, v in effects_patch.items()
+                if k and v is not None
+            }
+        raw[key] = trophy
+        with p.open("w") as f:
+            _yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        return {"success": True, "key": key}
+
+    @router.delete("/api/admin/trophy-config/{key}")
+    async def delete_trophy_config(
+        key: str, _uid: int = Depends(require_admin)
+    ) -> dict[str, Any]:
+        import yaml as _yaml
+        p = _CONFIG_DIR / "trophies.yaml"
+        with p.open() as f:
+            raw = _yaml.safe_load(f) or {}
+        if key not in raw:
+            raise HTTPException(status_code=404, detail=f"Trophy '{key}' not found")
+        del raw[key]
+        with p.open("w") as f:
+            _yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        return {"success": True, "key": key}
+
     @router.get("/api/admin/runtime-stats")
     async def get_runtime_stats(_uid: int = Depends(require_admin)) -> dict[str, Any]:
         assert services.database is not None
@@ -1002,7 +1133,13 @@ def make_router(services: "Services") -> APIRouter:
         for row in artifact_holds:
             row["username"] = uid_to_name.get(row["uid"], f"uid:{row['uid']}")
         era_firsts = await services.database.get_era_firsts()
-        return {"empire_stats": empire_stats, "artifact_holds": artifact_holds, "era_firsts": era_firsts}
+        from gameserver.engine.global_state import get_this_season_start_date
+        return {
+            "empire_stats": empire_stats,
+            "artifact_holds": artifact_holds,
+            "era_firsts": era_firsts,
+            "this_season_start_date": get_this_season_start_date(),
+        }
 
     @router.get("/api/admin/ai-battle-log")
     async def get_ai_battle_log(limit: int = 500, _uid: int = Depends(require_admin)) -> dict[str, Any]:
@@ -1021,5 +1158,174 @@ def make_router(services: "Services") -> APIRouter:
             r["critters_by_era"] = _json.loads(r["critters_by_era"] or "{}")
             result.append(r)
         return {"battles": result}
+
+    # ── Season admin ────────────────────────────────────────────────────────
+
+    @router.get("/api/admin/season")
+    async def get_season_state(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return the full season transition state."""
+        from gameserver.engine.global_state import (
+            get_season_number, get_season_title, get_this_season_start_date,
+            get_next_season_start, get_next_season_title, get_next_season_leadtime,
+            get_end_criterion_activated, get_end_criterion_empire_uid,
+            get_end_criterion_empire_name, is_season_reset_triggered,
+            is_end_rally_active, end_rally_seconds_remaining,
+        )
+        gc = services.empire_service._gc if services.empire_service else None
+        season_leadtime = gc.season_leadtime if gc else 259200.0
+        end_rally_duration = gc.end_rally_duration if gc else 604800.0
+        next_season_start_after_end = gc.next_season_start_after_end if gc else 1209600.0
+        end_criterion = gc.end_criterion if gc else ""
+        eca = get_end_criterion_activated()
+        return {
+            "season_number": get_season_number(),
+            "season_title": get_season_title(),
+            "this_season_start_date": get_this_season_start_date(),
+            "next_season_start": get_next_season_start(),
+            "next_season_title": get_next_season_title(),
+            "next_season_leadtime": get_next_season_leadtime(season_leadtime),
+            "season_leadtime_secs": season_leadtime,
+            "end_rally_duration_secs": end_rally_duration,
+            "next_season_start_after_end_secs": next_season_start_after_end,
+            "end_criterion": end_criterion,
+            "end_criterion_activated": eca.isoformat() if eca else None,
+            "end_criterion_empire_uid": get_end_criterion_empire_uid(),
+            "end_criterion_empire_name": get_end_criterion_empire_name(),
+            "game_frozen": is_season_reset_triggered(),
+            "end_rally_active": is_end_rally_active(gc) if gc else False,
+            "end_rally_seconds_remaining": end_rally_seconds_remaining(gc) if gc else 0.0,
+        }
+
+    @router.patch("/api/admin/season")
+    async def patch_season_state(
+        body: dict[str, Any],
+        _uid: int = Depends(require_admin),
+    ) -> dict[str, Any]:
+        """Update editable season fields: next_season_start, next_season_title, season_leadtime_secs."""
+        from gameserver.engine.global_state import (
+            get_season_number, get_season_title, get_next_season_start,
+            get_next_season_title, set_season,
+        )
+        changed: list[str] = []
+
+        new_next_start = body.get("next_season_start")
+        new_next_title = body.get("next_season_title")
+        new_leadtime   = body.get("season_leadtime_secs")
+
+        if new_next_start is not None or new_next_title is not None:
+            set_season(
+                get_season_number(),
+                get_season_title(),
+                str(new_next_start) if new_next_start is not None else get_next_season_start(),
+                str(new_next_title) if new_next_title is not None else get_next_season_title(),
+            )
+            if new_next_start is not None:
+                changed.append("next_season_start")
+            if new_next_title is not None:
+                changed.append("next_season_title")
+
+        if new_leadtime is not None:
+            from gameserver.engine.global_state import set_season_leadtime
+            gc = services.empire_service._gc if services.empire_service else None
+            if gc is not None:
+                gc.season_leadtime = float(new_leadtime)
+                set_season_leadtime(float(new_leadtime))
+                changed.append("season_leadtime_secs")
+
+        # Persist immediately so a crash doesn't lose the change
+        if changed and services.empire_service and services.attack_service:
+            from gameserver.persistence.state_save import save_state
+            from gameserver.network.handlers._core import _active_battles
+            _gc = services.empire_service._gc
+            try:
+                await save_state(
+                    empires=services.empire_service.all_empires,
+                    attacks=services.attack_service.get_all_attacks(),
+                    battles=list(_active_battles.values()),
+                    path=_state_file_path(),
+                )
+            except Exception:
+                pass
+
+        return {"changed": changed}
+
+    @router.post("/api/admin/season/force-new")
+    async def force_new_season(
+        body: dict[str, Any],
+        _uid: int = Depends(require_admin),
+    ) -> dict[str, Any]:
+        """Dev-only: immediately wipe all empires and start a new season.
+
+        Blocked unless IS_DEV=true is set in the environment.
+
+        Skips the snapshot, rally, and leadtime phases entirely.
+        Accepts optional 'new_title' in the request body.
+        """
+        import os as _os
+        if _os.environ.get("IS_DEV", "").lower() not in ("1", "true", "yes"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="force-new-season is only available in dev environments")
+
+        import asyncio as _asyncio
+        from gameserver.engine.global_state import (
+            get_season_number, get_season_title,
+            get_next_season_title,
+            set_season, set_season_reset_triggered,
+            set_this_season_start_date, clear_end_criterion,
+        )
+        from datetime import datetime, timezone
+
+        new_title = body.get("new_title") or get_next_season_title() or get_season_title()
+        new_number = get_season_number() + 1
+
+        # Wipe empires and attacks
+        wiped_empires = 0
+        wiped_attacks = 0
+        if services.empire_service:
+            uids = services.empire_service.wipe_all_empires()
+            wiped_empires = len(uids)
+        if services.attack_service:
+            wiped_attacks = services.attack_service.wipe_all_attacks()
+
+        # Reset DB season stats
+        if services.database:
+            _asyncio.ensure_future(services.database.wipe_season_stats())
+
+        # Clear rally / freeze state
+        clear_end_criterion()
+        set_season_reset_triggered(False)
+
+        # Advance season
+        now_iso = datetime.now(timezone.utc).isoformat()
+        set_season(new_number, new_title)
+        set_this_season_start_date(now_iso)
+
+        log.info(
+            "[force-new-season] Season %d '%s' started; wiped %d empires, %d attacks",
+            new_number, new_title, wiped_empires, wiped_attacks,
+        )
+
+        # Persist new state
+        if services.empire_service and services.attack_service:
+            from gameserver.persistence.state_save import save_state
+            from gameserver.network.handlers._core import _active_battles
+            try:
+                await save_state(
+                    empires=services.empire_service.all_empires,
+                    attacks=services.attack_service.get_all_attacks(),
+                    battles=list(_active_battles.values()),
+                    path=_state_file_path(),
+                )
+            except Exception:
+                pass
+
+        return {
+            "ok": True,
+            "season_number": new_number,
+            "season_title": new_title,
+            "wiped_empires": wiped_empires,
+            "wiped_attacks": wiped_attacks,
+            "started_at": now_iso,
+        }
 
     return router

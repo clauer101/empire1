@@ -261,8 +261,12 @@
   const towerChanges   = {};
   const reqChanges     = {};  // { IID: [req, ...] }
   const eraChanges     = {};  // { IID: "era_name" }
+  const typeChanges    = {};  // { IID: { item_kind, type_value } }
   const liveVals       = {};  // key = "critter-IID-field" → current value
   const liveReqs       = {};  // key = IID → current requirements array
+
+  const CRITTER_TYPES = ['', 'fast', 'tank', 'carrier', 'bulk', 'spread', 'boss', 'health'];
+  const TOWER_TYPES   = ['', 'splash', 'fast', 'strong', 'slow', 'burn'];
 
   const CRITTER_FIELDS = {
     health:       { label: 'HP',       step: 1,    min: 1    },
@@ -300,8 +304,16 @@
     </span>`;
   }
 
+  function typeSelectHtml(iid, kind, current, options) {
+    const opts = options.map(v => `<option value="${v}"${v === current ? ' selected' : ''}>${v || '— none —'}</option>`).join('');
+    return `<select class="type-select" data-iid="${iid}" data-kind="${kind}"
+      style="font-size:10px;background:var(--surface-alt);border:1px solid var(--border);color:var(--text-dim);border-radius:3px;padding:1px 4px;cursor:pointer;margin-left:4px;">
+      ${opts}
+    </select>`;
+  }
+
   function updateSaveBtn() {
-    const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length + Object.keys(reqChanges).length + Object.keys(eraChanges).length;
+    const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length + Object.keys(reqChanges).length + Object.keys(eraChanges).length + Object.keys(typeChanges).length;
     saveBtn.disabled = n === 0;
     saveBtn.textContent = n > 0 ? `Speichern (${n})` : 'Speichern';
   }
@@ -334,15 +346,18 @@
         reqs.push(fetch('/api/item-requirements', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(reqChanges) }));
       if (Object.keys(eraChanges).length)
         reqs.push(fetch('/api/critter-era', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(eraChanges) }));
+      if (Object.keys(typeChanges).length)
+        reqs.push(fetch('/api/item-type',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(typeChanges) }));
       const results = await Promise.all(reqs);
       for (const r of results) if (!r.ok) throw new Error(await r.text());
       for (const k of Object.keys(critterChanges)) delete critterChanges[k];
       for (const k of Object.keys(towerChanges))   delete towerChanges[k];
       for (const k of Object.keys(reqChanges))     delete reqChanges[k];
       for (const k of Object.keys(eraChanges))     delete eraChanges[k];
+      for (const k of Object.keys(typeChanges))    delete typeChanges[k];
       document.querySelectorAll('.stat-val.changed').forEach(el => el.classList.remove('changed'));
       document.querySelectorAll('.req-tag.changed').forEach(el => el.classList.remove('changed'));
-      document.querySelectorAll('.era-select').forEach(el => { el.style.color = ''; el.style.borderColor = ''; });
+      document.querySelectorAll('.era-select, .type-select').forEach(el => { el.style.color = 'var(--text-dim)'; el.style.borderColor = ''; });
       saveBtn.textContent = 'Gespeichert ✓';
       setTimeout(() => { saveBtn.textContent = 'Speichern'; saveBtn.disabled = true; }, 2000);
     } catch(e) {
@@ -688,8 +703,6 @@
 
   function renderCritterCard(c, counterHtml) {
     const effort = cumulativeEffort(c.requirements || []);
-    const sc = classifySpeed(c.speed);
-    const ac = classifyArmour(c.armour);
     const sprite = critterSprite(c);
     return `<div class="unit-card">
       <div class="unit-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${c.name}<span class="unit-iid">${c.iid}</span>${eraSelectHtml(c)}</div>
@@ -705,9 +718,9 @@
             ${editStat(c.iid,'critter','time_between',c.time_between)}
             ${editStat(c.iid,'critter','slots',c.slots ?? 1)}
           </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap">
-            <span class="tag tag-speed-${sc}">${sc}</span>
-            <span class="tag tag-armour-${ac}">${ac} armour</span>
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px">
+            <span style="font-size:10px;color:var(--text-dim)">Type:</span>
+            ${typeSelectHtml(c.iid, 'critter', c.critter_type || '', CRITTER_TYPES)}
           </div>
           ${reqsHtml(c.iid, c.requirements)}
           ${roleScoresHtml(c)}
@@ -741,6 +754,8 @@
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px">
             <span class="tag tag-${t.shot_type}">${t.shot_type}</span>
             ${t.shot_sprite ? `<img src="/${t.shot_sprite.replace(/^\//, '')}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'">` : ''}
+            <span style="font-size:10px;color:var(--text-dim)">Type:</span>
+            ${typeSelectHtml(t.iid, 'tower', t.tower_type || '', TOWER_TYPES)}
           </div>
           <div class="fx-editor" data-iid="${t.iid}" data-fx='${fxData}'></div>
           ${reqsHtml(t.iid, t.requirements)}
@@ -927,14 +942,21 @@
 
   // ── Era dropdown delegation ──
   contentEl.addEventListener('change', e => {
-    const sel = e.target.closest('.era-select');
-    if (!sel) return;
-    const iid = sel.dataset.iid;
-    const newEra = sel.value;
-    eraChanges[iid] = newEra;
-    sel.style.color = 'var(--warning)';
-    sel.style.borderColor = 'var(--warning)';
-    updateSaveBtn();
+    const eraEl = e.target.closest('.era-select');
+    if (eraEl) {
+      eraChanges[eraEl.dataset.iid] = eraEl.value;
+      eraEl.style.color = 'var(--warning)';
+      eraEl.style.borderColor = 'var(--warning)';
+      updateSaveBtn();
+      return;
+    }
+    const typeEl = e.target.closest('.type-select');
+    if (typeEl) {
+      typeChanges[typeEl.dataset.iid] = { item_kind: typeEl.dataset.kind, type_value: typeEl.value };
+      typeEl.style.color = 'var(--warning)';
+      typeEl.style.borderColor = 'var(--warning)';
+      updateSaveBtn();
+    }
   });
 
   // ── +/− button event delegation ──
@@ -997,6 +1019,80 @@
     }
     tryLoad(0);
   });
+  // ── Critter type matrix ──
+  (function renderTypeMatrix() {
+    // Columns: each has a label, critter types to include, and tower types to include
+    const COLS = [
+      { key: 'fast',    label: 'Fast',    critterTypes: ['fast'],            towerTypes: ['fast'] },
+      { key: 'tank',    label: 'Tank',    critterTypes: ['tank'],            towerTypes: ['burn', 'strong'] },
+      { key: 'carrier', label: 'Carrier', critterTypes: ['carrier'],         towerTypes: ['splash'] },
+      { key: 'bulk',    label: 'Bulk',    critterTypes: ['bulk'],            towerTypes: ['splash'] },
+      { key: 'spread',  label: 'Spread',  critterTypes: ['spread'],          towerTypes: [] },
+      { key: 'boss',    label: 'Boss',    critterTypes: ['boss'],            towerTypes: ['slow'],   includeBosses: true },
+      { key: 'health',  label: 'Health',  critterTypes: ['health'],          towerTypes: ['strong'] },
+    ];
+
+    // Build per-era lookup: { era: { colKey: { critters: [], towers: [] } } }
+    const matrix = {};
+    for (const era of ERA_ORDER) {
+      matrix[era] = {};
+      for (const col of COLS) matrix[era][col.key] = { critters: [], towers: [] };
+    }
+
+    const allCrittersForMatrix = [...combatCritters, ...bossCritters];
+    for (const c of allCrittersForMatrix) {
+      const era = ERA_ORDER.includes(c.era) ? c.era : 'stone';
+      const ct = c.critter_type || '';
+      for (const col of COLS) {
+        if (col.critterTypes.includes(ct)) {
+          matrix[era][col.key].critters.push(c.name);
+        }
+      }
+    }
+    for (const t of structures) {
+      const era = ERA_ORDER.includes(t.era) ? t.era : 'stone';
+      const tt = t.tower_type || '';
+      for (const col of COLS) {
+        if (col.towerTypes.includes(tt)) {
+          matrix[era][col.key].towers.push(t.name);
+        }
+      }
+    }
+
+    const thStyle = `padding:6px 10px;text-align:center;background:var(--surface-alt);border:1px solid var(--border);color:var(--text-dim);font-weight:600;white-space:nowrap`;
+    const tdStyle = `padding:6px 10px;border:1px solid var(--border);text-align:center;vertical-align:top`;
+
+    let html = `<div style="margin:40px 0 20px;padding:0 8px">
+      <h2 style="font-size:14px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Type Matrix</h2>
+      <div style="overflow-x:auto">
+      <table style="border-collapse:collapse;font-size:11px;width:100%">
+        <thead><tr>
+          <th style="${thStyle};text-align:left">Era</th>`;
+    for (const col of COLS) {
+      html += `<th style="${thStyle}">${col.label}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+
+    for (const era of ERA_ORDER) {
+      html += `<tr><td style="padding:6px 10px;border:1px solid var(--border);color:var(--text);font-weight:600;white-space:nowrap;background:var(--surface-alt)">${eraLabel(era)}</td>`;
+      for (const col of COLS) {
+        const { critters: cList, towers: tList } = matrix[era][col.key];
+        const parts = [
+          ...cList.map(n => `<div style="white-space:nowrap;color:var(--text)">${n}</div>`),
+          ...tList.map(n => `<div style="white-space:nowrap;color:#81c784">🗼 ${n}</div>`),
+        ];
+        const cell = parts.length ? parts.join('') : `<span style="color:var(--text-dim);opacity:0.3">—</span>`;
+        html += `<td style="${tdStyle}">${cell}</td>`;
+      }
+      html += `</tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    contentEl.appendChild(wrapper);
+  })();
+
 })();
 </script>
 </body>

@@ -63,7 +63,10 @@ def choose_action(ctx: BotContext, config: dict, active_type: str,
     # this cycle is mere filler (queue fill / fallback build) — otherwise doing
     # the affordable productive action now beats idling gold.
     affordable_now = [o for o in ranked if ctx.affordable_option(o)]
-    only_filler = all(o.filler for o in affordable_now)
+    # Only set a savings goal when there ARE affordable options but they're all
+    # filler. An empty affordable_now means nothing is reachable yet — don't
+    # cap spendable_gold or we'll block ourselves permanently.
+    only_filler = bool(affordable_now) and all(o.filler for o in affordable_now)
 
     # Goal handling: if the top option is unaffordable but worth saving for, and
     # nothing productive is affordable right now, declare a goal and (optionally)

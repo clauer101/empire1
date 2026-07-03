@@ -306,6 +306,16 @@ async def health_check():
 
 
 
+@app.get("/api/effect-keys")
+async def get_effect_keys():
+    """Return all known empire effect keys with icon, label, and description."""
+    from gameserver.engine.effect_keys import EMPIRE_EFFECT_KEYS
+    return JSONResponse({"effect_keys": [
+        {"key": k, "icon": icon, "label": label, "description": desc}
+        for k, icon, label, desc in EMPIRE_EFFECT_KEYS
+    ]})
+
+
 @app.get("/api/ai-waves")
 async def get_ai_waves():
     """Return all AI wave definitions annotated with era."""
@@ -651,6 +661,7 @@ def _parse_critters(path: Path) -> list[dict]:
             "animation": animation,
             "sprite": _resolve_sprite(animation),
             "spawn_on_death": item.get("spawn_on_death") or {},
+            "critter_type": item.get("critter_type", ""),
         })
     return result
 
@@ -673,6 +684,7 @@ def _parse_structures(path: Path) -> list[dict]:
             "sprite": item.get("sprite", ""),
             "costs": item.get("costs", {}),
             "requirements": item.get("requirements", []),
+            "tower_type": item.get("tower_type", ""),
         })
     return result
 
@@ -804,6 +816,47 @@ async def patch_critter_era(changes: dict = Body(...)):
     """Set era for critters. Body: { IID: 'iron', ... }"""
     for iid, era in changes.items():
         _set_era_field_in_yaml(CRITTERS_PATH, str(iid), str(era))
+    return {"ok": True}
+
+
+def _set_string_field_in_yaml(path: Path, iid: str, field: str, value: str) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    key_re = re.compile(r'^([A-Z][A-Z0-9_]*):\s*(?:#.*)?$')
+    start = None
+    next_start = None
+    for i, line in enumerate(lines):
+        m = key_re.match(line.rstrip("\r\n"))
+        if m:
+            if m.group(1) == iid:
+                start = i
+            elif start is not None:
+                next_start = i
+                break
+    if start is None:
+        return
+    end = next_start if next_start is not None else len(lines)
+    field_re = re.compile(r'^(\s+' + re.escape(field) + r':\s*).*$')
+    for j in range(start + 1, end):
+        m = field_re.match(lines[j].rstrip("\r\n"))
+        if m:
+            eol = "\n" if lines[j].endswith("\n") else ""
+            lines[j] = m.group(1) + value + eol
+            path.write_text("".join(lines), encoding="utf-8")
+            return
+    lines.insert(start + 1, f"  {field}: {value}\n")
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+@app.patch("/api/item-type")
+async def patch_item_type(body: dict = Body(...)):
+    """Set critter_type or tower_type. Body: { IID: { item_kind: 'critter'|'tower', type_value: str } }"""
+    for iid, info in body.items():
+        kind = info.get("item_kind", "")
+        value = str(info.get("type_value", ""))
+        if kind == "critter":
+            _set_string_field_in_yaml(CRITTERS_PATH, str(iid), "critter_type", value)
+        elif kind == "tower":
+            _set_string_field_in_yaml(STRUCTURES_PATH, str(iid), "tower_type", value)
     return {"ok": True}
 
 
@@ -1073,6 +1126,91 @@ async def save_artifacts(request: Request):
 
 
 RULERS_PATH = _CONFIG_DIR / "rulers.yaml"
+
+
+@app.get("/api/backups")
+async def get_backups():
+    """Return metadata for all backup slots (hourly + daily) for prod and dev."""
+    import sqlite3
+    import re
+
+    def _yaml_empire_count(path: Path) -> int | None:
+        try:
+            text = path.read_text(encoding="utf-8")
+            return len(re.findall(r"^- uid:", text, re.MULTILINE))
+        except Exception:
+            return None
+
+    def _db_user_count(path: Path) -> int | None:
+        try:
+            conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+            count = conn.execute("SELECT COUNT(*) FROM users WHERE uid > 0").fetchone()[0]
+            conn.close()
+            return count
+        except Exception:
+            return None
+
+    def _mtime(path: Path) -> str | None:
+        try:
+            import datetime
+            ts = path.stat().st_mtime
+            return datetime.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M UTC")
+        except Exception:
+            return None
+
+    def _scan_dir(states_dir: Path, prefix: str, slots: list[str]) -> list[dict]:
+        results = []
+        for slot in slots:
+            db_path   = states_dir / f"gameserver_{slot}.db"
+            yaml_path = states_dir / f"state_{slot}.yaml"
+            db_exists   = db_path.exists()
+            yaml_exists = yaml_path.exists()
+            db_mtime   = _mtime(db_path)   if db_exists   else None
+            yaml_mtime = _mtime(yaml_path) if yaml_exists else None
+            db_users   = _db_user_count(db_path)   if db_exists   else None
+            yaml_empires = _yaml_empire_count(yaml_path) if yaml_exists else None
+            # timestamps match within 5 minutes?
+            consistent = False
+            if db_mtime and yaml_mtime:
+                import datetime
+                fmt = "%Y-%m-%d %H:%M UTC"
+                try:
+                    diff = abs((datetime.datetime.strptime(db_mtime, fmt) -
+                                datetime.datetime.strptime(yaml_mtime, fmt)).total_seconds())
+                    consistent = diff <= 300
+                except Exception:
+                    pass
+            results.append({
+                "slot": slot,
+                "prefix": prefix,
+                "db_exists": db_exists,
+                "yaml_exists": yaml_exists,
+                "db_mtime": db_mtime,
+                "yaml_mtime": yaml_mtime,
+                "db_users": db_users,
+                "yaml_empires": yaml_empires,
+                "consistent": consistent,
+            })
+        return results
+
+    data_root = Path("/app/data")
+    out = {}
+    for env in ("prod", "dev"):
+        hourly_dir = data_root / env / "states" / "hourly"
+        daily_dir  = data_root / env / "states" / "daily"
+        hourly_slots = sorted({
+            p.stem.replace("gameserver_", "").replace("state_", "")
+            for p in list(hourly_dir.glob("*.db")) + list(hourly_dir.glob("*.yaml"))
+        }) if hourly_dir.exists() else []
+        daily_slots = sorted({
+            p.stem.replace("gameserver_", "").replace("state_", "")
+            for p in list(daily_dir.glob("*.db")) + list(daily_dir.glob("*.yaml"))
+        }) if daily_dir.exists() else []
+        out[env] = {
+            "hourly": _scan_dir(hourly_dir, "hourly", hourly_slots),
+            "daily":  _scan_dir(daily_dir,  "daily",  daily_slots),
+        }
+    return JSONResponse(out)
 
 
 @app.get("/api/rulers")

@@ -1,6 +1,7 @@
 """Auth router — /api/auth/login, /api/auth/signup."""
 from __future__ import annotations
 
+import structlog
 from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Request
@@ -8,6 +9,8 @@ from slowapi import Limiter
 
 from gameserver.network.jwt_auth import create_token
 from gameserver.network.rest_models import LoginRequest, LoginResponse, SignupRequest, SignupResponse
+
+log = structlog.get_logger(__name__)
 
 if TYPE_CHECKING:
     from gameserver.main import Services
@@ -38,6 +41,24 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                         uid, user_row["username"], user_row["empire_name"] or user_row["username"]
                     )
                     empire = empire_service.get(uid)
+                    # Restore trophies and apply their effects (including increase_start_gold)
+                    if empire is not None:
+                        trophy_rows = await services.database.get_trophy_rows(uid)
+                        for row in trophy_rows:
+                            empire.trophies[row["iid"]] = {
+                                "earned_at": row["earned_at"],
+                                "season": row["season"],
+                            }
+                        # Apply trophy effects to starting state
+                        extra_gold = 0.0
+                        if services.empire_service is not None:
+                            for iid in empire.trophies:
+                                fx = services.empire_service._upgrades.get_effects(iid)
+                                extra_gold += fx.get("increase_start_gold", 0.0)
+                        if extra_gold:
+                            empire.resources["gold"] = empire.resources.get("gold", 0.0) + extra_gold
+                            log.info("Trophy bonus: uid=%d +%g start gold from trophies", uid, extra_gold)
+                        empire_service.recalculate_effects(empire)
             summary = _build_empire_summary(empire, uid) if empire else None
             if services.database is not None:
                 forwarded = request.headers.get("X-Forwarded-For", "")

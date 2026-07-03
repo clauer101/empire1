@@ -215,7 +215,7 @@ class EmpireService:
 
     def step_all(self, dt: float) -> None:
         """Advance all registered empires by dt seconds."""
-        for empire in self._empires.values():
+        for empire in list(self._empires.values()):
             self.step(empire, dt)
 
     def step(self, empire: Empire, dt: float) -> None:
@@ -424,13 +424,14 @@ class EmpireService:
             return
         artifact_iid = random.choice(candidates)
         empire.artifacts.append(artifact_iid)
+        import datetime as _dt
+        empire.artifact_acquired_at[artifact_iid] = _dt.datetime.now(_dt.timezone.utc).isoformat()
         self.recalculate_effects(empire)
         log.info("Artifact granted for era3: uid=%d artifact=%s", empire.uid, artifact_iid)
         if self._database is not None:
             import asyncio as _adb
-            import time as _time
             _adb.get_running_loop().create_task(
-                self._database.record_artifact_acquired(empire.uid, artifact_iid, _time.time())
+                self._database.record_artifact_acquired(empire.uid, artifact_iid, 0.0)
             )
             artifact_item = self._upgrades.get(artifact_iid)
             artifact_name = artifact_item.name if artifact_item else artifact_iid
@@ -723,6 +724,28 @@ class EmpireService:
             return float(costs[era_index])
         return float(costs[-1])
 
+    def army_cumulative_cost_for(self, army: Any, empire: "Empire") -> float:
+        """Return the intrinsic gold value of a single army.
+
+        Sums: all wave purchases + all slot upgrades + all era upgrades.
+        Excludes the army creation cost (position-dependent, not intrinsic).
+        Uses the empire's current effect modifiers so discounts are reflected.
+        """
+        base_slots = int(self._gc.prices.base_wave_slots) if self._gc and hasattr(self._gc.prices, "base_wave_slots") else 1
+        total = 0.0
+        for wave_idx, wave in enumerate(army.waves):
+            total += self.wave_price_for(empire, wave_idx)
+            purchased_slots = max(0, int(wave.slots) - base_slots)
+            for slot_i in range(purchased_slots):
+                total += self.critter_slot_price_for(empire, slot_i)
+            for era_i in range(int(wave.max_era)):
+                total += self.wave_era_price_for(empire, era_i)
+
+        return round(total, 2)
+
+    def army_cumulative_cost(self, empire: "Empire") -> float:
+        """Return the total gold spent across all armies of the empire."""
+        return round(sum(self.army_cumulative_cost_for(a, empire) for a in empire.armies), 2)
 
     def _item_upgrade_price(self, empire: Empire, iid: str, stat: str) -> float:
         """Cost to upgrade `stat` of item `iid` by one level.

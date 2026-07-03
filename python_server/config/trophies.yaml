@@ -1,5 +1,3 @@
-# ─── Defense trophies ────────────────────────────────────────────────────────
-
 UNBROKEN:
   name: Unbroken
   description: When the first wave crashed against your gates, you did not flinch.
@@ -8,20 +6,7 @@ UNBROKEN:
   condition:
     type: defense_won
     threshold: 1
-  effects:
-    gold_offset: 0.001
-
-IRON_WALL:
-  name: Iron Wall
-  description: Twenty-five storms broke against your ramparts and dissolved into dust.
-    Invaders whisper your name to their children as a warning, not a war cry.
-  image: assets/sprites/trophies/trophy_v2.webp
-  condition:
-    type: defense_won
-    threshold: 25
-  effects:
-    restore_life_after_loss_offset: 0.001
-
+  effects: []
 CENTURION:
   name: Centurion
   description: One hundred battles. One hundred victories. Lesser rulers would have
@@ -31,59 +16,89 @@ CENTURION:
   condition:
     type: defense_won
     threshold: 100
+  effects: []
+IRON_WALL:
+  name: Iron Wall
+  description: Storms broke against your ramparts and dissolved into dust. Invaders
+    whisper your name to their children as a warning, not a war cry.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: defense_won
+    threshold: 500
   effects:
-    restore_life_after_loss_offset: 0.001
-    life_regen_modifier: 0.001
-
+    travel_time_modifier: 0.02
 GUARDIAN_AGAINST_AI:
   name: Keeper of the Gate
-  description: Ten times the machines have come with cold logic and infinite patience,
-    and ten times your walls have answered with fire. The algorithm does not learn
+  description: Fifty times the machines have come with cold logic and infinite patience,
+    and fifty times your walls have answered with fire. The algorithm does not learn
     from defeat — but it has learned to dread your name.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: defense_won_ai
-    threshold: 10
+    threshold: 50
+  effects: []
+MACHINE_WARDEN:
+  name: Machine Warden
+  description: One hundred times cold logic marshalled its forces and marched on your
+    walls. One hundred times it left with nothing. You are not merely a defender —
+    you are a recurring nightmare in the algorithm's training data.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: defense_won_ai
+    threshold: 100
+  effects: []
+SILICON_SLAYER:
+  name: Silicon Slayer
+  description: Two hundred victories against the machine. The algorithm has run every
+    permutation, tested every approach, and found the same answer each time — your
+    walls do not fall. Its patience is infinite; yours, apparently, is indestructible.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: defense_won_ai
+    threshold: 200
   effects:
-    gold_offset: 0.001
-
+    build_speed_modifier: 0.02
 HUMAN_BASTION:
   name: Human Bastion
-  description: When flesh-and-blood commanders threw their finest armies at your
-    gates, you met each one with the same unyielding answer. Rivals speak of you
-    not as a defender but as a force of nature.
+  description: When flesh-and-blood commanders threw their finest armies at your gates,
+    you met each one with the same unyielding answer. Rivals speak of you not as a
+    defender but as a force of nature.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: defense_won_human
     threshold: 10
+  effects: []
+IRON_HOST:
+  name: Iron Host
+  description: Fifty commanders sent their finest and returned with nothing but lessons.
+    Your gates have become a pilgrimage site for strategists seeking to understand
+    what perfect defense looks like.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: defense_won_human
+    threshold: 50
+  effects: []
+THE_IMMOVABLE:
+  name: The Immovable
+  description: One hundred human challengers. One hundred defeats. They brought their
+    best strategies, their sharpest armies, their most daring gambits — and you filed
+    each one under 'insufficient.' History will run out of words before your walls
+    run out of resolve.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: defense_won_human
+    threshold: 100
   effects:
-    culture_modifier: 0.001
-
-# ─── Attack trophies ──────────────────────────────────────────────────────────
-
+    research_speed_modifier: 0.02
 FIRST_BLOOD:
   name: First Blood
   description: Your army marched, your banners flew, and when the dust settled the
     enemy's walls were yours. Every conquest begins with a single decisive strike.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
-    type: attacks_won
+    type: attacks_won_human
     threshold: 1
-  effects:
-    culture_offset: 0.001
-
-WARLORD:
-  name: Warlord
-  description: Fifty campaigns. Fifty broken enemies. Your generals have long stopped
-    asking why you march — they only ask where. The chronicles will need a second
-    volume just for your exploits.
-  image: assets/sprites/trophies/trophy_v2.webp
-  condition:
-    type: attacks_won
-    threshold: 50
-  effects:
-    culture_modifier: 0.001
-
+  effects: []
 MACHINE_BREAKER:
   name: Machine Breaker
   description: The AI threw wave upon wave of coldly optimized monsters at foreign
@@ -91,26 +106,21 @@ MACHINE_BREAKER:
     substitutes for the art of war.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
-    type: attacks_won_ai
+    type: attacks_won_human
     threshold: 5
   effects:
-    gold_modifier: 0.001
-
+    culture_modifier: 0.02
 CONQUEROR_OF_KINGS:
   name: Conqueror of Kings
-  description: Fifteen human commanders fell before your onslaught. Each one believed
-    their strategy was the key — you proved that tactics matter less than sheer
-    audacity at the head of a superior force.
+  description: One hundred human commanders fell before your onslaught. Each one believed
+    their strategy was the key — you proved that tactics matter less than sheer audacity
+    at the head of a superior force.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: attacks_won_human
-    threshold: 15
+    threshold: 200
   effects:
-    culture_modifier: 0.001
-    gold_offset: 0.001
-
-# ─── Critter kill trophies ───────────────────────────────────────────────────
-
+    gold_modifier: 0.02
 EXTERMINATOR:
   name: Exterminator
   description: A thousand creatures met their end at the towers you built and the
@@ -119,10 +129,9 @@ EXTERMINATOR:
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: critters_killed
-    threshold: 1000
+    threshold: 100000
   effects:
-    gold_modifier: 0.001
-
+    max_life_modifier: 1.0
 MASS_MURDERER:
   name: Mass Murderer
   description: Ten thousand. The number staggers the mind. Generals have won entire
@@ -131,93 +140,127 @@ MASS_MURDERER:
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: critters_killed
-    threshold: 10000
+    threshold: 200000
   effects:
-    gold_modifier: 0.001
-    restore_life_after_loss_offset: 0.001
-
-# ─── Map trophies ─────────────────────────────────────────────────────────────
-
+    life_regen_modifier: 0.0005
 LANDGRABBER:
   name: Land Grabber
-  description: Twenty hexes bear your seal. Neighbors eye their borders nervously
+  description: Seventy-five hexes bear your seal. Neighbors eye their borders nervously
     over their morning tea, wondering which ridge or valley catches your eye next.
     Ambition, they say, is a fire that feeds on maps.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: hexes_owned
-    threshold: 20
+    threshold: 75
   effects:
-    culture_modifier: 0.001
-
+    build_speed_modifier: 0.01
 EMPIRE_BUILDER:
   name: Empire Builder
-  description: Fifty hexes, each one a story of negotiation, conquest, or sheer
-    audacity. Cartographers have had to redraw their maps twice since you started.
-    This is not an empire anymore — it is a statement.
+  description: One hundred and fifty hexes, each one a story of negotiation, conquest,
+    or sheer audacity. Cartographers have had to redraw their maps twice since you
+    started. This is not an empire anymore — it is a statement.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: hexes_owned
-    threshold: 50
+    threshold: 150
   effects:
-    culture_modifier: 0.001
-    build_speed_modifier: 0.001
-
+    research_speed_modifier: 0.02
 MAZE_ARCHITECT:
   name: Maze Architect
-  description: Twenty tiles of winding corridors, blind turns, and overlapping fields
-    of fire — a masterwork of defensive geometry. Invaders enter your maze with
-    confidence and leave as statistics.
+  description: Fifty tiles of winding corridors, blind turns, and overlapping fields
+    of fire — a masterwork of defensive geometry. Invaders enter your maze with confidence
+    and leave as statistics.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: path_length
-    threshold: 20
+    threshold: 50
   effects:
-    wave_delay_offset: 100
-
-# ─── Era-comparison trophies ─────────────────────────────────────────────────
-
+    research_speed_modifier: 0.01
+GRAND_LABYRINTH:
+  name: Grand Labyrinth
+  description: Seventy-five tiles of interlocking corridors and overlapping kill zones
+    — a masterpiece of hostile architecture. Cartographers have refused to map it.
+    Invaders have simply refused to enter.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: path_length
+    threshold: 75
+  effects:
+    build_speed_modifier: 0.02
 COWARD:
   name: Coward
-  description: You chose the easy prey, the smaller kingdoms, the weaker eras.
-    Perhaps efficiency is its own kind of brilliance — or perhaps you simply enjoy
-    watching fires you know you can start.
+  description: You chose the easy prey, the smaller kingdoms, the weaker eras. Perhaps
+    efficiency is its own kind of brilliance — or perhaps you simply enjoy watching
+    fires you know you can start.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: coward_attacks
-    threshold: 5
+    threshold: 1
   effects:
-    gold_offset: 0.001
-
+    increase_start_gold: -1.0
 LUCKY_PUNCH:
   name: Lucky Punch
   description: You marched uphill into a superior civilization and walked home with
-    their banners. That is not luck — that is the audacity of someone who never
-    received the memo that they were supposed to lose.
+    their banners. That is not luck — that is the audacity of someone who never received
+    the memo that they were supposed to lose.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: max_lucky_punch_levels
     threshold: 2
   effects:
-    culture_modifier: 0.001
-    gold_modifier: 0.001
-
-# ─── Espionage trophies ───────────────────────────────────────────────────────
-
+    increase_start_gold: 50.0
+UNDERDOG:
+  name: Underdog
+  description: Three times you picked a fight above your weight class and three times
+    you walked away with someone else's trophy. The word impossible appears to have
+    been redacted from your tactical vocabulary.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: max_lucky_punch_levels
+    threshold: 3
+  effects:
+    gold_offset: 0.05
+GIANT_SLAYER:
+  name: Giant Slayer
+  description: Four victories against empires that should have crushed you on paper.
+    At this point the era gap is not a disadvantage — it is your preferred fighting
+    condition. Legends are built on exactly this kind of audacity.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: max_lucky_punch_levels
+    threshold: 4
+  effects:
+    increase_start_gold: 500.0
 SHADOW_HAND:
   name: Shadow Hand
-  description: Ten missions. Ten silent departures into the dark. Half your enemies
-    never knew you were there until the secrets were already gone. The other half
-    will never forget.
+  description: One hundred missions. One hundred silent departures into the dark.
+    Half your enemies never knew you were there until the secrets were already gone.
+    The other half will never forget.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: spies_sent
-    threshold: 10
+    threshold: 100
+  effects: []
+SPYMASTER:
+  name: Spymaster
+  description: Two hundred missions. A shadow network that stretches across every
+    rival court in the known world. You have made intelligence gathering into an art
+    form, and your enemies have made paranoia into a lifestyle.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: spies_sent
+    threshold: 200
   effects:
-    gold_offset: 0.001
-
-# ─── Artifact trophies ───────────────────────────────────────────────────────
-
+    restore_life_after_loss_offset: 1.0
+FIRST_HEIST:
+  name: First Heist
+  description: One artifact taken from foreign hands and carried home. The first theft
+    is always the hardest — now you know how easy the second one feels.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: artifacts_stolen
+    threshold: 1
+  effects: []
 RELIC_HUNTER:
   name: Relic Hunter
   description: Five artifacts stripped from foreign vaults and carried home in triumph.
@@ -227,170 +270,215 @@ RELIC_HUNTER:
   condition:
     type: artifacts_stolen
     threshold: 5
+  effects: []
+COLLECTOR:
+  name: Collector
+  description: Fifteen artifacts, each one a story of audacity and superior timing.
+    Your display hall is starting to resemble a museum — one assembled entirely through
+    armed disagreement.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: artifacts_stolen
+    threshold: 15
   effects:
-    gold_modifier: 0.001
-
+    culture_offset: 0.05
+VAULT_BREAKER:
+  name: Vault Breaker
+  description: Thirty artifacts liberated from their former owners. Foreign rulers
+    have taken to burying their relics and hoping you simply won't find them. You
+    always find them.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: artifacts_stolen
+    threshold: 30
+  effects:
+    culture_modifier: 0.02
 GRAND_HEIST:
   name: Grand Heist
-  description: Two relics in a single engagement. You did not just win the battle —
-    you emptied the trophy room. The defender checked the invoice and simply wept.
+  description: Two relics in a single engagement. You did not just win the battle
+    — you emptied the trophy room. The defender checked the invoice and simply wept.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: max_artifacts_stolen_one_battle
     threshold: 2
   effects:
-    culture_modifier: 0.001
-    gold_modifier: 0.001
-
+    increase_start_gold: 100.0
 STRIPPED_BARE:
   name: Stripped Bare
   description: They came, they won, and they took everything. Two artifacts gone in
-    a single afternoon. If humiliation were a currency, you would be very rich
-    indeed — and wiser for it.
+    a single afternoon. If humiliation were a currency, you would be very rich indeed
+    — and wiser for it.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: max_artifacts_lost_one_battle
     threshold: 2
   effects:
-    restore_life_after_loss_offset: 0.001
-
-# ─── Culture & research trophies ─────────────────────────────────────────────
-
-CULTURE_VULTURE:
-  name: Culture Vulture
-  description: You swept through the enemy's galleries and libraries and returned
-    home richer in every civilized metric that matters. War has never been so
-    intellectually stimulating.
+    increase_start_gold: 100.0
+CULTURE_RAIDER:
+  name: Culture Raider
+  description: One million points of culture swept from foreign galleries and carried
+    home in triumph. Your first taste of cultural conquest — and clearly not your
+    last.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: culture_won
-    threshold: 500
-  effects:
-    culture_modifier: 0.001
-
-PLUNDERED:
-  name: Plundered
-  description: They took your culture, your art, your finest songs. You lost five
-    hundred points of the soul of your kingdom in a single season — and still you
-    rebuilt. That is resilience by another name.
+    threshold: 1000000
+  effects: []
+CULTURE_VULTURE:
+  name: Culture Vulture
+  description: Ten million points of culture swept from foreign galleries and libraries
+    and carried home. War has never been so intellectually stimulating — or so thoroughly
+    profitable.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
-    type: culture_stolen
-    threshold: 500
+    type: culture_won
+    threshold: 10000000
+  effects: []
+CULTURAL_HEGEMON:
+  name: Cultural Hegemon
+  description: Fifty million points of culture, conquered and claimed. Your kingdom
+    does not merely participate in the civilized world — it defines it, on terms extracted
+    from everyone else.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: culture_won
+    threshold: 50000000
   effects:
-    restore_life_after_loss_offset: 0.001
-
-KNOWLEDGE_THIEF:
-  name: Knowledge Thief
-  description: You have siphoned a thousand hours of enemy scholarship in a single
-    season. Your academy is staffed with ideas that were not originally yours —
-    and your towers are the better for it.
+    research_speed_modifier: 0.02
+APPRENTICE_THIEF:
+  name: Apprentice Thief
+  description: Five hundred thousand research points absorbed from enemy archives.
+    The first lessons in intellectual appropriation — profitable, replicable, and
+    thoroughly unethical.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: research_won
-    threshold: 1000
-  effects:
-    build_speed_modifier: 0.001
-
-SCHOLARLY_MARTYR:
-  name: Scholarly Martyr
-  description: A thousand points of your finest research, painstakingly gathered,
-    stripped away by raiders and opportunists. You continue to study anyway.
-    The library calls this perseverance. History calls it admirable.
+    threshold: 500000
+  effects: []
+KNOWLEDGE_THIEF:
+  name: Knowledge Thief
+  description: One million research points siphoned from enemy archives. Your academy
+    is staffed with ideas that were not originally yours — and your towers are the
+    better for it.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
-    type: research_stolen
-    threshold: 1000
+    type: research_won
+    threshold: 1000000
+  effects: []
+GRAND_INQUISITOR:
+  name: Grand Inquisitor
+  description: Three million research points extracted from rival academies. Your
+    scholars have stopped asking where the new papers come from. Your enemies have
+    started shredding everything.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: research_won
+    threshold: 3000000
   effects:
-    build_speed_modifier: 0.001
-
-# ─── Endurance trophy ─────────────────────────────────────────────────────────
-
+    culture_modifier: 0.02
 LAST_TOWER_STANDING:
   name: Last Tower Standing
-  description: Three minutes of unrelenting assault and your walls still held.
-    Generals study battles like this in academies. Your towers did not flinch,
-    your defenses did not yield, and the silence when it ended was deafening.
+  description: Thirty minutes of unrelenting assault and your walls still held. Generals
+    study battles like this in academies. Your towers did not flinch, your defenses
+    did not yield, and the silence when it ended was deafening.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: longest_battle_ms
-    threshold: 180000
+    threshold: 1800000
   effects:
-    restore_life_after_loss_offset: 0.001
-
-# ─── Ruler trophy ─────────────────────────────────────────────────────────────
-
+    gold_modifier: 0.01
+FORTRESS_ETERNAL:
+  name: Fortress Eternal
+  description: One hour. Sixty minutes of uninterrupted assault, and your walls treated
+    each wave as a minor inconvenience. Military historians have a word for this kind
+    of defense. They usually save it for the last chapter.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: longest_battle_ms
+    threshold: 3600000
+  effects:
+    gold_modifier: 0.01
+VETERAN:
+  name: Veteran
+  description: Level eleven. Halfway to the ceiling of mortal achievement, and already
+    carrying more hard-won knowledge than most rulers accumulate in a lifetime. The
+    real lessons are only beginning.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: ruler_level
+    threshold: 11
+  effects: []
 LEGEND:
   name: Legend
   description: Level 18. The ceiling of mortal achievement. Your ruler has walked
-    every battlefield, learned every lesson that victory and defeat can teach,
-    and emerged as something history will argue about for centuries.
+    every battlefield, learned every lesson that victory and defeat can teach, and
+    emerged as something history will argue about for centuries.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: ruler_level
     threshold: 18
   effects:
-    culture_modifier: 0.001
-    gold_modifier: 0.001
-
-# ─── First-in-era trophies ───────────────────────────────────────────────────
-
-FIRST_STONE:
-  name: First Among Stone
-  description: Before anyone else lifted a hammer, you were already building.
-    The Stone Age remembers its first pioneer — and so will every era that follows.
+    culture_modifier: 0.02
+LAST_BREATH:
+  name: Last Breath
+  description: One hit. One critter more and the kingdom would have fallen into silence.
+    But it did not. The towers held, the gates held, and you held — with barely enough
+    life left to write the victory dispatch.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
-    type: first_in_era
-    era: stone
+    type: one_hp_def_wins
+    threshold: 1
+  effects: []
+LUCKER:
+  name: Lucker
+  description: Ten times. Ten occasions where fate, physics, and sheer improbability
+    conspired to leave exactly one hit point standing between your kingdom and total
+    collapse — and every single time, you walked away. The universe is either on your
+    side or deeply confused.
+  image: assets/sprites/trophies/trophy_v2.webp
+  condition:
+    type: one_hp_def_wins
+    threshold: 10
   effects:
-    gold_offset: 0.001
-
+    life_regen_modifier: 0.0005
 FIRST_NEOLITHIC:
   name: Dawn of the New Stone
-  description: You crossed into the Neolithic before the dust had settled on the
-    old ways. Progress bends toward those who run to meet it, and you ran fastest.
+  description: You crossed into the Neolithic before the dust had settled on the old
+    ways. Progress bends toward those who run to meet it, and you ran fastest.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: first_in_era
     era: neolithic
-  effects:
-    gold_offset: 0.001
-
+  effects: []
 FIRST_BRONZE:
   name: Bronze Pioneer
-  description: The first to smelt ambition into something harder than stone.
-    When the Bronze Age dawned on this world, it dawned on you first.
+  description: The first to smelt ambition into something harder than stone. When
+    the Bronze Age dawned on this world, it dawned on you first.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: first_in_era
     era: bronze
-  effects:
-    gold_offset: 0.001
-
+  effects: []
 FIRST_IRON:
   name: Iron Vanguard
   description: Iron does not bend and neither did you. You sharpened civilization
-    into something that cuts, and you did it before anyone else had the courage to try.
+    into something that cuts, and you did it before anyone else had the courage to
+    try.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: first_in_era
     era: iron
-  effects:
-    gold_offset: 0.001
-
+  effects: []
 FIRST_MIDDLE_AGES:
   name: Lord of the Middle Ages
-  description: Cathedrals, codes of chivalry, and a thousand years of turbulent
-    brilliance — and you arrived at the gates of the Middle Ages before the
-    drawbridge was even finished.
+  description: Cathedrals, codes of chivalry, and a thousand years of turbulent brilliance
+    — and you arrived at the gates of the Middle Ages before the drawbridge was even
+    finished.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: first_in_era
     era: middle_ages
-  effects:
-    culture_offset: 0.001
-
+  effects: []
 FIRST_RENAISSANCE:
   name: Renaissance First
   description: Art, science, and philosophy bloomed and you were the first gardener.
@@ -401,8 +489,7 @@ FIRST_RENAISSANCE:
     type: first_in_era
     era: renaissance
   effects:
-    culture_offset: 0.001
-
+    research_speed_modifier: 0.01
 FIRST_INDUSTRIAL:
   name: Industrial Trailblazer
   description: Smoke, steam, and the relentless logic of machines — you embraced them
@@ -413,8 +500,7 @@ FIRST_INDUSTRIAL:
     type: first_in_era
     era: industrial
   effects:
-    gold_modifier: 0.001
-
+    build_speed_modifier: 0.01
 FIRST_MODERN:
   name: Modern Vanguard
   description: You did not wait for the Modern Age to arrive — you dragged it into
@@ -425,36 +511,28 @@ FIRST_MODERN:
     type: first_in_era
     era: modern
   effects:
-    build_speed_modifier: 0.001
-
+    tile_cost_modifier: 0.02
 FIRST_FUTURE:
   name: Architect of Tomorrow
-  description: The Future is not a destination — it is a decision. You made that
-    decision before anyone else, and the world is still catching up. Some rulers
-    are ahead of their time; you are ahead of all times.
+  description: The Future is not a destination — it is a decision. You made that decision
+    before anyone else, and the world is still catching up. Some rulers are ahead
+    of their time; you are ahead of all times.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: first_in_era
     era: future
   effects:
-    culture_modifier: 0.001
-    gold_modifier: 0.001
-
-# ─── Meta trophies ───────────────────────────────────────────────────────────
-
+    workshop_cost_modifier: 0.02
 TRAILBLAZER:
   name: Trailblazer
-  description: Every era has a first — and every time, that first was you. Nine ages
-    of history, nine ribbons of priority, nine moments when the world held its breath
+  description: Every era has a first — and every time, that first was you. Eight ages
+    of history, eight ribbons of priority, eight moments when the world held its breath
     and you arrived before anyone else exhaled.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: all_era_firsts
   effects:
-    culture_modifier: 0.001
-    gold_modifier: 0.001
-    build_speed_modifier: 0.001
-
+    gold_lump_sum_after_research: 100.0
 COMPLETIONIST:
   name: Completionist
   description: Every trophy. Every condition. Every quiet milestone that most rulers
@@ -464,6 +542,4 @@ COMPLETIONIST:
   condition:
     type: all_trophies
   effects:
-    culture_modifier: 0.002
-    gold_modifier: 0.002
-    build_speed_modifier: 0.001
+    gold_modifier: 0.05

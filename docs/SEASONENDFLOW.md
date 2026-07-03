@@ -8,16 +8,16 @@ A season ends when a player completes the configured `end_criterion` item (defau
 Player builds end_criterion item
         │
         ▼
-Phase 1: End Rally          (end_ralley_duration seconds, default 1 week)
+Phase 1: End Rally          (end_ralley_duration seconds, default 1 week, show rally banner)
         │
         ▼
-Phase 2: Leadtime / Wipe    (next_season_leadtime reached → empires wiped)
+Phase 2: Seasonover / Frozen Countdown    (season_reset_triggered = 1 in state.yaml, game tick frozen, show winner banner, save result files and databases)
         │
         ▼
-Phase 3: Frozen Countdown   (game frozen until next_season_start)
+Phase 3: Next season lead time reached, WIPE   (show "next season starts in.." banner, respawn all empires upon login)
         │
         ▼
-Phase 4: New Season Starts  (season_number +1, game unfreezes)
+Phase 4: New Season Starts when next season time reached  (season_number +1, game unfreezes)
 ```
 
 ---

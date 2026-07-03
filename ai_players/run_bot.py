@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Standalone AI player bot for empire1 (dev environment only).
 
+Bot flow is documented in ai_players/docs/bot-flow.md.
+Keep that file in sync when changing the tick structure or cycle steps.
+
 Usage:
     python run_bot.py --name alice [--cycles N] [--fast] [--control-port 9301]
 
@@ -13,7 +16,6 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import random
 import signal
 import sys
 import time
@@ -31,12 +33,13 @@ from bot.dispatch import choose_action  # noqa: E402
 from bot.planners.base import BotContext  # noqa: E402
 from bot.state import BotState, now_iso  # noqa: E402
 from bot.strategy import (  # noqa: E402
-    attack_defeat_strategy, breach_defense_strategy, is_expired, make_override,
-    roll_secondary, roll_strategy, should_respond_to_attack_defeat,
-    should_respond_to_breach,
+    _valid_until, attack_defeat_strategy, breach_defense_strategy, is_expired,
+    make_override, roll_secondary, roll_strategy, should_respond_to_attack_defeat,
 )
 
 log = logging.getLogger("bot")
+
+MAX_ACTIONS_PER_TICK = 20
 
 
 def load_config() -> dict:
@@ -48,7 +51,7 @@ def load_config() -> dict:
 
 
 def completed_signature(summary: dict) -> frozenset[str]:
-    """Set of completed item iids (mirrors BotContext.completed)."""
+    """Set of completed item iids — used to detect when items catalog changes."""
     done = {iid for iid, rem in (summary.get("buildings") or {}).items()
             if (rem or 0) <= 0}
     done |= {iid for iid, rem in (summary.get("knowledge") or {}).items()
@@ -57,11 +60,16 @@ def completed_signature(summary: dict) -> frozenset[str]:
     return frozenset(done)
 
 
+def _sleep_until(deadline: float, stop: dict) -> None:
+    while time.time() < deadline and not stop["flag"]:
+        time.sleep(0.2)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True, help="bot name (state file key)")
     ap.add_argument("--cycles", type=int, default=0, help="stop after N cycles (0 = forever)")
-    ap.add_argument("--fast", action="store_true", help="1s poll interval (testing)")
+    ap.add_argument("--fast", action="store_true", help="5s cycle interval (testing)")
     ap.add_argument("--control-port", type=int, default=0)
     ap.add_argument("--allow-remote", action="store_true",
                     help="allow non-localhost server URLs (DANGEROUS)")
@@ -72,9 +80,6 @@ def main() -> int:
     stream_handler.setFormatter(fmt)
     handlers: list[logging.Handler] = [stream_handler]
 
-    # File logging is best-effort: if the logs dir is missing or not writable
-    # (e.g. a freshly re-created bind-mount owned by root), keep running and
-    # log to stdout only instead of crashing on startup.
     log_dir = Path(__file__).parent / "logs"
     try:
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -96,7 +101,7 @@ def main() -> int:
     state = BotState.load_or_create(args.name)
     api = ApiClient(config["server_url"], state.account["username"], state.account["password"])
 
-    # Signup on first run
+    # Signup on first run (state has no uid yet)
     if state.account.get("uid") is None:
         uid = api.signup(state.account["username"], state.account["password"],
                          state.account["empire_name"])
@@ -108,7 +113,6 @@ def main() -> int:
         log.info("resuming account %s (uid=%s, %d cycles so far)",
                  state.account["username"], state.account["uid"],
                  state.runtime.get("cycles", 0))
-    api.login()
 
     control = ControlServer(args.control_port or config["control_port_base"] + 1)
     control.start()
@@ -122,30 +126,44 @@ def main() -> int:
     signal.signal(signal.SIGINT, _on_signal)
     signal.signal(signal.SIGTERM, _on_signal)
 
-    items_cache: dict = {"items": {}, "at": 0.0, "sig": None}
-    poll = 1.0 if args.fast else float(config["poll_interval_s"])
-    jitter = 0.0 if args.fast else float(config["jitter_s"])
-
+    interval = 5.0 if args.fast else float(config["cycle_interval_s"])
     run_cycles = 0
+
     try:
         while not stop["flag"]:
+            tick_start = time.time()
+
+            # 1. Login — recreates empire automatically if wiped (auth.py:35-61)
             try:
-                cycle(api, config, state, control, items_cache)
+                api.login()
+            except Exception:
+                log.exception("login failed — retrying next tick")
+                _sleep_until(tick_start + interval, stop)
+                continue
+
+            # 2. Run all affordable actions for this tick
+            try:
+                cycle(api, config, state, control)
             except ApiError as e:
                 log.warning("cycle failed: %s", e)
             except Exception:
                 log.exception("cycle crashed")
 
+            # 3. Persist state
             run_cycles += 1
             state.runtime["cycles"] = state.runtime.get("cycles", 0) + 1
             state.runtime["last_cycle"] = now_iso()
             if state.dirty:
                 state.save()
+
+            # 4. Discard token ("logout") — next tick starts fresh
+            api.token = None
+
             if args.cycles and run_cycles >= args.cycles:
                 break
-            deadline = time.time() + poll + random.uniform(0, jitter)
-            while time.time() < deadline and not stop["flag"]:
-                time.sleep(0.2)
+
+            # 5. Wait until next tick (skipped if cycle took longer than interval)
+            _sleep_until(tick_start + interval, stop)
     finally:
         control.stop()
         state.save()
@@ -153,22 +171,34 @@ def main() -> int:
     return 0
 
 
-def cycle(api: ApiClient, config: dict, state: BotState,
-          control: ControlServer, cache: dict) -> None:
+def _check_season_reset(summary: dict, state: BotState) -> bool:
+    """Return True (and reset state) if the server is on a new season."""
+    season = summary.get("season_number")
+    if season is None:
+        return False
+    last = state.memory.get("last_season")
+    if last is not None and last != season:
+        log.info("new season %s (was %s) → resetting state", season, last)
+        state.reset()
+        state.memory["last_season"] = season
+        return True
+    state.memory["last_season"] = season
+    return False
+
+
+def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer) -> None:
+    # --- One-time setup for this tick ---
     summary = api.summary()
 
-    # The items catalog is server-filtered by progress: completing an item can
-    # unlock new catalog entries, so refetch whenever the completed set changes.
-    completed_sig = completed_signature(summary)
-    if (time.time() - cache["at"] > config["items_cache_s"]
-            or not cache["items"]
-            or cache.get("sig") != completed_sig):
-        cache["items"] = api.items()
-        cache["at"] = time.time()
-        cache["sig"] = completed_sig
-    items = cache["items"]
+    # Detect season change and wipe transient state (strategy, memory, savings goals)
+    if _check_season_reset(summary, state):
+        state.save()
 
-    # 1. Control commands
+    # Items catalog changes when new items are unlocked; fetch fresh each tick
+    # since we have a new token and no stale cache to worry about.
+    items = api.items()
+
+    # Control commands (strategy overrides from control port)
     for cmd in control.drain():
         if cmd["cmd"] == "strategy":
             try:
@@ -181,7 +211,7 @@ def cycle(api: ApiClient, config: dict, state: BotState,
             state.strategy = None
             state.dirty = True
 
-    # 2. Battle reports → memory
+    # Battle reports → memory
     reports = process_new_reports(api.messages(), state.memory)
     if reports:
         state.dirty = True
@@ -189,24 +219,37 @@ def cycle(api: ApiClient, config: dict, state: BotState,
             log.info("battle report: role=%s won=%s reached=%d culture=%+.1f artifacts=%s",
                      r.role, r.won, r.reached, r.culture, r.artifacts)
 
-    # 2b. Breach → defense: an AI break-through always switches the bot to the
-    #     defense strategy so the following hours strengthen the perimeter
-    #     (the baseline breach response additionally acts on the very next cycle).
+    # Breach → always force defense strategy
     breach = any(r.role == "defender" and r.reached > 0 for r in reports)
-    if breach and (state.strategy or {}).get("type") != "defense":
-        if should_respond_to_breach(config, state.personality):
-            state.strategy = breach_defense_strategy(config)
-            state.dirty = True
-            log.info("breach detected → forced defense strategy until %s",
-                     state.strategy["valid_until"])
-        else:
-            log.info("breach detected → %s personality keeps current strategy '%s'",
-                     state.personality, (state.strategy or {}).get("type"))
+    if breach:
+        state.strategy = breach_defense_strategy(config)
+        state.dirty = True
+        log.info("breach detected → forced defense strategy until %s",
+                 state.strategy["valid_until"])
 
-    # 2b. Offensive analog to the breach response: a LOST attack switches the
-    #     bot back to the attack strategy against the same opponent (revenge).
-    #     Mark the defeat in memory too, so the next regular roll still boosts
-    #     attack even when the forced switch is skipped or breach wins above.
+    # Successful defense → switch to attack (if targets exist, else re-roll)
+    successful_defense = any(r.role == "defender" and r.won for r in reports)
+    if successful_defense and not breach:
+        targets = api.empires() or []
+        targets = [e for e in targets if e.get("uid") != state.account.get("uid")]
+        if targets:
+            top = max(targets, key=lambda e: e.get("score", 0))
+            state.strategy = {
+                "type": "attack",
+                "params": {"target_uid": int(top["uid"]), "target_name": top.get("name", ""),
+                           "phase": "strengthen"},
+                "valid_until": _valid_until(config, "attack"),
+                "source": "defense_won",
+                "started_at": now_iso(),
+            }
+            state.dirty = True
+            log.info("defense succeeded → switching to attack vs %s", top.get("name"))
+        else:
+            state.strategy = None  # re-roll next tick
+            state.dirty = True
+            log.info("defense succeeded → no targets, re-rolling strategy")
+
+    # Lost attack → revenge (mark defeat for next roll boost, maybe force-switch)
     lost_attack = next((r for r in reports if r.role == "attacker" and not r.won), None)
     if lost_attack:
         state.memory["recent_attack_defeat"] = True
@@ -223,7 +266,7 @@ def cycle(api: ApiClient, config: dict, state: BotState,
             log.info("attack defeat → forced revenge attack on %s until %s",
                      lost_attack.opponent, state.strategy["valid_until"])
 
-    # 3. Strategy expiry / completion / roll
+    # Strategy expiry / completion → roll a new strategy
     if is_expired(state.strategy) or (state.strategy or {}).get("completed"):
         military = api.military()
         empires = api.empires()
@@ -241,42 +284,54 @@ def cycle(api: ApiClient, config: dict, state: BotState,
             "targets": targets,
         }
         state.strategy = roll_strategy(config, state, context)
-        # The defeat boost applies to exactly one roll, then the flag is spent.
         state.memory.pop("recent_attack_defeat", None)
         state.dirty = True
         log.info("new strategy: %s until %s params=%s",
                  state.strategy["type"], state.strategy["valid_until"],
                  state.strategy["params"])
 
-    # 4. Plan + execute one action. The dispatcher gathers scored options from
-    #    baseline + active strategy + one weighted secondary strategy and picks
-    #    the best (utility-per-gold × personality/active-strategy weight).
+    # --- Action loop: execute all affordable actions this tick ---
     active_type = state.strategy["type"]
     has_target = bool((state.strategy.get("params") or {}).get("target_uid"))
     secondary_type = roll_secondary(config, state, active_type, has_target)
-    ctx = BotContext(summary, items, state.memory, state.strategy, api,
-                     selection=config.get("selection", {"top_n": 3}),
-                     personality=state.personality)
-    action = choose_action(ctx, config, active_type, secondary_type)
-    if action:
+    last_action = None
+
+    # Fetch map once per tick — shared across all actions to avoid rate-limiting.
+    # Invalidated after map-modifying actions (tower placement, tile purchase).
+    map_data: dict | None = api.get_map()
+
+    for _ in range(MAX_ACTIONS_PER_TICK):
+        summary = api.summary()  # refresh gold/resources after each action
+        ctx = BotContext(summary, items, state.memory, state.strategy, api,
+                         selection=config.get("selection", {"top_n": 3}),
+                         personality=state.personality,
+                         map_data=map_data)
+        action = choose_action(ctx, config, active_type, secondary_type)
+        if action is None:
+            break
         result = action.run(api)
         if isinstance(result, dict) and result.get("success") is False:
             log.warning("action FAILED: %s → %s", action.description,
                         result.get("error") or result.get("reason", "?"))
-        else:
-            log.info("action: %s", action.description)
+            break  # avoid retrying a failed action in a tight loop
+        log.info("action: %s", action.description)
+        last_action = action.description
         state.dirty = True
-    else:
+        # Refresh map after actions that modify it (tile buy or tower placement)
+        if any(w in action.description for w in ("buy tile", "build ", "relocate", "sell ")):
+            map_data = api.get_map()
+
+    if last_action is None:
         log.info("no affordable action for strategy '%s' — waiting", state.strategy["type"])
 
-    # 5. Status snapshot for control API
+    # Control status snapshot
     control.status = {
         "name": state.name,
         "uid": state.account.get("uid"),
         "strategy": state.strategy,
         "resources": summary.get("resources", {}),
         "cycles": state.runtime.get("cycles", 0),
-        "last_action": action.description if action else None,
+        "last_action": last_action,
     }
 
 

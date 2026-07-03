@@ -218,6 +218,7 @@ class TestRulerXpAward:
         battle.defender = 99
         battle.critters_killed = critters_killed
         battle.critters_reached = critters_reached
+        battle.critters_reached_slots = critters_reached  # 1 slot per critter by default
         # kills_era_xp_sum defaults to critters_killed (era_idx=1 per critter)
         battle.kills_era_xp_sum = kills_era_xp_sum if kills_era_xp_sum is not None else float(critters_killed)
         return battle

@@ -32,6 +32,7 @@ import logoutView from './views/logout.js';
 import legalView from './views/legal.js';
 import globalmapView from './views/globalmap.js';
 import globalempiresView from './views/globalempires.js';
+import empirestatsView from './views/empirestats.js';
 import rulerView from './views/ruler.js';
 import seasonResultsView from './views/seasonresults.js';
 import trophiesView from './views/trophies.js';
@@ -67,6 +68,7 @@ eventBus.on('rest:unauthorized', () => {
   workshopView,
   globalmapView,
   globalempiresView,
+  empirestatsView,
   rulerView,
   seasonResultsView,
   trophiesView,
@@ -143,7 +145,6 @@ const navArmy = document.getElementById('nav-army');
 const navTechtree = document.getElementById('nav-techtree');
 const navWorkshop = document.getElementById('nav-workshop');
 const navMessages = document.getElementById('nav-messages');
-const navTrophies = document.getElementById('nav-trophies');
 
 // When the user explicitly clicks the defense nav link while already on the
 // defense view (e.g. after spectating an outgoing attack), force a full
@@ -309,7 +310,6 @@ eventBus.on('state:summary', (data) => {
   if (navTechtree) navTechtree.style.display = (ef2.enable_techtree ?? 0) > 0 ? '' : 'none';
   if (navWorkshop) navWorkshop.style.display = (ef2.enable_workshop ?? 0) > 0 ? '' : 'none';
   if (navMessages) navMessages.style.display = (ef2.enable_messages ?? 0) > 0 ? '' : 'none';
-  if (navTrophies) navTrophies.style.display = data.is_dev ? '' : 'none';
 
   // Unread messages badge
   const unread = data?.unread_messages || 0;
@@ -327,11 +327,10 @@ let _rallyBannerBaseText = '';
 let _rallyBannerBaseHtml = '';
 
 function _fmtRallyTime(secs) {
-  if (secs >= 86400) return `${Math.floor(secs / 86400)}d`;
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  const s = Math.floor(secs % 60);
-  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  if (secs >= 2 * 86400) return `${Math.floor(secs / 86400)}d`;
+  if (secs >= 2 * 3600)  return `${Math.floor(secs / 3600)}h`;
+  if (secs >= 5 * 60)    return `${Math.floor(secs / 60)}m`;
+  return `${Math.floor(secs)}s`;
 }
 
 function _tickRallyBanner() {
@@ -341,8 +340,7 @@ function _tickRallyBanner() {
   const secs = Math.max(0, _rallySecondsRemaining - elapsed);
   const timeStr = _fmtRallyTime(secs);
   banner.innerHTML = `${_rallyBannerBaseHtml} (season ends in ${timeStr})`;
-  // Switch from per-day to countdown when under 1 day
-  if (secs < 86400 && !_rallyCountdownTimer) {
+  if (secs < 2 * 86400 && !_rallyCountdownTimer) {
     _rallyCountdownTimer = setInterval(_tickRallyBanner, 1000);
   }
 }
@@ -355,9 +353,7 @@ function _updateGameOverBanner(rally, data) {
   const nsl = data?.next_season_leadtime;
   const _utcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
   const inLeadtime = nsl && Date.now() >= _utcMs(nsl);
-  const resetTriggered = !!data?.season_reset_triggered;
-  // Hide once leadtime is reached (season-reset banner takes over), or if no rally end yet
-  // Keep showing when reset triggered but next_season_start not yet configured
+  // Show only when rally ended but leadtime not yet reached (Phase 2)
   if (!frozen || inLeadtime) { banner.style.display = 'none'; return; }
   const winner = rally.culture_leader_name || getCultureLeaderName() || rally.triggered_by_name || '?';
   const winnerSafe = winner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -376,7 +372,7 @@ function _updateRallyBanner(rally, selfName, data) {
   const _toUtcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
   const nsl = data?.next_season_leadtime;
   const inLeadtime = nsl && Date.now() >= _toUtcMs(nsl);
-  if (inLeadtime || data?.season_reset_triggered) {
+  if (inLeadtime) {
     banner.style.display = 'none';
     if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
     return;
@@ -386,6 +382,12 @@ function _updateRallyBanner(rally, selfName, data) {
     if (!rally?.activated_at) document.documentElement.style.setProperty('--rally-banner-h', '0px');
     if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
     _updateGameOverBanner(rally, data);
+    return;
+  }
+  // game_frozen without leadtime = Phase 2 (winner banner already shown above); hide rally banner
+  if (data?.game_frozen) {
+    banner.style.display = 'none';
+    if (_rallyCountdownTimer) { clearInterval(_rallyCountdownTimer); _rallyCountdownTimer = null; }
     return;
   }
   const builderName = rally.triggered_by_name || '?';
@@ -400,8 +402,7 @@ function _updateRallyBanner(rally, selfName, data) {
   _rallyBannerBaseHtml = `⚔ ${nameLink} has built ${criterion} — ${leadingLabel}, go get them!`;
   _rallySecondsRemaining = rally.seconds_remaining || 0;
   _rallySecondsTs = Date.now();
-  // Start per-second countdown only when under 1 day
-  if (_rallySecondsRemaining < 86400 && !_rallyCountdownTimer) {
+  if (_rallySecondsRemaining < 2 * 86400 && !_rallyCountdownTimer) {
     _rallyCountdownTimer = setInterval(_tickRallyBanner, 1000);
   }
   _tickRallyBanner();
@@ -446,7 +447,7 @@ function _updateSeasonResetBanner(data) {
   const banner = document.getElementById('season-reset-banner');
   if (!banner) return;
 
-  const resetTriggered = !!data?.season_reset_triggered;
+  const resetTriggered = !!data?.game_frozen;
   const nss = data?.next_season_start;
   const nsl = data?.next_season_leadtime;
   const _toUtcMs = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z').getTime() : 0;
@@ -458,7 +459,10 @@ function _updateSeasonResetBanner(data) {
   if (!shouldShow) {
     banner.style.display = 'none';
     if (_seasonResetTimer) { clearInterval(_seasonResetTimer); _seasonResetTimer = null; }
-    document.documentElement.style.setProperty('--rally-banner-h', '0px');
+    const gameOverBanner = document.getElementById('game-over-banner');
+    if (!gameOverBanner || gameOverBanner.style.display === 'none') {
+      document.documentElement.style.setProperty('--rally-banner-h', '0px');
+    }
     return;
   }
 
@@ -515,8 +519,16 @@ function stopPolling() {
 }
 
 eventBus.on('state:auth', (auth) => {
-  if (auth.authenticated) startPolling();
-  else stopPolling();
+  if (auth.authenticated) {
+    startPolling();
+  } else {
+    stopPolling();
+    ['rally-banner', 'game-over-banner', 'season-reset-banner'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    document.documentElement.style.setProperty('--rally-banner-h', '0px');
+  }
 });
 
 // ── Auth state → update nav + redirect ─────────────────────
@@ -573,13 +585,11 @@ if ('serviceWorker' in navigator) {
   try {
     const eraMap = await rest.getEraMap();
     _eraEffects = eraMap.era_effects || {};
-    _updateSeasonResetBanner(eraMap);
-    // End-rally banner only shown when logged in
-    if (eraMap.end_rally && state.auth?.authenticated) {
+    if (eraMap.end_rally) {
       _endRally = eraMap.end_rally;
       setEndRally(eraMap.end_rally);
-      _updateRallyBanner(eraMap.end_rally, '', eraMap);
     }
+    _lastSummary = eraMap;
   } catch (_) {
     /* non-fatal */
   }
@@ -589,6 +599,12 @@ if ('serviceWorker' in navigator) {
     await rest.tryAutoLogin();
   } catch (err) {
     console.warn('[app] REST auto-login failed:', err.message);
+  }
+
+  // Show banners only when authenticated
+  if (state.auth?.authenticated) {
+    if (_lastSummary) _updateSeasonResetBanner(_lastSummary);
+    if (_endRally) _updateRallyBanner(_endRally, '', _lastSummary || {});
   }
 
   // 2. Activate router (no WS needed — defense view manages its own)

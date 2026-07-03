@@ -185,6 +185,11 @@ async function _showArmyEffectsOverlay() {
     ${section('🏆', 'Artifact Steal — Victory', '#c9a84c', stealVictoryRows, _fmtPct(baseVictory + stealVictoryMod))}
     ${section('💀', 'Artifact Steal — Defeat', '#e57373', stealDefeatRows, _fmtPct(baseDefeat + stealDefeatMod))}
     ${section('🕵', 'Spy Capabilities', '#4fc3f7', spyContent, '')}
+    <div style="font-size:11px;color:#666;border-top:1px solid #333;margin-top:12px;padding-top:10px;line-height:1.6;">
+      <b style="color:#888;">Culture &amp; Research Loot</b><br>
+      A random share of the defender's culture is stolen, scaled by how much life they lost. Winning doubles the payout; attacking from a higher era halves it.<br>
+      Research loot steals a random portion of progress from one of the defender's unfinished knowledge items — that progress is permanently lost.
+    </div>
   `;
   box.addEventListener('click', (e) => {
     if (e.target.classList.contains('prod-overlay-close')) overlay.remove();
@@ -341,6 +346,13 @@ function init(el, _api, _state) {
 }
 
 async function enter() {
+  if (!((st.summary?.effects?.enable_army ?? 0) > 0)) {
+    pageTitle.set('🗡 Army Composer');
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔒</div>
+      <p>The Army Composer unlocks as your empire grows.<br>
+      Build up your defenses and research military knowledge to unlock it.</p></div>`;
+    return;
+  }
   pageTitle.set('🗡 Army Composer', {
     id: 'army-effects-btn', title: 'Show army effects', onClick: _showArmyEffectsOverlay,
   });
@@ -1459,7 +1471,13 @@ function _onSpyReport(msg) {
     <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">⚜ Artifacts</div>
     <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:10px;">
       ${(msg.artifacts || []).length > 0
-        ? (msg.artifacts).map((a) => `<div style="padding:2px 0;font-size:12px;">⚜ ${escHtml(a)}</div>`).join('')
+        ? (msg.artifacts).map((a) => {
+            const name = typeof a === 'string' ? a : a.name;
+            const prot = typeof a === 'object' && a.protected;
+            const glow = prot ? 'box-shadow:0 0 8px 2px #4fc3f7,0 0 2px #4fc3f7;border:1px solid #4fc3f7;border-radius:4px;padding:0 4px;' : '';
+            const tag = prot ? ' <span style="font-size:0.75em;color:#4fc3f7;">🔒 protected</span>' : '';
+            return `<div style="padding:2px 0;font-size:12px;${glow}">⚜ ${escHtml(name)}${tag}</div>`;
+          }).join('')
         : '<div style="opacity:0.4;font-size:12px;">none</div>'}
     </div>
 

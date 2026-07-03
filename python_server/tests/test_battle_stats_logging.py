@@ -45,6 +45,7 @@ def _mock_db() -> MagicMock:
     db = MagicMock()
     db.record_empire_stat = AsyncMock()
     db.record_empire_stat_max = AsyncMock()
+    db.record_empire_stat_min = AsyncMock()
     db.record_empire_stat_float = AsyncMock()
     db.record_artifact_acquired = AsyncMock()
     db.record_artifact_lost = AsyncMock()
@@ -118,7 +119,7 @@ class TestBattleStatsLogging:
 
         await _run_stats(battle, db)
 
-        db.record_empire_stat_max.assert_called_once_with(5, "longest_battle_ms", 42_000)
+        db.record_empire_stat_max.assert_any_call(5, "longest_battle_ms", 42_000)
 
     async def test_critters_killed_logged(self):
         defender = _empire(uid=5)

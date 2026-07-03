@@ -78,7 +78,7 @@ armies:
     travel_time: 12
     trigger:
       items: [BASE_CAMP]
-    waves:
+    waves: []
 
   # ──────────────────────────────────────────────────────────
   #   NEOLITHIC  (Effort 800 – 7.500)
@@ -1113,25 +1113,25 @@ armies:
         slots: 24
       - critter: SIEGE_TANK
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: DRONE
         slots: 25
       - critter: SIEGE_TANK
         slots: 26
       - critter: SPECOPS
         slots: 26
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 26
       - critter: HELI
         slots: 27
       - critter: SIEGE_TANK
         slots: 28
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 28
       - critter: SPECOPS
         slots: 28
       - critter: HELI
         slots: 29
-      - critter: SPECOPS
+      - critter: SMALL_TANK
         slots: 30
       - critter: HELI
         slots: 30
@@ -1155,13 +1155,13 @@ armies:
         slots: 20
       - critter: SIEGE_TANK
         slots: 20
-      - critter: NINJA
+      - critter: SIEGE_TANK
         slots: 20
-      - critter: NINJA
+      - critter: SPECOPS
         slots: 21
-      - critter: DRAGOONER
+      - critter: SPECOPS
         slots: 22
-      - critter: MUSKETEER
+      - critter: SPECOPS
         slots: 22
       - critter: HELI
         slots: 22
@@ -1175,7 +1175,7 @@ armies:
         slots: 24
       - critter: HELI
         slots: 25
-      - critter: MUSKETEER
+      - critter: MECH_WARRIOR
         slots: 26
       - critter: SPECOPS
         slots: 26
@@ -1187,7 +1187,7 @@ armies:
         slots: 28
       - critter: SPECOPS
         slots: 28
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 28
       - critter: HELI
         slots: 29
@@ -1195,11 +1195,11 @@ armies:
         slots: 30
       - critter: HELI
         slots: 30
-      - critter: SPECOPS
+      - critter: SMALL_TANK
         slots: 32
       - critter: SIEGE_TANK
         slots: 33
-      - critter: SIEGE_TANK
+      - critter: THE_GENERAL
         slots: 36
 
   - name: "Heli Strike"
@@ -1227,25 +1227,25 @@ armies:
         slots: 22
       - critter: SPECOPS
         slots: 23
-      - critter: MUSKETEER
+      - critter: SIEGE_TANK
         slots: 24
       - critter: HELI
         slots: 24
-      - critter: SIEGE_TANK
+      - critter: TRANSPORTER
         slots: 24
       - critter: SIEGE_TANK
         slots: 25
       - critter: HELI
         slots: 26
-      - critter: NINJA
+      - critter: SPECOPS
         slots: 26
-      - critter: HELI
+      - critter: MOTORBIKE
         slots: 26
       - critter: SPECOPS
         slots: 27
       - critter: HELI
         slots: 28
-      - critter: NINJA
+      - critter: TRANSPORTER
         slots: 28
       - critter: HELI
         slots: 28
@@ -1257,7 +1257,7 @@ armies:
         slots: 30
       - critter: THE_GENERAL
         slots: 35
-      - critter: SPECOPS
+      - critter: DRONE
         slots: 36
       - critter: SIEGE_TANK
         slots: 36
@@ -1279,7 +1279,7 @@ armies:
         slots: 20
       - critter: SPECOPS
         slots: 20
-      - critter: CARGO
+      - critter: TRANSPORTER
         slots: 21
       - critter: SIEGE_TANK
         slots: 22
@@ -1291,29 +1291,29 @@ armies:
         slots: 23
       - critter: SIEGE_TANK
         slots: 24
-      - critter: NINJA
+      - critter: SOLDIER
         slots: 24
       - critter: SPECOPS
         slots: 24
-      - critter: NINJA
+      - critter: SIEGE_TANK
         slots: 25
       - critter: SPECOPS
         slots: 26
-      - critter: MUSKETEER
+      - critter: SPECOPS
         slots: 26
       - critter: HELI
         slots: 26
       - critter: SIEGE_TANK
         slots: 27
-      - critter: MUSKETEER
+      - critter: TRANSPORTER
         slots: 28
-      - critter: NINJA
+      - critter: HELI
         slots: 28
-      - critter: MUSKETEER
+      - critter: HELI
         slots: 28
       - critter: SIEGE_TANK
         slots: 29
-      - critter: SPECOPS
+      - critter: MECH_WARRIOR
         slots: 30
       - critter: SPECOPS
         slots: 30
@@ -1335,7 +1335,7 @@ armies:
         slots: 20
       - critter: SPECOPS
         slots: 20
-      - critter: CARGO
+      - critter: SPECOPS
         slots: 20
       - critter: HELI
         slots: 21
@@ -1351,7 +1351,7 @@ armies:
         slots: 24
       - critter: SPECOPS
         slots: 24
-      - critter: MUSKETEER
+      - critter: SOLDIER
         slots: 24
       - critter: SPECOPS
         slots: 25
@@ -1369,13 +1369,13 @@ armies:
         slots: 28
       - critter: HELI
         slots: 28
-      - critter: HELI
+      - critter: TRANSPORTER
         slots: 29
-      - critter: CARGO
-        slots: 30
-      - critter: SPECOPS
-        slots: 30
       - critter: HELI
+        slots: 30
+      - critter: SMALL_TANK
+        slots: 30
+      - critter: DRONE
         slots: 34
       - critter: SIEGE_TANK
         slots: 36
@@ -1389,9 +1389,9 @@ armies:
         slots: 18
       - critter: HELI
         slots: 18
-      - critter: THE_GENERAL
+      - critter: HELI
         slots: 19
-      - critter: DRAGOONER
+      - critter: SPECOPS
         slots: 19
       - critter: SPECOPS
         slots: 20
@@ -1399,7 +1399,7 @@ armies:
         slots: 20
       - critter: SIEGE_TANK
         slots: 21
-      - critter: NINJA
+      - critter: SPECOPS
         slots: 21
       - critter: SPECOPS
         slots: 21
@@ -1411,7 +1411,7 @@ armies:
         slots: 23
       - critter: SPECOPS
         slots: 23
-      - critter: MUSKETEER
+      - critter: SIEGE_TANK
         slots: 24
       - critter: SIEGE_TANK
         slots: 24
@@ -1419,9 +1419,9 @@ armies:
         slots: 24
       - critter: HELI
         slots: 25
-      - critter: CARGO
+      - critter: SPECOPS
         slots: 25
-      - critter: SIEGE_TANK
+      - critter: HELI
         slots: 26
       - critter: SIEGE_TANK
         slots: 26
@@ -1435,9 +1435,9 @@ armies:
         slots: 28
       - critter: SIEGE_TANK
         slots: 28
-      - critter: DRAGOONER
+      - critter: SOLDIER
         slots: 29
-      - critter: SIEGE_TANK
+      - critter: DRONE
         slots: 30
       - critter: THE_GENERAL
         slots: 35

@@ -45,23 +45,22 @@ CREATE TABLE IF NOT EXISTS empire_stats (
     coward_attacks                    INTEGER DEFAULT 0,
     max_lucky_punch_levels            INTEGER DEFAULT 0,
     max_artifacts_stolen_one_battle   INTEGER DEFAULT 0,
-    max_artifacts_lost_one_battle     INTEGER DEFAULT 0
+    max_artifacts_lost_one_battle     INTEGER DEFAULT 0,
+    one_hp_def_wins                   INTEGER DEFAULT 0,
+    peak_incoming_attacks             INTEGER DEFAULT 0,
+    peak_incoming                     INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS era_firsts (
     era_key     TEXT PRIMARY KEY,
     uid         INTEGER NOT NULL,
-    empire_name TEXT NOT NULL DEFAULT ''
+    empire_name TEXT NOT NULL DEFAULT '',
+    reached_at  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS artifact_holds (
     uid               INTEGER NOT NULL,
     artifact_iid      TEXT NOT NULL,
     acquired_at       REAL,
     total_held_secs   REAL DEFAULT 0,
-    PRIMARY KEY (uid, artifact_iid)
-);
-CREATE TABLE IF NOT EXISTS last_season_artifacts (
-    uid          INTEGER NOT NULL,
-    artifact_iid TEXT NOT NULL,
     PRIMARY KEY (uid, artifact_iid)
 );
 CREATE TABLE IF NOT EXISTS users (
@@ -190,6 +189,9 @@ class Database:
             ("max_lucky_punch_levels", "INTEGER DEFAULT 0"),
             ("max_artifacts_stolen_one_battle", "INTEGER DEFAULT 0"),
             ("max_artifacts_lost_one_battle", "INTEGER DEFAULT 0"),
+            ("one_hp_def_wins", "INTEGER DEFAULT 0"),
+            ("peak_incoming_attacks", "INTEGER DEFAULT 0"),
+            ("peak_incoming", "INTEGER DEFAULT 0"),
         ]:
             try:
                 await self._conn.execute(f"SELECT {_col} FROM empire_stats LIMIT 1")
@@ -197,6 +199,19 @@ class Database:
                 await self._conn.execute(
                     f"ALTER TABLE empire_stats ADD COLUMN {_col} {_type}"
                 )
+        try:
+            await self._conn.execute("SELECT peak_army_cost FROM empire_stats LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute(
+                "ALTER TABLE empire_stats ADD COLUMN peak_army_cost REAL DEFAULT 0"
+            )
+        # Migrate: add reached_at column to era_firsts if missing
+        try:
+            await self._conn.execute("SELECT reached_at FROM era_firsts LIMIT 1")
+        except aiosqlite.OperationalError:
+            await self._conn.execute(
+                "ALTER TABLE era_firsts ADD COLUMN reached_at INTEGER NOT NULL DEFAULT 0"
+            )
         # Migrate: add device_id column to login_events if missing
         try:
             await self._conn.execute("SELECT device_id FROM login_events LIMIT 1")
@@ -718,7 +733,7 @@ class Database:
         except Exception:
             log.warning("record_empire_stat_float failed uid=%d field=%s", uid, field, exc_info=True)
 
-    async def record_empire_stat_max(self, uid: int, field: str, value: int) -> None:
+    async def record_empire_stat_max(self, uid: int, field: str, value: int | float) -> None:
         """Update field only if value > current."""
         assert self._conn is not None
         try:
@@ -730,6 +745,19 @@ class Database:
             await self._conn.commit()
         except Exception:
             log.warning("record_empire_stat_max failed uid=%d field=%s", uid, field, exc_info=True)
+
+    async def record_empire_stat_min(self, uid: int, field: str, value: float) -> None:
+        """Update field only if value < current."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                f"INSERT INTO empire_stats (uid, {field}) VALUES (?, ?)"
+                f" ON CONFLICT(uid) DO UPDATE SET {field} = MIN({field}, excluded.{field})",
+                (uid, value),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_empire_stat_min failed uid=%d field=%s", uid, field, exc_info=True)
 
     async def record_artifact_acquired(self, uid: int, artifact_iid: str, ts: float) -> None:
         """Upsert artifact_holds row, setting acquired_at = ts, and update peak_artifacts_held."""
@@ -820,10 +848,11 @@ class Database:
     async def record_era_first(self, era_key: str, uid: int, empire_name: str) -> None:
         """Record which empire was the first to reach a given era."""
         assert self._conn is not None
+        import time
         try:
             await self._conn.execute(
-                "INSERT OR IGNORE INTO era_firsts (era_key, uid, empire_name) VALUES (?, ?, ?)",
-                (era_key, uid, empire_name),
+                "INSERT OR IGNORE INTO era_firsts (era_key, uid, empire_name, reached_at) VALUES (?, ?, ?, ?)",
+                (era_key, uid, empire_name, int(time.time())),
             )
             await self._conn.commit()
         except Exception:
@@ -832,30 +861,10 @@ class Database:
     async def get_era_firsts(self) -> list[dict[str, Any]]:
         """Return all era_firsts rows ordered by ERA_ORDER."""
         assert self._conn is not None
-        async with self._conn.execute("SELECT era_key, uid, empire_name FROM era_firsts") as cur:
+        async with self._conn.execute("SELECT era_key, uid, empire_name, reached_at FROM era_firsts") as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
 
-    async def save_last_season_artifacts(self, uid_to_artifacts: dict[int, list[str]]) -> None:
-        """Replace last_season_artifacts with the current season's end-state artifacts."""
-        assert self._conn is not None
-        await self._conn.execute("DELETE FROM last_season_artifacts")
-        for uid, iids in uid_to_artifacts.items():
-            for iid in iids:
-                await self._conn.execute(
-                    "INSERT OR IGNORE INTO last_season_artifacts (uid, artifact_iid) VALUES (?, ?)",
-                    (uid, iid),
-                )
-        await self._conn.commit()
-
-    async def get_last_season_artifacts(self, uid: int) -> list[str]:
-        """Return artifact IIDs this user held at the end of the previous season."""
-        assert self._conn is not None
-        async with self._conn.execute(
-            "SELECT artifact_iid FROM last_season_artifacts WHERE uid = ?", (uid,)
-        ) as cur:
-            rows = await cur.fetchall()
-            return [r["artifact_iid"] for r in rows]
 
     # -- Trophy operations ---------------------------------------------------
 
@@ -869,7 +878,7 @@ class Database:
         return {r["iid"] for r in rows}
 
     async def award_trophy(self, uid: int, iid: str, earned_at: int, season: int = 1) -> None:
-        """Record a newly earned trophy. Silently ignores duplicates."""
+        """Record a newly earned trophy. No-op if already earned (each trophy is earned once)."""
         assert self._conn is not None
         try:
             await self._conn.execute(
@@ -888,6 +897,56 @@ class Database:
             (uid,),
         ) as cur:
             rows = await cur.fetchall()
+        return [dict(r) for r in rows]
+
+    async def get_all_trophy_rows(self) -> list[dict[str, Any]]:
+        """Return full trophy rows (uid, iid, earned_at, season) for all players."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, iid, earned_at, season FROM player_trophies ORDER BY uid, earned_at",
+        ) as cur:
+            rows = await cur.fetchall()
+        return [dict(r) for r in rows]
+
+    async def record_season_winners(
+        self,
+        season_number: int,
+        season_title: str,
+        winners: list[dict],  # list of {place, empire_uid, empire_name, culture}
+    ) -> None:
+        """Insert top-3 season results into season_winners. Skips if already recorded."""
+        assert self._conn is not None
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).isoformat()
+        existing = await self._conn.execute(
+            "SELECT COUNT(*) FROM season_winners WHERE season_number = ?", (season_number,)
+        )
+        row = await existing.fetchone()
+        if row and row[0] > 0:
+            log.info("Season %d winners already recorded — skipping", season_number)
+            return
+        for w in winners:
+            await self._conn.execute(
+                "INSERT INTO season_winners (season_number, season_title, place, empire_uid, empire_name, culture, recorded_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (season_number, season_title, w["place"], w["empire_uid"], w["empire_name"], w["culture"], now),
+            )
+        await self._conn.commit()
+        log.info("Season %d winners recorded (%d entries)", season_number, len(winners))
+
+    async def get_season_winners(self, season_number: int | None = None) -> list[dict]:
+        """Return season winners, optionally filtered to one season."""
+        assert self._conn is not None
+        if season_number is not None:
+            async with self._conn.execute(
+                "SELECT * FROM season_winners WHERE season_number = ? ORDER BY place", (season_number,)
+            ) as cur:
+                rows = await cur.fetchall()
+        else:
+            async with self._conn.execute(
+                "SELECT * FROM season_winners ORDER BY season_number, place"
+            ) as cur:
+                rows = await cur.fetchall()
         return [dict(r) for r in rows]
 
     async def wipe_season_stats(self) -> None:

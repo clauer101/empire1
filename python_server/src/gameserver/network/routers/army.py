@@ -89,6 +89,9 @@ def make_router(services: "Services") -> APIRouter:
 
     @router.post("/api/item/buy-upgrade")
     async def buy_item_upgrade(body: BuyItemUpgradeRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        from gameserver.engine.global_state import is_season_reset_triggered
+        if is_season_reset_triggered():
+            return {"success": False, "error": "Season is frozen — upgrades unavailable"}
         from gameserver.network.handlers import handle_buy_item_upgrade
         result: dict[str, Any] = await handle_buy_item_upgrade(body.iid, body.stat, uid)
         return result

@@ -776,10 +776,23 @@ button.ws-upgrade-btn:disabled {
 
 .sr-none { color: var(--text-dim); }
 
-.sr-my-value {
+.sr-award-desc {
+  display: block;
   color: var(--text-dim);
+  font-size: 0.75em;
+  font-weight: normal;
+  margin-top: 1px;
+}
+
+.sr-award-sub {
+  color: var(--text-dim);
+  font-size: 0.8em;
+}
+
+.sr-my-value {
+  color: var(--accent, #7eb8f7);
   font-size: 0.78em;
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 .sr-era-firsts-table {

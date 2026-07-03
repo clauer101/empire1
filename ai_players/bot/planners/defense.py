@@ -1,24 +1,25 @@
-"""Defense strategy planner: replay-driven coverage optimization.
+"""Defense strategy planner: greedy path-adjacent tower placement.
 
-Flow per cycle (one action):
-1. Analyze the newest unprocessed defense replay (each key fetched exactly once)
-   → weak path segments stored in memory["defense_analysis"].
-2. Score candidate tiles (owned empty + purchasable void) by weighted path
-   coverage; pick the desired tower via class-mix balancing.
-3. Place tower / buy tile / declare a savings goal when the best move is
-   unaffordable / targeted upgrade / defensive-building fallback.
+Build priority per cycle:
+1. Place tower on owned empty tile adjacent to path (row 1) — with extension guard
+2. Buy void tile adjacent to path (creates new row 1 spots)
+3. Buy void tile whose tower placement would lengthen the path
+4. Build on row 2 (adjacent to row 1) — only when no tiles can be purchased
+[Guard] Never build on the last tile that could still extend the path
+
+Upgrades (era-swap, workshop, targeted) are always offered in addition to the
+maze improvement options above — not as a fallback. The dispatcher picks among
+all emitted options per iteration of the multi-action tick loop.
 """
 
 from __future__ import annotations
 
 import logging
-import random
 
 from bot.analyzer import ERA_RANK
 from bot.defense_analysis import (
-    analyze_replay, best_relocation, bfs_path, coverage_score, next_maze_tile,
-    path_points, pick_tower, score_candidate_tiles, sell_to_carve_candidate,
-    tower_class, tower_quality, weight_fn_from_memory,
+    HEX_DIRS, analyze_replay, best_relocation, bfs_path, coverage_score,
+    path_points, pick_tower, tower_class, tower_quality, weight_fn_from_memory,
 )
 from .base import (
     Action, BotContext, Option, Planner, cheapest_affordable, weighted_top_n,
@@ -26,44 +27,25 @@ from .base import (
 
 log = logging.getLogger("bot.planner.defense")
 
-# Buy a tile only if its coverage clearly beats the best owned spot
-TILE_PURCHASE_MARGIN = 1.3
-# Minimum path-length gain (tiles) to justify relocating spawn/castle
-MIN_PATH_GAIN = 2
-# Prod battle data: win rate peaks at 1.1–2.0 towers per path tile and
-# collapses above 2.0 — beyond that, invest in upgrades, not more towers.
-TOWER_DENSITY_MAX = 2.0
-# Carve a serpentine maze until the path reaches this length (prod good mazes
-# run 28-41 tiles); below this, lengthening the path beats coverage placement.
-MAZE_LENGTH_TARGET = 28
-# Keep at least this many owned covering spots in reserve — when towers use
-# them up, the planner buys tiles so defense can keep expanding.
-MIN_OWNED_COVER_SPOTS = 2
-# Gold buffer required before spending on upgrades
-UPGRADE_GOLD_BUFFER = 500
-# Fallback sell refund rate when the summary lacks tower_sell_refund
-SELL_REFUND_DEFAULT = 0.3
-# Server-side cap per stat (economy handler MAX_UPGRADE_LEVEL)
-MAX_UPGRADE_LEVEL = 20
-# Upgradeable structure stats, in preference order after the range/damage pick
-UPGRADE_STATS = ("damage", "range", "reload", "effect_duration", "effect_value")
-# One workshop upgrade level lifts a stat by ~2.5% (see CLAUDE.md: +2-3%/level),
-# so the strength gained ≈ tower_quality × this factor.
-UPGRADE_QUALITY_GAIN = 0.025
-# Maze carving lengthens the path so every tower covers it repeatedly — the
-# pattern of strong human mazes. Boost its gain so carving outranks plain
-# coverage placement while the maze is still short.
-MAZE_CARVE_BONUS = 3.0
-# Free defensive actions (relocate) get a high finite gain so they sort to the
-# top of the free tier without needing mandatory status.
+# Mandatory-option priorities (kept below baseline breach/tower-floor)
+PRIO_BUILD_ROW1    = 12
+PRIO_RELOCATE      = 11  # free, wins over tile purchase on score but loses to row1 build
+PRIO_BUY_PATH_ADJ  = 11
+PRIO_BUY_EXTENSION = 10
+PRIO_ERA_SWAP      =  9  # below all placement/buy options so tower count grows first
+
+# Gain multipliers — ensure maze improvement outscores upgrades
+ROW1_GAIN_BONUS = 8.0   # row1 build always beats upgrades
+ROW2_GAIN_BONUS = 2.0   # row2 beats upgrades but loses to any buying option
+
+MIN_PATH_GAIN     = 1
 FREE_DEFENSE_GAIN = 100.0
 
-# Mandatory-option priorities for the maze-building sequence. Kept below the
-# baseline breach/tower-floor priorities (see baseline.py) so a breach response
-# still wins; among themselves: sell-to-carve (unblock) > carve > widen.
-PRIO_SELL_TO_CARVE = 12
-PRIO_CARVE = 11
-PRIO_WIDEN = 10
+UPGRADE_GOLD_BUFFER  = 500
+SELL_REFUND_DEFAULT  = 0.3
+MAX_UPGRADE_LEVEL    = 20
+UPGRADE_STATS        = ("damage", "range", "reload", "effect_duration", "effect_value")
+UPGRADE_QUALITY_GAIN = 0.025
 
 DEFENSIVE_EFFECTS = ("siege_offset", "wave_delay_offset",
                      "restore_life_after_loss_offset", "max_life_modifier",
@@ -84,41 +66,55 @@ def _parse_key(key: str) -> tuple[int, int]:
 class DefensePlanner(Planner):
     def propose_options(self, ctx: BotContext, *,
                         advance_phase: bool = True) -> list[Option]:
-        # 1. Replay analysis (fetch each replay exactly once)
         self._refresh_analysis(ctx)
         weight_fn = weight_fn_from_memory(ctx.memory.get("defense_analysis"))
 
-        tiles = ctx.api.get_map().get("tiles", {})
+        map_data = ctx.get_map()
+        tiles = map_data.get("tiles", {})
         structures = ctx.items.get("structures", {})
         opts: list[Option] = []
 
-        # Per-bot maze seed: drawn once, persisted in memory, so the
-        # serpentine plan stays stable across cycles but differs per bot.
-        maze_seed = ctx.memory.setdefault("maze_seed",
-                                          random.getrandbits(32) or 1)
+        raw_path = map_data.get("path") or []
+        path: list[tuple[int, int]] = [tuple(p) for p in raw_path]  # type: ignore[misc]
+        if not path:
+            path = bfs_path(tiles)  # fallback if server omits path
+        if not path:
+            opts.extend(self._investment_options(ctx, tiles, structures, [],
+                                                 weight_fn, None))
+            opts.extend(self._fallback_options(ctx))
+            return opts
 
-        # 2a. Lengthen the path: relocate spawn/castle (free) whenever a
-        #     placement on owned land makes the critter route clearly longer.
-        reloc = (None if next_maze_tile(tiles, maze_seed)
-                 else best_relocation(tiles))
-        if reloc and reloc["new_len"] - reloc["old_len"] >= MIN_PATH_GAIN:
-            new_tiles = reloc["tiles"]
+        pts = path_points(path)
 
-            def _do_reloc(api, new_tiles=new_tiles):
-                ctx.memory.pop("defense_analysis", None)  # bins refer to old path
-                return api.save_map(new_tiles)
-            opts.append(Option(
-                category="defense", price=0.0, gain=FREE_DEFENSE_GAIN,
-                description=f"relocate spawn/castle to lengthen path "
-                            f"({reloc['old_len']}→{reloc['new_len']} tiles)",
-                run=_do_reloc))
+        # Tile classification
+        path_set = frozenset(
+            _parse_key(k) for k, v in tiles.items()
+            if _tile_type(v) in {"path", "spawnpoint", "castle"}
+        )
+        owned = frozenset(
+            _parse_key(k) for k, v in tiles.items()
+            if _tile_type(v) != "void"
+        )
+        owned_empty = [
+            _parse_key(k) for k, v in tiles.items()
+            if _tile_type(v) == "empty"
+        ]
 
-        # Ordered path: server-identical BFS over the map, replay as fallback
-        path = bfs_path(tiles) or [
-            (int(q), int(r)) for q, r in
-            (ctx.memory.get("defense_analysis") or {}).get("path", [])]
+        # Purchasable void tiles (adjacent to owned land)
+        explicit_void = frozenset(
+            _parse_key(k) for k, v in tiles.items()
+            if _tile_type(v) == "void"
+        )
+        implicit_void = (
+            frozenset((q + dq, r + dr) for q, r in owned for dq, dr in HEX_DIRS)
+            - owned - explicit_void
+        )
+        purchasable = frozenset(
+            (q, r) for q, r in (explicit_void | implicit_void)
+            if any((q + dq, r + dr) in owned for dq, dr in HEX_DIRS)
+        )
 
-        # 2. Desired tower (mix-balanced, unlocked; affordability checked later)
+        # Tower selection (class-mix balanced)
         placed_iids = [_tile_type(v) for v in tiles.values()
                        if _tile_type(v) in structures]
         placed_counts: dict[str, int] = {}
@@ -127,129 +123,211 @@ class DefensePlanner(Planner):
             placed_counts[cls] = placed_counts.get(cls, 0) + 1
         tower_iid = pick_tower(structures, placed_counts, ctx.is_unlocked,
                                top_n=ctx.top_n)
-        if tower_iid is None:
-            opts.extend(self._fallback_options(ctx))
-            return opts
-        tower = structures[tower_iid]
-        tower_cost = float((tower.get("costs") or {}).get("gold", 0.0))
-        tower_range = float(tower.get("range", 1.5) or 1.5)
-        tower_q = tower_quality(tower)
 
         tile_price = float(ctx.summary.get("tile_price", 0.0) or 0.0)
-        candidates = score_candidate_tiles(tiles, path, tower_range,
-                                           weight_fn, tile_price)
+        tower_cost = 0.0
+        tower_range = 1.5
+        tower_q = 1.0  # default for gain calc when no tower available yet
+        tower_cls = "damage"
+        if tower_iid:
+            tower = structures[tower_iid]
+            tower_cost = float((tower.get("costs") or {}).get("gold", 0.0))
+            tower_range = float(tower.get("range", 1.5) or 1.5)
+            tower_q = tower_quality(tower)
+            tower_cls = tower_class(tower)
 
-        # A tower on an empty tile that carries the only route would sever the
-        # path — the server rejects that ("Weg verbaut"). Filter those out.
-        def _keeps_path(c) -> bool:
+        def _cov(t: tuple[int, int]) -> float:
+            return coverage_score(t, tower_range, pts, weight_fn)
+
+        # ── Row 1: owned empty tiles adjacent to path (needs tower to place) ──
+        row1 = [(q, r) for q, r in owned_empty
+                if any((q + dq, r + dr) in path_set for dq, dr in HEX_DIRS)]
+
+        # Path-adjacent purchasable tiles (used in extension guard + prio 2)
+        path_adj_buy = sorted(
+            [(q, r) for q, r in purchasable
+             if any((q + dq, r + dr) in path_set for dq, dr in HEX_DIRS)],
+            key=_cov, reverse=True)
+
+        # Safe row1: any path-adjacent empty tile where building doesn't sever the path.
+        safe_row1: list[tuple[int, int]] = []
+        for q, r in row1:
             sim = dict(tiles)
-            sim[f"{c['q']},{c['r']}"] = "blocked"
-            return bfs_path(sim) is not None
+            sim[f"{q},{r}"] = "blocked"
+            if bfs_path(sim) is not None:
+                safe_row1.append((q, r))
+        safe_row1 = sorted(safe_row1, key=_cov, reverse=True)
 
-        owned = [c for c in candidates
-                 if not c["needs_purchase"] and _keeps_path(c)]
-        purchasable = [c for c in candidates if c["needs_purchase"]]
-        owned_pick = weighted_top_n(owned, key=lambda c: c["score"], n=ctx.top_n)
-        buy_pick = weighted_top_n(purchasable, key=lambda c: c["score"], n=ctx.top_n)
+        # Relocation (free): always check, emitted whenever it gains >= MIN_PATH_GAIN.
+        # PRIO=11 < row1 build PRIO=12, so row1 wins when affordable.
+        # When row1 unaffordable, relocation wins over tile purchase on score
+        # (gain=100, price=0 → infinite ROI).
+        reloc = best_relocation(tiles)
+        if reloc and reloc["new_len"] - reloc["old_len"] >= MIN_PATH_GAIN:
+            new_tiles = reloc["tiles"]
 
-        density = (len(placed_iids) / len(path)) if path else 0.0
-        short_maze = bool(path) and len(path) < MAZE_LENGTH_TARGET
+            def _do_reloc(api, nt=new_tiles):
+                ctx.memory.pop("defense_analysis", None)
+                return api.save_map(nt)
+            opts.append(Option(
+                category="defense", price=0.0, gain=FREE_DEFENSE_GAIN,
+                mandatory=True, priority=PRIO_RELOCATE,
+                description=f"relocate spawn/castle "
+                            f"({reloc['old_len']}→{reloc['new_len']} tiles)",
+                run=_do_reloc))
 
-        # 2b/2c. Maze carving while the path is short and not yet saturated.
-        # Carving is the maze-building sequence: it lengthens the path so every
-        # tower covers it repeatedly. Mark it mandatory so it takes precedence
-        # over plain coverage placement (the old early-return behavior), exempt
-        # from the density cap. Gated on being able to afford a tower so we never
-        # sell to carve without the gold to rebuild elsewhere.
-        if path and short_maze and ctx.gold >= tower_cost:
-            spot = next_maze_tile(tiles, maze_seed)
-            if spot:
-                q, r = spot
+        if tower_iid:
+            # PRIORITY 1: Build on row 1 (path-adjacent)
+            if safe_row1:
+                q, r = weighted_top_n(safe_row1, key=_cov, n=ctx.top_n)
                 new_tiles = dict(tiles)
                 new_tiles[f"{q},{r}"] = tower_iid
-                old_len = len(path)
-                new_len = len(bfs_path(new_tiles) or path)
                 opts.append(Option(
                     category="defense", price=tower_cost,
-                    gain=tower_q * MAZE_CARVE_BONUS,
-                    mandatory=True, priority=PRIO_CARVE,
-                    description=f"carve maze: place {tower_class(tower)} tower "
-                                f"{tower_iid} at {q},{r} (path {old_len}→{new_len})",
+                    gain=tower_q * ROW1_GAIN_BONUS * max(_cov((q, r)), 1.0),
+                    mandatory=True, priority=PRIO_BUILD_ROW1,
+                    description=f"build {tower_cls} tower {tower_iid} at {q},{r} "
+                                f"(path-adjacent, coverage {_cov((q, r)):.0f})",
                     run=lambda api, t=new_tiles: api.save_map(t),
                     saves_for=tower_cost,
-                    goal_meta={"item": tower_iid, "action": "carve tower"}))
-            else:
-                # No safe wall tile but path still short. Offer both ways to
-                # resume carving; the dispatcher picks the affordable one:
-                #   • widen the block by buying the best covering void tile, and
-                #   • sell a placed tower that blocks the serpentine plan (free).
-                if purchasable:
-                    q, r = buy_pick["q"], buy_pick["r"]
-                    opts.append(Option(
-                        category="defense", price=tile_price,
-                        gain=tower_q * max(buy_pick["score"], 0.0) * MAZE_CARVE_BONUS,
-                        mandatory=True, priority=PRIO_WIDEN,
-                        description=f"buy tile {q},{r} (widen maze block)",
-                        run=lambda api, q=q, r=r: api.buy_tile(q, r),
-                        saves_for=tile_price,
-                        goal_meta={"item": f"tile {q},{r}", "action": "tile"}))
-                sell = self._sell_to_carve(ctx, tiles, structures, path,
-                                           weight_fn, maze_seed)
-                if sell is not None:
-                    opts.append(Option(
-                        category="defense", price=0.0, gain=FREE_DEFENSE_GAIN,
-                        mandatory=True, priority=PRIO_SELL_TO_CARVE,
-                        description=sell.description, run=sell.run))
+                    goal_meta={"item": tower_iid, "action": "tower"}))
 
-        # 3a-pre. Expansion: owned covering spots running low → buy the best
-        # purchasable covering tile so tower placement never stalls for land.
-        if purchasable and len(owned) < MIN_OWNED_COVER_SPOTS:
-            q, r = buy_pick["q"], buy_pick["r"]
+        # PRIORITY 2: Buy void tile adjacent to path (always, even without tower)
+        if path_adj_buy:
+            q, r = weighted_top_n(path_adj_buy, key=_cov, n=ctx.top_n)
             opts.append(Option(
                 category="defense", price=tile_price,
-                gain=tower_q * max(buy_pick["score"], 0.0),
-                description=f"buy tile {q},{r} (owned cover spots "
-                            f"{len(owned)}/{MIN_OWNED_COVER_SPOTS})",
+                gain=tower_q * max(_cov((q, r)), 1.0),
+                mandatory=True, priority=PRIO_BUY_PATH_ADJ,
+                description=f"buy tile {q},{r} adjacent to path",
                 run=lambda api, q=q, r=r: api.buy_tile(q, r),
                 saves_for=tile_price,
                 goal_meta={"item": f"tile {q},{r}", "action": "tile"}))
 
-        # 3a/3b. Coverage placement — only while below the density cap (above it,
-        # more towers hurt; invest in quality instead via 3d below).
-        if owned and density < TOWER_DENSITY_MAX:
-            best = owned_pick
-            if (buy_pick
-                    and buy_pick["score"] > best["score"] * TILE_PURCHASE_MARGIN):
-                # 3b. A purchasable tile is clearly better → buy it first.
-                q, r = buy_pick["q"], buy_pick["r"]
+        # PRIORITY 3: Buy tile enabling path extension (only when 1+2 unavailable)
+        # Simulate buying + immediately placing a tower (non-traversable) to see
+        # if the BFS path gets longer (critters forced to detour).
+        if not safe_row1 and not path_adj_buy and purchasable:
+            ext_buy: list[tuple[int, int]] = []
+            for q, r in purchasable:
+                sim = dict(tiles)
+                sim[f"{q},{r}"] = "WALL"  # non-traversable: simulates tower after buy
+                new_p = bfs_path(sim)
+                if new_p and len(new_p) > len(path):
+                    ext_buy.append((q, r))
+            if ext_buy:
+                q, r = weighted_top_n(ext_buy, key=_cov, n=ctx.top_n)
                 opts.append(Option(
                     category="defense", price=tile_price,
-                    gain=tower_q * max(buy_pick["score"], 0.0),
-                    description=f"buy tile {q},{r} (coverage {buy_pick['score']:.0f} "
-                                f"> owned best {best['score']:.0f})",
+                    gain=tower_q * max(_cov((q, r)), 0.5),
+                    mandatory=True, priority=PRIO_BUY_EXTENSION,
+                    description=f"buy tile {q},{r} (enables path extension)",
                     run=lambda api, q=q, r=r: api.buy_tile(q, r),
                     saves_for=tile_price,
                     goal_meta={"item": f"tile {q},{r}", "action": "tile"}))
-            q, r = best["q"], best["r"]
-            new_tiles = dict(tiles)
-            new_tiles[f"{q},{r}"] = tower_iid
+
+        if tower_iid:
+            # PRIORITY 4: Row 2 — only when no tiles can be purchased
+            if not purchasable:
+                row1_positions = frozenset(
+                    (q + dq, r + dr)
+                    for q, r in path_set
+                    for dq, dr in HEX_DIRS
+                ) | path_set
+                row2 = [(q, r) for q, r in owned_empty
+                        if (q, r) not in row1_positions
+                        and any((q + dq, r + dr) in row1_positions
+                                for dq, dr in HEX_DIRS)]
+                safe_row2: list[tuple[int, int]] = []
+                for q, r in row2:
+                    sim = dict(tiles)
+                    sim[f"{q},{r}"] = "blocked"
+                    if bfs_path(sim) is not None:
+                        safe_row2.append((q, r))
+                if safe_row2:
+                    q, r = weighted_top_n(safe_row2, key=_cov, n=ctx.top_n)
+                    new_tiles = dict(tiles)
+                    new_tiles[f"{q},{r}"] = tower_iid
+                    opts.append(Option(
+                        category="defense", price=tower_cost,
+                        gain=tower_q * ROW2_GAIN_BONUS * max(_cov((q, r)), 1.0),
+                        description=f"build {tower_cls} tower {tower_iid} at {q},{r} "
+                                    f"(row 2, coverage {_cov((q, r)):.0f})",
+                        run=lambda api, t=new_tiles: api.save_map(t),
+                        saves_for=tower_cost,
+                        goal_meta={"item": tower_iid, "action": "tower"}))
+
+        # DEADLOCK BREAK: sell a path-adjacent tower when all expansion options
+        # exhausted (no row1, no path-adj buy, no ext_buy, relocation blocked).
+        # Converts a tower back to empty, creating a new row1 spot next cycle.
+        # ext_buy is only populated when not safe_row1 and not path_adj_buy
+        _ext_buy_found = any(True for q, r in purchasable
+                             for sim in [dict(tiles) | {f"{q},{r}": "WALL"}]
+                             for new_p in [bfs_path(sim)]
+                             if new_p and len(new_p) > len(path))
+        deadlocked = (not safe_row1 and not path_adj_buy and not _ext_buy_found
+                      and not (reloc and reloc["new_len"] - reloc["old_len"] >= MIN_PATH_GAIN))
+        if deadlocked and structures:
+            refund_rate = float(ctx.summary.get("tower_sell_refund", SELL_REFUND_DEFAULT)
+                                or SELL_REFUND_DEFAULT)
+            # Find path-adjacent towers; only sell when doing so enables a
+            # relocation gain — avoids the build→sell→build loop within one tick.
+            adj_towers = [
+                (k, iid)
+                for k, v in tiles.items()
+                for iid in [_tile_type(v)]
+                if iid in structures
+                and any((_parse_key(k)[0] + dq, _parse_key(k)[1] + dr) in path_set
+                        for dq, dr in HEX_DIRS)
+            ]
+            best_sell: tuple[str, str, int] | None = None
+            for sell_key, sell_iid in sorted(
+                    adj_towers, key=lambda e: tower_quality(structures[e[1]])):
+                sim_tiles = dict(tiles)
+                sim_tiles[sell_key] = "empty"
+                sim_reloc = best_relocation(sim_tiles)
+                if sim_reloc and sim_reloc["new_len"] - sim_reloc["old_len"] >= MIN_PATH_GAIN:
+                    best_sell = (sell_key, sell_iid,
+                                 sim_reloc["new_len"] - sim_reloc["old_len"])
+                    break
+            if best_sell:
+                sell_key, sell_iid, reloc_gain = best_sell
+                sell_cost = float((structures[sell_iid].get("costs") or {}).get("gold", 0.0))
+                refund = sell_cost * refund_rate
+                new_tiles = dict(tiles)
+                new_tiles[sell_key] = "empty"
+                opts.append(Option(
+                    category="defense", price=0.0,
+                    gain=FREE_DEFENSE_GAIN * 0.5,
+                    mandatory=True, priority=PRIO_BUY_EXTENSION,
+                    description=f"sell {sell_iid} at {sell_key} to break deadlock "
+                                f"(enables +{reloc_gain} path tiles, +{refund:.0f}g)",
+                    run=lambda api, t=new_tiles: api.save_map(t)))
+
+        # ── Era-swap first; workshop only when no era-swap available ─────────
+        # Era-swap replaces old-era towers with current-era towers. Workshop
+        # upgrades only happen once all placed towers are already current-era.
+        cur_era = ctx.summary.get("current_era", "stone")
+        refund_rate_inv = float(ctx.summary.get("tower_sell_refund", SELL_REFUND_DEFAULT)
+                                or SELL_REFUND_DEFAULT)
+        upgrade_prices = ctx.summary.get("item_upgrade_prices") or {}
+        swap = self._era_swap(ctx, tiles, structures, cur_era, refund_rate_inv)
+        if swap is not None:
+            gain, price, act = swap
+            # Non-mandatory, no savings-goal: era-swaps happen opportunistically
+            # after new tower placement so tower count grows before quality improves.
             opts.append(Option(
-                category="defense", price=tower_cost,
-                gain=tower_q * max(best["score"], 0.0),
-                description=f"place {tower_class(tower)} tower {tower_iid} at "
-                            f"{q},{r} (coverage {best['score']:.0f})",
-                run=lambda api, t=new_tiles: api.save_map(t),
-                saves_for=tower_cost,
-                goal_meta={"item": tower_iid, "action": "tower"}))
-
-        # 3d. Quality investments: era-swap / workshop / expansion on a common
-        # strength-per-gold basis (always offered; they win when placement is
-        # capped or unavailable, and compete on ROI otherwise).
-        opts.extend(self._investment_options(ctx, tiles, structures, path,
-                                             weight_fn, tower_iid,
-                                             owned_pick, buy_pick))
-
-        # 3d-fallback. Targeted upgrade of the tower covering the weakest segment.
+                category="defense", price=price, gain=gain,
+                mandatory=False, priority=PRIO_ERA_SWAP,
+                description=act.description, run=act.run))
+        # Workshop + targeted upgrades always offered (era-swap not exclusive)
+        wk = self._workshop_option(ctx, tiles, structures, path, weight_fn,
+                                   upgrade_prices)
+        if wk is not None:
+            gain, price, act = wk
+            opts.append(Option(
+                category="defense", price=price, gain=gain,
+                description=act.description, run=act.run))
         up = self._targeted_upgrade(ctx, tiles, structures, path, weight_fn)
         if up is not None:
             opts.append(Option(
@@ -257,11 +335,10 @@ class DefensePlanner(Planner):
                 gain=tower_q * UPGRADE_QUALITY_GAIN,
                 description=up.description, run=up.run))
 
-        # 3e. Fallback defensive building.
         opts.extend(self._fallback_options(ctx))
         return opts
 
-    # ── helpers ───────────────────────────────────────────────────────────
+    # ── helpers ───────────────────────────────────────────────────────────────
 
     def _refresh_analysis(self, ctx: BotContext) -> None:
         pending = ctx.memory.get("defense_replays", [])
@@ -273,7 +350,7 @@ class DefensePlanner(Planner):
                 replay = ctx.api.get_replay(key)
             except Exception as exc:
                 log.warning("replay fetch failed %s: %s", key, exc)
-                analyzed.append(key)  # don't retry forever
+                analyzed.append(key)
                 continue
             analysis = analyze_replay(replay)
             mem = analysis.to_memory()
@@ -282,7 +359,7 @@ class DefensePlanner(Planner):
             analyzed.append(key)
             log.info("analyzed replay %s: weak segments %s, reached %d",
                      key, analysis.weak_segments, analysis.reach_count)
-            break  # one replay per cycle keeps API budget flat
+            break  # one replay per cycle
         ctx.memory["analyzed_replay_keys"] = analyzed[-10:]
 
     def _targeted_upgrade(self, ctx: BotContext, tiles: dict, structures: dict,
@@ -294,43 +371,32 @@ class DefensePlanner(Planner):
                   if _tile_type(v) in structures]
         if not placed:
             return None
-        # Towers whose coverage of weak segments is highest get upgrades first
+
         def weak_coverage(entry):
             key, iid = entry
             rng = float(structures[iid].get("range", 1.5) or 1.5)
             return coverage_score(_parse_key(key), rng, pts, weight_fn)
+
         upgrades = ctx.summary.get("item_upgrades") or {}
         for key, iid in sorted(placed, key=weak_coverage, reverse=True):
             levels = upgrades.get(iid) or {}
-            # range when the tower barely covers any path, damage otherwise
             rng = float(structures[iid].get("range", 1.5) or 1.5)
             plain_cov = coverage_score(_parse_key(key), rng, pts, lambda _p: 1.0)
             preferred = "range" if plain_cov < 4 else "damage"
             for stat in (preferred, *UPGRADE_STATS):
                 if int(levels.get(stat, 0)) >= MAX_UPGRADE_LEVEL:
-                    continue  # stat capped server-side — never retry it
+                    continue
                 return Action(f"upgrade {iid} {stat} (covers weakest segment)",
                               lambda api, iid=iid, stat=stat:
                               api.buy_item_upgrade(iid, stat))
-        return None  # every placed tower is fully upgraded
+        return None
 
     def _investment_options(self, ctx: BotContext, tiles: dict, structures: dict,
                             path: list[tuple[int, int]], weight_fn,
-                            tower_iid: str, owned_pick, buy_pick) -> list[Option]:
-        """Quality investments as scored Options on a strength-per-gold basis.
-
-        1. Era-swap — sell the weakest outdated (older-era) placed tower and
-           build a current-era one in its place.
-        2. Workshop — upgrade a placed tower's stat (tech instead of land/maze).
-
-        Strength is measured in tower_quality units (gain), price is the net
-        gold cost, so base_score = gain/price is comparable to the placement and
-        carving options the planner also emits. Expansion (buy tile + tower) is
-        already covered by the placement options above.
-        """
+                            tower_iid: str | None) -> list[Option]:
+        """Era-swap and workshop upgrade as scored Options."""
         cur_era = ctx.summary.get("current_era", "stone")
-        refund_rate = float(ctx.summary.get("tower_sell_refund",
-                                            SELL_REFUND_DEFAULT)
+        refund_rate = float(ctx.summary.get("tower_sell_refund", SELL_REFUND_DEFAULT)
                             or SELL_REFUND_DEFAULT)
         upgrade_prices = ctx.summary.get("item_upgrade_prices") or {}
         out: list[Option] = []
@@ -340,9 +406,8 @@ class DefensePlanner(Planner):
             gain, price, act = swap
             out.append(Option(
                 category="defense", price=price, gain=gain,
-                description=act.description, run=act.run,
-                saves_for=price,
-                goal_meta={"item": "era-swap", "action": "era-swap"}))
+                mandatory=False, priority=PRIO_ERA_SWAP,
+                description=act.description, run=act.run))
 
         wk = self._workshop_option(ctx, tiles, structures, path, weight_fn,
                                    upgrade_prices)
@@ -356,15 +421,7 @@ class DefensePlanner(Planner):
     def _era_swap(self, ctx: BotContext, tiles: dict, structures: dict,
                   cur_era: str, refund_rate: float
                   ) -> tuple[float, float, Action] | None:
-        """Sell the weakest placed tower from an older era, build current-era.
-
-        Returns (gain, net_price, action) or None. Cross-class and explicitly
-        era-driven: any tower from a past era is a swap candidate, replaced by
-        the strongest affordable current-era tower.
-        """
         cur_rank = ERA_RANK.get(cur_era, 0)
-        # Best current-era tower by quality (cross-class — replacing junk beats
-        # preserving the class mix).
         best_new = None
         best_new_q = 0.0
         for iid, item in structures.items():
@@ -381,14 +438,13 @@ class DefensePlanner(Planner):
 
         placed = [(k, _tile_type(v)) for k, v in tiles.items()
                   if _tile_type(v) in structures]
-        # Oldest/weakest first.
         for key, old_iid in sorted(
                 placed,
                 key=lambda e: (ERA_RANK.get(structures[e[1]].get("era", "stone"), 0),
                                tower_quality(structures[e[1]]))):
             old = structures[old_iid]
             if ERA_RANK.get(old.get("era", "stone"), 0) >= cur_rank:
-                break  # nothing older left — list is era-sorted
+                break
             old_cost = float((old.get("costs") or {}).get("gold", 0.0))
             net_cost = new_cost - refund_rate * old_cost
             if net_cost <= 0:
@@ -408,7 +464,6 @@ class DefensePlanner(Planner):
     def _workshop_option(self, ctx: BotContext, tiles: dict, structures: dict,
                          path: list[tuple[int, int]], weight_fn,
                          upgrade_prices: dict) -> tuple[float, float, Action] | None:
-        """Best workshop (tech) upgrade as a (gain, price, action) triple."""
         pts = path_points(path)
         placed = [(k, _tile_type(v)) for k, v in tiles.items()
                   if _tile_type(v) in structures]
@@ -437,34 +492,7 @@ class DefensePlanner(Planner):
                 return (gain, price, act)
         return None
 
-    def _sell_to_carve(self, ctx: BotContext, tiles: dict, structures: dict,
-                       path: list[tuple[int, int]], weight_fn,
-                       maze_seed: int) -> Action | None:
-        """Sell the placed tower whose removal re-enables maze carving."""
-        pts = path_points(path)
-        placed = [(k, _tile_type(v)) for k, v in tiles.items()
-                  if _tile_type(v) in structures]
-        if not placed:
-            return None
-
-        # Try worst defensive value first — same metric as targeted upgrades.
-        def weak_coverage(entry):
-            key, iid = entry
-            rng = float(structures[iid].get("range", 1.5) or 1.5)
-            return coverage_score(_parse_key(key), rng, pts, weight_fn)
-        order = [k for k, _ in sorted(placed, key=weak_coverage)]
-        key = sell_to_carve_candidate(tiles, maze_seed, order)
-        if key is None:
-            return None
-        iid = _tile_type(tiles[key])
-        new_tiles = dict(tiles)
-        new_tiles[key] = "empty"
-        return Action(f"sell tower {iid} at {key} (unblock maze)",
-                      lambda api: api.save_map(new_tiles))
-
     def _upgrade_price(self, ctx: BotContext, action: Action) -> float:
-        """Look up the next upgrade price for the iid named in a targeted-upgrade
-        action description (`upgrade <iid> <stat> ...`)."""
         prices = ctx.summary.get("item_upgrade_prices") or {}
         parts = action.description.split()
         iid = parts[1] if len(parts) > 1 else ""

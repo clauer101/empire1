@@ -51,14 +51,16 @@ const EFFECT_META = {
   // -- Citizen modifiers
   citizen_effect_modifier:        ['🫂', 'Citizen efficiency',       (v) => `+${(v * 100).toFixed(1)}%`,                                                               'Adds to the productivity bonus of each citizen'],
   other_citizen_gold_modifier:    ['💰', 'Artist/Scientist gold',    (v) => `+${(v * 100).toFixed(1)}% per citizen`,                                                  'Artists and scientists also contribute to gold income'],
+  increase_start_gold:            ['💰', 'Starting gold',   (v) => `+${v.toLocaleString('de-DE')} gold`,                                                       'Grants extra gold when respawning after season restart'],
   // -- One-shot lump sums (shown in ruler skill tooltips only)
   gold_lump_sum_on_skill_up:      ['💰', 'Skill-up gold reward',     (v) => `+${v.toLocaleString('de-DE')} gold`,                                                     'Grants a one-time gold bonus when this skill level is reached'],
   culture_lump_sum_on_skill_up:   ['🎭', 'Skill-up culture reward',  (v) => `+${v.toLocaleString('de-DE')} culture`,                                                  'Grants a one-time culture bonus when this skill level is reached'],
   // -- Ruler aura effects
-  increase_armour_modifier:            ['🛡', 'Aura: Armour boost',   (v) => `+${(v * 100).toFixed(0)}% armour`,                                                           'Boosts armour of nearby friendly critters'],
-  increase_critter_speed:              ['⚡', 'Aura: Speed boost',    (v) => `+${(v * 100).toFixed(0)}% speed`,                                                           'Boosts speed of nearby friendly critters'],
-  slow_tower_modifier:                 ['❄', 'Aura: Tower slow',      (v) => `-${(v * 100).toFixed(0)}% reload`,                                                    'Slows reload speed of nearby enemy towers'],
-  reduce_tower_damage:                 ['💢', 'Aura: Tower damage',   (v) => `-${(v * 100).toFixed(0)}% damage`,                                                    'Reduces damage of nearby enemy towers'],
+  increase_armour_modifier:       ['🛡', 'Aura: Armour boost',   (v) => `+${(v * 100).toFixed(0)}% armour`,                                                           'Boosts armour of nearby friendly critters'],
+  increase_critter_speed:         ['⚡', 'Aura: Speed boost',    (v) => `+${(v * 100).toFixed(0)}% speed`,                                                           'Boosts speed of nearby friendly critters'],
+  slow_tower_modifier:            ['❄', 'Aura: Tower slow',      (v) => `-${(v * 100).toFixed(0)}% reload`,                                                    'Slows reload speed of nearby enemy towers'],
+  reduce_tower_damage:            ['💢', 'Aura: Tower damage',   (v) => `-${(v * 100).toFixed(0)}% damage`,                                                    'Reduces damage of nearby enemy towers'],
+  artifact_retention_time:            ['⚜',  'Artifact protection',      (v) => `${Math.round(v / 3600)}h`,                                                           'Newly acquired artifacts cannot be stolen for this duration'],
   // -- Combat
   restore_life_during_battle_modifier: ['❤️', 'Battle life regen',   (v) => `+${v}/s`,                                                                              'Adds to life regeneration while in battle'],
   enemy_siege_time_modifier:      ['⚔️', 'Siege corruption',         (v) => `-${(v * 100).toFixed(0)}% enemy siege`,                                                  'Reduces the siege duration of your own attacks'],
@@ -167,7 +169,8 @@ export const CONDITION_META = {
   culture_stolen:  ['🎭', (t) => `Lose ${t} culture to raiders in a season`],
   research_won:    ['📖', (t) => `Win ${t} research in a season`],
   research_stolen: ['📖', (t) => `Lose ${t} research to raiders in a season`],
-  longest_battle_ms: ['⏱', (t) => `Survive a battle lasting ${Math.round(t / 1000)}s`],
+  longest_battle_ms:        ['⏱', (t) => `Survive a battle lasting ${Math.round(t / 1000)}s`],
+  one_hp_def_wins:          ['❤️', (t) => `Win ${t > 1 ? t + ' defenses' : 'a defense'} with 1 HP remaining`],
   // Map / path
   path_length: ['🗺️', (t) => `Build a maze with ${t}+ path tiles`],
   // Ruler
@@ -241,4 +244,25 @@ export function fmtSecs(s) {
   if (h > 0) return `${h}h ${m}m ${sec}s`;
   if (m > 0) return `${m}m ${sec}s`;
   return `${sec}s`;
+}
+
+export function showIconLegend() {
+  document.querySelector('.icon-legend-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.className = 'icon-legend-overlay tt-overlay visible';
+  ov.innerHTML = `
+    <div class="tt-panel">
+      <button class="tt-close">&times;</button>
+      <div class="tt-dp-name">Player Icons</div>
+      <div class="tt-dp-desc" style="margin-top:10px;font-style:normal;line-height:1.9;font-size:0.92em">
+        <div>🥇🥈🥉 &nbsp;Top 3 of the <strong>last season</strong></div>
+        <div>🎖️ &nbsp;Winner of a <strong>past season</strong></div>
+        <div>🤖 &nbsp;AI-controlled empire</div>
+        <div>⚜ &nbsp;Artifact — a powerful item that can be conquered from other empires</div>
+      </div>
+    </div>`;
+  ov.addEventListener('click', e => {
+    if (e.target === ov || e.target.classList.contains('tt-close')) ov.remove();
+  });
+  document.body.appendChild(ov);
 }

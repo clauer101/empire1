@@ -70,14 +70,20 @@ class BattleState:
     defender_losses: dict[str, float] = field(default_factory=dict)
     defender_gold_earned: float = 0.0
 
+    defender_life_at_end: float | None = None  # snapshot before post-battle effects
+
     critters_spawned: int = 0
     critters_killed: int = 0
     critters_reached: int = 0
+    critters_reached_slots: int = 0  # slot-weighted count of critters that reached the castle
     kills_era_xp_sum: float = 0.0  # sum of era_idx for each killed critter (for ruler XP)
     ruler_reached_goal: bool = False  # True if a ruler critter reached the castle
 
     # reason: "died" | "reached"
     removed_critters: list[dict[str, Any]] = field(default_factory=list)
+
+    loop_running: bool = False  # guard against duplicate battle_loop coroutines
+    replay_key: str = ""  # persisted so resumed battles can continue the same replay file
 
     broadcast_interval_ms: float = 250.0
     recorder: ReplayRecorder | None = None

@@ -100,3 +100,7 @@ class ItemDetails:
     era: str = ""    # Era key from YAML (e.g. "stone")
     subtype: str = ""  # Artifact rarity: "normal" | "legendary"
     condition: dict[str, object] = field(default_factory=dict)  # Trophy unlock condition
+    # Critter classification: fast | tank | carrier | bulk | spread | boss
+    critter_type: str = ""
+    # Tower classification: splash | fast | strong | slow | burn
+    tower_type: str = ""

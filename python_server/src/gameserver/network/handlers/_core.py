@@ -20,6 +20,7 @@ Returning None means no response to the sender (fire-and-forget).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any, Optional, TYPE_CHECKING, cast
@@ -130,6 +131,34 @@ def _has_path_from_spawn_to_castle(tiles: Any) -> bool:
 
 _active_battles: "dict[int, BattleState]" = {}  # uid → BattleState
 _next_bid: int = 1
+_battle_tasks: "dict[int, asyncio.Task[None]]" = {}  # bid → running task
+
+
+def sync_bid_counter(battles: list[Any]) -> None:
+    """Set _next_bid above the highest bid in restored battles.
+
+    Must be called after loading state so new battle IDs never collide with
+    restored ones. Mirrors the pattern used by sync_wid_counter().
+    """
+    global _next_bid
+    if battles:
+        _next_bid = max(b.bid for b in battles) + 1
+    log.info("Battle ID counter synced: next_bid=%d", _next_bid)
+
+
+def force_finish_active_battles() -> None:
+    """Force-finish all active battles during graceful shutdown.
+
+    Sets is_finished=True and defender_won=True so each running
+    _run_battle_task coroutine exits its loop on the next tick and
+    executes post-battle cleanup (inbox messages, loot, stats).
+    """
+    for battle in list(_active_battles.values()):
+        if not battle.is_finished:
+            battle.is_finished = True
+            battle.keep_alive = False
+            battle.defender_won = True
+            log.info("[shutdown] Force-finished battle bid=%d (defender wins by default)", battle.bid)
 
 
 # ===================================================================

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Settings</title>
+  <style>
+    :root {
+      --bg:            #0d0d14;
+      --surface:       #14141f;
+      --surface-alt:   #1a1a28;
+      --surface-hover: #22222f;
+      --border:        #2a2a3a;
+      --accent:        #4fc3f7;
+      --gold:          #c9a84c;
+      --success:       #66bb6a;
+      --danger:        #ef5350;
+      --warning:       #ffa726;
+      --text:          #e0e0e6;
+      --text-dim:      #9999a8;
+      --radius:        6px;
+      --mono:          'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    /* ── Topbar ─────────────────────────────────────────────────── */
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px; flex-wrap: wrap;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #save-status { font-size: 12px; }
+    #save-status.ok  { color: var(--success); }
+    #save-status.err { color: var(--danger); }
+    #dirty-count { font-size: 11px; color: var(--warning); }
+    #save-btn {
+      padding: 6px 18px; background: var(--accent); color: #000;
+      border: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 13px;
+    }
+    #save-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Page layout ────────────────────────────────────────────── */
+    main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 32px; }
+
+    /* ── Section headings ───────────────────────────────────────── */
+    .page-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); padding-bottom: 8px; margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Game Config collapsible cards ──────────────────────────── */
+    .section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .section.dirty { border-color: var(--warning); }
+    .section-head {
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+      padding: 9px 14px; display: flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none;
+    }
+    .section-head h2 { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; flex: 1; }
+    .section-head .toggle { font-size: 10px; color: var(--text-dim); }
+    .section-body { padding: 14px; }
+    .section.collapsed .section-body { display: none; }
+
+    .field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .field-row { display: flex; flex-direction: column; gap: 4px; }
+    .field-row label { font-size: 11px; color: var(--text-dim); }
+    .field-row input[type="number"], .field-row input[type="text"] {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 5px 8px;
+      font-size: 13px; width: 100%;
+    }
+    .field-row input:focus { outline: none; border-color: var(--accent); }
+    .field-row input.changed { border-color: var(--warning); }
+
+    .subsection { margin-top: 10px; }
+    .subsection-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .list-item { display: flex; flex-direction: column; gap: 3px; }
+    .list-item label { font-size: 10px; color: var(--text-dim); }
+    .list-item input {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 4px 7px;
+      font-size: 12px; width: 100%;
+    }
+    .list-item input:focus { outline: none; border-color: var(--accent); }
+    .list-item input.changed { border-color: var(--warning); }
+
+    /* ── Era Effects cards ──────────────────────────────────────── */
+    #era-grid { display: flex; flex-direction: column; gap: 10px; }
+
+    .era-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    }
+    .era-card.dirty { border-color: var(--warning); }
+    .era-head {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      background: var(--surface-alt); border-bottom: 1px solid var(--border);
+    }
+    .era-roman { font-size: 18px; font-weight: 700; color: var(--gold); min-width: 28px; }
+    .era-name  { font-weight: 700; flex: 1; }
+    .era-key   { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+    .era-body  { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    .effect-row { display: grid; grid-template-columns: 1fr 160px 32px; align-items: center; gap: 8px; }
+    .effect-key-wrap { position: relative; }
+    .effect-key-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--mono); font-size: 12px; padding: 5px 8px;
+    }
+    .effect-key-input:focus { outline: none; border-color: var(--accent); }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      max-height: 180px; overflow-y: auto; display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .ac-item { padding: 5px 10px; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--accent); }
+    .ac-item:hover, .ac-item.selected { background: var(--surface-hover); }
+    .effect-val-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--mono); font-size: 12px; padding: 5px 8px;
+      text-align: right; -moz-appearance: textfield;
+    }
+    .effect-val-input::-webkit-outer-spin-button,
+    .effect-val-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .effect-val-input:focus { outline: none; border-color: var(--accent); }
+    .effect-val-input.changed { border-color: var(--warning); color: var(--warning); }
+    .del-btn {
+      background: transparent; border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--danger); cursor: pointer; font-size: 14px; line-height: 1;
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    }
+    .del-btn:hover { background: rgba(239,83,80,0.12); border-color: var(--danger); }
+    .add-row-btn {
+      align-self: flex-start; background: transparent; border: 1px dashed var(--border);
+      border-radius: var(--radius); color: var(--text-dim); cursor: pointer;
+      padding: 5px 12px; font-size: 12px; margin-top: 2px;
+    }
+    .add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Workshop ───────────────────────────────────────────────── */
+    #ws-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .ws-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;
+    }
+    .ws-card h2 { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 12px; letter-spacing: 0.5px; }
+    .ws-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .costs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .ws-field-row { display: flex; flex-direction: column; gap: 4px; }
+    .ws-field-row label { font-size: 11px; color: var(--text-dim); }
+    .ws-field-row input {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 5px 8px;
+      font-size: 13px; width: 100%;
+    }
+    .ws-field-row input:focus { outline: none; border-color: var(--accent); }
+    .ws-hint { font-size: 11px; color: var(--text-dim); margin-top: 10px; }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 18px; font-size: 13px; display: none;
+    }
+    #toast.show { display: block; }
+    #toast.ok   { border-color: var(--success); color: var(--success); }
+    #toast.err  { border-color: var(--danger);  color: var(--danger);  }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+
+<div id="topbar">
+  <h1>⚙ Game Settings</h1>
+  <span id="dirty-count"></span>
+  <span id="save-status"></span>
+  <button id="save-btn" disabled>Save All</button>
+</div>
+
+<main>
+
+  <!-- ── Game Config ──────────────────────────────────────────────── -->
+  <div>
+    <div class="page-section-title">⚙ Game Config</div>
+    <div id="cfg-sections" style="display:flex;flex-direction:column;gap:10px;">
+      <div style="color:var(--text-dim);padding:20px;text-align:center">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ── Era Effects ──────────────────────────────────────────────── -->
+  <div>
+    <div class="page-section-title">⏱ Era Effects</div>
+    <div id="era-grid">
+      <div style="color:var(--text-dim);padding:20px;text-align:center">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ── Workshop ─────────────────────────────────────────────────── -->
+  <div>
+    <div class="page-section-title">🔧 Workshop</div>
+    <div id="ws-grid">
+      <div class="ws-card">
+        <h2>Tower Upgrade Bonuses (% / level)</h2>
+        <div class="ws-field-grid" id="structure-fields"></div>
+        <p class="ws-hint">Each upgrade level adds this % bonus to the stat.</p>
+      </div>
+      <div class="ws-card">
+        <h2>Unit Upgrade Bonuses (% / level)</h2>
+        <div class="ws-field-grid" id="critter-fields"></div>
+        <p class="ws-hint">Each upgrade level adds this % bonus to the stat.</p>
+      </div>
+      <div class="ws-card">
+        <h2>Upgrade Base Costs (gold, per era)</h2>
+        <div class="costs-grid" id="costs-fields"></div>
+        <p class="ws-hint">Base cost × (total upgrades on item + 1)²</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+const BASE = window.location.origin;
+const ERA_LABELS = ['Stone Age','Neolithic','Bronze Age','Iron Age','Middle Ages','Renaissance','Industrial','Modern','Future'];
+const ERA_KEYS   = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future'];
+const ERA_ROMAN  = { stone:'I', neolithic:'II', bronze:'III', iron:'IV', middle_ages:'V', renaissance:'VI', industrial:'VII', modern:'VIII', future:'IX' };
+
+function token() {
+  return localStorage.getItem('e3_jwt_token') || sessionStorage.getItem('e3_jwt_token') || '';
+}
+
+async function apiFetch(method, path, body) {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+function showToast(msg, ok = true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${ok ? 'ok' : 'err'}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Dirty tracking (global) ───────────────────────────────────────────────────
+let _anyDirty = false;
+
+function updateSaveBtn() {
+  const dirty = _anyDirty || _cfg_dirtyFields.size > 0 || _era_dirtyEras.size > 0 || _ws_dirty;
+  document.getElementById('save-btn').disabled = !dirty;
+
+  const parts = [];
+  if (_cfg_dirtyFields.size > 0) parts.push(`${_cfg_dirtyFields.size} config field${_cfg_dirtyFields.size > 1 ? 's' : ''}`);
+  if (_era_dirtyEras.size > 0)   parts.push(`${_era_dirtyEras.size} era${_era_dirtyEras.size > 1 ? 's' : ''}`);
+  if (_ws_dirty)                  parts.push('workshop');
+  document.getElementById('dirty-count').textContent = parts.length ? parts.join(', ') + ' changed' : '';
+  document.getElementById('save-status').textContent = '';
+  document.getElementById('save-status').className = '';
+}
+
+// ── Save All ──────────────────────────────────────────────────────────────────
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn    = document.getElementById('save-btn');
+  const status = document.getElementById('save-status');
+  btn.disabled = true;
+  status.textContent = 'Saving…';
+  status.className = '';
+
+  const errors = [];
+
+  // 1. Game Config
+  if (_cfg_dirtyFields.size > 0) {
+    try {
+      const patch = cfg_collectPatch();
+      await apiFetch('PATCH', '/api/admin/game-config', patch);
+      function applyPatch(dst, src) {
+        for (const [k, v] of Object.entries(src)) {
+          if (typeof v === 'object' && !Array.isArray(v) && v !== null && typeof dst[k] === 'object') applyPatch(dst[k], v);
+          else dst[k] = v;
+        }
+      }
+      applyPatch(_cfg_orig, patch);
+      _cfg_dirtyFields.clear();
+      document.querySelectorAll('[data-path].changed').forEach(el => el.classList.remove('changed'));
+    } catch (e) { errors.push('Game Config: ' + e.message.slice(0, 60)); }
+  }
+
+  // 2. Era Effects (all dirty eras in parallel)
+  if (_era_dirtyEras.size > 0) {
+    const saves = [..._era_dirtyEras].map(async eraKey => {
+      const card = document.querySelector(`.era-card[data-era="${eraKey}"]`);
+      const effects = card ? era_readRows(card) : {};
+      try {
+        await apiFetch('PATCH', `/api/admin/era-effects/${eraKey}`, { effects });
+        _era_data[eraKey] = effects;
+        _era_dirtyEras.delete(eraKey);
+        if (card) {
+          card.classList.remove('dirty');
+          card.querySelectorAll('.effect-val-input').forEach(i => i.classList.remove('changed'));
+        }
+      } catch (e) { errors.push(`Era ${eraKey}: ` + e.message.slice(0, 40)); }
+    });
+    await Promise.all(saves);
+  }
+
+  // 3. Workshop
+  if (_ws_dirty) {
+    try {
+      await apiFetch('PATCH', '/api/admin/workshop-config', {
+        structure_upgrades:      ws_readFields(document.getElementById('structure-fields')),
+        critter_upgrades:        ws_readFields(document.getElementById('critter-fields')),
+        item_upgrade_base_costs: ws_readCosts(),
+      });
+      _ws_dirty = false;
+    } catch (e) { errors.push('Workshop: ' + e.message.slice(0, 40)); }
+  }
+
+  _anyDirty = false;
+  updateSaveBtn();
+
+  if (errors.length) {
+    status.textContent = '✗ ' + errors[0];
+    status.className = 'err';
+    btn.disabled = false;
+    showToast('Some saves failed', false);
+  } else {
+    status.textContent = '✓ Saved';
+    status.className = 'ok';
+    showToast('✓ All saved');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAME CONFIG
+// ═══════════════════════════════════════════════════════════════════════════════
+let _cfg_orig = null;
+let _cfg_dirtyFields = new Set();
+
+function cfg_markDirty(input) {
+  const key = input.dataset.path;
+  const origVal = cfg_getOrigVal(key);
+  const curVal  = cfg_inputValue(input);
+  if (String(curVal) !== String(origVal)) {
+    input.classList.add('changed');
+    _cfg_dirtyFields.add(key);
+  } else {
+    input.classList.remove('changed');
+    _cfg_dirtyFields.delete(key);
+  }
+  updateSaveBtn();
+}
+
+function cfg_getOrigVal(path) {
+  const parts = path.split('.');
+  let cur = _cfg_orig;
+  for (const p of parts) {
+    if (cur == null) return undefined;
+    const idx = parseInt(p, 10);
+    cur = isNaN(idx) ? cur[p] : cur[idx];
+  }
+  return cur;
+}
+
+function cfg_inputValue(input) {
+  if (input.type === 'number') { const v = parseFloat(input.value); return isNaN(v) ? 0 : v; }
+  return input.value;
+}
+
+function cfg_collectPatch() {
+  const patch = {};
+  document.querySelectorAll('[data-path]').forEach(input => {
+    if (!_cfg_dirtyFields.has(input.dataset.path)) return;
+    const parts = input.dataset.path.split('.');
+    let cur = patch;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const p = parts[i];
+      const nextIsIdx = !isNaN(parseInt(parts[i + 1], 10));
+      if (cur[p] == null) cur[p] = nextIsIdx ? [] : {};
+      cur = cur[p];
+    }
+    const last = parts[parts.length - 1];
+    const idx = parseInt(last, 10);
+    if (!isNaN(idx)) cur[idx] = cfg_inputValue(input);
+    else cur[last] = cfg_inputValue(input);
+  });
+  document.querySelectorAll('[data-path]').forEach(input => {
+    const parts = input.dataset.path.split('.');
+    if (parts.length < 2) return;
+    const parent = parts.slice(0, -1).join('.');
+    const last = parts[parts.length - 1];
+    if (!isNaN(parseInt(last, 10))) {
+      if (!Array.from(_cfg_dirtyFields).some(p => p.startsWith(parent + '.'))) return;
+      const allInputs = Array.from(document.querySelectorAll(`[data-path^="${parent}."]`))
+        .sort((a, b) => parseInt(a.dataset.path.split('.').pop()) - parseInt(b.dataset.path.split('.').pop()));
+      const arr = allInputs.map(i => cfg_inputValue(i));
+      const pp = parent.split('.');
+      let cur = patch;
+      for (let i = 0; i < pp.length - 1; i++) { if (!cur[pp[i]]) cur[pp[i]] = {}; cur = cur[pp[i]]; }
+      cur[pp[pp.length - 1]] = arr;
+    }
+  });
+  return patch;
+}
+
+function numInput(path, value, step = 'any', label = null) {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  const lbl = label || path.split('.').pop().replace(/_/g, ' ');
+  row.innerHTML = `<label>${lbl}</label><input type="number" step="${step}" data-path="${path}" value="${value}" />`;
+  row.querySelector('input').addEventListener('input', e => cfg_markDirty(e.target));
+  return row;
+}
+
+function strInput(path, value, label = null) {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  const lbl = label || path.split('.').pop().replace(/_/g, ' ');
+  row.innerHTML = `<label>${lbl}</label><input type="text" data-path="${path}" value="${value ?? ''}" />`;
+  row.querySelector('input').addEventListener('input', e => cfg_markDirty(e.target));
+  return row;
+}
+
+function buildSection(id, title, buildFn, collapsed = true) {
+  const sec = document.createElement('div');
+  sec.className = 'section' + (collapsed ? ' collapsed' : '');
+  sec.id = id;
+  sec.innerHTML = `
+    <div class="section-head">
+      <h2>${title}</h2>
+      <span class="toggle">${collapsed ? '▶' : '▼'}</span>
+    </div>
+    <div class="section-body"></div>`;
+  sec.querySelector('.section-head').addEventListener('click', () => {
+    sec.classList.toggle('collapsed');
+    sec.querySelector('.toggle').textContent = sec.classList.contains('collapsed') ? '▶' : '▼';
+  });
+  buildFn(sec.querySelector('.section-body'));
+  return sec;
+}
+
+function addGrid(parent, fields) {
+  const grid = document.createElement('div');
+  grid.className = 'field-grid';
+  for (const f of fields) grid.appendChild(f);
+  parent.appendChild(grid);
+}
+
+function addSubsection(parent, label, fields) {
+  const sub = document.createElement('div');
+  sub.className = 'subsection';
+  sub.innerHTML = `<div class="subsection-label">${label}</div>`;
+  const grid = document.createElement('div');
+  grid.className = 'field-grid';
+  for (const f of fields) grid.appendChild(f);
+  sub.appendChild(grid);
+  parent.appendChild(sub);
+}
+
+function cfg_render(raw) {
+  const container = document.getElementById('cfg-sections');
+  container.innerHTML = '';
+
+  const sections = [
+    ['s-timing', '⏱ Timing', body => addGrid(body, [
+      numInput('step_length_ms',        raw.step_length_ms,        1,    'Step length (ms)'),
+      numInput('battle_tick_ms',         raw.battle_tick_ms,        0.1,  'Battle tick (ms)'),
+      numInput('broadcast_interval_ms',  raw.broadcast_interval_ms, 1,    'Broadcast interval (ms)'),
+      numInput('min_keep_alive_ms',      raw.min_keep_alive_ms,     100,  'Min keep-alive (ms)'),
+      numInput('initial_wave_delay_ms',  raw.initial_wave_delay_ms, 100,  'Initial wave delay (ms)'),
+      numInput('splash_flight_ms',       raw.splash_flight_ms,      10,   'Splash flight (ms)'),
+      numInput('default_reload_time_ms', raw.default_reload_time_ms,10,   'Default reload (ms)'),
+      numInput('default_spawn_interval_ms', raw.default_spawn_interval_ms, 10, 'Spawn interval (ms)'),
+    ])],
+    ['s-economy', '💰 Economy', body => addGrid(body, [
+      numInput('base_gold_per_sec',    raw.base_gold_per_sec,   0.1,   'Base gold/sec'),
+      numInput('base_culture_per_sec', raw.base_culture_per_sec,0.1,   'Base culture/sec'),
+      numInput('citizen_effect',       raw.citizen_effect,      0.001, 'Citizen effect'),
+      numInput('base_build_speed',     raw.base_build_speed,    0.1,   'Base build speed'),
+      numInput('base_research_speed',  raw.base_research_speed, 0.1,   'Base research speed'),
+      numInput('base_siege_construction_speed_per_army_modifier', raw.base_siege_construction_speed_per_army_modifier, 0.01, 'Siege construction speed/army'),
+    ])],
+    ['s-start', '🌱 Starting Values', body => {
+      const sr = raw.starting_resources || {};
+      addGrid(body, [
+        numInput('starting_resources.gold',    sr.gold    ?? 0,  1, 'Starting gold'),
+        numInput('starting_resources.culture', sr.culture ?? 0,  1, 'Starting culture'),
+        numInput('starting_resources.life',    sr.life    ?? 10, 1, 'Starting life'),
+        numInput('starting_max_life',          raw.starting_max_life, 1, 'Max life'),
+        numInput('restore_life_after_loss_offset', raw.restore_life_after_loss_offset, 1, 'Life restored after loss'),
+      ]);
+    }],
+    ['s-loot', '⚔ Battle Loot', body => {
+      addGrid(body, [
+        numInput('min_lose_knowledge',          raw.min_lose_knowledge,          0.01, 'Min knowledge lost'),
+        numInput('max_lose_knowledge',          raw.max_lose_knowledge,          0.01, 'Max knowledge lost'),
+        numInput('min_lose_culture',            raw.min_lose_culture,            0.01, 'Min culture lost (%)'),
+        numInput('max_lose_culture',            raw.max_lose_culture,            0.01, 'Max culture lost (%)'),
+        numInput('culture_era_advantage_ratio', raw.culture_era_advantage_ratio, 0.01, 'Culture era advantage ratio'),
+        numInput('culture_steal_per_life_and_era', raw.culture_steal_per_life_and_era, 100, 'Culture steal/life/era'),
+        numInput('base_artifact_steal_victory', raw.base_artifact_steal_victory, 0.01, 'Artifact steal chance (win)'),
+        numInput('base_artifact_steal_defeat',  raw.base_artifact_steal_defeat,  0.01, 'Artifact steal chance (loss)'),
+        numInput('ruler_artifact_steal_bonus',  raw.ruler_artifact_steal_bonus,  0.01, 'Ruler artifact steal bonus'),
+        numInput('steal_min_multiplier',        raw.steal_min_multiplier,        0.01, 'Min army steal multiplier'),
+      ]);
+      const thresholds = raw.steal_power_thresholds || [];
+      const sub = document.createElement('div');
+      sub.className = 'subsection';
+      sub.innerHTML = '<div class="subsection-label">Steal power thresholds</div>';
+      const tgrid = document.createElement('div');
+      tgrid.className = 'list-grid';
+      thresholds.forEach((v, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `<label>Tier ${i + 1}</label><input type="number" step="1" data-path="steal_power_thresholds.${i}" value="${v}" />`;
+        item.querySelector('input').addEventListener('input', e => cfg_markDirty(e.target));
+        tgrid.appendChild(item);
+      });
+      sub.appendChild(tgrid);
+      body.appendChild(sub);
+    }],
+    ['s-barb', '🪓 Barbarian Aggressiveness', body => addGrid(body,
+      ERA_KEYS.map((k, i) => numInput(`barbarians_aggressiveness.${k}`, (raw.barbarians_aggressiveness || {})[k] ?? 0, 0.0001, ERA_LABELS[i]))
+    )],
+    ['s-spy', '🕵 Spy Costs', body => {
+      const sc = raw.spy_costs || {};
+      addGrid(body, [
+        numInput('spy_costs.defense',        sc.defense        ?? 0, 50, 'Defense'),
+        numInput('spy_costs.build_queue',    sc.build_queue    ?? 0, 50, 'Build queue'),
+        numInput('spy_costs.research_queue', sc.research_queue ?? 0, 50, 'Research queue'),
+        numInput('spy_costs.attacks',        sc.attacks        ?? 0, 50, 'Attacks'),
+        numInput('spy_costs.artifacts',      sc.artifacts      ?? 0, 50, 'Artifacts'),
+      ]);
+    }],
+    ['s-ruler', '👑 Ruler XP', body => addGrid(body, [
+      numInput('ruler_xp_per_kill',            raw.ruler_xp_per_kill,            0.5, 'XP per kill'),
+      numInput('ruler_xp_per_reached_per_era', raw.ruler_xp_per_reached_per_era, 1,   'XP per reached / era'),
+      numInput('ruler_xp_victory_per_era',     raw.ruler_xp_victory_per_era,     1,   'XP victory / era'),
+    ])],
+    ['s-ai', '🤖 AI', body => addGrid(body, [
+      numInput('ai_travel_seconds',       raw.ai_travel_seconds,       1,   'Travel seconds'),
+      numInput('ai_min_player_score',     raw.ai_min_player_score,     10,  'Min player score to target'),
+      numInput('waves_per_level',         raw.waves_per_level,         0.1, 'Waves per level'),
+      numInput('slot_adder_per_ai_level', raw.slot_adder_per_ai_level, 0.5, 'Slots added per AI level'),
+    ])],
+    ['s-triggered', '⚡ Triggered Armies', body => addGrid(body, [
+      numInput('chance_triggered_one_army',     raw.chance_triggered_one_army,     1, '1 army (weight)'),
+      numInput('chance_triggered_two_armies',   raw.chance_triggered_two_armies,   1, '2 armies (weight)'),
+      numInput('chance_triggered_three_armies', raw.chance_triggered_three_armies, 1, '3 armies (weight)'),
+      numInput('chance_triggered_four_armies',  raw.chance_triggered_four_armies,  1, '4 armies (weight)'),
+    ])],
+    ['s-struct', '🗼 Structures & Artifacts', body => addGrid(body, [
+      numInput('tower_sell_refund',     raw.tower_sell_refund,     0.05, 'Tower sell refund (fraction)'),
+      numInput('max_spy_armies',        raw.max_spy_armies,        1,    'Max spy armies'),
+      numInput('accounts_per_artifact', raw.accounts_per_artifact, 1,    'Accounts per artifact'),
+    ])],
+    ['s-map', '🗺 Map & Spawn', body => addGrid(body, [
+      numInput('empire_spawn_spacing',   raw.empire_spawn_spacing,   1, 'Empire spawn spacing (hex)'),
+      numInput('base_map_vision_radius', raw.base_map_vision_radius, 1, 'Base map vision radius'),
+    ])],
+    ['s-end', '🏆 End Game', body => {
+      const ef = raw.end_ralley_effects || {};
+      addGrid(body, [
+        strInput('end_criterion',       raw.end_criterion,                 'End criterion (IID)'),
+        numInput('end_ralley_duration', raw.end_ralley_duration ?? 604800, 3600, 'Rally duration (sec)'),
+      ]);
+      addSubsection(body, 'Rally effects', [
+        numInput('end_ralley_effects.gold_offset',         ef.gold_offset         ?? 0, 0.1,  'Gold offset'),
+        numInput('end_ralley_effects.siege_time_modifier', ef.siege_time_modifier ?? 1, 0.05, 'Siege time modifier'),
+      ]);
+    }],
+  ];
+
+  for (const [id, title, fn] of sections) {
+    container.appendChild(buildSection(id, title, fn));
+  }
+}
+
+async function cfg_load() {
+  try {
+    const raw = await apiFetch('GET', '/api/admin/game-config');
+    _cfg_orig = JSON.parse(JSON.stringify(raw));
+    _cfg_dirtyFields.clear();
+    cfg_render(raw);
+  } catch (e) {
+    document.getElementById('cfg-sections').innerHTML =
+      `<div style="color:var(--danger);padding:20px">Failed: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ERA EFFECTS
+// ═══════════════════════════════════════════════════════════════════════════════
+let _era_data = {};
+let _era_dirtyEras = new Set();
+let _era_allEffectIDs = [];
+
+function era_attachAutocomplete(input, listEl) {
+  const refresh = () => {
+    const q = input.value.toLowerCase();
+    const matches = q ? _era_allEffectIDs.filter(id => id.includes(q)) : _era_allEffectIDs;
+    listEl.innerHTML = matches.slice(0, 30).map(id => `<div class="ac-item" data-id="${id}">${id}</div>`).join('');
+    listEl.classList.toggle('open', matches.length > 0);
+    listEl.querySelectorAll('.ac-item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = item.dataset.id;
+        listEl.classList.remove('open');
+        input.dispatchEvent(new Event('change'));
+      });
+    });
+  };
+  input.addEventListener('input', refresh);
+  input.addEventListener('focus', refresh);
+  input.addEventListener('keydown', e => {
+    const items = listEl.querySelectorAll('.ac-item');
+    const sel   = listEl.querySelector('.ac-item.selected');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = sel ? sel.nextElementSibling : items[0];
+      if (next) { sel?.classList.remove('selected'); next.classList.add('selected'); next.scrollIntoView({block:'nearest'}); }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = sel ? sel.previousElementSibling : items[items.length - 1];
+      if (prev) { sel?.classList.remove('selected'); prev.classList.add('selected'); prev.scrollIntoView({block:'nearest'}); }
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      const s = listEl.querySelector('.ac-item.selected');
+      if (s) { e.preventDefault(); input.value = s.dataset.id; listEl.classList.remove('open'); }
+    } else if (e.key === 'Escape') { listEl.classList.remove('open'); }
+  });
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target) && !listEl.contains(e.target)) listEl.classList.remove('open');
+  });
+}
+
+function era_readRows(card) {
+  const result = {};
+  card.querySelectorAll('.effect-row').forEach(row => {
+    const k = row.querySelector('.effect-key-input').value.trim();
+    const v = parseFloat(row.querySelector('.effect-val-input').value);
+    if (k && !isNaN(v)) result[k] = v;
+  });
+  return result;
+}
+
+function era_renderCard(eraKey) {
+  const effects = _era_data[eraKey] || {};
+  const card = document.createElement('div');
+  card.className = 'era-card';
+  card.dataset.era = eraKey;
+  card.innerHTML = `
+    <div class="era-head">
+      <span class="era-roman">${ERA_ROMAN[eraKey] || ''}</span>
+      <span class="era-name">${ERA_LABELS[ERA_KEYS.indexOf(eraKey)] || eraKey}</span>
+      <span class="era-key">${eraKey}</span>
+    </div>
+    <div class="era-body">
+      <div class="rows-container"></div>
+      <button class="add-row-btn">+ Add effect</button>
+    </div>`;
+
+  const rowsContainer = card.querySelector('.rows-container');
+  const addBtn = card.querySelector('.add-row-btn');
+
+  function markDirty() {
+    _era_dirtyEras.add(eraKey);
+    card.classList.add('dirty');
+    updateSaveBtn();
+  }
+
+  function addRow(key = '', value = 0) {
+    const row = document.createElement('div');
+    row.className = 'effect-row';
+    const keyWrap = document.createElement('div');
+    keyWrap.className = 'effect-key-wrap';
+    const keyInput = document.createElement('input');
+    keyInput.className = 'effect-key-input';
+    keyInput.placeholder = 'effect_id';
+    keyInput.value = key;
+    const acList = document.createElement('div');
+    acList.className = 'autocomplete-list';
+    keyWrap.append(keyInput, acList);
+    era_attachAutocomplete(keyInput, acList);
+    keyInput.addEventListener('change', markDirty);
+    keyInput.addEventListener('input', markDirty);
+    const valInput = document.createElement('input');
+    valInput.className = 'effect-val-input';
+    valInput.type = 'number';
+    valInput.step = 'any';
+    valInput.value = value;
+    valInput.addEventListener('change', () => { valInput.classList.add('changed'); markDirty(); });
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.title = 'Remove';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', () => { row.remove(); markDirty(); });
+    row.append(keyWrap, valInput, delBtn);
+    rowsContainer.appendChild(row);
+  }
+
+  for (const [k, v] of Object.entries(effects)) addRow(k, v);
+  addBtn.addEventListener('click', () => { addRow(); markDirty(); });
+  return card;
+}
+
+async function era_load() {
+  try {
+    const [data, ekData] = await Promise.all([
+      apiFetch('GET', '/api/admin/era-effects'),
+      fetch(BASE + '/api/effect-keys').then(r => r.json()),
+    ]);
+    _era_data = data.era_effects || {};
+    _era_allEffectIDs = (ekData.effect_keys || []).map(e => e.key);
+    const grid = document.getElementById('era-grid');
+    grid.innerHTML = '';
+    for (const key of ERA_KEYS) {
+      if (!(key in _era_data)) _era_data[key] = {};
+      grid.appendChild(era_renderCard(key));
+    }
+  } catch (e) {
+    document.getElementById('era-grid').innerHTML =
+      `<div style="color:var(--danger);padding:20px">Failed: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WORKSHOP
+// ═══════════════════════════════════════════════════════════════════════════════
+const STRUCT_LABELS = { damage: 'Damage', range: 'Range', reload: 'Reload', effect_duration: 'Effect Duration', effect_value: 'Effect Value' };
+const CRIT_LABELS   = { health: 'Health', speed: 'Speed', armour: 'Armour' };
+let _ws_dirty = false;
+
+function ws_buildFields(container, data, labels) {
+  container.innerHTML = '';
+  for (const [key, val] of Object.entries(data)) {
+    const row = document.createElement('div');
+    row.className = 'ws-field-row';
+    row.innerHTML = `<label>${labels[key] || key}</label><input type="number" step="0.5" min="0" data-ws-key="${key}" value="${val}" />`;
+    row.querySelector('input').addEventListener('input', () => { _ws_dirty = true; updateSaveBtn(); });
+    container.appendChild(row);
+  }
+}
+
+function ws_buildCosts(container, costs) {
+  container.innerHTML = '';
+  costs.forEach((val, i) => {
+    const div = document.createElement('div');
+    div.className = 'ws-field-row';
+    div.innerHTML = `<label>${ERA_LABELS[i] || 'Era ' + i}</label><input type="number" step="1" min="0" data-ws-era="${i}" value="${val}" />`;
+    div.querySelector('input').addEventListener('input', () => { _ws_dirty = true; updateSaveBtn(); });
+    container.appendChild(div);
+  });
+}
+
+function ws_readFields(container) {
+  const result = {};
+  container.querySelectorAll('input[data-ws-key]').forEach(inp => { result[inp.dataset.wsKey] = parseFloat(inp.value) || 0; });
+  return result;
+}
+
+function ws_readCosts() {
+  return Array.from(document.querySelectorAll('#costs-fields input[data-ws-era]'))
+    .map(inp => parseFloat(inp.value) || 0);
+}
+
+async function ws_load() {
+  try {
+    const data = await apiFetch('GET', '/api/admin/workshop-config');
+    ws_buildFields(document.getElementById('structure-fields'), data.structure_upgrades, STRUCT_LABELS);
+    ws_buildFields(document.getElementById('critter-fields'),   data.critter_upgrades,   CRIT_LABELS);
+    ws_buildCosts(document.getElementById('costs-fields'), data.item_upgrade_base_costs);
+  } catch (e) {
+    document.getElementById('ws-grid').innerHTML =
+      `<div style="color:var(--danger);padding:20px">Failed: ${e.message}</div>`;
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+Promise.all([cfg_load(), era_load(), ws_load()]);
+</script>
+</body>
+</html>

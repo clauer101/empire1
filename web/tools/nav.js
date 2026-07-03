@@ -33,18 +33,18 @@
     // Helpers
     { name: '📊 Status',       href: 'status.html' },
     { name: '🗄️ Database',    href: 'database.html' },
-    { name: '🔁 Restart',      href: 'restart.html' },
+    { name: '🗓 Season',       href: 'season.html' },
     { name: '🌍 Global Map',   href: 'global-map.html' },
     { name: '📈 Runtime Stats', href: 'runtime-stats.html' },
     // Economy
     { name: '⚡ Effects',      href: 'effects.html' },
-    { name: '⏱ Era FX',       href: 'era-effects.html' },
+    { name: '⚙ Game Settings', href: 'game-settings.html' },
     { name: '✨ Artifacts',    href: 'artifacts.html' },
+    { name: '🏆 Trophies',    href: 'trophies.html' },
+    { name: '🏆 Trophy Config', href: 'trophy-config.html' },
     { name: '👑 Rulers',       href: 'rulers.html' },
     { name: '🎛️ Sigmoid',     href: 'sigmoid_tuner.html' },
     { name: '⏱ Effort',       href: 'effort-tuner.html' },
-    { name: '🔧 Workshop',     href: 'workshop-config.html' },
-    { name: '⚙ Game Config',  href: 'game-config.html' },
     { name: '🐾 Critters',     href: 'critters.html' },
     // Battle/Balancing
     { name: '⚖ Balance',      href: 'balance.html' },
@@ -54,7 +54,6 @@
     { name: '📊 Battle Log',   href: 'ai-battle-log.html' },    
     { name: '⚔ Sim Map',      href: 'sim-map.html' },
     { name: '🗺 Maps',         href: 'map-overview.html' },
-    { name: '⚔ Sprite',       href: 'sprite.html' },
     { name: '📊 Scatter',      href: 'critter-scatter.html' },
   ];
 
