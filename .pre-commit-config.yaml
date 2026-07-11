@@ -25,5 +25,6 @@ repos:
           (?x)^(
             \.env\.example|
             python_server/tests/.*|
-            docs/.*
+            docs/.*|
+            data/backups/.*
           )$

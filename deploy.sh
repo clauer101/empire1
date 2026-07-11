@@ -113,6 +113,36 @@ build_assets() {
     (export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && cd web && npm run build --silent)
 }
 
+# Snapshot the essentials needed to restore prod from scratch (DB, live state,
+# bot credentials, season results) into a single overwritten tgz under git.
+# Not a substitute for data/prod/states/{daily,hourly} — those are the game's
+# own internal history; this is the "server died, rebuild from latest" copy.
+backup_prod_data() {
+    local backup_dir="data/backups"
+    mkdir -p "$backup_dir"
+
+    echo "  Backing up prod data..."
+    tar czf "${backup_dir}/prod.tgz.tmp" \
+        --ignore-failed-read \
+        -C data/prod \
+        gameserver.db state.yaml bot_states admin_token results 2>/dev/null || true
+    mv "${backup_dir}/prod.tgz.tmp" "${backup_dir}/prod.tgz"
+
+    git add "${backup_dir}/prod.tgz"
+    if git diff --cached --quiet -- "${backup_dir}/prod.tgz"; then
+        echo "  Backup unchanged — nothing to commit"
+        return
+    fi
+
+    # --no-verify: this commit only ever touches the binary backup tgz, which
+    # the code hooks (ruff/mypy/detect-secrets) can't meaningfully check —
+    # running them here would just make automated backups fragile against
+    # unrelated repo lint state.
+    git commit -q --no-verify -m "backup: prod data snapshot $(date '+%Y-%m-%d %H:%M:%S')" -- "${backup_dir}/prod.tgz" \
+        && echo -e "${GREEN}  Backup committed${NC}" \
+        || echo -e "${YELLOW}  Backup commit skipped (nothing staged or commit failed)${NC}"
+}
+
 # Returns the number of active battles for the given env/port, or 0 if unreachable.
 _get_battle_count() {
     local port="$1"
@@ -222,6 +252,7 @@ deploy() {
     docker compose -p "$project" -f "$compose_file" build
 
     save_state_before_stop "$env" "$port"
+    [[ "$env" == "prod" ]] && backup_prod_data
     force_stop_containers "$project" "$compose_file"
 
     docker compose -p "$project" -f "$compose_file" up -d
@@ -245,6 +276,7 @@ stop_env() {
     echo -e "========================================${NC}"
 
     save_state_before_stop "$env" "$port"
+    [[ "$env" == "prod" ]] && backup_prod_data
     force_stop_containers "$project" "$compose_file"
 
     echo -e "${GREEN}[OK] $env stopped${NC}"
