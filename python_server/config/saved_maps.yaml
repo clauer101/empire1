@@ -1,100 +1,6 @@
 maps:
-- id: live_4_1774129631
-  name: Bronze+
-  life: 12.0
-  hex_map:
-  - q: -1
-    r: -1
-    type: path
-  - q: -1
-    r: 0
-    type: ARROW_TOWER
-  - q: -1
-    r: 1
-    type: FIRE_TOWER
-  - q: -1
-    r: 2
-    type: path
-  - q: -1
-    r: 3
-    type: FIRE_TOWER
-  - q: -2
-    r: 0
-    type: path
-  - q: -2
-    r: 1
-    type: path
-  - q: -2
-    r: 2
-    type: path
-  - q: -2
-    r: 3
-    type: BALLISTA_TOWER
-  - q: -3
-    r: 1
-    type: FIRE_TOWER
-  - q: -3
-    r: 2
-    type: FIRE_TOWER
-  - q: -3
-    r: 3
-    type: BALLISTA_TOWER
-  - q: 0
-    r: -1
-    type: SPIKE_TRAP
-  - q: 0
-    r: -2
-    type: path
-  - q: 0
-    r: 0
-    type: castle
-  - q: 0
-    r: 1
-    type: BALLISTA_TOWER
-  - q: 0
-    r: 2
-    type: path
-  - q: 0
-    r: 3
-    type: ARROW_TOWER
-  - q: 1
-    r: -1
-    type: BALLISTA_TOWER
-  - q: 1
-    r: -2
-    type: path
-  - q: 1
-    r: 0
-    type: path
-  - q: 1
-    r: 1
-    type: ARROW_TOWER
-  - q: 1
-    r: 2
-    type: path
-  - q: 2
-    r: -1
-    type: HEAVY_TOWER
-  - q: 2
-    r: -2
-    type: path
-  - q: 2
-    r: 0
-    type: path
-  - q: 2
-    r: 1
-    type: path
-  - q: 3
-    r: -1
-    type: ARBELESTE_TOWER
-  - q: 3
-    r: -2
-    type: spawnpoint
-  - q: 3
-    r: 0
-    type: ARBELESTE_TOWER
 - id: live_4_1774628767
-  name: Middle Ages
+  name: Early
   hex_map:
   - q: -1
     r: -1
@@ -231,7 +137,7 @@ maps:
   - q: 4
     r: 1
     type: empty
-  life: 16.0
+  life: 13.0
 - id: live_7_1774675022
   name: Neolith
   hex_map:
@@ -433,60 +339,8 @@ maps:
     r: -2
     type: CATAPULTS
   life: 12.0
-- id: live_15_1776279998
-  name: Fruit Republic (late neo)
-  hex_map:
-  - q: -1
-    r: 2
-    type: empty
-  - q: -1
-    r: 3
-    type: BALLISTA_TOWER
-  - q: -1
-    r: 4
-    type: spawnpoint
-  - q: -2
-    r: 2
-    type: FIRE_TOWER
-  - q: -2
-    r: 3
-    type: empty
-  - q: -2
-    r: 4
-    type: empty
-  - q: 0
-    r: 0
-    type: castle
-  - q: 0
-    r: 1
-    type: BASIC_TOWER
-  - q: 0
-    r: 2
-    type: empty
-  - q: 0
-    r: 3
-    type: DOUBLE_SLING_TOWER
-  - q: 1
-    r: 0
-    type: empty
-  - q: 1
-    r: 1
-    type: SPIKE_TRAP
-  - q: 1
-    r: 2
-    type: empty
-  - q: 2
-    r: -1
-    type: DOUBLE_SLING_TOWER
-  - q: 2
-    r: 0
-    type: empty
-  - q: 2
-    r: 1
-    type: empty
-  life: 10.0
 - id: live_7_1776280037
-  name: Limperium (Late renn)
+  name: Mixed late
   hex_map:
   - q: -1
     r: 0
@@ -745,54 +599,306 @@ maps:
     r: 2
     type: castle
   life: 10.0
-- id: live_3_1776283370
-  name: Bikini Bottom (early Indy)
+- id: season1_4_1783706526
+  name: Weak Modern
+  life: 28.0
+  hex_map:
+  - q: -10
+    r: 10
+    type: empty
+  - q: -10
+    r: 11
+    type: empty
+  - q: -10
+    r: 12
+    type: empty
+  - q: -10
+    r: 7
+    type: MG_TOWER
+  - q: -10
+    r: 8
+    type: empty
+  - q: -10
+    r: 9
+    type: ANTI_AIR_TOWER
+  - q: -11
+    r: 10
+    type: empty
+  - q: -11
+    r: 11
+    type: RADAR_TOWER
+  - q: -11
+    r: 12
+    type: LASER_TOWER
+  - q: -11
+    r: 13
+    type: FLAME_THROWER
+  - q: -11
+    r: 6
+    type: castle
+  - q: -11
+    r: 7
+    type: ANTI_AIR_TOWER
+  - q: -11
+    r: 8
+    type: empty
+  - q: -11
+    r: 9
+    type: FLAME_THROWER
+  - q: -12
+    r: 10
+    type: empty
+  - q: -12
+    r: 11
+    type: ANTI_AIR_TOWER
+  - q: -12
+    r: 12
+    type: empty
+  - q: -12
+    r: 13
+    type: empty
+  - q: -12
+    r: 14
+    type: empty
+  - q: -12
+    r: 15
+    type: empty
+  - q: -12
+    r: 16
+    type: COLD_TOWER
+  - q: -12
+    r: 7
+    type: empty
+  - q: -12
+    r: 8
+    type: empty
+  - q: -12
+    r: 9
+    type: ANTI_AIR_TOWER
+  - q: -13
+    r: 10
+    type: empty
+  - q: -13
+    r: 11
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -13
+    r: 12
+    type: empty
+  - q: -13
+    r: 13
+    type: MG_TOWER
+  - q: -13
+    r: 14
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -13
+    r: 15
+    type: RADAR_TOWER
+  - q: -13
+    r: 16
+    type: empty
+  - q: -13
+    r: 9
+    type: ICE_TOWER
+  - q: -14
+    r: 10
+    type: empty
+  - q: -14
+    r: 11
+    type: MG_TOWER
+  - q: -14
+    r: 12
+    type: empty
+  - q: -14
+    r: 13
+    type: RADAR_TOWER
+  - q: -14
+    r: 14
+    type: spawnpoint
+  - q: -14
+    r: 15
+    type: empty
+  - q: -14
+    r: 16
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -14
+    r: 17
+    type: empty
+  - q: -15
+    r: 11
+    type: empty
+  - q: -15
+    r: 12
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -15
+    r: 13
+    type: empty
+  - q: -15
+    r: 14
+    type: LASER_TOWER
+  - q: -15
+    r: 15
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -15
+    r: 16
+    type: empty
+  - q: -15
+    r: 17
+    type: MG_TOWER
+  - q: -15
+    r: 18
+    type: empty
+  - q: -16
+    r: 12
+    type: empty
+  - q: -16
+    r: 13
+    type: LASER_TOWER
+  - q: -16
+    r: 14
+    type: empty
+  - q: -16
+    r: 15
+    type: empty
+  - q: -16
+    r: 16
+    type: empty
+  - q: -16
+    r: 17
+    type: RADAR_TOWER
+  - q: -16
+    r: 18
+    type: empty
+  - q: -17
+    r: 13
+    type: empty
+  - q: -17
+    r: 14
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -17
+    r: 15
+    type: LASER_TOWER
+  - q: -17
+    r: 16
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -17
+    r: 17
+    type: MG_TOWER
+  - q: -17
+    r: 18
+    type: empty
+  - q: -18
+    r: 13
+    type: COLD_TOWER
+  - q: -18
+    r: 14
+    type: empty
+  - q: -18
+    r: 15
+    type: empty
+  - q: -18
+    r: 16
+    type: empty
+  - q: -18
+    r: 17
+    type: empty
+  - q: -18
+    r: 18
+    type: empty
+  - q: -8
+    r: 10
+    type: empty
+  - q: -8
+    r: 11
+    type: empty
+  - q: -8
+    r: 8
+    type: empty
+  - q: -8
+    r: 9
+    type: empty
+  - q: -9
+    r: 10
+    type: RADAR_TOWER
+  - q: -9
+    r: 11
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -9
+    r: 12
+    type: empty
+  - q: -9
+    r: 7
+    type: MG_TOWER
+  - q: -9
+    r: 8
+    type: empty
+  - q: -9
+    r: 9
+    type: MG_TOWER
+- id: season1_3_1783706527
+  name: Short Mixed Modern
+  life: 48.0
   hex_map:
   - q: -1
     r: -1
     type: spawnpoint
   - q: -1
     r: -2
-    type: RIFLE_TOWER
+    type: RADAR_TOWER
   - q: -1
     r: 0
-    type: CANNON_TOWER
+    type: MG_TOWER
   - q: -1
     r: 1
     type: empty
   - q: -1
     r: 2
-    type: FLAME_THROWER
+    type: NAPALM_THROWER
   - q: -1
     r: 3
     type: empty
   - q: -1
     r: 4
-    type: HEAVY_TOWER
+    type: RADAR_TOWER
   - q: -2
     r: -1
-    type: RIFLE_TOWER
+    type: RADAR_TOWER
   - q: -2
     r: 0
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: -2
     r: 1
     type: empty
   - q: -2
     r: 2
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: -2
     r: 3
     type: empty
   - q: -2
     r: 4
-    type: ICE_TOWER
+    type: SHOCK_TOWER
   - q: -3
     r: 0
-    type: ICE_TOWER
+    type: RADAR_TOWER
   - q: -3
     r: 1
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: -3
     r: 2
     type: empty
@@ -801,540 +907,4977 @@ maps:
     type: empty
   - q: -3
     r: 4
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: -4
     r: 1
-    type: HEAVY_TOWER
+    type: RADAR_TOWER
   - q: -4
     r: 2
-    type: COLD_TOWER
+    type: PARALYZNG_TOWER
   - q: -4
     r: 3
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: -4
     r: 4
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: 0
     r: -1
     type: empty
   - q: 0
     r: -2
-    type: RIFLE_TOWER
+    type: MG_TOWER
   - q: 0
     r: 0
-    type: COLD_TOWER
+    type: PARALYZNG_TOWER
   - q: 0
     r: 1
     type: empty
   - q: 0
     r: 2
-    type: COLD_TOWER
+    type: PARALYZNG_TOWER
   - q: 0
     r: 3
     type: empty
   - q: 0
     r: 4
-    type: FLAME_THROWER
-  - q: 1
-    r: -1
-    type: empty
-  - q: 1
-    r: -2
-    type: ICE_TOWER
-  - q: 1
-    r: 0
-    type: FLAME_THROWER
-  - q: 1
-    r: 1
-    type: empty
-  - q: 1
-    r: 2
-    type: BOILING_OIL
-  - q: 1
-    r: 3
-    type: empty
-  - q: 1
-    r: 4
-    type: RIFLE_TOWER
-  - q: 2
-    r: -1
-    type: empty
-  - q: 2
-    r: -2
-    type: RIFLE_TOWER
-  - q: 2
-    r: 0
-    type: ICE_TOWER
-  - q: 2
-    r: 1
-    type: empty
-  - q: 2
-    r: 2
-    type: FLAME_THROWER
-  - q: 2
-    r: 3
-    type: empty
-  - q: 2
-    r: 4
-    type: RIFLE_TOWER
-  - q: 3
-    r: -1
-    type: empty
-  - q: 3
-    r: -2
-    type: FLAME_THROWER
-  - q: 3
-    r: 0
-    type: FLAME_THROWER
-  - q: 3
-    r: 1
-    type: empty
-  - q: 3
-    r: 2
-    type: RIFLE_TOWER
-  - q: 3
-    r: 3
-    type: empty
-  - q: 3
-    r: 4
-    type: ICE_TOWER
-  - q: 4
-    r: -1
-    type: empty
-  - q: 4
-    r: -2
-    type: HEAVY_TOWER
-  - q: 4
-    r: 0
-    type: CANNON_TOWER
-  - q: 4
-    r: 1
-    type: empty
-  - q: 4
-    r: 2
-    type: COLD_TOWER
-  - q: 4
-    r: 3
-    type: empty
-  - q: 4
-    r: 4
-    type: RIFLE_TOWER
-  - q: 5
-    r: -1
-    type: empty
-  - q: 5
-    r: -2
-    type: COLD_TOWER
-  - q: 5
-    r: 0
-    type: RIFLE_TOWER
-  - q: 5
-    r: 1
-    type: empty
-  - q: 5
-    r: 2
-    type: RIFLE_TOWER
-  - q: 5
-    r: 3
+    type: NAPALM_THROWER
+  - q: 0
+    r: 5
     type: castle
-  - q: 5
-    r: 4
-    type: RIFLE_TOWER
-  - q: 6
-    r: -1
-    type: empty
-  - q: 6
-    r: -2
-    type: HEAVY_TOWER
-  - q: 6
-    r: 0
-    type: COLD_TOWER
-  - q: 6
-    r: 1
-    type: empty
-  - q: 6
-    r: 2
-    type: RIFLE_TOWER
-  - q: 6
-    r: 3
-    type: RIFLE_TOWER
-  - q: 7
-    r: -1
-    type: empty
-  - q: 7
-    r: -2
-    type: ICE_TOWER
-  - q: 7
-    r: 0
-    type: empty
-  - q: 7
-    r: 1
-    type: RIFLE_TOWER
-  - q: 7
-    r: 2
-    type: ICE_TOWER
-  - q: 8
-    r: -1
-    type: RIFLE_TOWER
-  - q: 8
-    r: -2
-    type: RIFLE_TOWER
-  - q: 8
-    r: 0
-    type: ICE_TOWER
-  - q: 8
-    r: 1
-    type: ICE_TOWER
-  life: 26.0
-- id: live_3_1776587122
-  name: Bikini Bottom (Indy)
-  hex_map:
-  - q: -1
-    r: -1
-    type: spawnpoint
-  - q: -1
-    r: -2
-    type: GATLING_TOWER
-  - q: -1
-    r: 0
-    type: GATLING_TOWER
-  - q: -1
-    r: 1
-    type: empty
-  - q: -1
-    r: 2
-    type: FLAME_THROWER
-  - q: -1
-    r: 3
-    type: empty
-  - q: -1
-    r: 4
-    type: GATLING_TOWER
-  - q: -2
-    r: -1
-    type: GATLING_TOWER
-  - q: -2
-    r: 0
-    type: GATLING_TOWER
-  - q: -2
-    r: 1
-    type: empty
-  - q: -2
-    r: 2
-    type: GATLING_TOWER
-  - q: -2
-    r: 3
-    type: empty
-  - q: -2
-    r: 4
-    type: ICE_TOWER
-  - q: -3
-    r: 0
-    type: ICE_TOWER
-  - q: -3
-    r: 1
-    type: GATLING_TOWER
-  - q: -3
-    r: 2
-    type: empty
-  - q: -3
-    r: 3
-    type: empty
-  - q: -3
-    r: 4
-    type: GATLING_TOWER
-  - q: -4
-    r: 1
-    type: ICE_TOWER
-  - q: -4
-    r: 2
-    type: COLD_TOWER
-  - q: -4
-    r: 3
-    type: GATLING_TOWER
-  - q: -4
-    r: 4
-    type: GATLING_TOWER
-  - q: 0
-    r: -1
-    type: empty
-  - q: 0
-    r: -2
-    type: GATLING_TOWER
-  - q: 0
-    r: 0
-    type: COLD_TOWER
-  - q: 0
-    r: 1
-    type: empty
-  - q: 0
-    r: 2
-    type: COLD_TOWER
-  - q: 0
-    r: 3
-    type: empty
-  - q: 0
-    r: 4
-    type: FLAME_THROWER
   - q: 1
     r: -1
     type: empty
   - q: 1
     r: -2
-    type: ICE_TOWER
+    type: SHOCK_TOWER
   - q: 1
     r: 0
-    type: FLAME_THROWER
+    type: NAPALM_THROWER
   - q: 1
     r: 1
     type: empty
   - q: 1
     r: 2
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 1
     r: 3
     type: empty
   - q: 1
     r: 4
-    type: GATLING_TOWER
+    type: RADAR_TOWER
+  - q: 1
+    r: 5
+    type: empty
   - q: 2
     r: -1
     type: empty
   - q: 2
     r: -2
-    type: GATLING_TOWER
+    type: RADAR_TOWER
   - q: 2
     r: 0
-    type: ICE_TOWER
+    type: SHOCK_TOWER
   - q: 2
     r: 1
     type: empty
   - q: 2
     r: 2
-    type: FLAME_THROWER
+    type: NAPALM_THROWER
   - q: 2
     r: 3
     type: empty
   - q: 2
     r: 4
-    type: GATLING_TOWER
+    type: MG_TOWER
+  - q: 2
+    r: 5
+    type: empty
   - q: 3
     r: -1
     type: empty
   - q: 3
     r: -2
-    type: FLAME_THROWER
+    type: NAPALM_THROWER
   - q: 3
     r: 0
-    type: FLAME_THROWER
+    type: NAPALM_THROWER
   - q: 3
     r: 1
     type: empty
   - q: 3
     r: 2
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 3
     r: 3
     type: empty
   - q: 3
     r: 4
-    type: ICE_TOWER
+    type: SHOCK_TOWER
+  - q: 3
+    r: 5
+    type: empty
   - q: 4
     r: -1
     type: empty
   - q: 4
     r: -2
-    type: GATLING_TOWER
+    type: RADAR_TOWER
   - q: 4
     r: 0
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 4
     r: 1
     type: empty
   - q: 4
     r: 2
-    type: COLD_TOWER
+    type: PARALYZNG_TOWER
   - q: 4
     r: 3
     type: empty
   - q: 4
     r: 4
-    type: GATLING_TOWER
+    type: empty
+  - q: 4
+    r: 5
+    type: MG_TOWER
   - q: 5
     r: -1
     type: empty
   - q: 5
     r: -2
-    type: COLD_TOWER
+    type: PARALYZNG_TOWER
   - q: 5
     r: 0
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 5
     r: 1
     type: empty
   - q: 5
     r: 2
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 5
     r: 3
-    type: castle
+    type: MG_TOWER
   - q: 5
     r: 4
-    type: GATLING_TOWER
+    type: RADAR_TOWER
   - q: 6
     r: -1
     type: empty
   - q: 6
     r: -2
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 6
     r: 0
-    type: COLD_TOWER
+    type: PARALYZNG_TOWER
   - q: 6
     r: 1
     type: empty
   - q: 6
     r: 2
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 6
     r: 3
-    type: GATLING_TOWER
+    type: RADAR_TOWER
   - q: 7
     r: -1
     type: empty
   - q: 7
     r: -2
-    type: ICE_TOWER
+    type: SHOCK_TOWER
   - q: 7
     r: 0
     type: empty
   - q: 7
     r: 1
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 7
     r: 2
-    type: ICE_TOWER
+    type: RADAR_TOWER
   - q: 8
     r: -1
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 8
     r: -2
-    type: GATLING_TOWER
+    type: MG_TOWER
   - q: 8
     r: 0
-    type: ICE_TOWER
+    type: SHOCK_TOWER
   - q: 8
     r: 1
-    type: ICE_TOWER
+    type: RADAR_TOWER
   - q: 9
     r: 1
     type: empty
-  life: 26.0
-- id: live_17_1776603146
-  name: MooHaven (Middle ages)
+- id: season1_7_1783706529
+  name: S1 Limperium
+  life: 48.0
   hex_map:
   - q: -1
-    r: -1
+    r: -10
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -1
+    r: -11
     type: empty
   - q: -1
-    r: 0
-    type: HEAVY_TOWER
+    r: -12
+    type:
+      type: ROCKET_TOWER
+      select: random
   - q: -1
-    r: 1
-    type: HEAVY_TOWER
+    r: -13
+    type: empty
   - q: -1
-    r: 2
-    type: TAR_TOWER
+    r: -14
+    type:
+      type: MG_TOWER
+      select: random
   - q: -1
-    r: 3
+    r: -15
+    type: empty
+  - q: -1
+    r: -16
+    type: MG_TOWER
+  - q: -1
+    r: -17
+    type: empty
+  - q: -1
+    r: -18
+    type: MG_TOWER
+  - q: -1
+    r: -4
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -1
+    r: -5
+    type: empty
+  - q: -1
+    r: -6
+    type:
+      type: NAPALM_THROWER
+      select: random
+  - q: -1
+    r: -7
+    type: empty
+  - q: -1
+    r: -8
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -1
+    r: -9
     type: empty
   - q: -2
-    r: 0
+    r: -10
     type: empty
   - q: -2
-    r: 1
+    r: -11
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -2
+    r: -12
+    type: MG_TOWER
+  - q: -2
+    r: -13
     type: empty
   - q: -2
-    r: 2
+    r: -14
     type: empty
   - q: -2
-    r: 3
-    type: empty
-  - q: 0
-    r: -1
-    type: TAR_TOWER
-  - q: 0
-    r: -2
-    type: empty
-  - q: 0
-    r: 0
-    type: empty
-  - q: 0
-    r: 1
-    type: empty
-  - q: 0
-    r: 2
-    type: HEAVY_TOWER
-  - q: 0
-    r: 3
-    type: empty
-  - q: 1
-    r: -1
-    type: empty
-  - q: 1
-    r: -2
-    type: HEAVY_TOWER
-  - q: 1
-    r: -3
-    type: empty
-  - q: 1
-    r: 0
-    type: CATAPULTS
-  - q: 1
-    r: 1
-    type: empty
-  - q: 1
-    r: 2
-    type: HEAVY_TOWER
-  - q: 1
-    r: 3
-    type: empty
-  - q: 2
-    r: -1
-    type: empty
-  - q: 2
-    r: -2
-    type: HEAVY_TOWER
-  - q: 2
-    r: -3
-    type: empty
-  - q: 2
-    r: 0
-    type: HEAVY_TOWER
-  - q: 2
-    r: 1
-    type: empty
-  - q: 2
-    r: 2
-    type: empty
-  - q: 2
-    r: 3
-    type: SPIKE_TRAP
-  - q: 3
-    r: -1
+    r: -15
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -2
+    r: -16
+    type: MG_TOWER
+  - q: -2
+    r: -17
     type: castle
+  - q: -2
+    r: -4
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -2
+    r: -5
+    type: empty
+  - q: -2
+    r: -6
+    type: empty
+  - q: -2
+    r: -7
+    type: MG_TOWER
+  - q: -2
+    r: -8
+    type:
+      type: MG_TOWER
+      select: random
+  - q: -2
+    r: -9
+    type: empty
+  - q: -3
+    r: -11
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: -3
+    r: -13
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -3
+    r: -16
+    type: COLD_TOWER
+  - q: -3
+    r: -5
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -3
+    r: -7
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: -3
+    r: -9
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 0
+    r: -10
+    type: empty
+  - q: 0
+    r: -11
+    type:
+      type: NAPALM_THROWER
+      select: random
+  - q: 0
+    r: -12
+    type: empty
+  - q: 0
+    r: -13
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 0
+    r: -14
+    type: empty
+  - q: 0
+    r: -15
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 0
+    r: -16
+    type: empty
+  - q: 0
+    r: -17
+    type: MG_TOWER
+  - q: 0
+    r: -18
+    type: empty
+  - q: 0
+    r: -19
+    type: MG_TOWER
+  - q: 0
+    r: -5
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 0
+    r: -6
+    type: empty
+  - q: 0
+    r: -7
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 0
+    r: -8
+    type: empty
+  - q: 0
+    r: -9
+    type:
+      type: NAPALM_THROWER
+      select: random
+  - q: 1
+    r: -10
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -11
+    type: empty
+  - q: 1
+    r: -12
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -13
+    type: empty
+  - q: 1
+    r: -14
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -15
+    type: empty
+  - q: 1
+    r: -16
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -17
+    type: empty
+  - q: 1
+    r: -18
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -19
+    type: empty
+  - q: 1
+    r: -20
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -6
+    type: MG_TOWER
+  - q: 1
+    r: -7
+    type: empty
+  - q: 1
+    r: -8
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 1
+    r: -9
+    type: empty
+  - q: 2
+    r: -10
+    type: empty
+  - q: 2
+    r: -11
+    type: MG_TOWER
+  - q: 2
+    r: -12
+    type: empty
+  - q: 2
+    r: -13
+    type:
+      type: NAPALM_THROWER
+      select: random
+  - q: 2
+    r: -14
+    type: empty
+  - q: 2
+    r: -15
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 2
+    r: -16
+    type: empty
+  - q: 2
+    r: -17
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 2
+    r: -18
+    type: empty
+  - q: 2
+    r: -19
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 2
+    r: -20
+    type: empty
+  - q: 2
+    r: -21
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 2
+    r: -7
+    type:
+      type: NAPALM_THROWER
+      select: random
+  - q: 2
+    r: -8
+    type: empty
+  - q: 2
+    r: -9
+    type:
+      type: MG_TOWER
+      select: random
   - q: 3
-    r: -2
-    type: TAR_TOWER
+    r: -10
+    type:
+      type: MG_TOWER
+      select: random
   - q: 3
-    r: -3
+    r: -11
     type: empty
   - q: 3
+    r: -12
+    type: empty
+  - q: 3
+    r: -13
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 3
+    r: -14
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 3
+    r: -15
+    type: empty
+  - q: 3
+    r: -16
+    type: empty
+  - q: 3
+    r: -17
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 3
+    r: -18
+    type:
+      type: MG_TOWER
+      select: random
+  - q: 3
+    r: -19
+    type: empty
+  - q: 3
+    r: -20
+    type: empty
+  - q: 3
+    r: -21
+    type: MG_TOWER
+  - q: 3
+    r: -8
+    type: spawnpoint
+  - q: 3
+    r: -9
+    type: MG_TOWER
+  - q: 4
+    r: -12
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 4
+    r: -14
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 4
+    r: -16
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 4
+    r: -18
+    type:
+      type: ROCKET_TOWER
+      select: random
+  - q: 4
+    r: -20
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 4
+    r: -9
+    type:
+      type: COLD_TOWER
+      select: random
+- id: season1_9_1783706530
+  name: Mixed Early
+  life: 16.0
+  hex_map:
+  - q: 12
+    r: -10
+    type: DOUBLE_SLING_TOWER
+  - q: 12
+    r: -11
+    type: ARBELESTE_TOWER
+  - q: 12
+    r: -12
+    type:
+      select: random
+      type: ARBELESTE_TOWER
+  - q: 12
+    r: -13
+    type: empty
+  - q: 12
+    r: -9
+    type: ARROW_TOWER
+  - q: 13
+    r: -10
+    type: TAR_TOWER
+  - q: 13
+    r: -11
+    type: empty
+  - q: 13
+    r: -12
+    type: empty
+  - q: 13
+    r: -13
+    type: empty
+  - q: 13
+    r: -14
+    type: CATAPULTS
+  - q: 13
+    r: -15
+    type: CATAPULTS
+  - q: 14
+    r: -10
+    type:
+      select: last
+      type: DOUBLE_SLING_TOWER
+  - q: 14
+    r: -11
+    type: empty
+  - q: 14
+    r: -12
+    type: TAR_TOWER
+  - q: 14
+    r: -13
+    type: HEAVY_TOWER
+  - q: 14
+    r: -14
+    type: empty
+  - q: 14
+    r: -15
+    type: BALLISTA_TOWER
+  - q: 14
+    r: -16
+    type: BALLISTA_TOWER
+  - q: 15
+    r: -11
+    type: TAR_TOWER
+  - q: 15
+    r: -12
+    type: empty
+  - q: 15
+    r: -13
+    type: spawnpoint
+  - q: 15
+    r: -14
+    type: TAR_TOWER
+  - q: 15
+    r: -15
+    type: empty
+  - q: 15
+    r: -16
+    type: HEAVY_TOWER
+  - q: 16
+    r: -11
+    type:
+      select: random
+      type: ARROW_TOWER
+  - q: 16
+    r: -12
+    type: HEAVY_TOWER
+  - q: 16
+    r: -13
+    type: HEAVY_TOWER
+  - q: 16
+    r: -14
+    type: TAR_TOWER
+  - q: 16
+    r: -15
+    type: empty
+  - q: 16
+    r: -16
+    type:
+      select: random
+      type: BALLISTA_TOWER
+  - q: 17
+    r: -12
+    type: empty
+  - q: 17
+    r: -13
+    type: empty
+  - q: 17
+    r: -14
+    type: empty
+  - q: 17
+    r: -15
+    type: empty
+  - q: 17
+    r: -16
+    type: TAR_TOWER
+  - q: 17
+    r: -17
+    type: CATAPULTS
+  - q: 18
+    r: -12
+    type: empty
+  - q: 18
+    r: -13
+    type: TAR_TOWER
+  - q: 18
+    r: -14
+    type:
+      select: last
+      type: FIRE_TOWER
+  - q: 18
+    r: -15
+    type: HEAVY_TOWER
+  - q: 18
+    r: -16
+    type: HEAVY_TOWER
+  - q: 18
+    r: -17
+    type: CATAPULTS
+  - q: 19
+    r: -13
+    type: empty
+  - q: 19
+    r: -14
+    type: empty
+  - q: 19
+    r: -15
+    type: empty
+  - q: 19
+    r: -16
+    type: empty
+  - q: 19
+    r: -17
+    type: castle
+- id: season1_16_1783706534
+  name: Flame/Gatling
+  life: 28.0
+  hex_map:
+  - q: -18
+    r: 28
+    type: castle
+  - q: -19
+    r: 24
+    type: FLAME_THROWER
+  - q: -19
+    r: 25
+    type: FLAME_THROWER
+  - q: -19
+    r: 26
+    type: GATLING_TOWER
+  - q: -19
+    r: 27
+    type: FLAME_THROWER
+  - q: -19
+    r: 28
+    type: GATLING_TOWER
+  - q: -19
+    r: 29
+    type: empty
+  - q: -20
+    r: 25
+    type: empty
+  - q: -20
+    r: 26
+    type: empty
+  - q: -20
+    r: 27
+    type: empty
+  - q: -20
+    r: 28
+    type: empty
+  - q: -20
+    r: 29
+    type: empty
+  - q: -21
+    r: 25
+    type: empty
+  - q: -21
+    r: 26
+    type: GATLING_TOWER
+  - q: -21
+    r: 27
+    type: GATLING_TOWER
+  - q: -21
+    r: 28
+    type: FLAME_THROWER
+  - q: -21
+    r: 29
+    type: COLD_TOWER
+  - q: -21
+    r: 30
+    type: GATLING_TOWER
+  - q: -22
+    r: 26
+    type: empty
+  - q: -22
+    r: 27
+    type: empty
+  - q: -22
+    r: 28
+    type: empty
+  - q: -22
+    r: 29
+    type: empty
+  - q: -22
+    r: 30
+    type: empty
+  - q: -23
+    r: 26
+    type: FLAME_THROWER
+  - q: -23
+    r: 27
+    type: FLAME_THROWER
+  - q: -23
+    r: 28
+    type: GATLING_TOWER
+  - q: -23
+    r: 29
+    type: FLAME_THROWER
+  - q: -23
+    r: 30
+    type: GATLING_TOWER
+  - q: -23
+    r: 31
+    type: empty
+  - q: -24
+    r: 27
+    type: empty
+  - q: -24
+    r: 28
+    type: empty
+  - q: -24
+    r: 29
+    type: empty
+  - q: -24
+    r: 30
+    type: empty
+  - q: -24
+    r: 31
+    type: empty
+  - q: -25
+    r: 27
+    type: empty
+  - q: -25
+    r: 28
+    type: COLD_TOWER
+  - q: -25
+    r: 29
+    type: GATLING_TOWER
+  - q: -25
+    r: 30
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -25
+    r: 31
+    type: FLAME_THROWER
+  - q: -25
+    r: 32
+    type: GATLING_TOWER
+  - q: -26
+    r: 28
+    type: empty
+  - q: -26
+    r: 29
+    type: empty
+  - q: -26
+    r: 30
+    type: empty
+  - q: -26
+    r: 31
+    type: empty
+  - q: -26
+    r: 32
+    type: empty
+  - q: -27
+    r: 28
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -27
+    r: 29
+    type: FLAME_THROWER
+  - q: -27
+    r: 30
+    type: GATLING_TOWER
+  - q: -27
+    r: 31
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -27
+    r: 32
+    type: GATLING_TOWER
+  - q: -27
+    r: 33
+    type: empty
+  - q: -28
+    r: 29
+    type: empty
+  - q: -28
+    r: 30
+    type: empty
+  - q: -28
+    r: 31
+    type: empty
+  - q: -28
+    r: 32
+    type: empty
+  - q: -28
+    r: 33
+    type: empty
+  - q: -29
+    r: 29
+    type: empty
+  - q: -29
+    r: 30
+    type: GATLING_TOWER
+  - q: -29
+    r: 31
+    type: GATLING_TOWER
+  - q: -29
+    r: 32
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -29
+    r: 33
+    type: COLD_TOWER
+  - q: -29
+    r: 34
+    type: GATLING_TOWER
+  - q: -30
+    r: 30
+    type: empty
+  - q: -30
+    r: 31
+    type: empty
+  - q: -30
+    r: 32
+    type: empty
+  - q: -30
+    r: 33
+    type: empty
+  - q: -30
+    r: 34
+    type: empty
+  - q: -31
+    r: 30
+    type: FLAME_THROWER
+  - q: -31
+    r: 31
+    type: FLAME_THROWER
+  - q: -31
+    r: 32
+    type: GATLING_TOWER
+  - q: -31
+    r: 33
+    type: FLAME_THROWER
+  - q: -31
+    r: 34
+    type: GATLING_TOWER
+  - q: -31
+    r: 35
+    type: spawnpoint
+- id: season1_17_1783706535
+  name: Indy / Renaissance
+  life: 16.0
+  hex_map:
+  - q: -25
+    r: 12
+    type: empty
+  - q: -25
+    r: 13
+    type: empty
+  - q: -25
+    r: 14
+    type: empty
+  - q: -25
+    r: 15
+    type: empty
+  - q: -26
+    r: 12
+    type: empty
+  - q: -26
+    r: 13
+    type: RIFLE_TOWER
+  - q: -26
+    r: 14
+    type: RIFLE_TOWER
+  - q: -26
+    r: 15
+    type: FLAME_THROWER
+  - q: -26
+    r: 16
+    type: empty
+  - q: -26
+    r: 17
+    type: empty
+  - q: -27
+    r: 12
+    type: empty
+  - q: -27
+    r: 13
+    type: ICE_TOWER
+  - q: -27
+    r: 14
+    type: castle
+  - q: -27
+    r: 16
+    type: FLAME_THROWER
+  - q: -27
+    r: 17
+    type: RIFLE_TOWER
+  - q: -27
+    r: 18
+    type: empty
+  - q: -28
+    r: 12
+    type: empty
+  - q: -28
+    r: 13
+    type: FLAME_THROWER
+  - q: -28
+    r: 14
+    type: empty
+  - q: -28
+    r: 15
+    type: GATLING_TOWER
+  - q: -28
+    r: 16
+    type: empty
+  - q: -28
+    r: 17
+    type: empty
+  - q: -28
+    r: 18
+    type: ICE_TOWER
+  - q: -28
+    r: 19
+    type: empty
+  - q: -29
+    r: 12
+    type: empty
+  - q: -29
+    r: 13
+    type: FLAME_THROWER
+  - q: -29
+    r: 14
+    type: empty
+  - q: -29
+    r: 15
+    type: RIFLE_TOWER
+  - q: -29
+    r: 16
+    type: empty
+  - q: -29
+    r: 17
+    type: GATLING_TOWER
+  - q: -29
+    r: 18
+    type: empty
+  - q: -29
+    r: 19
+    type: FLAME_THROWER
+  - q: -29
+    r: 20
+    type: empty
+  - q: -30
+    r: 13
+    type: empty
+  - q: -30
+    r: 14
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -30
+    r: 15
+    type: empty
+  - q: -30
+    r: 16
+    type: empty
+  - q: -30
+    r: 17
+    type: GATLING_TOWER
+  - q: -30
+    r: 18
+    type: empty
+  - q: -30
+    r: 19
+    type: RIFLE_TOWER
+  - q: -30
+    r: 20
+    type: empty
+  - q: -31
+    r: 12
+    type: spawnpoint
+  - q: -31
+    r: 13
+    type: RIFLE_TOWER
+  - q: -31
+    r: 14
+    type: empty
+  - q: -31
+    r: 15
+    type: RIFLE_TOWER
+  - q: -31
+    r: 16
+    type: RIFLE_TOWER
+  - q: -31
+    r: 17
+    type: ICE_TOWER
+  - q: -31
+    r: 18
+    type: empty
+  - q: -31
+    r: 19
+    type: FLAME_THROWER
+  - q: -31
+    r: 20
+    type: empty
+  - q: -32
+    r: 13
+    type: empty
+  - q: -32
+    r: 14
+    type: FLAME_THROWER
+  - q: -32
+    r: 15
+    type: empty
+  - q: -32
+    r: 16
+    type: empty
+  - q: -32
+    r: 17
+    type: empty
+  - q: -32
+    r: 18
+    type: empty
+  - q: -32
+    r: 19
+    type: GATLING_TOWER
+  - q: -32
+    r: 20
+    type: empty
+  - q: -33
+    r: 14
+    type: empty
+  - q: -33
+    r: 15
+    type: RIFLE_TOWER
+  - q: -33
+    r: 16
+    type: GATLING_TOWER
+  - q: -33
+    r: 17
+    type: FLAME_THROWER
+  - q: -33
+    r: 18
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -33
+    r: 19
+    type: RIFLE_TOWER
+  - q: -33
+    r: 20
+    type: empty
+  - q: -34
+    r: 15
+    type: empty
+  - q: -34
+    r: 16
+    type: empty
+  - q: -34
+    r: 17
+    type: empty
+  - q: -34
+    r: 18
+    type: empty
+  - q: -34
+    r: 19
+    type: empty
+  - q: -34
+    r: 20
+    type: empty
+- id: season1_20_1783706538
+  name: 'Arrow Bronze (len: 8)'
+  life: 13.0
+  hex_map:
+  - q: -1
+    r: -27
+    type: ARROW_TOWER
+  - q: -1
+    r: -28
+    type: ARROW_TOWER
+  - q: -1
+    r: -29
+    type: FIRE_TOWER
+  - q: 0
+    r: -26
+    type: ARROW_TOWER
+  - q: 0
+    r: -27
+    type: empty
+  - q: 0
+    r: -28
+    type: empty
+  - q: 0
+    r: -29
+    type: empty
+  - q: 0
+    r: -30
+    type: castle
+  - q: 1
+    r: -27
+    type: empty
+  - q: 1
+    r: -28
+    type:
+      select: last
+      type: FIRE_TOWER
+  - q: 1
+    r: -29
+    type:
+      select: last
+      type: ARROW_TOWER
+  - q: 1
+    r: -30
+    type:
+      select: last
+      type: FIRE_TOWER
+  - q: 2
+    r: -27
+    type: ARROW_TOWER
+  - q: 2
+    r: -28
+    type: empty
+  - q: 2
+    r: -29
+    type: empty
+  - q: 2
+    r: -30
+    type: empty
+  - q: 2
+    r: -31
+    type: spawnpoint
+  - q: 3
+    r: -30
+    type: ARROW_TOWER
+  - q: 3
+    r: -31
+    type: ARROW_TOWER
+- id: season1_23_1783706541
+  name: Full Heavy Medieval
+  life: 28.0
+  hex_map:
+  - q: 27
+    r: -10
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 27
+    r: -11
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 27
+    r: -12
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 27
+    r: -13
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 27
+    r: -14
+    type: ICE_TOWER
+  - q: 28
+    r: -10
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 28
+    r: -11
+    type: empty
+  - q: 28
+    r: -12
+    type: empty
+  - q: 28
+    r: -13
+    type: empty
+  - q: 28
+    r: -14
+    type: empty
+  - q: 28
+    r: -15
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 29
+    r: -10
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 29
+    r: -11
+    type: empty
+  - q: 29
+    r: -12
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 29
+    r: -13
+    type: ICE_TOWER
+  - q: 29
+    r: -14
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 29
+    r: -15
+    type: empty
+  - q: 29
+    r: -16
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 30
+    r: -10
+    type: ICE_TOWER
+  - q: 30
+    r: -11
+    type: empty
+  - q: 30
+    r: -12
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 30
+    r: -13
+    type: empty
+  - q: 30
+    r: -14
+    type: spawnpoint
+  - q: 30
+    r: -15
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 30
+    r: -16
+    type: empty
+  - q: 30
+    r: -17
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 31
+    r: -10
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 31
+    r: -11
+    type: empty
+  - q: 31
+    r: -12
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 31
+    r: -13
+    type: empty
+  - q: 31
+    r: -14
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 31
+    r: -15
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 31
+    r: -16
+    type: empty
+  - q: 31
+    r: -17
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 32
+    r: -10
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 32
+    r: -11
+    type: empty
+  - q: 32
+    r: -12
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 32
+    r: -13
+    type: empty
+  - q: 32
+    r: -14
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 32
+    r: -15
+    type: castle
+  - q: 32
+    r: -16
+    type: empty
+  - q: 32
+    r: -17
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 33
+    r: -11
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 33
+    r: -12
+    type: empty
+  - q: 33
+    r: -13
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 33
+    r: -14
+    type: empty
+  - q: 33
+    r: -15
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 33
+    r: -16
+    type: ICE_TOWER
+  - q: 33
+    r: -17
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 34
+    r: -12
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 34
+    r: -13
+    type: empty
+  - q: 34
+    r: -14
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 34
+    r: -15
+    type: empty
+  - q: 34
+    r: -16
+    type: empty
+  - q: 34
+    r: -17
+    type: empty
+  - q: 34
+    r: -18
+    type: ICE_TOWER
+  - q: 35
+    r: -13
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 35
+    r: -14
+    type: empty
+  - q: 35
+    r: -15
+    type: ICE_TOWER
+  - q: 35
+    r: -16
+    type: HEAVY_TOWER
+  - q: 35
+    r: -17
+    type: HEAVY_TOWER
+  - q: 35
+    r: -18
+    type: empty
+  - q: 35
+    r: -19
+    type: HEAVY_TOWER
+  - q: 36
+    r: -14
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 36
+    r: -15
+    type: empty
+  - q: 36
+    r: -16
+    type: empty
+  - q: 36
+    r: -17
+    type: empty
+  - q: 36
+    r: -18
+    type: empty
+  - q: 36
+    r: -19
+    type: HEAVY_TOWER
+  - q: 37
+    r: -15
+    type: ICE_TOWER
+  - q: 37
+    r: -16
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 37
+    r: -17
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: 37
+    r: -18
+    type: HEAVY_TOWER
+  - q: 37
+    r: -19
+    type: HEAVY_TOWER
+- id: season1_24_1783706542
+  name: Full Heavy
+  life: 23.0
+  hex_map:
+  - q: 27
+    r: -1
+    type: HEAVY_TOWER
+  - q: 27
+    r: 0
+    type: HEAVY_TOWER
+  - q: 27
+    r: 1
+    type: HEAVY_TOWER
+  - q: 27
     r: 2
     type: HEAVY_TOWER
-  - q: 4
+  - q: 27
+    r: 3
+    type: HEAVY_TOWER
+  - q: 28
+    r: -1
+    type: empty
+  - q: 28
     r: -2
     type: HEAVY_TOWER
-  - q: 4
+  - q: 28
+    r: 0
+    type: empty
+  - q: 28
+    r: 1
+    type: empty
+  - q: 28
+    r: 2
+    type: empty
+  - q: 28
+    r: 3
+    type: castle
+  - q: 29
+    r: -1
+    type: HEAVY_TOWER
+  - q: 29
+    r: -2
+    type: empty
+  - q: 29
     r: -3
+    type: HEAVY_TOWER
+  - q: 29
+    r: 0
+    type: HEAVY_TOWER
+  - q: 29
+    r: 1
+    type: HEAVY_TOWER
+  - q: 29
+    r: 2
+    type: HEAVY_TOWER
+  - q: 29
+    r: 3
+    type: BOILING_OIL
+  - q: 29
+    r: 4
+    type: HEAVY_TOWER
+  - q: 30
+    r: -1
     type: spawnpoint
+  - q: 30
+    r: -2
+    type: HEAVY_TOWER
+  - q: 30
+    r: -3
+    type: empty
+  - q: 30
+    r: -4
+    type: HEAVY_TOWER
+  - q: 30
+    r: 0
+    type: empty
+  - q: 30
+    r: 1
+    type: empty
+  - q: 30
+    r: 2
+    type: empty
+  - q: 30
+    r: 3
+    type: empty
+  - q: 30
+    r: 4
+    type: HEAVY_TOWER
+  - q: 31
+    r: -1
+    type: HEAVY_TOWER
+  - q: 31
+    r: -2
+    type: HEAVY_TOWER
+  - q: 31
+    r: -3
+    type: empty
+  - q: 31
+    r: -4
+    type: HEAVY_TOWER
+  - q: 31
+    r: 0
+    type: HEAVY_TOWER
+  - q: 31
+    r: 1
+    type: HEAVY_TOWER
+  - q: 31
+    r: 2
+    type: HEAVY_TOWER
+  - q: 31
+    r: 3
+    type: empty
+  - q: 31
+    r: 4
+    type: HEAVY_TOWER
+  - q: 32
+    r: -1
+    type: empty
+  - q: 32
+    r: -2
+    type: empty
+  - q: 32
+    r: -3
+    type: empty
+  - q: 32
+    r: -4
+    type: HEAVY_TOWER
+  - q: 32
+    r: 0
+    type: empty
+  - q: 32
+    r: 1
+    type: empty
+  - q: 32
+    r: 2
+    type: empty
+  - q: 32
+    r: 3
+    type: TAR_TOWER
+  - q: 33
+    r: -1
+    type: HEAVY_TOWER
+  - q: 33
+    r: -2
+    type: HEAVY_TOWER
+  - q: 33
+    r: -3
+    type: BOILING_OIL
+  - q: 33
+    r: -4
+    type: HEAVY_TOWER
+  - q: 33
+    r: 0
+    type: HEAVY_TOWER
+  - q: 33
+    r: 1
+    type: HEAVY_TOWER
+  - q: 33
+    r: 2
+    type: HEAVY_TOWER
+- id: season1_56_1783706549
+  name: Late Bronze
+  life: 13.0
+  hex_map:
+  - q: -43
+    r: 16
+    type: spawnpoint
+  - q: -43
+    r: 17
+    type: empty
+  - q: -43
+    r: 18
+    type: empty
+  - q: -43
+    r: 19
+    type: empty
+  - q: -43
+    r: 20
+    type: ARROW_TOWER
+  - q: -44
+    r: 15
+    type: ARROW_TOWER
+  - q: -44
+    r: 16
+    type: ARROW_TOWER
+  - q: -44
+    r: 17
+    type: FIRE_TOWER
+  - q: -44
+    r: 18
+    type: BALLISTA_TOWER
+  - q: -44
+    r: 19
+    type:
+      type: SPIKE_TRAP
+      select: random
+  - q: -44
+    r: 20
+    type: empty
+  - q: -44
+    r: 21
+    type: BALLISTA_TOWER
+  - q: -45
+    r: 15
+    type: castle
+  - q: -45
+    r: 16
+    type: empty
+  - q: -45
+    r: 17
+    type: empty
+  - q: -45
+    r: 18
+    type: empty
+  - q: -45
+    r: 19
+    type: empty
+  - q: -45
+    r: 20
+    type: empty
+  - q: -45
+    r: 21
+    type: FIRE_TOWER
+  - q: -46
+    r: 16
+    type: ARROW_TOWER
+  - q: -46
+    r: 17
+    type: FIRE_TOWER
+  - q: -46
+    r: 18
+    type: BALLISTA_TOWER
+  - q: -46
+    r: 19
+    type: BALLISTA_TOWER
+  - q: -46
+    r: 20
+    type: ARROW_TOWER
+  - q: -46
+    r: 21
+    type: SPIKE_TRAP
+- id: season1_62_1783706551
+  name: Mixed Iron/Bronze
+  life: 16.0
+  hex_map:
+  - q: -1
+    r: -41
+    type: CATAPULTS
+  - q: -1
+    r: -42
+    type: spawnpoint
+  - q: -1
+    r: -43
+    type: empty
+  - q: -1
+    r: -44
+    type: FIRE_TOWER
+  - q: -1
+    r: -45
+    type: ARROW_TOWER
+  - q: -1
+    r: -46
+    type: empty
+  - q: -1
+    r: -47
+    type: CATAPULTS
+  - q: -2
+    r: -41
+    type: CATAPULTS
+  - q: -2
+    r: -42
+    type: ARBELESTE_TOWER
+  - q: -2
+    r: -43
+    type: empty
+  - q: -2
+    r: -44
+    type: CATAPULTS
+  - q: -2
+    r: -45
+    type: empty
+  - q: -2
+    r: -46
+    type: CATAPULTS
+  - q: -3
+    r: -41
+    type: CATAPULTS
+  - q: -3
+    r: -42
+    type: ARBELESTE_TOWER
+  - q: -3
+    r: -43
+    type: empty
+  - q: -3
+    r: -44
+    type: empty
+  - q: -3
+    r: -45
+    type: BALLISTA_TOWER
+  - q: -4
+    r: -42
+    type: CATAPULTS
+  - q: -4
+    r: -43
+    type: CATAPULTS
+  - q: -4
+    r: -44
+    type: BALLISTA_TOWER
+  - q: 0
+    r: -43
+    type: BALLISTA_TOWER
+  - q: 0
+    r: -44
+    type: FIRE_TOWER
+  - q: 0
+    r: -45
+    type: castle
+  - q: 0
+    r: -46
+    type: FIRE_TOWER
+  - q: 0
+    r: -47
+    type: empty
+  - q: 0
+    r: -48
+    type: FIRE_TOWER
+  - q: 1
+    r: -43
+    type: FIRE_TOWER
+  - q: 1
+    r: -44
+    type: empty
+  - q: 1
+    r: -45
+    type: empty
+  - q: 1
+    r: -46
+    type: FIRE_TOWER
+  - q: 1
+    r: -47
+    type: empty
+  - q: 1
+    r: -48
+    type: BALLISTA_TOWER
+  - q: 2
+    r: -43
+    type: BALLISTA_TOWER
+  - q: 2
+    r: -44
+    type: empty
+  - q: 2
+    r: -45
+    type: ARROW_TOWER
+  - q: 2
+    r: -46
+    type: ARROW_TOWER
+  - q: 2
+    r: -47
+    type: empty
+  - q: 2
+    r: -48
+    type: ARROW_TOWER
+  - q: 3
+    r: -44
+    type: FIRE_TOWER
+  - q: 3
+    r: -45
+    type: empty
+  - q: 3
+    r: -46
+    type: empty
+  - q: 3
+    r: -47
+    type: empty
+  - q: 3
+    r: -48
+    type: ARROW_TOWER
+  - q: 4
+    r: -45
+    type: BALLISTA_TOWER
+  - q: 4
+    r: -46
+    type: FIRE_TOWER
+  - q: 4
+    r: -47
+    type: FIRE_TOWER
+  - q: 4
+    r: -48
+    type: ARROW_TOWER
+- id: season2_13_1783706565
+  name: S2 Gempire
+  life: 38.0
+  hex_map:
+  - q: -10
+    r: 17
+    type: RADAR_TOWER
+  - q: -10
+    r: 18
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -10
+    r: 19
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -10
+    r: 20
+    type: empty
+  - q: -10
+    r: 21
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -10
+    r: 22
+    type:
+      type: ICE_TOWER
+      select: random
+  - q: -10
+    r: 23
+    type: empty
+  - q: -10
+    r: 24
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -10
+    r: 25
+    type: empty
+  - q: -10
+    r: 26
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -10
+    r: 27
+    type: empty
+  - q: -11
+    r: 19
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -11
+    r: 20
+    type: empty
+  - q: -11
+    r: 21
+    type: ANTI_AIR_TOWER
+  - q: -11
+    r: 22
+    type: castle
+  - q: -11
+    r: 23
+    type: empty
+  - q: -11
+    r: 24
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -11
+    r: 25
+    type: empty
+  - q: -11
+    r: 26
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -11
+    r: 27
+    type: empty
+  - q: -12
+    r: 20
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -12
+    r: 21
+    type: empty
+  - q: -12
+    r: 22
+    type: ANTI_AIR_TOWER
+  - q: -12
+    r: 23
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -12
+    r: 24
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -12
+    r: 25
+    type: empty
+  - q: -12
+    r: 26
+    type:
+      type: LASER_TOWER
+      select: random
+  - q: -12
+    r: 27
+    type: empty
+  - q: -12
+    r: 28
+    type: SHOCK_TOWER
+  - q: -13
+    r: 21
+    type: FLAME_THROWER
+  - q: -13
+    r: 22
+    type: empty
+  - q: -13
+    r: 23
+    type: empty
+  - q: -13
+    r: 24
+    type: empty
+  - q: -13
+    r: 25
+    type: empty
+  - q: -13
+    r: 26
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -13
+    r: 27
+    type: empty
+  - q: -14
+    r: 22
+    type: COLD_TOWER
+  - q: -14
+    r: 23
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -14
+    r: 24
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -14
+    r: 25
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -14
+    r: 26
+    type: COLD_TOWER
+  - q: -14
+    r: 27
+    type: empty
+  - q: -15
+    r: 24
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -15
+    r: 25
+    type: empty
+  - q: -15
+    r: 26
+    type: empty
+  - q: -15
+    r: 27
+    type: empty
+  - q: -15
+    r: 28
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -16
+    r: 24
+    type: FLAME_THROWER
+  - q: -16
+    r: 25
+    type: empty
+  - q: -16
+    r: 26
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -16
+    r: 27
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -16
+    r: 28
+    type: LASER_TOWER
+  - q: -16
+    r: 29
+    type: spawnpoint
+  - q: -17
+    r: 25
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -17
+    r: 26
+    type: empty
+  - q: -17
+    r: 27
+    type: empty
+  - q: -17
+    r: 28
+    type: empty
+  - q: -17
+    r: 29
+    type: empty
+  - q: -18
+    r: 26
+    type: COLD_TOWER
+  - q: -4
+    r: 15
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -4
+    r: 16
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -4
+    r: 17
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -4
+    r: 18
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -4
+    r: 19
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -4
+    r: 20
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -4
+    r: 21
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -4
+    r: 22
+    type: COLD_TOWER
+  - q: -5
+    r: 15
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -5
+    r: 16
+    type: empty
+  - q: -5
+    r: 17
+    type: empty
+  - q: -5
+    r: 18
+    type: empty
+  - q: -5
+    r: 19
+    type: empty
+  - q: -5
+    r: 20
+    type: empty
+  - q: -5
+    r: 21
+    type: empty
+  - q: -5
+    r: 22
+    type: empty
+  - q: -5
+    r: 23
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -6
+    r: 15
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -6
+    r: 16
+    type: empty
+  - q: -6
+    r: 17
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -6
+    r: 18
+    type: COLD_TOWER
+  - q: -6
+    r: 19
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -6
+    r: 20
+    type: FLAME_THROWER
+  - q: -6
+    r: 21
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -6
+    r: 22
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -6
+    r: 23
+    type: empty
+  - q: -6
+    r: 24
+    type: LASER_TOWER
+  - q: -7
+    r: 15
+    type: COLD_TOWER
+  - q: -7
+    r: 16
+    type: empty
+  - q: -7
+    r: 17
+    type: RADAR_TOWER
+  - q: -7
+    r: 18
+    type: empty
+  - q: -7
+    r: 19
+    type: empty
+  - q: -7
+    r: 20
+    type: empty
+  - q: -7
+    r: 21
+    type: empty
+  - q: -7
+    r: 22
+    type: empty
+  - q: -7
+    r: 23
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -7
+    r: 24
+    type: empty
+  - q: -7
+    r: 25
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -8
+    r: 16
+    type: empty
+  - q: -8
+    r: 17
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -8
+    r: 18
+    type: empty
+  - q: -8
+    r: 19
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -8
+    r: 20
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -8
+    r: 21
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -8
+    r: 22
+    type: COLD_TOWER
+  - q: -8
+    r: 23
+    type: empty
+  - q: -8
+    r: 24
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -8
+    r: 25
+    type: empty
+  - q: -8
+    r: 26
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -9
+    r: 16
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -9
+    r: 17
+    type: empty
+  - q: -9
+    r: 18
+    type: empty
+  - q: -9
+    r: 19
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -9
+    r: 20
+    type: empty
+  - q: -9
+    r: 21
+    type: empty
+  - q: -9
+    r: 22
+    type: empty
+  - q: -9
+    r: 23
+    type:
+      type: RADAR_TOWER
+      select: random
+  - q: -9
+    r: 24
+    type: empty
+  - q: -9
+    r: 25
+    type:
+      type: ANTI_AIR_TOWER
+      select: random
+  - q: -9
+    r: 26
+    type: empty
+  - q: -9
+    r: 27
+    type: COLD_TOWER
+- id: season2_25_1783706569
+  name: S2 Wicked$Kingdom
+  life: 38.0
+  hex_map:
+  - q: -1
+    r: -15
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -1
+    r: -16
+    type: empty
+  - q: -1
+    r: -17
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -1
+    r: -18
+    type: empty
+  - q: -1
+    r: -19
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -1
+    r: -20
+    type: empty
+  - q: -1
+    r: -21
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -1
+    r: -22
+    type: RADAR_TOWER
+  - q: -1
+    r: -23
+    type: empty
+  - q: -1
+    r: -24
+    type: RADAR_TOWER
+  - q: -2
+    r: -15
+    type: RADAR_TOWER
+  - q: -2
+    r: -16
+    type: empty
+  - q: -2
+    r: -17
+    type: GATLING_TOWER
+  - q: -2
+    r: -18
+    type: empty
+  - q: -2
+    r: -19
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: -2
+    r: -20
+    type: empty
+  - q: -2
+    r: -21
+    type: RADAR_TOWER
+  - q: -2
+    r: -22
+    type: RADAR_TOWER
+  - q: -2
+    r: -23
+    type: empty
+  - q: -3
+    r: -15
+    type: GATLING_TOWER
+  - q: -3
+    r: -16
+    type: empty
+  - q: -3
+    r: -17
+    type: empty
+  - q: -3
+    r: -18
+    type: RADAR_TOWER
+  - q: -3
+    r: -19
+    type: empty
+  - q: -3
+    r: -20
+    type: COLD_TOWER
+  - q: -3
+    r: -21
+    type: GATLING_TOWER
+  - q: -3
+    r: -22
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -3
+    r: -23
+    type: empty
+  - q: -4
+    r: -15
+    type: RADAR_TOWER
+  - q: -4
+    r: -16
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: -4
+    r: -17
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -4
+    r: -18
+    type: RADAR_TOWER
+  - q: -4
+    r: -19
+    type: empty
+  - q: -4
+    r: -20
+    type: empty
+  - q: -4
+    r: -21
+    type: empty
+  - q: -4
+    r: -22
+    type: empty
+  - q: -5
+    r: -18
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: -5
+    r: -19
+    type: RADAR_TOWER
+  - q: -5
+    r: -20
+    type: GATLING_TOWER
+  - q: -5
+    r: -21
+    type: RADAR_TOWER
+  - q: 0
+    r: -15
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: 0
+    r: -16
+    type: empty
+  - q: 0
+    r: -17
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 0
+    r: -18
+    type: empty
+  - q: 0
+    r: -19
+    type: RADAR_TOWER
+  - q: 0
+    r: -20
+    type: empty
+  - q: 0
+    r: -21
+    type: GATLING_TOWER
+  - q: 0
+    r: -22
+    type: spawnpoint
+  - q: 0
+    r: -23
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 0
+    r: -24
+    type: empty
+  - q: 0
+    r: -25
+    type: GATLING_TOWER
+  - q: 1
+    r: -16
+    type: RADAR_TOWER
+  - q: 1
+    r: -17
+    type: empty
+  - q: 1
+    r: -18
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 1
+    r: -19
+    type: empty
+  - q: 1
+    r: -20
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 1
+    r: -21
+    type: empty
+  - q: 1
+    r: -22
+    type:
+      type: ICE_TOWER
+      select: random
+  - q: 1
+    r: -23
+    type: empty
+  - q: 1
+    r: -24
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: 1
+    r: -25
+    type: empty
+  - q: 1
+    r: -26
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 2
+    r: -17
+    type: GATLING_TOWER
+  - q: 2
+    r: -18
+    type: empty
+  - q: 2
+    r: -19
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: 2
+    r: -20
+    type: empty
+  - q: 2
+    r: -21
+    type: RADAR_TOWER
+  - q: 2
+    r: -22
+    type: empty
+  - q: 2
+    r: -23
+    type: empty
+  - q: 2
+    r: -24
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 2
+    r: -25
+    type: empty
+  - q: 2
+    r: -26
+    type: RADAR_TOWER
+  - q: 3
+    r: -18
+    type: COLD_TOWER
+  - q: 3
+    r: -19
+    type: empty
+  - q: 3
+    r: -20
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 3
+    r: -21
+    type: empty
+  - q: 3
+    r: -22
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: 3
+    r: -23
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 3
+    r: -24
+    type: RADAR_TOWER
+  - q: 3
+    r: -25
+    type: empty
+  - q: 3
+    r: -26
+    type: GATLING_TOWER
+  - q: 3
+    r: -27
+    type: castle
+  - q: 4
+    r: -19
+    type: RADAR_TOWER
+  - q: 4
+    r: -20
+    type: empty
+  - q: 4
+    r: -21
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 4
+    r: -22
+    type: empty
+  - q: 4
+    r: -23
+    type: empty
+  - q: 4
+    r: -24
+    type: empty
+  - q: 4
+    r: -25
+    type: empty
+  - q: 4
+    r: -26
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 4
+    r: -27
+    type: empty
+  - q: 5
+    r: -20
+    type: GATLING_TOWER
+  - q: 5
+    r: -21
+    type: empty
+  - q: 5
+    r: -22
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 5
+    r: -23
+    type: GATLING_TOWER
+  - q: 5
+    r: -24
+    type:
+      type: COLD_TOWER
+      select: random
+  - q: 5
+    r: -25
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 5
+    r: -26
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: 5
+    r: -27
+    type: empty
+  - q: 6
+    r: -21
+    type:
+      type: FLAME_THROWER
+      select: random
+  - q: 6
+    r: -22
+    type: empty
+  - q: 6
+    r: -23
+    type: empty
+  - q: 6
+    r: -24
+    type: empty
+  - q: 6
+    r: -25
+    type: empty
+  - q: 6
+    r: -26
+    type: empty
+  - q: 6
+    r: -27
+    type: empty
+  - q: 7
+    r: -22
+    type: RADAR_TOWER
+  - q: 7
+    r: -23
+    type: RADAR_TOWER
+  - q: 7
+    r: -24
+    type: RADAR_TOWER
+  - q: 7
+    r: -25
+    type: RADAR_TOWER
+  - q: 7
+    r: -26
+    type: RADAR_TOWER
+- id: season2_3_1783706570
+  name: Full Gatling
+  life: 58.0
+  hex_map:
+  - q: 10
+    r: -16
+    type: GATLING_TOWER
+  - q: 10
+    r: -17
+    type: empty
+  - q: 10
+    r: -18
+    type: ICE_TOWER
+  - q: 10
+    r: -19
+    type: empty
+  - q: 10
+    r: -20
+    type: GATLING_TOWER
+  - q: 10
+    r: -21
+    type: empty
+  - q: 10
+    r: -22
+    type: GATLING_TOWER
+  - q: 10
+    r: -23
+    type: empty
+  - q: 10
+    r: -24
+    type: GATLING_TOWER
+  - q: 11
+    r: -17
+    type: ICE_TOWER
+  - q: 11
+    r: -18
+    type: GATLING_TOWER
+  - q: 11
+    r: -19
+    type: empty
+  - q: 11
+    r: -20
+    type: SHOCK_TOWER
+  - q: 11
+    r: -21
+    type: empty
+  - q: 11
+    r: -22
+    type: ICE_TOWER
+  - q: 11
+    r: -23
+    type: empty
+  - q: 11
+    r: -24
+    type: GATLING_TOWER
+  - q: 12
+    r: -18
+    type: GATLING_TOWER
+  - q: 12
+    r: -19
+    type: empty
+  - q: 12
+    r: -20
+    type: GATLING_TOWER
+  - q: 12
+    r: -21
+    type: empty
+  - q: 12
+    r: -22
+    type: GATLING_TOWER
+  - q: 12
+    r: -23
+    type: empty
+  - q: 12
+    r: -24
+    type: GATLING_TOWER
+  - q: 13
+    r: -19
+    type: castle
+  - q: 13
+    r: -20
+    type: SHOCK_TOWER
+  - q: 13
+    r: -21
+    type: empty
+  - q: 13
+    r: -22
+    type: FLAME_THROWER
+  - q: 13
+    r: -23
+    type: empty
+  - q: 13
+    r: -24
+    type: GATLING_TOWER
+  - q: 14
+    r: -20
+    type: GATLING_TOWER
+  - q: 14
+    r: -21
+    type: empty
+  - q: 14
+    r: -22
+    type: GATLING_TOWER
+  - q: 14
+    r: -23
+    type: empty
+  - q: 14
+    r: -24
+    type: ICE_TOWER
+  - q: 15
+    r: -21
+    type: GATLING_TOWER
+  - q: 15
+    r: -22
+    type: empty
+  - q: 15
+    r: -23
+    type: empty
+  - q: 15
+    r: -24
+    type: GATLING_TOWER
+  - q: 16
+    r: -22
+    type: GATLING_TOWER
+  - q: 16
+    r: -23
+    type: ICE_TOWER
+  - q: 16
+    r: -24
+    type: GATLING_TOWER
+  - q: 17
+    r: -22
+    type: empty
+  - q: 2
+    r: -12
+    type: GATLING_TOWER
+  - q: 2
+    r: -13
+    type: ICE_TOWER
+  - q: 2
+    r: -14
+    type: GATLING_TOWER
+  - q: 2
+    r: -15
+    type: GATLING_TOWER
+  - q: 2
+    r: -16
+    type: GATLING_TOWER
+  - q: 3
+    r: -12
+    type: GATLING_TOWER
+  - q: 3
+    r: -13
+    type: empty
+  - q: 3
+    r: -14
+    type: empty
+  - q: 3
+    r: -15
+    type: empty
+  - q: 3
+    r: -16
+    type: empty
+  - q: 3
+    r: -17
+    type: GATLING_TOWER
+  - q: 4
+    r: -12
+    type: GATLING_TOWER
+  - q: 4
+    r: -13
+    type: empty
+  - q: 4
+    r: -14
+    type: GATLING_TOWER
+  - q: 4
+    r: -15
+    type: GATLING_TOWER
+  - q: 4
+    r: -16
+    type: GATLING_TOWER
+  - q: 4
+    r: -17
+    type: empty
+  - q: 4
+    r: -18
+    type: GATLING_TOWER
+  - q: 5
+    r: -12
+    type: GATLING_TOWER
+  - q: 5
+    r: -13
+    type: empty
+  - q: 5
+    r: -14
+    type: ICE_TOWER
+  - q: 5
+    r: -15
+    type: empty
+  - q: 5
+    r: -16
+    type: empty
+  - q: 5
+    r: -17
+    type: empty
+  - q: 5
+    r: -18
+    type: GATLING_TOWER
+  - q: 5
+    r: -19
+    type: ICE_TOWER
+  - q: 6
+    r: -13
+    type: empty
+  - q: 6
+    r: -14
+    type: GATLING_TOWER
+  - q: 6
+    r: -15
+    type: empty
+  - q: 6
+    r: -16
+    type: GATLING_TOWER
+  - q: 6
+    r: -17
+    type: ICE_TOWER
+  - q: 6
+    r: -18
+    type: GATLING_TOWER
+  - q: 6
+    r: -19
+    type: GATLING_TOWER
+  - q: 6
+    r: -20
+    type: GATLING_TOWER
+  - q: 7
+    r: -13
+    type: empty
+  - q: 7
+    r: -14
+    type: GATLING_TOWER
+  - q: 7
+    r: -15
+    type: empty
+  - q: 7
+    r: -16
+    type: GATLING_TOWER
+  - q: 7
+    r: -17
+    type: empty
+  - q: 7
+    r: -18
+    type: empty
+  - q: 7
+    r: -19
+    type: empty
+  - q: 7
+    r: -20
+    type: empty
+  - q: 7
+    r: -21
+    type: GATLING_TOWER
+  - q: 8
+    r: -13
+    type: empty
+  - q: 8
+    r: -14
+    type: FLAME_THROWER
+  - q: 8
+    r: -15
+    type: empty
+  - q: 8
+    r: -16
+    type: GATLING_TOWER
+  - q: 8
+    r: -17
+    type: empty
+  - q: 8
+    r: -18
+    type: FLAME_THROWER
+  - q: 8
+    r: -19
+    type: GATLING_TOWER
+  - q: 8
+    r: -20
+    type: ICE_TOWER
+  - q: 8
+    r: -21
+    type: empty
+  - q: 8
+    r: -22
+    type: COLD_TOWER
+  - q: 9
+    r: -14
+    type: spawnpoint
+  - q: 9
+    r: -15
+    type: GATLING_TOWER
+  - q: 9
+    r: -16
+    type: empty
+  - q: 9
+    r: -17
+    type: empty
+  - q: 9
+    r: -18
+    type: SHOCK_TOWER
+  - q: 9
+    r: -19
+    type: empty
+  - q: 9
+    r: -20
+    type: empty
+  - q: 9
+    r: -21
+    type: FLAME_THROWER
+  - q: 9
+    r: -22
+    type: empty
+  - q: 9
+    r: -23
+    type: GATLING_TOWER
+- id: season2_66_1783706573
+  name: Big Bronze
+  life: 13.0
+  hex_map:
+  - q: -20
+    r: -7
+    type: SPIKE_TRAP
+  - q: -20
+    r: -8
+    type: ARROW_TOWER
+  - q: -20
+    r: -9
+    type: SPIKE_TRAP
+  - q: -21
+    r: -10
+    type: empty
+  - q: -21
+    r: -11
+    type: empty
+  - q: -21
+    r: -6
+    type: ARROW_TOWER
+  - q: -21
+    r: -7
+    type: empty
+  - q: -21
+    r: -8
+    type: empty
+  - q: -21
+    r: -9
+    type: empty
+  - q: -22
+    r: -10
+    type: ARROW_TOWER
+  - q: -22
+    r: -11
+    type: castle
+  - q: -22
+    r: -5
+    type: empty
+  - q: -22
+    r: -6
+    type: empty
+  - q: -22
+    r: -7
+    type:
+      type: ARROW_TOWER
+      select: random
+  - q: -22
+    r: -8
+    type: ARROW_TOWER
+  - q: -22
+    r: -9
+    type: ARROW_TOWER
+  - q: -23
+    r: -10
+    type:
+      type: ARROW_TOWER
+      select: random
+  - q: -23
+    r: -11
+    type:
+      type: ARROW_TOWER
+      select: last
+  - q: -23
+    r: -12
+    type: empty
+  - q: -23
+    r: -4
+    type: empty
+  - q: -23
+    r: -5
+    type: ARROW_TOWER
+  - q: -23
+    r: -6
+    type: SPIKE_TRAP
+  - q: -23
+    r: -7
+    type:
+      type: ARROW_TOWER
+      select: random
+  - q: -23
+    r: -8
+    type: spawnpoint
+  - q: -23
+    r: -9
+    type:
+      type: ARROW_TOWER
+      select: last
+  - q: -24
+    r: -10
+    type:
+      type: SPIKE_TRAP
+      select: last
+  - q: -24
+    r: -11
+    type: ARROW_TOWER
+  - q: -24
+    r: -4
+    type: empty
+  - q: -24
+    r: -5
+    type: SPIKE_TRAP
+  - q: -24
+    r: -6
+    type:
+      type: ARROW_TOWER
+      select: random
+  - q: -24
+    r: -7
+    type:
+      type: SPIKE_TRAP
+      select: last
+  - q: -24
+    r: -8
+    type: empty
+  - q: -24
+    r: -9
+    type: empty
+  - q: -25
+    r: -10
+    type: FIRE_TOWER
+  - q: -25
+    r: -4
+    type: empty
+  - q: -25
+    r: -5
+    type: ARROW_TOWER
+  - q: -25
+    r: -6
+    type:
+      type: ARROW_TOWER
+      select: last
+  - q: -25
+    r: -7
+    type:
+      type: ARROW_TOWER
+      select: last
+  - q: -25
+    r: -8
+    type:
+      type: FIRE_TOWER
+      select: last
+  - q: -25
+    r: -9
+    type: empty
+  - q: -26
+    r: -4
+    type: empty
+  - q: -26
+    r: -5
+    type: SPIKE_TRAP
+  - q: -26
+    r: -6
+    type: ARROW_TOWER
+  - q: -26
+    r: -7
+    type:
+      type: ARROW_TOWER
+      select: last
+  - q: -26
+    r: -8
+    type: empty
+  - q: -26
+    r: -9
+    type: ARROW_TOWER
+  - q: -27
+    r: -4
+    type: empty
+  - q: -27
+    r: -5
+    type: empty
+  - q: -27
+    r: -6
+    type: empty
+  - q: -27
+    r: -7
+    type: empty
+  - q: -27
+    r: -8
+    type: ARROW_TOWER
+- id: season2_6_1783706578
+  name: Mixed
+  life: 28.0
+  hex_map:
+  - q: 17
+    r: 23
+    type: SHOCK_TOWER
+  - q: 17
+    r: 24
+    type: SHOCK_TOWER
+  - q: 17
+    r: 25
+    type: FLAME_THROWER
+  - q: 17
+    r: 26
+    type: FLAME_THROWER
+  - q: 17
+    r: 27
+    type: FLAME_THROWER
+  - q: 17
+    r: 28
+    type: SHOCK_TOWER
+  - q: 18
+    r: 22
+    type: SHOCK_TOWER
+  - q: 18
+    r: 23
+    type: empty
+  - q: 18
+    r: 24
+    type: empty
+  - q: 18
+    r: 25
+    type: empty
+  - q: 18
+    r: 26
+    type: empty
+  - q: 18
+    r: 27
+    type: empty
+  - q: 18
+    r: 28
+    type: SHOCK_TOWER
+  - q: 19
+    r: 21
+    type: FLAME_THROWER
+  - q: 19
+    r: 22
+    type: empty
+  - q: 19
+    r: 23
+    type: SHOCK_TOWER
+  - q: 19
+    r: 24
+    type: FLAME_THROWER
+  - q: 19
+    r: 25
+    type: SHOCK_TOWER
+  - q: 19
+    r: 26
+    type: FLAME_THROWER
+  - q: 19
+    r: 27
+    type: empty
+  - q: 19
+    r: 28
+    type: FLAME_THROWER
+  - q: 20
+    r: 20
+    type: SHOCK_TOWER
+  - q: 20
+    r: 21
+    type: empty
+  - q: 20
+    r: 22
+    type: FLAME_THROWER
+  - q: 20
+    r: 23
+    type: empty
+  - q: 20
+    r: 24
+    type: empty
+  - q: 20
+    r: 25
+    type: empty
+  - q: 20
+    r: 26
+    type: SHOCK_TOWER
+  - q: 20
+    r: 27
+    type: empty
+  - q: 20
+    r: 28
+    type: FLAME_THROWER
+  - q: 21
+    r: 19
+    type: FLAME_THROWER
+  - q: 21
+    r: 20
+    type: empty
+  - q: 21
+    r: 21
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 21
+    r: 22
+    type: empty
+  - q: 21
+    r: 23
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 21
+    r: 24
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 21
+    r: 25
+    type: empty
+  - q: 21
+    r: 26
+    type: FLAME_THROWER
+  - q: 21
+    r: 27
+    type: empty
+  - q: 21
+    r: 28
+    type: FLAME_THROWER
+  - q: 22
+    r: 17
+    type: castle
+  - q: 22
+    r: 18
+    type: SHOCK_TOWER
+  - q: 22
+    r: 19
+    type: empty
+  - q: 22
+    r: 20
+    type: GATLING_TOWER
+  - q: 22
+    r: 21
+    type: empty
+  - q: 22
+    r: 22
+    type: COLD_TOWER
+  - q: 22
+    r: 23
+    type: spawnpoint
+  - q: 22
+    r: 24
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 22
+    r: 25
+    type: empty
+  - q: 22
+    r: 26
+    type: SHOCK_TOWER
+  - q: 22
+    r: 27
+    type: empty
+  - q: 22
+    r: 28
+    type: SHOCK_TOWER
+  - q: 23
+    r: 17
+    type: empty
+  - q: 23
+    r: 18
+    type: FLAME_THROWER
+  - q: 23
+    r: 19
+    type: empty
+  - q: 23
+    r: 20
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 23
+    r: 21
+    type: empty
+  - q: 23
+    r: 22
+    type: empty
+  - q: 23
+    r: 23
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 23
+    r: 24
+    type: empty
+  - q: 23
+    r: 25
+    type: FLAME_THROWER
+  - q: 23
+    r: 26
+    type: empty
+  - q: 23
+    r: 27
+    type: SHOCK_TOWER
+  - q: 24
+    r: 17
+    type: empty
+  - q: 24
+    r: 18
+    type: SHOCK_TOWER
+  - q: 24
+    r: 19
+    type: empty
+  - q: 24
+    r: 20
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 24
+    r: 21
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 24
+    r: 22
+    type:
+      type: GATLING_TOWER
+      select: random
+  - q: 24
+    r: 23
+    type: empty
+  - q: 24
+    r: 24
+    type: FLAME_THROWER
+  - q: 24
+    r: 25
+    type: empty
+  - q: 24
+    r: 26
+    type: SHOCK_TOWER
+  - q: 25
+    r: 16
+    type: ICE_TOWER
+  - q: 25
+    r: 17
+    type: empty
+  - q: 25
+    r: 18
+    type: FLAME_THROWER
+  - q: 25
+    r: 19
+    type: empty
+  - q: 25
+    r: 20
+    type: empty
+  - q: 25
+    r: 21
+    type: empty
+  - q: 25
+    r: 22
+    type: empty
+  - q: 25
+    r: 23
+    type: FLAME_THROWER
+  - q: 25
+    r: 24
+    type: empty
+  - q: 25
+    r: 25
+    type: FLAME_THROWER
+  - q: 26
+    r: 16
+    type: ICE_TOWER
+  - q: 26
+    r: 17
+    type: empty
+  - q: 26
+    r: 18
+    type: SHOCK_TOWER
+  - q: 26
+    r: 19
+    type: FLAME_THROWER
+  - q: 26
+    r: 20
+    type: SHOCK_TOWER
+  - q: 26
+    r: 21
+    type: FLAME_THROWER
+  - q: 26
+    r: 22
+    type: SHOCK_TOWER
+  - q: 26
+    r: 23
+    type: empty
+  - q: 26
+    r: 24
+    type: FLAME_THROWER
+  - q: 27
+    r: 16
+    type: ICE_TOWER
+  - q: 27
+    r: 17
+    type: empty
+  - q: 27
+    r: 18
+    type: empty
+  - q: 27
+    r: 19
+    type: empty
+  - q: 27
+    r: 20
+    type: empty
+  - q: 27
+    r: 21
+    type: empty
+  - q: 27
+    r: 22
+    type: empty
+  - q: 27
+    r: 23
+    type: FLAME_THROWER
+  - q: 28
+    r: 16
+    type: ICE_TOWER
+  - q: 28
+    r: 17
+    type: FLAME_THROWER
+  - q: 28
+    r: 18
+    type: GATLING_TOWER
+  - q: 28
+    r: 19
+    type: FLAME_THROWER
+  - q: 28
+    r: 20
+    type: FLAME_THROWER
+  - q: 28
+    r: 21
+    type: FLAME_THROWER
+  - q: 28
+    r: 22
+    type: SHOCK_TOWER
+- id: season2_72_1783706583
+  name: Big Mixed
+  life: 23.0
+  hex_map:
+  - q: -28
+    r: 15
+    type: TAR_TOWER
+  - q: -28
+    r: 16
+    type: BOILING_OIL
+  - q: -28
+    r: 17
+    type: TAR_TOWER
+  - q: -28
+    r: 18
+    type: CANNON_TOWER
+  - q: -28
+    r: 19
+    type: BOILING_OIL
+  - q: -28
+    r: 20
+    type: TAR_TOWER
+  - q: -28
+    r: 21
+    type: BOILING_OIL
+  - q: -29
+    r: 14
+    type: HEAVY_TOWER
+  - q: -29
+    r: 15
+    type: empty
+  - q: -29
+    r: 16
+    type: empty
+  - q: -29
+    r: 17
+    type: empty
+  - q: -29
+    r: 18
+    type: empty
+  - q: -29
+    r: 19
+    type: empty
+  - q: -29
+    r: 20
+    type: empty
+  - q: -29
+    r: 21
+    type: empty
+  - q: -29
+    r: 22
+    type: CANNON_TOWER
+  - q: -30
+    r: 14
+    type: HEAVY_TOWER
+  - q: -30
+    r: 15
+    type: empty
+  - q: -30
+    r: 16
+    type: HEAVY_TOWER
+  - q: -30
+    r: 17
+    type: CANNON_TOWER
+  - q: -30
+    r: 18
+    type: CANNON_TOWER
+  - q: -30
+    r: 19
+    type: BOILING_OIL
+  - q: -30
+    r: 20
+    type: HEAVY_TOWER
+  - q: -30
+    r: 21
+    type: TAR_TOWER
+  - q: -30
+    r: 22
+    type: empty
+  - q: -30
+    r: 23
+    type: HEAVY_TOWER
+  - q: -31
+    r: 14
+    type: TAR_TOWER
+  - q: -31
+    r: 15
+    type: empty
+  - q: -31
+    r: 16
+    type: HEAVY_TOWER
+  - q: -31
+    r: 17
+    type: empty
+  - q: -31
+    r: 18
+    type: empty
+  - q: -31
+    r: 19
+    type: empty
+  - q: -31
+    r: 20
+    type: empty
+  - q: -31
+    r: 21
+    type: empty
+  - q: -31
+    r: 22
+    type: empty
+  - q: -31
+    r: 23
+    type: TAR_TOWER
+  - q: -32
+    r: 14
+    type: TAR_TOWER
+  - q: -32
+    r: 15
+    type: empty
+  - q: -32
+    r: 16
+    type: CANNON_TOWER
+  - q: -32
+    r: 17
+    type: empty
+  - q: -32
+    r: 18
+    type:
+      type: CANNON_TOWER
+      select: random
+  - q: -32
+    r: 19
+    type:
+      type: CANNON_TOWER
+      select: random
+  - q: -32
+    r: 20
+    type: TAR_TOWER
+  - q: -32
+    r: 21
+    type:
+      type: CANNON_TOWER
+      select: random
+  - q: -32
+    r: 22
+    type: TAR_TOWER
+  - q: -32
+    r: 23
+    type: CANNON_TOWER
+  - q: -33
+    r: 15
+    type: HEAVY_TOWER
+  - q: -33
+    r: 16
+    type: empty
+  - q: -33
+    r: 17
+    type:
+      type: CANNON_TOWER
+      select: last
+  - q: -33
+    r: 18
+    type: empty
+  - q: -33
+    r: 19
+    type: empty
+  - q: -33
+    r: 20
+    type: empty
+  - q: -33
+    r: 21
+    type: empty
+  - q: -33
+    r: 22
+    type: empty
+  - q: -33
+    r: 23
+    type: empty
+  - q: -33
+    r: 24
+    type: empty
+  - q: -34
+    r: 16
+    type: CANNON_TOWER
+  - q: -34
+    r: 17
+    type: empty
+  - q: -34
+    r: 18
+    type: CANNON_TOWER
+  - q: -34
+    r: 19
+    type: BOILING_OIL
+  - q: -34
+    r: 20
+    type:
+      type: CANNON_TOWER
+      select: random
+  - q: -34
+    r: 21
+    type: CANNON_TOWER
+  - q: -34
+    r: 22
+    type:
+      type: HEAVY_TOWER
+      select: random
+  - q: -34
+    r: 23
+    type:
+      type: TAR_TOWER
+      select: last
+  - q: -34
+    r: 24
+    type: CANNON_TOWER
+  - q: -34
+    r: 25
+    type: empty
+  - q: -35
+    r: 18
+    type: empty
+  - q: -35
+    r: 19
+    type: empty
+  - q: -35
+    r: 20
+    type: castle
+  - q: -35
+    r: 22
+    type:
+      type: CANNON_TOWER
+      select: last
+  - q: -35
+    r: 23
+    type: empty
+  - q: -35
+    r: 24
+    type: empty
+  - q: -35
+    r: 25
+    type: empty
+  - q: -36
+    r: 23
+    type: spawnpoint
+  - q: -36
+    r: 24
+    type:
+      type: CANNON_TOWER
+      select: last
+  - q: -36
+    r: 25
+    type: BOILING_OIL
+- id: season2_73_1783706584
+  name: Almost Bronze
+  life: 13.0
+  hex_map:
+  - q: -28
+    r: -2
+    type: BALLISTA_TOWER
+  - q: -28
+    r: -3
+    type: BALLISTA_TOWER
+  - q: -28
+    r: -4
+    type: BALLISTA_TOWER
+  - q: -28
+    r: -5
+    type: castle
+  - q: -29
+    r: -1
+    type: empty
+  - q: -29
+    r: -2
+    type: empty
+  - q: -29
+    r: -3
+    type: empty
+  - q: -29
+    r: -4
+    type: empty
+  - q: -30
+    r: -1
+    type: ARROW_TOWER
+  - q: -30
+    r: -2
+    type: ARROW_TOWER
+  - q: -30
+    r: -3
+    type: ARROW_TOWER
+  - q: -30
+    r: -4
+    type: FIRE_TOWER
+  - q: -30
+    r: -5
+    type: ARROW_TOWER
+  - q: -30
+    r: -6
+    type: ARROW_TOWER
+  - q: -30
+    r: 0
+    type: empty
+  - q: -31
+    r: -1
+    type: empty
+  - q: -31
+    r: -2
+    type: empty
+  - q: -31
+    r: -3
+    type: empty
+  - q: -31
+    r: -4
+    type: empty
+  - q: -31
+    r: -5
+    type: empty
+  - q: -31
+    r: -6
+    type: ARROW_TOWER
+  - q: -31
+    r: 0
+    type: empty
+  - q: -32
+    r: -1
+    type:
+      type: FIRE_TOWER
+      select: last
+  - q: -32
+    r: -2
+    type: ARBELESTE_TOWER
+  - q: -32
+    r: -3
+    type: ARROW_TOWER
+  - q: -32
+    r: -4
+    type: ARROW_TOWER
+  - q: -32
+    r: -5
+    type: empty
+  - q: -32
+    r: -6
+    type: ARROW_TOWER
+  - q: -32
+    r: 0
+    type:
+      type: BALLISTA_TOWER
+      select: last
+  - q: -32
+    r: 1
+    type:
+      type: BALLISTA_TOWER
+      select: last
+  - q: -33
+    r: -1
+    type: empty
+  - q: -33
+    r: -2
+    type: empty
+  - q: -33
+    r: -3
+    type: empty
+  - q: -33
+    r: -4
+    type: empty
+  - q: -33
+    r: -5
+    type: ARROW_TOWER
+  - q: -33
+    r: 0
+    type: empty
+  - q: -33
+    r: 1
+    type: empty
+  - q: -33
+    r: 2
+    type: spawnpoint
+  - q: -34
+    r: -1
+    type: ARROW_TOWER
+  - q: -34
+    r: -2
+    type: ARROW_TOWER
+  - q: -34
+    r: -3
+    type: ARROW_TOWER
+  - q: -34
+    r: -4
+    type: ARROW_TOWER
+  - q: -34
+    r: 0
+    type:
+      type: BALLISTA_TOWER
+      select: last
+  - q: -34
+    r: 1
+    type:
+      type: BALLISTA_TOWER
+      select: last
+  - q: -34
+    r: 2
+    type:
+      type: ARBELESTE_TOWER
+      select: last
+- id: season2_74_1783706585
+  name: 'two towers (len: 1)'
+  life: 10.0
+  hex_map:
+  - q: -1
+    r: -32
+    type: SLING_TOWER
+  - q: 0
+    r: -32
+    type: spawnpoint
+  - q: 0
+    r: -33
+    type: castle
+  - q: 1
+    r: -33
+    type: BASIC_TOWER
+- id: season2_75_1783706586
+  name: Full Rifle
+  life: 16.0
+  hex_map:
+  - q: 10
+    r: -30
+    type: empty
+  - q: 10
+    r: -31
+    type: RIFLE_TOWER
+  - q: 10
+    r: -32
+    type: RIFLE_TOWER
+  - q: 10
+    r: -33
+    type: RIFLE_TOWER
+  - q: 10
+    r: -34
+    type: RIFLE_TOWER
+  - q: 10
+    r: -35
+    type: TAR_TOWER
+  - q: 10
+    r: -36
+    type: RIFLE_TOWER
+  - q: 10
+    r: -37
+    type: RIFLE_TOWER
+  - q: 10
+    r: -38
+    type: empty
+  - q: 11
+    r: -30
+    type: empty
+  - q: 11
+    r: -31
+    type: RIFLE_TOWER
+  - q: 11
+    r: -32
+    type: spawnpoint
+  - q: 11
+    r: -33
+    type: empty
+  - q: 11
+    r: -34
+    type: empty
+  - q: 11
+    r: -35
+    type: empty
+  - q: 11
+    r: -36
+    type: empty
+  - q: 11
+    r: -37
+    type: empty
+  - q: 11
+    r: -38
+    type: RIFLE_TOWER
+  - q: 11
+    r: -39
+    type: empty
+  - q: 12
+    r: -31
+    type: empty
+  - q: 12
+    r: -32
+    type: RIFLE_TOWER
+  - q: 12
+    r: -33
+    type: RIFLE_TOWER
+  - q: 12
+    r: -34
+    type: TAR_TOWER
+  - q: 12
+    r: -35
+    type: RIFLE_TOWER
+  - q: 12
+    r: -36
+    type: RIFLE_TOWER
+  - q: 12
+    r: -37
+    type: RIFLE_TOWER
+  - q: 12
+    r: -38
+    type: empty
+  - q: 12
+    r: -39
+    type: TAR_TOWER
+  - q: 12
+    r: -40
+    type: empty
+  - q: 13
+    r: -31
+    type: empty
+  - q: 13
+    r: -32
+    type: TAR_TOWER
+  - q: 13
+    r: -33
+    type: empty
+  - q: 13
+    r: -34
+    type: empty
+  - q: 13
+    r: -35
+    type: empty
+  - q: 13
+    r: -36
+    type: empty
+  - q: 13
+    r: -37
+    type: empty
+  - q: 13
+    r: -38
+    type: empty
+  - q: 13
+    r: -39
+    type: RIFLE_TOWER
+  - q: 13
+    r: -40
+    type: empty
+  - q: 14
+    r: -31
+    type: empty
+  - q: 14
+    r: -32
+    type: RIFLE_TOWER
+  - q: 14
+    r: -33
+    type: empty
+  - q: 14
+    r: -34
+    type: RIFLE_TOWER
+  - q: 14
+    r: -35
+    type: RIFLE_TOWER
+  - q: 14
+    r: -36
+    type: RIFLE_TOWER
+  - q: 14
+    r: -37
+    type: TAR_TOWER
+  - q: 14
+    r: -38
+    type: RIFLE_TOWER
+  - q: 14
+    r: -39
+    type: RIFLE_TOWER
+  - q: 14
+    r: -40
+    type: empty
+  - q: 15
+    r: -32
+    type: empty
+  - q: 15
+    r: -33
+    type: RIFLE_TOWER
+  - q: 15
+    r: -34
+    type: empty
+  - q: 15
+    r: -35
+    type: empty
+  - q: 15
+    r: -36
+    type: empty
+  - q: 15
+    r: -37
+    type: empty
+  - q: 15
+    r: -38
+    type: empty
+  - q: 15
+    r: -39
+    type: empty
+  - q: 15
+    r: -40
+    type: empty
+  - q: 15
+    r: -41
+    type: RIFLE_TOWER
+  - q: 16
+    r: -33
+    type: empty
+  - q: 16
+    r: -34
+    type: RIFLE_TOWER
+  - q: 16
+    r: -35
+    type: RIFLE_TOWER
+  - q: 16
+    r: -36
+    type: RIFLE_TOWER
+  - q: 16
+    r: -37
+    type: TAR_TOWER
+  - q: 16
+    r: -38
+    type: RIFLE_TOWER
+  - q: 16
+    r: -39
+    type: RIFLE_TOWER
+  - q: 16
+    r: -40
+    type: RIFLE_TOWER
+  - q: 16
+    r: -41
+    type: TAR_TOWER
+  - q: 17
+    r: -34
+    type: empty
+  - q: 17
+    r: -35
+    type: empty
+  - q: 17
+    r: -36
+    type: empty
+  - q: 17
+    r: -37
+    type: empty
+  - q: 17
+    r: -38
+    type: empty
+  - q: 17
+    r: -39
+    type: empty
+  - q: 17
+    r: -40
+    type: castle
+  - q: 9
+    r: -30
+    type: empty
+  - q: 9
+    r: -31
+    type: empty
+  - q: 9
+    r: -32
+    type: empty
+  - q: 9
+    r: -33
+    type: empty
+  - q: 9
+    r: -34
+    type: empty
+  - q: 9
+    r: -35
+    type: empty
+  - q: 9
+    r: -36
+    type: empty
+  - q: 9
+    r: -37
+    type: empty
+- id: season2_80_1783706589
+  name: Long Early
+  life: 23.0
+  hex_map:
+  - q: 10
+    r: 25
+    type: empty
+  - q: 10
+    r: 26
+    type: ARBELESTE_TOWER
+  - q: 10
+    r: 27
+    type: empty
+  - q: 10
+    r: 28
+    type: TAR_TOWER
+  - q: 10
+    r: 29
+    type: empty
+  - q: 10
+    r: 30
+    type: empty
+  - q: 10
+    r: 31
+    type: ARBELESTE_TOWER
+  - q: 10
+    r: 32
+    type: empty
+  - q: 11
+    r: 25
+    type: empty
+  - q: 11
+    r: 26
+    type: BOILING_OIL
+  - q: 11
+    r: 27
+    type: empty
+  - q: 11
+    r: 28
+    type: ARBELESTE_TOWER
+  - q: 11
+    r: 29
+    type: BOILING_OIL
+  - q: 11
+    r: 30
+    type: empty
+  - q: 11
+    r: 31
+    type: BOILING_OIL
+  - q: 11
+    r: 32
+    type: empty
+  - q: 12
+    r: 25
+    type: empty
+  - q: 12
+    r: 26
+    type: ARBELESTE_TOWER
+  - q: 12
+    r: 27
+    type: empty
+  - q: 12
+    r: 28
+    type: empty
+  - q: 12
+    r: 29
+    type: empty
+  - q: 12
+    r: 30
+    type: ARBELESTE_TOWER
+  - q: 12
+    r: 31
+    type: empty
+  - q: 13
+    r: 25
+    type: empty
+  - q: 13
+    r: 26
+    type: HEAVY_TOWER
+  - q: 13
+    r: 27
+    type: ARBELESTE_TOWER
+  - q: 13
+    r: 28
+    type: ARBELESTE_TOWER
+  - q: 13
+    r: 29
+    type: TAR_TOWER
+  - q: 13
+    r: 30
+    type: empty
+  - q: 14
+    r: 25
+    type: empty
+  - q: 14
+    r: 26
+    type: empty
+  - q: 14
+    r: 27
+    type: empty
+  - q: 14
+    r: 28
+    type: empty
+  - q: 14
+    r: 29
+    type: empty
+  - q: 6
+    r: 26
+    type: empty
+  - q: 6
+    r: 27
+    type: empty
+  - q: 6
+    r: 28
+    type: HEAVY_TOWER
+  - q: 6
+    r: 29
+    type: ARBELESTE_TOWER
+  - q: 6
+    r: 30
+    type: empty
+  - q: 6
+    r: 31
+    type: empty
+  - q: 6
+    r: 32
+    type: empty
+  - q: 6
+    r: 33
+    type: empty
+  - q: 7
+    r: 25
+    type: spawnpoint
+  - q: 7
+    r: 26
+    type: TAR_TOWER
+  - q: 7
+    r: 27
+    type: empty
+  - q: 7
+    r: 28
+    type: ARBELESTE_TOWER
+  - q: 7
+    r: 29
+    type: empty
+  - q: 7
+    r: 30
+    type: ARBELESTE_TOWER
+  - q: 7
+    r: 31
+    type: ARBELESTE_TOWER
+  - q: 7
+    r: 32
+    type: BOILING_OIL
+  - q: 7
+    r: 33
+    type: empty
+  - q: 8
+    r: 26
+    type: empty
+  - q: 8
+    r: 27
+    type: ARBELESTE_TOWER
+  - q: 8
+    r: 28
+    type: empty
+  - q: 8
+    r: 29
+    type: BOILING_OIL
+  - q: 8
+    r: 30
+    type: empty
+  - q: 8
+    r: 31
+    type: castle
+  - q: 8
+    r: 32
+    type: ARBELESTE_TOWER
+  - q: 8
+    r: 33
+    type: empty
+  - q: 9
+    r: 25
+    type: empty
+  - q: 9
+    r: 26
+    type: TAR_TOWER
+  - q: 9
+    r: 27
+    type: empty
+  - q: 9
+    r: 28
+    type: HEAVY_TOWER
+  - q: 9
+    r: 29
+    type: empty
+  - q: 9
+    r: 30
+    type: HEAVY_TOWER
+  - q: 9
+    r: 31
+    type: ARBELESTE_TOWER
+  - q: 9
+    r: 32
+    type: HEAVY_TOWER
+  - q: 9
+    r: 33
+    type: empty
+- id: season2_89_1783706594
+  name: '3 Towers (len: 6)'
+  life: 10.0
+  hex_map:
+  - q: 16
+    r: 34
+    type: castle
+  - q: 16
+    r: 35
+    type: empty
+  - q: 16
+    r: 36
+    type: empty
+  - q: 17
+    r: 34
+    type: SLING_TOWER
+  - q: 17
+    r: 36
+    type: empty
+  - q: 17
+    r: 37
+    type: SLING_TOWER
+  - q: 18
+    r: 35
+    type: empty
+  - q: 18
+    r: 36
+    type: SLING_TOWER
+  - q: 18
+    r: 37
+    type: spawnpoint
+  - q: 19
+    r: 35
+    type: empty
+  - q: 19
+    r: 36
+    type: empty
+- id: season2_92_1783706597
+  name: S2 Baumhaus
+  life: 16.0
+  hex_map:
+  - q: 35
+    r: 27
+    type: BALLISTA_TOWER
+  - q: 35
+    r: 29
+    type: ARROW_TOWER
+  - q: 35
+    r: 31
+    type: ARROW_TOWER
+  - q: 36
+    r: 25
+    type: CATAPULTS
+  - q: 36
+    r: 26
+    type: empty
+  - q: 36
+    r: 27
+    type: empty
+  - q: 36
+    r: 28
+    type: empty
+  - q: 36
+    r: 29
+    type: empty
+  - q: 36
+    r: 30
+    type: empty
+  - q: 36
+    r: 31
+    type: spawnpoint
+  - q: 37
+    r: 24
+    type: FIRE_TOWER
+  - q: 37
+    r: 25
+    type: empty
+  - q: 37
+    r: 26
+    type: BALLISTA_TOWER
+  - q: 37
+    r: 27
+    type: FIRE_TOWER
+  - q: 37
+    r: 28
+    type: ARROW_TOWER
+  - q: 37
+    r: 29
+    type:
+      type: FIRE_TOWER
+      select: random
+  - q: 37
+    r: 30
+    type: FIRE_TOWER
+  - q: 38
+    r: 24
+    type: ARROW_TOWER
+  - q: 38
+    r: 25
+    type: empty
+  - q: 38
+    r: 26
+    type: empty
+  - q: 38
+    r: 27
+    type: empty
+  - q: 38
+    r: 28
+    type: empty
+  - q: 38
+    r: 29
+    type: empty
+  - q: 38
+    r: 30
+    type: empty
+  - q: 39
+    r: 24
+    type: ARBELESTE_TOWER
+  - q: 39
+    r: 25
+    type: ARROW_TOWER
+  - q: 39
+    r: 26
+    type: ARBELESTE_TOWER
+  - q: 39
+    r: 27
+    type: ARROW_TOWER
+  - q: 39
+    r: 28
+    type: CATAPULTS
+  - q: 39
+    r: 29
+    type: ARBELESTE_TOWER
+  - q: 39
+    r: 30
+    type: empty
+  - q: 40
+    r: 24
+    type: empty
+  - q: 40
+    r: 25
+    type: empty
+  - q: 40
+    r: 26
+    type: empty
+  - q: 40
+    r: 27
+    type: empty
+  - q: 40
+    r: 28
+    type: empty
+  - q: 40
+    r: 29
+    type: empty
+  - q: 41
+    r: 23
+    type: empty
+  - q: 41
+    r: 24
+    type: ARROW_TOWER
+  - q: 41
+    r: 25
+    type: ARROW_TOWER
+  - q: 41
+    r: 26
+    type: CATAPULTS
+  - q: 41
+    r: 27
+    type: ARBELESTE_TOWER
+  - q: 41
+    r: 28
+    type: CATAPULTS
+  - q: 42
+    r: 23
+    type: empty
+  - q: 42
+    r: 24
+    type: empty
+  - q: 42
+    r: 25
+    type: empty
+  - q: 42
+    r: 26
+    type: empty
+  - q: 42
+    r: 27
+    type: empty
+  - q: 42
+    r: 28
+    type: castle
+- id: season2_96_1783706601
+  name: Only Arbaleste
+  life: 16.0
+  hex_map:
+  - q: -39
+    r: 44
+    type: spawnpoint
+  - q: -39
+    r: 45
+    type: empty
+  - q: -39
+    r: 46
+    type: empty
+  - q: -40
+    r: 42
+    type: ARBELESTE_TOWER
+  - q: -40
+    r: 43
+    type: ARBELESTE_TOWER
+  - q: -40
+    r: 44
+    type: ARBELESTE_TOWER
+  - q: -40
+    r: 45
+    type: ARBELESTE_TOWER
+  - q: -40
+    r: 46
+    type: ARBELESTE_TOWER
+  - q: -40
+    r: 47
+    type: empty
+  - q: -41
+    r: 42
+    type: ARBELESTE_TOWER
+  - q: -41
+    r: 43
+    type: empty
+  - q: -41
+    r: 44
+    type: empty
+  - q: -41
+    r: 45
+    type: empty
+  - q: -41
+    r: 46
+    type: empty
+  - q: -41
+    r: 47
+    type: ARBELESTE_TOWER
+  - q: -41
+    r: 48
+    type: empty
+  - q: -42
+    r: 42
+    type: ARBELESTE_TOWER
+  - q: -42
+    r: 43
+    type: empty
+  - q: -42
+    r: 44
+    type: ARBELESTE_TOWER
+  - q: -42
+    r: 45
+    type: ARBELESTE_TOWER
+  - q: -42
+    r: 46
+    type: ARBELESTE_TOWER
+  - q: -42
+    r: 47
+    type: empty
+  - q: -42
+    r: 48
+    type: ARBELESTE_TOWER
+  - q: -42
+    r: 49
+    type: empty
+  - q: -43
+    r: 42
+    type: ARBELESTE_TOWER
+  - q: -43
+    r: 43
+    type: empty
+  - q: -43
+    r: 44
+    type: ARBELESTE_TOWER
+  - q: -43
+    r: 45
+    type: empty
+  - q: -43
+    r: 46
+    type: castle
+  - q: -43
+    r: 47
+    type: ARBELESTE_TOWER
+  - q: -43
+    r: 48
+    type: empty
+  - q: -43
+    r: 49
+    type: ARBELESTE_TOWER
+  - q: -43
+    r: 50
+    type: empty
+  - q: -44
+    r: 42
+    type: ARBELESTE_TOWER
+  - q: -44
+    r: 43
+    type: empty
+  - q: -44
+    r: 44
+    type: ARBELESTE_TOWER
+  - q: -44
+    r: 45
+    type: empty
+  - q: -44
+    r: 46
+    type: ARBELESTE_TOWER
+  - q: -44
+    r: 47
+    type: ARBELESTE_TOWER
+  - q: -44
+    r: 48
+    type: empty
+  - q: -44
+    r: 49
+    type: ARBELESTE_TOWER
+  - q: -44
+    r: 50
+    type: empty
+  - q: -45
+    r: 43
+    type: ARBELESTE_TOWER
+  - q: -45
+    r: 44
+    type: empty
+  - q: -45
+    r: 45
+    type: ARBELESTE_TOWER
+  - q: -45
+    r: 46
+    type: empty
+  - q: -45
+    r: 47
+    type: empty
+  - q: -45
+    r: 48
+    type: empty
+  - q: -45
+    r: 49
+    type: ARBELESTE_TOWER
+  - q: -45
+    r: 50
+    type: empty
+  - q: -46
+    r: 44
+    type: ARBELESTE_TOWER
+  - q: -46
+    r: 45
+    type: empty
+  - q: -46
+    r: 46
+    type: ARBELESTE_TOWER
+  - q: -46
+    r: 47
+    type: ARBELESTE_TOWER
+  - q: -46
+    r: 48
+    type: ARBELESTE_TOWER
+  - q: -46
+    r: 49
+    type: ARBELESTE_TOWER
+  - q: -46
+    r: 50
+    type: empty
+  - q: -47
+    r: 45
+    type: ARBELESTE_TOWER
+  - q: -47
+    r: 46
+    type: empty
+  - q: -47
+    r: 47
+    type: empty
+  - q: -47
+    r: 48
+    type: empty
+  - q: -47
+    r: 49
+    type: empty
+  - q: -47
+    r: 50
+    type: empty
+  - q: -48
+    r: 46
+    type: ARBELESTE_TOWER
+  - q: -48
+    r: 47
+    type: ARBELESTE_TOWER
+  - q: -48
+    r: 48
+    type: ARBELESTE_TOWER
+- id: season2_97_1783706602
+  name: Weak Bronze
+  life: 13.0
+  hex_map:
+  - q: -38
+    r: 36
+    type: ARROW_TOWER
+  - q: -39
+    r: 35
+    type: DOUBLE_SLING_TOWER
+  - q: -39
+    r: 36
+    type: empty
+  - q: -39
+    r: 37
+    type: spawnpoint
+  - q: -40
+    r: 36
+    type: empty
+  - q: -40
+    r: 37
+    type: FIRE_TOWER
+  - q: -41
+    r: 36
+    type: DOUBLE_SLING_TOWER
+  - q: -41
+    r: 37
+    type: empty
+  - q: -42
+    r: 36
+    type: empty
+  - q: -42
+    r: 37
+    type: empty
+  - q: -43
+    r: 36
+    type: empty
+  - q: -43
+    r: 37
+    type: ARROW_TOWER
+  - q: -44
+    r: 36
+    type: DOUBLE_SLING_TOWER
+  - q: -44
+    r: 37
+    type: empty
+  - q: -45
+    r: 36
+    type: castle
+  - q: -45
+    r: 37
+    type: empty

@@ -21,6 +21,12 @@ data/prod/states
 data/prod/replays
 data/prod/admin_token
 data/prod/states/gameserver.db
+data/prod/bot_states/
+data/prod/gameserver.db
+data/prod/logs/
+data/prod/state.yaml
+data/prod/state.yaml.*
+data/prod/state.yaml__
 python_server/state*.yaml
 python_server/gameserver*.db
 ai_players/states/

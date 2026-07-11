@@ -291,7 +291,13 @@ class BattleService:
         eff_armour = critter.armour * (1.0 + critter.aura_armour_modifier)
         damage = max(1.0, shot.damage - eff_armour) if shot.damage > 0 else 0.0
         if damage > 0:
+            health_before = critter.health
             critter.health -= damage
+            critter.last_hit_sid = shot.source_sid
+            effective_damage = min(damage, health_before)
+            battle.tower_damage[shot.source_sid] = (
+                battle.tower_damage.get(shot.source_sid, 0.0) + effective_damage
+            )
         log.debug("[HIT] Critter cid=%d hit by sid=%d for %.1f damage (remaining health: %.1f)",
                   critter.cid, shot.source_sid, damage, critter.health)
 
@@ -308,6 +314,7 @@ class BattleService:
         if has_burn:
             critter.burn_remaining_ms = float(shot.effects.get("burn_duration", 3000.0))
             critter.burn_dps          = float(shot.effects.get("burn_dps", 1.0))
+            critter.burn_source_sid   = shot.source_sid
             log.debug("[BURN] Critter cid=%d burning for %.1f dps over %.0fms",
                       critter.cid, critter.burn_dps, critter.burn_remaining_ms)
 
@@ -325,13 +332,20 @@ class BattleService:
                 if dist <= splash_radius:
                     other_eff_armour = other.armour * (1.0 + other.aura_armour_modifier)
                     splash_dmg = max(1.0, shot.damage - other_eff_armour) if shot.damage > 0 else 0.0
+                    other_health_before = other.health
                     other.health -= splash_dmg
+                    other.last_hit_sid = shot.source_sid
+                    battle.tower_damage[shot.source_sid] = (
+                        battle.tower_damage.get(shot.source_sid, 0.0)
+                        + min(splash_dmg, other_health_before)
+                    )
                     if has_splash_slow:
                         other.slow_remaining_ms = float(shot.effects.get("slow_duration", 2000.0))
                         other.slow_speed = other.speed * float(shot.effects.get("slow_ratio", 0.5))
                     if has_splash_burn:
                         other.burn_remaining_ms = float(shot.effects.get("burn_duration", 3000.0))
                         other.burn_dps = float(shot.effects.get("burn_dps", 1.0))
+                        other.burn_source_sid = shot.source_sid
                     log.debug("[SPLASH] Critter cid=%d hit for %.1f dmg (dist=%.2f, slow=%s, burn=%s)",
                               other_cid, splash_dmg, dist, has_splash_slow, has_splash_burn)
 
@@ -401,13 +415,19 @@ class BattleService:
             # Calculate actual burn time (might be less than dt_ms if effect expires)
             burn_time_ms = min(dt_ms, critter.burn_remaining_ms)
             burn_damage = critter.burn_dps * (burn_time_ms / 1000.0)
-            
+
+            health_before = critter.health
             critter.health = max(0, critter.health - burn_damage)
             critter.burn_remaining_ms -= dt_ms
             critter.burn_remaining_ms = max(0.0, critter.burn_remaining_ms)
-            
+
             if burn_damage > 0:
-                log.debug("[BURN] Critter %d takes %.1f burn damage (remaining: %.0fms)", 
+                critter.last_hit_sid = critter.burn_source_sid
+                battle.tower_damage[critter.burn_source_sid] = (
+                    battle.tower_damage.get(critter.burn_source_sid, 0.0)
+                    + min(burn_damage, health_before)
+                )
+                log.debug("[BURN] Critter %d takes %.1f burn damage (remaining: %.0fms)",
                           critter.cid, burn_damage, critter.burn_remaining_ms)
         
         # Decrement slow effect timer
@@ -853,7 +873,7 @@ class BattleService:
         
         Attacker gains the capture resources, defender loses life.
         """
-        battle.removed_critters.append({"cid": critter.cid, "reason": "reached", "path_progress": critter.path_progress, "damage": critter.damage})
+        battle.removed_critters.append({"cid": critter.cid, "iid": critter.iid, "reason": "reached", "path_progress": critter.path_progress, "damage": critter.damage})
         battle.critters_reached += 1
         battle.critters_reached_slots += critter.slots
         # Remove critter from battle
@@ -896,8 +916,10 @@ class BattleService:
         Defender gains gold equal to the critter's value.
         Spawns child critters if spawn_on_death is configured.
         """
-        battle.removed_critters.append({"cid": critter.cid, "reason": "died", "path_progress": critter.path_progress, "value": critter.value})
+        battle.removed_critters.append({"cid": critter.cid, "iid": critter.iid, "reason": "died", "path_progress": critter.path_progress, "value": critter.value})
         battle.critters_killed += 1
+        if critter.last_hit_sid:
+            battle.tower_kills[critter.last_hit_sid] = battle.tower_kills.get(critter.last_hit_sid, 0) + 1
         try:
             from gameserver.network.handlers._core import _svc as _core_svc
             _s = _core_svc()

@@ -112,6 +112,14 @@ CREATE TABLE IF NOT EXISTS player_trophies (
     earned_at   INTEGER NOT NULL,
     PRIMARY KEY (uid, iid)
 );
+CREATE TABLE IF NOT EXISTS password_resets (
+    token       TEXT PRIMARY KEY,
+    uid         INTEGER NOT NULL,
+    expires_at  INTEGER NOT NULL,
+    used        INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS ix_password_resets_uid ON password_resets(uid);
 CREATE TABLE IF NOT EXISTS ai_battle_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -237,13 +245,14 @@ class Database:
         """Look up a user by UID."""
         assert self._conn is not None
         async with self._conn.execute(
-            "SELECT uid, username, email, empire_name FROM users WHERE uid = ?",
+            "SELECT uid, username, password_hash, email, empire_name FROM users WHERE uid = ?",
             (uid,),
         ) as cursor:
             row = await cursor.fetchone()
             if row is None:
                 return None
-            return {"uid": row[0], "username": row[1], "email": row[2], "empire_name": row[3]}
+            return {"uid": row[0], "username": row[1], "password_hash": row[2],
+                    "email": row[3], "empire_name": row[4]}
 
     async def get_user(self, username: str) -> dict[str, Any] | None:
         """Look up a user by username (case-insensitive)."""
@@ -283,6 +292,58 @@ class Database:
         await self._conn.execute(
             "UPDATE users SET password_hash = ? WHERE uid = ?",
             (password_hash, uid),
+        )
+        await self._conn.commit()
+
+    async def update_email(self, uid: int, email: str) -> None:
+        """Update the stored email for a user."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE users SET email = ? WHERE uid = ?",
+            (email, uid),
+        )
+        await self._conn.commit()
+
+    async def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        """Look up a user by email (exact match, empty emails never match)."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, username, email, empire_name FROM users "
+            "WHERE email = ? AND email != '' LIMIT 1",
+            (email,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {"uid": row[0], "username": row[1], "email": row[2], "empire_name": row[3]}
+
+    async def create_password_reset(self, token: str, uid: int, expires_at: int) -> None:
+        """Store a password reset token."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "INSERT INTO password_resets (token, uid, expires_at) VALUES (?, ?, ?)",
+            (token, uid, expires_at),
+        )
+        await self._conn.commit()
+
+    async def get_password_reset(self, token: str) -> dict[str, Any] | None:
+        """Look up a password reset token."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT token, uid, expires_at, used FROM password_resets WHERE token = ?",
+            (token,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {"token": row[0], "uid": row[1], "expires_at": row[2], "used": row[3]}
+
+    async def mark_password_reset_used(self, token: str) -> None:
+        """Mark a password reset token as used."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE password_resets SET used = 1 WHERE token = ?",
+            (token,),
         )
         await self._conn.commit()
 

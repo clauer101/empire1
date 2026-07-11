@@ -1,14 +1,18 @@
-"""Auth router — /api/auth/login, /api/auth/signup."""
+"""Auth router — /api/auth/login, /api/auth/signup, /api/auth/change-password,
+/api/auth/forgot-password, /api/auth/reset-password."""
 from __future__ import annotations
 
 import structlog
 from typing import Any, TYPE_CHECKING
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
-from gameserver.network.jwt_auth import create_token
-from gameserver.network.rest_models import LoginRequest, LoginResponse, SignupRequest, SignupResponse
+from gameserver.network.jwt_auth import create_token, get_current_uid
+from gameserver.network.rest_models import (
+    ChangeEmailRequest, ChangePasswordRequest, ForgotPasswordRequest, LoginRequest,
+    LoginResponse, ResetPasswordRequest, SignupRequest, SignupResponse,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -24,7 +28,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     empire_service = services.empire_service
 
     @router.post("/api/auth/login", response_model=LoginResponse)
-    @limiter.limit("30/minute")
+    @limiter.limit("120/minute")
     async def login(request: Request, body: LoginRequest) -> dict[str, Any]:
         from gameserver.network.handlers import _build_empire_summary, _build_session_state
         uid = await auth_service.login(body.username, body.password)
@@ -96,5 +100,38 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                     services.bot_detector.declare_bot(result)
             return {"success": True, "uid": result, "reason": ""}
         return {"success": False, "uid": 0, "reason": result}
+
+    @router.post("/api/auth/change-password")
+    @limiter.limit("10/minute")
+    async def change_password(request: Request, body: ChangePasswordRequest,
+                              uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        error = await auth_service.change_password(
+            uid, body.current_password, body.new_password)
+        if error:
+            return {"success": False, "error": error}
+        return {"success": True}
+
+    @router.post("/api/auth/change-email")
+    @limiter.limit("10/minute")
+    async def change_email(request: Request, body: ChangeEmailRequest,
+                           uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        error = await auth_service.change_email(uid, body.current_password, body.new_email)
+        if error:
+            return {"success": False, "error": error}
+        return {"success": True}
+
+    @router.post("/api/auth/forgot-password")
+    @limiter.limit("5/minute")
+    async def forgot_password(request: Request, body: ForgotPasswordRequest) -> dict[str, Any]:
+        await auth_service.request_password_reset(body.identifier)
+        return {"success": True}
+
+    @router.post("/api/auth/reset-password")
+    @limiter.limit("10/minute")
+    async def reset_password(request: Request, body: ResetPasswordRequest) -> dict[str, Any]:
+        error = await auth_service.reset_password(body.token, body.new_password)
+        if error:
+            return {"success": False, "error": error}
+        return {"success": True}
 
     return router

@@ -24,7 +24,7 @@ barbarians_aggressiveness:
   neolithic: 0.0012
   bronze: 0.0014
   iron: 0.0016
-  middle_ages: 0.0017
+  medieval: 0.0017
   renaissance: 0.0018
   industrial: 0.0019
   modern: 0.002
@@ -52,7 +52,7 @@ era_effects:
     travel_offset: 7200
     gold_offset: 0.7
     max_siege_construction_speed_modifier: 0.2
-  middle_ages:
+  medieval:
     travel_offset: 10800
     gold_offset: 1.9
     max_siege_construction_speed_modifier: 0.25
@@ -216,7 +216,7 @@ ai_generator:
     max_previous_era: 3
     min_next_era: 0
     max_next_era: 2
-  middle_ages:
+  medieval:
     min_waves: 9
     max_waves: 13
     min_slots: 11

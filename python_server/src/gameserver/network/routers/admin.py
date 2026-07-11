@@ -425,6 +425,22 @@ def make_router(services: "Services") -> APIRouter:
         await services.database._conn.commit()
         return {"ok": updated}
 
+    @router.put("/api/admin/users/{username}/email")
+    async def admin_update_email(username: str, body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        if services.database is None:
+            return {"ok": False, "error": "no database"}
+        from gameserver.network.auth import _EMAIL_RE
+        email = body.get("email", "").strip()
+        if email and not _EMAIL_RE.match(email):
+            return {"ok": False, "error": "invalid email format"}
+        assert services.database._conn is not None
+        async with services.database._conn.execute(
+            "UPDATE users SET email = ? WHERE username = ?", (email, username)
+        ) as cur:
+            updated = cur.rowcount > 0
+        await services.database._conn.commit()
+        return {"ok": updated}
+
     @router.put("/api/admin/users/{uid}/empire_name")
     async def admin_rename_empire(uid: int, body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
         if services.database is None:
@@ -524,20 +540,7 @@ def make_router(services: "Services") -> APIRouter:
                         visited.add(nb)
                         queue.append((nb, dist + 1))
 
-        TOWER_AGE: dict[str, str] = {
-            "BASIC_TOWER": "Stone Age", "SLING_TOWER": "Stone Age",
-            "DOUBLE_SLING_TOWER": "Neolithic", "SPIKE_TRAP": "Neolithic",
-            "ARROW_TOWER": "Bronze Age", "BALLISTA_TOWER": "Bronze Age", "FIRE_TOWER": "Bronze Age",
-            "CATAPULTS": "Iron Age", "ARBELESTE_TOWER": "Iron Age",
-            "TAR_TOWER": "Middle Ages", "HEAVY_TOWER": "Middle Ages", "BOILING_OIL": "Middle Ages",
-            "CANNON_TOWER": "Renaissance", "RIFLE_TOWER": "Renaissance",
-            "COLD_TOWER": "Renaissance", "ICE_TOWER": "Renaissance",
-            "FLAME_THROWER": "Industrial", "SHOCK_TOWER": "Industrial",
-            "PARALYZNG_TOWER": "Industrial", "NAPALM_THROWER": "Industrial",
-            "MG_TOWER": "Modern", "RAPID_FIRE_MG_BUNKER": "Modern",
-            "RADAR_TOWER": "Modern", "ANTI_AIR_TOWER": "Modern", "LASER_TOWER": "Modern",
-            "SNIPER_TOWER": "Future", "ROCKET_TOWER": "Future",
-        }
+        from gameserver.util.eras import ERA_LABELS_EN
 
         up = services.empire_service._upgrades
         tower_names: list[str] = []
@@ -555,7 +558,7 @@ def make_router(services: "Services") -> APIRouter:
             cost = float(item.costs.get("gold", 0))
             total_cost += cost
             tower_names.append(tile_type)
-            age = TOWER_AGE.get(tile_type, "Unknown")
+            age = ERA_LABELS_EN.get(item.era, "Unknown")
             age_counts[age] = age_counts.get(age, 0) + 1
 
         tower_counts = dict(_Counter(tower_names))
@@ -579,12 +582,12 @@ def make_router(services: "Services") -> APIRouter:
     @router.get("/api/admin/map-overview")
     async def admin_map_overview(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
         import yaml as _yaml
-        from collections import Counter as _Cnt, deque as _dq2
+        from collections import Counter as _Cnt
         assert services.empire_service is not None
 
-        HEX_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
         NON_TOWER = {"path", "castle", "spawnpoint", "empty", "", None}
 
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
         from gameserver.engine.power_service import defense_power as _defense_power
         from gameserver.models.empire import Empire as _Empire
 
@@ -609,28 +612,18 @@ def make_router(services: "Services") -> APIRouter:
                     tt = tt.get("type", "")
                 tile_map[(t["q"], t["r"])] = tt or ""
 
-            walkable = {pos for pos, tt in tile_map.items() if tt in ("path", "spawnpoint", "castle")}
-            start = next((pos for pos, tt in tile_map.items() if tt == "spawnpoint"), None)
-            goal  = next((pos for pos, tt in tile_map.items() if tt == "castle"), None)
-            path_length: int | None = None
-            if start and goal:
-                queue = _dq2([(start, 0)])
-                visited = {start}
-                while queue:
-                    pos, dist = queue.popleft()
-                    if pos == goal:
-                        path_length = dist
-                        break
-                    q, r = pos
-                    for dq, dr in HEX_DIRS:
-                        nb = (q + dq, r + dr)
-                        if nb not in visited and nb in walkable:
-                            visited.add(nb)
-                            queue.append((nb, dist + 1))
+            key_map = {f"{q},{r}": tt for (q, r), tt in tile_map.items()}
+            found_path = find_path_from_spawn_to_castle(key_map)
+            path_length = len(found_path) - 1 if found_path else None
 
             TOWER_AGE: dict[str, str] = {
                 iid: _ERA_LABELS_EN[era]
                 for era, iids in _STRUCTURE_ERAS
+                for iid in iids
+            }
+            TOWER_AGE_INDEX: dict[str, int] = {
+                iid: idx
+                for idx, (era, iids) in enumerate(_STRUCTURE_ERAS)
                 for iid in iids
             }
 
@@ -638,6 +631,7 @@ def make_router(services: "Services") -> APIRouter:
             tower_names: list[str] = []
             total_cost: float = 0.0
             age_counts: dict[str, int] = {}
+            max_era_index = -1
             for tt in tile_map.values():
                 if tt in NON_TOWER:
                     continue
@@ -649,6 +643,7 @@ def make_router(services: "Services") -> APIRouter:
                 tower_names.append(tt)
                 age = TOWER_AGE.get(tt, "Unknown")
                 age_counts[age] = age_counts.get(age, 0) + 1
+                max_era_index = max(max_era_index, TOWER_AGE_INDEX.get(tt, -1))
 
             num_towers = len(tower_names)
             age_pct = {
@@ -656,6 +651,7 @@ def make_router(services: "Services") -> APIRouter:
                 for age, cnt in age_counts.items()
             } if num_towers else {}
             power = _defense_power_for_tiles(tiles, life, path_length=path_length)
+            max_era = _STRUCTURE_ERAS[max_era_index][0] if max_era_index >= 0 else None
 
             return {
                 "source":      source,
@@ -670,6 +666,8 @@ def make_router(services: "Services") -> APIRouter:
                 "age_counts":  age_counts,
                 "age_pct":     age_pct,
                 "power":       power,
+                "max_era":       _ERA_LABELS_EN.get(max_era, "Unknown") if max_era else "Unknown",
+                "max_era_index": max_era_index,
             }
 
         results: list[dict[str, Any]] = []

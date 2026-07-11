@@ -70,7 +70,6 @@ class GameLoop:
 
         self._database: Any | None = None
         self._season_snapshot_done: bool = False
-        self._wipe_done: bool = False
 
         # --- Debug / monitoring counters ---
         self.tick_count: int = 0
@@ -258,6 +257,7 @@ class GameLoop:
             is_season_reset_triggered, set_season_reset_triggered, set_season,
             clear_end_criterion, parse_iso_utc, set_this_season_start_date,
             is_season_snapshot_done, set_season_snapshot_done,
+            is_season_wipe_done, set_season_wipe_done,
         )
         now = datetime.now(timezone.utc)
         season_start = parse_iso_utc(get_next_season_start())
@@ -287,11 +287,11 @@ class GameLoop:
         # season_leadtime). Fires once regardless of whether game_frozen is
         # already True (set by rally end above). Gated on _season_snapshot_done
         # so snapshot runs first, and on wipe not having happened yet.
-        if season_start is not None and self._gc is not None and not self._wipe_done:
+        if season_start is not None and self._gc is not None and not is_season_wipe_done():
             leadtime = get_next_season_leadtime(self._gc.season_leadtime)
             reset_at = parse_iso_utc(leadtime)
             if reset_at is not None and now >= reset_at:
-                self._wipe_done = True
+                set_season_wipe_done(True)
                 import time as _time
                 from gameserver.engine.global_state import set_season_wipe_time
                 set_season_wipe_time(_time.time())
@@ -323,7 +323,7 @@ class GameLoop:
                 set_this_season_start_date(season_start.isoformat())
                 set_season_reset_triggered(False)
                 set_season_snapshot_done(False)
-                self._wipe_done = False
+                set_season_wipe_done(False)
                 _log.info(
                     "New season started: season %d '%s'",
                     get_season_number(), get_season_title(),

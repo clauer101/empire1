@@ -1,6 +1,6 @@
-"""Time-accelerated maze/defense simulation using the REAL DefensePlanner.
+"""Time-accelerated maze/defense simulation using the REAL FrontierDefensePlanner.
 
-Runs the identical bot implementation (bot.planners.defense.DefensePlanner +
+Runs the identical bot implementation (bot.planners.defense_frontier.FrontierDefensePlanner +
 bot.defense_analysis) against an in-memory map, as if the defense strategy
 were permanently active. No game server involved: SimApi applies the
 planner's actions (save_map / buy_tile / upgrades / buildings) locally and
@@ -12,15 +12,12 @@ from __future__ import annotations
 from typing import Any
 
 from bot.planners.base import BotContext
-from bot.planners.comb_defense import CombDefensePlanner
-from bot.planners.defense import DefensePlanner
-from bot.planners.spiral_defense import SpiralDefensePlanner
+from bot.planners.defense_frontier import FrontierDefensePlanner
 
-# Selectable defense-build strategies (all share the Planner interface).
+# Selectable defense-build strategies (the Planner interface allows more than
+# one, but frontier is currently the only supported strategy).
 DEFENSE_STRATEGIES: dict[str, type] = {
-    "coverage": DefensePlanner,       # replay-driven serpentine (the default)
-    "spiral": SpiralDefensePlanner,   # simple concentric-ring spiral
-    "comb": CombDefensePlanner,       # space-filling boustrophedon comb
+    "frontier": FrontierDefensePlanner,   # corridor growth + spawn relocation
 }
 
 START_TILES = {"0,0": "castle", "0,1": "spawnpoint", "1,0": "empty"}
@@ -103,12 +100,27 @@ class SimApi:
 
 def _run_cycle(planner, api: "SimApi", items: dict, memory: dict, state: dict,
                structures: dict, tiles: dict, cycle: int, top_n: int) -> dict:
-    """Run exactly one DefensePlanner cycle and return its step record.
+    """Run exactly one FrontierDefensePlanner cycle and return its step record.
 
     The step always carries a `tiles` snapshot; callers that diff successive
     snapshots (simulate_defense) drop it when unchanged.
     """
     from bot.defense_analysis import bfs_path
+
+    # Next-level upgrade price per placed tower iid, using the server formula
+    # (base × (total_levels + 1)²) so the planner can weigh upgrades against
+    # tile purchases exactly like the live bot.
+    upgrade_bases = state.get("upgrade_base_by_iid", {})
+    placed_iids = {v.get("type") if isinstance(v, dict) else v
+                   for v in tiles.values()}
+    item_upgrade_prices = {}
+    for iid in placed_iids:
+        if iid not in structures:
+            continue
+        levels = state["item_upgrades"].get(iid, {})
+        total = sum(levels.values())
+        base = float(upgrade_bases.get(iid, 100.0))
+        item_upgrade_prices[iid] = base * (total + 1) ** 2
 
     strategy = {"type": "defense", "params": {},
                 "valid_until": "2099-01-01T00:00:00Z"}
@@ -117,6 +129,7 @@ def _run_cycle(planner, api: "SimApi", items: dict, memory: dict, state: dict,
         "tile_price": state["tile_price"],
         "tower_sell_refund": TOWER_SELL_REFUND,
         "item_upgrades": {k: dict(v) for k, v in state["item_upgrades"].items()},
+        "item_upgrade_prices": item_upgrade_prices,
         "buildings": dict(state["completed"]),
         "knowledge": {},
         "artifacts": [],
@@ -161,12 +174,12 @@ def simulate_defense(
     upgrade_base_by_iid: dict | None = None,
     top_n: int = 1,
     seed: int | None = None,
-    strategy: str = "coverage",
+    strategy: str = "frontier",
 ) -> dict[str, Any]:
     """Run `cycles` defense-planner cycles; return the step log + final map.
 
     Each cycle adds `gold_per_cycle` gold (the time acceleration) and asks the
-    real DefensePlanner for exactly one action, like the live bot loop.
+    real FrontierDefensePlanner for exactly one action, like the live bot loop.
 
     `seed` fixes the maze randomization (memory["maze_seed"]) for reproducible
     runs; None lets the planner draw one, like a live bot. The seed actually
@@ -192,7 +205,7 @@ def simulate_defense(
     # it, so the whole run is reproducible from `seed`.
     random.seed(maze_seed)
     memory: dict[str, Any] = {"maze_seed": maze_seed}
-    planner = DEFENSE_STRATEGIES.get(strategy, DefensePlanner)()
+    planner = DEFENSE_STRATEGIES.get(strategy, FrontierDefensePlanner)()
 
     steps: list[dict] = []
     last_snapshot: dict | None = None
@@ -230,7 +243,7 @@ def step_defense(
     upgrade_base_by_iid: dict | None = None,
     top_n: int = 1,
     seed: int | None = None,
-    strategy: str = "coverage",
+    strategy: str = "frontier",
 ) -> dict[str, Any]:
     """Run a SINGLE defense-planner cycle, resuming from caller-supplied state.
 
@@ -279,7 +292,7 @@ def step_defense(
 
     api = SimApi(tiles, structures, buildings, state, tile_params)
     items = {"structures": structures, "buildings": buildings, "knowledge": {}}
-    planner = DEFENSE_STRATEGIES.get(strategy, DefensePlanner)()
+    planner = DEFENSE_STRATEGIES.get(strategy, FrontierDefensePlanner)()
 
     step = _run_cycle(planner, api, items, memory, state, structures,
                       tiles, cycle, top_n)

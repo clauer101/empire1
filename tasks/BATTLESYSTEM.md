@@ -1,3 +1,5 @@
+> **Status: stale** — early German scratch note about cooperative attacks; not implemented.
+
 Die Battles sollen folgende neue funktion erhalten:
 Verschiedene user sollen gemeinsam einen defender angreifen können.
 

@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import random
 import time
 
 from bot.analyzer import ERA_RANK
@@ -20,9 +21,9 @@ from bot.api_client import ApiError
 from bot.army_building import next_skill, pick_ruler
 
 from .base import Action, BotContext, Option, cheapest_affordable
-from .defense import DefensePlanner
+from .defense_frontier import FrontierDefensePlanner
 
-_defense = DefensePlanner()
+_defense = FrontierDefensePlanner()
 
 FLOOR_BASE_TOWERS = 2
 FLOOR_TOWERS_PER_ERA = 2
@@ -55,6 +56,67 @@ def _has_econ_effect(item: dict) -> bool:
     return any(k in effects for k in ECON_EFFECTS)
 
 
+def _missing_tower_knowledge(ctx: BotContext) -> str | None:
+    """First unresearched knowledge requirement of an era-appropriate,
+    not-yet-unlocked tower.
+
+    A tower's era label (e.g. "iron") only means the empire's overall tech
+    progress reached that era, not that every tower of that era is actually
+    buildable — each tower also lists its own requirements (knowledge and/or
+    buildings). Without this check the bot can research the era-defining
+    knowledge and then, by sheer bad luck of the random research pool, never
+    pick up the extra techs a tower needs — leaving its maze stuck on
+    weaker, older towers indefinitely.
+
+    Only knowledge requirements are handled here (queued via the research
+    slot below); missing building requirements are left to the existing
+    build-queue logic (block 3) to avoid the two queues fighting over the
+    same item. Returns the requirement's iid, or None if every current-era
+    tower is unlocked or only building requirements remain.
+    """
+    structures = ctx.items.get("structures", {})
+    knowledge = ctx.items.get("knowledge", {})
+    own_rank = ERA_RANK.get(ctx.summary.get("era", "stone"), 0)
+    for item in structures.values():
+        if ERA_RANK.get(item.get("era", "stone"), 0) != own_rank:
+            continue
+        if ctx.is_unlocked(item):
+            continue
+        missing = [r for r in (item.get("requirements") or []) if r not in ctx.completed]
+        missing_knowledge = [r for r in missing if r in knowledge]
+        if missing_knowledge:
+            return missing_knowledge[0]
+    return None
+
+
+def _missing_main_branch_tech(ctx: BotContext) -> str | None:
+    """Lowest-era not-yet-started "main" branch knowledge, or None.
+
+    The tech tree has three branch lanes per knowledge.yaml: "main" (the
+    required backbone — things like TRIBAL_LEADERSHIP, which gates the ruler
+    system) and "left"/"right" (optional side branches). Without this check,
+    once an empire has advanced several eras there is almost always some
+    still-unresearched *current-era* tech, so the `current_era or candidates`
+    fallback in the research pool below never actually falls back — an old,
+    unresearched main-branch tech from an earlier era (e.g. TRIBAL_LEADERSHIP
+    at neolithic while the empire is already in iron) can then never be
+    picked, no matter how many cycles pass. Forcing the oldest missing main
+    tech first (regardless of era) guarantees every required tech eventually
+    gets researched; left/right techs stay in the normal opportunistic pool
+    below and may or may not ever be picked, by design.
+    """
+    knowledge_catalog = ctx.items.get("knowledge", {})
+    candidates = [
+        (iid, it) for iid, it in knowledge_catalog.items()
+        if iid not in ctx.started and (it.get("branch") or "main") == "main"
+        and ctx.is_unlocked(it)
+    ]
+    if not candidates:
+        return None
+    iid, _ = min(candidates, key=lambda c: ERA_RANK.get(c[1].get("era", "stone"), 0))
+    return iid
+
+
 def min_towers(ctx: BotContext) -> int:
     era_rank = ERA_RANK.get(ctx.summary.get("era", "stone"), 0)
     return FLOOR_BASE_TOWERS + FLOOR_TOWERS_PER_ERA * era_rank
@@ -80,8 +142,15 @@ def baseline_options(ctx: BotContext) -> list[Option]:
     """Emit baseline obligation options."""
     options: list[Option] = []
 
+    # Growth means "invest in neither attack nor defense" — a full defense
+    # loss still force-switches the active strategy to "defense" unconditionally
+    # (see run_bot.py's defense_lost handling, same as during attack), but the
+    # lighter reactive maze upkeep below (partial-breach response, tower floor)
+    # is itself a defense investment and must not fire while growth is active.
+    is_growth = ctx.strategy.get("type") == "growth"
+
     # 1a. Breach response
-    if ctx.memory.get("pending_breach"):
+    if not is_growth and ctx.memory.get("pending_breach"):
         base = _best_defense_option(ctx)
         ctx.memory["pending_breach"] = False
         if base:
@@ -90,19 +159,22 @@ def baseline_options(ctx: BotContext) -> list[Option]:
                 description=f"baseline defense (breach response): {base.description}",
                 run=base.run, price=base.price, gain=base.gain,
                 saves_for=base.saves_for, goal_meta=base.goal_meta))
+    elif is_growth:
+        ctx.memory["pending_breach"] = False
 
     # 1b. Tower floor
-    placed = placed_towers(ctx)
-    needed = min_towers(ctx)
-    if placed < needed:
-        base = _best_defense_option(ctx)
-        if base:
-            options.append(Option(
-                category="baseline", mandatory=True, priority=PRIO_TOWER_FLOOR,
-                description=f"baseline defense (towers {placed}/{needed}): "
-                            f"{base.description}",
-                run=base.run, price=base.price, gain=base.gain,
-                saves_for=base.saves_for, goal_meta=base.goal_meta))
+    if not is_growth:
+        placed = placed_towers(ctx)
+        needed = min_towers(ctx)
+        if placed < needed:
+            base = _best_defense_option(ctx)
+            if base:
+                options.append(Option(
+                    category="baseline", mandatory=True, priority=PRIO_TOWER_FLOOR,
+                    description=f"baseline defense (towers {placed}/{needed}): "
+                                f"{base.description}",
+                    run=base.run, price=base.price, gain=base.gain,
+                    saves_for=base.saves_for, goal_meta=base.goal_meta))
 
     # 1c. Claim ruler (free)
     ruler = ctx.summary.get("ruler") or {}
@@ -118,9 +190,20 @@ def baseline_options(ctx: BotContext) -> list[Option]:
 
     # 2. Research queue — always keep something researching
     if not ctx.summary.get("research_queue"):
-        # Resume paused items first (costs already paid, re-queueing is free)
+        # Resume paused items first (costs already paid, re-queueing is free).
+        # Must still be unlocked: a paused item's other requirement can remain
+        # unresearched indefinitely (e.g. STEEL needs IRON + ECONOMY; IRON done,
+        # ECONOMY never started), in which case resuming it fails every tick
+        # forever with no fallback — skip it and let the pool below pick
+        # something actually researchable instead. The server's item catalog
+        # (ctx.items) already excludes not-yet-unlocked items entirely, so an
+        # iid missing from it means unmet requirements — checking membership
+        # here (not ctx.is_unlocked on a `{}` fallback, which vacuously passes
+        # since an empty requirements set is always a subset) is what actually
+        # detects that.
+        knowledge_catalog = ctx.items.get("knowledge", {})
         paused = {iid: rem for iid, rem in (ctx.summary.get("knowledge") or {}).items()
-                  if rem and rem > 0}
+                  if rem and rem > 0 and iid in knowledge_catalog}
         if paused:
             resume_iid = min(paused, key=paused.__getitem__)  # most-progressed first
             options.append(Option(
@@ -129,16 +212,56 @@ def baseline_options(ctx: BotContext) -> list[Option]:
                 description=f"baseline research (resume) {resume_iid}",
                 run=lambda api, iid=resume_iid: api.build(iid)))
         else:
-            knowledge = ctx.items.get("knowledge", {})
-            econ_iid = cheapest_affordable(knowledge, ctx, _has_econ_effect,
-                                           respect_savings=False)
-            iid = econ_iid or cheapest_affordable(knowledge, ctx, respect_savings=False)
-            if iid:
-                item = knowledge.get(iid, {})
-                price = float((item.get("costs") or {}).get("gold", 0.0))
+            # Tower-unlock requirement takes priority over the main-branch
+            # backlog and the random pool below: otherwise the bot can research
+            # its way into a new era and then, by chance, never pick the
+            # specific techs a tower there needs — stuck defending with older,
+            # weaker towers indefinitely.
+            tower_req = _missing_tower_knowledge(ctx)
+            # Research is free for bots — never gate on affordability, the
+            # queue must always stay active.
+            if tower_req is not None and tower_req not in ctx.started:
                 options.append(Option(
-                    category="baseline", price=price,
-                    gain=GAIN_ECON_ITEM if iid == econ_iid else GAIN_PLAIN_ITEM,
+                    category="baseline", price=0.0, gain=GAIN_PLAIN_ITEM,
+                    mandatory=True, priority=PRIO_RESEARCH,
+                    description=f"baseline research (tower unlock) {tower_req}",
+                    run=lambda api, iid=tower_req: api.build(iid)))
+                candidates = []
+            else:
+                # Oldest unresearched main-branch tech next: the current-era
+                # preference in the random pool below never falls back to older
+                # eras while the current era still has unresearched techs left
+                # (near-permanent for an advanced empire), so a left-behind
+                # main-branch tech from an earlier era (e.g. TRIBAL_LEADERSHIP,
+                # which gates the ruler system) would otherwise never get
+                # picked. Left/right branch techs are exempt by design — they
+                # stay optional and only appear in the pool below.
+                main_req = _missing_main_branch_tech(ctx)
+                if main_req is not None:
+                    options.append(Option(
+                        category="baseline", price=0.0, gain=GAIN_PLAIN_ITEM,
+                        mandatory=True, priority=PRIO_RESEARCH,
+                        description=f"baseline research (main branch) {main_req}",
+                        run=lambda api, iid=main_req: api.build(iid)))
+                    candidates = []
+                else:
+                    candidates = [
+                        (iid, it) for iid, it in knowledge_catalog.items()
+                        if iid not in ctx.started and ctx.is_unlocked(it)
+                    ]
+            if candidates:
+                own_rank = ERA_RANK.get(ctx.summary.get("era", "stone"), 0)
+                current_era = [
+                    c for c in candidates
+                    if ERA_RANK.get(c[1].get("era", "stone"), 0) == own_rank
+                ]
+                pool = current_era or candidates
+                econ = [c for c in pool if _has_econ_effect(c[1])]
+                pool = econ or pool
+                iid = random.choice(pool)[0]
+                options.append(Option(
+                    category="baseline", price=0.0,
+                    gain=GAIN_ECON_ITEM if econ else GAIN_PLAIN_ITEM,
                     mandatory=True, priority=PRIO_RESEARCH,
                     description=f"baseline research {iid}",
                     run=lambda api, iid=iid: api.build(iid)))

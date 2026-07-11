@@ -33,6 +33,8 @@ services:
     image: empire1-webserver
     restart: unless-stopped
     env_file: .env
+    environment:
+      BOTS_HOST: bots
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -48,4 +50,20 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  bots:
+    build:
+      context: .
+      target: bots
+    image: empire1-bots
+    restart: unless-stopped
+    environment:
+      SERVER_URL: http://gameserver:8080
+      BOT_COUNT: "3"
+    volumes:
+      - ./data/prod/bot_states:/app/states
+      - ./data/prod/bot_logs:/app/logs
+    depends_on:
+      gameserver:
+        condition: service_healthy
 

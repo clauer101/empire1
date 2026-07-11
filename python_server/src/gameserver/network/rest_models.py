@@ -47,6 +47,25 @@ class SignupResponse(BaseModel):
     reason: str = ""
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ChangeEmailRequest(BaseModel):
+    current_password: str
+    new_email: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    identifier: str  # email or username
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 # ===================================================================
 # Empire queries
 # ===================================================================

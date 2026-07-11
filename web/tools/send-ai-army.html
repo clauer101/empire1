@@ -412,7 +412,7 @@ const ERA_BREAKS = [
   [300,  'neolithic'],
   [630,  'bronze'],
   [900,  'iron'],
-  [1500, 'middle_ages'],
+  [1500, 'medieval'],
   [2400, 'renaissance'],
   [3600, 'industrial'],
   [5400, 'modern'],
@@ -420,7 +420,7 @@ const ERA_BREAKS = [
 ];
 const ERA_LABEL = {
   stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
-  middle_ages: 'Middle Ages', renaissance: 'Renaissance', industrial: 'Industrial',
+  medieval: 'Medieval', renaissance: 'Renaissance', industrial: 'Industrial',
   modern: 'Modern', future: 'Future',
 };
 // Reverse: English label → internal era key (for matching critterStats.era)
@@ -528,7 +528,7 @@ function updateEmpireBtnPower(uid, power) {
 }
 
 function renderEmpireAnalysis(panel, d) {
-  const AGES = ['Stone Age','Neolithic','Bronze Age','Iron Age','Middle Ages','Renaissance','Industrial','Modern'];
+  const AGES = ['Stone Age','Neolithic','Bronze Age','Iron Age','Medieval','Renaissance','Industrial','Modern'];
 
   // Tower type chips
   const towerChips = Object.entries(d.tower_counts || {})

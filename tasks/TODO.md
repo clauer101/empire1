@@ -1,3 +1,14 @@
+> **Status: active** — open ideas and balance notes.
+
+# 0) Season 3 balance notes (moved from CHANGELOG.md)
+
+* industry units too strong
+* cannon tower too strong
+* ninja, samurai too weak
+* renaissance damage tower missing
+* money should scale faster in later eras
+* build times / research too
+
 # 1) ERA System
 
 only one era system should previal:
@@ -9,11 +20,11 @@ Three different era key systems exist and must not be mixed:
 
 | System | Example | Used in |
 |--------|---------|---------|
-| **Lowercase** | `stone`, `middle_ages`, `renaissance` | `ERA_ORDER`, `get_current_era()`, `era_effects` dict keys, `game.yaml`, `ai_generator` |
+| **Lowercase** | `stone`, `medieval`, `renaissance` | `ERA_ORDER`, `get_current_era()`, `era_effects` dict keys, `game.yaml`, `ai_generator` |
 | **YAML-item** | `STONE_AGE`, `MEDIEVAL`, `INDUSTRIAL` | `era:` field in `knowledge.yaml`, `ERA_ITEM_TO_INDEX` |
 
 Mappings: `ERA_BACKEND_TO_INTERNAL` in `util/army_generator.py`, `ERA_YAML_TO_KEY` in `util/eras.py`.  
-Travel offsets are stored as legacy flat fields: `stone_travel_offset`, `middle_ages_travel_offset`, etc. in `GameConfig`.
+Travel offsets are stored as legacy flat fields: `stone_travel_offset`, `medieval_travel_offset`, etc. in `GameConfig`.
 
 ### Upgrade System
 

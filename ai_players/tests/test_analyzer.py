@@ -69,14 +69,22 @@ def test_process_new_reports_updates_memory():
         {"id": 1, "body": DEFENDER_LOSS},
         {"id": 2, "body": ATTACKER_WIN},
     ]}
-    reports = process_new_reports(messages, memory)
+    reports = process_new_reports(messages, memory, era="iron")
     assert len(reports) == 2
     assert memory["last_seen_message_id"] == 2
     assert memory["defense_weak_waves"]["breaches"] == 6
     assert memory["opponents"]["Weak Empire"]["last_outcome"] == "victory"
+    assert memory["last_beaten_name"] == "Weak Empire"
     assert memory["attack_history"][-1]["artifacts"] == ["Holy Grail"]
+    # battle_log covers both roles, tagged with the era passed in
+    assert [e["role"] for e in memory["battle_log"]] == ["defender", "attacker"]
+    assert all(e["era"] == "iron" for e in memory["battle_log"])
+    assert memory["battle_log"][0]["won"] is False
+    assert memory["battle_log"][1]["won"] is True
+    assert [e["mid"] for e in memory["battle_log"]] == [1, 2]
     # second run: nothing new
     assert process_new_reports(messages, memory) == []
+    assert len(memory["battle_log"]) == 2
 
 
 def test_score_targets():
@@ -98,3 +106,21 @@ def test_score_targets():
 
     art_targets = score_targets(empires, 1, 500, "bronze", {}, prefer_artifacts=True)
     assert art_targets[0]["uid"] == 4  # artifact holder preferred
+
+
+def test_score_targets_prefers_last_beaten():
+    empires = [
+        {"uid": 1, "name": "Me", "is_self": True, "culture": 500, "era": "bronze"},
+        {"uid": 2, "name": "Weakest", "culture": 50, "era": "stone"},
+        {"uid": 4, "name": "Rich", "culture": 300, "era": "bronze"},
+    ]
+    # Without history, the globally weakest empire wins.
+    targets = score_targets(empires, 1, 500, "bronze", {})
+    assert targets[0]["uid"] == 2
+
+    # Having last beaten "Rich" nudges it above the (still weaker) "Weakest" —
+    # this is what lets different bots stick to different opponents instead
+    # of every bot converging on the single weakest empire.
+    targets = score_targets(empires, 1, 500, "bronze",
+                            {"last_beaten_name": "Rich"})
+    assert targets[0]["uid"] == 4

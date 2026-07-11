@@ -108,6 +108,10 @@ export class ItemOverlay {
       const excl = this._excludesLinks(avail?.excludes || catInfo.excludes);
       const eraLabel = this._getEraLabel(iid);
       const itemUnlocks = unlocks[iid] || [];
+      const branch = avail?.branch ?? catInfo.branch;
+      const branchLabel = branch && branch !== 'main'
+        ? `${(avail?.branch_label ?? catInfo.branch_label) || 'optional'} branch`
+        : '';
 
       html += `
         <div class="tt-dp-name">🔬 ${name}</div>
@@ -115,6 +119,7 @@ export class ItemOverlay {
         ${desc ? `<div class="tt-dp-desc">${desc}</div>` : ''}
         <div class="tt-dp-props">
           ${eraLabel ? `<span class="tt-dp-label">Era:</span><span>${eraLabel}</span>` : ''}
+          ${branchLabel ? `<span class="tt-dp-label">Branch:</span><span style="color:#4fc3f7;font-weight:600;">${branchLabel}</span>` : ''}
           ${effort != null ? `<span class="tt-dp-label">Duration:</span><span>${this._fmtDuration(effort, 'knowledge')}</span>` : ''}
         </div>
         ${effectsStr ? `<div class="tt-dp-row tt-dp-effects">✦ ${effectsStr}</div>` : ''}

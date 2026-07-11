@@ -129,7 +129,7 @@
           <option value="neolithic">Neolithic</option>
           <option value="bronze">Bronze Age</option>
           <option value="iron">Iron Age</option>
-          <option value="middle_ages" selected>Middle Ages</option>
+          <option value="medieval" selected>Medieval</option>
           <option value="renaissance">Renaissance</option>
           <option value="industrial">Industrial Age</option>
           <option value="modern">Modern Age</option>
@@ -138,11 +138,21 @@
       </label>
 <label style="max-width:100px;">
         N (battles)
-        <input type="number" id="inp-n" value="20" min="1" max="500" />
+        <input type="number" id="inp-n" value="10" min="1" max="500" />
       </label>
       <button class="btn-primary" id="btn-run">▶ Run</button>
       <button class="btn-stop"    id="btn-stop" disabled>■ Stop</button>
     </div>
+  </div>
+
+  <div class="card" id="map-detail-card">
+    <div class="section-title">Selected Map</div>
+    <div id="map-detail-stats" style="display:flex;gap:24px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;margin-bottom:10px;">
+      <div><span style="color:var(--text-dim);">HP</span> <span id="map-detail-hp">–</span></div>
+      <div><span style="color:var(--text-dim);">Path length</span> <span id="map-detail-path">–</span></div>
+      <div><span style="color:var(--text-dim);">Defense power</span> <span id="map-detail-power">–</span></div>
+    </div>
+    <div id="map-detail-towers" style="display:flex;flex-wrap:wrap;gap:6px;font-family:var(--mono);font-size:11px;"></div>
   </div>
 
   <div class="card" id="progress-card" style="display:none;">
@@ -179,19 +189,53 @@
 const API = window.location.origin;
 
 // ── Load maps ─────────────────────────────────────────────────
-let _mapPower   = {};   // name → defense power
-let _mapAgePct  = {};   // name → {era_label: pct}
+let _mapPower      = {};   // name → defense power
+let _mapAgePct     = {};   // name → {era_label: pct}
+let _mapLife       = {};   // name → HP
+let _mapTowers     = {};   // name → [{name, count}, ...]
+let _mapPathLength = {};   // name → path length (tiles)
+
+// Mirrors ERA_ORDER / ERA_LABELS_EN in gameserver/util/eras.py.
+const ERA_LABEL_ORDER = [
+  'Stone Age', 'Neolithic', 'Bronze Age', 'Iron Age',
+  'Medieval', 'Renaissance', 'Industrial', 'Modern', 'Future',
+];
+
+function _mapEra(name) {
+  // Group by the most advanced era present on the map (highest tower era wins).
+  const pct = _mapAgePct[name] || {};
+  let best = null, bestIdx = -1;
+  for (const era of Object.keys(pct)) {
+    const idx = ERA_LABEL_ORDER.indexOf(era);
+    if (idx > bestIdx) { bestIdx = idx; best = era; }
+  }
+  return best || 'Unclassified';
+}
 
 async function loadMaps() {
   try {
     const resp = await fetch(`${API}/api/saved-maps`);
     const data = await resp.json();
-    _mapPower  = data.power   || {};
-    _mapAgePct = data.age_pct || {};
+    _mapPower      = data.power       || {};
+    _mapAgePct     = data.age_pct     || {};
+    _mapLife       = data.life        || {};
+    _mapTowers     = data.towers      || {};
+    _mapPathLength = data.path_length || {};
     const sel = document.getElementById('sel-map');
-    sel.innerHTML = data.maps.map(n =>
-      `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`
-    ).join('');
+
+    const groups = new Map();
+    for (const n of data.maps) {
+      const g = _mapEra(n);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(n);
+    }
+    const groupOrder = [...ERA_LABEL_ORDER, 'Unclassified'];
+    sel.innerHTML = groupOrder.filter(g => groups.has(g)).map(g => {
+      const options = groups.get(g).map(n =>
+        `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`
+      ).join('');
+      return `<optgroup label="${g}">${options}</optgroup>`;
+    }).join('');
     updateLifeField();
   } catch(e) {
     document.getElementById('sel-map').innerHTML = '<option value="">Error loading maps</option>';
@@ -218,6 +262,19 @@ function updateLifeField() {
     barsEl.style.display = 'none';
     barsEl.innerHTML = '';
   }
+
+  document.getElementById('map-detail-hp').textContent =
+    _mapLife[mapName] != null ? _mapLife[mapName] : '–';
+  document.getElementById('map-detail-path').textContent =
+    _mapPathLength[mapName] != null ? _mapPathLength[mapName] : '–';
+  document.getElementById('map-detail-power').textContent =
+    p != null ? p.toLocaleString() : '–';
+
+  const towers = _mapTowers[mapName] || [];
+  const towersEl = document.getElementById('map-detail-towers');
+  towersEl.innerHTML = towers.length
+    ? towers.map(t => `<span style="background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:3px 8px;">${t.name} <span style="color:var(--text-dim);">×${t.count}</span></span>`).join('')
+    : '<span style="color:var(--text-dim);">No towers placed</span>';
 }
 
 document.getElementById('sel-map').addEventListener('change', updateLifeField);

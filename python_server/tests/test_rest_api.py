@@ -197,6 +197,89 @@ class TestAuthEndpoints:
         assert data["success"] is False
         assert "taken" in data["reason"].lower()
 
+    @pytest.mark.asyncio
+    async def test_change_password_requires_auth(self, client):
+        resp = await client.post("/api/auth/change-password", json={
+            "current_password": "old", "new_password": "newpass123",
+        })
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_change_password_success(self, client, services, token):
+        services.auth_service.change_password = AsyncMock(return_value=None)
+        resp = await client.post("/api/auth/change-password",
+                                 headers=_auth_header(token),
+                                 json={"current_password": "old",
+                                       "new_password": "newpass123"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        services.auth_service.change_password.assert_awaited_once_with(
+            TEST_UID, "old", "newpass123")
+
+    @pytest.mark.asyncio
+    async def test_change_password_wrong_current(self, client, services, token):
+        services.auth_service.change_password = AsyncMock(
+            return_value="Current password is incorrect")
+        resp = await client.post("/api/auth/change-password",
+                                 headers=_auth_header(token),
+                                 json={"current_password": "wrong",
+                                       "new_password": "newpass123"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "incorrect" in data["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_change_email_success(self, client, services, token):
+        services.auth_service.change_email = AsyncMock(return_value=None)
+        resp = await client.post("/api/auth/change-email",
+                                 headers=_auth_header(token),
+                                 json={"current_password": "old", "new_email": "new@example.com"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        services.auth_service.change_email.assert_awaited_once_with(
+            TEST_UID, "old", "new@example.com")
+
+    @pytest.mark.asyncio
+    async def test_change_email_requires_auth(self, client):
+        resp = await client.post("/api/auth/change-email",
+                                 json={"current_password": "old", "new_email": "new@example.com"})
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_always_success(self, client, services):
+        services.auth_service.request_password_reset = AsyncMock(return_value=None)
+        resp = await client.post("/api/auth/forgot-password",
+                                 json={"identifier": "nobody@example.com"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        services.auth_service.request_password_reset.assert_awaited_once_with(
+            "nobody@example.com")
+
+    @pytest.mark.asyncio
+    async def test_reset_password_success(self, client, services):
+        services.auth_service.reset_password = AsyncMock(return_value=None)
+        resp = await client.post("/api/auth/reset-password",
+                                 json={"token": "abc", "new_password": "newpass123"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        services.auth_service.reset_password.assert_awaited_once_with("abc", "newpass123")
+
+    @pytest.mark.asyncio
+    async def test_reset_password_invalid_token(self, client, services):
+        services.auth_service.reset_password = AsyncMock(
+            return_value="Reset link is invalid or has expired")
+        resp = await client.post("/api/auth/reset-password",
+                                 json={"token": "bad", "new_password": "newpass123"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "invalid" in data["error"].lower()
+
 
 # ---------------------------------------------------------------------------
 # Protected endpoints — no token

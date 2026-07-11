@@ -11,24 +11,19 @@ import bot.state as state_mod  # noqa: E402
 from bot.defense_analysis import pick_tower  # noqa: E402
 from bot.planners.base import weighted_top_n  # noqa: E402
 from bot.state import PERSONALITIES, BotState  # noqa: E402
-from bot.strategy import roll_strategy, should_respond_to_breach  # noqa: E402
+from bot.strategy import roll_strategy  # noqa: E402
 
 CONFIG = {
     "strategy": {
-        "weights": {"economy": 4, "defense": 3, "attack": 2, "artifact": 1},
-        "duration_hours": {"economy": [4, 10], "defense": [3, 8],
-                           "attack": [1, 3], "artifact": [1, 3]},
+        "weights": {"defense": 3, "attack": 2, "growth": 1},
+        "duration_hours": {"defense": [3, 8]},
     },
     "personalities": {
-        "economy":    {"economy": 3.0, "defense": 1.0, "attack": 0.5, "artifact": 0.7},
-        "aggressive": {"economy": 0.7, "defense": 0.5, "attack": 3.0, "artifact": 1.5},
-        "defensive":  {"economy": 1.0, "defense": 3.0, "attack": 0.5, "artifact": 0.5},
-        "balanced":   {"economy": 1.0, "defense": 1.0, "attack": 1.0, "artifact": 1.0},
+        "aggressive": {"defense": 0.5, "attack": 3.0, "growth": 0.3},
+        "defensive":  {"defense": 3.0, "attack": 0.5, "growth": 2.0},
+        "balanced":   {"defense": 1.0, "attack": 1.0, "growth": 1.0},
     },
     "selection": {"top_n": 3},
-    "breach_response_chance": {
-        "economy": 0.3, "aggressive": 0.2, "defensive": 1.0, "balanced": 0.6,
-    },
 }
 
 
@@ -61,33 +56,66 @@ def test_weighted_top_n_distributes_but_favors_best():
     assert counts["a"] > counts["b"] > counts["c"]
 
 
-# --- personality bias -------------------------------------------------------
+# --- roll_strategy: weighted-random between attack/growth (never defense —
+# defense is only ever entered via a lost battle, not rolled). Reached after
+# DEFENSE_WIN_STREAK_TARGET consecutive defense wins (run_bot.py). Attack is
+# excluded from the pool when no attackable target exists. ------------------
 
-def _attack_share(personality: str, draws: int = 2000) -> float:
-    state = BotState(name="t", personality=personality)
+def test_rolls_both_attack_and_growth_when_target_exists():
     targets = [{"uid": 1, "name": "X", "score": 1.0}]
-    ctx = {"has_army": True, "gold": 1000, "targets": targets}
-    types = Counter(roll_strategy(CONFIG, state, ctx)["type"] for _ in range(draws))
-    return (types["attack"] + types["artifact"]) / draws
+    state = BotState(name="t", personality="balanced")
+    seen = {roll_strategy(CONFIG, state, {"targets": targets})["type"] for _ in range(200)}
+    assert seen == {"attack", "growth"}
 
 
-def test_aggressive_attacks_more_than_economy():
-    assert _attack_share("aggressive") > _attack_share("economy") + 0.2
+def test_never_rolls_defense():
+    targets = [{"uid": 1, "name": "X", "score": 1.0}]
+    state = BotState(name="t", personality="balanced")
+    for _ in range(200):
+        assert roll_strategy(CONFIG, state, {"targets": targets})["type"] != "defense"
 
 
-def test_defensive_picks_defense_most():
-    state = BotState(name="t", personality="defensive")
-    ctx = {"has_army": True, "gold": 1000, "targets": [{"uid": 1, "name": "X", "score": 1.0}]}
-    types = Counter(roll_strategy(CONFIG, state, ctx)["type"] for _ in range(2000))
-    assert types.most_common(1)[0][0] == "defense"
+def test_attack_params_set_when_attack_rolled():
+    targets = [{"uid": 1, "name": "X", "score": 1.0}]
+    state = BotState(name="t", personality="balanced")
+    for _ in range(200):
+        s = roll_strategy(CONFIG, state, {"targets": targets})
+        if s["type"] == "attack":
+            assert s["params"]["target_uid"] == 1
+            assert s["params"]["phase"] == "strengthen"
+            return
+    raise AssertionError("attack was never rolled in 200 tries")
 
 
-def test_missing_personality_config_falls_back_balanced():
-    # CONFIG without personalities → no multiplier applied, still valid roll.
-    cfg = {"strategy": CONFIG["strategy"], "selection": {"top_n": 1}}
+def test_aggressive_favors_attack_over_growth():
+    targets = [{"uid": 1, "name": "X", "score": 1.0}]
     state = BotState(name="t", personality="aggressive")
-    s = roll_strategy(cfg, state, {"has_army": False, "gold": 1000, "targets": []})
-    assert s["type"] in ("economy", "defense")
+    counts = Counter(roll_strategy(CONFIG, state, {"targets": targets})["type"]
+                     for _ in range(1000))
+    assert counts["attack"] > counts["growth"]
+
+
+def test_defensive_favors_growth_over_attack():
+    targets = [{"uid": 1, "name": "X", "score": 1.0}]
+    state = BotState(name="t", personality="defensive")
+    counts = Counter(roll_strategy(CONFIG, state, {"targets": targets})["type"]
+                     for _ in range(1000))
+    assert counts["growth"] > counts["attack"]
+
+
+def test_falls_back_to_defense_when_no_targets_and_growth_has_no_weight():
+    cfg = {"strategy": {"weights": {"defense": 3, "attack": 2, "growth": 0},
+                        "duration_hours": CONFIG["strategy"]["duration_hours"]}}
+    state = BotState(name="t", personality="balanced")
+    s = roll_strategy(cfg, state, {"targets": []})
+    assert s["type"] == "defense"
+    assert s["source"] == "no_targets"
+
+
+def test_no_targets_still_allows_growth():
+    state = BotState(name="t", personality="balanced")
+    for _ in range(200):
+        assert roll_strategy(CONFIG, state, {"targets": []})["type"] in ("growth", "defense")
 
 
 # --- personality persistence ------------------------------------------------
@@ -113,25 +141,6 @@ def test_legacy_state_without_personality_defaults_balanced(tmp_path, monkeypatc
         "account: {username: bot_old_x, uid: 3}\nstrategy: null\n")
     loaded = BotState.load_or_create("old")
     assert loaded.personality == "balanced"
-
-
-# --- breach response by personality ----------------------------------------
-
-def test_defensive_always_responds_to_breach():
-    for _ in range(200):
-        assert should_respond_to_breach(CONFIG, "defensive") is True
-
-
-def test_aggressive_often_ignores_breach():
-    responses = sum(should_respond_to_breach(CONFIG, "aggressive") for _ in range(2000))
-    # chance 0.2 → roughly 400; assert it clearly ignores most breaches.
-    assert 200 < responses < 700
-
-
-def test_missing_breach_config_defaults_to_always_respond():
-    cfg = {"strategy": CONFIG["strategy"]}
-    for _ in range(50):
-        assert should_respond_to_breach(cfg, "aggressive") is True
 
 
 # --- pick_tower randomization ----------------------------------------------

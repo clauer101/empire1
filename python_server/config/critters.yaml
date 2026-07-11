@@ -20,7 +20,7 @@ SLAVE:
   name: "Slave"
   description: "Weak and expendable, sent in swarms to overwhelm defenses. Costs almost nothing to field."
   speed: 0.2
-  health: 1
+  health: 2
   value: 2
   damage: 1
   armour: 0
@@ -40,7 +40,7 @@ CLUBMAN:
   name: "Clubman"
   description: "A basic melee brawler that takes up extra wave capacity. Stronger than a Slave but equally slow."
   speed: 0.2
-  health: 2
+  health: 4
   value: 4
   damage: 1
   armour: 0
@@ -65,7 +65,7 @@ SCOUT:
   damage: 1
   armour: 0
   slots: 1
-  time_between: 1800
+  time_between: 2100
   is_boss: false
   capture: {}
   bonus: {}
@@ -84,10 +84,10 @@ WARRIOR:
   name: "Warrior"
   description: "Reliable all-rounder with basic armor and decent health. A solid first-era attacker."
   speed: 0.2
-  health: 3
+  health: 11
   value: 8
   damage: 1
-  armour: 0.5
+  armour: 1
   slots: 1
   time_between: 1700
   is_boss: false
@@ -104,7 +104,7 @@ CART:
   name: "Cart"
   description: "A carrier that fills three slots but releases five Clubmen on death. Hard to stop once rolling."
   speed: 0.2
-  health: 2
+  health: 5
   value: 9
   damage: 2
   armour: 1
@@ -116,7 +116,7 @@ CART:
   spawn_on_death: {CLUBMAN: 5}
   scale: 2.0
   animation: assets/sprites/critters/cart
-  requirements: [DOMESTICATION, TOOL_SHOP, POTTERY]
+  requirements: [DOMESTICATION, WORK_SHOP, POTTERY]
 
 # ============================================================
 #   BRONZE_AGE  (Effort 1.500 – 8.000)
@@ -128,7 +128,7 @@ BOWMAN:
   name: "Bowman"
   description: "Fast enough to outpace slow towers, with decent health for its era. A versatile Bronze Age attacker."
   speed: 0.45
-  health: 5
+  health: 18
   value: 22
   damage: 2
   armour: 0.5
@@ -148,11 +148,11 @@ SWORDMAN:
   name: "Swordman"
   description: "Well-armored melee fighter with steady movement. A dependable all-purpose attacker."
   speed: 0.3
-  health: 6
+  health: 14
   value: 25
   damage: 2
-  armour: 1.5
-  slots: 1
+  armour: 4
+  slots: 2
   time_between: 1700
   is_boss: false
   capture: {}
@@ -167,8 +167,8 @@ CHARIOT:
   era: bronze
   name: "Chariot"
   description: "The fastest Bronze Age unit, charging through defenses before they can react. Light armor but hard to intercept."
-  speed: 0.65
-  health: 6
+  speed: 1.15
+  health: 5
   value: 27
   damage: 1
   armour: 0.5
@@ -192,12 +192,12 @@ PIKENEER:
   name: "Pikeneer"
   description: "Disciplined spearman who moves quickly in tight formation. Low damage but relentless in numbers."
   speed: 0.6
-  health: 11
+  health: 13
   value: 45
   damage: 1
   armour: 1.5
   slots: 1
-  time_between: 700
+  time_between: 600
   is_boss: false
   capture: {}
   bonus: {}
@@ -212,10 +212,10 @@ HORSEMAN_SLOW:
   name: "Heavy Horseman"
   description: "Heavily armored cavalry that shrugs off most damage. Slow but nearly unstoppable."
   speed: 0.3
-  health: 21
+  health: 20
   value: 47
   damage: 2
-  armour: 2.5
+  armour: 5
   slots: 1
   time_between: 1200
   is_boss: false
@@ -231,11 +231,11 @@ HORSEMAN_FAST:
   era: iron
   name: "Light Horseman"
   description: "Swift cavalry that outpaces most tower fire. Fragile but nearly impossible to intercept."
-  speed: 0.75
-  health: 7
+  speed: 1.25
+  health: 13
   value: 45
   damage: 1
-  armour: 0.5
+  armour: 1
   slots: 1
   time_between: 900
   is_boss: false
@@ -244,7 +244,7 @@ HORSEMAN_FAST:
   spawn_on_death: null
   scale: 1.8
   animation: assets/sprites/critters/horseman_fast
-  requirements: [HORSEBACK_RIDING, RACE_COURSE]
+  requirements: [HORSEBACK_RIDING, STABLES]
 
 LEGIONARY:
   critter_type: health
@@ -252,10 +252,10 @@ LEGIONARY:
   name: "Legionary"
   description: "Rome's elite infantry with excellent armor and methodical advance. Relentless and hard to stop."
   speed: 0.35
-  health: 12
+  health: 38
   value: 46
   damage: 1
-  armour: 2.5
+  armour: 1
   slots: 1
   time_between: 1600
   is_boss: false
@@ -272,10 +272,10 @@ LARGE_CART:
   name: "Large Cart"
   description: "A massive carrier that deploys three Pikeneers on destruction. Four slots but delivers a dangerous payload."
   speed: 0.35
-  health: 7
+  health: 10
   value: 130
   damage: 3
-  armour: 2.5
+  armour: 3
   slots: 4
   time_between: 2200
   is_boss: false
@@ -307,40 +307,40 @@ THE_SWORDMASTER:
   requirements: [IRON, FENCING_SCHOOL]
 
 # ============================================================
-#   MIDDLE_AGES  (Effort 30.000 – 130.000)
+#   MEDIEVAL  (Effort 30.000 – 130.000)
 # ============================================================
 
 CRUSADER:
   critter_type: spread
-  era: middle_ages
+  era: medieval
   name: "Crusader"
   description: "A well-rounded holy warrior with solid armor and decent speed. The backbone of medieval assaults."
   speed: 0.5
-  health: 40
+  health: 70
   value: 74
   damage: 2
-  armour: 2.5
+  armour: 4.5
   slots: 1
-  time_between: 1100
+  time_between: 1200
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/crusader
-  requirements: [HOLY_WAR]
+  requirements: [HOLY_ORDERS]
 
 KNIGHT:
   critter_type: tank
-  era: middle_ages
+  era: medieval
   name: "Knight"
   description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
   speed: 0.4
-  health: 68
+  health: 93
   value: 194
   damage: 1
-  armour: 6
-  slots: 2
+  armour: 8.5
+  slots: 3
   time_between: 1900
   is_boss: false
   capture: {}
@@ -352,16 +352,16 @@ KNIGHT:
 
 SAMURAI:
   critter_type: fast
-  era: middle_ages
+  era: medieval
   name: "Samurai"
   description: "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker."
-  speed: 1
-  health: 21
+  speed: 1.4
+  health: 36
   value: 86
   damage: 1
-  armour: 3
+  armour: 3.5
   slots: 1
-  time_between: 1100
+  time_between: 1000
   is_boss: false
   capture: {}
   bonus: {}
@@ -372,14 +372,14 @@ SAMURAI:
 
 SIEGE_RAM:
   critter_type: carrier
-  era: middle_ages
+  era: medieval
   name: "Siege Ram"
   description: "A slow carrier that carries Crusaders and deals massive damage. Three slots of nearly unstoppable force."
   speed: 0.4
-  health: 29
+  health: 55
   value: 330
   damage: 3
-  armour: 5
+  armour: 4.5
   slots: 3
   time_between: 2300
   is_boss: false
@@ -392,11 +392,11 @@ SIEGE_RAM:
 
 CONDOTTERI:
   critter_type: health
-  era: middle_ages
+  era: medieval
   name: "Condotteri"
   description: "A battle-hardened mercenary with above-average health and good speed. Reliable all-rounder of the medieval era."
   speed: 0.6
-  health: 57
+  health: 80
   value: 108
   damage: 2
   armour: 2.5
@@ -412,16 +412,16 @@ CONDOTTERI:
 
 HANDGUNNER:
   critter_type: bulk
-  era: middle_ages
+  era: medieval
   name: "Handgunner"
   description: "Early gunpowder unit combining strong armor with high speed. Blends firepower with surprising mobility."
   speed: 0.7
-  health: 53
+  health: 73
   value: 101
   damage: 1
-  armour: 4.5
+  armour: 3
   slots: 1
-  time_between: 1200
+  time_between: 600
   is_boss: false
   capture: {}
   bonus: {}
@@ -459,7 +459,7 @@ NINJA:
   era: renaissance
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
-  speed: 1.1
+  speed: 1.4
   health: 52
   value: 168
   damage: 1
@@ -479,13 +479,13 @@ MUSKETEER:
   era: renaissance
   name: "Musketeer"
   description: "Well-armored gunner that advances steadily under fire. Good balance of health, speed, and durability."
-  speed: 0.6
-  health: 87
+  speed: 0.65
+  health: 92
   value: 171
   damage: 1
-  armour: 6
+  armour: 5
   slots: 1
-  time_between: 900
+  time_between: 700
   is_boss: false
   capture: {}
   bonus: {}
@@ -500,11 +500,11 @@ DRAGOONER:
   name: "Dragoon"
   description: "Mounted gunner combining speed with solid armor. A well-rounded attacker that hits hard and moves fast."
   speed: 0.75
-  health: 112
+  health: 122
   value: 182
   damage: 2
-  armour: 4
-  slots: 1.2
+  armour: 9
+  slots: 2.2
   time_between: 1000
   is_boss: false
   capture: {}
@@ -563,11 +563,11 @@ MOTORBIKE:
   era: industrial
   name: "Motorbike"
   description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
-  speed: 1.3
-  health: 91
+  speed: 1.5
+  health: 86
   value: 264
   damage: 3
-  armour: 4.5
+  armour: 4
   slots: 1
   time_between: 700
   is_boss: false
@@ -584,10 +584,10 @@ SMALL_TANK:
   name: "Small Tank"
   description: "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage."
   speed: 0.4
-  health: 301
+  health: 250
   value: 500
   damage: 2
-  armour: 9
+  armour: 11
   slots: 2
   time_between: 1000
   is_boss: false
@@ -631,7 +631,7 @@ SIEGE_TANK:
   health: 350
   value: 1833
   damage: 2
-  armour: 14.5
+  armour: 18
   slots: 2
   time_between: 1100
   is_boss: false
@@ -648,12 +648,12 @@ SPECOPS:
   name: "Special Ops"
   description: "Elite special forces with advanced armor and tactical precision. Balanced speed and durability."
   speed: 0.8
-  health: 230
+  health: 240
   value: 941
   damage: 2
   armour: 8
   slots: 1
-  time_between: 800
+  time_between: 400
   is_boss: false
   capture: {}
   bonus: {}
@@ -667,11 +667,11 @@ HELI:
   era: modern
   name: "Helicopter"
   description: "The fastest modern unit, deploying Soldiers on crash. Weak armor but nearly impossible to intercept."
-  speed: 1.5
+  speed: 1.6
   health: 120
   value: 1012
   damage: 3
-  armour: 4
+  armour: 8
   slots: 2
   time_between: 900
   is_boss: false
@@ -713,10 +713,10 @@ DRONE:
   name: "Drone"
   description: "A fast and agile flying unit with light armor. Difficult to hit but vulnerable to area damage."
   speed: 1.9
-  health: 135
+  health: 177
   value: 1112
   damage: 1
-  armour: 5
+  armour: 2
   slots: 0.6
   time_between: 300
   is_boss: false
@@ -733,11 +733,11 @@ MECH_WARRIOR:
   name: "Mech Warrior"
   description: "A two-slot combat mech with heavy armor that releases Special Ops on destruction. The pinnacle of future warfare."
   speed: 0.5
-  health: 350
+  health: 400
   value: 3000
-  damage: 5
-  armour: 11
-  slots: 2
+  damage: 4
+  armour: 18
+  slots: 3
   time_between: 2000
   is_boss: false
   capture: {}

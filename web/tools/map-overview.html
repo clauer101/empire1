@@ -40,28 +40,22 @@
     }
     #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
 
-    /* ── Filter bar ── */
-    #filterbar {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      padding: 10px 20px;
-      background: var(--surface-alt);
-      border-bottom: 1px solid var(--border);
-    }
-    .filter-label { font-size: 11px; color: var(--text-dim); }
-    .filter-chip {
-      padding: 3px 10px; font-size: 11px; font-weight: 600;
-      border: 1px solid var(--border); border-radius: 20px;
-      cursor: pointer; background: var(--surface); color: var(--text-dim);
-      transition: background 0.12s, border-color 0.12s, color 0.12s;
-    }
-    .filter-chip:hover { border-color: var(--text-dim); color: var(--text); }
-    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #000; }
-
     /* ── Grid ── */
     #content {
       max-width: 1400px;
       margin: 0 auto;
       padding: 20px 16px 60px;
+    }
+    .era-group { margin-bottom: 28px; }
+    .era-group-header {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 4px 2px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .era-group-title { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+    .era-group-count { font-size: 11px; color: var(--text-dim); }
+    .era-group-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 16px;
@@ -84,14 +78,6 @@
     }
     .card-title { font-weight: 700; font-size: 13px; color: var(--text); }
     .card-uid   { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
-    .card-source {
-      margin-left: auto; font-size: 10px; font-family: var(--mono);
-      padding: 1px 6px; border-radius: 3px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text-dim); white-space: nowrap;
-    }
-    .card-source.live { color: var(--success); border-color: var(--success); }
-
     /* ── SVG map ── */
     .map-wrap {
       background: #0a0a12;
@@ -193,7 +179,6 @@
       .card-actions { padding: 6px 8px; }
       .act-btn { padding: 4px 6px; font-size: 10px; }
       #topbar { padding: 8px 10px; }
-      #filterbar { padding: 8px 10px; }
       #legend { padding: 8px 10px; gap: 6px 10px; font-size: 10px; }
     }
   </style>
@@ -204,13 +189,6 @@
 <div id="topbar">
   <h1>🗺 Map Overview</h1>
   <span id="count" style="font-size:12px;color:var(--text-dim)"></span>
-</div>
-
-<div id="filterbar">
-  <span class="filter-label">Quelle:</span>
-  <button class="filter-chip active" data-filter="all">Alle</button>
-  <button class="filter-chip" data-filter="live">Live</button>
-  <button class="filter-chip" data-filter="saved">Gespeichert</button>
 </div>
 
 <div id="legend">
@@ -357,11 +335,6 @@ async function apiPatch(mapId, fields) {
 function buildCard(e) {
   const card = document.createElement('div');
   card.className = 'empire-card';
-  card.dataset.source = e.source === 'live' ? 'live' : 'fixture';
-
-  const isLive   = e.source === 'live';
-  const isSaved  = e.source === 'saved';
-  const srcLabel = isLive ? 'live' : 'saved';
 
   const towerChips = Object.entries(e.tower_counts || {})
     .sort((a, b) => b[1] - a[1])
@@ -380,7 +353,6 @@ function buildCard(e) {
     <div class="card-header">
       <span class="card-title">${e.empire_name}</span>
       <span class="card-uid">uid ${e.uid}</span>
-      <span class="card-source${isLive ? ' live' : ''}">${srcLabel}</span>
     </div>
     <div class="map-wrap">${renderMapSVG(e.tiles)}</div>
     <div class="card-stats">
@@ -406,144 +378,131 @@ function buildCard(e) {
       </div>
       <div class="stat">
         <span class="lbl">HP ♥</span>
-        ${isSaved
-          ? `<input class="life-input" type="number" min="1" step="1" value="${e.life ?? ''}" placeholder="—">`
-          : `<span class="val" style="color:var(--success)">${e.life ?? '—'}</span>`}
+        <input class="life-input" type="number" min="1" step="1" value="${e.life ?? ''}" placeholder="—">
       </div>
     </div>
     ${towerChips ? `<div class="tower-chips">${towerChips}</div>` : ''}
     ${ageBars ? `<div class="age-bars">${ageBars}</div>` : ''}
     <div class="card-actions">
-      ${isSaved
-        ? `<button class="act-btn activate">▶ Aktivieren</button>
-           <button class="act-btn rename">✏ Umbenennen</button>
-           <button class="act-btn delete">🗑 Löschen</button>`
-        : `<button class="act-btn save-copy">💾 Als Kopie speichern</button>`}
+      <button class="act-btn activate">▶ Aktivieren</button>
+      <button class="act-btn rename">✏ Umbenennen</button>
+      <button class="act-btn delete">🗑 Löschen</button>
     </div>
   `;
 
-  if (isSaved) {
-    card.querySelector('.act-btn.activate').addEventListener('click', async (ev) => {
-      if (!confirm(`Map "${e.empire_name}" als aktive Map für uid 4 (eem) setzen?\nDie aktuelle Map von uid 4 wird automatisch gespeichert.`)) return;
-      const btn = ev.currentTarget;
-      btn.disabled = true;
-      btn.textContent = 'Aktiviert…';
-      try {
-        const r = await fetch(`${GS}/api/admin/saved-maps/${encodeURIComponent(e.map_id)}/activate`, {
-          method: 'POST', headers: authHeaders(),
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        btn.textContent = '✓ Aktiv';
-        btn.style.color = 'var(--success)';
-      } catch (err) {
-        alert('Fehler: ' + err.message);
-        btn.disabled = false;
-        btn.textContent = '▶ Aktivieren';
-      }
-    });
+  card.querySelector('.act-btn.activate').addEventListener('click', async (ev) => {
+    if (!confirm(`Map "${e.empire_name}" als aktive Map für uid 4 (eem) setzen?\nDie aktuelle Map von uid 4 wird automatisch gespeichert.`)) return;
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'Aktiviert…';
+    try {
+      const r = await fetch(`${GS}/api/admin/saved-maps/${encodeURIComponent(e.map_id)}/activate`, {
+        method: 'POST', headers: authHeaders(),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      btn.textContent = '✓ Aktiv';
+      btn.style.color = 'var(--success)';
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = '▶ Aktivieren';
+    }
+  });
 
-    card.querySelector('.act-btn.rename').addEventListener('click', async () => {
-      const newName = prompt('Neuer Name:', e.empire_name);
-      if (!newName || newName.trim() === e.empire_name) return;
-      try {
-        await apiPatch(e.map_id, { name: newName.trim() });
-        e.empire_name = newName.trim();
-        card.querySelector('.card-title').textContent = newName.trim();
-        const entry = allData.find(d => d.map_id === e.map_id);
-        if (entry) entry.empire_name = newName.trim();
-      } catch (err) { alert('Fehler: ' + err.message); }
-    });
+  card.querySelector('.act-btn.rename').addEventListener('click', async () => {
+    const newName = prompt('Neuer Name:', e.empire_name);
+    if (!newName || newName.trim() === e.empire_name) return;
+    try {
+      await apiPatch(e.map_id, { name: newName.trim() });
+      e.empire_name = newName.trim();
+      card.querySelector('.card-title').textContent = newName.trim();
+      const entry = allData.find(d => d.map_id === e.map_id);
+      if (entry) entry.empire_name = newName.trim();
+    } catch (err) { alert('Fehler: ' + err.message); }
+  });
 
-    card.querySelector('.life-input').addEventListener('change', async (ev) => {
-      const val = parseFloat(ev.target.value);
-      if (!val || val <= 0) return;
-      try {
-        await apiPatch(e.map_id, { name: e.empire_name, life: val });
-        e.life = val;
-        const entry = allData.find(d => d.map_id === e.map_id);
-        if (entry) entry.life = val;
-        ev.target.style.borderBottomColor = 'var(--success)';
-        setTimeout(() => { ev.target.style.borderBottomColor = ''; }, 1000);
-      } catch (err) { alert('Fehler: ' + err.message); ev.target.value = e.life ?? ''; }
-    });
+  card.querySelector('.life-input').addEventListener('change', async (ev) => {
+    const val = parseFloat(ev.target.value);
+    if (!val || val <= 0) return;
+    try {
+      await apiPatch(e.map_id, { name: e.empire_name, life: val });
+      e.life = val;
+      const entry = allData.find(d => d.map_id === e.map_id);
+      if (entry) entry.life = val;
+      ev.target.style.borderBottomColor = 'var(--success)';
+      setTimeout(() => { ev.target.style.borderBottomColor = ''; }, 1000);
+    } catch (err) { alert('Fehler: ' + err.message); ev.target.value = e.life ?? ''; }
+  });
 
-    card.querySelector('.act-btn.delete').addEventListener('click', async (ev) => {
-      if (!confirm(`Map "${e.empire_name}" wirklich löschen?`)) return;
-      const btn = ev.currentTarget;
-      btn.disabled = true;
-      try {
-        await apiDelete(e.map_id);
-        allData = allData.filter(d => d.map_id !== e.map_id);
-        card.remove();
-        document.getElementById('count').textContent = `${document.querySelectorAll('.empire-card').length} Karten`;
-      } catch (err) { alert('Fehler: ' + err.message); btn.disabled = false; }
-    });
-  } else if (isLive) {
-    card.querySelector('.act-btn.save-copy').addEventListener('click', async (ev) => {
-      const btn = ev.currentTarget;
-      btn.disabled = true;
-      btn.textContent = 'Speichert…';
-      try {
-        const r = await fetch(`${GS}/api/admin/saved-maps/from-live/${e.uid}`, {
-          method: 'POST', headers: authHeaders(),
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const d = await r.json();
-        btn.textContent = '✓ Gespeichert';
-        btn.style.color = 'var(--success)';
-        // Add new entry to allData so filter picks it up on next render
-        allData.push({ ...e, source: 'saved', map_id: d.map_id, empire_name: d.name });
-      } catch (err) {
-        alert('Fehler: ' + err.message);
-        btn.disabled = false;
-        btn.textContent = '💾 Als Kopie speichern';
-      }
-    });
-  }
+  card.querySelector('.act-btn.delete').addEventListener('click', async (ev) => {
+    if (!confirm(`Map "${e.empire_name}" wirklich löschen?`)) return;
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    try {
+      await apiDelete(e.map_id);
+      allData = allData.filter(d => d.map_id !== e.map_id);
+      card.remove();
+      document.getElementById('count').textContent = `${document.querySelectorAll('.empire-card').length} Karten`;
+    } catch (err) { alert('Fehler: ' + err.message); btn.disabled = false; }
+  });
 
   return card;
 }
 
-// ── Filter ───────────────────────────────────────────────────
+// ── Render ───────────────────────────────────────────────────
 let allData = [];
-let activeFilter = 'all';
 
-function applyFilter() {
+function render() {
   const content = document.getElementById('content');
   content.innerHTML = '';
-  const filtered = activeFilter === 'all'
-    ? allData
-    : allData.filter(e => e.source === activeFilter);
-  filtered.forEach(e => content.appendChild(buildCard(e)));
-  document.getElementById('count').textContent = `${filtered.length} Karten`;
-}
 
-document.getElementById('filterbar').addEventListener('click', e => {
-  const chip = e.target.closest('.filter-chip');
-  if (!chip) return;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  chip.classList.add('active');
-  activeFilter = chip.dataset.filter;
-  applyFilter();
-});
+  const groups = new Map(); // max_era_index -> { label, items: [] }
+  for (const e of allData) {
+    const idx = e.max_era_index ?? -1;
+    if (!groups.has(idx)) groups.set(idx, { label: e.max_era || 'Unknown', items: [] });
+    groups.get(idx).items.push(e);
+  }
+  const sortedIdx = [...groups.keys()].sort((a, b) => a - b);
+
+  for (const idx of sortedIdx) {
+    const { label, items } = groups.get(idx);
+    const section = document.createElement('div');
+    section.className = 'era-group';
+    section.innerHTML = `
+      <div class="era-group-header">
+        <span class="era-group-title">${label}</span>
+        <span class="era-group-count">${items.length} Karte${items.length === 1 ? '' : 'n'}</span>
+      </div>
+      <div class="era-group-grid"></div>
+    `;
+    const grid = section.querySelector('.era-group-grid');
+    items.forEach(e => grid.appendChild(buildCard(e)));
+    content.appendChild(section);
+  }
+
+  document.getElementById('count').textContent = `${allData.length} Karten`;
+}
 
 // AGE_ORDER populated at load time from /api/era-map (English labels)
 let AGE_ORDER = [];
 
+async function loadOverview() {
+  const r = await fetch(`${GS}/api/admin/map-overview`, { headers: authHeaders() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  allData = data.filter(e => e.source === 'saved');
+  render();
+}
+
 // ── Load ─────────────────────────────────────────────────────
 (async () => {
   try {
-    const [r, eraMapR] = await Promise.all([
-      fetch(`${GS}/api/admin/map-overview`, { headers: authHeaders() }),
-      fetch(`${GS}/api/era-map`,            { headers: authHeaders() }),
-    ]);
+    const eraMapR = await fetch(`${GS}/api/era-map`, { headers: authHeaders() });
     if (eraMapR.ok) {
       const em = await eraMapR.json();
       AGE_ORDER = (em.eras || []).map(k => em.labels_en?.[k] || k);
     }
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    allData = await r.json();
-    applyFilter();
+    await loadOverview();
   } catch (err) {
     document.getElementById('content').innerHTML =
       `<p style="color:var(--danger);padding:40px">Fehler: ${err.message}</p>`;

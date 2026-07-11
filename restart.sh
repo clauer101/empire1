@@ -2,25 +2,25 @@
 # ---------------------------------------------------------------
 # restart.sh — GameServer Lifecycle Management
 #
-# Nutzung:
-#   ./restart.sh                    # Neustart GameServer
-#   ./restart.sh restart            # Neustart GameServer
-#   ./restart.sh stop               # Stop GameServer
-#   ./restart.sh start              # Start GameServer
+# Usage:
+#   ./restart.sh                    # restart GameServer
+#   ./restart.sh restart            # restart GameServer
+#   ./restart.sh stop               # stop GameServer
+#   ./restart.sh start              # start GameServer
 #   ./restart.sh gameserver         # GameServer restart
 #   ./restart.sh gameserver stop    # GameServer stop
 #   ./restart.sh gameserver start   # GameServer start
 #
-# Optionen:
-#   --state_file <path>             # Benutzerdefinierte State-Datei
+# Options:
+#   --state_file <path>             # custom state file
 #
-# Beispiele:
+# Examples:
 #   ./restart.sh gameserver --state_file state2.yaml
 #   ./restart.sh --state_file custom_state.yaml gameserver start
 # ---------------------------------------------------------------
 set -euo pipefail
 
-# -- Konfiguration ------------------------------------------------
+# -- Configuration ------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PYTHON_SERVER_DIR="$SCRIPT_DIR/python_server"
 VENV="$SCRIPT_DIR/.venv/bin/python"
@@ -28,15 +28,15 @@ MODULE="gameserver.main"
 PIDFILE="$PYTHON_SERVER_DIR/.gameserver.pid"
 LOG="$PYTHON_SERVER_DIR/gameserver.log"
 
-# Timeouts (Sekunden)
+# Timeouts (seconds)
 GRACEFUL_TIMEOUT=10
 
-# -- Farben --------------------------------------------------------
+# -- Colors --------------------------------------------------------
 RED='\033[1;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# -- Hilfsfunktionen -----------------------------------------------
+# -- Helper functions -----------------------------------------------
 
 find_server_pids() {
     pgrep -f "python.*${MODULE}" 2>/dev/null || true
@@ -47,11 +47,11 @@ stop_gameserver() {
     pids=$(find_server_pids)
 
     if [[ -z "$pids" ]]; then
-        echo "[INFO] Kein laufender GameServer gefunden."
+        echo "[INFO] No running GameServer found."
         return 0
     fi
 
-    echo "[INFO] GameServer läuft (PIDs: $pids) — sende SIGTERM …"
+    echo "[INFO] GameServer running (PIDs: $pids) — sending SIGTERM …"
     kill -TERM $pids 2>/dev/null || true
 
     local waited=0
@@ -60,23 +60,23 @@ stop_gameserver() {
         waited=$((waited + 1))
         pids=$(find_server_pids)
         if [[ -z "$pids" ]]; then
-            echo "[OK]   GameServer nach ${waited}s sauber beendet."
+            echo "[OK]   GameServer stopped cleanly after ${waited}s."
             return 0
         fi
-        echo "[WAIT] Warte auf Shutdown … (${waited}/${GRACEFUL_TIMEOUT}s)"
+        echo "[WAIT] Waiting for shutdown … (${waited}/${GRACEFUL_TIMEOUT}s)"
     done
 
     pids=$(find_server_pids)
     if [[ -n "$pids" ]]; then
-        echo "[WARN] Graceful Shutdown fehlgeschlagen — sende SIGKILL …"
+        echo "[WARN] Graceful shutdown failed — sending SIGKILL …"
         kill -KILL $pids 2>/dev/null || true
         sleep 1
         pids=$(find_server_pids)
         if [[ -n "$pids" ]]; then
-            echo "[FEHLER] Konnte GameServer nicht beenden (PIDs: $pids)" >&2
+            echo "[ERROR] Could not stop GameServer (PIDs: $pids)" >&2
             return 1
         fi
-        echo "[OK]   GameServer per SIGKILL beendet."
+        echo "[OK]   GameServer stopped via SIGKILL."
     fi
 }
 
@@ -89,12 +89,12 @@ start_gameserver() {
     local existing_pids
     existing_pids=$(find_server_pids)
     if [[ -n "$existing_pids" ]]; then
-        echo "[INFO] Laufender GameServer gefunden (PIDs: $existing_pids) — stoppe zuerst …"
+        echo "[INFO] Running GameServer found (PIDs: $existing_pids) — stopping first …"
         stop_gameserver
     fi
 
-    echo "[INFO] Starte GameServer …"
-    echo "       State-Datei: $state_file"
+    echo "[INFO] Starting GameServer …"
+    echo "       State file: $state_file"
     cd "$PYTHON_SERVER_DIR"
 
     # Load .env from repo root if present
@@ -104,7 +104,7 @@ start_gameserver() {
         # shellcheck source=/dev/null
         source "$env_file"
         set +a
-        echo "       Env: $env_file geladen"
+        echo "       Env: $env_file loaded"
     fi
 
     PYTHONPATH=src nohup "$VENV" -m "$MODULE" --state_file "$state_file" >> "$LOG" 2>&1 &
@@ -113,23 +113,23 @@ start_gameserver() {
 
     sleep 2
     if kill -0 "$pid" 2>/dev/null; then
-        echo "[OK]   GameServer gestartet (PID: $pid)"
+        echo "[OK]   GameServer started (PID: $pid)"
         echo "       Log: $LOG"
         echo "       URL: https://relicsnrockets.io/"
         echo "       DevTools: https://relicsnrockets.io/tools/"
     else
         echo -e "${RED}╔══════════════════════════════════════════╗${NC}" >&2
-        echo -e "${RED}║  FEHLER: GameServer konnte nicht starten ║${NC}" >&2
+        echo -e "${RED}║  ERROR: GameServer failed to start       ║${NC}" >&2
         echo -e "${RED}╚══════════════════════════════════════════╝${NC}" >&2
         echo -e "${YELLOW}Log: $LOG${NC}" >&2
-        echo -e "${YELLOW}── Letzte Zeilen ──────────────────────────${NC}" >&2
+        echo -e "${YELLOW}── Last lines ─────────────────────────────${NC}" >&2
         tail -20 "$LOG" >&2
         echo -e "${YELLOW}───────────────────────────────────────────${NC}" >&2
         return 1
     fi
 }
 
-# -- Argument-Parsing ------------------------------------------------
+# -- Argument parsing ------------------------------------------------
 
 STATE_FILE=""
 CMD="restart"
@@ -139,7 +139,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --state_file)
             if [[ -z "${2:-}" ]]; then
-                echo "[FEHLER] --state_file erfordert einen Pfad" >&2
+                echo "[ERROR] --state_file requires a path" >&2
                 exit 1
             fi
             STATE_FILE="$2"
@@ -156,7 +156,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# -- Hauptprogramm --------------------------------------------------
+# -- Main --------------------------------------------------
 
 case "$CMD" in
     stop)
@@ -166,7 +166,7 @@ case "$CMD" in
         echo "========================================"
         stop_gameserver
         echo "========================================"
-        echo " Fertig."
+        echo " Done."
         echo "========================================"
         ;;
     start)
@@ -176,7 +176,7 @@ case "$CMD" in
         echo "========================================"
         start_gameserver "${STATE_FILE:-python_server/state.yaml}"
         echo "========================================"
-        echo " Fertig."
+        echo " Done."
         echo "========================================"
         ;;
     gameserver)
@@ -189,7 +189,7 @@ case "$CMD" in
                     echo "========================================"
                     stop_gameserver
                     echo "========================================"
-                    echo " Fertig."
+                    echo " Done."
                     echo "========================================"
                     ;;
                 start)
@@ -199,12 +199,12 @@ case "$CMD" in
                     echo "========================================"
                     start_gameserver "${STATE_FILE:-python_server/state.yaml}"
                     echo "========================================"
-                    echo " Fertig."
+                    echo " Done."
                     echo "========================================"
                     ;;
                 *)
-                    echo "[FEHLER] Unbekannter Subcommand: $SUBCMD" >&2
-                    echo "Gültig: stop, start" >&2
+                    echo "[ERROR] Unknown subcommand: $SUBCMD" >&2
+                    echo "Valid: stop, start" >&2
                     exit 1
                     ;;
             esac
@@ -216,7 +216,7 @@ case "$CMD" in
             stop_gameserver
             start_gameserver "${STATE_FILE:-python_server/state.yaml}"
             echo "========================================"
-            echo " Fertig."
+            echo " Done."
             echo "========================================"
         fi
         ;;
@@ -228,17 +228,17 @@ case "$CMD" in
         stop_gameserver
         start_gameserver "${STATE_FILE:-python_server/state.yaml}"
         echo "========================================"
-        echo " Fertig."
+        echo " Done."
         echo "========================================"
         ;;
     *)
-        echo "[FEHLER] Unbekannter Befehl: $CMD" >&2
+        echo "[ERROR] Unknown command: $CMD" >&2
         echo "" >&2
-        echo "Nutzung:" >&2
-        echo "  ./restart.sh                    # Neustart GameServer" >&2
-        echo "  ./restart.sh restart            # Neustart GameServer" >&2
-        echo "  ./restart.sh stop               # Stop GameServer" >&2
-        echo "  ./restart.sh start              # Start GameServer" >&2
+        echo "Usage:" >&2
+        echo "  ./restart.sh                    # restart GameServer" >&2
+        echo "  ./restart.sh restart            # restart GameServer" >&2
+        echo "  ./restart.sh stop               # stop GameServer" >&2
+        echo "  ./restart.sh start              # start GameServer" >&2
         echo "  ./restart.sh gameserver         # GameServer restart" >&2
         echo "  ./restart.sh gameserver stop    # GameServer stop" >&2
         echo "  ./restart.sh gameserver start   # GameServer start" >&2

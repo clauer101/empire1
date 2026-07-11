@@ -29,7 +29,7 @@ BARBARIAN_NAMES: list[str] = [
 # Era order — lowercase English, canonical format (matches ERA_ORDER in eras.py)
 ERA_ORDER_INTERNAL: list[str] = [
     "stone", "neolithic", "bronze", "iron",
-    "middle_ages", "renaissance", "industrial", "modern", "future",
+    "medieval", "renaissance", "industrial", "modern", "future",
 ]
 
 # Alias kept for backward compatibility; identical to ERA_ORDER_INTERNAL

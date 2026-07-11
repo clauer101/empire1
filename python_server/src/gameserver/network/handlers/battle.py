@@ -233,9 +233,7 @@ async def _send_battle_setup_to_observer(attack: "Attack", observer_uid: int) ->
     computed_path = find_path_from_spawn_to_castle(normalized)
     hex_path = computed_path if computed_path else []
 
-    structures_dict = {}
-    if defender_empire.structures:
-        structures_dict = dict(defender_empire.structures)
+    structures_dict: dict[int, Any] = {}
 
     from gameserver.models.structure import structure_from_item
     structure_sid = 1

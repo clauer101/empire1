@@ -121,8 +121,7 @@
     <div class="ctl"><label>Strategy</label>
       <select id="in-strategy">
         <option value="coverage">Coverage (serpentine)</option>
-        <option value="spiral">Spiral (snail shell)</option>
-        <option value="comb">Space-filling (comb)</option>
+        <option value="frontier">Frontier (corridor growth)</option>
       </select>
     </div>
     <div class="ctl"><label>Top-N pick</label><input id="in-topn" type="number" value="2" min="1" max="5"></div>
@@ -161,7 +160,7 @@
   </div>
 
 <script>
-const ERAS = ['stone', 'neolithic', 'bronze', 'iron', 'middle_ages',
+const ERAS = ['stone', 'neolithic', 'bronze', 'iron', 'medieval',
               'renaissance', 'industrial', 'modern', 'future'];
 const eraSel = document.getElementById('in-era');
 for (const e of ERAS) {

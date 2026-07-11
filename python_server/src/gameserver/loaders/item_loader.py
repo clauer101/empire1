@@ -75,6 +75,8 @@ def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
             animation=attrs.get("animation", ""),
             image=attrs.get("image", ""),
             era=attrs.get("era", ""),
+            branch=attrs.get("branch", "main"),
+            branch_label=attrs.get("branch_label", ""),
             subtype=attrs.get("type", ""),
             condition=attrs.get("condition") or {},
             critter_type=attrs.get("critter_type", ""),

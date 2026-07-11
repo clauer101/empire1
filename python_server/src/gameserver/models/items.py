@@ -98,6 +98,8 @@ class ItemDetails:
     animation: str = ""  # Sprite folder path, e.g. assets/sprites/critters/slave
     image: str = ""  # Image path prefix, e.g. assets/sprites/buildings/hangar
     era: str = ""    # Era key from YAML (e.g. "stone")
+    branch: str = "main"  # Tech tree grid column: left | right | main (layout only)
+    branch_label: str = ""  # Free-text label shown in the research queue (e.g. "Trade")
     subtype: str = ""  # Artifact rarity: "normal" | "legendary"
     condition: dict[str, object] = field(default_factory=dict)  # Trophy unlock condition
     # Critter classification: fast | tank | carrier | bulk | spread | boss

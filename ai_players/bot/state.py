@@ -20,15 +20,18 @@ STATES_DIR = Path(__file__).resolve().parent.parent / "states"
 # instances develop into distinct, recognizable play styles.
 PERSONALITIES = ["aggressive", "defensive", "balanced"]
 
-# Whimsical fantasy name parts. A new bot gets a random adjective + noun
-# (e.g. "GildedRaven"), which becomes its state-file key, username and empire
-# name. Lowercased for the state filename.
+# Whimsical fantasy name parts. A new bot gets a random "Adjective Noun"
+# (e.g. "Gilded Raven"), which becomes its state-file key and username.
+# The empire name is rolled independently (see random_empire_name below).
 _NAME_ADJECTIVES = [
     "Gilded", "Crimson", "Shadow", "Frost", "Ember", "Silent", "Storm",
     "Iron", "Velvet", "Obsidian", "Radiant", "Thorn", "Mystic", "Azure",
     "Ravenous", "Gleaming", "Wandering", "Eternal", "Hollow", "Verdant",
     "Brazen", "Cinder", "Dusk", "Gloom", "Hallowed", "Lunar", "Onyx",
     "Scarlet", "Solar", "Whispering", "Wild", "Amber", "Glacial", "Searing",
+    # Historically-flavored additions
+    "Golden", "Ancient", "Bronze", "Ashen", "Sable", "Steel", "Savage",
+    "Forgotten", "Undying", "Exiled", "Noble", "Grim", "Northern",
 ]
 _NAME_NOUNS = [
     "Raven", "Wolf", "Drake", "Sphinx", "Phoenix", "Griffin", "Basilisk",
@@ -36,21 +39,48 @@ _NAME_NOUNS = [
     "Sentinel", "Reaver", "Oracle", "Marauder", "Harbinger", "Tempest",
     "Talon", "Fang", "Crown", "Bastion", "Citadel", "Vortex", "Ember",
     "Wraith", "Cobra", "Stag", "Lynx", "Kraken", "Manticore", "Nomad",
+    # Historically-flavored additions — titles and figures from real history
+    "Khan", "Tsar", "Kaiser", "Doge", "Emir", "Sultan", "Shogun", "Vizier",
+    "Satrap", "Rajah", "Consul", "Praetor", "Warlord", "Regent", "Spartan",
+    "Viking", "Mongol", "Cossack", "Samurai", "Templar", "Draco", "Solon",
+    "Attila", "Xerxes", "Croesus", "Titan",
 ]
 
 
 def random_fantasy_name(max_len: int = 15) -> str:
-    """Return a random whimsical name like 'GildedRaven', at most max_len chars.
+    """Return a random whimsical name like 'Gilded Raven', at most max_len chars
+    (spaces included).
 
     max_len defaults to 15 so the derived username (name + 5-char hex suffix)
     stays within the server's 20-character limit.
     """
     for _ in range(50):
-        name = random.choice(_NAME_ADJECTIVES) + random.choice(_NAME_NOUNS)
+        name = f"{random.choice(_NAME_ADJECTIVES)} {random.choice(_NAME_NOUNS)}"
         if len(name) <= max_len:
             return name
     # Fallback: shortest possible combination.
-    return min(_NAME_ADJECTIVES, key=len) + min(_NAME_NOUNS, key=len)
+    return f"{min(_NAME_ADJECTIVES, key=len)} {min(_NAME_NOUNS, key=len)}"
+
+
+# Empire names are rolled independently from the bot's own name — an
+# adjective plus a realm/polity type, many with a historical ring
+# ("Khanate", "Tsardom", ...) to match the bot naming theme.
+_EMPIRE_TYPES = [
+    "Empire", "Dominion", "Kingdom", "Realm", "Dynasty", "Imperium",
+    "Hegemony", "Sovereignty", "Confederation", "Commonwealth", "Throne",
+    "Legacy", "Khanate", "Sultanate", "Caliphate", "Tsardom", "Shogunate",
+    "Principality", "Satrapy",
+]
+
+
+def random_empire_name(max_len: int = 40) -> str:
+    """Return a random empire name like 'Golden Khanate', independent of the
+    bot's own fantasy name."""
+    for _ in range(50):
+        name = f"{random.choice(_NAME_ADJECTIVES)} {random.choice(_EMPIRE_TYPES)}"
+        if len(name) <= max_len:
+            return name
+    return f"{min(_NAME_ADJECTIVES, key=len)} {min(_EMPIRE_TYPES, key=len)}"
 
 
 def now_iso() -> str:
@@ -72,6 +102,7 @@ class BotState:
         "defense_weak_waves": {},
         "opponents": {},
         "attack_history": [],
+        "battle_log": [],
     })
     runtime: dict[str, Any] = field(default_factory=lambda: {"cycles": 0, "last_cycle": ""})
     dirty: bool = False
@@ -102,11 +133,17 @@ class BotState:
             "username": username,
             "password": secrets.token_urlsafe(16),
             "email": "",
-            "empire_name": f"{name}'s Dominion",
+            "empire_name": random_empire_name(),
             "uid": None,
         }
         state.personality = random.choice(PERSONALITIES)
         state.dirty = True
+        # Persist the reserved name/credentials immediately, before the caller
+        # signs up via the API. Otherwise a crash between signup and the next
+        # save() (e.g. a permissions error) leaves the account live on the
+        # server but invisible to this state dir — the next restart wouldn't
+        # find this name on disk and would mint a duplicate account instead.
+        state.save()
         return state
 
     def reset(self) -> None:
@@ -117,6 +154,7 @@ class BotState:
             "defense_weak_waves": {},
             "opponents": {},
             "attack_history": [],
+            "battle_log": [],
         }
         self.runtime = {"cycles": 0, "last_cycle": ""}
         self.dirty = True

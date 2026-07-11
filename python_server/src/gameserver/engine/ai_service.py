@@ -480,7 +480,7 @@ class AIService:
         """
         if not self._game_config:
             return 30.0
-        era_key = empire_service.get_current_era(empire)  # lowercase English e.g. "middle_ages"
+        era_key = empire_service.get_current_era(empire)  # lowercase English e.g. "medieval"
         travel = getattr(self._game_config, f"{era_key}_travel_offset", None)
         if travel is not None:
             return float(travel)
@@ -763,7 +763,7 @@ class AIService:
             if uid == AI_UID:
                 continue
 
-            era_key = empire_service.get_current_era(empire)   # lowercase English e.g. "middle_ages"
+            era_key = empire_service.get_current_era(empire)   # lowercase English e.g. "medieval"
             p = aggr.get(era_key, 0.0)
 
             if p <= 0.0:

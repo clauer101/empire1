@@ -9,20 +9,27 @@
 > `cheapest_affordable` in `bot/planners/base.py`.
 > This file is the spec — when the baseline changes, update it (and vice versa).
 
-Three obligations hold **regardless of the active strategy**:
+Three obligations hold regardless of the active strategy, with one exception:
+obligation 1 is entirely suspended while [growth](growth.md) is active (a
+deliberate "invest in nothing" strategy).
 
 ## 1. Defense must never be neglected
 
-Two triggers, both active in **every** strategy (economy, attack, artifact too):
+Two triggers, active in every strategy **except** [growth](growth.md), which
+suspends both as a deliberate "invest in nothing" strategy:
 
 - **Breach response** — whenever a defensive battle report shows a breach
   (`🏰 Reached > 0`), the next cycle takes one defensive action (tower
   placement / tile purchase / upgrade — same logic as the
-  [defense strategy](defense.md)) before any strategy-specific action.
-  In addition, the breach **forces a strategy switch to defense**
-  (`run_bot.py` step 2b, `strategy.py::breach_defense_strategy`, source
-  `breach`) — the bot then spends a full defense-strategy period
-  strengthening the perimeter, regardless of what it was doing before.
+  [defense strategy](defense.md)) before any strategy-specific action. This
+  fires even when the defender still won the battle overall.
+- A **fully lost** defense (the whole battle, not just a partial breach) goes
+  further and **unconditionally forces a full strategy switch to defense**
+  (`run_bot.py`, `strategy.py::breach_defense_strategy`, source `breach`) for
+  3–8 hours, resetting the defense-win-streak to 0 — the only way out is
+  winning `DEFENSE_WIN_STREAK_TARGET` (3) defenses in a row (see
+  `bot-flow.md`'s Strategy System section), not just taking the one-off
+  action above.
 - **Tower floor** — a minimum number of placed towers is maintained at all
   times so AI waves always meet an adequate defense:
   `min_towers = 2 + 2 × era_rank` (stone = 2, iron = 8, …). Placed towers are
@@ -31,20 +38,46 @@ Two triggers, both active in **every** strategy (economy, attack, artifact too):
   spawn/castle relocation to lengthen the critter path, tile purchases,
   tower placement, and targeted upgrades. While below the
   floor, each cycle runs one defensive action — buying tiles and building
-  towers even under the economy strategy. Tiles are bought whenever fewer
+  towers even under the attack strategy. Tiles are bought whenever fewer
   than 2 owned tiles still cover the path, so territory expands along with
   the tower count. If the needed tower/tile is
   unaffordable, the defense logic declares a savings goal (obligation 3),
   which protects the gold from queue filling until the purchase is possible.
+  Suspended entirely while [growth](growth.md) is active — see there.
 
 ## 2. Minimize idle time on building and research
 
 An empty research or build queue is dead progress. Before strategy-specific
-actions, the baseline fills an empty research queue with the cheapest affordable
-knowledge and an empty build queue with the cheapest affordable building.
-Strategy planners may still pick *better* items (e.g. economy prefers
-economy-effect items) — the baseline only guarantees the queues never sit idle
-while something is affordable.
+actions, the baseline fills an empty research queue and build queue itself,
+preferring items with an economic effect (`_has_econ_effect`/`ECON_EFFECTS`
+in `baseline.py`) over plain filler at the same price — the baseline only
+guarantees the queues never sit idle while something is affordable.
+
+Research selection, in priority order, once the queue is empty:
+
+1. **Resume a paused item** — only if it is still unlocked (its remaining
+   requirement may itself be unresearched; resuming an item whose
+   requirements aren't met would fail every cycle with no fallback).
+2. **Missing tower-unlock requirement** — the oldest not-yet-unlocked tower of
+   the empire's own era may need more than its era-defining knowledge (e.g.
+   `ARBELESTE_TOWER` needs `FORGE` + `IRON`, not just `IRON`); its first
+   missing knowledge requirement is forced next so the maze doesn't get stuck
+   defending with an older, weaker tower.
+3. **Missing "main" branch tech** — every knowledge item has a `branch`
+   (`main` | `left` | `right`; unset defaults to `main`). Main-branch techs
+   are the required backbone (e.g. `TRIBAL_LEADERSHIP`, which gates the ruler
+   system) and must all eventually get researched; left/right techs are
+   optional side branches. Without this step, an advanced empire almost
+   always has *some* unresearched current-era tech, so a left-behind
+   main-branch tech from an earlier era would never get picked — the
+   current-era preference in step 4 never falls back to older eras while the
+   current era still has anything left to research. This step forces the
+   oldest (lowest-era) not-yet-started, currently-unlockable main-branch tech.
+4. **Random pool** — otherwise, prefer unlocked techs from the current era
+   (falling back to any unlocked tech if none remain), then prefer
+   economy-effect techs within that pool, then pick randomly. Left/right
+   branch techs only ever get chosen here — they may or may not ever be
+   researched, by design.
 
 ## 3. Respect savings goals
 

@@ -109,8 +109,20 @@ function init(el, _api, _state) {
           <input type="password" id="login-pwd" autocomplete="current-password" placeholder="Password" class="lp-topnav-input">
           <button id="login-btn" class="lp-topnav-btn">Sign In</button>
         </div>
+        <a href="#" id="forgot-pwd-link" class="lp-topnav-signup">Forgot password?</a>
         <a href="#signup" class="lp-topnav-signup">New? Create Empire →</a>
         <a href="/api.html" class="lp-topnav-api" title="Public REST API — build your own AI bot">🤖 API for AI devs</a>
+      </div>
+    </div>
+
+    <div id="forgot-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:24px;min-width:280px;max-width:360px;width:90%;position:relative;display:flex;flex-direction:column;gap:12px;">
+        <button id="forgot-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;">✕</button>
+        <div style="font-weight:600;font-size:1.05em;">Reset Password</div>
+        <div style="font-size:0.85em;color:var(--text-dim,#888);">Enter your username or email address and we'll send a reset link to the email on your account.</div>
+        <input type="text" id="forgot-email" placeholder="Username or email address" autocomplete="username" style="width:100%;box-sizing:border-box;" />
+        <div id="forgot-msg" style="font-size:0.82em;min-height:14px;"></div>
+        <button id="forgot-confirm" style="width:100%;">Send Reset Link</button>
       </div>
     </div>
 
@@ -207,6 +219,53 @@ function init(el, _api, _state) {
   container.querySelector('#login-btn').addEventListener('click', onLogin);
   container.querySelector('#login-pwd').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') onLogin();
+  });
+
+  const forgotOverlay = container.querySelector('#forgot-overlay');
+  const forgotEmail = container.querySelector('#forgot-email');
+  const forgotMsg = container.querySelector('#forgot-msg');
+
+  function closeForgotOverlay() {
+    forgotOverlay.style.display = 'none';
+    forgotEmail.value = '';
+  }
+
+  container.querySelector('#forgot-pwd-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    forgotMsg.textContent = '';
+    forgotOverlay.style.display = 'flex';
+    forgotEmail.focus();
+  });
+
+  container.querySelector('#forgot-close').addEventListener('click', closeForgotOverlay);
+
+  forgotOverlay.addEventListener('click', (e) => {
+    if (e.target === forgotOverlay) closeForgotOverlay();
+  });
+
+  container.querySelector('#forgot-confirm').addEventListener('click', async () => {
+    const identifier = forgotEmail.value.trim();
+    if (!identifier) {
+      forgotMsg.textContent = 'Please enter your username or email address';
+      forgotMsg.style.color = 'var(--danger)';
+      return;
+    }
+    const btn = container.querySelector('#forgot-confirm');
+    btn.disabled = true;
+    try {
+      await rest.forgotPassword(identifier);
+      forgotMsg.textContent = '✓ If that account has an email on file, a reset link has been sent.';
+      forgotMsg.style.color = 'var(--success)';
+    } catch (err) {
+      forgotMsg.textContent = `✗ ${err.message}`;
+      forgotMsg.style.color = 'var(--danger)';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  forgotEmail.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') container.querySelector('#forgot-confirm').click();
   });
 }
 

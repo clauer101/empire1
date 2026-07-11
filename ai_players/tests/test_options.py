@@ -40,13 +40,13 @@ def test_to_action():
 
 
 def test_category_weight_defaults_to_one():
-    assert category_weight({}, "balanced", "economy", "defense") == 1.0
+    assert category_weight({}, "balanced", "other_strategy", "defense") == 1.0
 
 
 def test_category_weight_uses_personality():
     cfg = {"category_weights": {"aggressive": {"attack": 1.6, "defense": 0.7}}}
-    assert category_weight(cfg, "aggressive", "economy", "attack") == 1.6
-    assert category_weight(cfg, "aggressive", "economy", "defense") == 0.7
+    assert category_weight(cfg, "aggressive", "other_strategy", "attack") == 1.6
+    assert category_weight(cfg, "aggressive", "other_strategy", "defense") == 0.7
 
 
 def test_active_strategy_boost():
@@ -54,9 +54,9 @@ def test_active_strategy_boost():
            "active_strategy_boost": 1.5}
     # defense option while defense is active → boosted
     assert category_weight(cfg, "balanced", "defense", "defense") == 1.5
-    # economy option while defense active → no boost
-    cfg["category_weights"]["balanced"]["economy"] = 1.0
-    assert category_weight(cfg, "balanced", "defense", "economy") == 1.0
+    # other_strategy option while defense active → no boost
+    cfg["category_weights"]["balanced"]["other_strategy"] = 1.0
+    assert category_weight(cfg, "balanced", "defense", "other_strategy") == 1.0
 
 
 def test_artifact_maps_to_attack_category_for_boost():

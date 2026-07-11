@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse
+import asyncio
 import json
 import logging
 import logging.handlers
@@ -54,7 +55,7 @@ _ERA_PATTERNS = [
     ("neolithic",    re.compile(r'#\s+NEOLITHIC')),
     ("bronze",       re.compile(r'#\s+BRONZE_AGE')),
     ("iron",         re.compile(r'#\s+IRON_AGE')),
-    ("middle_ages",  re.compile(r'#\s+MIDDLE_AGES')),
+    ("medieval",     re.compile(r'#\s+MEDIEVAL')),
     ("renaissance",  re.compile(r'#\s+RENAISSANCE')),
     ("industrial",   re.compile(r'#\s+INDUSTRIAL')),
     ("modern",       re.compile(r'#\s+MODERN')),
@@ -66,7 +67,7 @@ _ERA_INFO = {
     "neolithic":    "Effort 800 – 7.500",
     "bronze":       "Effort 2.500 – 8.000",
     "iron":         "Effort 8.000 – 30.000",
-    "middle_ages":  "Effort 28.000 – 130.000",
+    "medieval":     "Effort 28.000 – 130.000",
     "renaissance":  "Effort 100.000 – 500.000",
     "industrial":   "Effort 500.000 – 2.000.000",
     "modern":       "Effort 2.000.000 – 5.300.000",
@@ -170,7 +171,7 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
         "#   Neolithic      →  CLUBMAN / SCOUT / WARRIOR\n"
         "#   Bronze Age     →  BOWMAN / SWORDMAN / CHARIOT\n"
         "#   Iron Age       →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
-        "#   Middle Ages    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
+        "#   Medieval       →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
         "#   Renaissance    →  NINJA / MUSKETEER / DRAGOONER\n"
         "#   Industrial     →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
         "#   Modern         →  SPECOPS / HELI\n"
@@ -189,7 +190,7 @@ def _write_ai_waves(waves_with_era: list[dict]) -> str:
     # Map lowercase English era keys → YAML comment markers used in ai_waves.yaml
     _ERA_COMMENT_KEY = {
         "stone": "STONE_AGE", "neolithic": "NEOLITHIC", "bronze": "BRONZE_AGE",
-        "iron": "IRON_AGE", "middle_ages": "MIDDLE_AGES", "renaissance": "RENAISSANCE",
+        "iron": "IRON_AGE", "medieval": "MEDIEVAL", "renaissance": "RENAISSANCE",
         "industrial": "INDUSTRIAL", "modern": "MODERN", "future": "FUTURE",
     }
 
@@ -1437,8 +1438,7 @@ def _get_map_power_upgrades():
 def _get_structure_era_map() -> dict[str, str]:
     """Return {iid: era_label_en} for all structures, parsed from structures.yaml."""
     from gameserver.util.eras import ERA_LABELS_EN
-    CONFIG_DIR = Path(__file__).resolve().parent.parent / "python_server" / "config"
-    data = yaml.safe_load((CONFIG_DIR / "structures.yaml").read_text(encoding="utf-8")) or {}
+    data = yaml.safe_load(STRUCTURES_PATH.read_text(encoding="utf-8")) or {}
     result: dict[str, str] = {}
     for iid, item in data.items():
         if isinstance(item, dict):
@@ -1454,7 +1454,39 @@ def _get_cached_structure_era_map() -> dict[str, str]:
         _structure_era_map = _get_structure_era_map()
     return _structure_era_map
 
+_structure_name_map: dict[str, str] | None = None
+
+def _get_structure_name_map() -> dict[str, str]:
+    global _structure_name_map
+    if _structure_name_map is None:
+        data = yaml.safe_load(STRUCTURES_PATH.read_text(encoding="utf-8")) or {}
+        _structure_name_map = {
+            iid: item.get("name", iid) for iid, item in data.items() if isinstance(item, dict)
+        }
+    return _structure_name_map
+
 NON_TOWER = {"castle", "spawnpoint", "path", "empty", "blocked", "void", ""}
+
+def _compute_map_towers(m: dict) -> list[dict]:
+    """Return [{name, count}, ...] of towers placed on the map, most common first."""
+    tower_names = _get_structure_name_map()
+    counts: dict[str, int] = {}
+    for t in (m.get("hex_map") or []):
+        tt = t.get("type", "")
+        if isinstance(tt, dict):
+            tt = tt.get("type", "")
+        if tt in NON_TOWER or not tt:
+            continue
+        name = tower_names.get(tt, tt)
+        counts[name] = counts.get(name, 0) + 1
+    return [{"name": n, "count": c} for n, c in sorted(counts.items(), key=lambda kv: -kv[1])]
+
+def _compute_map_path_length(m: dict) -> int | None:
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+    from gameserver.util.maze_loader import tile_type
+    str_map = {f"{t['q']},{t['r']}": tile_type(t.get("type", "empty")) for t in (m.get("hex_map") or [])}
+    path = find_path_from_spawn_to_castle(str_map)
+    return len(path) - 1 if path else None
 
 def _compute_map_age_pct(m: dict) -> dict[str, float]:
     """Return {era_label: pct} tower era distribution for a map entry."""
@@ -1479,8 +1511,9 @@ def _compute_map_defense_power(m: dict) -> float:
     from gameserver.engine.power_service import defense_power
     from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
     from gameserver.models.empire import Empire
+    from gameserver.util.maze_loader import tile_type
     upgrades, default_life = _get_map_power_upgrades()
-    hex_map = {f"{t['q']},{t['r']}": {"type": t.get("type", "empty")} for t in (m.get("hex_map") or [])}
+    hex_map = {f"{t['q']},{t['r']}": {"type": tile_type(t.get("type", "empty"))} for t in (m.get("hex_map") or [])}
     empire = Empire(uid=0, name="")
     empire.hex_map = hex_map
     empire.max_life = float(m.get("life") or default_life)
@@ -1494,16 +1527,18 @@ def _compute_map_defense_power(m: dict) -> float:
 
 @app.get("/api/saved-maps")
 async def list_saved_maps():
-    """Return map names and their life values from saved_maps.yaml."""
-    if not _SAVED_MAPS_PATH.exists():
-        return JSONResponse({"maps": [], "life": {}})
-    data = yaml.safe_load(_SAVED_MAPS_PATH.read_text()) or {}
-    names   = []
-    life    = {}
-    power   = {}
-    age_pct = {}
-    for m in (data.get("maps") or []):
-        name = m.get("name", m.get("id", "?"))
+    """Return map names and their life values from saved_maps.yaml (curated maps only)."""
+    from gameserver.util.maze_loader import load_raw_saved_maps
+    maps = load_raw_saved_maps()
+
+    names       = []
+    life        = {}
+    power       = {}
+    age_pct     = {}
+    towers      = {}
+    path_length = {}
+    for m in maps:
+        name = m["name"]
         names.append(name)
         if m.get("life") is not None:
             life[name] = m["life"]
@@ -1515,7 +1550,18 @@ async def list_saved_maps():
             age_pct[name] = _compute_map_age_pct(m)
         except Exception:
             pass
-    return JSONResponse({"maps": names, "life": life, "power": power, "age_pct": age_pct})
+        try:
+            towers[name] = _compute_map_towers(m)
+        except Exception:
+            pass
+        try:
+            path_length[name] = _compute_map_path_length(m)
+        except Exception:
+            pass
+    return JSONResponse({
+        "maps": names, "life": life, "power": power, "age_pct": age_pct,
+        "towers": towers, "path_length": path_length,
+    })
 
 
 @app.put("/api/tools/map-life")
@@ -1555,7 +1601,7 @@ async def sim_map(map_name: str, era: str, n: int):
     import tempfile
     from fastapi.responses import StreamingResponse
 
-    script = Path(__file__).resolve().parent.parent / "sim_map.py"
+    script = Path(__file__).resolve().parent.parent / "scripts" / "sim_map.py"
     python = Path(__file__).resolve().parent.parent / "python_server" / ".venv" / "bin" / "python3"
     if not python.exists():
         python = Path(sys.executable)
@@ -1617,9 +1663,6 @@ async def restart_web():
 @app.post("/api/admin/deploy")
 async def admin_deploy(body: dict = Body(...)):
     """Trigger deploy.sh on the host for the given env (prod|dev)."""
-    import asyncio
-    import subprocess
-
     env = body.get("env", "prod")
     if env not in ("prod", "dev"):
         return JSONResponse({"ok": False, "detail": "env must be 'prod' or 'dev'"}, status_code=400)
@@ -1647,20 +1690,89 @@ async def admin_deploy(body: dict = Body(...)):
     return JSONResponse({"ok": True, "message": f"Deploy of '{env}' started …"})
 
 
-@app.get("/api/tools/bots")
-async def get_bot_status() -> JSONResponse:
-    """Read all ai_players/states/*.yaml files and last 48 h of each bot log."""
+def _battle_stats(battle_log: list) -> dict:
+    """Winrate overall + per-era, and last-10-per-role, from a bot's battle_log.
+
+    battle_log is wiped every season (run_bot.py::_check_season_reset), so the
+    overall rate computed here is implicitly "since season start" — no
+    separate season-start timestamp is needed.
+    """
+    def _rate(entries: list) -> dict:
+        wins = sum(1 for e in entries if e.get("won"))
+        total = len(entries)
+        return {"wins": wins, "losses": total - wins, "total": total,
+                "rate": round(wins / total, 3) if total else None}
+
+    by_era: dict[str, list] = {}
+    for e in battle_log:
+        by_era.setdefault(e.get("era", "stone"), []).append(e)
+
+    def _last(role: str, n: int = 10) -> list[dict]:
+        return [{"won": e.get("won"), "era": e.get("era"), "opponent": e.get("opponent"),
+                 "ts": e.get("ts")}
+                for e in battle_log if e.get("role") == role][-n:]
+
+    return {
+        "winrate_season": _rate(battle_log),
+        "winrate_by_era": {era: _rate(entries) for era, entries in by_era.items()},
+        "last10_attack": _last("attacker"),
+        "last10_defense": _last("defender"),
+    }
+
+
+# Bot logs are append-only and only wiped on a season change (run_bot.py::
+# _check_season_reset), so within a season they can grow to many MB. Reading
+# the whole file on every poll (previously: `log_path.read_text()`) is the
+# main cost of this endpoint — bound it to the tail, since only the last 48h
+# of strategy-change lines are ever used.
+LOG_TAIL_BYTES = 2 * 1024 * 1024  # 2 MB comfortably covers 48h at any cycle interval
+
+
+def _read_log_tail(log_path: Path) -> str:
+    size = log_path.stat().st_size
+    with log_path.open("rb") as f:
+        if size > LOG_TAIL_BYTES:
+            f.seek(size - LOG_TAIL_BYTES)
+            f.readline()  # drop the partial first line from the seek
+        return f.read().decode(errors="replace")
+
+
+# Substrings identifying gold-spending action descriptions — checked with
+# `in`, not a prefix match, because baseline.py's breach-response/tower-floor
+# options wrap a frontier planner's description inside their own
+# ("baseline defense (breach response): frontier: flank tile ...", "baseline
+# defense (towers N/M): frontier: tower ..."), so the gold-spend marker can be
+# embedded rather than leading. Kept as substrings (not a fixed enum) because
+# planners format the item/target into the description — see
+# bot/planners/{baseline,defense_frontier,attack}.py. Free actions (research,
+# spawn/castle relocation, wave-fill with an already-unlocked critter, ruler
+# placement/skill-ups, spy/attack calls) are deliberately excluded — only true
+# gold spends belong on a "where did the gold go" list.
+_GOLD_ACTION_MARKERS = (
+    "baseline build ",
+    "frontier: era-swap ", "frontier: upgrade ", "frontier: flank tile ",
+    "frontier: buy side tile ", "frontier: grow ", "frontier: tower ",
+    "buy citizen", "buy slot on wave ", "upgrade critter ",
+    "create army", "add wave ", "add first wave ", "era-upgrade wave ",
+    "buy tile ",
+)
+
+
+def _is_gold_action(description: str) -> bool:
+    return any(marker in description for marker in _GOLD_ACTION_MARKERS)
+
+
+def _load_bot_status(base: Path) -> dict:
+    """Blocking work for get_bot_status() — run off the event loop via to_thread."""
     import re as _re
     from datetime import datetime as _dt, timezone as _tz, timedelta as _td
 
-    # Works both in repo layout and Docker (web/ sits next to ai_players/)
-    base = Path(__file__).parent.parent
     states_dir = base / "ai_players" / "states"
     logs_dir = base / "ai_players" / "logs"
     cutoff = _dt.now(_tz.utc) - _td(hours=48)
 
     if not states_dir.exists():
-        return JSONResponse({"bots": []})
+        return {"bots": [], "personalities": {}}
 
     # Personality → per-strategy weight multipliers (every bot has ALL skills;
     # personality only re-weights how often each strategy is chosen).
@@ -1682,10 +1794,15 @@ async def get_bot_status() -> JSONResponse:
         name = f.stem
         log_path = logs_dir / f"{name}.log"
 
+        # Strategy timeline (48h-windowed) and gold-spend history (unwindowed:
+        # a quiet bot's last 5 spends may be older than 48h — see
+        # _is_gold_action). Both walk the same tail scan since re-reading a
+        # potentially multi-MB log twice per bot would double the endpoint's
+        # main cost for no benefit.
         strategy_history: list[dict] = []
-        triggers: list[dict] = []
+        all_actions: list[dict] = []  # every "action: ..." line, any age
         if log_path.exists():
-            for line in log_path.read_text(errors="replace").splitlines():
+            for line in _read_log_tail(log_path).splitlines():
                 m = _re.match(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),\d+ \[.*?\] (.*)", line)
                 if not m:
                     continue
@@ -1693,33 +1810,51 @@ async def get_bot_status() -> JSONResponse:
                     ts = _dt.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=_tz.utc)
                 except ValueError:
                     continue
+                msg = m.group(2)
+                # msg still carries the logger-name prefix (e.g. "bot: " or
+                # "bot.planner.frontier: "), so "action: " can appear anywhere
+                # in it, not just at the start — search, not match.
+                am = _re.search(r"\baction: (.*)", msg)
+                if am and _is_gold_action(am.group(1)):
+                    all_actions.append({"description": am.group(1), "ts": m.group(1), "_dt": ts})
                 if ts < cutoff:
                     continue
-                msg = m.group(2)
                 sm = _re.search(r"new strategy: (\w+) until (\S+)", msg)
                 if sm:
                     strategy_history.append({"type": sm.group(1), "until": sm.group(2), "ts": m.group(1)})
                 sm2 = _re.search(r"strategy override: (\w+)", msg)
                 if sm2:
                     strategy_history.append({"type": sm2.group(1), "source": "override", "ts": m.group(1)})
-                if "breach detected" in msg:
-                    triggers.append({"event": "breach_defense_switch", "ts": m.group(1)})
+                if "breach detected" in msg and "forced defense" in msg:
                     # A breach forces a defense strategy; surface it on the
                     # timeline too (the message isn't a "new strategy:" line).
                     bu = _re.search(r"until (\S+)", msg)
-                    if "forced defense" in msg:
-                        strategy_history.append({
-                            "type": "defense", "source": "breach", "ts": m.group(1),
-                            "until": bu.group(1) if bu else None})
-                elif "breach response" in msg.lower():
-                    triggers.append({"event": "breach_response", "ts": m.group(1)})
-                elif "analyzed replay" in msg:
-                    segs = _re.search(r"weak segments (\[.*?\])", msg)
-                    triggers.append({"event": "replay_analyzed", "ts": m.group(1),
-                                     "detail": segs.group(1) if segs else ""})
-                elif "savings goal set" in msg:
-                    triggers.append({"event": "savings_goal", "ts": m.group(1),
-                                     "detail": msg.split("savings goal set:")[-1].strip()})
+                    strategy_history.append({
+                        "type": "defense", "source": "breach", "ts": m.group(1),
+                        "until": bu.group(1) if bu else None})
+
+        # Attribute each gold spend to whatever strategy was active at that
+        # moment: the latest strategy_history entry whose ts is <= the
+        # action's ts (all entries here are well-formed "%Y-%m-%d %H:%M:%S"
+        # strings from the same log, so plain string comparison sorts
+        # correctly). Falls back to the bot's current strategy type only when
+        # no history entry precedes the action (e.g. very first action ever).
+        hist_sorted = sorted(strategy_history, key=lambda h: h["ts"])
+        current_type = ((state.get("strategy") or {}).get("type")) or "unknown"
+
+        def _strategy_at(ts: str) -> str:
+            active = current_type
+            for h in hist_sorted:
+                if h["ts"] <= ts:
+                    active = h["type"]
+                else:
+                    break
+            return active
+
+        last_gold_spends = [
+            {"description": a["description"], "ts": a["ts"], "strategy": _strategy_at(a["ts"])}
+            for a in all_actions[-5:]
+        ]
 
         memory = state.get("memory") or {}
         bots.append({
@@ -1732,54 +1867,50 @@ async def get_bot_status() -> JSONResponse:
                 "breaches": (memory.get("defense_weak_waves") or {}).get("breaches", 0),
                 "pending_breach": memory.get("pending_breach", False),
                 "savings_goal": memory.get("savings_goal"),
-                "defense_analysis": {
-                    k: v for k, v in (memory.get("defense_analysis") or {}).items()
-                    if k != "path"
-                } if memory.get("defense_analysis") else None,
                 "attack_history_count": len(memory.get("attack_history") or []),
-                "analyzed_replays": len(memory.get("analyzed_replay_keys") or []),
             },
             "strategy_history_48h": strategy_history[-30:],
-            "triggers_48h": triggers[-50:],
+            "last_gold_spends": last_gold_spends,
+            **_battle_stats(memory.get("battle_log") or []),
         })
-    return JSONResponse({"bots": bots, "personalities": personalities})
+    return {"bots": bots, "personalities": personalities}
+
+
+@app.get("/api/tools/bots")
+async def get_bot_status() -> JSONResponse:
+    """Read all ai_players/states/*.yaml files and last 48 h of each bot log."""
+    # Works both in repo layout and Docker (web/ sits next to ai_players/)
+    base = Path(__file__).parent.parent
+    result = await asyncio.to_thread(_load_bot_status, base)
+    return JSONResponse(result)
 
 
 @app.post("/api/tools/bots")
 async def spawn_bot(body: dict = Body(default={})) -> JSONResponse:
     """Create a new bot state file. The fleet will pick it up on next restart."""
     import random as _random
+    import re as _re
     import secrets as _secrets
 
     base = Path(__file__).parent.parent
-    states_dir = base / "ai_players" / "states"
+    ai_players_dir = base / "ai_players"
+    states_dir = ai_players_dir / "states"
     states_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate a unique fantasy name (adjective+noun, like the Python state module).
-    adjectives = [
-        "Gilded", "Crimson", "Shadow", "Frost", "Ember", "Silent", "Storm",
-        "Iron", "Velvet", "Obsidian", "Radiant", "Thorn", "Mystic", "Azure",
-        "Ravenous", "Gleaming", "Wandering", "Eternal", "Hollow", "Verdant",
-        "Brazen", "Cinder", "Dusk", "Gloom", "Hallowed", "Lunar", "Onyx",
-        "Scarlet", "Solar", "Whispering", "Wild", "Amber", "Glacial", "Searing",
-    ]
-    nouns = [
-        "Raven", "Wolf", "Drake", "Sphinx", "Phoenix", "Griffin", "Basilisk",
-        "Wyrm", "Falcon", "Serpent", "Hydra", "Golem", "Specter", "Warden",
-        "Sentinel", "Reaver", "Oracle", "Marauder", "Harbinger", "Tempest",
-        "Talon", "Fang", "Crown", "Bastion", "Citadel", "Vortex", "Ember",
-        "Wraith", "Cobra", "Stag", "Lynx", "Kraken", "Manticore", "Nomad",
-    ]
+    if str(ai_players_dir) not in _sys.path:
+        _sys.path.insert(0, str(ai_players_dir))
+    from bot.state import random_empire_name, random_fantasy_name
+
     existing = {p.stem for p in states_dir.glob("*.yaml")}
     name = body.get("name", "").strip()
     if name:
-        # Validate caller-supplied name
-        if not name.replace("_", "").replace("-", "").isalnum():
+        # Validate caller-supplied name (letters/digits/spaces/hyphen/underscore only)
+        if not _re.match(r'^[\w\- ]+$', name):
             return JSONResponse({"ok": False, "detail": "Invalid name"}, status_code=400)
     else:
         for _ in range(100):
-            candidate = _random.choice(adjectives) + _random.choice(nouns)
-            if len(candidate) <= 15 and candidate not in existing:
+            candidate = random_fantasy_name()
+            if candidate not in existing:
                 name = candidate
                 break
         if not name:
@@ -1788,7 +1919,7 @@ async def spawn_bot(body: dict = Body(default={})) -> JSONResponse:
     if name in existing:
         return JSONResponse({"ok": False, "detail": f"Bot '{name}' already exists"}, status_code=409)
 
-    personalities = ["economy", "aggressive", "defensive", "balanced"]
+    personalities = ["aggressive", "defensive", "balanced"]
     personality = body.get("personality", "")
     if personality not in personalities:
         personality = _random.choice(personalities)
@@ -1800,7 +1931,7 @@ async def spawn_bot(body: dict = Body(default={})) -> JSONResponse:
             "username": username,
             "password": _secrets.token_urlsafe(16),
             "email": "",
-            "empire_name": f"{name}'s Dominion",
+            "empire_name": random_empire_name(),
             "uid": None,
         },
         "personality": personality,
@@ -1825,7 +1956,7 @@ async def override_bot_strategy(name: str, body: dict = Body(default={})) -> JSO
     import urllib.request as _req
     import urllib.error as _uerr
 
-    if not _re.match(r'^[\w\-]+$', name):
+    if not _re.match(r'^[\w\- ]+$', name):
         return JSONResponse({"ok": False, "detail": "Invalid name"}, status_code=400)
 
     base = Path(__file__).parent.parent
@@ -1865,7 +1996,7 @@ async def override_bot_strategy(name: str, body: dict = Body(default={})) -> JSO
 async def delete_bot(name: str) -> JSONResponse:
     """Remove a bot's state file (and log if present). Irreversible."""
     import re as _re
-    if not _re.match(r'^[\w\-]+$', name):
+    if not _re.match(r'^[\w\- ]+$', name):
         return JSONResponse({"ok": False, "detail": "Invalid name"}, status_code=400)
 
     base = Path(__file__).parent.parent

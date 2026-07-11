@@ -18,6 +18,7 @@ import { pageTitle } from './lib/page_title.js';
 import { fmtRes } from './lib/format.js';
 
 import loginView from './views/login.js';
+import resetPasswordView from './views/reset_password.js';
 import dashView, { getCultureLeaderName, onLeaderUpdated } from './views/status.js?v=20260514a';
 import buildView from './views/buildings.js';
 import resView from './views/research.js';
@@ -56,6 +57,7 @@ eventBus.on('rest:unauthorized', () => {
 // ── Register views ─────────────────────────────────────────
 [
   loginView,
+  resetPasswordView,
   signupView,
   dashView,
   buildView,

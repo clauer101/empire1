@@ -165,16 +165,37 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         if remaining <= 0
     ]
 
-    # Structures summary
+    # Structures summary — derived from hex_map, not the legacy empire.structures
+    # dict, which is never populated by the modern map-composer placement flow
+    # (buy_tile/save_map only write hex_map). Same construction battle-start
+    # code uses (see network/handlers/battle.py::_send_battle_setup).
+    from gameserver.models.hex import HexCoord
+    from gameserver.models.structure import structure_from_item
+    from gameserver.network.handlers._core import _tile_select, _tile_type
+
     structures_list = []
-    for sid, s in empire.structures.items():
+    hex_map_items = svc.upgrade_provider.items if svc.upgrade_provider else {}
+    placed_tower_iids: set[str] = set()
+    structure_sid = 1
+    for tile_key, tile_val in empire.hex_map.items():
+        tile_type = _tile_type(tile_val)
+        item = hex_map_items.get(tile_type)
+        if item is None:
+            continue
+        placed_tower_iids.add(tile_type)
+        q, r = map(int, tile_key.split(","))
+        s = structure_from_item(
+            sid=structure_sid, iid=tile_type, position=HexCoord(q, r),
+            item=item, select_override=_tile_select(tile_val, getattr(item, "select", "first")),
+        )
         structures_list.append({
-            "sid": sid,
+            "sid": s.sid,
             "iid": s.iid,
             "position": {"q": s.position.q, "r": s.position.r},
             "damage": s.damage,
             "range": s.range,
         })
+        structure_sid += 1
 
     # Ongoing attacks
     from gameserver.network.handlers._core import _active_battles
@@ -277,16 +298,20 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "base_artifact_steal_victory": svc.game_config.base_artifact_steal_victory if svc.game_config else 0.0,
         "base_artifact_steal_defeat": svc.game_config.base_artifact_steal_defeat if svc.game_config else 0.0,
         "current_era": svc.empire_service.get_current_era(empire),
+        # Alias of current_era: ai_players bots read this key everywhere.
+        "era": svc.empire_service.get_current_era(empire),
         "item_upgrades": {iid: dict(stats) for iid, stats in empire.item_upgrades.items()},
         # Next per-iid item-upgrade price (cost is independent of which stat is
         # bought — it depends only on the item's era and total levels already on
-        # the iid). Covers placed towers plus any already-upgraded item so the
-        # client/bots can weigh a workshop upgrade against other spending without
-        # re-deriving the formula. Stat "damage" is a representative valid stat.
+        # the iid). Covers placed towers, placed wave critters, and any
+        # already-upgraded item, so the client/bots can weigh a workshop
+        # upgrade against other spending without re-deriving the formula.
+        # Stat "damage" is a representative valid stat.
         "item_upgrade_prices": {
             iid: round(svc.empire_service._item_upgrade_price(empire, iid, "damage"), 2)
             for iid in (
-                {s.iid for s in empire.structures.values()}
+                placed_tower_iids
+                | {w.iid for a in empire.armies for w in a.waves if w.iid}
                 | set(empire.item_upgrades.keys())
             )
         },
@@ -405,24 +430,19 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
     The initial tiles are shifted to the empire's assigned global spawn position.
     """
     from gameserver.models.empire import Empire
+    from gameserver.models.hex import spiral_slot
     svc = _svc()
     assert svc.empire_service is not None
     starting_res = dict(svc.game_config.starting_resources) if svc.game_config else {"gold": 0.0, "culture": 0.0, "life": 10.0}
     starting_max_life = svc.game_config.starting_max_life if svc.game_config else 10.0
 
-    # Compute global spawn position for this new empire
+    # Deterministic spawn position: the Nth empire always gets the Nth slot
+    # of an expanding hex spiral — no distance checks or tile scanning needed.
     spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
-    existing_tiles: list[tuple[int, int]] = []
-    for emp in svc.empire_service.all_empires.values():
-        for key in emp.hex_map:
-            q, r = map(int, key.split(","))
-            existing_tiles.append((q, r))
-    if not existing_tiles:
-        log.warning("No existing tiles found when placing uid=%d — this should not happen in a live game", uid)
-    spawn_offset = _next_spawn_point(spacing=spacing, existing_castles=existing_tiles)
-    log.info("New empire uid=%d spawn offset q=%d r=%d (spacing=%d, existing_tiles=%d)", uid, spawn_offset.q, spawn_offset.r, spacing, len(existing_tiles))
-
-    oq, or_ = spawn_offset.q, spawn_offset.r
+    index = sum(1 for eu in svc.empire_service.all_empires if eu not in (0, 100))
+    slot = spiral_slot(index)
+    oq, or_ = slot.q * spacing, slot.r * spacing
+    log.info("New empire uid=%d spawn offset q=%d r=%d (spacing=%d, index=%d)", uid, oq, or_, spacing, index)
     empire = Empire(
         uid=uid,
         name=empire_name or f"{username}'s Empire",
@@ -436,32 +456,6 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
         },
     )
     svc.empire_service.register(empire)
-
-
-
-
-def _next_spawn_point(spacing: int, existing_castles: list[tuple[int, int]]) -> Any:
-    """Return the nearest grid point (multiples of spacing) that is >= spacing hex steps from all existing castles."""
-    import math
-    from gameserver.models.hex import HexCoord
-
-    def _hex_dist(aq: int, ar: int, bq: int, br: int) -> int:
-        return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
-
-    radius = 0
-    while True:
-        pts: list[tuple[int, float, int, int]] = []
-        for gq in range(-radius, radius + 1):
-            for gr in range(-radius, radius + 1):
-                q, r = gq * spacing, gr * spacing
-                d = _hex_dist(0, 0, q, r)
-                angle = math.atan2(q, -r)
-                pts.append((d, angle, q, r))
-        pts.sort()
-        for _, _, q, r in pts:
-            if all(_hex_dist(q, r, eq, er) >= spacing for eq, er in existing_castles):
-                return HexCoord(q, r)
-        radius += 1
 
 
 async def handle_auth_request(

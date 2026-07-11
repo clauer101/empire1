@@ -1,4 +1,5 @@
 import { isGameFrozen } from './game_state.js';
+import { escHtml } from './html.js';
 
 /**
  * Generic item queue view factory.
@@ -203,6 +204,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
             ${imgUrl ? `<div class="item-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;" data-bg="${imgUrl}"></div><div class="item-bg-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;"></div>` : ''}
             <div style="flex:1;position:relative;">
               <div><strong style="font-size:1.1em;">${status === 'in-progress' ? cfg.actionIcon : ''}${info.name || iid}</strong>${info.era ? `<span style="font-size:0.75em;color:#c9a84c;margin-left:6px;font-weight:400;">${ERA_ROMAN[ERA_YAML_TO_KEY[info.era]] || ''}</span>` : ''}${info.advances_era ? '<span class="badge badge--era-advance" title="Completing this item advances your empire to a new era">⬆ New Era</span>' : ''}</div>
+              ${info.branch && info.branch !== 'main' ? `<div style="font-size:0.7em;color:#4fc3f7;font-weight:600;">${escHtml(info.branch_label || 'optional')} branch</div>` : ''}
               <div class="${cfg.msgClass}"></div>
               <div class="item-description" style="font-size:0.9em; color:#aaa; margin-top:4px;">${info.description || '—'}</div>
             </div>

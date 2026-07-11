@@ -48,14 +48,15 @@ def _iso_in(seconds: float) -> str:
 
 @pytest.fixture(autouse=True)
 def reset_global_state():
-    """global_state is module-level globals — keep it clean across tests."""
-    global_state.clear_end_criterion()
-    global_state.set_season_reset_triggered(False)
+    """global_state is module-level globals — keep it clean across tests.
+
+    Reset both before and after: another test in the full suite may leave
+    season/freeze state dirty, which otherwise skews this flow's assertions.
+    """
+    global_state.reset()
     global_state.set_season(1, "Season 1")
     yield
-    global_state.clear_end_criterion()
-    global_state.set_season_reset_triggered(False)
-    global_state.set_season(1, "Season 1")
+    global_state.reset()
 
 
 @pytest.fixture
@@ -177,7 +178,7 @@ async def test_full_season_round_trip(harness):
         _next_title="Season 2",
     )
     gl._step(1.0)
-    assert gl._wipe_done is True
+    assert global_state.is_season_wipe_done() is True
     assert empires.all_empires == {}
     assert attacks.get_all_attacks() == []
     assert global_state.get_end_criterion_activated() is None  # cleared on wipe
@@ -199,18 +200,18 @@ async def test_full_season_round_trip(harness):
     gl._step(1.0)
     assert global_state.get_season_number() == season_before + 1
     assert global_state.is_season_reset_triggered() is False
-    assert gl._wipe_done is False
-    assert gl._season_snapshot_done is False
+    assert global_state.is_season_wipe_done() is False
+    assert global_state.is_season_snapshot_done() is False
     assert global_state.get_season_title() == "Season 2"
 
 
 async def test_wipe_fires_exactly_once(harness):
-    """The _wipe_done guard prevents a second wipe on the next tick."""
+    """The season-wipe-done guard prevents a second wipe on the next tick."""
     gl, empires, attacks, gc, tmp_path = harness
 
     # Enter the frozen state with the leadtime window open.
     global_state.set_season_reset_triggered(True)
-    gl._season_snapshot_done = True
+    global_state.set_season_snapshot_done(True)
     global_state.set_season(
         1, "Season 1",
         _next_start=_iso_in(SEASON_LEADTIME - 1),
@@ -218,7 +219,7 @@ async def test_wipe_fires_exactly_once(harness):
     )
 
     gl._step(1.0)
-    assert gl._wipe_done is True
+    assert global_state.is_season_wipe_done() is True
     assert empires.all_empires == {}
 
     # Re-register an empire; a second tick must NOT wipe it again.

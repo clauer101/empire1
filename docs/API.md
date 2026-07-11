@@ -72,6 +72,8 @@ The server enforces per-IP rate limits via SlowAPI:
 | Endpoint | Limit |
 |---|---|
 | `POST /api/auth/login`, `POST /api/auth/signup` | 30 req/min |
+| `POST /api/auth/change-password`, `POST /api/auth/reset-password` | 10 req/min |
+| `POST /api/auth/forgot-password` | 5 req/min |
 | `POST /api/attack`, `POST /api/spy-attack` | 20 req/min |
 | `POST /api/messages` | 20 req/min |
 | `POST /api/empire/build` | 60 req/min |
@@ -139,6 +141,98 @@ Accounts created with `is_bot: true` are permanently flagged as bots (visible vi
 
 ---
 
+### `POST /api/auth/change-password`
+Change the password of the currently logged-in account. Requires the current
+password.
+
+**Auth required** (Bearer token).  Rate-limited: 10 req/min.
+
+**Request body**
+```json
+{ "current_password": "old-secret", "new_password": "new-secret" }
+```
+
+**Response**
+```json
+{ "success": true }
+```
+or, on failure (wrong current password / new password too short):
+```json
+{ "success": false, "error": "Current password is incorrect" }
+```
+
+---
+
+### `POST /api/auth/change-email`
+Change the email address of the currently logged-in account. Requires the
+current password. Passing an empty string clears the email (email is
+optional).
+
+**Auth required** (Bearer token).  Rate-limited: 10 req/min.
+
+**Request body**
+```json
+{ "current_password": "s3cret", "new_email": "new@example.com" }
+```
+
+**Response**
+```json
+{ "success": true }
+```
+or, on failure (wrong password / invalid email format):
+```json
+{ "success": false, "error": "Invalid email format" }
+```
+
+---
+
+### `POST /api/auth/forgot-password`
+Request a password reset email, identified by username or email. Only works
+for accounts that have an email address on file (`email` is optional at
+signup).
+
+**No auth required.**  Rate-limited: 5 req/min.
+
+**Request body**
+```json
+{ "identifier": "user@example.com" }
+```
+`identifier` may be either the account's username or its email address.
+
+**Response** — always the same, regardless of whether the identifier matches
+an account (prevents account enumeration):
+```json
+{ "success": true }
+```
+
+> If the identifier matches an account with an email on file, a reset link
+> (`#reset-password/<token>`, valid 1 hour, single-use) is emailed via Resend.
+> No email is sent — and no error is returned — for unknown identifiers or
+> accounts without an email.
+
+---
+
+### `POST /api/auth/reset-password`
+Set a new password using the token from a reset email.
+
+**No auth required.**  Rate-limited: 10 req/min.
+
+**Request body**
+```json
+{ "token": "<token from reset link>", "new_password": "new-secret" }
+```
+
+**Response**
+```json
+{ "success": true }
+```
+or, on failure (invalid/expired/already-used token, or new password too short):
+```json
+{ "success": false, "error": "Reset link is invalid or has expired" }
+```
+
+---
+
 ## Empire State
 
 ### `GET /api/empire/summary`  🔐
@@ -166,7 +260,7 @@ The **primary polling endpoint**. Returns the full state of the authenticated em
   "base_culture": 0.2,        // culture/s from buildings
   "base_build_speed": 1.0,
   "base_research_speed": 0.7,
-  "current_era": "middle_ages",   // lowercase era key (see Era Keys section)
+  "current_era": "medieval",   // lowercase era key (see Era Keys section)
   "effects": {                    // all passive effects active on this empire
     "gold_modifier": 0.3,
     "culture_offset": 0.5,
@@ -538,7 +632,7 @@ Static game data: era order, per-era item IIDs, upgrade costs, season info. No a
 **Response (key fields)**
 ```json
 {
-  "eras": ["stone", "neolithic", "bronze", "iron", "middle_ages", "renaissance", "industrial", "modern", "future"],
+  "eras": ["stone", "neolithic", "bronze", "iron", "medieval", "renaissance", "industrial", "modern", "future"],
   "labels_en": ["Stone Age", "Neolithic", "Bronze Age", ...],
   "critters": { "stone": ["SLAVE", "WORKER"], "neolithic": ["SOLDIER", ...], ... },
   "structures": { ... },
@@ -876,7 +970,7 @@ Two formats exist — do not mix them:
 | 2 | `neolithic` | Neolithic | `NEOLITHIC` |
 | 3 | `bronze` | Bronze Age | `BRONZE_AGE` |
 | 4 | `iron` | Iron Age | `IRON_AGE` |
-| 5 | `middle_ages` | Middle Ages | `MIDDLE_AGES` |
+| 5 | `medieval` | Medieval | `MEDIEVAL` |
 | 6 | `renaissance` | Renaissance | `RENAISSANCE` |
 | 7 | `industrial` | Industrial | `INDUSTRIAL` |
 | 8 | `modern` | Modern | `MODERN` |

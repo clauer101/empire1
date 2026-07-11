@@ -14,7 +14,7 @@ function eq(a, b) { if (a !== b) throw new Error(`Expected "${b}", got "${a}"`);
 
 const ERAS = [
   'stone', 'neolithic', 'bronze', 'iron',
-  'middle_ages', 'renaissance', 'industrial', 'modern', 'future'
+  'medieval', 'renaissance', 'industrial', 'modern', 'future'
 ];
 
 // ── ERA_ROMAN ────────────────────────────────────────────────────────────────

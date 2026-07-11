@@ -7,7 +7,7 @@ const STATIC_SPRITES = [
   '/assets/sprites/bases/base_neolithicum.webp',
   '/assets/sprites/bases/base_bronze.webp',
   '/assets/sprites/bases/base_iron.webp',
-  '/assets/sprites/bases/base_middle_ages.webp',
+  '/assets/sprites/bases/base_medieval.webp',
   '/assets/sprites/bases/base_renaissance.webp',
   '/assets/sprites/bases/base_industrial.webp',
   '/assets/sprites/bases/base_modern.webp',

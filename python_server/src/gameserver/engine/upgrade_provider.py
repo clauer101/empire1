@@ -48,20 +48,35 @@ class UpgradeProvider:
         item = self.items.get(iid)
         return dict(item.effects) if item and item.effects else {}
 
+    def _is_available(self, item: ItemDetails, completed: set[str]) -> bool:
+        """Requirements met, and not mutually excluded by a completed item.
+
+        Exclusion is symmetric: an item is unavailable if it excludes an
+        already-completed item, or if an already-completed item excludes it
+        (matches the check in EmpireService.build_item).
+        """
+        if not all(req in completed for req in item.requirements):
+            return False
+        if any(excl in completed for excl in item.excludes):
+            return False
+        return not any(item.iid in (self.items[c].excludes if c in self.items else ())
+                       for c in completed)
+
     def available_critters(self, completed: set[str]) -> list[ItemDetails]:
         """Return all critter types whose requirements are met."""
         return [
             i
             for i in self.items.values()
             if i.item_type == ItemType.CRITTER
-            and all(req in completed for req in i.requirements)
+            and self._is_available(i, completed)
         ]
 
     def available_items(self, item_type: ItemType, completed: set[str]) -> list[ItemDetails]:
-        """Return all items of *item_type* whose requirements are met."""
+        """Return all items of *item_type* whose requirements are met and are
+        not excluded by an already-completed item."""
         return [
             i
             for i in self.items.values()
             if i.item_type == item_type
-            and all(req in completed for req in i.requirements)
+            and self._is_available(i, completed)
         ]

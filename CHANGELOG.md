@@ -2,28 +2,22 @@
 
 ## 2026-06-10
 
-### Culture Raiding — Fairer Loot auch bei verlorenen Angriffen
+### Culture Raiding — fairer loot even for lost attacks
 
-Beim Angriff auf eine andere Empire wird jetzt auch dann Culture gestohlen, wenn der Angriff scheitert — sofern dem Verteidiger dabei Leben abgenommen wurden.
+When attacking another empire, culture is now stolen even if the attack fails —
+as long as the defender lost lives in the process.
 
-**Neue Berechnung:**
+**New calculation:**
 
-Der gestohlene Culture-Betrag setzt sich aus zwei Teilen zusammen:
+The stolen culture amount consists of two parts:
 
-1. **Leben-Anteil** (gilt immer, auch bei Angreifer-Niederlage):  
-   `fehlende Leben des Verteidigers × Era-Faktor × Rate`  
-   Je mehr Leben der Verteidiger am Ende verloren hat und je weiter fortgeschritten seine Era ist, desto mehr Culture wird gestohlen.
+1. **Lives share** (always applies, even on attacker defeat):
+   `defender's lost lives × era factor × rate`
+   The more lives the defender lost and the more advanced their era, the more
+   culture is stolen.
 
-2. **Pool-Anteil** (nur bei Angreifer-Sieg):  
-   Zusätzlich ein zufälliger Prozentsatz (1–5 %) des gesamten Culture-Pools des Verteidigers.
+2. **Pool share** (only on attacker victory):
+   Additionally a random percentage (1–5%) of the defender's total culture pool.
 
-**Era-Penalty:** Greift ein Spieler eine Empire in einer niedrigeren Era an, erhält er nur 50 % der gestohlenen Culture — kultureller Fortschritt schützt.
-
-
-# S3
-* industry einheiten zu stark
-* cannon tower zu stark
-* ninja, samurai zu schwach
-* rennai damage tower fehlt
-* geld in neuen eras schneller steigen
-* bauzeiten/ forschung auch
+**Era penalty:** If a player attacks an empire in a lower era, they receive only
+50% of the stolen culture — cultural progress protects.

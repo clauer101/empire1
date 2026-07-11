@@ -232,7 +232,7 @@ class TestRulerXpAward:
         )
         emp_svc = MagicMock()
         emp_svc.get.return_value = empire
-        emp_svc._ERA_ORDER = ["stone", "middle_ages", "renaissance"]
+        emp_svc._ERA_ORDER = ["stone", "medieval", "renaissance"]
         emp_svc.get_current_era.return_value = "stone"
         svc.empire_service = emp_svc
         return svc

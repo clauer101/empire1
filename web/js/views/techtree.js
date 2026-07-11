@@ -8,6 +8,7 @@ import { rest } from '../rest.js';
 import { ItemOverlay } from '../lib/item_overlay.js';
 import { fmtEffort, fmtEffectsInline } from '../lib/format.js';
 import { ERA_ROMAN, ERA_KEYS, ERA_YAML_TO_KEY, ERA_LABEL_EN } from '../lib/eras.js';
+import { escHtml } from '../lib/html.js';
 
 /** @type {import('../state.js').StateStore} */
 let st;
@@ -101,16 +102,48 @@ function _buildUnlocksMap() {
 
 /* ── Layout: topological sort within each era ────────────── */
 
+const _BRANCHES = ['main', 'left', 'right'];
+
 function _buildKnowledgeGroups() {
   const catalog = st.items?.catalog || {};
   const groups = {};
-  for (const era of ERA_KEYS) groups[era] = [];
+  for (const era of ERA_KEYS) groups[era] = { main: [], left: [], right: [] };
   for (const [iid, info] of Object.entries(catalog)) {
     if (info.item_type !== 'knowledge') continue;
     const key = ERA_YAML_TO_KEY[info.era] || null;
-    if (key) groups[key].push(iid);
+    if (!key) continue;
+    const branch = _BRANCHES.includes(info.branch) ? info.branch : 'main';
+    groups[key][branch].push(iid);
   }
   return groups;
+}
+
+/**
+ * Assign each in-era knowledge item a vertical depth = the longest chain of
+ * knowledge requirements leading to it, counting only requirements placed in
+ * the SAME era (across all branches). Items whose requirements all live in
+ * earlier eras get depth 0. This is what makes a branch item (e.g. a `left`
+ * node) sit one row below its `main`-column requirement instead of being
+ * pulled up to row 0. Returns a Map iid -> depth.
+ */
+function _eraDepths(eraIids, catalog) {
+  const inEra = new Set(eraIids);
+  const depth = new Map();
+  const computing = new Set();
+  const depthOf = (iid) => {
+    if (depth.has(iid)) return depth.get(iid);
+    if (computing.has(iid)) return 0; // cycle guard (shouldn't happen)
+    computing.add(iid);
+    const reqs = (catalog[iid]?.requirements || []).filter(
+      (r) => inEra.has(r) && catalog[r]?.item_type === 'knowledge'
+    );
+    const d = reqs.length === 0 ? 0 : Math.max(...reqs.map((r) => depthOf(r) + 1));
+    computing.delete(iid);
+    depth.set(iid, d);
+    return d;
+  };
+  for (const iid of eraIids) depthOf(iid);
+  return depth;
 }
 
 function _layoutNodes() {
@@ -121,51 +154,29 @@ function _layoutNodes() {
   const result = {};
 
   for (const era of eras) {
-    const iids = knowledgeGroups[era] || [];
-    if (iids.length === 0) {
-      result[era] = [];
-      continue;
+    const eraIids = [
+      ...knowledgeGroups[era].main,
+      ...knowledgeGroups[era].left,
+      ...knowledgeGroups[era].right,
+    ];
+    const depths = _eraDepths(eraIids, catalog);
+    const maxDepth = eraIids.length ? Math.max(...eraIids.map((iid) => depths.get(iid))) : -1;
+
+    // Per branch, bucket items by their era-global depth. Each bucket is the
+    // full set of items at that depth (main may hold several; left/right one).
+    // A shared grid then renders one row per depth so all three columns of a
+    // given level share the same row height and stay vertically aligned.
+    const byDepth = { main: [], left: [], right: [] };
+    for (const branch of _BRANCHES) {
+      const iids = knowledgeGroups[era][branch] || [];
+      const buckets = [];
+      for (let d = 0; d <= maxDepth; d++) buckets.push([]);
+      for (const iid of iids) buckets[depths.get(iid)].push(iid);
+      for (const level of buckets) level.sort((a, b) => iids.indexOf(a) - iids.indexOf(b));
+      byDepth[branch] = buckets;
     }
 
-    // All IIDs placed in previous eras
-    const allPlaced = new Set();
-    for (const prevEra of eras) {
-      if (prevEra === era) break;
-      for (const iid of knowledgeGroups[prevEra] || []) allPlaced.add(iid);
-    }
-
-    const placed = new Set();
-    const remaining = new Map(iids.map((iid) => [iid, catalog[iid] || { requirements: [] }]));
-    const rows = [];
-
-    while (remaining.size > 0) {
-      const ready = [];
-      for (const [iid, info] of remaining) {
-        const reqs = (info.requirements || []).filter(
-          (r) => r in catalog && catalog[r]?.item_type === 'knowledge'
-        );
-        const satisfied = reqs.every((r) => placed.has(r) || allPlaced.has(r));
-        if (satisfied) ready.push(iid);
-      }
-
-      if (ready.length === 0) {
-        ready.push(...remaining.keys());
-      }
-
-      // Sort by catalog order (stable)
-      ready.sort((a, b) => iids.indexOf(a) - iids.indexOf(b));
-
-      for (let i = 0; i < ready.length; i += 3) {
-        rows.push(ready.slice(i, i + 3));
-      }
-
-      for (const iid of ready) {
-        placed.add(iid);
-        remaining.delete(iid);
-      }
-    }
-
-    result[era] = rows;
+    result[era] = { maxDepth, byDepth, depths };
   }
 
   return result;
@@ -180,6 +191,101 @@ const _fmtEffects = fmtEffectsInline;
 /* ── Render (full DOM build — only on init or items change) ── */
 
 let _rendered = false;
+let _lastRenderedMobile = false;
+
+function _nodeHtml(iid, catalog, knowledge) {
+  const catInfo = catalog[iid] || {};
+  const avail = knowledge[iid];
+  const name = avail?.name || catInfo.name || iid;
+  const effort = avail?.effort;
+  const effects = avail?.effects;
+  const effectsStr = _fmtEffects(effects);
+
+  const unlocks = _unlocksMap[iid] || [];
+  let unlocksHtml = '';
+  if (unlocks.length > 0) {
+    unlocksHtml =
+      '<div class="tt-unlocks">' +
+      unlocks
+        .map(
+          (u) =>
+            `<span class="tt-ubadge tt-cat-${u.category}" data-unlock="${u.iid}" title="${u.iid}">${u.name}</span>`
+        )
+        .join('') +
+      '</div>';
+  }
+
+  const branchLabel = catInfo.branch && catInfo.branch !== 'main' ? `${catInfo.branch_label || 'optional'} branch` : '';
+
+  return `<div class="tt-node" data-iid="${iid}">
+    <div class="tt-node-name" title="${iid}"><span class="tt-status-icon"></span>${name}${avail?.advances_era ? '<span class="badge badge--era-advance" title="Completing this item advances your empire to a new era">⬆</span>' : ''}</div>
+    ${branchLabel ? `<div class="tt-node-branch" style="font-size:0.7em;color:#4fc3f7;font-weight:600;">${escHtml(branchLabel)}</div>` : ''}
+    ${effort != null ? `<div class="tt-node-effort">⏱ ${_fmtEffort(effort)}</div>` : ''}
+    ${effectsStr ? `<div class="tt-node-effects">✦ ${effectsStr}</div>` : ''}
+    <div class="tt-node-locked" style="display:none">🔒</div>
+    ${unlocksHtml}
+  </div>`;
+}
+
+/**
+ * Render an era as a 3-column CSS grid (left | main | right) with one grid row
+ * per depth level. Because all three cells of a level share the same grid row,
+ * the grid stretches that row to the tallest node in it, keeping branch nodes
+ * aligned with the main-column node they depend on — no fixed-height guessing.
+ */
+// Visual left-to-right column order of the grid (differs from _BRANCHES,
+// which lists `main` first for layout bucketing).
+const _GRID_COLUMNS = ['left', 'main', 'right'];
+
+const _GRID_COL_INDEX = { left: 1, main: 2, right: 3 };
+
+function _eraGridHtml(eraLayout, catalog, knowledge) {
+  const { maxDepth, byDepth } = eraLayout;
+  let html = '<div class="tt-era-grid">';
+  // Every cell is pinned to its (depth row, branch column) explicitly, so a
+  // main cell that wraps internally cannot push later depth rows down for the
+  // other columns — each depth level stays a single shared grid row.
+  for (let d = 0; d <= maxDepth; d++) {
+    for (const branch of _GRID_COLUMNS) {
+      const cellIids = byDepth[branch][d] || [];
+      if (cellIids.length === 0) continue; // empty cells need no DOM node
+      const col = _GRID_COL_INDEX[branch];
+      const style = `grid-row:${d + 1};grid-column:${col}`;
+      html += `<div class="tt-cell tt-cell-${branch}" style="${style}">`;
+      for (const iid of cellIids) html += _nodeHtml(iid, catalog, knowledge);
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+const _MOBILE_BREAKPOINT = 700;
+function _isMobileLayout() {
+  return window.innerWidth <= _MOBILE_BREAKPOINT;
+}
+
+/**
+ * Mobile layout: same era-global depth model as desktop, but with no separate
+ * left/right columns — every item (branch items included) is treated exactly
+ * like a main item and sorted by catalog order within its depth level. Each
+ * depth level is one row laid out as a 3-column grid.
+ */
+function _mobileEraHtml(eraLayout, catalog, knowledge) {
+  const { maxDepth, byDepth } = eraLayout;
+  if (maxDepth < 0) return '';
+
+  let html = '<div class="tt-mobile-flow">';
+  for (let d = 0; d <= maxDepth; d++) {
+    const level = [...byDepth.left[d], ...byDepth.main[d], ...byDepth.right[d]];
+    if (level.length === 0) continue;
+    html += '<div class="tt-mobile-level">';
+    for (const iid of level) html += _nodeHtml(iid, catalog, knowledge);
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
 
 function render() {
   if (!st.items || !st.summary) return;
@@ -192,12 +298,15 @@ function render() {
   const labels = ERA_LABEL_EN;
   const catalog = st.items.catalog || {};
   const knowledge = st.items.knowledge || {};
+  const mobile = _isMobileLayout();
+  _lastRenderedMobile = mobile;
 
   let html = '<svg class="tt-svg" id="tt-svg"></svg><div id="tt-content">';
 
   eras.forEach((era, eraIdx) => {
-    const rows = layout[era];
-    if (!rows || rows.length === 0) return;
+    const eraLayout = layout[era];
+    const hasAny = eraLayout && eraLayout.maxDepth >= 0;
+    if (!hasAny) return;
 
     if (eraIdx > 0) {
       html += '<div class="tt-era-divider"></div>';
@@ -209,39 +318,10 @@ function render() {
       <span class="tt-era-name">${labels[era] || era}</span>
     </div>`;
 
-    for (const row of rows) {
-      html += '<div class="tt-row">';
-      for (const iid of row) {
-        const catInfo = catalog[iid] || {};
-        const avail = knowledge[iid];
-        const name = avail?.name || catInfo.name || iid;
-        const effort = avail?.effort;
-        const effects = avail?.effects;
-        const effectsStr = _fmtEffects(effects);
-
-        const unlocks = _unlocksMap[iid] || [];
-        let unlocksHtml = '';
-        if (unlocks.length > 0) {
-          unlocksHtml =
-            '<div class="tt-unlocks">' +
-            unlocks
-              .map(
-                (u) =>
-                  `<span class="tt-ubadge tt-cat-${u.category}" data-unlock="${u.iid}" title="${u.iid}">${u.name}</span>`
-              )
-              .join('') +
-            '</div>';
-        }
-
-        html += `<div class="tt-node" data-iid="${iid}">
-          <div class="tt-node-name" title="${iid}"><span class="tt-status-icon"></span>${name}${avail?.advances_era ? '<span class="badge badge--era-advance" title="Completing this item advances your empire to a new era">⬆</span>' : ''}</div>
-          ${effort != null ? `<div class="tt-node-effort">⏱ ${_fmtEffort(effort)}</div>` : ''}
-          ${effectsStr ? `<div class="tt-node-effects">✦ ${effectsStr}</div>` : ''}
-          <div class="tt-node-locked" style="display:none">🔒</div>
-          ${unlocksHtml}
-        </div>`;
-      }
-      html += '</div>';
+    if (mobile) {
+      html += _mobileEraHtml(eraLayout, catalog, knowledge);
+    } else {
+      html += _eraGridHtml(eraLayout, catalog, knowledge);
     }
 
     html += '</div>';
@@ -280,8 +360,13 @@ function render() {
     });
   });
 
-  // Draw connectors after DOM settles
-  requestAnimationFrame(() => requestAnimationFrame(_drawConnectors));
+  // Draw connectors after layout has settled. The desktop grid keeps branch
+  // nodes aligned with their requirement structurally, so no margin pass runs.
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      _drawConnectors();
+    })
+  );
 
   // Resize handler
   clearTimeout(_resizeTimer);
@@ -375,7 +460,13 @@ function _scrollToCurrentEra() {
 let _resizeTimer = null;
 function _resizeHandler() {
   clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(_drawConnectors, 150);
+  _resizeTimer = setTimeout(() => {
+    if (_isMobileLayout() !== _lastRenderedMobile) {
+      render();
+    } else {
+      _drawConnectors();
+    }
+  }, 150);
 }
 
 /* ── SVG Connectors ──────────────────────────────────────── */

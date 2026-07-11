@@ -387,32 +387,20 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
     except Exception:
         pass
 
-    _TOWER_ERA: dict[str, str] = {
-        "BASIC_TOWER": "Stone Age", "SLING_TOWER": "Stone Age",
-        "DOUBLE_SLING_TOWER": "Neolith.", "SPIKE_TRAP": "Neolith.",
-        "ARROW_TOWER": "Bronze", "BALLISTA_TOWER": "Bronze", "FIRE_TOWER": "Bronze",
-        "CATAPULTS": "Iron Age", "ARBELESTE_TOWER": "Iron Age",
-        "TAR_TOWER": "Medieval", "HEAVY_TOWER": "Medieval", "BOILING_OIL": "Medieval",
-        "CANNON_TOWER": "Medieval",
-        "RIFLE_TOWER": "Renaissance",
-        "COLD_TOWER": "Renaissance", "ICE_TOWER": "Renaissance",
-        "FLAME_THROWER": "Industrial", "SHOCK_TOWER": "Industrial",
-        "PARALYZNG_TOWER": "Industrial", "GATLING_TOWER": "Industrial",
-        "NAPALM_THROWER": "Modern", "MG_TOWER": "Modern",
-        "RAPID_FIRE_MG_BUNKER": "Modern", "RADAR_TOWER": "Modern",
-        "ANTI_AIR_TOWER": "Modern", "LASER_TOWER": "Modern",
-        "SNIPER_TOWER": "Future", "ROCKET_TOWER": "Future",
-    }
-    _ERA_ORDER_STAT = ["Stone Age", "Neolith.", "Bronze", "Iron Age",
-                       "Medieval", "Renaissance", "Industrial", "Modern", "Future"]
+    # Tower era labels come from the items' era field (structures.yaml)
+    def _tower_era_label(tile_type: str) -> str:
+        item = items.get(tile_type)
+        return ERA_LABELS_EN.get(item.era, "?") if item is not None else "?"
+
+    _era_order_stat = [ERA_LABELS_EN[k] for k in ERA_ORDER]
     by_era: dict[str, int] = {}
     for t in placed_towers:
-        era_name = _TOWER_ERA.get(t["type"], "?")
+        era_name = _tower_era_label(t["type"])
         by_era[era_name] = by_era.get(era_name, 0) + 1
     bar_width = 16
     max_count = max(by_era.values(), default=1)
     era_bar_lines = []
-    for era_name in _ERA_ORDER_STAT:
+    for era_name in _era_order_stat:
         cnt = by_era.get(era_name)
         if not cnt:
             continue
@@ -422,6 +410,9 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         era_bar_lines.append(f"  {era_name:<11} {bar} {cnt:2}× {pct:3}%")
 
     has_workshop_intel = attacker is not None and attacker.get_effect("spy_workshop", 0.0) > 0
+    has_artifact_intel = attacker is not None and attacker.get_effect("spy_artifacts", 0.0) > 0
+    has_ruler_intel = attacker is not None and attacker.get_effect("spy_ruler", 0.0) > 0
+    has_queue_intel = attacker is not None and attacker.get_effect("spy_queues", 0.0) > 0
 
     ruler_info: dict[str, Any] | None = None
     if defender.ruler and defender.ruler.type:
@@ -456,39 +447,60 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         if not critters:
             lines.append("  (none)")
 
-    # Artifacts — always included
-    import datetime as _dt
-    artifact_iids: list[str] = defender.artifacts or []
-    _retention = defender.get_effect("artifact_retention_time", 0.0)
-    _now = _dt.datetime.now(_dt.timezone.utc)
-    def _is_protected(iid: str) -> bool:
-        if _retention <= 0:
-            return False
-        acq_str = defender.artifact_acquired_at.get(iid, "")
-        if not acq_str:
-            return False
-        try:
-            age = (_now - _dt.datetime.fromisoformat(acq_str)).total_seconds()
-            return age < _retention
-        except Exception:
-            return False
-    artifact_list = [{"name": items[iid].name if iid in items else iid, "protected": _is_protected(iid)} for iid in artifact_iids]
+    # Artifacts — requires spy_artifacts effect
+    artifact_list: list[dict[str, Any]] = []
+    if has_artifact_intel:
+        import datetime as _dt
+        artifact_iids: list[str] = defender.artifacts or []
+        _retention = defender.get_effect("artifact_retention_time", 0.0)
+        _now = _dt.datetime.now(_dt.timezone.utc)
+        def _is_protected(iid: str) -> bool:
+            if _retention <= 0:
+                return False
+            acq_str = defender.artifact_acquired_at.get(iid, "")
+            if not acq_str:
+                return False
+            try:
+                age = (_now - _dt.datetime.fromisoformat(acq_str)).total_seconds()
+                return age < _retention
+            except Exception:
+                return False
+        artifact_list = [{"name": items[iid].name if iid in items else iid, "protected": _is_protected(iid)} for iid in artifact_iids]
 
-    lines.append("─" * 32)
-    lines.append("⚜ Artifacts")
-    if artifact_list:
-        for a in artifact_list:
-            prot = " 🔒" if a["protected"] else ""
-            lines.append(f"  ⚜ {a['name']}{prot}")
-    else:
-        lines.append("  (none)")
+        lines.append("─" * 32)
+        lines.append("⚜ Artifacts")
+        if artifact_list:
+            for a in artifact_list:
+                prot = " 🔒" if a["protected"] else ""
+                lines.append(f"  ⚜ {a['name']}{prot}")
+        else:
+            lines.append("  (none)")
 
-    lines.append("─" * 32)
-    lines.append("👑 Ruler")
-    if ruler_info:
-        lines.append(f"  👑 {ruler_info['name']}  Lv {ruler_info['level']}")
-    else:
-        lines.append("  (none)")
+    # Ruler — requires spy_ruler effect
+    if has_ruler_intel:
+        lines.append("─" * 32)
+        lines.append("👑 Ruler")
+        if ruler_info:
+            lines.append(f"  👑 {ruler_info['name']}  Lv {ruler_info['level']}")
+        else:
+            lines.append("  (none)")
+
+    # Current build / research queue — requires spy_queues effect
+    queue_info: dict[str, Any] | None = None
+    if has_queue_intel:
+        def _item_name(iid: str | None) -> str | None:
+            if not iid:
+                return None
+            return items[iid].name if iid in items else iid
+        queue_info = {
+            "building": _item_name(defender.build_queue),
+            "research": _item_name(defender.research_queue),
+        }
+        lines.append("─" * 32)
+        lines.append("🏗 Production")
+        lines.append(f"  🏗 Building: {queue_info['building'] or '(idle)'}")
+        lines.append(f"  🔬 Researching: {queue_info['research'] or '(idle)'}")
+
     lines.append("─" * 32)
 
     text = "\n".join(lines)
@@ -498,9 +510,13 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
         "era_idx": era_idx,
         "placed_towers": placed_towers,
         "path_length": path_length,
-        "artifacts": artifact_list,
-        "ruler": ruler_info,
     }
+    if has_artifact_intel:
+        data["artifacts"] = artifact_list
+    if has_ruler_intel:
+        data["ruler"] = ruler_info
+    if has_queue_intel:
+        data["queues"] = queue_info
     if has_workshop_intel:
         data["structures"] = [{"name": n, "upgrades": lvl} for n, lvl in sorted(structures)]
         data["critters"] = [{"name": n, "upgrades": lvl} for n, lvl in sorted(critters)]

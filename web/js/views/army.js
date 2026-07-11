@@ -170,8 +170,13 @@ async function _showArmyEffectsOverlay() {
   const stealDefeatRows = `<div class="panel-row"><span class="label">${_fmtPct(baseDefeat)}</span><span class="value" style="color:#ccc">Base chance</span></div>`
     + (stealDefeatMod !== 0 ? sourceRows('artifact_steal_defeat_modifier', (v) => (v >= 0 ? '+' : '') + _fmtPct(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
 
-  const spyWorkshop = effects.spy_workshop || 0;
-  const spyContent = `<div class="panel-row"><span class="label" style="color:#ccc">Workshop intel (upgrades) visible in spy reports</span><span class="value" style="color:${spyWorkshop > 0 ? '#4fc3f7' : '#555'};font-weight:bold">${spyWorkshop > 0 ? 'Active' : 'No'}</span></div>`;
+  const spyIntelRow = (label, val) =>
+    `<div class="panel-row"><span class="label" style="color:#ccc">${label}</span><span class="value" style="color:${val > 0 ? '#4fc3f7' : '#555'};font-weight:bold">${val > 0 ? 'Active' : 'No'}</span></div>`;
+  const spyContent =
+    spyIntelRow('Workshop intel (upgrades) visible in spy reports', effects.spy_workshop || 0)
+    + spyIntelRow('Artifact intel (artifact list) visible in spy reports', effects.spy_artifacts || 0)
+    + spyIntelRow('Ruler intel (name + level) visible in spy reports', effects.spy_ruler || 0)
+    + spyIntelRow('Queue intel (build + research) visible in spy reports', effects.spy_queues || 0);
 
   const siegeCorruption = effects.enemy_siege_time_modifier || 0;
   const siegeCorruptionRows = sourceRows('enemy_siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`, rulerName);
@@ -1450,7 +1455,7 @@ function _onSpyReport(msg) {
     })
     .join('');
 
-  const eraDistHTML = _buildEraStatsHTML(msg.placed_towers || []);
+  const eraDistHTML = _buildEraStatsHTML(msg.placed_towers || [], null, st.items?.catalog);
 
   const pathLenHtml = msg.path_length != null
     ? `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 6px;font-size:12px;font-family:monospace;">${msg.path_length} tiles</span>`

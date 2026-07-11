@@ -47,7 +47,7 @@ from gameserver.network.router import Router
 from gameserver.network.server import Server
 from gameserver.persistence.database import Database
 from gameserver.persistence.state_load import load_state
-from gameserver.engine.global_state import set_season, set_season_reset_triggered, set_this_season_start_date, set_season_snapshot_done, set_season_leadtime
+from gameserver.engine.global_state import set_season, set_season_reset_triggered, set_this_season_start_date, set_season_snapshot_done, set_season_wipe_done, set_season_leadtime
 from gameserver.persistence.state_save import save_state
 from gameserver.util.events import EventBus, BattleFinished, AttackArrived, ItemCompleted
 from gameserver.models.empire import Empire
@@ -299,6 +299,7 @@ async def init_persistence(db_path: str = DEFAULT_DB_PATH, state_file: str = "st
         set_this_season_start_date(restored.this_season_start_date)
         set_season_reset_triggered(restored.game_frozen)
         set_season_snapshot_done(restored.season_snapshot_done)
+        set_season_wipe_done(restored.season_wipe_done)
         if restored.end_criterion_activated:
             log.info(
                 "  end criterion activated at %s by empire '%s'",

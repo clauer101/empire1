@@ -35,13 +35,16 @@ def _ctx(summary_extra=None, memory=None, api=None):
                "research_queue": "", "build_queue": "",
                "buildings": {}, "knowledge": {}, "era": "stone"}
     summary.update(summary_extra or {})
-    return BotContext(summary, ITEMS, memory or {}, {"type": "economy"},
+    return BotContext(summary, ITEMS, memory or {}, {"type": "attack"},
                       api or MapApi())
 
 
 def test_fills_empty_research_queue_first():
+    # Both FIRE and WHEEL default to branch="main" (unset), so the
+    # oldest-missing-main-branch-tech rule (both era="stone", tie broken by
+    # dict order) deterministically forces FIRE first.
     action = baseline_action(_ctx())
-    assert action and "research FIRE" in action.description
+    assert action and "research (main branch) FIRE" in action.description
 
 
 def test_fills_build_queue_when_research_busy():
@@ -70,8 +73,9 @@ def test_breach_response_places_tower_with_new_planner():
 
     summary = {"resources": {"gold": 100, "culture": 0},
                "research_queue": "X", "build_queue": "Y",
-               "buildings": {}, "knowledge": {}, "tile_price": 999}
-    ctx = BotContext(summary, items, memory, {"type": "economy"}, FakeApi())
+               "buildings": {}, "knowledge": {"HUNTING": 0},
+               "tile_price": 999}
+    ctx = BotContext(summary, items, memory, {"type": "attack"}, FakeApi())
     action = baseline_action(ctx)
     assert action and "baseline defense" in action.description
     assert "BASIC_TOWER" in action.description
@@ -83,7 +87,7 @@ def test_min_towers_scales_with_era():
     assert min_towers(_ctx({"era": "iron"})) == 2 + 2 * 3
 
 
-def test_tower_floor_triggers_defense_in_economy_strategy():
+def test_tower_floor_triggers_defense_regardless_of_strategy():
     items = dict(ITEMS)
     items["structures"] = {
         "BASIC_TOWER": {"costs": {"gold": 50}, "requirements": [],
@@ -96,7 +100,8 @@ def test_tower_floor_triggers_defense_in_economy_strategy():
             return {"tiles": {"0,0": "spawnpoint", "1,0": "path",
                               "2,0": "castle", "1,1": "empty"}}
 
-    summary = {"research_queue": "X", "build_queue": "Y", "tile_price": 999}
+    summary = {"research_queue": "X", "build_queue": "Y", "tile_price": 999,
+               "knowledge": {"HUNTING": 0}}
     ctx = _ctx(summary, api=FakeApi())
     ctx.items = items
     action = baseline_action(ctx)

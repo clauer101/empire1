@@ -469,15 +469,15 @@ FIRST_IRON:
     type: first_in_era
     era: iron
   effects: []
-FIRST_MIDDLE_AGES:
-  name: Lord of the Middle Ages
+FIRST_MEDIEVAL:
+  name: Lord of the Medieval Era
   description: Cathedrals, codes of chivalry, and a thousand years of turbulent brilliance
-    — and you arrived at the gates of the Middle Ages before the drawbridge was even
+    — and you arrived at the gates of the medieval era before the drawbridge was even
     finished.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: first_in_era
-    era: middle_ages
+    era: medieval
   effects: []
 FIRST_RENAISSANCE:
   name: Renaissance First

@@ -40,7 +40,7 @@ class Router {
     /** @type {string|null} route the user wanted before auth redirect */
     this.pendingRoute = null;
     /** @type {string[]} routes that don't require auth */
-    this.publicRoutes = ['login', 'signup', 'legal'];
+    this.publicRoutes = ['login', 'signup', 'legal', 'reset-password'];
 
     this._onHashChange = this._onHashChange.bind(this);
   }
@@ -165,7 +165,7 @@ class Router {
     const mainCol = document.getElementById('main-col');
     const pageHeader = document.getElementById('page-header');
     if (shell) {
-      const isLogin = viewId === 'login' || viewId === 'signup';
+      const isLogin = viewId === 'login' || viewId === 'signup' || viewId === 'reset-password';
       if (nav) nav.style.display = isLogin ? 'none' : '';
       if (pageHeader) pageHeader.style.display = isLogin ? 'none' : '';
       if (mainCol) mainCol.style.gridColumn = isLogin ? '1 / -1' : '';

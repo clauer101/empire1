@@ -14,7 +14,7 @@ HUNTING:
   image: assets/sprites/knowledge/hunting
   name: "Hunting"
   description: "Basic survival skill for acquiring food resources."
-  effort: 200
+  effort: 120
   costs: {}
   requirements: [FIRE_PLACE]
   effects: {}
@@ -52,6 +52,26 @@ CRAFTSMANSHIP:
   effects:
     build_speed_offset: 0.15
 
+TERRITORIALITY:
+  era: stone
+  image: assets/sprites/knowledge/territoriality
+  name: "Territoriality"
+  description: "Defending hunting grounds against rival bands, the primal root of organized conflict."
+  effort: 400
+  costs: {}
+  requirements: [HUNTING]
+  effects: {}
+
+TOOL_MAKING:
+  era: stone
+  image: assets/sprites/knowledge/tool_making
+  name: "Tool Making"
+  description: "Knapping of flint into blades, spears, and axes, the first purpose-built weapons."
+  effort: 380
+  costs: {}
+  requirements: [HUNTING]
+  effects: {}
+
 # ============================================================
 #   NEOLITIC  (Effort 800 – 1.500)
 # ============================================================
@@ -61,9 +81,9 @@ POTTERY:
   image: assets/sprites/knowledge/pottery
   name: "Pottery"
   description: "Ceramic crafting for storage and early trade vessels."
-  effort: 760
+  effort: 798
   costs: {}
-  requirements: [CRAFTSMANSHIP]
+  requirements: [CRAFTSMANSHIP, TOOL_MAKING]
   effects:
 
 HERBOLOGY:
@@ -71,7 +91,7 @@ HERBOLOGY:
   image: assets/sprites/knowledge/herbology
   name: "Herbology"
   description: "Study of plants for medicine and healing purposes."
-  effort: 1140
+  effort: 1197
   costs: {}
   requirements: [HUNTING, DOMESTICATION]
   effects: {}
@@ -81,7 +101,7 @@ AGRICULTURE:
   image: assets/sprites/knowledge/agriculture
   name: "Agriculture"
   description: "Systematic crop cultivation and farming techniques."
-  effort: 1330
+  effort: 1397
   costs: {}
   requirements: [DOMESTICATION, HERBOLOGY, POTTERY]
   effects: {}
@@ -91,20 +111,30 @@ ALPHABET_WRITING:
   image: assets/sprites/knowledge/alphabet_writing
   name: "Alphabet & Writing"
   description: "Development of written language and symbolism."
-  effort: 1425
+  effort: 1496
   costs: {}
   requirements: [CRAFTSMANSHIP]
   effects:
     research_speed_offset: 0.15
+
+BARTERING:
+  era: neolithic
+  image: assets/sprites/knowledge/bartering
+  name: "Bartering"
+  description: "Exchange of goods between tribes, the first stirrings of trade and economy."
+  effort: 1029
+  costs: {}
+  requirements: [POTTERY, DOMESTICATION]
+  effects: {}
 
 TRIBAL_LEADERSHIP:
   era: neolithic
   image: assets/sprites/knowledge/tribal_leadership
   name: "Tribal Leadership"
   description: "Emergence of organized leadership structures within tribal society."
-  effort: 1300
+  effort: 1365
   costs: {}
-  requirements: [ALPHABET_WRITING, AGRICULTURE]
+  requirements: [WARFARE]
   effects: {}
 
 WARFARE:
@@ -112,9 +142,9 @@ WARFARE:
   image: assets/sprites/knowledge/warfare
   name: "Warfare"
   description: "Organized armed conflict and the first strategies of war."
-  effort: 1450
+  effort: 1523
   costs: {}
-  requirements: [HUNTING, TRIBAL_LEADERSHIP]
+  requirements: [TERRITORIALITY]
   effects: {}
 
 # ============================================================
@@ -126,9 +156,9 @@ COPPER_BRONZE:
   image: assets/sprites/knowledge/copper_bronze
   name: "Copper & Bronze"
   description: "Metallurgy techniques for bronze age advancement."
-  effort: 2756
+  effort: 2887
   costs: {}
-  requirements: [AGRICULTURE]
+  requirements: [AGRICULTURE, CRAFTSMANSHIP]
   effects: {}
 
 RELIGION:
@@ -136,17 +166,30 @@ RELIGION:
   image: assets/sprites/knowledge/religion
   name: "Religion"
   description: "Organized faith and spiritual institutional systems."
-  effort: 3859
+  effort: 4042
   costs: {}
-  requirements: [MYSTIC, ALPHABET_WRITING]
+  requirements: [MYSTIC, MUSIC]
   effects: {}
+
+PRIESTHOOD:
+  era: bronze
+  image: assets/sprites/knowledge/priesthood
+  name: "Priesthood"
+  description: "A dedicated clergy class formalizing rites and doctrine, binding communities together through shared faith."
+  effort: 5395
+  costs: {}
+  requirements: [RELIGION]
+  branch: left
+  branch_label: "Faith"
+  effects:
+    culture_modifier: 0.1
 
 MUSIC:
   era: bronze
   image: assets/sprites/knowledge/music
   name: "Music"
   description: "Musical composition and performance arts."
-  effort: 4410
+  effort: 4620
   costs: {}
   requirements: [ALPHABET_WRITING, CRAFTSMANSHIP]
   effects: 
@@ -158,7 +201,7 @@ SAILING:
   image: assets/sprites/knowledge/sailing
   name: "Sailing"
   description: "Seafaring and coastal navigation techniques."
-  effort: 4410
+  effort: 4620
   costs: {}
   requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
   effects: {}
@@ -168,7 +211,7 @@ HORSEBACK_RIDING:
   image: assets/sprites/knowledge/horseback_riding
   name: "Horseback Riding"
   description: "Mastery of mounted combat and horse training."
-  effort: 5513
+  effort: 5774
   costs: {}
   requirements: [RELIGION, DOMESTICATION]
   effects: {}
@@ -178,9 +221,45 @@ CURRENCY:
   image: assets/sprites/knowledge/currency
   name: "Currency"
   description: "Development of standardized monetary exchange systems."
-  effort: 6615
+  effort: 6928
   costs: {}
-  requirements: [COPPER_BRONZE, ALPHABET_WRITING]
+  requirements: [COPPER_BRONZE, BARTERING]
+  effects: {}
+
+TRADE_ROUTES:
+  era: bronze
+  image: assets/sprites/knowledge/trade_routes
+  name: "Trade Routes"
+  description: "Established trade paths linking settlements, allowing goods and currency to flow across distances."
+  effort: 6178
+  costs: {}
+  requirements: [CURRENCY]
+  branch: right
+  branch_label: "Trade"
+  effects:
+    gold_modifier: 0.15
+
+CARAVAN_NETWORKS:
+  era: bronze
+  image: assets/sprites/knowledge/caravan_networks
+  name: "Caravan Networks"
+  description: "Coordinated caravans linking trade routes into a reliable, far-reaching supply network."
+  effort: 9100
+  costs: {}
+  requirements: [TRADE_ROUTES]
+  branch: right
+  branch_label: "Trade"
+  effects:
+    gold_offset: 0.3
+
+FLETCHING:
+  era: bronze
+  image: assets/sprites/knowledge/fletching
+  name: "Fletching"
+  description: "The craft of bronze-tipped arrows and standardized ammunition, giving ranged forces reach and precision."
+  effort: 5237
+  costs: {}
+  requirements: [WARFARE, AGRICULTURE]
   effects: {}
 
 DRILL:
@@ -188,9 +267,9 @@ DRILL:
   image: assets/sprites/knowledge/drill
   name: "Drill"
   description: "Systematic military training and discipline."
-  effort: 7718
+  effort: 8084
   costs: {}
-  requirements: [WARFARE, COPPER_BRONZE]
+  requirements: [TRIBAL_LEADERSHIP, HORSEBACK_RIDING]
   effects: {}
 
 # ============================================================
@@ -202,7 +281,7 @@ ARTS:
   image: assets/sprites/knowledge/arts
   name: "Arts"
   description: "Development of music, painting, and creative expression."
-  effort: 11820
+  effort: 13032
   costs: {}
   requirements: [MUSIC, ALPHABET_WRITING]
   effects: {}
@@ -212,9 +291,9 @@ MECHANICS:
   image: assets/sprites/knowledge/mechanics
   name: "Mechanics"
   description: "Understanding of mechanical systems and machines."
-  effort: 14775
+  effort: 16290
   costs: {}
-  requirements: [DRILL, COPPER_BRONZE]
+  requirements: [FLETCHING, COPPER_BRONZE]
   effects: {}
 
 MATHMATICS:
@@ -222,19 +301,58 @@ MATHMATICS:
   image: assets/sprites/knowledge/mathmatics
   name: "Mathematics"
   description: "Mathematical sciences and numerical computation."
-  effort: 16253
+  effort: 17919
   costs: {}
   requirements: [ALPHABET_WRITING, CURRENCY]
   effects: {}
+
+TRIGONOMETRY:
+  era: iron
+  image: assets/sprites/knowledge/trigonometry
+  name: "Trigonometry"
+  description: "Calculation of triangles and angles, refined across Greek, Indian, and Islamic scholarship for navigation and construction."
+  effort: 9700
+  costs: {}
+  requirements: [MATHMATICS]
+  branch: right
+  branch_label: "Science"
+  effects:
+    research_speed_offset: 0.1
+
+LOGIC:
+  era: iron
+  image: assets/sprites/knowledge/logic
+  name: "Logic"
+  description: "Formal rules of deduction and argument, from Aristotelian syllogism to the disputations of the medieval schools."
+  effort: 11300
+  costs: {}
+  requirements: [TRIGONOMETRY]
+  branch: right
+  branch_label: "Science"
+  effects:
+    research_speed_modifier: 0.15
+
+ASTRONOMY:
+  era: iron
+  image: assets/sprites/knowledge/astronomy
+  name: "Astronomy"
+  description: "Systematic observation of celestial cycles using astrolabes and calendars, guiding navigation and timekeeping long before the telescope."
+  effort: 15800
+  costs: {}
+  requirements: [LOGIC]
+  branch: right
+  branch_label: "Science"
+  effects:
+    research_speed_offset: 0.2
 
 CARTOGRAPHY:
   era: iron
   image: assets/sprites/knowledge/cartography
   name: "Cartography"
   description: "Art of mapmaking and geographic knowledge."
-  effort: 17730
+  effort: 19548
   costs: {}
-  requirements: [MATHMATICS]
+  requirements: [MATHMATICS, SAILING]
   effects: {}
 
 LAWS:
@@ -242,7 +360,7 @@ LAWS:
   image: assets/sprites/knowledge/laws
   name: "Laws"
   description: "Development of legal systems and justice frameworks."
-  effort: 20684
+  effort: 22804
   costs: {}
   requirements: [ARTS, RELIGION]
   effects: {}
@@ -252,7 +370,7 @@ IRON:
   image: assets/sprites/knowledge/iron
   name: "Iron"
   description: "Iron age metallurgy and production techniques."
-  effort: 22162
+  effort: 24434
   costs: {}
   requirements: [COPPER_BRONZE, MECHANICS]
   effects: {}
@@ -262,18 +380,44 @@ ARCHITECTURE:
   image: assets/sprites/knowledge/architecture
   name: "Architecture"
   description: "Advanced building design and structural engineering."
-  effort: 26594
+  effort: 29320
   costs: {}
   requirements: [MATHMATICS, MECHANICS]
-  effects: 
+  effects:
     build_speed_modifier: 0.3
+
+MASONRY:
+  era: iron
+  image: assets/sprites/knowledge/masonry
+  name: "Masonry"
+  description: "Precision stone-cutting and load-bearing techniques, enabling taller walls and heavier foundations."
+  effort: 31500
+  costs: {}
+  requirements: [ARCHITECTURE]
+  branch: left
+  branch_label: "Construction"
+  effects:
+    build_speed_modifier: 0.4
+
+ROMAN_CONCRETE:
+  era: iron
+  image: assets/sprites/knowledge/roman_concrete
+  name: "Roman Concrete"
+  description: "Volcanic-ash mortar that hardens into durable concrete, enabling vaults, domes, and structures unmatched by stone alone."
+  effort: 34800
+  costs: {}
+  requirements: [MASONRY]
+  branch: left
+  branch_label: "Construction"
+  effects:
+    build_speed_offset: 0.4
 
 PAINTING:
   era: iron
   image: assets/sprites/knowledge/painting
   name: "Painting"
   description: "Visual arts and painting techniques for expression."
-  effort: 29550
+  effort: 32579
   costs: {}
   requirements: [ARTS]
   effects: {}
@@ -283,111 +427,171 @@ LITERATURE:
   image: assets/sprites/knowledge/literature
   name: "Literature"
   description: "Written storytelling and literary arts."
-  effort: 32504
+  effort: 35835
   costs: {}
-  requirements: [ALPHABET_WRITING, ARTS]
+  requirements: [ALPHABET_WRITING, CARTOGRAPHY]
+  effects: {}
+
+WEATHER_OBSERVATION:
+  era: iron
+  image: assets/sprites/knowledge/weather_observation
+  name: "Weather Observation"
+  description: "Reading the skies to predict frost and storms, mastering cold and the elements."
+  effort: 27000
+  costs: {}
+  requirements: [IRON, ARCHITECTURE]
   effects: {}
 
 # ============================================================
-#   MIDDLE_AGES  (Effort 30.000 – 130.000)
+#   MEDIEVAL  (Effort 30.000 – 130.000)
 # ============================================================
 
+SIEGE_DEFENSE:
+  era: medieval
+  image: assets/sprites/knowledge/siege_defense
+  name: "Siege Defense"
+  description: "Fortress countermeasures against besiegers, from wall-mounted cauldrons to hurling engines."
+  effort: 48000
+  costs: {}
+  requirements: [ARCHITECTURE, IRON]
+  effects:
+    siege_offset: 1800
+
 SCIENCE:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/science
   name: "Science"
   description: "Systematic scientific method and research principles."
-  effort: 36936
+  effort: 42758
   costs: {}
-  requirements: [MATHMATICS, FANATISM]
+  requirements: [MATHMATICS, WEATHER_OBSERVATION]
   effects: []
 
 COMMAND_CHAIN:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/command_chain
   name: "Command Chain"
   description: "Military hierarchy and organizational command structure."
-  effort: 77426
+  effort: 89630
   costs: {}
   requirements: [DRILL, LAWS]
   effects: {}
 
 TACTICS:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/tactics
   name: "Tactics"
   description: "Military battle strategies and combat techniques."
-  effort: 82951
+  effort: 96027
   costs: {}
-  requirements: [COMMAND_CHAIN, DRILL]
+  requirements: [COMMAND_CHAIN, SIEGE_DEFENSE]
   effects: {}
 
+MILITARY_DOCTRINE:
+  era: medieval
+  image: assets/sprites/knowledge/military_doctrine
+  name: "Military Doctrine"
+  description: "Standardized principles for training, equipping, and deploying armies across campaigns and eras."
+  effort: 66500
+  costs: {}
+  requirements: [TACTICS]
+  branch: left
+  branch_label: "Military"
+  effects:
+    wave_era_cost_modifier: 0.1
+
+HOLY_ORDERS:
+  era: medieval
+  image: assets/sprites/knowledge/holy_orders
+  name: "Holy Orders"
+  description: "Militant religious brotherhoods combining monastic discipline with battlefield prowess, forming the vanguard of the crusades."
+  effort: 77200
+  costs: {}
+  requirements: [MILITARY_DOCTRINE]
+  branch: left
+  branch_label: "Military"
+  effects:
+    wave_slot_cost_modifier: 0.1
+
 FANATISM:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/fanatism
   name: "Fanatism"
   description: "Zealous commitment to ideological or religious causes."
-  effort: 87784
+  effort: 101621
   costs: {}
   requirements: [RELIGION, COMMAND_CHAIN]
   effects: {}
 
 HOLY_WAR:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/holy_war
   name: "Holy War"
   description: "Religious warfare doctrine and jihadist concepts."
-  effort: 100323
+  effort: 116136
   costs: {}
   requirements: [RELIGION, FANATISM]
   effects: {}
 
 ECONOMY:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/economy
   name: "Economy"
   description: "Economic trade systems and market management."
-  effort: 96769
+  effort: 112021
   costs: {}
   requirements: [CURRENCY, LAWS]
   effects: {}
 
 FEUDALISM:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/feudalism
   name: "Feudalism"
   description: "Feudal land ownership and hierarchical social systems."
-  effort: 112359
+  effort: 130070
   costs: {}
   requirements: [LAWS, COMMAND_CHAIN]
   effects: {}
 
+DOMAIN_EXPANSION:
+  era: medieval
+  image: assets/sprites/knowledge/domain_expansion
+  name: "Domain Expansion"
+  description: "Formalized claims and surveying rights allowing lords to annex and administer new land at scale."
+  effort: 260000
+  costs: {}
+  requirements: [FEUDALISM]
+  branch: right
+  branch_label: "Land"
+  effects:
+    tile_cost_modifier: 0.1
+
 MONARCHY:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/monarchy
   name: "Monarchy"
   description: "Absolute rule by a single monarch or dynasty."
-  effort: 132784
+  effort: 153714
   costs: {}
   requirements: [ECONOMY, COMMAND_CHAIN]
   effects: {}
 
 GUNPOWDER:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/gunpowder
   name: "Gunpowder"
   description: "Explosive powder technology for weapons."
-  effort: 122602
+  effort: 141927
   costs: {}
   requirements: [SCIENCE]
   effects: {}
 
 STEEL:
-  era: middle_ages
+  era: medieval
   image: assets/sprites/knowledge/steel
   name: "Steel"
   description: "Advanced iron alloy production for superior tools."
-  effort: 147494
+  effort: 170743
   costs: {}
   requirements: [IRON, ECONOMY]
   effects: {}
@@ -401,17 +605,45 @@ PRINTING_PRESS:
   image: assets/sprites/knowledge/printing_press
   name: "Printing Press"
   description: "Mass production of printed materials and information."
-  effort: 354684
+  effort: 372418
   costs: {}
-  requirements: [STEEL, LITERATURE]
-  effects: {}
+  requirements: [PAINTING, LITERATURE]
+  effects:
+    research_speed_modifier: 0.2
+    culture_offset: 0.2
+
+SCIENTIFIC_METHOD:
+  era: renaissance
+  image: assets/sprites/knowledge/scientific_method
+  name: "Scientific Method"
+  description: "Systematic observation and experiment, as practiced by Galileo and Kepler to test the workings of the heavens."
+  effort: 391000
+  costs: {}
+  requirements: [PRINTING_PRESS]
+  branch: left
+  branch_label: "Science"
+  effects:
+    research_speed_offset: 0.3
+
+PRINCIPIA_MATHEMATICA:
+  era: renaissance
+  image: assets/sprites/knowledge/principia_mathematica
+  name: "Principia Mathematica"
+  description: "Newton's unification of motion and gravitation into a single mathematical framework for the natural world."
+  effort: 416000
+  costs: {}
+  requirements: [SCIENTIFIC_METHOD]
+  branch: left
+  branch_label: "Science"
+  effects:
+    research_speed_modifier: 0.3
 
 STEALTH_SECRECY:
   era: renaissance
   image: assets/sprites/knowledge/stealth_secrecy
   name: "Stealth & Secrecy"
   description: "Clandestine operations and intelligence gathering."
-  effort: 333482
+  effort: 350156
   costs: {}
   requirements: [TACTICS, HOLY_WAR]
   effects: {}
@@ -421,17 +653,43 @@ CONSTITUTION:
   image: assets/sprites/knowledge/constitution
   name: "Constitution"
   description: "Governmental framework and citizen rights principles."
-  effort: 342944
+  effort: 360091
   costs: {}
-  requirements: [FANATISM, MONARCHY]
+  requirements: [FEUDALISM, MONARCHY]
   effects: {}
+
+ENLIGHTENMENT:
+  era: renaissance
+  image: assets/sprites/knowledge/enlightenment
+  name: "Enlightenment"
+  description: "Reason and individual rights take root in public life, reshaping how citizens see their place in society."
+  effort: 380000
+  costs: {}
+  requirements: [CONSTITUTION]
+  branch: right
+  branch_label: "Culture"
+  effects:
+    culture_modifier: 0.4
+
+PUBLIC_ASSEMBLY:
+  era: renaissance
+  image: assets/sprites/knowledge/public_assembly
+  name: "Public Assembly"
+  description: "Open forums and civic gatherings where citizens debate policy and shape communal identity."
+  effort: 404000
+  costs: {}
+  requirements: [ENLIGHTENMENT]
+  branch: right
+  branch_label: "Culture"
+  effects:
+    culture_offset: 0.4
 
 STRATEGIC_WARFARE:
   era: renaissance
   image: assets/sprites/knowledge/strategic_warfare
   name: "Strategic Warfare"
   description: "Large-scale military strategy and campaign planning."
-  effort: 376188
+  effort: 394997
   costs: {}
   requirements: [TACTICS, STEALTH_SECRECY]
   effects: {}
@@ -441,7 +699,7 @@ PHYSICS:
   image: assets/sprites/knowledge/physics
   name: "Physics"
   description: "Laws of motion, forces, and natural philosophy."
-  effort: 345668
+  effort: 362951
   costs: {}
   requirements: [STEEL, MATHMATICS]
   effects: {}
@@ -451,7 +709,7 @@ CHEMISTRY:
   image: assets/sprites/knowledge/chemistry
   name: "Chemistry"
   description: "Study of matter, elements, and chemical reactions."
-  effort: 414799
+  effort: 435539
   costs: {}
   requirements: [GUNPOWDER, PHYSICS]
   effects: {}
@@ -461,11 +719,31 @@ MECHANICAL_ENGINEERING:
   image: assets/sprites/knowledge/mechanical_engineering
   name: "Mechanical Engineering"
   description: "Advanced engineering of mechanical systems."
-  effort: 386225
+  effort: 405536
   costs: {}
   requirements: [MECHANICS, PHYSICS]
-  effects: 
+  effects:
     build_speed_modifier: 0.2
+
+THEOLOGY:
+  era: renaissance
+  image: assets/sprites/knowledge/theology
+  name: "Theology"
+  description: "Systematic study of divine doctrine and religious philosophy."
+  effort: 340210
+  costs: {}
+  requirements: [ARCHITECTURE, HOLY_WAR]
+  effects: {}
+
+STATE_ADMINISTRATION:
+  era: renaissance
+  image: assets/sprites/knowledge/state_administration
+  name: "State Administration"
+  description: "Codification of law and separation of governing powers."
+  effort: 345780
+  costs: {}
+  requirements: [CONSTITUTION, MONARCHY]
+  effects: {}
 
 # ============================================================
 #   INDUSTRIALIZATION  (Effort 500.000 – 2.000.000)
@@ -518,7 +796,7 @@ ELECTRICITY:
   description: "Electrical power generation and transmission."
   effort: 455601
   costs: {}
-  requirements: [PHYSICS, STEAM_ENGINE]
+  requirements: [PHYSICS, COMBUSTION_ENGINE]
   effects: {}
 
 COMBUSTION_ENGINE:
@@ -538,7 +816,7 @@ SOCIAL_SCIENCES:
   description: "Human behavior and societal development studies."
   effort: 554471
   costs: {}
-  requirements: [CONSTITUTION, SANITATION]
+  requirements: [THEOLOGY, SANITATION, PRINTING_PRESS]
   effects: {}
 
 MEDICINE:
@@ -550,6 +828,63 @@ MEDICINE:
   costs: {}
   requirements: [HERBOLOGY, SANITATION]
   effects: {}
+
+BUREAUCRACY:
+  era: industrial
+  image: assets/sprites/knowledge/bureaucracy
+  name: "Bureaucracy"
+  description: "Centralized administrative institutions for large-scale governance."
+  effort: 561230
+  costs: {}
+  requirements: [STATE_ADMINISTRATION, SOCIAL_SCIENCES]
+  effects: {}
+
+BUREAUCRATIC_REFORM:
+  era: industrial
+  image: assets/sprites/knowledge/bureaucratic_reform
+  name: "Bureaucratic Reform"
+  description: "Standardized record-keeping and administrative procedure, professionalizing both civil and military institutions."
+  effort: 275000
+  costs: {}
+  requirements: [BUREAUCRACY]
+  branch: left
+  branch_label: "Administration"
+  effects: {}
+
+AERONAUTICS:
+  era: industrial
+  image: assets/sprites/knowledge/aeronautics
+  name: "Aeronautics"
+  description: "Early flight science of gliders, airships, and lift, paving the way for powered aircraft."
+  effort: 583925
+  costs: {}
+  requirements: [COMBUSTION_ENGINE, OPTICS]
+  effects: {}
+
+CAPITALISM:
+  era: industrial
+  image: assets/sprites/knowledge/capitalism
+  name: "Capitalism"
+  description: "Capital markets, investment, and share trading driving industrial economies."
+  effort: 612000
+  costs: {}
+  requirements: [ELECTRICITY, SOCIAL_SCIENCES]
+  effects:
+    gold_offset: 0.3
+
+CREDIT_SYSTEMS:
+  era: industrial
+  image: assets/sprites/knowledge/credit_systems
+  name: "Credit Systems"
+  description: "Structured lending and debt instruments that let capital circulate faster than gold alone ever could."
+  effort: 935000
+  costs: {}
+  requirements: [CAPITALISM]
+  branch: right
+  branch_label: "Economy"
+  effects:
+    gold_modifier: 0.3
+    gold_offset: 0.5
 
 
 # ============================================================
@@ -583,8 +918,34 @@ MILITARY_SERVICE:
   description: "Organized military conscription and service systems."
   effort: 747751
   costs: {}
-  requirements: [CRYPTOLOGY, GLOBALIZATION_STRATEGIES]
+  requirements: [GLOBALIZATION_STRATEGIES]
   effects: {}
+
+MASS_MOBILIZATION:
+  era: modern
+  image: assets/sprites/knowledge/mass_mobilization
+  name: "Mass Mobilization"
+  description: "Nationwide conscription pipelines that raise and equip entire armies at unprecedented scale and speed."
+  effort: 780000
+  costs: {}
+  requirements: [MILITARY_SERVICE]
+  branch: left
+  branch_label: "Military"
+  effects:
+    wave_slot_cost_modifier: 0.05
+
+TOTAL_WAR:
+  era: modern
+  image: assets/sprites/knowledge/total_war
+  name: "Total War"
+  description: "Full mobilization of a nation's population and industry toward a single war effort, without reserve."
+  effort: 1550000
+  costs: {}
+  requirements: [MASS_MOBILIZATION]
+  branch: left
+  branch_label: "Military"
+  effects:
+    wave_slot_cost_modifier: 0.15
 
 AVIATION:
   era: modern
@@ -593,7 +954,7 @@ AVIATION:
   description: "Fixed-wing aircraft design and flight technology."
   effort: 747751
   costs: {}
-  requirements: [MECHANICAL_ENGINEERING, COMBUSTION_ENGINE]
+  requirements: [AERONAUTICS, COMBUSTION_ENGINE]
   effects: {}
 
 ELECTRONICS:
@@ -634,7 +995,7 @@ CHEMICAL_WARFARE:
   description: "Chemical weapons development and deployment."
   effort: 1124736
   costs: {}
-  requirements: [CHEMISTRY, BOMBING_AREA]
+  requirements: [CHEMISTRY, BOMBING_AREA, SPECIAL_FORCES]
   effects: {}
 
 ROCKET_SCIENCE:
@@ -644,7 +1005,7 @@ ROCKET_SCIENCE:
   description: "Propulsion and rocket engineering technology."
   effort: 1183933
   costs: {}
-  requirements: [AVIATION, ELECTRONICS]
+  requirements: [SATELLITE_SYSTEMS, ELECTRONICS]
   effects: {}
 
 AERO_DYNAMICS:
@@ -664,7 +1025,7 @@ GLOBALIZATION_STRATEGIES:
   description: "International trade and global economic integration."
   effort: 1183933
   costs: {}
-  requirements: [ECONOMY, ELECTRONICS, SOCIAL_SCIENCES]
+  requirements: [ECONOMY, ELECTRONICS, CAPITALISM]
   effects: 
     gold_offset: 0.4
 
@@ -673,10 +1034,37 @@ CIVIL_ENGINEERING:
   image: assets/sprites/knowledge/civil_engineering
   name: "Civil Engineering"
   description: "Infrastructure design and large-scale construction."
-  effort: 1246249
+  effort: 646249
   costs: {}
-  requirements: [SOCIAL_SCIENCES, STEAM_ENGINE]
-  effects: {}
+  requirements: [BUREAUCRACY, GLOBALIZATION_STRATEGIES]
+  effects:
+    culture_offset: 0.5
+
+URBAN_PLANNING:
+  era: modern
+  image: assets/sprites/knowledge/urban_planning
+  name: "Urban Planning"
+  description: "Deliberate design of public spaces, parks, and civic districts that shape a city's cultural life."
+  effort: 1500000
+  costs: {}
+  requirements: [CIVIL_ENGINEERING]
+  branch: right
+  branch_label: "Culture"
+  effects:
+    culture_modifier: 1
+
+CULTURAL_HERITAGE:
+  era: modern
+  image: assets/sprites/knowledge/cultural_heritage
+  name: "Cultural Heritage"
+  description: "Preservation and celebration of monuments, museums, and traditions as a shared national identity."
+  effort: 1320000
+  costs: {}
+  requirements: [URBAN_PLANNING]
+  branch: right
+  branch_label: "Culture"
+  effects:
+    culture_offset: 0.5
 
 SATELLITE_SYSTEMS:
   era: modern
@@ -705,7 +1093,7 @@ SPECIAL_FORCES:
   description: "Elite military units with advanced training."
   effort: 1417730
   costs: {}
-  requirements: [MILITARY_SERVICE, SATELLITE_SYSTEMS]
+  requirements: [MILITARY_SERVICE, CRYPTOLOGY]
   effects: {}
 
 # ============================================================
@@ -719,7 +1107,7 @@ BIONICS:
   description: "Integration of biological and mechanical systems."
   effort: 1555248
   costs: {}
-  requirements: [MILITARY_SERVICE, COMPUTER_TECHNOLOGY]
+  requirements: [MILITARY_SERVICE, COMPUTER_TECHNOLOGY, SPECIAL_FORCES]
   effects: {}
 
 FIBER_COMPOSITE:
@@ -732,11 +1120,11 @@ FIBER_COMPOSITE:
   requirements: [AERO_DYNAMICS, MASS_PRODUCTION, KNO_ARMOUR]
   effects: {}
 
-COLD_FUSION:
+NUCLEAR_FUSION:
   era: future
-  image: assets/sprites/knowledge/cold_fusion
-  name: "Cold Fusion"
-  description: "Low-temperature nuclear fusion research and development."
+  image: assets/sprites/knowledge/nuclear_fusion
+  name: "Nuclear Fusion"
+  description: "High-temperature nuclear fusion research and development."
   effort: 1637098
   costs: {}
   requirements: [NUCLEAR_REACTION, ROCKET_SCIENCE]

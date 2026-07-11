@@ -1,3 +1,5 @@
+> **Status: stale** — large hardening backlog; check items against current code before acting on any of them.
+
 # REFACTORING.md — Prototype-to-Production Hardening Guide for Coding Agents
 
 > **This file is written for AI coding agents** (Claude Code, Cursor, Aider, etc.).

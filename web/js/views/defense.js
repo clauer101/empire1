@@ -284,7 +284,7 @@ async function _showDefenseEffectsOverlay() {
 
   const tiles = grid ? [...grid.tiles.values()] : [];
   const pathLen = grid?.battlePath ? grid.battlePath.length - 1 : null;
-  const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles, pathLen)}</div>`;
+  const eraStatsHTML = `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:#9B59B6">🏰 Tower Era Distribution</span></div>${_buildEraStatsHTML(tiles, pathLen, st.items?.catalog)}</div>`;
 
   // ── Siege Construction Disruption section ──────────────────
   let siegeConstrRows = '';

@@ -56,6 +56,7 @@ class RestoredState:
     next_season_title: str = ""
     game_frozen: bool = False
     season_snapshot_done: bool = False
+    season_wipe_done: bool = False
     season_leadtime: Optional[float] = None  # None = use game.yaml default
 
 
@@ -119,6 +120,7 @@ async def load_state(path: str = DEFAULT_STATE_PATH) -> Optional[RestoredState]:
     result.next_season_title = str(global_dict.get("next_season_title") or "")
     result.game_frozen = bool(global_dict.get("game_frozen") or global_dict.get("season_reset_triggered") or False)
     result.season_snapshot_done = bool(global_dict.get("season_snapshot_done") or False)
+    result.season_wipe_done = bool(global_dict.get("season_wipe_done") or False)
     _lt = global_dict.get("season_leadtime")
     result.season_leadtime = float(_lt) if _lt is not None else None
 

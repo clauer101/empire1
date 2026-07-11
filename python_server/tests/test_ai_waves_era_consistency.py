@@ -21,16 +21,16 @@ _CRITTERS  = _CONFIG / "critters.yaml"
 
 ERA_ORDER = [
     "stone", "neolithic", "bronze", "iron",
-    "middle_ages", "renaissance", "industrial", "modern", "future",
+    "medieval", "renaissance", "industrial", "modern", "future",
 ]
 
 _ERA_SECTION_RE = re.compile(
-    r"#\s+(STONE_AGE|NEOLITHIC|BRONZE_AGE|IRON_AGE|MIDDLE_AGES"
+    r"#\s+(STONE_AGE|NEOLITHIC|BRONZE_AGE|IRON_AGE|MEDIEVAL"
     r"|RENAISSANCE|INDUSTRIAL|MODERN|FUTURE)\b"
 )
 _ERA_KEY_MAP = {
     "STONE_AGE": "stone", "NEOLITHIC": "neolithic", "BRONZE_AGE": "bronze",
-    "IRON_AGE": "iron", "MIDDLE_AGES": "middle_ages", "RENAISSANCE": "renaissance",
+    "IRON_AGE": "iron", "MEDIEVAL": "medieval", "RENAISSANCE": "renaissance",
     "INDUSTRIAL": "industrial", "MODERN": "modern", "FUTURE": "future",
 }
 

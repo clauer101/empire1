@@ -82,6 +82,10 @@ class BattleState:
     # reason: "died" | "reached"
     removed_critters: list[dict[str, Any]] = field(default_factory=list)
 
+    # Per-tower stats, keyed by sid — used by balancing analysis, not gameplay.
+    tower_damage: dict[int, float] = field(default_factory=dict)
+    tower_kills: dict[int, int] = field(default_factory=dict)
+
     loop_running: bool = False  # guard against duplicate battle_loop coroutines
     replay_key: str = ""  # persisted so resumed battles can continue the same replay file
 

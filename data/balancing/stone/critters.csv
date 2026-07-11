@@ -1,0 +1,6 @@
+era,iid,spawned,killed,reached,reach_rate,castle_damage
+stone,CART,78,32,46,0.5897,92.0
+stone,CLUBMAN,627,467,156,0.2488,156.0
+stone,SCOUT,601,513,86,0.1431,86.0
+stone,SLAVE,550,547,1,0.0018,1.0
+stone,WARRIOR,180,24,155,0.8611,155.0

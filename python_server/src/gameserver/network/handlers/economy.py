@@ -138,6 +138,8 @@ async def handle_item_request(
             "effects": dict(item.effects),
             "image": item.image,
             "era": item.era,
+            "branch": item.branch,
+            "branch_label": item.branch_label,
             "advances_era": _advances_era(item),
         }
 
@@ -216,6 +218,8 @@ async def handle_item_request(
                 "description": item.description,
                 "image": item.image,
                 "excludes": list(item.excludes),
+                "branch": item.branch,
+                "branch_label": item.branch_label,
             })
         elif item.item_type == ItemType.BUILDING:
             entry.update({
@@ -868,6 +872,25 @@ async def handle_buy_item_upgrade(
 
     if stat not in valid_stats:
         return {"success": False, "error": f"Invalid stat '{stat}' for {iid} (valid: {sorted(valid_stats)})"}
+
+    # effect_duration/effect_value only apply to structures whose shot effects
+    # actually carry a matching key (see battle_service._step_structures) —
+    # slow_duration/burn_duration for effect_duration, slow_ratio/burn_dps for
+    # effect_value. A tower with no matching effect (e.g. plain damage towers
+    # like HEAVY_TOWER, effects={}) would silently waste gold on a level that
+    # never applies in combat. The web client already hides these stats for
+    # such towers in its upgrade UI; this closes the same gap for direct API
+    # callers (bots).
+    if item.item_type == ItemType.STRUCTURE and stat in ("effect_duration", "effect_value"):
+        effects = item.effects or {}
+        applies = (
+            ("slow_duration" in effects or "burn_duration" in effects)
+            if stat == "effect_duration"
+            else ("slow_ratio" in effects or "burn_dps" in effects)
+        )
+        if not applies:
+            return {"success": False,
+                    "error": f"{iid} has no effect that '{stat}' would modify"}
 
     MAX_UPGRADE_LEVEL = 20
     current_level = empire.item_upgrades.get(iid, {}).get(stat, 0)

@@ -15,7 +15,7 @@ _CONFIG = Path(__file__).resolve().parent.parent / "config"
 
 ERA_ORDER = [
     "stone", "neolithic", "bronze", "iron",
-    "middle_ages", "renaissance", "industrial", "modern", "future",
+    "medieval", "renaissance", "industrial", "modern", "future",
 ]
 _ERA_SET = set(ERA_ORDER)
 
@@ -383,10 +383,10 @@ class TestAiWavesYaml:
         import re
         raw = (_CONFIG / "ai_waves.yaml").read_text(encoding="utf-8")
         _ERA_SECTION_RE = re.compile(r"#\s+(STONE_AGE|NEOLITHIC|BRONZE_AGE|IRON_AGE"
-                                      r"|MIDDLE_AGES|RENAISSANCE|INDUSTRIAL|MODERN|FUTURE)\b")
+                                      r"|MEDIEVAL|RENAISSANCE|INDUSTRIAL|MODERN|FUTURE)\b")
         _ERA_KEY_MAP = {
             "STONE_AGE": "stone", "NEOLITHIC": "neolithic", "BRONZE_AGE": "bronze",
-            "IRON_AGE": "iron", "MIDDLE_AGES": "middle_ages", "RENAISSANCE": "renaissance",
+            "IRON_AGE": "iron", "MEDIEVAL": "medieval", "RENAISSANCE": "renaissance",
             "INDUSTRIAL": "industrial", "MODERN": "modern", "FUTURE": "future",
         }
         name_to_era: dict[str, str] = {}

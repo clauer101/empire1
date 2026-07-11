@@ -1,0 +1,20 @@
+# Documentation Index
+
+| Doc | Contents |
+|---|---|
+| [API.md](API.md) | REST/WebSocket API reference — single source of truth; generates `web/api.html` |
+| [CODINGGUIDELINE.md](CODINGGUIDELINE.md) | Coding standards for backend and frontend |
+| [EFFECTSGUIDE.md](EFFECTSGUIDE.md) | Effects system (burn, slow, splash, …) — config keys and semantics |
+| [YAMLATTRIBUTEGUIDE.md](YAMLATTRIBUTEGUIDE.md) | Attribute reference for the game config YAMLs |
+| [SEASONENDFLOW.md](SEASONENDFLOW.md) | Season-end flow (reset, trophies, carry-over) |
+| [RUNTIMESTATS.md](RUNTIMESTATS.md) | Runtime statistics and monitoring |
+| [building_image_prompts.md](building_image_prompts.md) | Image-generation prompts for building assets |
+| [knowledge_image_prompts.md](knowledge_image_prompts.md) | Image-generation prompts for knowledge/tech assets |
+
+## Related documentation elsewhere
+
+- `python_server/src/gameserver/*/INTERFACES.md` — public interface per backend package
+- `ai_players/docs/` — bot flow + strategy specs (synced 1:1 with `ai_players/bot/planners/`)
+- `web/scripts/AGENTS.md` — Node build scripts
+- `tasks/` — planning/working notes with status headers
+- `CLAUDE.md` + `.claude/rules/` — Claude Code behavior rules

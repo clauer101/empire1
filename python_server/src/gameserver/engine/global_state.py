@@ -24,6 +24,7 @@ _next_season_title: str = ""
 _game_frozen: bool = False
 _season_wipe_time: float = 0.0  # unix timestamp of last empire wipe
 _season_snapshot_done: bool = False
+_season_wipe_done: bool = False  # wipe already performed for the pending season transition
 _season_leadtime: Optional[float] = None  # None = use game.yaml default
 
 
@@ -174,6 +175,15 @@ def set_season_snapshot_done(value: bool) -> None:
     _season_snapshot_done = value
 
 
+def is_season_wipe_done() -> bool:
+    return _season_wipe_done
+
+
+def set_season_wipe_done(value: bool) -> None:
+    global _season_wipe_done
+    _season_wipe_done = value
+
+
 def get_season_leadtime() -> Optional[float]:
     return _season_leadtime
 
@@ -196,6 +206,34 @@ def restore_first_eras(era_keys: set[str]) -> None:
     """Called on startup to restore persisted first-era claims."""
     global _eras_first_reached
     _eras_first_reached = set(era_keys)
+
+
+def reset() -> None:
+    """Reset all module-level state to defaults.
+
+    Intended for test isolation — global_state is a bag of module globals, so
+    tests that exercise the season/end-criterion flow must start from a clean
+    slate regardless of what ran before them.
+    """
+    global _end_criterion_activated, _eras_first_reached
+    global _end_criterion_empire_uid, _end_criterion_empire_name
+    global _season_number, _season_title, _this_season_start_date
+    global _next_season_start, _next_season_title, _game_frozen
+    global _season_wipe_time, _season_snapshot_done, _season_leadtime, _season_wipe_done
+    _end_criterion_activated = None
+    _eras_first_reached = set()
+    _end_criterion_empire_uid = None
+    _end_criterion_empire_name = ""
+    _season_number = 1
+    _season_title = ""
+    _this_season_start_date = ""
+    _next_season_start = ""
+    _next_season_title = ""
+    _game_frozen = False
+    _season_wipe_time = 0.0
+    _season_snapshot_done = False
+    _season_wipe_done = False
+    _season_leadtime = None
 
 
 def is_end_rally_active(cfg: GameConfig) -> bool:

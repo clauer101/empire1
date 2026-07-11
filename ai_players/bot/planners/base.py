@@ -1,4 +1,6 @@
-"""Planner base: planners emit scored Options; the dispatcher picks one per cycle."""
+"""Planner base: planners emit Options; the dispatcher runs them in strict
+priority order each cycle (free first, then priced highest-priority-first —
+see bot/dispatch.py)."""
 
 from __future__ import annotations
 
@@ -46,24 +48,29 @@ class Action:
 
 @dataclass
 class Option:
-    """A scored candidate action a planner offers the dispatcher.
+    """A candidate action a planner offers the dispatcher.
 
-    base_score is utility-per-gold (gain/price); free and mandatory options sort
-    to the top. The dispatcher multiplies base_score by a category weight and
-    samples one option per cycle. When the chosen option is unaffordable and
-    carries saves_for/goal_meta, the dispatcher saves toward it instead.
+    Dispatch (bot/dispatch.py) is strict priority order, not ROI: free options
+    (price <= 0) always run before any priced one, regardless of priority;
+    among priced options, higher `priority` wins. `gain`/`base_score`/`tier`/
+    `filler`/`mandatory` are legacy fields kept for `Planner.propose()` and a
+    few single-planner "pick the best of my own options" call sites (e.g.
+    baseline.py's tower-floor/breach-response helper) — they no longer affect
+    the dispatcher's cross-planner ordering. When the chosen option is
+    unaffordable and carries saves_for/goal_meta, the dispatcher saves toward
+    it instead of running a lower-priority option that would spend the gold.
     """
 
-    category: str                       # "baseline" | "economy" | "defense" | "attack"
+    category: str                       # "baseline" | "defense" | "attack"
     description: str
     run: Callable[[Any], Any]
     price: float = 0.0                  # gold cost; 0.0 = free
-    gain: float = 1.0                   # rough common "power/value" unit
-    mandatory: bool = False             # sequencing/breach: must win its tier
-    priority: int = 0                   # ordering among mandatory options (higher first)
+    gain: float = 1.0                   # rough common "power/value" unit (legacy, see above)
+    mandatory: bool = False             # legacy tier field, see class docstring
+    priority: int = 0                   # dispatch order among priced options (higher first)
     saves_for: float = 0.0              # if unaffordable, gold to save toward (0 = don't)
     goal_meta: dict | None = field(default=None)  # {item, action, sticky} for set_goal
-    filler: bool = False                # low-value keep-busy action (queue fill, etc.)
+    filler: bool = False                # legacy tier field, see class docstring
 
     def base_score(self) -> float:
         if self.price <= 0:
@@ -76,6 +83,8 @@ class Option:
 
         Filler (queue fill / fallback build) always ranks last so a valuable but
         cheaper-per-gold productive option is never displaced by keep-busy work.
+        Only used by Planner.propose() and single-planner helpers — see class
+        docstring; the cross-planner dispatcher no longer uses this.
         """
         if self.mandatory:
             return 3

@@ -47,6 +47,8 @@ async function enter() {
 
       <div style="${CARD}">
         <div style="${LABEL}">Account</div>
+        <button id="change-password-btn" style="${BTN}">Change Password</button>
+        <button id="change-email-btn" style="${BTN}">Change Email</button>
         <button id="logout-confirm-btn" style="${BTN}">Sign Out</button>
       </div>
 
@@ -63,6 +65,29 @@ async function enter() {
         <input type="text" id="rename-input" placeholder="New empire name" maxlength="40" style="width:100%;box-sizing:border-box;" />
         <div id="rename-msg" style="font-size:0.82em;min-height:14px;"></div>
         <button id="rename-confirm" style="width:100%;">Rename</button>
+      </div>
+    </div>
+
+    <div id="pwd-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:24px;min-width:280px;max-width:360px;width:90%;position:relative;display:flex;flex-direction:column;gap:12px;">
+        <button id="pwd-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;">✕</button>
+        <div style="font-weight:600;font-size:1.05em;">Change Password</div>
+        <input type="password" id="pwd-current" placeholder="Current password" autocomplete="current-password" style="width:100%;box-sizing:border-box;" />
+        <input type="password" id="pwd-new" placeholder="New password" autocomplete="new-password" style="width:100%;box-sizing:border-box;" />
+        <input type="password" id="pwd-new2" placeholder="Repeat new password" autocomplete="new-password" style="width:100%;box-sizing:border-box;" />
+        <div id="pwd-msg" style="font-size:0.82em;min-height:14px;"></div>
+        <button id="pwd-confirm" style="width:100%;">Change Password</button>
+      </div>
+    </div>
+
+    <div id="email-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:24px;min-width:280px;max-width:360px;width:90%;position:relative;display:flex;flex-direction:column;gap:12px;">
+        <button id="email-close" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#888;font-size:16px;">✕</button>
+        <div style="font-weight:600;font-size:1.05em;">Change Email</div>
+        <input type="email" id="email-new" placeholder="New email address" autocomplete="email" style="width:100%;box-sizing:border-box;" />
+        <input type="password" id="email-pwd" placeholder="Current password" autocomplete="current-password" style="width:100%;box-sizing:border-box;" />
+        <div id="email-msg" style="font-size:0.82em;min-height:14px;"></div>
+        <button id="email-confirm" style="width:100%;">Change Email</button>
       </div>
     </div>
   `;
@@ -117,6 +142,124 @@ async function enter() {
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') container.querySelector('#rename-confirm').click();
+  });
+
+  const pwdOverlay = container.querySelector('#pwd-overlay');
+  const pwdCurrent = container.querySelector('#pwd-current');
+  const pwdNew = container.querySelector('#pwd-new');
+  const pwdNew2 = container.querySelector('#pwd-new2');
+  const pwdMsg = container.querySelector('#pwd-msg');
+
+  function closePwdOverlay() {
+    pwdOverlay.style.display = 'none';
+    pwdCurrent.value = '';
+    pwdNew.value = '';
+    pwdNew2.value = '';
+  }
+
+  container.querySelector('#change-password-btn').addEventListener('click', () => {
+    pwdMsg.textContent = '';
+    pwdOverlay.style.display = 'flex';
+    pwdCurrent.focus();
+  });
+
+  container.querySelector('#pwd-close').addEventListener('click', closePwdOverlay);
+
+  pwdOverlay.addEventListener('click', (e) => {
+    if (e.target === pwdOverlay) closePwdOverlay();
+  });
+
+  container.querySelector('#pwd-confirm').addEventListener('click', async () => {
+    const current = pwdCurrent.value;
+    const next = pwdNew.value;
+    const next2 = pwdNew2.value;
+    if (next.length < 4) {
+      pwdMsg.textContent = 'New password must be at least 4 characters';
+      pwdMsg.style.color = 'var(--danger)';
+      return;
+    }
+    if (next !== next2) {
+      pwdMsg.textContent = 'New passwords do not match';
+      pwdMsg.style.color = 'var(--danger)';
+      return;
+    }
+    const btn = container.querySelector('#pwd-confirm');
+    btn.disabled = true;
+    try {
+      const resp = await rest.changePassword(current, next);
+      if (resp.success) {
+        pwdMsg.textContent = '✓ Password changed!';
+        pwdMsg.style.color = 'var(--success)';
+        setTimeout(closePwdOverlay, 1200);
+      } else {
+        pwdMsg.textContent = `✗ ${resp.error || 'Failed'}`;
+        pwdMsg.style.color = 'var(--danger)';
+      }
+    } catch (err) {
+      pwdMsg.textContent = `✗ ${err.message}`;
+      pwdMsg.style.color = 'var(--danger)';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  pwdNew2.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') container.querySelector('#pwd-confirm').click();
+  });
+
+  const emailOverlay = container.querySelector('#email-overlay');
+  const emailNew = container.querySelector('#email-new');
+  const emailPwd = container.querySelector('#email-pwd');
+  const emailMsg = container.querySelector('#email-msg');
+
+  function closeEmailOverlay() {
+    emailOverlay.style.display = 'none';
+    emailNew.value = '';
+    emailPwd.value = '';
+  }
+
+  container.querySelector('#change-email-btn').addEventListener('click', () => {
+    emailMsg.textContent = '';
+    emailOverlay.style.display = 'flex';
+    emailNew.focus();
+  });
+
+  container.querySelector('#email-close').addEventListener('click', closeEmailOverlay);
+
+  emailOverlay.addEventListener('click', (e) => {
+    if (e.target === emailOverlay) closeEmailOverlay();
+  });
+
+  container.querySelector('#email-confirm').addEventListener('click', async () => {
+    const newEmail = emailNew.value.trim();
+    const pwd = emailPwd.value;
+    if (!pwd) {
+      emailMsg.textContent = 'Current password is required';
+      emailMsg.style.color = 'var(--danger)';
+      return;
+    }
+    const btn = container.querySelector('#email-confirm');
+    btn.disabled = true;
+    try {
+      const resp = await rest.changeEmail(pwd, newEmail);
+      if (resp.success) {
+        emailMsg.textContent = '✓ Email updated!';
+        emailMsg.style.color = 'var(--success)';
+        setTimeout(closeEmailOverlay, 1200);
+      } else {
+        emailMsg.textContent = `✗ ${resp.error || 'Failed'}`;
+        emailMsg.style.color = 'var(--danger)';
+      }
+    } catch (err) {
+      emailMsg.textContent = `✗ ${err.message}`;
+      emailMsg.style.color = 'var(--danger)';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  emailPwd.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') container.querySelector('#email-confirm').click();
   });
 }
 

@@ -64,6 +64,27 @@ server {
     }
 }
 
+# ── Dev: HTTPS fallback ───────────────────────────────────────────────────────
+# Dev has no valid TLS cert of its own (HTTP-only by design — see block above).
+# Without this block, any HTTPS request to dev.relicsnrockets.io (e.g. a
+# browser auto-upgrading a typed http:// URL) falls through to whichever 443
+# server block nginx treats as default (the first one below, prod's www
+# redirect) and silently lands on PROD instead of dev. This block claims the
+# hostname explicitly and bounces back down to the real http dev site instead.
+# Reuses the prod cert only to complete the TLS handshake (hostname mismatch
+# warning is expected and harmless since we redirect immediately).
+server {
+    listen 443 ssl;
+    server_name dev.relicsnrockets.io;
+
+    ssl_certificate     /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    return 301 http://dev.relicsnrockets.io$request_uri;
+}
+
 # ── Prod: www → non-www redirect (HTTPS) ─────────────────────────────────────
 server {
     listen 443 ssl;

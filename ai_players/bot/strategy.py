@@ -1,10 +1,18 @@
-"""Strategy model: weighted random selection with wall-clock lifetime.
+"""Strategy model: two simple rules, nothing else.
 
-A strategy's lifetime is a wall-clock window (``valid_until``). The bot runs as
-an external process independent of the server game tick.
+1. A fully lost defense immediately switches to `defense` — this always wins,
+   unconditionally, overriding whatever was active before.
+2. Winning DEFENSE_WIN_STREAK_TARGET (see run_bot.py) defenses in a row rolls
+   a NEW strategy via `roll_strategy()` (attack or growth, weighted by
+   `config.yaml` and personality) — this is the only way out of `defense`.
 
-Only two strategies exist: defense and attack. Research, buildings, citizens
-and ruler skill-ups run unconditionally via baseline regardless of strategy.
+There is no revenge-attack-on-defeat mechanism and no wall-clock strategy
+rotation: attack/growth both hold with NO_EXPIRY until the next lost defense.
+Research, buildings, citizens and ruler skill-ups run unconditionally via
+baseline regardless of strategy. Attack's free actions (spy/attack calls,
+wave-fill with an already-unlocked critter) also run regardless of the active
+strategy — see bot/dispatch.py::gather_options — since they cost no gold;
+growth is the one exception (it means "invest in nothing, not even free").
 """
 
 from __future__ import annotations
@@ -16,7 +24,12 @@ from typing import Any
 from .planners.base import weighted_top_n
 from .state import BotState, now_iso, parse_iso
 
-STRATEGY_TYPES = ["defense", "attack"]
+STRATEGY_TYPES = ["defense", "attack", "growth"]
+
+# Sentinel valid_until for a strategy that should persist indefinitely rather
+# than expire on a wall-clock timer — attack/growth both hold until the next
+# lost defense forces a switch back to defense, not for a randomized duration.
+NO_EXPIRY = "2099-01-01T00:00:00Z"
 
 
 def is_expired(strategy: dict | None) -> bool:
@@ -46,79 +59,52 @@ def _personality_weights(config: dict, state: BotState) -> dict[str, float]:
     return weights
 
 
-_VARIETY_WINDOW = 3
-_VARIETY_BOOST  = 3.0
-
-
-def _variety_weights(weights: dict[str, float], memory: dict) -> dict[str, float]:
-    history = memory.get("strategy_history", [])
-    recent = set(history[-_VARIETY_WINDOW:])
-    return {t: (w if t in recent else w * _VARIETY_BOOST)
-            for t, w in weights.items()}
-
-
 def roll_strategy(config: dict, state: BotState, context: dict[str, Any]) -> dict:
-    """Pick defense or attack, modulated by context."""
+    """Weighted-random pick between attack and growth (config.yaml
+    strategy.weights, scaled by personality) — the only way out of defense,
+    reached after DEFENSE_WIN_STREAK_TARGET consecutive defense wins (see
+    run_bot.py). Attack is excluded from the pool when no attackable target
+    exists; if that leaves nothing, growth is used, and if growth also has
+    zero weight, falls back to a short-lived defense placeholder (re-checked
+    again soon rather than parking on defense for hours)."""
+    targets = context.get("targets") or []
     weights = _personality_weights(config, state)
-
-    if not context.get("has_army"):
-        army_price = float(context.get("army_price", 0.0) or 0.0)
-        if army_price > 0 and context.get("gold", 0.0) < 0.3 * army_price:
-            weights["attack"] = 0
-        else:
-            weights["attack"] = weights.get("attack", 0) / 2
-
-    if context.get("recent_defeat"):
-        weights["defense"] = weights.get("defense", 0) * 2
-    if context.get("recent_attack_defeat"):
-        weights["attack"] = weights.get("attack", 0) * 2
-    if not context.get("targets"):
-        weights["attack"] = 0
-
-    types = [t for t in STRATEGY_TYPES if weights.get(t, 0) > 0]
+    if not targets:
+        weights.pop("attack", None)
+    weights.pop("defense", None)
+    types = [t for t in weights if weights[t] > 0]
     if not types:
-        types, weights = ["defense"], {"defense": 1}
+        return {
+            "type": "defense",
+            "params": {},
+            "valid_until": (datetime.now(timezone.utc)
+                            + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source": "no_targets",
+            "started_at": now_iso(),
+        }
 
-    weights = _variety_weights(weights, state.memory)
     chosen = random.choices(types, weights=[weights[t] for t in types], k=1)[0]
-
-    history = state.memory.setdefault("strategy_history", [])
-    history.append(chosen)
-    state.memory["strategy_history"] = history[-10:]
-
-    params: dict[str, Any] = {}
     if chosen == "attack":
-        targets = context.get("targets", [])
-        top_n = int((config.get("selection") or {}).get("top_n", 1) or 1)
-        target = weighted_top_n(targets, key=lambda t: t.get("score", 0.0), n=top_n)
-        params = {"target_uid": target["uid"], "target_name": target["name"],
-                  "phase": "strengthen"}
-
+        # Sample across the WHOLE viable pool (not just config.selection.top_n,
+        # which was too narrow with only a handful of opponents in play) so bots
+        # spread across different targets instead of every bot's weighted draw
+        # converging on the single globally weakest empire.
+        target = weighted_top_n(targets, key=lambda t: t.get("score", 0.0), n=len(targets))
+        return {
+            "type": "attack",
+            "params": {"target_uid": target["uid"], "target_name": target["name"],
+                       "phase": "strengthen"},
+            "valid_until": NO_EXPIRY,
+            "source": "defense_won",
+            "started_at": now_iso(),
+        }
     return {
-        "type": chosen,
-        "params": params,
-        "valid_until": _valid_until(config, chosen),
-        "source": "random",
+        "type": "growth",
+        "params": {},
+        "valid_until": NO_EXPIRY,
+        "source": "defense_won",
         "started_at": now_iso(),
     }
-
-
-def roll_secondary(config: dict, state: BotState,
-                   active_type: str, has_target: bool) -> str | None:
-    """Pick a secondary strategy type (the one not currently active)."""
-    weights = _personality_weights(config, state)
-    weights.pop(active_type, None)
-    if not has_target:
-        weights.pop("attack", None)
-    types = [t for t in STRATEGY_TYPES if weights.get(t, 0) > 0]
-    if not types:
-        return None
-    return random.choices(types, weights=[weights[t] for t in types], k=1)[0]
-
-
-def should_respond_to_breach(config: dict, personality: str) -> bool:
-    chance = (config.get("breach_response_chance") or {}).get(personality, 1.0)
-    return random.random() < float(chance)
 
 
 def breach_defense_strategy(config: dict) -> dict:
@@ -127,22 +113,6 @@ def breach_defense_strategy(config: dict) -> dict:
         "params": {},
         "valid_until": _valid_until(config, "defense"),
         "source": "breach",
-        "started_at": now_iso(),
-    }
-
-
-def should_respond_to_attack_defeat(config: dict, personality: str) -> bool:
-    chance = (config.get("attack_defeat_response_chance") or {}).get(personality, 1.0)
-    return random.random() < float(chance)
-
-
-def attack_defeat_strategy(config: dict, target_uid: int, target_name: str) -> dict:
-    return {
-        "type": "attack",
-        "params": {"target_uid": target_uid, "target_name": target_name,
-                   "phase": "strengthen"},
-        "valid_until": _valid_until(config, "attack"),
-        "source": "revenge",
         "started_at": now_iso(),
     }
 

@@ -19,7 +19,7 @@ EMPIRE_EFFECT_KEYS: list[tuple[str, str, str, str]] = [
     ("build_speed_offset",                      "🏗",  "Build speed",                    "Accelerates building construction by a fixed amount"),
     ("research_speed_modifier",                 "🔬", "Research speed",                  "Accelerates research by a multiplier"),
     ("research_speed_offset",                   "🔬", "Research speed",                  "Accelerates research by a fixed amount"),
-    ("research_cost_modifier",                  "🔬", "Research cost",                   "Reduces the effort cost of each research"),
+    ("research_effort_modifier",                "🔬", "Research effort",                 "Reduces the required effort of each research"),
     ("scientist_citizen_bonus",                 "🔭", "Scientist bonus",                 "Increases the research speed bonus per scientist citizen"),
     ("gold_lump_sum_after_research",            "💰", "Research reward",                 "Grants a one-time gold bonus each time a research is completed"),
     # Workshop
@@ -39,13 +39,6 @@ EMPIRE_EFFECT_KEYS: list[tuple[str, str, str, str]] = [
     ("wave_slot_cost_modifier",                 "⚔️", "Wave slot discount",              "Reduces the gold cost of purchasing additional critter slots"),
     # Battle / Defense
     ("restore_life_during_battle_modifier",     "❤️", "Battle life regen",               "Adds to life regeneration while in battle"),
-    ("damage_modifier",                         "💥", "Tower damage",                    "Increases damage of all towers by a multiplier"),
-    ("range_modifier",                          "🎯", "Tower range",                     "Increases range of all towers by a multiplier"),
-    ("reload_modifier",                         "⚡", "Tower reload speed",              "Increases reload speed of all towers by a multiplier"),
-    # Critter buffs
-    ("speed_modifier",                          "⚡", "Critter speed",                   "Boosts speed of all spawned critters"),
-    ("health_modifier",                         "❤️", "Critter health",                  "Boosts health of all spawned critters"),
-    ("armour_modifier",                         "🛡", "Critter armour",                  "Boosts armour of all spawned critters"),
     # Costs
     ("citizen_cost_modifier",                   "🫂", "Citizen discount",                "Reduces the culture cost of acquiring new citizens"),
     ("tile_cost_modifier",                      "🗺️", "Land discount",                   "Reduces the gold cost of acquiring new land tiles"),
@@ -61,6 +54,9 @@ EMPIRE_EFFECT_KEYS: list[tuple[str, str, str, str]] = [
     ("artifact_steal_defeat_modifier",          "⚜",  "Artifact steal (defeat)",        "Increases artifact maximum steal chance on defeat"),
     ("artifact_retention_time",                 "⚜",  "Artifact protection",            "Newly acquired artifacts cannot be stolen for this duration"),
     ("spy_workshop",                            "🕵️", "Workshop intel",                  "Unlocks workshop intelligence in spy reports"),
+    ("spy_artifacts",                           "🕵️", "Artifact intel",                  "Unlocks the artifact list in spy reports"),
+    ("spy_ruler",                               "🕵️", "Ruler intel",                     "Unlocks ruler information in spy reports"),
+    ("spy_queues",                              "🕵️", "Queue intel",                     "Reveals the target's current build and research queue in spy reports"),
     # Unlocks
     ("ruler_unlock",                            "👑", "Ruler",                           "Assign a powerful ruler to your empire"),
     ("enable_army",                             "⚔",  "Army",                           "Unlocks the Army view to compose and send attack waves"),

@@ -23,7 +23,7 @@ const EFFECT_META = {
   build_speed_offset:             ['🏗',  'Build speed',             (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(1)}/h`,                                             'Accelerates building construction by a fixed amount'],
   research_speed_modifier:        ['🔬', 'Research speed',           (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Accelerates research by a multiplier'],
   research_speed_offset:          ['🔬', 'Research speed',           (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(1)}/h`,                                            'Accelerates research by a fixed amount'],
-  research_cost_modifier:         ['🔬', 'Research cost',            (v) => `-${(v * 100).toFixed(0)}%`,                                                                'Reduces the effort cost of each research'],
+  research_effort_modifier:       ['🔬', 'Research effort',          (v) => `-${(v * 100).toFixed(0)}%`,                                                                'Reduces the required effort of each research'],
   scientist_citizen_bonus:        ['🔭', 'Scientist bonus',          (v) => `×${(1 + v).toFixed(1)} per scientist`,                                                     'Increases the research speed bonus per scientist citizen'],
   gold_lump_sum_after_research:   ['💰', 'Research reward',          (v) => `+${v.toLocaleString('de-DE')} gold`,                                                       'Grants a one-time gold bonus each time a research is completed'],
   workshop_cost_modifier:         ['🔧', 'Workshop discount',        (v) => `-${(v * 100).toFixed(0)}%`,                                                                'Reduces the gold cost of workshop item upgrades'],
@@ -31,11 +31,14 @@ const EFFECT_META = {
   travel_offset:                  ['🚀', 'Travel time',              (v) => `${v > 0 ? '+' : ''}${v}s`,                                                                 'Modifies travel time of armies'],
   siege_offset:                   ['⚔️', 'Siege time',               (v) => `${v > 0 ? '+' : ''}${(v / 3600).toFixed(1)}h`,                                          'Modifies siege time of armies'],
   siege_time_modifier:            ['⚔️', 'Siege speed',              (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Accelerates siege by a multiplier'],
-  wave_delay_offset:              ['⏳', 'Wave delay',               (v) => `${v > 0 ? '+' : ''}${(v / 1000).toFixed(0)}s`,                                          'Increases delay between incoming waves'],
+  wave_delay_offset:              ['⏳', 'Wave delay',               (v) => `${v > 0 ? '+' : ''}${(v / 1000).toFixed(1)}s`,                                          'Increases delay between incoming waves'],
   artifact_steal_victory_modifier:['⚜',  'Max. Artifact steal (victory)', (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases artifact maximum steal chance on victory'],
   artifact_steal_defeat_modifier: ['⚜',  'Max. Artifact steal (defeat)',  (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases artifact maximum steal chance on defeat'],
   tower_sell_refund_modifier:     ['💰', 'Tower refund',             (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases tower sell refund'],
   spy_workshop:                   ['🕵️', 'Workshop intel',           () => 'Unlocked',                                                                                  'Unlocks workshop intelligence in spy reports'],
+  spy_artifacts:                  ['🕵️', 'Artifact intel',           () => 'Unlocked',                                                                                  'Unlocks the artifact list in spy reports'],
+  spy_ruler:                      ['🕵️', 'Ruler intel',              () => 'Unlocked',                                                                                  'Unlocks ruler information in spy reports'],
+  spy_queues:                     ['🕵️', 'Queue intel',              () => 'Unlocked',                                                                                  'Reveals the target\'s current build and research queue in spy reports'],
   ruler_unlock:                   ['👑', 'Ruler',                    () => 'Unlocked',                                                                                  'Assign a powerful ruler to your empire'],
   enable_army:                    ['⚔',  'Army',                     () => 'Unlocked',                                                                                  'Unlocks the Army view to compose and send attack waves'],
   enable_techtree:                ['⬡',  'Tech Tree',                () => 'Unlocked',                                                                                  'Unlocks the Tech Tree view for advanced research'],
@@ -179,7 +182,7 @@ export const CONDITION_META = {
   first_in_era: ['🏅', (t, c) => {
     const ERA_LABEL_EN = {
       stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age',
-      iron: 'Iron Age', middle_ages: 'Middle Ages', renaissance: 'Renaissance',
+      iron: 'Iron Age', medieval: 'Medieval', renaissance: 'Renaissance',
       industrial: 'Industrial Age', modern: 'Modern Age', future: 'Future',
     };
     return `First to reach the ${ERA_LABEL_EN[c?.era] ?? c?.era ?? '?'}`;

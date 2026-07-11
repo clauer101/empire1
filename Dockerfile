@@ -16,6 +16,7 @@ COPY python_server/config ./config
 COPY python_server/migrations ./migrations
 COPY python_server/alembic.ini ./alembic.ini
 COPY web ./web
+COPY scripts ./scripts
 COPY docker-entrypoint.sh ./entrypoint.sh
 
 # Non-root user
@@ -59,4 +60,5 @@ ENV PYTHONUNBUFFERED=1
 # BOT_COUNT controls how many bots fleet.py spawns (default: 3)
 ENV BOT_COUNT=3
 
-CMD ["sh", "-c", "python fleet.py --count ${BOT_COUNT}"]
+# exec so python replaces sh as PID 1 and receives docker's SIGTERM directly
+CMD ["sh", "-c", "exec python fleet.py --count ${BOT_COUNT}"]

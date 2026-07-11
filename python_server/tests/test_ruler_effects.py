@@ -18,7 +18,7 @@ def empire() -> Empire:
     return Empire(uid=1, name="Test")
 
 
-# ── research_cost_modifier ─────────────────────────────────────────────
+# ── research_effort_modifier ─────────────────────────────────────────────
 
 
 class TestResearchCostModifier:
@@ -31,34 +31,34 @@ class TestResearchCostModifier:
         empire.knowledge["fire"] = 100.0
 
         # Simulate is_new_start path directly
-        cost_mod = max(0.0, 1.0 - empire.get_effect("research_cost_modifier", 0.0))
+        cost_mod = max(0.0, 1.0 - empire.get_effect("research_effort_modifier", 0.0))
         result = item.effort * cost_mod
         assert result == 100.0
 
     def test_modifier_reduces_effort(self, service: EmpireService, empire: Empire):
-        """research_cost_modifier 0.25 → 25% less effort on new research start."""
-        empire.effects["research_cost_modifier"] = 0.25
-        cost_mod = max(0.0, 1.0 - empire.get_effect("research_cost_modifier", 0.0))
+        """research_effort_modifier 0.25 → 25% less effort on new research start."""
+        empire.effects["research_effort_modifier"] = 0.25
+        cost_mod = max(0.0, 1.0 - empire.get_effect("research_effort_modifier", 0.0))
         assert cost_mod == pytest.approx(0.75)
 
     def test_modifier_applied_on_new_research(self, service: EmpireService, empire: Empire):
         """New research item gets reduced effort when modifier is active."""
-        empire.effects["research_cost_modifier"] = 0.20
+        empire.effects["research_effort_modifier"] = 0.20
         # Simulate what build_item does on is_new_start for KNOWLEDGE
         effort = 200.0
-        cost_mod = max(0.0, 1.0 - empire.get_effect("research_cost_modifier", 0.0))
+        cost_mod = max(0.0, 1.0 - empire.get_effect("research_effort_modifier", 0.0))
         empire.knowledge["fire"] = effort * cost_mod
         assert empire.knowledge["fire"] == pytest.approx(160.0)
 
     def test_modifier_clamped_at_zero(self, service: EmpireService, empire: Empire):
         """Modifier > 1.0 does not produce negative effort."""
-        empire.effects["research_cost_modifier"] = 1.5
-        cost_mod = max(0.0, 1.0 - empire.get_effect("research_cost_modifier", 0.0))
+        empire.effects["research_effort_modifier"] = 1.5
+        cost_mod = max(0.0, 1.0 - empire.get_effect("research_effort_modifier", 0.0))
         assert cost_mod == 0.0
 
     def test_modifier_not_applied_on_resume(self, service: EmpireService, empire: Empire):
         """Resuming an already-started item does not re-apply the modifier."""
-        empire.effects["research_cost_modifier"] = 0.50
+        empire.effects["research_effort_modifier"] = 0.50
         empire.knowledge["fire"] = 60.0  # already started, remaining = 60
         empire.research_queue = "fire"
         service._progress_knowledge(empire, dt=1.0)

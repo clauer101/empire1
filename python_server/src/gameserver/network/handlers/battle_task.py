@@ -1270,9 +1270,7 @@ def _create_battle_start_handler() -> Callable[..., Any]:
                 _abort_battle_setup(attack_id, attacking_army)
                 return
 
-            structures_dict = {}
-            if defender_empire.structures:
-                structures_dict = dict(defender_empire.structures)
+            structures_dict: dict[int, Any] = {}
 
             from gameserver.models.structure import structure_from_item
             from gameserver.models.hex import HexCoord

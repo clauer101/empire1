@@ -3,60 +3,20 @@
  * No shared state — safe to import from anywhere.
  */
 
-export const _TOWER_ERA = {
-  BASIC_TOWER: 'Stone Age',
-  SLING_TOWER: 'Stone Age',
-  DOUBLE_SLING_TOWER: 'Neolith.',
-  SPIKE_TRAP: 'Neolith.',
-  ARROW_TOWER: 'Bronze',
-  BALLISTA_TOWER: 'Bronze',
-  FIRE_TOWER: 'Bronze',
-  CATAPULTS: 'Iron Age',
-  ARBELESTE_TOWER: 'Iron Age',
-  TAR_TOWER: 'Medieval',
-  HEAVY_TOWER: 'Medieval',
-  BOILING_OIL: 'Medieval',
-  CANNON_TOWER: 'Renaissance',
-  RIFLE_TOWER: 'Renaissance',
-  COLD_TOWER: 'Renaissance',
-  ICE_TOWER: 'Renaissance',
-  FLAME_THROWER: 'Industrial',
-  SHOCK_TOWER: 'Industrial',
-  PARALYZNG_TOWER: 'Industrial',
-  GATLING_TOWER: 'Industrial',
-  NAPALM_THROWER: 'Modern',
-  MG_TOWER: 'Modern',
-  RAPID_FIRE_MG_BUNKER: 'Modern',
-  RADAR_TOWER: 'Modern',
-  ANTI_AIR_TOWER: 'Modern',
-  LASER_TOWER: 'Modern',
-  SNIPER_TOWER: 'Future',
-  ROCKET_TOWER: 'Future',
-};
+import { ERA_KEYS, ERA_LABEL_EN } from '../../lib/eras.js';
 
+// Colors keyed by canonical lowercase era key (matches structures.yaml `era:`)
 export const _ERA_COLORS = {
-  'Stone Age': '#8B7355',
-  'Neolith.': '#A0887A',
-  Bronze: '#CD7F32',
-  'Iron Age': '#888888',
-  Medieval: '#6B8A8A',
-  Renaissance: '#8B6914',
-  Industrial: '#FF6B35',
-  Modern: '#4B9CD3',
-  Future: '#9B59B6',
+  stone: '#8B7355',
+  neolithic: '#A0887A',
+  bronze: '#CD7F32',
+  iron: '#888888',
+  medieval: '#6B8A8A',
+  renaissance: '#8B6914',
+  industrial: '#FF6B35',
+  modern: '#4B9CD3',
+  future: '#9B59B6',
 };
-
-export const _ERA_ORDER_STAT = [
-  'Stone Age',
-  'Neolith.',
-  'Bronze',
-  'Iron Age',
-  'Medieval',
-  'Renaissance',
-  'Industrial',
-  'Modern',
-  'Future',
-];
 
 export const _NON_TOWER = new Set(['castle', 'spawnpoint', 'path', 'empty', 'void', '']);
 
@@ -65,7 +25,7 @@ export const _ERA_CASTLE_SPRITES = {
   neolithic: '/assets/sprites/bases/base_neolithicum.webp',
   bronze: '/assets/sprites/bases/base_bronze.webp',
   iron: '/assets/sprites/bases/base_iron.webp',
-  middle_ages: '/assets/sprites/bases/base_middle_ages.webp',
+  medieval: '/assets/sprites/bases/base_medieval.webp',
   renaissance: '/assets/sprites/bases/base_renaissance.webp',
   industrial: '/assets/sprites/bases/base_industrial.webp',
   modern: '/assets/sprites/bases/base_modern.webp',
@@ -83,7 +43,7 @@ export const STRUCTURE_COLORS = [
   { color: '#4a5a4a', stroke: '#6a7a6a' },
 ];
 
-export function _buildEraStatsHTML(tiles, pathLength) {
+export function _buildEraStatsHTML(tiles, pathLength, catalog) {
   if (!tiles) return '';
   const pathRow = pathLength != null
     ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Path length: <span style="color:var(--text);font-family:monospace">${pathLength} tiles</span></div>`
@@ -91,14 +51,16 @@ export function _buildEraStatsHTML(tiles, pathLength) {
   const towers = tiles.filter((t) => !_NON_TOWER.has(t.type));
   if (!towers.length)
     return pathRow + '<div style="color:var(--text-dim);font-size:11px;padding:4px 0;">No towers placed</div>';
+  // Era per tower comes from the item catalog (structures.yaml `era:` field)
+  const cat = catalog || {};
   const byEra = {};
   for (const t of towers) {
-    const era = _TOWER_ERA[t.type] || '?';
+    const era = cat[t.type]?.era || '?';
     byEra[era] = (byEra[era] || 0) + 1;
   }
   const total = Object.values(byEra).reduce((a, b) => a + b, 0);
   const maxCount = Math.max(1, ...Object.values(byEra));
-  const rows = _ERA_ORDER_STAT
+  const rows = [...ERA_KEYS, '?']
     .filter((era) => byEra[era])
     .map((era) => {
       const cnt = byEra[era];
@@ -106,7 +68,7 @@ export function _buildEraStatsHTML(tiles, pathLength) {
       const pct = Math.round((cnt / total) * 100);
       const col = _ERA_COLORS[era] || '#888';
       return `<div class="age-row">
-        <span class="age-name">${era}</span>
+        <span class="age-name">${ERA_LABEL_EN[era] || era}</span>
         <div class="age-bar-outer"><div class="age-bar-inner" style="width:${barPct}%;background:${col}"></div></div>
         <span class="age-pct">${pct}%</span>
         <span style="color:var(--text-dim);font-size:10px;font-family:monospace">${cnt}×</span>

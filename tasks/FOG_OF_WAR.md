@@ -1,3 +1,5 @@
+> **Status: done** — implemented; kept as design reference.
+
 # Fog of War — Neighbor Tile Visibility
 
 ## What Was Implemented

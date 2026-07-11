@@ -20,9 +20,8 @@ import json
 import sys
 from pathlib import Path
 
-import yaml
-
-sys.path.insert(0, str(Path(__file__).resolve().parent / "python_server" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python_server" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from gameserver.main import load_configuration
 from gameserver.engine.battle_service import BattleService
@@ -34,13 +33,18 @@ from gameserver.util.army_generator import (
     parse_slot_by_iid,
     ERA_BACKEND_TO_INTERNAL,
 )
+from gameserver.util.maze_loader import find_raw_map, load_raw_maps, normalize_hex_map
 
 from scripts.battle_sim import build_structures, make_battle, run_battle, tile_type
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-CONFIG_DIR      = Path(__file__).resolve().parent / "python_server" / "config"
-SAVED_MAPS_PATH = CONFIG_DIR / "saved_maps.yaml"
+REPO_ROOT       = Path(__file__).resolve().parent.parent
+# `config/` sits inside `python_server/` locally but is copied straight into
+# `/app/config` in Docker (no extra nesting there) — try both layouts.
+CONFIG_DIR      = REPO_ROOT / "python_server" / "config"
+if not CONFIG_DIR.exists():
+    CONFIG_DIR = REPO_ROOT / "config"
 CRITTERS_PATH   = CONFIG_DIR / "critters.yaml"
 
 # Maps era CLI arg → backend era key
@@ -49,7 +53,7 @@ ERA_KEYWORDS = {
     "neolithic":    "neolithic",
     "bronze":       "bronze",
     "iron":         "iron",
-    "middle_ages":  "middle_ages",
+    "medieval":  "medieval",
     "renaissance":  "renaissance",
     "industrial":   "industrial",
     "modern":       "modern",
@@ -60,15 +64,16 @@ ERA_KEYWORDS = {
 # ── Loaders ───────────────────────────────────────────────────────────────────
 
 def load_map(name: str) -> dict:
-    """Load a single map by name from saved_maps.yaml."""
-    data = yaml.safe_load(SAVED_MAPS_PATH.read_text())
-    for m in (data.get("maps") or []):
-        mname = m.get("name", m.get("id", ""))
-        if mname == name:
-            tiles_list = m.get("hex_map") or []
-            hex_map = {f"{t['q']},{t['r']}": t.get("type", "") for t in tiles_list}
-            return {"name": mname, "hex_map": hex_map, "life": m.get("life")}
-    available = [m.get("name", m.get("id", "?")) for m in (data.get("maps") or [])]
+    """Load a single map by name — curated saved_maps.yaml or a season snapshot.
+
+    Season maps are addressed as "season1:EmpireName" (matching the naming
+    used by /api/saved-maps and gameserver.util.maze_loader).
+    """
+    raw = find_raw_map(name)
+    if raw is not None:
+        return {"name": raw["name"], "hex_map": normalize_hex_map(raw["hex_map"]), "life": raw["life"]}
+
+    available = [m["name"] for m in load_raw_maps()]
     print(f"ERROR: Map '{name}' not found.\nAvailable maps:")
     for n in available:
         print(f"  - {n}")

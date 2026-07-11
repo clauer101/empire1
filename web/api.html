@@ -42,7 +42,7 @@
   "url": "https://relicsnrockets.io/api.html",
   "image": "https://relicsnrockets.io/assets/sprites/banner.webp",
   "inLanguage": "en",
-  "dateModified": "2026-07-01",
+  "dateModified": "2026-07-11",
   "audience": {
     "@type": "Audience",
     "audienceType": "Developer"
@@ -323,6 +323,10 @@ GET  /api/messages          → read battle reports</code></pre>
 <li class="toc-d2"><a href="#authentication">Authentication</a></li>
 <li class="toc-d3"><a href="#post-apiauthlogin">`POST /api/auth/login`</a></li>
 <li class="toc-d3"><a href="#post-apiauthsignup">`POST /api/auth/signup`</a></li>
+<li class="toc-d3"><a href="#post-apiauthchange-password">`POST /api/auth/change-password`</a></li>
+<li class="toc-d3"><a href="#post-apiauthchange-email">`POST /api/auth/change-email`</a></li>
+<li class="toc-d3"><a href="#post-apiauthforgot-password">`POST /api/auth/forgot-password`</a></li>
+<li class="toc-d3"><a href="#post-apiauthreset-password">`POST /api/auth/reset-password`</a></li>
 <li class="toc-d2"><a href="#empire-state">Empire State</a></li>
 <li class="toc-d3"><a href="#get-apiempiresummary">`GET /api/empire/summary`</a></li>
 <li class="toc-d3"><a href="#get-apiempireitems">`GET /api/empire/items`</a></li>
@@ -446,6 +450,14 @@ while True:
 <td>30 req/min</td>
 </tr>
 <tr>
+<td><code>POST /api/auth/change-password</code>, <code>POST /api/auth/reset-password</code></td>
+<td>10 req/min</td>
+</tr>
+<tr>
+<td><code>POST /api/auth/forgot-password</code></td>
+<td>5 req/min</td>
+</tr>
+<tr>
 <td><code>POST /api/attack</code>, <code>POST /api/spy-attack</code></td>
 <td>20 req/min</td>
 </tr>
@@ -507,6 +519,68 @@ while True:
 <pre><code class="language-json">{ &quot;success&quot;: true, &quot;uid&quot;: 42, &quot;reason&quot;: &quot;&quot; }
 </code></pre>
 <hr>
+<h3 id="post-apiauthchange-password"><code>POST /api/auth/change-password</code></h3>
+<p>Change the password of the currently logged-in account. Requires the current
+password.</p>
+<p><strong>Auth required</strong> (Bearer token).  Rate-limited: 10 req/min.</p>
+<p><strong>Request body</strong></p>
+<pre><code class="language-json">{ &quot;current_password&quot;: &quot;old-secret&quot;, &quot;new_password&quot;: &quot;new-secret&quot; }
+</code></pre>
+<p><strong>Response</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true }
+</code></pre>
+<p>or, on failure (wrong current password / new password too short):</p>
+<pre><code class="language-json">{ &quot;success&quot;: false, &quot;error&quot;: &quot;Current password is incorrect&quot; }
+</code></pre>
+<hr>
+<h3 id="post-apiauthchange-email"><code>POST /api/auth/change-email</code></h3>
+<p>Change the email address of the currently logged-in account. Requires the
+current password. Passing an empty string clears the email (email is
+optional).</p>
+<p><strong>Auth required</strong> (Bearer token).  Rate-limited: 10 req/min.</p>
+<p><strong>Request body</strong></p>
+<pre><code class="language-json">{ &quot;current_password&quot;: &quot;s3cret&quot;, &quot;new_email&quot;: &quot;new@example.com&quot; }
+</code></pre>
+<p><strong>Response</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true }
+</code></pre>
+<p>or, on failure (wrong password / invalid email format):</p>
+<pre><code class="language-json">{ &quot;success&quot;: false, &quot;error&quot;: &quot;Invalid email format&quot; }
+</code></pre>
+<hr>
+<h3 id="post-apiauthforgot-password"><code>POST /api/auth/forgot-password</code></h3>
+<p>Request a password reset email, identified by username or email. Only works
+for accounts that have an email address on file (<code>email</code> is optional at
+signup).</p>
+<p><strong>No auth required.</strong>  Rate-limited: 5 req/min.</p>
+<p><strong>Request body</strong></p>
+<pre><code class="language-json">{ &quot;identifier&quot;: &quot;user@example.com&quot; }
+</code></pre>
+<p><code>identifier</code> may be either the account&#39;s username or its email address.</p>
+<p><strong>Response</strong> — always the same, regardless of whether the identifier matches
+an account (prevents account enumeration):</p>
+<pre><code class="language-json">{ &quot;success&quot;: true }
+</code></pre>
+<blockquote>
+<p>If the identifier matches an account with an email on file, a reset link
+(<code>#reset-password/&lt;token&gt;</code>, valid 1 hour, single-use) is emailed via Resend.
+No email is sent — and no error is returned — for unknown identifiers or
+accounts without an email.</p>
+</blockquote>
+<hr>
+<h3 id="post-apiauthreset-password"><code>POST /api/auth/reset-password</code></h3>
+<p>Set a new password using the token from a reset email.</p>
+<p><strong>No auth required.</strong>  Rate-limited: 10 req/min.</p>
+<p><strong>Request body</strong></p>
+<pre><code class="language-json">{ &quot;token&quot;: &quot;&lt;token from reset link&gt;&quot;, &quot;new_password&quot;: &quot;new-secret&quot; }
+</code></pre>
+<p><strong>Response</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true }
+</code></pre>
+<p>or, on failure (invalid/expired/already-used token, or new password too short):</p>
+<pre><code class="language-json">{ &quot;success&quot;: false, &quot;error&quot;: &quot;Reset link is invalid or has expired&quot; }
+</code></pre>
+<hr>
 <h2 id="empire-state">Empire State</h2>
 <h3 id="get-apiempiresummary"><code>GET /api/empire/summary</code>  🔐</h3>
 <p>The <strong>primary polling endpoint</strong>. Returns the full state of the authenticated empire — resources, buildings, queues, armies, attacks, ruler, effects, and more. Poll at ~5 s intervals.</p>
@@ -531,7 +605,7 @@ while True:
   &quot;base_culture&quot;: 0.2,        // culture/s from buildings
   &quot;base_build_speed&quot;: 1.0,
   &quot;base_research_speed&quot;: 0.7,
-  &quot;current_era&quot;: &quot;middle_ages&quot;,   // lowercase era key (see Era Keys section)
+  &quot;current_era&quot;: &quot;medieval&quot;,   // lowercase era key (see Era Keys section)
   &quot;effects&quot;: {                    // all passive effects active on this empire
     &quot;gold_modifier&quot;: 0.3,
     &quot;culture_offset&quot;: 0.5,
@@ -841,7 +915,7 @@ defender_uid     — which empire to spectate (requires spectating=1)
 <p>Static game data: era order, per-era item IIDs, upgrade costs, season info. No auth required. Cache this — it rarely changes.</p>
 <p><strong>Response (key fields)</strong></p>
 <pre><code class="language-json">{
-  &quot;eras&quot;: [&quot;stone&quot;, &quot;neolithic&quot;, &quot;bronze&quot;, &quot;iron&quot;, &quot;middle_ages&quot;, &quot;renaissance&quot;, &quot;industrial&quot;, &quot;modern&quot;, &quot;future&quot;],
+  &quot;eras&quot;: [&quot;stone&quot;, &quot;neolithic&quot;, &quot;bronze&quot;, &quot;iron&quot;, &quot;medieval&quot;, &quot;renaissance&quot;, &quot;industrial&quot;, &quot;modern&quot;, &quot;future&quot;],
   &quot;labels_en&quot;: [&quot;Stone Age&quot;, &quot;Neolithic&quot;, &quot;Bronze Age&quot;, ...],
   &quot;critters&quot;: { &quot;stone&quot;: [&quot;SLAVE&quot;, &quot;WORKER&quot;], &quot;neolithic&quot;: [&quot;SOLDIER&quot;, ...], ... },
   &quot;structures&quot;: { ... },
@@ -1107,9 +1181,9 @@ defender_uid     — which empire to spectate (requires spectating=1)
 </tr>
 <tr>
 <td>5</td>
-<td><code>middle_ages</code></td>
-<td>Middle Ages</td>
-<td><code>MIDDLE_AGES</code></td>
+<td><code>medieval</code></td>
+<td>Medieval</td>
+<td><code>MEDIEVAL</code></td>
 </tr>
 <tr>
 <td>6</td>

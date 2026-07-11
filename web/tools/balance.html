@@ -243,11 +243,11 @@
   const eraMap = await fetch('/api/era-map').then(r => r.json()).catch(() => ({}));
   const ERA_ORDER = eraMap.eras || [
     "stone","neolithic","bronze","iron",
-    "middle_ages","renaissance","industrial","modern","future"
+    "medieval","renaissance","industrial","modern","future"
   ];
   const ERA_EN = {
     "stone": "Stone Age", "neolithic": "Neolithic", "bronze": "Bronze Age",
-    "iron": "Iron Age", "middle_ages": "Middle Ages", "renaissance": "Renaissance",
+    "iron": "Iron Age", "medieval": "Medieval", "renaissance": "Renaissance",
     "industrial": "Industrial Age", "modern": "Modern Age", "future": "Future",
   };
   function eraLabel(e) { return ERA_EN[e] || e; }

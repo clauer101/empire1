@@ -1,0 +1,9 @@
+era,iid,spawned,killed,reached,reach_rate,castle_damage
+neolithic,BOWMAN,59,22,27,0.4576,54.0
+neolithic,CART,212,157,19,0.0896,38.0
+neolithic,CHARIOT,104,45,59,0.5673,59.0
+neolithic,CLUBMAN,793,628,135,0.1702,135.0
+neolithic,SCOUT,28,23,4,0.1429,4.0
+neolithic,SLAVE,51,50,0,0.0000,0.0
+neolithic,SWORDMAN,22,12,7,0.3182,14.0
+neolithic,WARRIOR,751,460,170,0.2264,170.0

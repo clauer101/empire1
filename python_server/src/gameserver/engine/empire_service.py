@@ -606,7 +606,7 @@ class EmpireService:
             # Enqueue (replace current research queue item)
             # Only set effort if not already started (not in dict or already completed)
             if is_new_start:
-                cost_mod = max(0.0, 1.0 - empire.get_effect("research_cost_modifier", 0.0))
+                cost_mod = max(0.0, 1.0 - empire.get_effect("research_effort_modifier", 0.0))
                 empire.knowledge[iid] = float(item.effort) * cost_mod
             if item.effort > 0:
                 empire.research_queue = iid

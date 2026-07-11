@@ -46,7 +46,7 @@ def test_goal_expiry_restores_spending():
 def test_strategy_change_clears_goal():
     memory = {}
     set_goal(memory, item="x", action="army", amount=500, strategy=STRATEGY)
-    assert get_goal(memory, {"type": "economy"}) is None
+    assert get_goal(memory, {"type": "growth"}) is None
     assert "savings_goal" not in memory
 
 
@@ -77,17 +77,17 @@ def test_sticky_goal_survives_strategy_type_change():
     memory = {}
     set_goal(memory, item="army", action="army", amount=500,
              strategy=_attack_strategy(), sticky=True)
-    goal = get_goal(memory, {"type": "economy"})
+    goal = get_goal(memory, {"type": "growth"})
     assert goal is not None and goal["sticky"] is True
     # reserved gold stays protected from a non-owning spender after the re-roll
-    assert spendable_gold(700, memory, {"type": "economy"}) == 200.0
+    assert spendable_gold(700, memory, {"type": "growth"}) == 200.0
 
 
 def test_sticky_goal_still_expires_on_ttl():
     memory = {}
     set_goal(memory, item="army", action="army", amount=500,
              strategy=_attack_strategy(), sticky=True, ttl_h=-1)
-    assert get_goal(memory, {"type": "economy"}) is None
+    assert get_goal(memory, {"type": "growth"}) is None
 
 
 def test_sticky_goal_not_clamped_to_strategy_end():
@@ -95,4 +95,4 @@ def test_sticky_goal_not_clamped_to_strategy_end():
     set_goal(memory, item="army", action="army", amount=500,
              strategy=_attack_strategy(hours=0.001), sticky=True, ttl_h=2)
     # outlives the tiny attack window it was created in
-    assert get_goal(memory, {"type": "economy"}) is not None
+    assert get_goal(memory, {"type": "growth"}) is not None

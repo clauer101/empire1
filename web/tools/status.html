@@ -544,6 +544,9 @@ function buildDetailHTML(e) {
       ${towerStats.eraHTML || '<span style="color:var(--text-dim);font-size:11px">none</span>'}
       <div class="detail-title" style="margin-top:8px">Map (${(e.hex_tiles || []).length})</div>
       ${mapSVG}
+      <button class="save-map-btn" data-uid="${e.uid}" style="margin-top:6px;align-self:flex-start;cursor:pointer;
+        border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;
+        background:var(--surface-alt);color:var(--text)">💾 Save to saved_maps.yaml</button>
     </div>
     <div class="detail-section">
       <div class="detail-title">Buildings (${e.buildings_done.length} done, ${Object.keys(e.buildings_wip).length} in progress)</div>
@@ -655,6 +658,14 @@ function renderEmpires(empires) {
     detailTd.innerHTML = buildDetailHTML(e);
     detailRow.appendChild(detailTd);
 
+    const saveMapBtn = detailTd.querySelector('.save-map-btn');
+    if (saveMapBtn) {
+      saveMapBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        saveEmpireMap(e.uid, saveMapBtn);
+      });
+    }
+
     mainRow.addEventListener('click', () => {
       const arrow = mainRow.querySelector('.expand-arrow');
       if (detailRow.classList.toggle('open')) {
@@ -751,8 +762,8 @@ const TOWER_ERA = {
   DOUBLE_SLING_TOWER: 'Neolithic', SPIKE_TRAP: 'Neolithic',
   ARROW_TOWER: 'Bronze',       BALLISTA_TOWER: 'Bronze',    FIRE_TOWER: 'Bronze',
   CATAPULTS: 'Iron Age',       ARBELESTE_TOWER: 'Iron Age',
-  TAR_TOWER: 'Middle Ages',    HEAVY_TOWER: 'Middle Ages',  BOILING_OIL: 'Middle Ages',
-  CANNON_TOWER: 'Middle Ages',
+  TAR_TOWER: 'Medieval',    HEAVY_TOWER: 'Medieval',  BOILING_OIL: 'Medieval',
+  CANNON_TOWER: 'Medieval',
   RIFLE_TOWER: 'Renaissance',  COLD_TOWER: 'Renaissance', ICE_TOWER: 'Renaissance',
   FLAME_THROWER: 'Industrial', SHOCK_TOWER: 'Industrial',   PARALYZNG_TOWER: 'Industrial',  GATLING_TOWER: 'Industrial',
   NAPALM_THROWER: 'Modern',    MG_TOWER: 'Modern',          RAPID_FIRE_MG_BUNKER: 'Modern',
@@ -765,7 +776,7 @@ const ERA_COLORS = {
   'Neolithic':   '#A0887A',
   'Bronze':      '#CD7F32',
   'Iron Age':    '#888888',
-  'Middle Ages': '#6B8A8A',
+  'Medieval': '#6B8A8A',
   'Renaissance': '#8B6914',
   'Industrial':  '#FF6B35',
   'Modern':      '#4B9CD3',
@@ -826,7 +837,7 @@ function buildHexMapSVG(tiles) {
   return `<svg width="${W}" height="${H}" style="display:block;border-radius:3px">${polys.join('')}</svg>`;
 }
 
-const ERA_ORDER_STATUS = ['Stone Age','Neolithic','Bronze','Iron Age','Middle Ages','Renaissance','Industrial','Modern','Future'];
+const ERA_ORDER_STATUS = ['Stone Age','Neolithic','Bronze','Iron Age','Medieval','Renaissance','Industrial','Modern','Future'];
 
 function buildTowerStats(tiles) {
   if (!tiles) return {count: 0, eraHTML: ''};
@@ -891,6 +902,29 @@ function calcEra(knowledgeDone) {
     if (items.some(iid => done.has(iid))) result = era;
   }
   return ERA_LABELS_EN[result] || result;
+}
+
+// ── Save empire map to saved_maps.yaml ──────────────────────────────
+async function saveEmpireMap(uid, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/saved-maps/from-live/${uid}`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
+    btn.textContent = `✓ Saved as "${d.name}"`;
+    btn.style.color = 'var(--success)';
+    btn.style.borderColor = 'var(--success)';
+  } catch (e) {
+    btn.textContent = original;
+    btn.disabled = false;
+    alert('Failed to save map: ' + e.message);
+  }
 }
 
 // ── Poll ──────────────────────────────────────────────────────────

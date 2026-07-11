@@ -121,7 +121,7 @@ class GameConfig:
     neolithic_travel_offset: float = 300.0
     bronze_travel_offset: float = 300.0
     iron_travel_offset: float = 300.0
-    middle_ages_travel_offset: float = 300.0
+    medieval_travel_offset: float = 300.0
     renaissance_travel_offset: float = 300.0
     industrial_travel_offset: float = 300.0
     modern_travel_offset: float = 300.0

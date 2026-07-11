@@ -6,6 +6,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from bot.state import now_iso
+
+BATTLE_LOG_CAP = 200  # enough history for winrate/last-10 display, keeps yaml small
+
 # Battle report body format produced by battle_task.py:
 #   "🛡 You Won!" / "🛡 You Lost!"  (defender report)
 #   "⚔ You Won!" / "⚔ You Lost!"  (attacker report)
@@ -75,8 +79,12 @@ def parse_report(body: str) -> BattleReport | None:
     return report
 
 
-def process_new_reports(messages: dict, memory: dict) -> list[BattleReport]:
-    """Parse all unseen battle reports, update bot memory, return new reports."""
+def process_new_reports(messages: dict, memory: dict, era: str = "stone") -> list[BattleReport]:
+    """Parse all unseen battle reports, update bot memory, return new reports.
+
+    `era` is the empire's current era at processing time — tagged onto each
+    battle_log entry so winrate can be broken down per era later.
+    """
     last_id = memory.get("last_seen_message_id", 0)
     new_reports: list[BattleReport] = []
     for msg in messages.get("battle_reports", []):
@@ -88,11 +96,16 @@ def process_new_reports(messages: dict, memory: dict) -> list[BattleReport]:
         if report is None:
             continue
         new_reports.append(report)
-        if report.role == "defender" and report.replay_key:
-            # Queue replay for defense weakness analysis (DefensePlanner)
-            replays = memory.setdefault("defense_replays", [])
-            replays.append(report.replay_key)
-            memory["defense_replays"] = replays[-5:]
+        battle_log = memory.setdefault("battle_log", [])
+        battle_log.append({
+            "mid": mid,  # source message id — lets one-off backfills dedupe
+            "ts": now_iso(),
+            "role": report.role,
+            "won": report.won,
+            "era": era,
+            "opponent": report.opponent,
+        })
+        memory["battle_log"] = battle_log[-BATTLE_LOG_CAP:]
         if report.role == "defender" and report.reached > 0:
             # Own defense breached: remember the breach severity
             weak = memory.setdefault("defense_weak_waves", {})
@@ -104,6 +117,13 @@ def process_new_reports(messages: dict, memory: dict) -> list[BattleReport]:
             # Strength estimate: ratio of killed critters (higher = stronger defense)
             if report.spawned > 0:
                 opp["est_strength"] = round(report.killed / report.spawned, 2)
+            if report.won:
+                # Single most recent win — score_targets() strongly prefers
+                # re-attacking this specific opponent, so a bot that finds an
+                # easy target sticks with it instead of re-converging on
+                # whichever empire is globally weakest (which would otherwise
+                # make every bot pile onto the same one).
+                memory["last_beaten_name"] = report.opponent
         memory.setdefault("attack_history", [])
         if report.role == "attacker":
             memory["attack_history"].append({
@@ -118,9 +138,17 @@ def process_new_reports(messages: dict, memory: dict) -> list[BattleReport]:
 
 
 ERA_RANK = {e: i for i, e in enumerate([
-    "stone", "neolithic", "bronze", "iron", "middle_ages",
+    "stone", "neolithic", "bronze", "iron", "medieval",
     "renaissance", "industrial", "modern", "future",
 ])}
+
+
+LAST_BEATEN_BONUS = 1.0  # a real nudge toward re-attacking whoever we most
+# recently won against, without being so dominant that every bot's first
+# lucky draw against the globally weakest empire becomes an unbreakable
+# lock — target *selection* (weighted_top_n over the whole viable pool, see
+# roll_strategy/AttackPlanner) is what actually spreads bots across
+# different targets; this bonus only breaks ties/nudges among close scores.
 
 
 def score_targets(empires: list[dict], own_uid: int, own_culture: float,
@@ -128,6 +156,7 @@ def score_targets(empires: list[dict], own_uid: int, own_culture: float,
                   prefer_artifacts: bool = False) -> list[dict[str, Any]]:
     """Score potential targets; lower-strength opponents first."""
     own_rank = ERA_RANK.get(own_era, 0)
+    last_beaten_name = memory.get("last_beaten_name")
     scored = []
     for e in empires:
         if e.get("uid") == own_uid or e.get("is_self"):
@@ -148,6 +177,8 @@ def score_targets(empires: list[dict], own_uid: int, own_culture: float,
             score += 0.3
         elif opp.get("last_outcome") == "defeat":
             score -= 1.0
+        if last_beaten_name and e.get("name") == last_beaten_name:
+            score += LAST_BEATEN_BONUS
         scored.append({**e, "score": score})
     scored.sort(key=lambda x: -x["score"])
     return scored

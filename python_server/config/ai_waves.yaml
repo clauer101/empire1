@@ -27,7 +27,7 @@
 #   Neolithic      →  CLUBMAN / SCOUT / WARRIOR
 #   Bronze Age     →  BOWMAN / SWORDMAN / CHARIOT
 #   Iron Age       →  PIKENEER / HORSEMAN_FAST / LEGIONARY
-#   Middle Ages    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM
+#   Medieval    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM
 #   Renaissance    →  NINJA / MUSKETEER / DRAGOONER
 #   Industrial     →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK
 #   Modern         →  SPECOPS / HELI
@@ -383,7 +383,7 @@ armies:
         slots: 28
 
   # ──────────────────────────────────────────────────────────
-  #   MIDDLE_AGES  (Effort 28.000 – 130.000)
+  #   MEDIEVAL  (Effort 28.000 – 130.000)
   # ──────────────────────────────────────────────────────────
 
   - name: "Medieval Siege"

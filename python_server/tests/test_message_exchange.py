@@ -15,8 +15,7 @@ import pytest
 
 from gameserver.models.empire import Empire
 from gameserver.models.army import Army
-from gameserver.models.hex import HexCoord
-from gameserver.models.structure import Structure
+from gameserver.models.items import ItemDetails, ItemType
 from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.attack_service import AttackService
 from gameserver.engine.upgrade_provider import UpgradeProvider
@@ -48,6 +47,10 @@ def _make_services(empire: Optional[Empire] = None) -> Any:
     """Create a minimal Services-like object for handler tests."""
     event_bus = EventBus()
     upgrade_provider = UpgradeProvider()
+    upgrade_provider.load([
+        ItemDetails(iid="tower", item_type=ItemType.STRUCTURE,
+                   damage=10.0, range=3, reload_time_ms=1000.0, shot_speed=5.0),
+    ])
     empire_service = EmpireService(upgrade_provider, event_bus)
     attack_service = AttackService(event_bus, empire_service=empire_service)
     if empire is not None:
@@ -75,9 +78,10 @@ def _make_empire(uid: int = 100, name: str = "TestEmpire") -> Empire:
         citizens={"merchant": 3, "scientist": 2, "artist": 1},
         buildings={"farm": 0.0, "library": 0.0, "workshop": 15.5},
         knowledge={"archery": 0.0, "alchemy": 30.0},
-        structures={
-            1: Structure(sid=1, iid="tower", position=HexCoord(2, 3), damage=10.0, range=3, reload_time_ms=1000.0, shot_speed=5.0),
-        },
+        # Structures summary is derived from hex_map (not the legacy
+        # empire.structures dict, which the modern map-composer placement
+        # flow never populates) — see network/handlers/auth.py.
+        hex_map={"2,3": "tower"},
         armies=[Army(aid=1, uid=uid, name="Alpha")],
         effects={"speed": 1.5},
         artifacts=["golden_shield"],

@@ -33,13 +33,13 @@ from bot.dispatch import choose_action  # noqa: E402
 from bot.planners.base import BotContext  # noqa: E402
 from bot.state import BotState, now_iso  # noqa: E402
 from bot.strategy import (  # noqa: E402
-    _valid_until, attack_defeat_strategy, breach_defense_strategy, is_expired,
-    make_override, roll_secondary, roll_strategy, should_respond_to_attack_defeat,
+    breach_defense_strategy, is_expired, make_override, roll_strategy,
 )
 
 log = logging.getLogger("bot")
 
 MAX_ACTIONS_PER_TICK = 20
+DEFENSE_WIN_STREAK_TARGET = 3
 
 
 def load_config() -> dict:
@@ -48,6 +48,12 @@ def load_config() -> dict:
     if env_url:
         cfg["server_url"] = env_url
     return cfg
+
+
+def _empire_list(api: ApiClient) -> list[dict]:
+    """api.empires() returns {"empires": [...]}, not a bare list."""
+    empires = api.empires()
+    return empires if isinstance(empires, list) else (empires or {}).get("empires", [])
 
 
 def completed_signature(summary: dict) -> frozenset[str]:
@@ -171,16 +177,30 @@ def main() -> int:
     return 0
 
 
+def _wipe_log_files() -> None:
+    """Truncate every FileHandler's backing log file in place.
+
+    The process keeps the file open for the handler's lifetime, so the file
+    must be truncated via the open fd (not deleted/reopened) for logging to
+    keep working after the wipe.
+    """
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.FileHandler) and handler.stream:
+            handler.stream.truncate(0)
+            handler.stream.seek(0)
+
+
 def _check_season_reset(summary: dict, state: BotState) -> bool:
-    """Return True (and reset state) if the server is on a new season."""
+    """Return True (and reset state + wipe the log file) on a new season."""
     season = summary.get("season_number")
     if season is None:
         return False
     last = state.memory.get("last_season")
     if last is not None and last != season:
-        log.info("new season %s (was %s) → resetting state", season, last)
         state.reset()
         state.memory["last_season"] = season
+        _wipe_log_files()
+        log.info("new season %s (was %s) → state and log reset", season, last)
         return True
     state.memory["last_season"] = season
     return False
@@ -212,89 +232,75 @@ def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer)
             state.dirty = True
 
     # Battle reports → memory
-    reports = process_new_reports(api.messages(), state.memory)
+    reports = process_new_reports(api.messages(), state.memory, summary.get("era", "stone"))
     if reports:
         state.dirty = True
         for r in reports:
             log.info("battle report: role=%s won=%s reached=%d culture=%+.1f artifacts=%s",
                      r.role, r.won, r.reached, r.culture, r.artifacts)
 
-    # Breach → always force defense strategy
-    breach = any(r.role == "defender" and r.reached > 0 for r in reports)
-    if breach:
+    # Two rules govern strategy, nothing else:
+    # 1. A fully lost defense immediately (and unconditionally) switches to
+    #    defense — this always wins, overriding whatever was active before
+    #    (attack, growth, or an in-progress defense streak). A battle where
+    #    some critters reached the castle but the defender still WON is not
+    #    a loss here — only a complete defeat forces this; partial breaches
+    #    get the lighter one-off "breach response" action instead
+    #    (memory.pending_breach, handled in baseline.py).
+    # 2. Winning DEFENSE_WIN_STREAK_TARGET defenses in a row is the ONLY way
+    #    out of defense: it rolls a new strategy (attack or growth, weighted
+    #    — see bot/strategy.py::roll_strategy). That choice then holds
+    #    (NO_EXPIRY) until the next lost defense resets the streak.
+    defense_lost = any(r.role == "defender" and not r.won for r in reports)
+    if defense_lost:
         state.strategy = breach_defense_strategy(config)
+        state.memory["defense_win_streak"] = 0
         state.dirty = True
-        log.info("breach detected → forced defense strategy until %s",
+        log.info("defense lost → forced defense strategy until %s",
                  state.strategy["valid_until"])
 
-    # Successful defense → switch to attack (if targets exist, else re-roll)
     successful_defense = any(r.role == "defender" and r.won for r in reports)
-    if successful_defense and not breach:
-        targets = api.empires() or []
-        targets = [e for e in targets if e.get("uid") != state.account.get("uid")]
-        if targets:
-            top = max(targets, key=lambda e: e.get("score", 0))
-            state.strategy = {
-                "type": "attack",
-                "params": {"target_uid": int(top["uid"]), "target_name": top.get("name", ""),
-                           "phase": "strengthen"},
-                "valid_until": _valid_until(config, "attack"),
-                "source": "defense_won",
-                "started_at": now_iso(),
-            }
-            state.dirty = True
-            log.info("defense succeeded → switching to attack vs %s", top.get("name"))
-        else:
-            state.strategy = None  # re-roll next tick
-            state.dirty = True
-            log.info("defense succeeded → no targets, re-rolling strategy")
-
-    # Lost attack → revenge (mark defeat for next roll boost, maybe force-switch)
-    lost_attack = next((r for r in reports if r.role == "attacker" and not r.won), None)
-    if lost_attack:
-        state.memory["recent_attack_defeat"] = True
+    if successful_defense and not defense_lost:
+        streak = int(state.memory.get("defense_win_streak", 0)) + 1
+        state.memory["defense_win_streak"] = streak
         state.dirty = True
-    if (lost_attack and not breach
-            and (state.strategy or {}).get("type") != "attack"
-            and should_respond_to_attack_defeat(config, state.personality)):
-        target = next((e for e in (api.empires() or [])
-                       if e.get("name") == lost_attack.opponent), None)
-        if target:
-            state.strategy = attack_defeat_strategy(
-                config, int(target["uid"]), lost_attack.opponent)
-            state.dirty = True
-            log.info("attack defeat → forced revenge attack on %s until %s",
-                     lost_attack.opponent, state.strategy["valid_until"])
+        if streak < DEFENSE_WIN_STREAK_TARGET:
+            log.info("defense succeeded (streak %d/%d) → staying on defense",
+                     streak, DEFENSE_WIN_STREAK_TARGET)
+        else:
+            targets = score_targets(
+                _empire_list(api), summary.get("uid", 0),
+                float(summary.get("resources", {}).get("culture", 0.0)),
+                summary.get("era", "stone"), state.memory)
+            state.strategy = roll_strategy(config, state, {"targets": targets})
+            log.info("defense streak %d/%d reached → rolled new strategy: %s",
+                     streak, DEFENSE_WIN_STREAK_TARGET, state.strategy["type"])
 
-    # Strategy expiry / completion → roll a new strategy
+    # Strategy expiry / completion → roll a new strategy. In practice this
+    # only ever fires for the "no_targets" placeholder (5 min TTL): defense
+    # is only ever entered via rule 1 above (breach_defense_strategy's
+    # wall-clock window is set but rule 1 replaces it long before it could
+    # expire in normal play), and attack/growth hold with NO_EXPIRY.
     if is_expired(state.strategy) or (state.strategy or {}).get("completed"):
-        military = api.military()
-        empires = api.empires()
-        empire_list = empires if isinstance(empires, list) else empires.get("empires", [])
         targets = score_targets(
-            empire_list, summary.get("uid", 0),
+            _empire_list(api), summary.get("uid", 0),
             float(summary.get("resources", {}).get("culture", 0.0)),
             summary.get("era", "stone"), state.memory)
-        context = {
-            "has_army": bool(military.get("armies")),
-            "army_price": float(summary.get("army_price", 0.0) or 0.0),
-            "recent_defeat": any(r.role == "defender" and not r.won for r in reports),
-            "recent_attack_defeat": bool(state.memory.get("recent_attack_defeat")),
-            "gold": float(summary.get("resources", {}).get("gold", 0.0)),
-            "targets": targets,
-        }
-        state.strategy = roll_strategy(config, state, context)
-        state.memory.pop("recent_attack_defeat", None)
+        state.strategy = roll_strategy(config, state, {"targets": targets})
         state.dirty = True
         log.info("new strategy: %s until %s params=%s",
                  state.strategy["type"], state.strategy["valid_until"],
                  state.strategy["params"])
 
-    # --- Action loop: execute all affordable actions this tick ---
+    # --- Action loop: execute all affordable actions this tick, highest
+    # priority first. A server-rejected option (e.g. unmet requirements) is
+    # excluded for the rest of THIS tick only (memory isn't touched) so it
+    # can't loop forever, but every other priority — including lower ones —
+    # still gets tried, per the strict-priority dispatch model (see
+    # bot/dispatch.py). ---
     active_type = state.strategy["type"]
-    has_target = bool((state.strategy.get("params") or {}).get("target_uid"))
-    secondary_type = roll_secondary(config, state, active_type, has_target)
     last_action = None
+    failed_this_tick: set[str] = set()
 
     # Fetch map once per tick — shared across all actions to avoid rate-limiting.
     # Invalidated after map-modifying actions (tower placement, tile purchase).
@@ -306,19 +312,25 @@ def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer)
                          selection=config.get("selection", {"top_n": 3}),
                          personality=state.personality,
                          map_data=map_data)
-        action = choose_action(ctx, config, active_type, secondary_type)
+        action = choose_action(ctx, config, active_type, exclude=failed_this_tick)
         if action is None:
             break
         result = action.run(api)
         if isinstance(result, dict) and result.get("success") is False:
             log.warning("action FAILED: %s → %s", action.description,
                         result.get("error") or result.get("reason", "?"))
-            break  # avoid retrying a failed action in a tight loop
+            failed_this_tick.add(action.description)
+            continue  # try the next-highest-priority option instead
         log.info("action: %s", action.description)
         last_action = action.description
         state.dirty = True
-        # Refresh map after actions that modify it (tile buy or tower placement)
-        if any(w in action.description for w in ("buy tile", "build ", "relocate", "sell ")):
+        # Refresh map after actions that modify it (tile buy, tower placement,
+        # tower sale, or era-swap). Any planner action that calls save_map/buy_tile
+        # must be listed here, otherwise the stale in-memory map makes the planner
+        # re-propose the same action every action-slot until the tick is exhausted.
+        if any(w in action.description for w in
+               ("buy tile", "build ", "relocate", "move spawn", "move castle",
+                "sell ", "tower ", "grow ", "era-swap")):
             map_data = api.get_map()
 
     if last_action is None:

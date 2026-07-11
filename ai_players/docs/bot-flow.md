@@ -50,9 +50,12 @@ The cycle runs in two phases:
 2. `GET /api/empire/items` — available items catalog (always fresh; no cache)
 3. Drain control port commands (strategy overrides, rerolls)
 4. `GET /api/messages` → process battle reports into memory
-   - Breach detected → force-switch to defense strategy (personality-gated)
-   - Lost attack detected → mark for revenge; may force-switch to attack strategy
-5. Strategy expiry check → if expired or completed, roll a new strategy
+   - Defense fully lost → force-switch to `defense`, unconditionally, resets
+     the win streak
+   - Defense won → increment the win streak; at `DEFENSE_WIN_STREAK_TARGET`
+     (3) consecutive wins, roll a new strategy (attack/growth)
+5. Strategy expiry check → in practice only ever fires for the short-lived
+   `no_targets` placeholder; attack/growth hold indefinitely (`NO_EXPIRY`)
 
 **Phase B — Action loop (up to `MAX_ACTIONS_PER_TICK = 20` iterations):**
 
@@ -87,18 +90,38 @@ is stateless). The next tick starts unauthenticated and calls `login()` again.
 
 ## Action Selection
 
-Each tick, `choose_action()` (in `bot/dispatch.py`) selects the best action from:
+Each tick, `choose_action()` (in `bot/dispatch.py`) is called repeatedly (up
+to `MAX_ACTIONS_PER_TICK`) so a single tick can run several actions, not just
+one. Dispatch is **strict priority order** — no ROI/personality scoring:
 
-- **Baseline obligations** (`bot/planners/baseline.py`): always evaluated first
-  - Breach response (mandatory if `memory["pending_breach"]` is set)
-  - Tower floor maintenance (minimum towers per era: `2 + 2 × era_rank`)
-  - Ruler claim (free, when unlocked and no ruler equipped)
-  - Queue filling (cheapest research + build, filler priority)
+1. **Free options (price ≤ 0) always run first**, in priority order — they
+   never compete with or get excluded by priced options.
+2. **Priced options** are then checked highest-priority first. An unaffordable
+   one is skipped (not blocking); every remaining priority is still checked
+   and run if affordable this tick.
+3. **Nothing affordable at all** → the tick ends and waits for the next one.
+
+Options are gathered from, in no particular precedence (priority numbers
+decide, not source):
+
+- **Baseline obligations** (`bot/planners/baseline.py`): breach response,
+  tower floor maintenance, ruler claim, research/build queue filling
 - **Active strategy planner** (`bot/planners/<strategy>.py`)
-- **Secondary strategy planner** (weighted random, for diversity)
+- **Attack's free actions** — spy/attack calls and wave-fill with an
+  already-unlocked critter cost no gold, so they always run regardless of the
+  active strategy (`bot/dispatch.py::gather_options`), not just while attack
+  is active. The one exception is `growth` (see `growth.md`): while it's
+  active, nothing runs except baseline — not even attack's free actions.
+  There is no more "secondary strategy" concept; this replaced it.
 
-Options are scored as `gain / price × personality_weight × category_weight`.
-The top-N are sampled probabilistically so different bots make different choices.
+A server-rejected option (e.g. unmet requirements) is excluded for the rest
+of that tick only, so it can't loop forever, but every other priority —
+including lower ones — still gets tried (`run_bot.py`'s `failed_this_tick`).
+
+Savings goals are simplified accordingly: the highest-priority option that is
+NOT yet affordable (and asks to save via `saves_for`/`goal_meta`) reserves its
+gold for every lower-priority option this cycle (`bot/savings.py`) — there is
+no more "only save when everything else is filler" special case.
 
 ---
 
@@ -106,13 +129,27 @@ The top-N are sampled probabilistically so different bots make different choices
 
 A strategy is a dict `{type, valid_until, params, completed}`.
 
-**Types:** `economy`, `defense`, `attack`, `artifact`
+**Types:** `defense`, `attack`, `growth`
 
-**Lifecycle:**
-- Rolled at startup and whenever the current strategy expires or is marked completed
-- Duration from `config.yaml strategy.duration_hours.<type>` (random range)
-- Force-switches: breach → defense; lost attack → attack (both personality-gated)
-- Manual override via control port: `{"cmd": "strategy", "payload": {...}}`
+**Two rules govern strategy, nothing else** (see `bot/strategy.py` and
+`run_bot.py`):
+
+1. **A fully lost defense immediately (and unconditionally) switches to
+   `defense`** — this always wins, overriding whatever was active before
+   (attack, growth, or an in-progress win streak). Resets the win streak to 0.
+   A battle where some critters reached the castle but the defender still WON
+   is not a loss here — only a complete defeat triggers this; partial
+   breaches get the lighter one-off "breach response" action instead.
+2. **Winning `DEFENSE_WIN_STREAK_TARGET` (3) defenses in a row is the ONLY
+   way out of `defense`**: it rolls a new strategy via `roll_strategy()` —
+   weighted-random between `attack` and `growth` (`config.yaml`
+   `strategy.weights`, scaled by personality). `defense` itself is never
+   rolled this way. Attack is excluded from the roll when no attackable
+   target exists. The result holds indefinitely (`NO_EXPIRY`) until the next
+   lost defense resets the streak.
+
+There is no revenge-attack-on-defeat mechanism and no wall-clock strategy
+rotation. Manual override via control port: `{"cmd": "strategy", "payload": {...}}`.
 
 Strategy is persisted in `states/<name>.yaml` so it survives restarts.
 
@@ -125,7 +162,7 @@ File: `states/<name>.yaml`
 | Field | Contents |
 |---|---|
 | `account` | username, password, empire_name, uid |
-| `personality` | one of: economy, aggressive, defensive, balanced (rolled once) |
+| `personality` | one of: aggressive, defensive, balanced (rolled once) |
 | `strategy` | active strategy dict (type, valid_until, params, completed) |
 | `memory` | battle history, opponent scores, breach flags, savings goals |
 | `runtime` | cycle counter, last_cycle timestamp |
@@ -142,14 +179,12 @@ and memory after a wipe; only the empire itself is recreated on next login.
 | `server_url` | `http://localhost:8180` | Gameserver API endpoint |
 | `cycle_interval_s` | `60` | Seconds between tick starts |
 | `control_port_base` | `9300` | Base port; each bot gets base + offset |
-| `strategy.weights` | — | Relative weights for initial strategy roll |
-| `strategy.duration_hours` | — | Strategy lifetime ranges per type |
+| `strategy.weights` | — | Weights for the post-win-streak attack/growth roll (`defense`'s weight in this table is unused — `defense` is never rolled, only forced on a lost battle) |
+| `strategy.duration_hours` | — | Only `defense`'s range is used (`breach_defense_strategy`); attack/growth hold indefinitely instead |
 | `personalities` | — | Per-personality strategy weight multipliers |
-| `breach_response_chance` | — | Probability to force-switch to defense on breach |
-| `attack_defeat_response_chance` | — | Probability to force-switch to attack on loss |
-| `selection.top_n` | `3` | Weighted sampling from top N options |
-| `category_weights` | — | Per-personality option scoring multipliers |
-| `active_strategy_boost` | `1.5` | Extra multiplier for options matching active strategy |
+| `selection.top_n` | `3` | Weighted sampling among *equally viable* candidates within a single planner step (e.g. which tile/target) — not used for cross-planner option ranking |
+| `category_weights` | — | **Unused** — dispatch is strict priority order (see "Action Selection"), no personality-weighted option scoring |
+| `active_strategy_boost` | `1.5` | **Unused**, same reason |
 
 **`--fast` flag:** sets `cycle_interval_s = 5` for local testing.
 
@@ -163,6 +198,6 @@ and memory after a wipe; only the empire itself is recreated on next login.
 | Server down at login | Exception caught, tick skipped, bot sleeps until next tick |
 | Cycle takes > `cycle_interval_s` | `max(0, ...)` → sleep = 0, next tick starts immediately |
 | No affordable action | Loop exits at first iteration, bot sleeps rest of interval |
-| Action fails (API error) | Logged as warning, loop breaks to avoid tight retry |
+| Action fails (API error) | Logged as warning, description excluded for the rest of this tick (`failed_this_tick`); every other priority — including lower ones — is still tried |
 | Loop hits MAX_ACTIONS (20) | Tick ends normally — indicates unusually many cheap actions |
 | Bot receives SIGTERM | `stop["flag"] = True`, current tick finishes, state saved, exit |

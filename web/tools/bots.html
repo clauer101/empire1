@@ -89,10 +89,8 @@
       display: inline-flex; align-items: center; gap: 6px;
       padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
     }
-    .strat-badge.economy  { background: #1b2a1b; border: 1px solid var(--success);  color: var(--success); }
     .strat-badge.defense  { background: #1a1a2e; border: 1px solid var(--accent);   color: var(--accent); }
     .strat-badge.attack   { background: #2a1a1a; border: 1px solid var(--danger);   color: var(--danger); }
-    .strat-badge.artifact { background: #22162a; border: 1px solid var(--purple);   color: var(--purple); }
     .strat-badge.unknown  { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-dim); }
 
     .source-tag {
@@ -116,15 +114,6 @@
     .stat-box .value.warning { color: var(--warning); }
     .stat-box .value.accent { color: var(--accent); }
 
-    /* Strategy timeline */
-    .timeline { display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto; }
-    .tl-row { display: flex; gap: 8px; align-items: baseline; }
-    .tl-ts { font-size: 10px; color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
-    .tl-badge { font-size: 11px; }
-    .tl-src { font-size: 10px; color: var(--text-dim); }
-    .tl-row.breach .tl-badge { color: var(--danger); }
-    .tl-row.override .tl-badge { color: var(--warning); }
-
     /* Strategy Gantt chart (last 24 h) */
     .gantt { margin-top: 8px; }
     .gantt-track {
@@ -138,10 +127,8 @@
       font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden;
       border-right: 1px solid rgba(0,0,0,.35); cursor: default;
     }
-    .gantt-bar.economy  { background: #1b2a1b; color: var(--success); }
     .gantt-bar.defense  { background: #1a1a2e; color: var(--accent); }
     .gantt-bar.attack   { background: #2a1a1a; color: var(--danger); }
-    .gantt-bar.artifact { background: #22162a; color: var(--purple); }
     .gantt-bar.unknown  { background: var(--surface-alt); color: var(--text-dim); }
     .gantt-bar.breach { box-shadow: inset 0 -3px 0 var(--danger); }
     .gantt-axis {
@@ -150,24 +137,51 @@
       margin-top: 3px;
     }
 
-    /* Triggers */
-    .triggers { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
-    .trigger {
-      display: flex; align-items: baseline; gap: 8px;
-      padding: 4px 8px; border-radius: 4px; background: var(--surface-alt);
+    /* Winrate */
+    .winrate-block { display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; }
+    .winrate-big {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 16px; min-width: 100px;
+      display: flex; flex-direction: column; justify-content: center;
     }
-    .trigger-icon { font-size: 13px; flex-shrink: 0; }
-    .trigger-ts { font-size: 10px; color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
-    .trigger-detail { font-size: 11px; color: var(--text-dim); }
+    .winrate-big .value { font-size: 22px; font-weight: 700; }
+    .winrate-big .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+    .era-rates { display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+    .era-row { display: flex; gap: 8px; align-items: center; font-size: 11px; }
+    .era-row .era-name { width: 68px; color: var(--text-dim); text-transform: capitalize; }
+    .era-row .era-bar-track { width: 80px; height: 6px; border-radius: 3px; background: var(--surface); overflow: hidden; }
+    .era-row .era-bar-fill { height: 100%; background: var(--accent); }
+    .era-row .era-count { color: var(--text-dim); font-family: var(--mono); }
 
-    /* Defense memory */
-    .histogram { display: flex; gap: 2px; align-items: flex-end; height: 36px; }
-    .histogram .bar {
-      flex: 1; background: var(--accent); border-radius: 2px 2px 0 0;
-      min-height: 2px; opacity: .7; transition: opacity .2s;
+    /* Last gold spends */
+    .goldspend-list { display: flex; flex-direction: column; gap: 5px; }
+    .goldspend-row {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 6px 10px; border-radius: var(--radius);
+      background: var(--surface-alt); border: 1px solid var(--border);
+      font-size: 11px;
     }
-    .histogram .bar.weak { background: var(--danger); opacity: 1; }
-    .histogram .bar:hover { opacity: 1; }
+    .goldspend-desc { color: var(--text); flex: 1; overflow-wrap: anywhere; }
+    .goldspend-strategy {
+      font-size: 10px; font-weight: 600; flex-shrink: 0;
+      padding: 1px 8px; border-radius: 10px;
+    }
+    .goldspend-strategy.defense  { color: var(--accent);  border: 1px solid var(--accent); }
+    .goldspend-strategy.attack   { color: var(--danger);  border: 1px solid var(--danger); }
+    .goldspend-strategy.economy  { color: var(--warning); border: 1px solid var(--warning); }
+    .goldspend-strategy.growth   { color: var(--success); border: 1px solid var(--success); }
+    .goldspend-strategy.unknown  { color: var(--text-dim); border: 1px solid var(--border); }
+    .goldspend-ts { font-size: 10px; color: var(--text-dim); flex-shrink: 0; font-family: var(--mono); }
+
+    /* Last 10 battles */
+    .last10-row { display: flex; align-items: center; gap: 8px; }
+    .last10-label { font-size: 10px; color: var(--text-dim); width: 56px; flex-shrink: 0; }
+    .last10-dots { display: flex; gap: 3px; }
+    .last10-dot {
+      width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; cursor: default;
+    }
+    .last10-dot.win  { background: var(--success); }
+    .last10-dot.loss { background: var(--danger); }
 
     /* Skills */
     .skills { display: flex; flex-direction: column; gap: 6px; }
@@ -219,7 +233,6 @@
     }
     .personality-tag.aggressive { color: var(--danger);  border-color: var(--danger); }
     .personality-tag.defensive  { color: var(--accent);  border-color: var(--accent); }
-    .personality-tag.economy    { color: var(--success); border-color: var(--success); }
     .personality-tag.balanced   { color: var(--text-dim); }
 
     /* Savings goal */
@@ -328,7 +341,6 @@
       <label for="spawnPersonality">Personality</label>
       <select id="spawnPersonality">
         <option value="">Random</option>
-        <option value="economy">💹 Economy</option>
         <option value="aggressive">⚔️ Aggressive</option>
         <option value="defensive">🛡️ Defensive</option>
         <option value="balanced">⚖️ Balanced</option>
@@ -349,10 +361,9 @@
     <div>
       <label for="overrideType">Strategy</label>
       <select id="overrideType" onchange="updateOverrideFields()">
-        <option value="economy">💹 Economy</option>
         <option value="defense">🛡️ Defense</option>
         <option value="attack">⚔️ Attack</option>
-        <option value="artifact">🏺 Artifact</option>
+        <option value="economy">💰 Economy</option>
       </select>
     </div>
     <div id="overrideTargetRow" class="hidden">
@@ -388,52 +399,43 @@ const SKILLS = {
     { icon: '🏰', name: 'Defense floor (baseline)',
       desc: 'Minimum <code>2 + 2×era_rank</code> towers at all times — buys tiles and places towers in <em>every</em> strategy. Counts live from the map, not the battle snapshot.' },
     { icon: '🔥', name: 'Breach response (baseline)',
-      desc: 'One defensive action (tower / tile / upgrade) runs before the strategy on the very next cycle after any breach. A full <strong>defense strategy switch</strong> may also fire, gated by personality (<code>breach_response_chance</code>): defensive bots always react, aggressive/economy often shrug it off.' },
+      desc: 'One defensive action (tower / tile / upgrade) runs before the strategy on the very next cycle after any breach. A full <strong>defense strategy switch</strong> may also fire, gated by personality (<code>breach_response_chance</code>): defensive bots always react, aggressive bots often shrug it off.' },
     { icon: '📚', name: 'Idle-queue fill (baseline)',
       desc: 'Keeps research and build queues busy at all times — cheapest affordable item each cycle. Paused while a savings goal is active.' },
     { icon: '💰', name: 'Savings goals',
       desc: 'When a desired purchase (tower, tile, army) is unaffordable, a goal is declared. Non-owning spenders only use gold above the goal amount. TTL = min(strategy remainder, 2 h).' },
     { icon: '👑', name: 'Claim ruler (baseline)',
-      desc: 'Claims a ruler as soon as one is unlocked — free and strategy-independent, so defense/artifact bots get one too. Skill points are then spent by the active strategy in <code>SKILL_ORDER</code> (R→Q→W→E).' },
-  ],
-  economy: [
-    { icon: '📈', name: 'Economy strategy',
-      desc: 'Maximises gold/culture income — prefers economy-effect buildings, citizens, ruler skills. Duration 4–10 h.' },
+      desc: 'Claims a ruler as soon as one is unlocked — free and strategy-independent, so defense-focused bots get one too. Skill points are then spent by the active strategy in <code>SKILL_ORDER</code> (R→Q→W→E).' },
   ],
   defense: [
-    { icon: '🗺️', name: 'Path lengthening',
-      desc: 'Relocates spawnpoint + castle (free) to maximise the critter walk distance. Tries all own-tile combos via BFS; fires when gain ≥ 2 tiles. Resets replay analysis when fired.' },
-    { icon: '🔭', name: 'Replay analysis',
-      desc: 'Downloads each battle replay once. Bins critter deaths across 10 path-progress buckets; marks weak segments (zero kills or late bins &lt;50 % of mean). Weak points weight 3× in coverage scoring.' },
-    { icon: '📐', name: 'Coverage-optimised placement',
-      desc: 'Scores every owned empty tile and purchasable void (including implicit void derived from hex adjacency). Tiles that would block the only path are excluded. Best coverage score wins.' },
+    { icon: '🧭', name: 'Frontier corridor growth',
+      desc: 'Grows a single walkable corridor from the castle outward (serpentine heading, turns when blocked). A new tile may touch the existing corridor at exactly one point, so the corridor never shortcuts itself.' },
+    { icon: '🧱', name: 'Flanking',
+      desc: 'Every corridor tile (except the two growing ends) gets all its non-corridor neighbor tiles bought, so the corridor ends up walled with towers on both sides.' },
+    { icon: '📐', name: 'Coverage-scored towers',
+      desc: 'Stray owned tiles are towered immediately, using the best-covering spot by interpolated path coverage (continuous hex distance, matches server targeting math).' },
     { icon: '⚖️', name: 'Tower-mix balancing',
       desc: 'Steers placed towers to <strong>damage : slow : splash ≈ 3:1:1</strong>. Picks best tower in the most under-represented class by <code>damage/reload_time × (1+range/4)</code>.' },
-    { icon: '📊', name: 'Density cap',
-      desc: 'Above <strong>2.0 towers per path tile</strong> no further towers are placed (prod data: win% collapses above 2.0). Investment shifts to upgrades instead.' },
+    { icon: '🔁', name: 'Era-swap',
+      desc: 'Replaces the oldest-era placed tower with the best current-era tower (sell + rebuild in one save) whenever the quality gain outweighs the net cost — before any upgrade or growth spend.' },
     { icon: '⬆️', name: 'Targeted upgrades',
-      desc: 'Upgrades the tower with highest weak-segment coverage. Stat: <em>range</em> if coverage &lt;4 path points, else <em>damage</em>. Skips stats already at server cap (level 20).' },
+      desc: 'Upgrades the cheapest placed current-era tower when that costs less than the next tile purchase — <em>range</em> if its coverage is thin, otherwise <em>damage</em>. Capped at level 20.' },
   ],
   attack: [
     { icon: '⚔️', name: 'Attack strategy',
       desc: 'Spy → attack weakest opponent (lower era). Army cost triggers a savings goal. Victory adds loot; defeat re-rolls strategy. Duration 1–3 h.' },
   ],
-  artifact: [
-    { icon: '🏺', name: 'Artifact strategy',
-      desc: 'Like attack but targets opponents holding artifacts. Duration 1–3 h.' },
-  ],
 };
 
-const TRIGGER_META = {
-  breach_defense_switch: { icon: '🚨', label: 'Breach → defense switch' },
-  breach_response:       { icon: '🛡️', label: 'Breach response action' },
-  replay_analyzed:       { icon: '🎬', label: 'Replay analyzed' },
-  savings_goal:          { icon: '💰', label: 'Savings goal set' },
-  forced_defense:        { icon: '⚡', label: 'Forced defense' },
-};
+// Mirrors ai_players/bot/analyzer.py::ERA_RANK — display order for per-era winrate.
+const ERA_ORDER = [
+  'stone', 'neolithic', 'bronze', 'iron', 'medieval',
+  'renaissance', 'industrial', 'modern', 'future',
+];
 
+// Mirrors ai_players/bot/strategy.py: STRATEGY_TYPES.
 function strat(type) {
-  const map = { economy:'💹 Economy', defense:'🛡️ Defense', attack:'⚔️ Attack', artifact:'🏺 Artifact' };
+  const map = { defense:'🛡️ Defense', attack:'⚔️ Attack', economy:'💰 Economy', growth:'🌱 Growth' };
   return map[type] || type;
 }
 
@@ -454,30 +456,12 @@ function fmtDate(s) {
   return d.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
-function buildHistogram(analysis) {
-  if (!analysis || !analysis.death_bins) return '';
-  const bins = analysis.death_bins;
-  const weak = new Set((analysis.weak_segments || []).map(([a]) => Math.floor(a * 10)));
-  const max = Math.max(...bins, 1);
-  const bars = bins.map((v, i) => {
-    const h = Math.max(2, Math.round((v / max) * 36));
-    const cls = weak.has(i) ? 'bar weak' : 'bar';
-    const title = `Bin ${i*10}–${(i+1)*10}%: ${v} kills${weak.has(i) ? ' ⚠ weak' : ''}`;
-    return `<div class="${cls}" style="height:${h}px" title="${title}"></div>`;
-  });
-  return `
-    <div>
-      <div class="section-label">Kill histogram (last replay) — red = weak segment</div>
-      <div class="histogram">${bars.join('')}</div>
-    </div>`;
-}
-
 // Base strategy weights (config.yaml strategy.weights). Personality multipliers
 // from the API re-scale these; every bot has ALL capabilities regardless.
-const BASE_WEIGHTS = { economy: 4, defense: 3, attack: 2, artifact: 1 };
+const BASE_WEIGHTS = { defense: 3, attack: 2 };
 
 const PERSONALITY_ICON = {
-  economy: '💹', aggressive: '⚔️', defensive: '🛡️', balanced: '⚖️',
+  aggressive: '⚔️', defensive: '🛡️', balanced: '⚖️',
 };
 
 function skillGroup(title, items, weightBadge) {
@@ -500,7 +484,7 @@ function skillGroup(title, items, weightBadge) {
 // Every bot has ALL skills; personality only re-weights strategy frequency.
 function buildSkills(bot) {
   const mult = (PERSONALITIES[bot.personality] || {});
-  const stratOrder = ['economy', 'defense', 'attack', 'artifact'];
+  const stratOrder = ['defense', 'attack'];
   const groups = [skillGroup('Always-on (baseline)', SKILLS.all)];
   for (const t of stratOrder) {
     const base = BASE_WEIGHTS[t] || 0;
@@ -564,6 +548,76 @@ function buildGantt(bot) {
   </div>`;
 }
 
+// Overall winrate (since season start — battle_log is wiped on season change,
+// see run_bot.py::_check_season_reset) plus a per-era breakdown.
+function buildWinrate(bot) {
+  const season = bot.winrate_season || { total: 0 };
+  if (!season.total) return '<p class="empty-msg">No battles yet this season</p>';
+  const pct = Math.round((season.rate || 0) * 100);
+  const cls = pct >= 60 ? 'accent' : pct >= 40 ? 'warning' : 'danger';
+  const byEra = bot.winrate_by_era || {};
+  const eraRows = ERA_ORDER
+    .filter(e => byEra[e] && byEra[e].total)
+    .map(e => {
+      const r = byEra[e];
+      const p = Math.round((r.rate || 0) * 100);
+      return `<div class="era-row">
+        <span class="era-name">${e}</span>
+        <span class="era-bar-track"><span class="era-bar-fill" style="width:${p}%"></span></span>
+        <span class="era-count">${p}% (${r.wins}/${r.total})</span>
+      </div>`;
+    }).join('');
+  return `<div class="winrate-block">
+    <div class="winrate-big">
+      <span class="value ${cls}">${pct}%</span>
+      <span class="label">${season.wins}W / ${season.losses}L this season</span>
+    </div>
+    <div class="era-rates">${eraRows}</div>
+  </div>`;
+}
+
+// Two compact rows of win/loss dots for the last 10 battles per role.
+function buildLast10(bot) {
+  const row = (label, entries) => {
+    if (!entries || !entries.length)
+      return `<div class="last10-row"><span class="last10-label">${label}</span><span class="empty-msg">none yet</span></div>`;
+    const dots = entries.map(e => {
+      const cls = e.won ? 'win' : 'loss';
+      const title = `${e.won ? 'Won' : 'Lost'} · ${e.era || '?'} vs ${e.opponent || '?'} · ${fmtDate(e.ts)}`;
+      return `<span class="last10-dot ${cls}" title="${title}"></span>`;
+    }).join('');
+    return `<div class="last10-row"><span class="last10-label">${label}</span><span class="last10-dots">${dots}</span></div>`;
+  };
+  return row('⚔️ Attack', bot.last10_attack) + row('🛡️ Defense', bot.last10_defense);
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Last 5 actual gold spends (see web/fastapi_server.py::_is_gold_action —
+// research, relocation, wave-fill with an already-unlocked critter, ruler
+// placement/skill-ups and spy/attack calls are free and excluded). Each
+// entry shows which strategy was active at the moment the gold was spent,
+// not the bot's current strategy — the two can differ once a switch has
+// happened since.
+function buildGoldSpends(bot) {
+  const spends = bot.last_gold_spends || [];
+  if (!spends.length)
+    return '<p class="empty-msg">No gold spent yet</p>';
+  const rows = spends.slice().reverse().map(s => {
+    const stratType = s.strategy || 'unknown';
+    return `<div class="goldspend-row">
+      <span class="goldspend-desc">${escapeHtml(s.description)}</span>
+      <span class="goldspend-strategy ${stratType}">${strat(stratType)}</span>
+      <span class="goldspend-ts">${fmtDate(s.ts)}</span>
+    </div>`;
+  }).join('');
+  return `<div class="goldspend-list">${rows}</div>`;
+}
+
 function buildCard(bot) {
   const stgy = bot.strategy || {};
   const type = stgy.type || 'unknown';
@@ -579,50 +633,6 @@ function buildCard(bot) {
   const breaches = mem.breaches || 0;
   const bClass = breaches > 20 ? 'danger' : breaches > 5 ? 'warning' : 'accent';
 
-  // Strategy timeline
-  // Strategy history — dedup
-  const seenHist = new Set();
-  const hist = (bot.strategy_history_48h || []).filter(h => {
-    const k = h.ts + h.type + (h.source||'');
-    if (seenHist.has(k)) return false;
-    seenHist.add(k); return true;
-  });
-  const histHtml = hist.length === 0
-    ? `<p class="empty-msg">No strategy changes in the last 48 h</p>`
-    : hist.slice().reverse().map(h => {
-        const isBreach = h.source === 'breach' || (bot.triggers_48h || []).some(t =>
-          t.event === 'breach_defense_switch' && t.ts === h.ts);
-        const rowCls = h.source === 'override' ? 'override' : isBreach ? 'breach' : '';
-        const srcLbl = h.source ? `<span class="tl-src">(${h.source})</span>` : '';
-        const until = h.until ? ` → ${fmtDate(h.until)}` : '';
-        return `<div class="tl-row ${rowCls}">
-          <span class="tl-ts">${h.ts.slice(5,16)}</span>
-          <span class="tl-badge">${strat(h.type)}</span>
-          ${srcLbl}
-          <span class="tl-src">${until}</span>
-        </div>`;
-      }).join('');
-
-  // Triggers — dedup by ts+event (double-logging when bot restarts)
-  const seenTrig = new Set();
-  const triggers = (bot.triggers_48h || []).filter(t => {
-    const k = t.ts + t.event;
-    if (seenTrig.has(k)) return false;
-    seenTrig.add(k); return true;
-  }).slice().reverse();
-  const trigHtml = triggers.length === 0
-    ? `<p class="empty-msg">No triggers in the last 48 h</p>`
-    : triggers.slice(0, 25).map(t => {
-        const m = TRIGGER_META[t.event] || { icon: '•', label: t.event };
-        const det = t.detail ? `<span class="trigger-detail">${t.detail.slice(0, 60)}</span>` : '';
-        return `<div class="trigger">
-          <span class="trigger-icon">${m.icon}</span>
-          <span class="trigger-ts">${t.ts.slice(5,16)}</span>
-          <span>${m.label}</span>
-          ${det}
-        </div>`;
-      }).join('');
-
   // Savings goal
   const goal = mem.savings_goal;
   const goalHtml = goal ? `
@@ -633,10 +643,6 @@ function buildCard(bot) {
         <div class="sg-meta">Saving for <strong>${goal.item}</strong> · expires ${fmtDate(goal.expires_at)}</div>
       </div>
     </div>` : '';
-
-  const defAnal = mem.defense_analysis;
-  const histogramHtml = defAnal ? buildHistogram(defAnal) : '';
-  const reached = defAnal ? defAnal.reach_count : null;
 
   return `
   <div class="bot-card" id="bot-${bot.name}">
@@ -680,39 +686,35 @@ function buildCard(bot) {
           <div class="value ${bClass}">${breaches}</div>
         </div>
         <div class="stat-box">
-          <div class="label">Replays</div>
-          <div class="value accent">${mem.analyzed_replays || 0}</div>
-        </div>
-        <div class="stat-box">
           <div class="label">Attacks</div>
           <div class="value">${mem.attack_history_count || 0}</div>
         </div>
-        ${reached !== null ? `<div class="stat-box">
-          <div class="label">Last breach</div>
-          <div class="value ${reached > 0 ? 'danger' : 'accent'}">${reached > 0 ? '🚨 '+reached : '✓ 0'}</div>
-        </div>` : ''}
       </div>
 
       ${goalHtml}
 
-      ${histogramHtml}
+      <!-- Winrate since season start -->
+      <div>
+        <div class="section-label">Winrate — since season start</div>
+        <div style="margin-top:8px">${buildWinrate(bot)}</div>
+      </div>
 
-      <!-- Strategy Gantt — last 24 h -->
+      <!-- Last 10 battles -->
+      <div>
+        <div class="section-label">Last 10 battles</div>
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">${buildLast10(bot)}</div>
+      </div>
+
+      <!-- Last 5 gold spends, newest first -->
+      <div>
+        <div class="section-label">Last 5 gold spends</div>
+        <div style="margin-top:8px">${buildGoldSpends(bot)}</div>
+      </div>
+
+      <!-- Strategy timeline — defense/attack phases only -->
       <div>
         <div class="section-label">Strategy timeline — last 24 h</div>
         ${buildGantt(bot)}
-      </div>
-
-      <!-- Strategy history 48 h -->
-      <div>
-        <div class="section-label">Strategy history — last 48 h</div>
-        <div class="timeline" style="margin-top:6px">${histHtml}</div>
-      </div>
-
-      <!-- Triggers 48 h -->
-      <div>
-        <div class="section-label">Triggers — last 48 h (newest first)</div>
-        <div class="triggers" style="margin-top:6px">${trigHtml}</div>
       </div>
 
     </div>
@@ -812,7 +814,7 @@ function closeOverrideModal() {
 
 function updateOverrideFields() {
   const type = document.getElementById('overrideType').value;
-  const needsTarget = type === 'attack' || type === 'artifact';
+  const needsTarget = type === 'attack';
   document.getElementById('overrideTargetRow').classList.toggle('hidden', !needsTarget);
 }
 
@@ -824,7 +826,7 @@ async function submitOverride() {
 
   const payload = { type, duration_hours: hours };
 
-  if (type === 'attack' || type === 'artifact') {
+  if (type === 'attack') {
     const val = document.getElementById('overrideTarget').value;
     if (!val) { errEl.textContent = 'Select a target.'; errEl.style.display = ''; return; }
     const [uid, ...nameParts] = val.split(':');

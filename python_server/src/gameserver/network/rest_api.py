@@ -45,7 +45,7 @@ log = structlog.get_logger(__name__)
 
 ERA_KEYS = _ERA_KEYS  # alias kept for back-compat; routers use _ERA_KEYS directly
 _CONFIG_DIR = Path(__file__).resolve().parents[3] / "config"
-_SAVED_MAPS_PATH = Path(__file__).resolve().parents[4] / "config" / "saved_maps.yaml"
+_SAVED_MAPS_PATH = _CONFIG_DIR / "saved_maps.yaml"
 
 
 # ---------------------------------------------------------------------------

@@ -367,8 +367,8 @@ artifacts.yaml, knowledge.yaml, maps/*.yaml).
 
 | Format | Example | Used in |
 |--------|---------|---------|
-| Lowercase | `stone`, `middle_ages`, `renaissance` | `ERA_ORDER`, `get_current_era()`, `era_effects` dict keys, `game.yaml` |
-| UPPERCASE | `STONE_AGE`, `MIDDLE_AGES`, `INDUSTRIAL` | `era:` field in item YAMLs, `ERA_ITEM_TO_INDEX` |
+| Lowercase | `stone`, `medieval`, `renaissance` | `ERA_ORDER`, `get_current_era()`, `era_effects` dict keys, `game.yaml` |
+| UPPERCASE | `STONE_AGE`, `MEDIEVAL`, `INDUSTRIAL` | `era:` field in item YAMLs, `ERA_ITEM_TO_INDEX` |
 
 Import era constants from `gameserver.util.eras` — never hardcode era strings elsewhere.
 

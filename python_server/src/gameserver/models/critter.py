@@ -43,6 +43,8 @@ class Critter:
         slow_speed: Movement speed while slowed (hex/s).
         burn_remaining_ms: Remaining burn effect duration in ms.
         burn_dps: Burn damage per second.
+        burn_source_sid: sid of the tower whose shot applied the active burn.
+        last_hit_sid: sid of the tower that most recently damaged this critter.
 
         level: Critter level (for bosses).
         xp: Experience points (for bosses).
@@ -70,6 +72,8 @@ class Critter:
     slow_speed: float = 0.0
     burn_remaining_ms: float = 0.0
     burn_dps: float = 0.0
+    burn_source_sid: int = 0
+    last_hit_sid: int = 0
 
     # Set to True when path_progress >= 1.0 (critter "at the gate").
     # Stays in battle.critters for one more shot-phase so in-flight shots

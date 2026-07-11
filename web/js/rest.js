@@ -508,6 +508,26 @@ class RestClient {
     return this._post('/api/empire/rename', { name });
   }
 
+  async changePassword(currentPassword, newPassword) {
+    return this._post('/api/auth/change-password', {
+      current_password: currentPassword, new_password: newPassword,
+    });
+  }
+
+  async changeEmail(currentPassword, newEmail) {
+    return this._post('/api/auth/change-email', {
+      current_password: currentPassword, new_email: newEmail,
+    });
+  }
+
+  async forgotPassword(identifier) {
+    return this._post('/api/auth/forgot-password', { identifier });
+  }
+
+  async resetPassword(token, newPassword) {
+    return this._post('/api/auth/reset-password', { token, new_password: newPassword });
+  }
+
   // ── Citizens ──────────────────────────────────────────────
 
   /**

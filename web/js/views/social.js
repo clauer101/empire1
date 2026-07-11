@@ -122,6 +122,11 @@ async function enter() {
   pageTitle.set('⚔ Battle Reports');
   await _refresh();
   _pollInterval = setInterval(_refresh, 8000);
+  // Visiting this view marks everything read (see _renderBattleReports) —
+  // clear the navbar badge immediately instead of waiting for the next
+  // periodic summary push from the server.
+  const badge = document.getElementById('nav-msg-badge');
+  if (badge) badge.style.display = 'none';
 }
 
 function leave() {
@@ -174,15 +179,17 @@ function _isAiBattle(body) {
   return /Attacker\(s\):\s*AI\b/m.test(body || '');
 }
 
-function _renderBattleReports(el, messages, myUid) {
-  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
-  messages = messages.filter((m) => new Date(m.sent_at).getTime() >= cutoff);
-
-  // Mark all unread messages as read immediately on page view
-  messages.filter((m) => !m.read).forEach((m) => {
+function _renderBattleReports(el, allMessages, myUid) {
+  // Mark ALL unread messages as read on page view, even ones older than the
+  // display cutoff below — otherwise the navbar badge (which counts unread
+  // messages with no date cutoff) never clears for reports older than 3 days.
+  allMessages.filter((m) => !m.read).forEach((m) => {
     rest.markMessageRead(Number(m.id)).catch(() => {});
     m.read = true;
   });
+
+  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  const messages = allMessages.filter((m) => new Date(m.sent_at).getTime() >= cutoff);
 
   el.innerHTML =
     '<div id="br-empty" class="empty-state" style="display:none"><div class="empty-icon">⚔</div><p>No matching battle reports.</p></div>' +

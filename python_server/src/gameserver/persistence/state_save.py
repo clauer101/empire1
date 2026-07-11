@@ -25,6 +25,7 @@ from gameserver.engine.global_state import (
     get_next_season_title,
     is_season_reset_triggered,
     is_season_snapshot_done,
+    is_season_wipe_done,
     get_season_leadtime,
 )
 from gameserver.models.army import Army, CritterWave, SpyArmy
@@ -118,6 +119,7 @@ def _serialize_global() -> dict[str, Any]:
         "next_season_title": get_next_season_title(),
         "game_frozen": is_season_reset_triggered(),
         "season_snapshot_done": is_season_snapshot_done(),
+        "season_wipe_done": is_season_wipe_done(),
         "end_criterion_activated": eca.isoformat() if eca is not None else None,
         "end_criterion_empire_uid": get_end_criterion_empire_uid(),
         "end_criterion_empire_name": get_end_criterion_empire_name(),

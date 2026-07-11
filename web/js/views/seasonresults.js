@@ -226,7 +226,7 @@ function _allAwardsHtml(empires, myUid) {
 
 const _ERA_LABELS = {
   stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
-  middle_ages: 'Middle Ages', renaissance: 'Renaissance', industrial: 'Industrial',
+  medieval: 'Medieval', renaissance: 'Renaissance', industrial: 'Industrial',
   modern: 'Modern', future: 'Future',
 };
 

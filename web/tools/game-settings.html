@@ -229,9 +229,9 @@
 
 <script>
 const BASE = window.location.origin;
-const ERA_LABELS = ['Stone Age','Neolithic','Bronze Age','Iron Age','Middle Ages','Renaissance','Industrial','Modern','Future'];
-const ERA_KEYS   = ['stone','neolithic','bronze','iron','middle_ages','renaissance','industrial','modern','future'];
-const ERA_ROMAN  = { stone:'I', neolithic:'II', bronze:'III', iron:'IV', middle_ages:'V', renaissance:'VI', industrial:'VII', modern:'VIII', future:'IX' };
+const ERA_LABELS = ['Stone Age','Neolithic','Bronze Age','Iron Age','Medieval','Renaissance','Industrial','Modern','Future'];
+const ERA_KEYS   = ['stone','neolithic','bronze','iron','medieval','renaissance','industrial','modern','future'];
+const ERA_ROMAN  = { stone:'I', neolithic:'II', bronze:'III', iron:'IV', medieval:'V', renaissance:'VI', industrial:'VII', modern:'VIII', future:'IX' };
 
 function token() {
   return localStorage.getItem('e3_jwt_token') || sessionStorage.getItem('e3_jwt_token') || '';

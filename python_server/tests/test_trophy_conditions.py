@@ -283,7 +283,7 @@ class TestFirstInEra:
 
     @pytest.mark.parametrize("era", [
         "stone", "neolithic", "bronze", "iron",
-        "middle_ages", "renaissance", "industrial", "modern", "future",
+        "medieval", "renaissance", "industrial", "modern", "future",
     ])
     def test_all_nine_eras(self, era):
         svc = _svc()
@@ -296,7 +296,7 @@ class TestFirstInEra:
 
 _ERA_FIRST_IIDS = [
     "FIRST_STONE", "FIRST_NEOLITHIC", "FIRST_BRONZE", "FIRST_IRON",
-    "FIRST_MIDDLE_AGES", "FIRST_RENAISSANCE", "FIRST_INDUSTRIAL",
+    "FIRST_MEDIEVAL", "FIRST_RENAISSANCE", "FIRST_INDUSTRIAL",
     "FIRST_MODERN", "FIRST_FUTURE",
 ]
 
@@ -311,7 +311,7 @@ def _svc_with_trophies(trophy_iids: list[str]) -> TrophyService:
         item.condition = {"type": ctype, **ckwargs}
         return item
 
-    era_keys = ["stone", "neolithic", "bronze", "iron", "middle_ages",
+    era_keys = ["stone", "neolithic", "bronze", "iron", "medieval",
                 "renaissance", "industrial", "modern", "future"]
     items = {}
     for iid, era in zip(_ERA_FIRST_IIDS, era_keys):
@@ -445,10 +445,10 @@ class TestCheckAndAward:
         """all_era_firsts is awarded in the same call that completes the last era-first."""
         svc = TrophyService.__new__(TrophyService)
         svc._database = MagicMock()
-        era_keys = ["stone", "neolithic", "bronze", "iron", "middle_ages",
+        era_keys = ["stone", "neolithic", "bronze", "iron", "medieval",
                     "renaissance", "industrial", "modern", "future"]
         era_first_iids = ["FIRST_STONE", "FIRST_NEOLITHIC", "FIRST_BRONZE", "FIRST_IRON",
-                          "FIRST_MIDDLE_AGES", "FIRST_RENAISSANCE", "FIRST_INDUSTRIAL",
+                          "FIRST_MEDIEVAL", "FIRST_RENAISSANCE", "FIRST_INDUSTRIAL",
                           "FIRST_MODERN", "FIRST_FUTURE"]
 
         def _make_first_in_era(iid: str, era: str) -> MagicMock:

@@ -194,7 +194,7 @@
 #tt-wrap {
   position: relative;
   isolation: isolate;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 12px 12px 60px;
 }
@@ -296,7 +296,33 @@
   background: rgba(100, 80, 160, 0.06);
 }
 
-/* Node rows */
+/* Era layout: shared 3-column grid (left | main | right), one row per depth
+   level. All three cells of a level share the same grid row, so the row
+   stretches to the tallest node in it and branch nodes stay aligned with the
+   main-column node they depend on. */
+.tt-era-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  column-gap: 16px;
+  row-gap: 20px;
+  align-items: start;
+}
+.tt-cell {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  position: relative;
+}
+.tt-cell-left,
+.tt-cell-right {
+  gap: 0;
+}
+.tt-cell-main {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* Node rows (mobile flow still uses .tt-row) */
 .tt-row {
   display: flex;
   justify-content: center;
@@ -567,11 +593,36 @@
   #tt-wrap {
     padding: 8px 4px 40px;
   }
+
+  /* Mobile layout: one row per era-global depth level, laid out as a fixed
+     3-column grid, minus the separate left/right columns. Branch chains
+     occupy a single grid cell, stacked vertically. */
+  .tt-mobile-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .tt-mobile-level {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+  .tt-mobile-level .tt-node {
+    width: auto;
+  }
 }
 @media (max-width: 480px) {
   .tt-node {
     width: calc((100vw - 80px) / 3);
     padding: 4px 5px;
+  }
+  /* Grid cell controls node width in the 5-column mobile level */
+  .tt-mobile-level .tt-node {
+    width: auto;
+  }
+  .tt-mobile-level {
+    gap: 6px;
   }
   .tt-row {
     gap: 6px;

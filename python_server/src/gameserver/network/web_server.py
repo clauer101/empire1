@@ -41,7 +41,7 @@ _ERA_PATTERNS = [
     ("neolithic",    re.compile(r'#\s+NEOLITHIC')),
     ("bronze",       re.compile(r'#\s+BRONZE_AGE')),
     ("iron",         re.compile(r'#\s+IRON_AGE')),
-    ("middle_ages",  re.compile(r'#\s+MIDDLE_AGES')),
+    ("medieval",     re.compile(r'#\s+MEDIEVAL')),
     ("renaissance",  re.compile(r'#\s+RENAISSANCE')),
     ("industrial",   re.compile(r'#\s+INDUSTRIAL')),
     ("modern",       re.compile(r'#\s+MODERN')),
@@ -53,7 +53,7 @@ _ERA_INFO = {
     "neolithic":    "Effort 800 – 7.500",
     "bronze":       "Effort 2.500 – 8.000",
     "iron":         "Effort 8.000 – 30.000",
-    "middle_ages":  "Effort 28.000 – 130.000",
+    "medieval":     "Effort 28.000 – 130.000",
     "renaissance":  "Effort 100.000 – 500.000",
     "industrial":   "Effort 500.000 – 2.000.000",
     "modern":       "Effort 2.000.000 – 5.300.000",
@@ -64,7 +64,7 @@ _ERA_ORDER = list(_ERA_INFO.keys())
 
 _ERA_COMMENT_KEY = {
     "stone": "STONE_AGE", "neolithic": "NEOLITHIC", "bronze": "BRONZE_AGE",
-    "iron": "IRON_AGE", "middle_ages": "MIDDLE_AGES", "renaissance": "RENAISSANCE",
+    "iron": "IRON_AGE", "medieval": "MEDIEVAL", "renaissance": "RENAISSANCE",
     "industrial": "INDUSTRIAL", "modern": "MODERN", "future": "FUTURE",
 }
 
@@ -72,6 +72,7 @@ _SPRITE_EXTS = [".png", ".webp", ".jpg"]
 
 _map_power_upgrades = None
 _structure_era_map: dict[str, str] | None = None
+_structure_name_map: dict[str, str] | None = None
 NON_TOWER = {"castle", "spawnpoint", "path", "empty", "blocked", "void", ""}
 
 
@@ -164,7 +165,7 @@ def _write_ai_waves(waves_with_era: list[dict[str, Any]]) -> str:
         "#   Neolithic      →  CLUBMAN / SCOUT / WARRIOR\n"
         "#   Bronze Age     →  BOWMAN / SWORDMAN / CHARIOT\n"
         "#   Iron Age       →  PIKENEER / HORSEMAN_FAST / LEGIONARY\n"
-        "#   Middle Ages    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
+        "#   Medieval       →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM\n"
         "#   Renaissance    →  NINJA / MUSKETEER / DRAGOONER\n"
         "#   Industrial     →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK\n"
         "#   Modern         →  SPECOPS / HELI\n"
@@ -613,12 +614,46 @@ def _compute_map_age_pct(m: dict[str, Any]) -> dict[str, float]:
     return {era: round(cnt / total * 100, 1) for era, cnt in counts.items()}
 
 
+def _get_structure_name_map() -> dict[str, str]:
+    global _structure_name_map
+    if _structure_name_map is None:
+        data = yaml.safe_load(STRUCTURES_PATH.read_text(encoding="utf-8")) or {}
+        _structure_name_map = {
+            iid: item.get("name", iid) for iid, item in data.items() if isinstance(item, dict)
+        }
+    return _structure_name_map
+
+
+def _compute_map_towers(m: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return [{name, count}, ...] of towers placed on the map, most common first."""
+    tower_names = _get_structure_name_map()
+    counts: dict[str, int] = {}
+    for t in (m.get("hex_map") or []):
+        tt = t.get("type", "")
+        if isinstance(tt, dict):
+            tt = tt.get("type", "")
+        if tt in NON_TOWER or not tt:
+            continue
+        name = tower_names.get(tt, tt)
+        counts[name] = counts.get(name, 0) + 1
+    return [{"name": n, "count": c} for n, c in sorted(counts.items(), key=lambda kv: -kv[1])]
+
+
+def _compute_map_path_length(m: dict[str, Any]) -> int | None:
+    from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+    from gameserver.util.maze_loader import tile_type
+    str_map = {f"{t['q']},{t['r']}": tile_type(t.get("type", "empty")) for t in (m.get("hex_map") or [])}
+    path = find_path_from_spawn_to_castle(str_map)
+    return len(path) - 1 if path else None
+
+
 def _compute_map_defense_power(m: dict[str, Any]) -> float:
     from gameserver.engine.power_service import defense_power
     from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
     from gameserver.models.empire import Empire
+    from gameserver.util.maze_loader import tile_type
     upgrades, default_life = _get_map_power_upgrades()
-    hex_map = {f"{t['q']},{t['r']}": {"type": t.get("type", "empty")} for t in (m.get("hex_map") or [])}
+    hex_map = {f"{t['q']},{t['r']}": {"type": tile_type(t.get("type", "empty"))} for t in (m.get("hex_map") or [])}
     empire = Empire(uid=0, name="")
     empire.hex_map = hex_map
     empire.max_life = float(m.get("life") or default_life)
@@ -1086,12 +1121,12 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
 
     @app.get("/api/saved-maps")
     async def list_saved_maps() -> Any:
-        if not _SAVED_MAPS_PATH.exists():
-            return JSONResponse({"maps": [], "life": {}})
-        data = yaml.safe_load(_SAVED_MAPS_PATH.read_text()) or {}
-        names, life, power, age_pct = [], {}, {}, {}
-        for m in (data.get("maps") or []):
-            name = m.get("name", m.get("id", "?"))
+        from gameserver.util.maze_loader import load_raw_saved_maps
+        maps = load_raw_saved_maps()
+
+        names, life, power, age_pct, towers, path_length = [], {}, {}, {}, {}, {}
+        for m in maps:
+            name = m["name"]
             names.append(name)
             if m.get("life") is not None:
                 life[name] = m["life"]
@@ -1105,7 +1140,20 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
             except Exception:
                 # Age distribution is derived/optional — skip if map data is incomplete
                 pass
-        return JSONResponse({"maps": names, "life": life, "power": power, "age_pct": age_pct})
+            try:
+                towers[name] = _compute_map_towers(m)
+            except Exception:
+                # Tower list is derived/optional — skip if map data is incomplete
+                pass
+            try:
+                path_length[name] = _compute_map_path_length(m)
+            except Exception:
+                # Path length is derived/optional — skip if map data is incomplete
+                pass
+        return JSONResponse({
+            "maps": names, "life": life, "power": power, "age_pct": age_pct,
+            "towers": towers, "path_length": path_length,
+        })
 
     @app.put("/api/tools/map-life")
     async def set_map_life(payload: dict[str, Any], _uid: int = Depends(require_admin)) -> Any:
@@ -1135,7 +1183,12 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
     async def sim_map(map_name: str, era: str, n: int) -> Any:
         import asyncio
         import tempfile
-        script = Path(__file__).resolve().parent.parent.parent.parent.parent / "sim_map.py"
+        # `scripts/` sits next to `python_server/` locally but is copied straight
+        # into `/app/scripts` in Docker (no extra nesting there) — try both layouts.
+        _base = Path(__file__).resolve().parent.parent.parent.parent
+        script = _base / "scripts" / "sim_map.py"
+        if not script.exists():
+            script = _base.parent / "scripts" / "sim_map.py"
         python = Path(sys.executable)
         out_fd, out_path = tempfile.mkstemp(suffix=".jsonl", prefix="sim_map_")
         os.close(out_fd)

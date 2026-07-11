@@ -72,6 +72,13 @@ def main() -> int:
         print(f"started {name} (pid={procs[-1].pid}, control port {port})")
         time.sleep(1)
 
+    # Docker sends SIGTERM (and fleet runs as PID 1, where unhandled signals
+    # are ignored) — translate it into the same shutdown path as Ctrl-C.
+    def _sigterm(signum, frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, _sigterm)
+
     try:
         while any(p.poll() is None for p in procs):
             time.sleep(2)
@@ -81,7 +88,10 @@ def main() -> int:
             if p.poll() is None:
                 p.send_signal(signal.SIGTERM)
         for p in procs:
-            p.wait(timeout=15)
+            try:
+                p.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                p.kill()
     return 0
 
 

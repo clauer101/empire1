@@ -1,36 +1,31 @@
 # AI player bot configuration (dev environment ONLY)
 server_url: http://localhost:8180
-cycle_interval_s: 10
+cycle_interval_s: 30
 control_port_base: 9300
 
 strategy:
+  # roll_strategy only ever picks between attack/growth — reached after
+  # DEFENSE_WIN_STREAK_TARGET consecutive defense wins (run_bot.py); defense
+  # itself is never rolled there, it's forced unconditionally on a lost
+  # defense. The `defense` weight below is only used by roll_secondary (lets
+  # defense run in the background, e.g. maze upkeep, while attack is active).
   weights:
     defense: 3
     attack: 2
-  # Strategy lifetime as a wall-clock window [min, max] hours.
+    growth: 1
+  # Strategy lifetime as a wall-clock window [min, max] hours. defense's
+  # range is used by breach_defense_strategy(); attack/growth ignore this
+  # and hold indefinitely (NO_EXPIRY) until the next lost defense.
   duration_hours:
     defense: [3, 8]
-    attack: [1, 3]
 
 # Per-bot temperament: multipliers applied to the base strategy weights above.
 # A bot's personality is rolled once at account creation (see bot/state.py).
 # Missing personality → "balanced" (all x1.0).
 personalities:
-  aggressive: {defense: 0.5, attack: 3.0}
-  defensive:  {defense: 3.0, attack: 0.5}
-  balanced:   {defense: 1.0, attack: 1.0}
-
-# Probability that a bot reacts to an AI breach by force-switching to defense.
-breach_response_chance:
-  aggressive: 0.2
-  defensive:  1.0
-  balanced:   0.6
-
-# Probability that a LOST attack force-switches the bot back to attack (revenge).
-attack_defeat_response_chance:
-  aggressive: 0.9
-  defensive:  0.2
-  balanced:   0.6
+  aggressive: {defense: 0.5, attack: 3.0, growth: 0.3}
+  defensive:  {defense: 3.0, attack: 0.5, growth: 2.0}
+  balanced:   {defense: 1.0, attack: 1.0, growth: 1.0}
 
 # Weighted top-N sampling: instead of always taking the single best candidate,
 # planners sample from the best `top_n` options (better = higher probability).

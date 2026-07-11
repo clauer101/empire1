@@ -112,16 +112,8 @@ const EFFECT_LABELS = {
   // Battle — implemented
   wave_delay_offset:              'Wave Delay Offset',
   wave_delay_modifier:            'Wave Delay Multiplier ⚠',
-  // Critter buffs — implemented (applied to spawned critters via attacker empire)
-  speed_modifier:                 'Critter Speed Multiplier',
-  health_modifier:                'Critter Health Multiplier',
-  armour_modifier:                'Critter Armour Multiplier',
   slot_offset:                    'Wave Slots + ⚠',
   slot_adder_per_level:           'Wave Slots per Level + ⚠',
-  // Tower buffs — implemented (applied via defender empire)
-  damage_modifier:                'Tower Damage Multiplier',
-  range_modifier:                 'Tower Range Multiplier',
-  reload_modifier:                'Tower Reload Speed Multiplier',
   slow_target:                    'Tower Slow Chance ⚠',
   slow_target_duration:           'Tower Slow Duration ⚠',
   burn_target:                    'Tower Burn Chance ⚠',
@@ -156,12 +148,11 @@ const EFFECT_GROUPS = [
   },
   {
     label: '🐛 Critter Buffs (attacker empire)',
-    keys: ['speed_modifier','health_modifier','armour_modifier','slot_offset','slot_adder_per_level'],
+    keys: ['slot_offset','slot_adder_per_level'],
   },
   {
     label: '🗼 Tower Buffs (defender empire)',
-    keys: ['damage_modifier','range_modifier','reload_modifier',
-           'slow_target','slow_target_duration','burn_target','burn_target_duration'],
+    keys: ['slow_target','slow_target_duration','burn_target','burn_target_duration'],
   },
   {
     label: '💀 Loot (⚠ not yet applied)',

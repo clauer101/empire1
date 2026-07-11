@@ -24,6 +24,7 @@ from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.models.army import Army, CritterWave
 from gameserver.models.attack import Attack, AttackPhase
 from gameserver.models.empire import Empire
+from gameserver.models.items import ItemDetails, ItemType
 from gameserver.models.map import HexCoord
 from gameserver.models.structure import Structure
 from gameserver.network.handlers import register_all_handlers
@@ -242,6 +243,50 @@ class TestArmyRouter:
             headers=_auth(),
         )
         assert resp.status_code == 200
+
+    async def test_buy_item_upgrade_rejects_effect_stat_with_no_matching_effect(
+        self, client, svc):
+        # A plain damage tower (effects={}, e.g. HEAVY_TOWER) has no
+        # slow/burn effect for effect_duration to modify — the server must
+        # reject the purchase rather than silently take gold for a level
+        # that never applies in combat (see battle_service._step_structures,
+        # which only scales slow_duration/burn_duration/slow_ratio/burn_dps).
+        # Reset the module-global season-freeze flag: another test in the
+        # full suite run may have left it set, which would short-circuit
+        # this endpoint before our new validation even runs.
+        from gameserver.engine.global_state import set_season_reset_triggered
+        set_season_reset_triggered(False)
+        svc.upgrade_provider.load([
+            ItemDetails(iid="plain_tower", item_type=ItemType.STRUCTURE,
+                       damage=10.0, range=1.5, reload_time_ms=1000.0, effects={}),
+        ])
+        resp = await client.post(
+            "/api/item/buy-upgrade",
+            json={"iid": "plain_tower", "stat": "effect_duration"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "effect" in data["error"].lower()
+
+    async def test_buy_item_upgrade_allows_effect_stat_with_matching_effect(
+        self, client, svc):
+        from gameserver.engine.global_state import set_season_reset_triggered
+        set_season_reset_triggered(False)
+        svc.upgrade_provider.load([
+            ItemDetails(iid="slow_tower", item_type=ItemType.STRUCTURE,
+                       damage=1.0, range=1.5, reload_time_ms=1000.0,
+                       effects={"slow_duration": 2000.0, "slow_ratio": 0.5}),
+        ])
+        resp = await client.post(
+            "/api/item/buy-upgrade",
+            json={"iid": "slow_tower", "stat": "effect_duration"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
 
 
 # ---------------------------------------------------------------------------

@@ -51,14 +51,23 @@ force_stop_containers() {
 
     # SIGTERM with 8 s timeout, then SIGKILL anything still alive.
     echo "  Stopping containers (timeout 8s)..."
-    docker stop --timeout 8 $ids 2>/dev/null || true
+    local id name
+    for id in $ids; do
+        name=$(docker inspect --format '{{.Name}}' "$id" 2>/dev/null | sed 's|^/||')
+        printf '    stopping %s ... ' "${name:-$id}"
+        docker stop --timeout 8 "$id" >/dev/null 2>&1 || true
+        echo "done"
+    done
 
     # Force-kill survivors
     local still_up
     still_up=$(docker ps -q --filter "label=com.docker.compose.project=$project" 2>/dev/null || true)
     if [[ -n "$still_up" ]]; then
-        echo -e "${YELLOW}  Force-killing stubborn containers${NC}"
-        docker kill $still_up 2>/dev/null || true
+        for id in $still_up; do
+            name=$(docker inspect --format '{{.Name}}' "$id" 2>/dev/null | sed 's|^/||')
+            echo -e "${YELLOW}  Force-killing stubborn container ${name:-$id}${NC}"
+            docker kill "$id" >/dev/null 2>&1 || true
+        done
         sleep 1
     fi
 

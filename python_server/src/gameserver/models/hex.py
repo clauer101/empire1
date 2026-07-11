@@ -101,3 +101,19 @@ _DIRECTIONS: list[tuple[int, int]] = [
     (-1, 1),  # SW
     (0, 1),   # SE
 ]
+
+
+def spiral_slot(index: int) -> HexCoord:
+    """Deterministic Nth (0-based) point of an expanding hex spiral.
+
+    index=0 is the origin. Ring k (k>=1) holds indices
+    [1+3k(k-1), 3k(k+1)] inclusive (6k points), walked via HexCoord.ring(k)
+    in its existing continuous order.
+    """
+    if index == 0:
+        return HexCoord(0, 0)
+    k, start = 1, 1
+    while index >= start + 6 * k:
+        start += 6 * k
+        k += 1
+    return HexCoord(0, 0).ring(k)[index - start]
