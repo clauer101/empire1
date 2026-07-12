@@ -973,7 +973,7 @@ class Database:
         self,
         season_number: int,
         season_title: str,
-        winners: list[dict],  # list of {place, empire_uid, empire_name, culture}
+        winners: list[dict[str, Any]],  # list of {place, empire_uid, empire_name, culture}
     ) -> None:
         """Insert top-3 season results into season_winners. Skips if already recorded."""
         assert self._conn is not None
@@ -995,7 +995,7 @@ class Database:
         await self._conn.commit()
         log.info("Season %d winners recorded (%d entries)", season_number, len(winners))
 
-    async def get_season_winners(self, season_number: int | None = None) -> list[dict]:
+    async def get_season_winners(self, season_number: int | None = None) -> list[dict[str, Any]]:
         """Return season winners, optionally filtered to one season."""
         assert self._conn is not None
         if season_number is not None:

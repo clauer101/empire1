@@ -1020,7 +1020,7 @@ def make_router(services: "Services") -> APIRouter:
         with p.open() as f:
             raw = _yaml.safe_load(f) or {}
 
-        def _deep_merge(dst: dict, src: dict) -> None:
+        def _deep_merge(dst: dict[str, Any], src: dict[str, Any]) -> None:
             for k, v in src.items():
                 if isinstance(v, dict) and isinstance(dst.get(k), dict):
                     _deep_merge(dst[k], v)

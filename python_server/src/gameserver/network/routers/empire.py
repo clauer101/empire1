@@ -201,8 +201,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "past_champion": empire.uid in past_champions,
                 **{k: stats.get(k, 0) for k in _STAT_KEYS},
             })
-        empires.sort(key=lambda e: float(e.get("culture") or 0),  # type: ignore[arg-type]
-                     reverse=True)
+        empires.sort(key=lambda e: float(e.get("culture") or 0), reverse=True)
         return {"empires": empires}
 
     @router.post("/api/empire/build")

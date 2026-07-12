@@ -191,9 +191,9 @@ ARBELESTE_TOWER:
   era: iron
   name: "Arbalest Tower"
   sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
-  damage: 13
+  damage: 12
   range: 1.5
-  reload_time: 4200
+  reload_time: 4400
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/bolt.webp"
   shot_sprite_scale: 1.5
@@ -214,7 +214,7 @@ TAR_TOWER:
   era: medieval
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
-  damage: 12
+  damage: 13
   range: 2
   reload_time: 2100
   shot_speed: 1
@@ -232,9 +232,9 @@ HEAVY_TOWER:
   era: medieval
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
-  damage: 27
+  damage: 26
   range: 1.5
-  reload_time: 4400
+  reload_time: 4500
   shot_speed: 2.5
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -252,7 +252,7 @@ BOILING_OIL:
   sprite: "assets/sprites/structures/boiling_oil/boiling_oil.webp"
   damage: 1
   range: 1.5
-  reload_time: 3500
+  reload_time: 3400
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/fireball.webp"
   projectile_y_offset: 0.3
@@ -260,7 +260,7 @@ BOILING_OIL:
   max_level: 1
   select: first
   costs: {gold: 47000}
-  effects: {burn_duration: 2500, burn_dps: 15}   # burns for 3 dps over 5s
+  effects: {burn_duration: 2500, burn_dps: 16}   # burns for 3 dps over 5s
   requirements: [CITY_WALLS, SIEGE_DEFENSE]
 
 CANNON_TOWER:
@@ -268,9 +268,9 @@ CANNON_TOWER:
   era: medieval
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 19
+  damage: 20
   range: 2
-  reload_time: 4600
+  reload_time: 4800
   shot_speed: 1
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -290,7 +290,7 @@ RIFLE_TOWER:
   era: renaissance
   name: "Rifle Tower"
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
-  damage: 14
+  damage: 15
   range: 1.5
   reload_time: 900
   shot_speed: 5
@@ -308,7 +308,7 @@ ICE_TOWER:
   era: renaissance
   name: "Ice Tower"
   sprite: "assets/sprites/structures/ice_tower/ice_tower.webp"
-  damage: 10
+  damage: 11
   range: 3
   reload_time: 2000
   shot_speed: 2
@@ -332,7 +332,7 @@ FLAME_THROWER:
   sprite: "assets/sprites/structures/flame_thrower/flame_thrower.webp"
   damage: 9
   range: 1.5
-  reload_time: 3200
+  reload_time: 3300
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/fireball.webp"
   projectile_y_offset: 0.3
@@ -340,7 +340,7 @@ FLAME_THROWER:
   max_level: 1
   select: first
   costs: {gold: 135000}
-  effects: {burn_duration: 3000, burn_dps: 35}   # burns 
+  effects: {burn_duration: 2500, burn_dps: 32}   # burns 
   requirements: [MECHANICAL_ENGINEERING, ELECTRICITY]
 
 SHOCK_TOWER:
@@ -418,7 +418,7 @@ NAPALM_THROWER:
   max_level: 1
   select: first
   costs: {gold: 540000}
-  effects: {burn_dps: 60, burn_duration: 2000}
+  effects: {burn_dps: 60, burn_duration: 2300}
   requirements: [WMD_SITE, CHEMICAL_WARFARE]
 
 MG_TOWER:
@@ -462,9 +462,9 @@ RADAR_TOWER:
   era: modern
   name: "Radar Tower"
   sprite: "assets/sprites/structures/radar_tower/radar_tower.webp"
-  damage: 18
+  damage: 19
   range: 1.5
-  reload_time: 5400
+  reload_time: 5100
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/radio.webp"
   projectile_y_offset: 0.3
@@ -482,7 +482,7 @@ ANTI_AIR_TOWER:
   sprite: "assets/sprites/structures/anti_air_tower/anti_air_tower.webp"
   damage: 58
   range: 1.5
-  reload_time: 3900
+  reload_time: 3800
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3

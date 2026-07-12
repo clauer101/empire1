@@ -140,6 +140,14 @@
         N (battles)
         <input type="number" id="inp-n" value="10" min="1" max="500" />
       </label>
+      <label>
+        Tower Override
+        <select id="sel-tower-override"><option value="">— none —</option></select>
+      </label>
+      <label>
+        Critter Override
+        <select id="sel-critter-override"><option value="">— none —</option></select>
+      </label>
       <button class="btn-primary" id="btn-run">▶ Run</button>
       <button class="btn-stop"    id="btn-stop" disabled>■ Stop</button>
     </div>
@@ -242,6 +250,39 @@ async function loadMaps() {
   }
 }
 
+// ── Load tower/critter override catalogs ───────────────────────
+// Mirrors ERA_LABELS_EN in gameserver/util/eras.py (era: field is the lowercase key).
+const ERA_KEY_LABEL = {
+  stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
+  medieval: 'Medieval', renaissance: 'Renaissance', industrial: 'Industrial',
+  modern: 'Modern', future: 'Future',
+};
+
+async function loadOverrideOptions(endpoint, selectId) {
+  const sel = document.getElementById(selectId);
+  try {
+    const resp = await fetch(`${API}${endpoint}`);
+    const items = await resp.json();
+
+    const groups = new Map();
+    for (const it of items) {
+      const g = ERA_KEY_LABEL[it.era] || it.era || 'Unclassified';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(it);
+    }
+    const groupOrder = [...ERA_LABEL_ORDER, 'Unclassified'];
+    const optgroups = groupOrder.filter(g => groups.has(g)).map(g => {
+      const options = groups.get(g).map(it =>
+        `<option value="${it.iid}">${it.name}</option>`
+      ).join('');
+      return `<optgroup label="${g}">${options}</optgroup>`;
+    }).join('');
+    sel.insertAdjacentHTML('beforeend', optgroups);
+  } catch(e) {
+    // Overrides are optional — leave the "none" option only if loading fails.
+  }
+}
+
 function updateLifeField() {
   const mapName = document.getElementById('sel-map').value;
   const p = _mapPower[mapName];
@@ -280,6 +321,8 @@ function updateLifeField() {
 document.getElementById('sel-map').addEventListener('change', updateLifeField);
 
 loadMaps();
+loadOverrideOptions('/api/structure-stats', 'sel-tower-override');
+loadOverrideOptions('/api/critter-stats', 'sel-critter-override');
 
 // ── Sim state ─────────────────────────────────────────────────
 let evtSource = null;
@@ -351,9 +394,11 @@ function updateProgress(done, total) {
 
 // ── Run ───────────────────────────────────────────────────────
 document.getElementById('btn-run').addEventListener('click', () => {
-  const mapName = document.getElementById('sel-map').value;
-  const era     = document.getElementById('sel-era').value;
-  const n       = parseInt(document.getElementById('inp-n').value) || 10;
+  const mapName         = document.getElementById('sel-map').value;
+  const era             = document.getElementById('sel-era').value;
+  const n               = parseInt(document.getElementById('inp-n').value) || 10;
+  const towerOverride   = document.getElementById('sel-tower-override').value;
+  const critterOverride = document.getElementById('sel-critter-override').value;
 
   if (!mapName) { alert('Select a map first.'); return; }
   if (evtSource) { evtSource.close(); evtSource = null; }
@@ -362,13 +407,16 @@ document.getElementById('btn-run').addEventListener('click', () => {
   document.getElementById('progress-card').style.display = 'block';
   document.getElementById('progress-wrap').style.display  = 'flex';
   document.getElementById('output-wrap').style.display    = 'block';
-  document.getElementById('output-title').textContent     =
-    `Results — ${mapName} · ${era} · N=${n}`;
+  let title = `Results — ${mapName} · ${era} · N=${n}`;
+  if (towerOverride)   title += ` · Tower: ${towerOverride}`;
+  if (critterOverride) title += ` · Critter: ${critterOverride}`;
+  document.getElementById('output-title').textContent = title;
   document.getElementById('btn-run').disabled  = true;
   document.getElementById('btn-stop').disabled = false;
   updateProgress(0, n);
 
-  const url = `${API}/api/tools/sim-map?map_name=${encodeURIComponent(mapName)}&era=${encodeURIComponent(era)}&n=${n}`;
+  const url = `${API}/api/tools/sim-map?map_name=${encodeURIComponent(mapName)}&era=${encodeURIComponent(era)}&n=${n}`
+    + `&tower_override=${encodeURIComponent(towerOverride)}&critter_override=${encodeURIComponent(critterOverride)}`;
   evtSource = new EventSource(url);
 
   evtSource.onmessage = (e) => {

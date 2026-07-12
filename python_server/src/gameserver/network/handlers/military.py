@@ -452,7 +452,7 @@ def _build_spy_report(defender: Any, svc: Any, attacker: Any = None) -> tuple[st
     if has_artifact_intel:
         import datetime as _dt
         artifact_iids: list[str] = defender.artifacts or []
-        _retention = defender.get_effect("artifact_retention_time", 0.0)
+        _retention = float(defender.get_effect("artifact_retention_time", 0.0))
         _now = _dt.datetime.now(_dt.timezone.utc)
         def _is_protected(iid: str) -> bool:
             if _retention <= 0:

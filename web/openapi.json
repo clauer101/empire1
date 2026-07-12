@@ -3321,6 +3321,26 @@
               "type": "integer",
               "title": "N"
             }
+          },
+          {
+            "name": "tower_override",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Tower Override"
+            }
+          },
+          {
+            "name": "critter_override",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Critter Override"
+            }
           }
         ],
         "responses": {

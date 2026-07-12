@@ -56,13 +56,17 @@ def tile_select(v, default: str = "first") -> str:
 
 # ── Structure builder ─────────────────────────────────────────────────────────
 
-def build_structures(hex_map: dict, items_dict: dict) -> dict[int, Structure]:
+def build_structures(
+    hex_map: dict, items_dict: dict, override_iid: str | None = None,
+) -> dict[int, Structure]:
     """Build a sid→Structure dict from a hex_map and item catalog.
 
     Args:
-        hex_map:    {"q,r": type_str_or_dict} — tile map as stored in saved_maps.yaml
-                    or a deserialized season state.yaml.
-        items_dict: {iid: ItemDetails} — full item catalog from config.
+        hex_map:      {"q,r": type_str_or_dict} — tile map as stored in saved_maps.yaml
+                      or a deserialized season state.yaml.
+        items_dict:   {iid: ItemDetails} — full item catalog from config.
+        override_iid: if set, replace every tower on the map with this iid
+                      (position/select kept, tower type forced).
 
     Returns:
         Dict mapping sid (1-based int) → Structure.
@@ -73,12 +77,13 @@ def build_structures(hex_map: dict, items_dict: dict) -> dict[int, Structure]:
         tt = tile_type(tile_val)
         if tt in NON_STRUCTURE_TYPES:
             continue
-        item = items_dict.get(tt)
+        actual_iid = override_iid or tt
+        item = items_dict.get(actual_iid)
         if not item:
             continue
         q, r = map(int, tile_key.split(","))
         structures[sid] = structure_from_item(
-            sid=sid, iid=tt, position=HexCoord(q, r), item=item,
+            sid=sid, iid=actual_iid, position=HexCoord(q, r), item=item,
             select_override=tile_select(tile_val),
         )
         sid += 1

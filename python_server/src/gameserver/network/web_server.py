@@ -1180,7 +1180,7 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
         return JSONResponse({"ok": True})
 
     @app.get("/api/tools/sim-map")
-    async def sim_map(map_name: str, era: str, n: int) -> Any:
+    async def sim_map(map_name: str, era: str, n: int, tower_override: str = "", critter_override: str = "") -> Any:
         import asyncio
         import tempfile
         # `scripts/` sits next to `python_server/` locally but is copied straight
@@ -1196,6 +1196,7 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
         async def generate() -> Any:
             proc = await asyncio.create_subprocess_exec(
                 str(python), str(script), map_name, era, str(n), out_path,
+                tower_override, critter_override,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
                 cwd=str(script.parent),

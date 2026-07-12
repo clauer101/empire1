@@ -796,9 +796,9 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
         if rem > 0 and items.get(iid)
     ]
 
-    def _by_progress(iid_rem: tuple) -> float:
+    def _by_progress(iid_rem: tuple[str, float]) -> float:
         iid, rem = iid_rem
-        return (items[iid].effort if items.get(iid) else 0.0) - rem
+        return float(items[iid].effort if items.get(iid) else 0.0) - rem
 
     if _is_ai_only:
         chosen_iid = max(active, key=_by_progress)[0] if active else None

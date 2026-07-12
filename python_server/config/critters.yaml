@@ -271,8 +271,8 @@ LARGE_CART:
   era: iron
   name: "Large Cart"
   description: "A massive carrier that deploys three Pikeneers on destruction. Four slots but delivers a dangerous payload."
-  speed: 0.35
-  health: 10
+  speed: 0.45
+  health: 11
   value: 130
   damage: 3
   armour: 3
@@ -315,7 +315,7 @@ CRUSADER:
   era: medieval
   name: "Crusader"
   description: "A well-rounded holy warrior with solid armor and decent speed. The backbone of medieval assaults."
-  speed: 0.5
+  speed: 0.55
   health: 70
   value: 74
   damage: 2
@@ -335,8 +335,8 @@ KNIGHT:
   era: medieval
   name: "Knight"
   description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
-  speed: 0.4
-  health: 93
+  speed: 0.45
+  health: 110
   value: 194
   damage: 1
   armour: 8.5
@@ -459,13 +459,13 @@ NINJA:
   era: renaissance
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
-  speed: 1.4
-  health: 52
+  speed: 1.45
+  health: 79
   value: 168
   damage: 1
-  armour: 3
+  armour: 3.5
   slots: 1
-  time_between: 1100
+  time_between: 900
   is_boss: false
   capture: {}
   bonus: {}
@@ -479,13 +479,13 @@ MUSKETEER:
   era: renaissance
   name: "Musketeer"
   description: "Well-armored gunner that advances steadily under fire. Good balance of health, speed, and durability."
-  speed: 0.65
+  speed: 0.75
   health: 92
   value: 171
   damage: 1
   armour: 5
   slots: 1
-  time_between: 700
+  time_between: 600
   is_boss: false
   capture: {}
   bonus: {}
@@ -500,7 +500,7 @@ DRAGOONER:
   name: "Dragoon"
   description: "Mounted gunner combining speed with solid armor. A well-rounded attacker that hits hard and moves fast."
   speed: 0.75
-  health: 122
+  health: 148
   value: 182
   damage: 2
   armour: 9
@@ -519,8 +519,8 @@ CARGO:
   era: renaissance
   name: "Cargo"
   description: "A heavy transport that deploys three Musketeers on death. Takes four slots but delivers a fearsome payload."
-  speed: 0.8
-  health: 53
+  speed: 0.75
+  health: 63
   value: 334
   damage: 4
   armour: 2.5
@@ -583,11 +583,11 @@ SMALL_TANK:
   era: industrial
   name: "Small Tank"
   description: "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage."
-  speed: 0.4
-  health: 250
+  speed: 0.45
+  health: 270
   value: 500
   damage: 2
-  armour: 11
+  armour: 13
   slots: 2
   time_between: 1000
   is_boss: false
@@ -604,10 +604,10 @@ TRANSPORTER:
   name: "Transporter"
   description: "A hulking carrier that deploys eight Soldiers on death. Takes ten slots but delivers a full squad."
   speed: 0.4
-  health: 126
+  health: 130
   value: 547
   damage: 5
-  armour: 4.5
+  armour: 5
   slots: 10
   time_between: 1900
   is_boss: false

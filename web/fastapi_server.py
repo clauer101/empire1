@@ -1595,7 +1595,7 @@ async def set_map_life(payload: dict):
 
 
 @app.get("/api/tools/sim-map")
-async def sim_map(map_name: str, era: str, n: int):
+async def sim_map(map_name: str, era: str, n: int, tower_override: str = "", critter_override: str = ""):
     """Run sim_map.py and stream its output file line-by-line as SSE."""
     import asyncio
     import tempfile
@@ -1613,6 +1613,7 @@ async def sim_map(map_name: str, era: str, n: int):
     async def generate():
         proc = await asyncio.create_subprocess_exec(
             str(python), str(script), map_name, era, str(n), out_path,
+            tower_override, critter_override,
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.DEVNULL,
             cwd=str(script.parent),
