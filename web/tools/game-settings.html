@@ -530,6 +530,12 @@ function cfg_render(raw) {
       });
       sub.appendChild(tgrid);
       body.appendChild(sub);
+      addSubsection(body, 'Anti-farm protection', [
+        numInput('anti_farm_win_threshold',            raw.anti_farm_win_threshold,            1,    'Wins before protection kicks in'),
+        numInput('anti_farm_window_hours',              raw.anti_farm_window_hours,              1,    'Rolling window (hours)'),
+        numInput('anti_farm_culture_multiplier',        raw.anti_farm_culture_multiplier,        0.01, 'Attacker culture multiplier'),
+        numInput('anti_farm_defender_gold_multiplier',  raw.anti_farm_defender_gold_multiplier,  0.1,  'Defender gold multiplier'),
+      ]);
     }],
     ['s-barb', '🪓 Barbarian Aggressiveness', body => addGrid(body,
       ERA_KEYS.map((k, i) => numInput(`barbarians_aggressiveness.${k}`, (raw.barbarians_aggressiveness || {})[k] ?? 0, 0.0001, ERA_LABELS[i]))
@@ -579,6 +585,10 @@ function cfg_render(raw) {
       addSubsection(body, 'Rally effects', [
         numInput('end_ralley_effects.gold_offset',         ef.gold_offset         ?? 0, 0.1,  'Gold offset'),
         numInput('end_ralley_effects.siege_time_modifier', ef.siege_time_modifier ?? 1, 0.05, 'Siege time modifier'),
+      ]);
+      addSubsection(body, 'Season timing', [
+        numInput('season_leadtime',              raw.season_leadtime,              3600, 'Season leadtime (sec)'),
+        numInput('next_season_start_after_end',  raw.next_season_start_after_end,  3600, 'Time to next season (sec)'),
       ]);
     }],
   ];

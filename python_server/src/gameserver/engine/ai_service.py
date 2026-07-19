@@ -463,13 +463,19 @@ class AIService:
             dominant = max(slots_by_era, key=lambda e: slots_by_era[e])
             return ERA_ORDER_INTERNAL.index(dominant) if dominant in ERA_ORDER_INTERNAL else 0
 
-        exact = [e for e in self._hardcoded_waves if dominant_era_idx(e) == era_idx]
+        # Empty-`waves` entries (e.g. "No Army") exist only to suppress attacks for
+        # specific trigger items via `_is_suppressed_item` — they can't produce an
+        # actual army, and `dominant_era_idx` would otherwise misclassify them as
+        # era index 0 (stone), letting `random.choice` silently pick a "no-op" entry.
+        attackable = [e for e in self._hardcoded_waves if e.get("waves")]
+
+        exact = [e for e in attackable if dominant_era_idx(e) == era_idx]
         if exact:
             return exact
 
         # No exact match → fall back to closest available era
-        broader = [e for e in self._hardcoded_waves if dominant_era_idx(e) <= era_idx]
-        return broader or self._hardcoded_waves
+        broader = [e for e in attackable if dominant_era_idx(e) <= era_idx]
+        return broader or attackable
 
     def _era_travel_seconds(self, empire: "Empire", empire_service: "EmpireService") -> float:
         """Return the era-appropriate travel time for an AI attack targeting *empire*.

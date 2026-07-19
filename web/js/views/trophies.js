@@ -7,7 +7,7 @@
 
 import { rest } from '../rest.js';
 import { pageTitle } from '../lib/page_title.js';
-import { fmtEffectsInline, fmtTrophyCondition } from '../lib/format.js';
+import { fmtEffectsInline, fmtTrophyCondition, fmtTrophyProgress } from '../lib/format.js';
 import { eventBus } from '../events.js';
 
 let _container = null;
@@ -48,9 +48,13 @@ function _cardHtml(t) {
   const effects = Object.keys(t.effects || {}).length > 0
     ? `<div class="trophy-effects">${fmtEffectsInline(t.effects)}</div>`
     : '';
+  const progressText = fmtTrophyProgress(t.progress_current, t.progress_target);
   const condition = t.earned
     ? `<div class="trophy-condition trophy-condition--earned">✓ ${fmtTrophyCondition(t.condition)}</div>`
-    : `<div class="trophy-condition">${fmtTrophyCondition(t.condition)}</div>`;
+    : `<div class="trophy-condition">${fmtTrophyCondition(t.condition)}${progressText ? ` (${progressText})` : ''}</div>`;
+  const progressBar = (!t.earned && t.progress_target)
+    ? `<div class="trophy-progress-bar"><div class="trophy-progress-bar-fill" style="width:${Math.min(100, 100 * (t.progress_current ?? 0) / t.progress_target)}%"></div></div>`
+    : '';
   const earnedDate = t.earned && t.earned_at
     ? `<div class="trophy-date">${new Date(t.earned_at * 1000).toLocaleDateString()}</div>`
     : '';
@@ -62,6 +66,7 @@ function _cardHtml(t) {
         <div class="trophy-name">${t.name}</div>
         <div class="trophy-desc">${t.description}</div>
         ${condition}
+        ${progressBar}
         ${effects}
         ${earnedDate}
       </div>

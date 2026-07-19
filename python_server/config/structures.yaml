@@ -96,9 +96,9 @@ ARROW_TOWER:
   era: bronze
   name: "Arrow Tower"
   sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
-  damage: 2.5
+  damage: 3
   range: 2
-  reload_time: 1100
+  reload_time: 1300
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/arrow.webp"
   projectile_y_offset: 0.3
@@ -164,7 +164,7 @@ COLD_TOWER:
   upgrade_costs: {}
   max_level: 1
   select: first
-  costs: {gold: 83000}
+  costs: {gold: 17600}
   effects: {slow_duration: 3000, slow_ratio: 0.4}   # slows to 50% speed for 3s
   requirements: [WEATHER_OBSERVATION, ARCHITECTURE]
 
@@ -205,6 +205,25 @@ ARBELESTE_TOWER:
   effects: {}
   requirements: [FORGE, IRON]
 
+CROSSBOW_TOWER:
+  tower_type: fast
+  era: iron
+  name: "Crossbow Tower"
+  sprite: "assets/sprites/structures/crossbow_tower/crossbow_tower.webp"
+  damage: 4
+  range: 1.5
+  reload_time: 1100
+  shot_speed: 15
+  shot_sprite: "assets/sprites/hud/bolt.webp"
+  shot_sprite_scale: 0.5
+  projectile_y_offset: 0.3
+  upgrade_costs: {}
+  max_level: 1
+  select: first
+  costs: {gold: 25500}
+  effects: {}
+  requirements: [IRON]
+
 # ============================================================
 #   MEDIEVAL  (Effort 30.000 – 130.000)
 # ============================================================
@@ -214,7 +233,7 @@ TAR_TOWER:
   era: medieval
   name: "Tar Tower"
   sprite: "assets/sprites/structures/tar_tower/tar_tower.webp"
-  damage: 13
+  damage: 15
   range: 2
   reload_time: 2100
   shot_speed: 1
@@ -232,7 +251,7 @@ HEAVY_TOWER:
   era: medieval
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
-  damage: 26
+  damage: 27
   range: 1.5
   reload_time: 4500
   shot_speed: 2.5
@@ -250,7 +269,7 @@ BOILING_OIL:
   era: medieval
   name: "Boiling Oil"
   sprite: "assets/sprites/structures/boiling_oil/boiling_oil.webp"
-  damage: 1
+  damage: 5
   range: 1.5
   reload_time: 3400
   shot_speed: 1
@@ -268,7 +287,7 @@ CANNON_TOWER:
   era: medieval
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 20
+  damage: 21
   range: 2
   reload_time: 4800
   shot_speed: 1

@@ -34,8 +34,8 @@ end_ralley_effects:
   gold_offset: 2
   siege_time_modifier: 0.5
 end_ralley_duration: 604800
-season_leadtime: 259200
-next_season_start_after_end: 1209600
+season_leadtime: 66000
+next_season_start_after_end: 86000
 era_effects:
   stone:
     travel_offset: 300
@@ -98,6 +98,10 @@ steal_power_thresholds:
 - 300000
 - 1000000
 steal_min_multiplier: 0.1
+anti_farm_win_threshold: 3
+anti_farm_window_hours: 24.0
+anti_farm_culture_multiplier: 0.33
+anti_farm_defender_gold_multiplier: 3.0
 ruler_xp_per_kill: 1.3
 ruler_xp_per_reached_per_era: 30
 ruler_xp_victory_per_era: 80

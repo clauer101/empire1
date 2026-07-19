@@ -262,22 +262,26 @@ class EmpireService:
     # -- Build progress --------------------------------------------------
 
     def _progress_buildings(self, empire: Empire, dt: float) -> None:
-        """Tick building construction for the single active build item."""
+        """Tick building construction for the single active build item.
+
+        Mirrors `_progress_knowledge`'s guard against a pre-zeroed `remaining`
+        (see that method's docstring) — same fix, for parity, in case a future
+        mechanic ever mutates `empire.buildings[iid]` directly the way
+        knowledge-steal loot does today.
+        """
         if empire.build_queue is None:
             return
 
         iid = empire.build_queue
         remaining = empire.buildings.get(iid, 0.0)
-        if remaining <= 0:
-            empire.build_queue = None
-            return
+        if remaining > 0:
+            # Build speed: (base + offset) * (1 + modifier) * (1 - siege_penalty)
+            speed = (self._base_build_speed + empire.get_effect("build_speed_offset", 0.0)) * (1.0 + empire.get_effect("build_speed_modifier", 0.0))
+            siege_penalty = self._siege_construction_speed_penalty(empire)
+            if siege_penalty > 0:
+                speed *= (1.0 - siege_penalty)
+            remaining -= dt * speed
 
-        # Build speed: (base + offset) * (1 + modifier) * (1 - siege_penalty)
-        speed = (self._base_build_speed + empire.get_effect("build_speed_offset", 0.0)) * (1.0 + empire.get_effect("build_speed_modifier", 0.0))
-        siege_penalty = self._siege_construction_speed_penalty(empire)
-        if siege_penalty > 0:
-            speed *= (1.0 - siege_penalty)
-        remaining -= dt * speed
         if remaining <= 0:
             remaining = 0.0
             empire.build_queue = None
@@ -312,34 +316,53 @@ class EmpireService:
         return min(raw, max_penalty) if max_penalty > 0 else raw
 
     def _progress_knowledge(self, empire: Empire, dt: float) -> None:
-        """Tick research progress for the single active research item."""
+        """Tick research progress for the single active research item.
+
+        `remaining` can already be <= 0 at the start of a tick — e.g. an
+        attacker's own in-progress research finished off by knowledge stolen
+        during a battle (see handlers/battle_task.py's knowledge-steal loot).
+        Completion always goes through `complete_knowledge()` so the gold
+        bounty and ItemCompleted event fire exactly once regardless of which
+        path zeroed `remaining`.
+        """
         if empire.research_queue is None:
             return
 
         iid = empire.research_queue
         remaining = empire.knowledge.get(iid, 0.0)
-        if remaining <= 0:
-            empire.research_queue = None
-            return
+        if remaining > 0:
+            # Research speed: (base + offset) * (1 + modifier + n_scientists * citizen_effect * scientist_bonus)
+            scientist_count = empire.citizens.get("scientist", 0)
+            scientist_bonus = 1.0 + empire.get_effect("scientist_citizen_bonus", 0.0)
+            speed = (self._base_research_speed + empire.get_effect("research_speed_offset", 0.0)) * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self.effective_citizen_effect(empire) * scientist_bonus)
+            remaining -= dt * speed
 
-        # Research speed: (base + offset) * (1 + modifier + n_scientists * citizen_effect * scientist_bonus)
-        scientist_count = empire.citizens.get("scientist", 0)
-        scientist_bonus = 1.0 + empire.get_effect("scientist_citizen_bonus", 0.0)
-        speed = (self._base_research_speed + empire.get_effect("research_speed_offset", 0.0)) * (1.0 + empire.get_effect("research_speed_modifier", 0.0) + scientist_count * self.effective_citizen_effect(empire) * scientist_bonus)
-        remaining -= dt * speed
         if remaining <= 0:
-            remaining = 0.0
-            empire.research_queue = None
-            empire.knowledge[iid] = remaining
-            self._apply_effects(empire, iid)
-            lump = empire.get_effect("gold_lump_sum_after_research", 0.0)
-            if lump > 0:
-                empire.resources["gold"] = empire.resources.get("gold", 0.0) + lump
-            log.info("Empire %d: knowledge %s completed", empire.uid, iid)
-            from gameserver.util.events import ItemCompleted
-            self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
+            if empire.research_queue == iid:
+                empire.research_queue = None
+            self.complete_knowledge(empire, iid)
             return
         empire.knowledge[iid] = remaining
+
+    def complete_knowledge(self, empire: Empire, iid: str) -> None:
+        """Finish researching `iid`: apply effects, pay the gold bounty, emit the event.
+
+        Called both from the normal per-tick progress path above and from
+        knowledge-steal loot (`handlers/battle_task.py`), which can push a
+        winner's *non-active* knowledge item (not necessarily their current
+        `research_queue`) to <=0 remaining directly — that path used to skip
+        completion entirely, silently denying the gold_lump_sum_after_research
+        bounty (Maja's Scholar's Bounty) whenever the stolen item wasn't the
+        winner's actively-queued research.
+        """
+        empire.knowledge[iid] = 0.0
+        self._apply_effects(empire, iid)
+        lump = empire.get_effect("gold_lump_sum_after_research", 0.0)
+        if lump > 0:
+            empire.resources["gold"] = empire.resources.get("gold", 0.0) + lump
+        log.info("Empire %d: knowledge %s completed", empire.uid, iid)
+        from gameserver.util.events import ItemCompleted
+        self._events.emit(ItemCompleted(empire_uid=empire.uid, iid=iid))
 
     # -- Effects ---------------------------------------------------------
 

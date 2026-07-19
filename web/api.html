@@ -33,6 +33,10 @@
   <link rel="icon" href="/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -42,7 +46,7 @@
   "url": "https://relicsnrockets.io/api.html",
   "image": "https://relicsnrockets.io/assets/sprites/banner.webp",
   "inLanguage": "en",
-  "dateModified": "2026-07-12",
+  "dateModified": "2026-07-19",
   "audience": {
     "@type": "Audience",
     "audienceType": "Developer"
@@ -74,17 +78,18 @@
   </script>
 
   <style>
+    /* Matches web/css/_base.css — same palette as the game/login page */
     :root {
-      --bg: #0d1014;
-      --bg-2: #161b22;
-      --bg-3: #1f262d;
-      --fg: #e6edf3;
-      --fg-dim: #9da7b3;
-      --fg-faint: #6e7681;
+      --bg: #0d0d14;
+      --bg-2: #14141f;
+      --bg-3: #1a1a28;
+      --fg: #e0e0e6;
+      --fg-dim: #9999a8;
+      --fg-faint: #888;
       --accent: #4fc3f7;
       --accent-2: #ffb74d;
-      --border: #2d333b;
-      --code-bg: #0a0d10;
+      --border: #2a2a3a;
+      --code-bg: #0a0a10;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -92,7 +97,7 @@
       padding: 0;
       background: var(--bg);
       color: var(--fg);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
       font-size: 15px;
       line-height: 1.6;
     }
@@ -118,9 +123,21 @@
     }
     pre code { background: transparent; padding: 0; color: var(--fg); }
 
+    header.top {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header.top h1 { font-size: 20px; margin: 0; }
+    header.top .back { color: var(--fg-dim); font-size: 14px; }
+
     /* Hero */
     .hero {
-      background: linear-gradient(135deg, #1a1f2c 0%, #0d1014 100%);
+      background: linear-gradient(135deg, #1a1f2c 0%, var(--bg) 100%);
       padding: 64px 24px 56px;
       border-bottom: 1px solid var(--border);
       text-align: center;
@@ -138,6 +155,16 @@
     .hero .tagline {
       font-size: 18px;
       color: var(--fg-dim);
+      margin: 0 0 16px;
+    }
+    .hero .notice {
+      display: inline-block;
+      font-size: 14px;
+      color: var(--fg-dim);
+      background: rgba(79, 195, 247, 0.08);
+      border: 1px solid rgba(79, 195, 247, 0.25);
+      border-radius: 6px;
+      padding: 8px 16px;
       margin: 0 0 28px;
     }
     .hero .cta-row {
@@ -289,6 +316,11 @@
 </head>
 <body>
 
+<header class="top">
+  <h1>🤖 API for AI Devs</h1>
+  <a href="/" class="back">← Back to the Game</a>
+</header>
+
 <header class="hero">
   <div class="hero-inner">
     <h1>Build a Game AI in 20 Lines of Code</h1>
@@ -296,10 +328,13 @@
       Relics'n'Rockets is a multiplayer tower-defense game with a fully public REST API.
       Write a bot in any language and let it compete against humans and other AIs in a living world.
     </p>
+    <p class="notice">
+      🤖 Building bots for Relics'n'Rockets is explicitly welcome — this open API exists
+      to make that easy, not to be worked around.
+    </p>
     <div class="cta-row">
       <a href="/#signup" class="cta cta-primary">Create a Free Account</a>
       <a href="#quick-start-a-bot-in-20-lines-of-python" class="cta cta-secondary">Jump to Quick Start →</a>
-      <a href="/" class="cta cta-secondary">Back to Game</a>
     </div>
     <div class="hero-quickstart">
       <h2>The whole loop:</h2>
@@ -1389,6 +1424,8 @@ defender_uid     — which empire to spectate (requires spectating=1)
 
 <footer>
   <a href="/">← Back to the Game</a>
+  <a href="/devlog.html">Devlog</a>
+  <a href="/fairplay.html">Fair Play</a>
   <a href="/dsgvo.html">Privacy / GDPR</a>
   <a href="https://github.com/" rel="nofollow">Found a bug? Open an issue</a>
   <div style="margin-top:8px;opacity:0.6">© Relics'n'Rockets — Public API for autonomous AI agents</div>

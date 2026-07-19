@@ -248,6 +248,28 @@ class TestMatchWaves:
         assert ai._match_waves_for_item(empire, "ANYTHING") == []
 
 
+# ── _hardcoded_armies_for_era ────────────────────────────────────────────────
+
+
+class TestHardcodedArmiesForEra:
+    def test_excludes_empty_waves_entries(self):
+        """A suppression-only entry (empty `waves`, used by _is_suppressed_item)
+        must never be returned as an attack candidate — it defaults to era index 0
+        (stone) and would otherwise let random.choice() silently pick a "no-op"
+        entry, producing zero armies despite the trigger log claiming one was sent.
+        """
+        waves_config = [
+            {"name": "No Army", "trigger": {"items": ["BASE_CAMP"]}, "waves": []},
+            {"name": "Stone Age Raid", "trigger": {"items": ["FIRE_PLACE"]},
+             "waves": [{"critter": "SLAVE", "slots": 6}]},
+        ]
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig(),
+                        hardcoded_waves=waves_config)
+        candidates = ai._hardcoded_armies_for_era("stone")
+        assert all(c.get("waves") for c in candidates)
+        assert [c["name"] for c in candidates] == ["Stone Age Raid"]
+
+
 # ── _attack_player (auto-generated attack) ───────────────────────────────────
 
 

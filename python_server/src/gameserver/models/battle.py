@@ -70,6 +70,15 @@ class BattleState:
     defender_losses: dict[str, float] = field(default_factory=dict)
     defender_gold_earned: float = 0.0
 
+    # Anti-farming protection: attacker uids (subset of attacker_uids) that had
+    # already beaten this defender >= anti_farm_win_threshold times in the
+    # trailing anti_farm_window_hours as of when this battle was created.
+    # Decided once at battle creation (see handlers/battle_task.py's new-battle
+    # path) and reused for the whole battle: it gates both the live 3x defender
+    # gold bonus (engine/battle_service.py, on each critter kill) and the
+    # attacker-side culture/ruler-XP penalty applied at battle end.
+    farming_attacker_uids: set[int] = field(default_factory=set)
+
     defender_life_at_end: float | None = None  # snapshot before post-battle effects
 
     critters_spawned: int = 0

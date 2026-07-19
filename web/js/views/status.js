@@ -8,7 +8,7 @@
 import { eventBus } from '../events.js';
 import { pageTitle } from '../lib/page_title.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
-import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition, showIconLegend } from '../lib/format.js';
+import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition, fmtTrophyProgress, showIconLegend } from '../lib/format.js';
 import { escHtml } from '../lib/html.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
@@ -1708,6 +1708,12 @@ function _showTrophyOverlay(iid) {
       ? `<div style="color:#66bb6a;font-size:0.85em;margin-bottom:8px">✓ Earned ${new Date(trophy.earned_at * 1000).toLocaleDateString()}</div>`
       : `<div style="color:#888;font-size:0.85em;margin-bottom:8px">Locked</div>`;
     const conditionLabel = fmtTrophyCondition(trophy.condition);
+    const progressText = trophy.earned
+      ? '✅'
+      : fmtTrophyProgress(trophy.progress_current, trophy.progress_target);
+    const progressBar = (!trophy.earned && trophy.progress_target)
+      ? `<div class="trophy-progress-bar"><div class="trophy-progress-bar-fill" style="width:${Math.min(100, 100 * (trophy.progress_current ?? 0) / trophy.progress_target)}%"></div></div>`
+      : '';
     const counter = `<div style="font-size:0.75em;color:#555;text-align:center;margin-bottom:6px">${idx + 1} / ${trophies.length}</div>`;
     overlay.innerHTML = `
       <button class="trophy-nav trophy-nav--prev" title="Previous">&#8249;</button>
@@ -1720,7 +1726,8 @@ function _showTrophyOverlay(iid) {
         <div class="tt-dp-name">${trophy.name}</div>
         ${earnedLine}
         <div class="tt-dp-desc">${trophy.description}</div>
-        <div style="font-size:0.82em;color:#888;margin-bottom:10px">Condition: ${conditionLabel}</div>
+        <div style="font-size:0.82em;color:#888;margin-bottom:4px">Condition: ${conditionLabel}${progressText ? ` (${progressText})` : ''}</div>
+        ${progressBar}
         ${effectRows ? `<div style="font-size:0.82em;color:#9999a8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Bonus</div><div class="tt-dp-props">${effectRows}</div>` : ''}
       </div>
       <button class="trophy-nav trophy-nav--next" title="Next">&#8250;</button>

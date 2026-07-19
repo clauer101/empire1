@@ -431,14 +431,14 @@ LAST_BREATH:
   effects: []
 LUCKER:
   name: Lucker
-  description: Ten times. Ten occasions where fate, physics, and sheer improbability
+  description: Twenty-five times. Ten occasions where fate, physics, and sheer improbability
     conspired to leave exactly one hit point standing between your kingdom and total
     collapse — and every single time, you walked away. The universe is either on your
     side or deeply confused.
   image: assets/sprites/trophies/trophy_v2.webp
   condition:
     type: one_hp_def_wins
-    threshold: 10
+    threshold: 25
   effects:
     life_regen_modifier: 0.0005
 FIRST_NEOLITHIC:

@@ -54,6 +54,11 @@ def _check(svc: TrophyService, condition: dict, stats: dict,
     return svc._check_condition(condition, stats, empire, era_firsts)
 
 
+def _progress(svc: TrophyService, condition: dict, stats: dict,
+              empire: "Empire | None" = None, era_firsts: "dict | None" = None) -> tuple[float, float]:
+    return svc._condition_progress(condition, stats, empire, era_firsts)
+
+
 # ── Legacy combined counters ───────────────────────────────────────────────────
 
 class TestDefenseWon:
@@ -185,6 +190,37 @@ class TestDirectStatConditions:
     def test_missing_stat_column_is_zero(self):
         svc = _svc()
         assert not _check(svc, _cond("coward_attacks", 1), {})
+
+
+# ── Single-battle peak conditions report binary progress ───────────────────────
+
+class TestSingleEventThresholdProgress:
+    """max_artifacts_stolen_one_battle / max_artifacts_lost_one_battle must reach
+    their threshold within one battle, so progress should read 0/1 or 1/1 —
+    never e.g. 1/2, which would misleadingly suggest accumulating across battles."""
+
+    @pytest.mark.parametrize("ctype", [
+        "max_artifacts_stolen_one_battle",
+        "max_artifacts_lost_one_battle",
+    ])
+    def test_below_threshold_reports_zero_of_one(self, ctype):
+        svc = _svc()
+        current, target = _progress(svc, _cond(ctype, 2), {ctype: 1})
+        assert (current, target) == (0.0, 1.0)
+
+    @pytest.mark.parametrize("ctype", [
+        "max_artifacts_stolen_one_battle",
+        "max_artifacts_lost_one_battle",
+    ])
+    def test_at_threshold_reports_one_of_one(self, ctype):
+        svc = _svc()
+        current, target = _progress(svc, _cond(ctype, 2), {ctype: 2})
+        assert (current, target) == (1.0, 1.0)
+
+    def test_missing_stat_reports_zero_of_one(self):
+        svc = _svc()
+        current, target = _progress(svc, _cond("max_artifacts_stolen_one_battle", 2), {})
+        assert (current, target) == (0.0, 1.0)
 
 
 # ── Ruler level ───────────────────────────────────────────────────────────────
@@ -483,3 +519,29 @@ class TestCheckAndAward:
 
         assert set(newly) == set(era_first_iids) | {"TRAILBLAZER"}
         assert "TRAILBLAZER" in empire.trophies
+
+
+# ── get_condition_progress_all ─────────────────────────────────────────────────
+
+class TestGetConditionProgressAll:
+    """Progress fraction (current/target) for the /api/empire/trophies REST response."""
+
+    def _make_svc(self) -> TrophyService:
+        svc = TrophyService.__new__(TrophyService)
+        svc._database = MagicMock()
+        svc._database.get_empire_stats = AsyncMock(return_value={"defense_won_human": 7})
+        svc._database.get_era_firsts = AsyncMock(return_value=[])
+        item = MagicMock(spec=ItemDetails)
+        item.iid = "TEST_TROPHY"
+        item.item_type = ItemType.TROPHY
+        item.condition = {"type": "defense_won_human", "threshold": 50}
+        svc._upgrade_provider = MagicMock()
+        svc._upgrade_provider.items = {"TEST_TROPHY": item}
+        svc._empire_service = None
+        return svc
+
+    async def test_returns_current_and_target_for_unearned_trophy(self):
+        svc = self._make_svc()
+        empire = _empire()
+        progress = await svc.get_condition_progress_all(uid=1, empire=empire)
+        assert progress["TEST_TROPHY"] == (7.0, 50.0)

@@ -546,12 +546,20 @@ function _initCanvas() {
       if (isOnPath) {
         grid.rangeOverlay = null;
         grid._dirty = true;
-        if (inBattle) {
-          _showTileDetails(q, r, { type: 'path' });
-        } else if (tileData?.type === 'castle' || tileData?.type === 'spawnpoint') {
+        // The displayed path is frozen for the whole battle (see setDisplayPath) and
+        // can end up overlapping a tile whose *actual* type has since changed — e.g. a
+        // tower sold mid-battle turns its tile back to 'empty' even though that
+        // coordinate is still drawn as part of the (intentionally unmoving) path
+        // overlay. The real tile type must win here, or the build menu never opens
+        // for that tile again for the rest of the battle. The backend is still the
+        // authority: it rejects placing a new tower directly on the live critter
+        // path (handle_map_save_request), so it's safe to just try.
+        if (tileData?.type === 'castle' || tileData?.type === 'spawnpoint') {
           _showTileDetails(q, r, tileData);
         } else if (tileData?.type === 'empty' && _spectateDefenderUid == null) {
           _placement?.openPlacementMenu(q, r);
+        } else if (inBattle) {
+          _showTileDetails(q, r, { type: 'path' });
         }
         return;
       }

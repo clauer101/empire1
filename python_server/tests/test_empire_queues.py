@@ -69,6 +69,24 @@ class TestBuildQueue:
 
         assert empire.build_queue is None
 
+    def test_pre_zeroed_remaining_still_completes_fully(self, service: EmpireService, empire: Empire):
+        """Regression: a building whose remaining was zeroed by something other
+        than this method's own decrement (e.g. a future sabotage/theft feature
+        mutating empire.buildings[iid] directly) must still run the full
+        completion path — apply_effects + ItemCompleted — not just clear the
+        queue silently. See the analogous, real-world research-theft bug this
+        mirrors in TestResearchQueue.
+        """
+        empire.buildings["granary"] = 0.0  # already zeroed by an external mutation
+        empire.build_queue = "granary"
+        service._upgrades.get_effects.return_value = {"gold_offset": 5.0}
+
+        service._progress_buildings(empire, dt=1.0)
+
+        assert empire.build_queue is None
+        assert empire.effects.get("gold_offset") == pytest.approx(5.0)
+        service._events.emit.assert_called_once()
+
 
 # ── Research queue ─────────────────────────────────────────────────────
 
@@ -165,6 +183,33 @@ class TestResearchQueue:
         service._progress_knowledge(empire, dt=1.0)
 
         assert empire.research_queue is None
+
+    def test_research_finished_by_theft_still_applies_effects_and_gold_lump(
+        self, service: EmpireService, empire: Empire,
+    ):
+        """Regression: handlers/battle_task.py's knowledge-steal loot decrements
+        an attacker's own `empire.knowledge[iid]` directly (outside this method's
+        tick), which can push it to 0. Previously the top-of-function guard for
+        "already <= 0" just cleared research_queue and returned — skipping
+        apply_effects, the gold_lump_sum_after_research bonus (e.g. Maja's
+        Erudite Synergy), and the ItemCompleted event entirely. A reported bug:
+        a player's research finished this way and Maja's bonus never fired.
+        """
+        empire.knowledge["iron_smelting"] = 0.0  # zeroed by theft, not by this method
+        empire.research_queue = "iron_smelting"
+        empire.resources["gold"] = 100.0
+        # recalculate_effects() rebuilds empire.effects from scratch from
+        # completed items — a pre-set empire.effects value would just be wiped,
+        # so the lump-sum bonus has to come through the (mocked) item catalog,
+        # same as it would from a real ruler skill or tech in production.
+        service._upgrades.get_effects.return_value = {"damage_modifier": 0.2, "gold_lump_sum_after_research": 400.0}
+
+        service._progress_knowledge(empire, dt=1.0)
+
+        assert empire.research_queue is None
+        assert empire.effects.get("damage_modifier") == pytest.approx(0.2)
+        assert empire.resources["gold"] == pytest.approx(500.0)
+        service._events.emit.assert_called_once()
 
 
 # ── Research speed formula contract ───────────────────────────────────

@@ -167,6 +167,12 @@ class GameConfig:
     steal_power_thresholds: list[float] = field(default_factory=lambda: [80,180,400,800,1500,3000,6000,12000,25000])
     steal_min_multiplier: float = 0.10
 
+    # -- Anti-farming protection (repeated PvP wins vs. the same defender) --
+    anti_farm_win_threshold: int = 4         # wins allowed before penalty kicks in
+    anti_farm_window_hours: float = 24.0
+    anti_farm_culture_multiplier: float = 0.33
+    anti_farm_defender_gold_multiplier: float = 3.0
+
     # -- Ruler aura --------------------------------------------------
     ruler_aura_effects: Dict[str, float] = field(default_factory=lambda: {
         "slow_tower_modifier": 0.3,

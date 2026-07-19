@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower &amp; Critter Changes — Relics'n'Rockets</title>
+  <meta name="description" content="Every tower and critter balance change in Relics'n'Rockets, era by era — damage, reload, health, new units, and retirements." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://relicsnrockets.io/tower-critter-changes.html" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://relicsnrockets.io/tower-critter-changes.html" />
+  <meta property="og:title" content="Tower &amp; Critter Changes — Relics'n'Rockets" />
+  <meta property="og:description" content="Every tower and critter balance change in Relics'n'Rockets, era by era — damage, reload, health, new units, and retirements." />
+  <meta property="og:site_name" content="Relics'n'Rockets" />
+
+  <link rel="icon" href="/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --danger:      #ef5350;
+      --success:     #66bb6a;
+      --warning:     #ffa726;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --font:        'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    #topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    #meta { font-size: 11px; color: var(--text-dim); }
+    #topbar-links { display: flex; gap: 14px; margin-left: auto; font-size: 12px; }
+    #topbar-links a { color: var(--text-dim); text-decoration: none; opacity: 0.85; }
+    #topbar-links a:hover { color: var(--accent); opacity: 1; text-decoration: underline; }
+    #meta b { color: var(--text); }
+
+    #filterbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 8px 20px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-label { font-size: 11px; color: var(--text-dim); }
+    .filter-chip {
+      padding: 3px 10px; font-size: 11px; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 20px;
+      cursor: pointer; background: var(--surface); color: var(--text-dim);
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .filter-chip:hover { border-color: var(--text-dim); color: var(--text); }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+    #content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+    }
+
+    .era-group { margin-bottom: 30px; }
+    .era-group-header {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 4px 2px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .era-group-title { font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+    .era-group-count { font-size: 11px; color: var(--text-dim); }
+
+    .era-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 20px;
+      align-items: start;
+    }
+    .category-block { margin-bottom: 18px; }
+    .category-title {
+      font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 0.6px; margin-bottom: 8px; font-weight: 700;
+    }
+
+    @media (max-width: 800px) {
+      .era-columns { grid-template-columns: 1fr; }
+    }
+
+    .item-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .item-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    .item-name { font-weight: 700; font-size: 12.5px; }
+    .item-iid { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+    .status-badge {
+      margin-left: auto; font-size: 10px; font-weight: 700;
+      padding: 1px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .status-badge.added   { background: #0d2a12; color: var(--success); border: 1px solid #1f5c2a; }
+    .status-badge.removed { background: #2a0d0d; color: var(--danger);  border: 1px solid #5c1f1f; }
+    .status-badge.changed { background: #2a2005; color: var(--warning); border: 1px solid #5c4a10; }
+
+    .field-table { width: 100%; border-collapse: collapse; }
+    .field-table td {
+      padding: 5px 12px; font-size: 11.5px; font-family: var(--mono);
+      border-top: 1px solid var(--border);
+    }
+    .field-table tr:first-child td { border-top: none; }
+    .field-name { color: var(--text-dim); width: 160px; white-space: nowrap; }
+    .field-old { color: var(--danger); text-decoration: line-through; opacity: 0.75; }
+    .field-arrow { color: var(--text-dim); padding: 0 4px; }
+    .field-new { color: var(--success); font-weight: 600; }
+    .field-delta { color: var(--text-dim); font-size: 10px; margin-left: 6px; }
+    .field-unchanged { color: var(--text); opacity: 0.7; }
+
+    .full-fields {
+      padding: 8px 12px;
+      display: flex; flex-wrap: wrap; gap: 4px 14px;
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    }
+    .full-fields b { color: var(--text); font-weight: 600; }
+
+    #empty-state {
+      padding: 60px 20px; text-align: center; color: var(--text-dim); font-size: 14px;
+    }
+
+    @media (max-width: 700px) {
+      #content { padding: 12px 8px 40px; }
+      .field-name { width: 110px; }
+      #topbar { padding: 8px 10px; }
+      #filterbar { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>🔧 Tower &amp; Critter Changes</h1>
+  <span id="meta"></span>
+  <div id="topbar-links">
+    <a href="/">← Game</a>
+    <a href="/devlog.html">Devlog</a>
+    <a href="/fairplay.html">Fair Play</a>
+    <a href="/api.html">API for AI devs</a>
+  </div>
+</div>
+
+<div id="filterbar">
+  <span class="filter-label">Category:</span>
+  <button class="filter-chip active" data-cat="all">All</button>
+  <button class="filter-chip" data-cat="structures">Towers</button>
+  <button class="filter-chip" data-cat="critters">Critters</button>
+  <span class="filter-label" style="margin-left:12px">Status:</span>
+  <button class="filter-chip active" data-status="all">All</button>
+  <button class="filter-chip" data-status="changed">Changed</button>
+  <button class="filter-chip" data-status="added">Added</button>
+  <button class="filter-chip" data-status="removed">Removed</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+const GS = window.location.origin;
+
+function fmtVal(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+function fmtNum(n) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function fmtDelta(oldVal, newVal) {
+  if (typeof oldVal !== 'number' || typeof newVal !== 'number') return '';
+  const d = newVal - oldVal;
+  if (d === 0) return '';
+  const pct = oldVal !== 0 ? (100 * d / oldVal) : null;
+  const sign = d > 0 ? '+' : '';
+  const pctStr = pct !== null ? ` (${sign}${pct.toFixed(0)}%)` : '';
+  return `${sign}${fmtNum(d)}${pctStr}`;
+}
+
+// Fields never worth showing on this page — cosmetic/asset refs or noisy
+// per-unit bookkeeping that doesn't inform a balance review.
+const SKIP_FIELDS = new Set([
+  'name', 'sprite', 'shot_sprite', 'animation', 'requirements', 'description',
+  'value', 'time_between', 'is_boss', 'capture', 'bonus', 'spawn_on_death', 'scale',
+]);
+// Additionally hidden on towers only — not meaningful for a balance review there.
+const TOWER_SKIP_FIELDS = new Set([
+  'era', 'shot_speed', 'projectile_y_offset', 'upgrade_costs', 'max_level', 'select', 'costs',
+]);
+
+// ── Build one item card ─────────────────────────────────────────────
+function buildItemCard(iid, status, payload, cat) {
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  card.dataset.status = status;
+
+  const skip = cat === 'structures' ? new Set([...SKIP_FIELDS, ...TOWER_SKIP_FIELDS]) : SKIP_FIELDS;
+  const name = payload.name || iid;
+
+  let body = '';
+  if (status === 'changed') {
+    const changedRows = Object.entries(payload.fields)
+      .filter(([field]) => !skip.has(field))
+      .map(([field, { old, new: newVal }]) => {
+        const delta = fmtDelta(old, newVal);
+        return `<tr>
+          <td class="field-name">${field}</td>
+          <td class="field-old">${fmtVal(old)}</td>
+          <td class="field-arrow">→</td>
+          <td class="field-new">${fmtVal(newVal)}${delta ? `<span class="field-delta">${delta}</span>` : ''}</td>
+        </tr>`;
+      }).join('');
+    const unchangedRows = Object.entries(payload.current || {})
+      .filter(([k]) => !skip.has(k) && !(k in payload.fields))
+      .map(([field, val]) => `<tr>
+        <td class="field-name">${field}</td>
+        <td class="field-unchanged" colspan="3">${fmtVal(val)}</td>
+      </tr>`).join('');
+    body = `<table class="field-table"><tbody>${changedRows}${unchangedRows}</tbody></table>`;
+  } else {
+    const entries = Object.entries(payload).filter(([k]) => !skip.has(k));
+    body = `<div class="full-fields">${entries.map(([k, v]) =>
+      `<span><b>${k}</b>: ${fmtVal(v)}</span>`).join('')}</div>`;
+  }
+
+  card.innerHTML = `
+    <div class="item-header">
+      <span class="item-name">${name}</span>
+      <span class="item-iid">${iid}</span>
+      <span class="status-badge ${status}">${status}</span>
+    </div>
+    ${body}
+  `;
+  return card;
+}
+
+// ── Render ───────────────────────────────────────────────────────────
+// Fallback labels — /api/era-map may be proxied to a service that doesn't
+// return labels_en (e.g. direct webserver access bypassing nginx); era keys
+// themselves are effectively static, so hardcoding the display text here is
+// safe and keeps the page working without that field.
+let DATA = null;
+let ERA_ORDER = ['stone', 'neolithic', 'bronze', 'iron', 'medieval', 'renaissance', 'industrial', 'modern', 'future'];
+let ERA_LABELS = {
+  stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
+  medieval: 'Medieval', renaissance: 'Renaissance', industrial: 'Industrial', modern: 'Modern', future: 'Future',
+};
+let activeCat = 'all';
+let activeStatus = 'all';
+
+function render() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  // era -> category -> status -> [[iid, payload], ...]
+  const byEra = new Map();
+
+  const categories = activeCat === 'all' ? Object.keys(DATA.categories) : [activeCat];
+  const statuses = activeStatus === 'all' ? ['changed', 'added', 'removed'] : [activeStatus];
+
+  for (const cat of categories) {
+    const diff = DATA.categories[cat];
+    if (!diff) continue;
+    for (const status of statuses) {
+      for (const [iid, payload] of Object.entries(diff[status] || {})) {
+        const era = payload.era || 'unknown';
+        if (!byEra.has(era)) byEra.set(era, {});
+        const eraBucket = byEra.get(era);
+        if (!eraBucket[cat]) eraBucket[cat] = {};
+        if (!eraBucket[cat][status]) eraBucket[cat][status] = [];
+        eraBucket[cat][status].push([iid, payload]);
+      }
+    }
+  }
+
+  const eraKeys = [...byEra.keys()].sort((a, b) => {
+    const ia = ERA_ORDER.indexOf(a), ib = ERA_ORDER.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+
+  if (!eraKeys.length) {
+    content.innerHTML = '<div id="empty-state">No changes for this selection.</div>';
+    document.getElementById('meta').textContent = '';
+    return;
+  }
+
+  let totalItems = 0;
+
+  for (const era of eraKeys) {
+    const eraBucket = byEra.get(era);
+
+    const section = document.createElement('div');
+    section.className = 'era-group';
+
+    const columns = document.createElement('div');
+    columns.className = 'era-columns';
+
+    let eraItemCount = 0;
+    // Fixed left/right order regardless of which categories are present.
+    for (const cat of ['critters', 'structures']) {
+      const statusMap = eraBucket[cat];
+      if (!statusMap) continue;
+      const catLabel = cat === 'structures' ? 'Towers' : 'Critters';
+      const catDiv = document.createElement('div');
+      catDiv.className = 'category-block';
+      catDiv.innerHTML = `<div class="category-title">${catLabel}</div>`;
+      const catContainer = document.createElement('div');
+      for (const status of ['changed', 'added', 'removed']) {
+        const items = (statusMap[status] || []).sort((a, b) => a[0].localeCompare(b[0]));
+        for (const [iid, payload] of items) {
+          catContainer.appendChild(buildItemCard(iid, status, payload, cat));
+          eraItemCount++;
+        }
+      }
+      catDiv.appendChild(catContainer);
+      columns.appendChild(catDiv);
+    }
+    section.appendChild(columns);
+    totalItems += eraItemCount;
+
+    const header = document.createElement('div');
+    header.className = 'era-group-header';
+    header.innerHTML = `
+      <span class="era-group-title">${ERA_LABELS[era] || era}</span>
+      <span class="era-group-count">${eraItemCount} change${eraItemCount === 1 ? '' : 's'}</span>
+    `;
+    section.prepend(header);
+    content.appendChild(section);
+  }
+
+  document.getElementById('meta').innerHTML =
+    `Since <b>${DATA.since}</b> (base: <span style="font-family:var(--mono)">${DATA.categories.structures?.base_revision?.slice(0, 8) || '?'}</span>) · <b>${totalItems}</b> changes`;
+}
+
+// ── Filters ──────────────────────────────────────────────────────────
+document.getElementById('filterbar').addEventListener('click', (e) => {
+  const chip = e.target.closest('.filter-chip');
+  if (!chip) return;
+  if (chip.dataset.cat !== undefined) {
+    document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeCat = chip.dataset.cat;
+  } else if (chip.dataset.status !== undefined) {
+    document.querySelectorAll('[data-status]').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeStatus = chip.dataset.status;
+  }
+  render();
+});
+
+// ── Load ─────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    const [changesR, eraMapR] = await Promise.all([
+      fetch('tower-critter-changes.json'),
+      fetch(`${GS}/api/era-map`),
+    ]);
+    if (!changesR.ok) throw new Error(`HTTP ${changesR.status} loading tower-critter-changes.json`);
+    DATA = await changesR.json();
+    if (eraMapR.ok) {
+      const em = await eraMapR.json();
+      if (em.eras?.length) ERA_ORDER = em.eras;
+      if (em.labels_en && Object.keys(em.labels_en).length) ERA_LABELS = em.labels_en;
+    }
+    render();
+  } catch (err) {
+    document.getElementById('content').innerHTML =
+      `<div id="empty-state" style="color:var(--danger)">Error: ${err.message}</div>`;
+  }
+})();
+</script>
+</body>
+</html>

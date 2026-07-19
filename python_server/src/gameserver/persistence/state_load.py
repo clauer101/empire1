@@ -280,6 +280,14 @@ def _deserialize_critter(d: dict[str, Any]) -> Critter:
         xp=d.get("xp", 0.0),
         is_boss=d.get("is_boss", False),
         scale=float(d.get("scale", 1.0)),
+        value=d.get("value", 0.0),
+        damage=d.get("damage", 1.0),
+        slots=d.get("slots", 1),
+        owner_uid=d.get("owner_uid", 0),
+        reached_goal=d.get("reached_goal", False),
+        is_ruler=d.get("is_ruler", False),
+        aura_radius=d.get("aura_radius", 0.0),
+        aura_effects=dict(d.get("aura_effects", {})),
     )
 
 

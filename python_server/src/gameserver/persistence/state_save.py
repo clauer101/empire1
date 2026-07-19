@@ -232,6 +232,14 @@ def _serialize_critter(c: Critter) -> dict[str, Any]:
         "xp": c.xp,
         "is_boss": c.is_boss,
         "scale": c.scale,
+        "value": c.value,
+        "damage": c.damage,
+        "slots": c.slots,
+        "owner_uid": c.owner_uid,
+        "reached_goal": c.reached_goal,
+        "is_ruler": c.is_ruler,
+        "aura_radius": c.aura_radius,
+        "aura_effects": dict(c.aura_effects),
     }
 
 

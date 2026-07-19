@@ -5,7 +5,7 @@
   <!-- Landing page / login -->
   <url>
     <loc>https://relicsnrockets.io/</loc>
-    <lastmod>2026-05-28</lastmod>
+    <lastmod>2026-07-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -21,9 +21,33 @@
   <!-- Public API documentation (for external AI bot developers) -->
   <url>
     <loc>https://relicsnrockets.io/api.html</loc>
-    <lastmod>2026-05-28</lastmod>
+    <lastmod>2026-07-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+
+  <!-- Devlog / changelog -->
+  <url>
+    <loc>https://relicsnrockets.io/devlog.html</loc>
+    <lastmod>2026-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Tower & critter balance changes -->
+  <url>
+    <loc>https://relicsnrockets.io/tower-critter-changes.html</loc>
+    <lastmod>2026-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Fair Play / exploit policy -->
+  <url>
+    <loc>https://relicsnrockets.io/fairplay.html</loc>
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 
   <!-- Legal / GDPR -->

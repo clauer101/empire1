@@ -60,6 +60,7 @@ def _era_index(iid: str) -> int | None:
 _STRUCTURE_IDS = [iid for iid in CATALOG if CATALOG[iid].item_type == ItemType.STRUCTURE]
 _CRITTER_IDS   = [iid for iid in CATALOG if CATALOG[iid].item_type == ItemType.CRITTER]
 _SC_IDS        = _STRUCTURE_IDS + _CRITTER_IDS
+_KNOWLEDGE_ONLY_IDS = [iid for iid in CATALOG if CATALOG[iid].item_type == ItemType.KNOWLEDGE]
 
 
 # =============================================================================
@@ -138,4 +139,33 @@ class TestAtLeastOneKnowledgeRequirement:
         assert knowledge_reqs, (
             f"{iid} has no knowledge requirement. "
             f"Requirements: {reqs}"
+        )
+
+
+# =============================================================================
+# Test 4: knowledge items require own-era or predecessor-era prerequisites
+# =============================================================================
+
+class TestKnowledgeRequiresOwnOrPredecessorEra:
+    """Each knowledge item must have ≥1 requirement from its own era or the
+    immediately preceding era (no skipping straight past the predecessor era)."""
+
+    @pytest.mark.parametrize("iid", _KNOWLEDGE_ONLY_IDS)
+    def test_has_own_or_predecessor_era_requirement(self, iid):
+        item = CATALOG[iid]
+        own_era = _ALL_ERAS.get(iid)
+        if own_era is None:
+            pytest.skip(f"{iid} has no era annotation in YAML sections")
+
+        reqs = item.requirements
+        if not reqs:
+            pytest.skip(f"{iid} has no requirements (starter item)")
+
+        own_idx = ERA_INDEX[own_era]
+        allowed_idx = {own_idx, own_idx - 1}
+        near_era_reqs = [r for r in reqs if _era_index(r) in allowed_idx]
+        assert near_era_reqs, (
+            f"{iid} (era={own_era}) has no requirement from its own or predecessor "
+            f"era. Requirements: {reqs} — their eras: "
+            f"{[_ALL_ERAS.get(r, '?') for r in reqs]}"
         )

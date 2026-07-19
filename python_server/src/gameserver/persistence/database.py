@@ -56,6 +56,13 @@ CREATE TABLE IF NOT EXISTS era_firsts (
     empire_name TEXT NOT NULL DEFAULT '',
     reached_at  INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS attacker_win_log (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    attacker_uid  INTEGER NOT NULL,
+    defender_uid  INTEGER NOT NULL,
+    ts            INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_attacker_win_log_pair ON attacker_win_log(attacker_uid, defender_uid, ts);
 CREATE TABLE IF NOT EXISTS artifact_holds (
     uid               INTEGER NOT NULL,
     artifact_iid      TEXT NOT NULL,
@@ -536,6 +543,46 @@ class Database:
             row = await cursor.fetchone()
         return self._msg_row_to_dict(row)
 
+    async def get_attacker_win_messages(self, since_iso: str) -> list[dict[str, Any]]:
+        """Return {to_uid, body, sent_at} for system "You Won!" attacker battle
+        reports sent at/after since_iso.
+
+        Used to backfill attacker_win_log (anti-farming protection) from
+        message history, so already-repeated attacks aren't forgotten just
+        because the feature launched mid-stream.
+        """
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT to_uid, body, sent_at FROM messages"
+            " WHERE from_uid = 0 AND sent_at >= ? AND body LIKE '⚔ You Won!%'"
+            " ORDER BY sent_at",
+            (since_iso,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [{"to_uid": r[0], "body": r[1], "sent_at": r[2]} for r in rows]
+
+    async def get_active_anti_farm_pairs(
+        self, since_ts: int, threshold: int,
+    ) -> list[dict[str, Any]]:
+        """Return {attacker_uid, defender_uid, win_count, last_win_ts} for every
+        (attacker, defender) pair currently at/over the anti-farm win threshold
+        within the trailing window — i.e. protection is active for that pair.
+        """
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT attacker_uid, defender_uid, COUNT(*) AS win_count, MAX(ts) AS last_win_ts"
+            " FROM attacker_win_log WHERE ts >= ?"
+            " GROUP BY attacker_uid, defender_uid"
+            " HAVING win_count >= ?"
+            " ORDER BY win_count DESC",
+            (since_ts, threshold),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [
+            {"attacker_uid": r[0], "defender_uid": r[1], "win_count": r[2], "last_win_ts": r[3]}
+            for r in rows
+        ]
+
     async def get_inbox(self, uid: int) -> list[dict[str, Any]]:
         """Return all messages received by uid, newest first."""
         assert self._conn is not None
@@ -846,6 +893,43 @@ class Database:
             await self._conn.commit()
         except Exception:
             log.warning("record_artifact_acquired failed uid=%d iid=%s", uid, artifact_iid, exc_info=True)
+
+    async def count_recent_attacker_wins(
+        self, attacker_uid: int, defender_uid: int, since_ts: int,
+    ) -> int:
+        """Count attacker_uid's wins against defender_uid at/after since_ts.
+
+        Used by the anti-farming protection to decide, once at battle
+        creation, whether this attacker has already beaten this defender too
+        often within the rolling window.
+        """
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT COUNT(*) FROM attacker_win_log WHERE attacker_uid = ? AND defender_uid = ? AND ts >= ?",
+            (attacker_uid, defender_uid, since_ts),
+        ) as cur:
+            row = await cur.fetchone()
+        return row[0] if row else 0
+
+    async def record_attacker_win(self, attacker_uid: int, defender_uid: int, ts: int) -> None:
+        """Record a PvP win for the anti-farming rolling-window count.
+
+        Also prunes this pair's rows older than 48h (well past the anti-farm
+        window) so the table can't grow unbounded.
+        """
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                "DELETE FROM attacker_win_log WHERE attacker_uid = ? AND defender_uid = ? AND ts < ?",
+                (attacker_uid, defender_uid, ts - 172800),
+            )
+            await self._conn.execute(
+                "INSERT INTO attacker_win_log (attacker_uid, defender_uid, ts) VALUES (?, ?, ?)",
+                (attacker_uid, defender_uid, ts),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_attacker_win failed attacker=%d defender=%d", attacker_uid, defender_uid, exc_info=True)
 
     async def record_artifact_lost(self, uid: int, artifact_iid: str, ts: float) -> None:
         """Accumulate hold duration into total_held_secs and clear acquired_at."""

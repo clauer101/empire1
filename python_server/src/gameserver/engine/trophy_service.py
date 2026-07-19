@@ -36,6 +36,23 @@ _DIRECT_STAT_CONDITIONS: frozenset[str] = frozenset({
     "one_hp_def_wins",
 })
 
+# Every condition type _condition_progress()/_check_condition() understand —
+# anything outside this set logs a warning and is treated as never-satisfiable.
+_KNOWN_CONDITION_TYPES: frozenset[str] = _DIRECT_STAT_CONDITIONS | frozenset({
+    "defense_won", "attacks_won", "critters_killed", "hexes_owned",
+    "ruler_level", "path_length", "first_in_era", "all_era_firsts", "all_trophies",
+})
+
+# Subset of _DIRECT_STAT_CONDITIONS whose threshold must be reached within a
+# single battle (not accumulated across battles). Progress for these is
+# reported as binary (0/1 or 1/1) rather than current/threshold, since e.g.
+# "1/2" on max_artifacts_stolen_one_battle would misread as "steal 2 relics
+# total" instead of "steal 2 relics in one engagement".
+_SINGLE_EVENT_THRESHOLD_CONDITIONS: frozenset[str] = frozenset({
+    "max_artifacts_stolen_one_battle",
+    "max_artifacts_lost_one_battle",
+})
+
 
 class TrophyService:
     """Checks trophy conditions and awards trophies to players."""
@@ -56,78 +73,107 @@ class TrophyService:
             if item.item_type == ItemType.TROPHY
         ]
 
+    def _condition_progress(
+        self,
+        condition: dict[str, Any],
+        stats: dict[str, Any],
+        empire: "Empire | None",
+        era_firsts: dict[str, int] | None = None,
+    ) -> tuple[float, float]:
+        """Return (current_value, target) for a trophy condition.
+
+        Used both to check completion (current >= target) and to render a
+        progress fraction/bar for trophies not yet earned. `target` is always
+        the effective threshold to reach — for binary conditions (first_in_era)
+        and meta conditions (all_era_firsts/all_trophies) that means 1 or the
+        sub-trophy count, not the raw `threshold` field.
+        """
+        ctype = condition.get("type", "")
+        threshold = float(condition.get("threshold", 1))
+
+        # --- Legacy combined counters (still supported) ---
+        if ctype == "defense_won":
+            total = (stats.get("defense_won_human") or 0) + (stats.get("defense_won_ai") or 0)
+            return float(total), threshold
+        if ctype == "attacks_won":
+            total = (stats.get("attacks_won_human") or 0) + (stats.get("attacks_won_ai") or 0)
+            return float(total), threshold
+        if ctype == "critters_killed":
+            return float(stats.get("critters_killed") or 0), threshold
+        if ctype == "hexes_owned":
+            return float(len(empire.hex_map) if empire is not None else 0), threshold
+
+        # --- Single-battle peak conditions: binary, not a cumulative counter.
+        # The threshold must be reached within one battle, so "3/2" or "1/2"
+        # would misleadingly read as "collect 2 across battles". Report
+        # 1/1 once any battle has hit the threshold, 0/1 otherwise.
+        if ctype in _SINGLE_EVENT_THRESHOLD_CONDITIONS:
+            reached = (stats.get(ctype) or 0) >= threshold
+            return (1.0 if reached else 0.0), 1.0
+
+        # --- Direct per-season stat column ---
+        if ctype in _DIRECT_STAT_CONDITIONS:
+            return float(stats.get(ctype) or 0), threshold
+
+        # --- Live / snapshot conditions ---
+        if ctype == "ruler_level":
+            if empire is None or self._empire_service is None:
+                return 0.0, threshold
+            level = self._empire_service.ruler_level_from_xp(empire.ruler.xp if empire.ruler else 0.0)
+            return float(level), threshold
+
+        if ctype == "path_length":
+            if empire is None:
+                return 0.0, threshold
+            from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+            path = find_path_from_spawn_to_castle(empire.hex_map) or []
+            return float(len(path)), threshold
+
+        if ctype == "first_in_era":
+            if empire is None or era_firsts is None:
+                return 0.0, 1.0
+            era_key = condition.get("era", "")
+            return (1.0 if era_firsts.get(era_key) == empire.uid else 0.0), 1.0
+
+        # --- Meta conditions ---
+        if ctype == "all_era_firsts":
+            if empire is None:
+                return 0.0, 1.0
+            era_first_trophies = [
+                t for t in self._trophies()
+                if t.condition.get("type") == "first_in_era"
+            ]
+            target = float(len(era_first_trophies)) or 1.0
+            current = float(sum(1 for t in era_first_trophies if t.iid in empire.trophies))
+            return current, target
+
+        if ctype == "all_trophies":
+            if empire is None:
+                return 0.0, 1.0
+            meta_types = {"all_era_firsts", "all_trophies"}
+            non_meta = [
+                t for t in self._trophies()
+                if t.condition.get("type") not in meta_types
+            ]
+            target = float(len(non_meta)) or 1.0
+            current = float(sum(1 for t in non_meta if t.iid in empire.trophies))
+            return current, target
+
+        log.warning("Unknown trophy condition type: %s", ctype)
+        return 0.0, threshold
+
     def _check_condition(
         self,
         condition: dict[str, Any],
         stats: dict[str, Any],
         empire: "Empire | None",
         era_firsts: dict[str, int] | None = None,
-        all_trophy_iids: set[str] | None = None,
     ) -> bool:
-        ctype = condition.get("type", "")
-        threshold = condition.get("threshold", 1)
-
-        # --- Legacy combined counters (still supported) ---
-        if ctype == "defense_won":
-            total = (stats.get("defense_won_human") or 0) + (stats.get("defense_won_ai") or 0)
-            return total >= int(threshold)
-        if ctype == "attacks_won":
-            total = (stats.get("attacks_won_human") or 0) + (stats.get("attacks_won_ai") or 0)
-            return total >= int(threshold)
-        if ctype == "critters_killed":
-            return (stats.get("critters_killed") or 0) >= int(threshold)
-        if ctype == "hexes_owned":
-            if empire is None:
-                return False
-            return len(empire.hex_map) >= int(threshold)
-
-        # --- Direct per-season stat column ---
-        if ctype in _DIRECT_STAT_CONDITIONS:
-            val = stats.get(ctype) or 0
-            return float(val) >= float(threshold)
-
-        # --- Live / snapshot conditions ---
-        if ctype == "ruler_level":
-            if empire is None or self._empire_service is None:
-                return False
-            level = self._empire_service.ruler_level_from_xp(empire.ruler.xp if empire.ruler else 0.0)
-            return level >= int(threshold)
-
-        if ctype == "path_length":
-            if empire is None:
-                return False
-            from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
-            path = find_path_from_spawn_to_castle(empire.hex_map) or []
-            return len(path) >= int(threshold)
-
-        if ctype == "first_in_era":
-            if empire is None or era_firsts is None:
-                return False
-            era_key = condition.get("era", "")
-            return era_firsts.get(era_key) == empire.uid
-
-        # --- Meta conditions ---
-        if ctype == "all_era_firsts":
-            if empire is None:
-                return False
-            era_first_trophies = [
-                t for t in self._trophies()
-                if t.condition.get("type") == "first_in_era"
-            ]
-            return all(t.iid in empire.trophies for t in era_first_trophies)
-
-        if ctype == "all_trophies":
-            if empire is None:
-                return False
-            meta_types = {"all_era_firsts", "all_trophies"}
-            non_meta = [
-                t for t in self._trophies()
-                if t.condition.get("type") not in meta_types
-            ]
-            return all(t.iid in empire.trophies for t in non_meta)
-
-        log.warning("Unknown trophy condition type: %s", ctype)
-        return False
+        if condition.get("type", "") not in _KNOWN_CONDITION_TYPES:
+            log.warning("Unknown trophy condition type: %s", condition.get("type", ""))
+            return False
+        current, target = self._condition_progress(condition, stats, empire, era_firsts)
+        return current >= target
 
     async def check_and_award(
         self, uid: int, empire: "Empire | None" = None
@@ -207,3 +253,19 @@ class TrophyService:
                 "effects": item.effects,
             })
         return result
+
+    async def get_condition_progress_all(
+        self, uid: int, empire: "Empire | None"
+    ) -> dict[str, tuple[float, float]]:
+        """Return {trophy_iid: (current, target)} for every trophy, earned or not.
+
+        Used by the REST endpoint to render a progress fraction/bar even for
+        trophies the player hasn't earned yet.
+        """
+        stats = await self._database.get_empire_stats(uid) or {}
+        era_firsts_rows = await self._database.get_era_firsts()
+        era_firsts: dict[str, int] = {r["era_key"]: r["uid"] for r in era_firsts_rows}
+        return {
+            t.iid: self._condition_progress(t.condition, stats, empire, era_firsts)
+            for t in self._trophies()
+        }

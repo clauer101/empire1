@@ -134,6 +134,10 @@ class BattleService:
             # Ruler occupies all remaining slots so exactly one spawns per wave.
             return float(max(wave.slots, 999.0))
         item = self._items_by_iid.get(wave.iid)
+        if item is not None and getattr(item, "is_boss", False):
+            # Bosses occupy all remaining slots so exactly one spawns per wave,
+            # regardless of the item's own (balance-tuned) slots value.
+            return float(max(wave.slots, 999.0))
         return max(0.1, float(getattr(item, "slots", 1.0) or 1.0))
 
     def _mark_wave_complete_if_blocked(self, wave: Any) -> bool:
@@ -805,7 +809,17 @@ class BattleService:
                 emp = svc.empire_service.get(uid) if svc.empire_service else None
                 attacker_item_upgrades = emp.item_upgrades if emp else None
             except Exception:
-                pass
+                log.exception(
+                    "[_step_armies] empire lookup failed for uid=%d (battle=%d) — "
+                    "ruler_level will default to 1",
+                    uid, battle.bid,
+                )
+            if emp is None:
+                log.warning(
+                    "[_step_armies] empire_service.get(%d) returned None (battle=%d) — "
+                    "ruler_level will default to 1",
+                    uid, battle.bid,
+                )
 
             ruler_level = emp.ruler.level if emp else 1
             aura_choice = emp.ruler.aura_choice if emp else ""
@@ -920,6 +934,7 @@ class BattleService:
         battle.critters_killed += 1
         if critter.last_hit_sid:
             battle.tower_kills[critter.last_hit_sid] = battle.tower_kills.get(critter.last_hit_sid, 0) + 1
+        _s = None
         try:
             from gameserver.network.handlers._core import _svc as _core_svc
             _s = _core_svc()
@@ -929,13 +944,19 @@ class BattleService:
         battle.kills_era_xp_sum += _era_idx
         del battle.critters[critter.cid]
 
-        # Award gold to defender
+        # Award gold to defender — tripled (config anti_farm_defender_gold_multiplier)
+        # while this battle's attacker is under anti-farming protection (see
+        # models/battle.py's farming_attacker_uids docstring).
         if battle.defender and critter.value > 0:
+            gold_mult = 1.0
+            if battle.farming_attacker_uids and set(battle.attacker_uids) & battle.farming_attacker_uids:
+                gold_mult = getattr(_s.game_config, "anti_farm_defender_gold_multiplier", 3.0) if _s else 3.0
+            awarded = critter.value * gold_mult
             gold = battle.defender.resources.get("gold", 0.0)
-            battle.defender.resources["gold"] = gold + critter.value
-            battle.defender_gold_earned += critter.value
+            battle.defender.resources["gold"] = gold + awarded
+            battle.defender_gold_earned += awarded
             log.debug("[KILLED] Critter cid=%d (%s) killed — defender awarded %.1f gold (total: %.1f)",
-                     critter.cid, critter.iid, critter.value, battle.defender.resources["gold"])
+                     critter.cid, critter.iid, awarded, battle.defender.resources["gold"])
         else:
             log.debug("[KILLED] Critter cid=%d (%s) killed at path_progress=%.2f",
                      critter.cid, critter.iid, critter.path_progress)

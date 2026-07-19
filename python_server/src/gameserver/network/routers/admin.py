@@ -494,6 +494,103 @@ def make_router(services: "Services") -> APIRouter:
                     }
         return {"structures": result}
 
+    @router.delete("/api/admin/empire/{uid}/tile")
+    async def admin_remove_tile(uid: int, q: int, r: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Remove a single tile from an empire's hex_map.
+
+        Tiles are simply absent from hex_map when void, so this un-claims the
+        tile outright — useful for resolving a cross-empire tile collision
+        (world_tile_owner() indexes every hex_map key, so the same q,r can end
+        up in two empires' maps if a claim path skips that check).
+        """
+        assert services.empire_service is not None
+        empire = services.empire_service.get(uid)
+        if empire is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
+        tile_key = f"{q},{r}"
+        removed = empire.hex_map.pop(tile_key, None)
+        if removed is None:
+            return {"ok": False, "error": f"Tile {tile_key} not found in empire {uid}'s hex_map"}
+        services.empire_service.invalidate_tile_index()
+        log.info("Admin removed tile %s from empire uid=%d (was %r)", tile_key, uid, removed)
+        return {"ok": True, "removed": removed}
+
+    @router.post("/api/admin/anti-farm/backfill")
+    async def admin_backfill_anti_farm(hours: float = 24.0, _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Reconstruct attacker_win_log rows from historical "You Won!" battle
+        report messages, so the anti-farming protection has context immediately
+        instead of starting from zero on launch day.
+
+        Best-effort: a defender name only resolves if that empire is still
+        registered (in-memory, via empire_service.find_by_name) — renamed or
+        deleted empires are skipped and reported back as unmatched.
+        """
+        import re
+        from datetime import datetime, timedelta, timezone
+
+        assert services.empire_service is not None
+        assert services.database is not None
+
+        since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+        rows = await services.database.get_attacker_win_messages(since)
+
+        inserted = 0
+        unmatched: set[str] = set()
+        for row in rows:
+            m = re.search(r"🛡 Defender:\s*(.+)", row["body"])
+            if not m:
+                continue
+            def_name = m.group(1).strip()
+            defender = services.empire_service.find_by_name(def_name)
+            if defender is None:
+                unmatched.add(def_name)
+                continue
+            try:
+                ts = int(
+                    datetime.strptime(row["sent_at"], "%Y-%m-%d %H:%M:%S")
+                    .replace(tzinfo=timezone.utc).timestamp()
+                )
+            except ValueError:
+                continue
+            await services.database.record_attacker_win(row["to_uid"], defender.uid, ts)
+            inserted += 1
+
+        log.info(
+            "Anti-farm backfill: inserted=%d unmatched=%d (last %.1fh)",
+            inserted, len(unmatched), hours,
+        )
+        return {"ok": True, "inserted": inserted, "unmatched_defender_names": sorted(unmatched)}
+
+    @router.get("/api/admin/anti-farm/active")
+    async def admin_anti_farm_active(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return every (attacker, defender) pair for which anti-farm protection
+        is currently active, with resolved empire names for the admin dashboard.
+        """
+        from datetime import datetime, timezone
+
+        assert services.empire_service is not None
+        assert services.database is not None
+        gc = services.empire_service._gc
+        threshold = int(getattr(gc, "anti_farm_win_threshold", 4)) if gc else 4
+        window_s = int(getattr(gc, "anti_farm_window_hours", 24.0) * 3600) if gc else 86400
+        since_ts = int(datetime.now(timezone.utc).timestamp()) - window_s
+
+        pairs = await services.database.get_active_anti_farm_pairs(since_ts, threshold)
+        result = []
+        for p in pairs:
+            attacker = services.empire_service.get(p["attacker_uid"])
+            defender = services.empire_service.get(p["defender_uid"])
+            result.append({
+                **p,
+                "attacker_name": attacker.name if attacker else f"uid {p['attacker_uid']}",
+                "defender_name": defender.name if defender else f"uid {p['defender_uid']}",
+            })
+        return {
+            "threshold": threshold,
+            "window_hours": window_s / 3600,
+            "active": result,
+        }
+
     @router.get("/api/admin/analyze-empire/{uid}")
     async def admin_analyze_empire(uid: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:
         from collections import deque as _deque, Counter as _Counter

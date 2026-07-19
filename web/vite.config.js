@@ -15,6 +15,9 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         dsgvo: resolve(__dirname, 'dsgvo.html'),
         api: resolve(__dirname, 'api.html'),
+        devlog: resolve(__dirname, 'devlog.html'),
+        fairplay: resolve(__dirname, 'fairplay.html'),
+        towerCritterChanges: resolve(__dirname, 'tower-critter-changes.html'),
       },
     },
 

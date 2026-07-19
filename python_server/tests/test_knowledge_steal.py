@@ -135,18 +135,17 @@ class TestAiWinsKnowledgeSteal:
 
 class TestAiDefeatNoKnowledgeSteal:
     def test_ai_defeat_no_knowledge_stolen(self):
-        """_compute_and_apply_loot is only called on attacker win (battle.defender_won=False).
-        On AI defeat (defender wins) the function is never invoked — verified here by
-        confirming the call guard in _run_battle_task and that knowledge is untouched."""
+        """On defender victory, knowledge is never stolen — regardless of whether
+        _compute_and_apply_loot ends up being called at all (it also runs on a lost
+        attack if some critters reached, for the culture-steal-on-partial-siege
+        feature, but knowledge steal is explicitly gated on attacker_won=True)."""
         battle = _make_battle(attacker_uid=AI_UID, defender_uid=1)
         battle.defender.knowledge = {"TECH": 30.0}
         original = dict(battle.defender.knowledge)
+        svc = _make_svc({"TECH": _make_item("TECH", effort=100.0)})
 
-        # _compute_and_apply_loot is NOT called on defeat — the guard is:
-        #   if attacker_won: loot = _compute_and_apply_loot(battle, svc)
-        # We verify that calling it when battle.defender_won is True (= AI lost)
-        # is simply never done. We confirm knowledge is unchanged after no call.
-        # (No call = no change)
+        _compute_and_apply_loot(battle, svc, attacker_won=False)
+
         assert battle.defender.knowledge == original
 
     def test_ai_defeat_no_artifact_stolen(self):
@@ -177,3 +176,35 @@ class TestAiDefeatNoKnowledgeSteal:
 
         assert stolen == []
         assert battle.defender.artifacts == ["CROWN"]
+
+
+# ── Human attacker loses (partial siege) — no knowledge steal, unlike culture ──
+
+class TestHumanDefeatNoKnowledgeSteal:
+    def test_human_defeat_with_critters_reached_still_no_knowledge_stolen(self):
+        """A lost attack where some critters reached the castle steals culture
+        (tested elsewhere) but must NOT steal research — attacker_won=False
+        must fully suppress the knowledge-steal block."""
+        items = {"TECH": _make_item("TECH", effort=100.0)}
+        svc = _make_svc(items)
+        battle = _make_battle(attacker_uid=5, defender_uid=1)
+        battle.defender.knowledge = {"TECH": 20.0}
+        original = dict(battle.defender.knowledge)
+
+        loot = _compute_and_apply_loot(battle, svc, attacker_won=False)
+
+        assert battle.defender.knowledge == original
+        assert loot["knowledge"] is None
+
+    def test_human_win_still_steals_knowledge(self):
+        """Sanity check: the default (attacker_won=True) behavior is unchanged."""
+        items = {"TECH": _make_item("TECH", effort=100.0)}
+        svc = _make_svc(items)
+        battle = _make_battle(attacker_uid=5, defender_uid=1)
+        battle.defender.knowledge = {"TECH": 20.0}
+        attacker = Empire(uid=5, name="Attacker")
+        svc.empire_service.get = lambda uid: attacker if uid == 5 else None
+
+        loot = _compute_and_apply_loot(battle, svc, attacker_won=True)
+
+        assert loot["knowledge"]["iid"] == "TECH"

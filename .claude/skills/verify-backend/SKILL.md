@@ -19,5 +19,7 @@ rtk run_tests.sh
 ```
 
 Test runner options: `--match=<pattern>`, `<path>`, `--all`, `--quick`, `--cov`, `--failfast`.
-mypy standalone: `.venv/bin/mypy python_server/src`.
+mypy standalone: `.venv/bin/mypy --config-file=python_server/pyproject.toml python_server/src`
+(the `--config-file` is required from the repo root — otherwise mypy silently
+skips `strict = true` and misses errors CI would catch).
 Never bypass pre-commit with `--no-verify`.

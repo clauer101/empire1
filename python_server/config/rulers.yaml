@@ -35,10 +35,10 @@ MAJA:
     description: ''
     levels:
     - gold_lump_sum_after_research: 1000
-    - gold_lump_sum_after_research: 30000
-    - gold_lump_sum_after_research: 100000
-    - gold_lump_sum_after_research: 400000
-    - gold_lump_sum_after_research: 800000
+    - gold_lump_sum_after_research: 25000
+    - gold_lump_sum_after_research: 50000
+    - gold_lump_sum_after_research: 75000
+    - gold_lump_sum_after_research: 200000
   e:
     name: Erudite Synergy
     description: ''
@@ -196,11 +196,11 @@ BORIN:
     name: Scrap and Salvage
     description: ''
     levels:
-    - wave_delay_offset: 0.4
-    - wave_delay_offset: 0.8
+    - wave_delay_offset: 0.6
     - wave_delay_offset: 1.2
-    - wave_delay_offset: 1.6
-    - wave_delay_offset: 2
+    - wave_delay_offset: 1.8
+    - wave_delay_offset: 2.4
+    - wave_delay_offset: 3
   e:
     name: Undying Defiance
     description: ''

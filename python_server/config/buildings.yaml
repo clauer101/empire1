@@ -250,7 +250,8 @@ SWORD_MAKER:
   effort: 9724
   costs: {gold: 1600}
   requirements: [COPPER_BRONZE]
-  effects: {}
+  effects:
+    build_speed_modifier: 0.1
 
 MARKET_PLACE:
   era: bronze
@@ -394,7 +395,8 @@ STABLES:
   effort: 60155
   costs: {gold: 9000}
   requirements: [HORSEBACK_RIDING, IRON]
-  effects: {}
+  effects:
+    gold_offset: 0.1
 
 # RACE_COURSE:
 #   era: iron
@@ -714,8 +716,8 @@ COLONIAL_OFFICE:
   requirements: [MONARCHY, FEUDALISM]
   excludes: [MERCHANT_GUILD]
   effects:
-    tile_cost_modifier: 0.2
-    building_cost_modifier: 0.1
+    tile_cost_modifier: 0.33
+    building_cost_modifier: 0.33
 
 # ============================================================
 #   RENAISSANCE  (Effort 130.000 – 500.000)
@@ -1163,6 +1165,32 @@ DERIVATIVE_MARKET:
   effects:
     gold_modifier: 0.5
     gold_offset: 0.5
+
+NATIONAL_ARCHIVE:
+  era: modern
+  image: assets/sprites/buildings/national_archive
+  name: "National Archive"
+  description: "Repository of state records and heritage. Requires global integration."
+  effort: 1050000
+  costs: {gold: 1890100}
+  requirements: [GLOBALIZATION_STRATEGIES]
+  excludes: [THINK_TANK]
+  effects:
+    culture_modifier: 0.6
+    culture_offset: 1.5
+
+THINK_TANK:
+  era: modern
+  image: assets/sprites/buildings/think_tank
+  name: "Think Tank"
+  description: "Independent policy and technology research institute. Requires global integration."
+  effort: 1050000
+  costs: {gold: 1890100}
+  requirements: [GLOBALIZATION_STRATEGIES]
+  excludes: [NATIONAL_ARCHIVE]
+  effects:
+    research_speed_modifier: 0.6
+    research_speed_offset: 0.8
 
 BOMBING_AREA:
   era: modern

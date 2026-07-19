@@ -286,15 +286,30 @@ async def _run_battle_task(
         attacker_won = battle.defender_won is False
         if battle.defender is not None:
             battle.defender_life_at_end = float(battle.defender.resources.get("life", 0.0))
+
+        # Anti-farming protection: penalize only the uids in battle.farming_attacker_uids
+        # (decided once at battle creation) that actually won this battle. Recording
+        # only happens on a real win, so the rolling count advances correctly.
+        penalized_uids: set[int] = set()
+        if attacker_won and battle.farming_attacker_uids:
+            battle_uids = {a.uid for a in battle.armies.values()}
+            penalized_uids = battle.farming_attacker_uids & battle_uids
+        if attacker_won and battle.defender is not None:
+            from gameserver.engine.ai_service import AI_UID as _AI_UID_FARM_LOG
+            if battle.defender.uid != _AI_UID_FARM_LOG:
+                _now_ts = int(time.time())
+                for _uid in {a.uid for a in battle.armies.values()} - {_AI_UID_FARM_LOG}:
+                    await svc.database.record_attacker_win(_uid, battle.defender.uid, _now_ts)
+
         if attacker_won:
-            loot = _compute_and_apply_loot(battle, svc)
+            loot = _compute_and_apply_loot(battle, svc, penalized_uids=penalized_uids, attacker_won=True)
         elif battle.critters_reached > 0:
-            loot = _compute_and_apply_loot(battle, svc)
+            loot = _compute_and_apply_loot(battle, svc, penalized_uids=penalized_uids, attacker_won=False)
         stolen_artifacts, steal_chances, army_multipliers = _apply_artifact_steal(battle, svc, attacker_won)
         if stolen_artifacts:
             loot["artifacts"] = [{"iid": iid, "winner_uid": uid} for iid, uid in stolen_artifacts]
 
-        ruler_xp_gained, ruler_xp_pvp_bonus = _award_ruler_xp(battle, svc, attacker_won)
+        ruler_xp_gained, ruler_xp_pvp_bonus = _award_ruler_xp(battle, svc, attacker_won, penalized_uids=penalized_uids)
 
         # PvP gold bonus: defender earns double when a human attacker is in a higher era
         from gameserver.engine.ai_service import AI_UID as _AI_UID_PVP
@@ -431,6 +446,10 @@ async def _run_battle_task(
                 f"⚡ PvP Bonus:  +{int(pvp_gold_bonus)} gold (×2 vs player)\n"
                 if pvp_gold_bonus > 0 else ""
             )
+            antifarm_bonus_line = (
+                "🛡 Anti-farm bonus: 3x gold (this attacker has beaten you too often recently)\n"
+                if set(battle.attacker_uids) & battle.farming_attacker_uids else ""
+            )
             life_lost = float(battle.defender_losses.get("life", 0.0))
             life_lost_line = f"❤ Life lost:  -{life_lost:g}\n" if life_lost > 0 else ""
             def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
@@ -447,6 +466,7 @@ async def _run_battle_task(
                 f"🗼 Towers:    {len(battle.structures)}\n"
                 f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
                 f"{pvp_bonus_line}"
+                f"{antifarm_bonus_line}"
                 f"{loot_def_lines}"
                 f"⏱ Duration:  {dur_str}\n"
                 f"────────────────────\n"
@@ -481,6 +501,8 @@ async def _run_battle_task(
                         else:
                             era_note = ""
                         loot_atk_lines += f"🎭 Culture: +{atk_culture:.1f}{era_note}\n"
+                    if per_atk.get("antifarm_penalty"):
+                        loot_atk_lines += "🛡 Anti-farm protection: you've beaten this defender too often — culture reduced, no ruler XP.\n"
                     if knowledge_loot:
                         k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                         k_pct  = knowledge_loot.get("pct", 0.0)
@@ -549,15 +571,20 @@ async def _run_battle_task(
 
 
 def _award_ruler_xp(
-    battle: "BattleState", svc: Any, attacker_won: bool
+    battle: "BattleState", svc: Any, attacker_won: bool, penalized_uids: "set[int] | None" = None,
 ) -> "tuple[dict[int, float], dict[int, float]]":
     """Award XP to the ruler of each human attacker empire based on battle outcome.
 
     Returns (gained, pvp_xp_bonus):
         gained       – uid -> total XP awarded (including any bonus)
         pvp_xp_bonus – uid -> bonus XP from attacking a higher-era defender (0 if none)
+
+    `penalized_uids` (anti-farming protection) get no XP at all — left absent
+    from `gained`, which the message layer already renders as "no ruler XP
+    line" with no further change needed there.
     """
     from gameserver.engine.ai_service import AI_UID
+    penalized_uids = penalized_uids or set()
     gained: dict[int, float] = {}
     pvp_xp_bonus: dict[int, float] = {}
     if svc.empire_service is None:
@@ -569,7 +596,7 @@ def _award_ruler_xp(
         def_era_idx = era_order.index(def_era_key) + 1 if def_era_key in era_order else 1
     for army in battle.armies.values():
         uid = army.uid
-        if uid == AI_UID:
+        if uid == AI_UID or uid in penalized_uids:
             continue
         emp = svc.empire_service.get(uid)
         if emp is None:
@@ -759,11 +786,22 @@ def _apply_artifact_steal(
 
 
 
-def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
+def _compute_and_apply_loot(
+    battle: "BattleState", svc: Any, penalized_uids: "set[int] | None" = None,
+    attacker_won: bool = True,
+) -> dict[str, Any]:
     """Compute and apply loot on defender loss. Returns loot dict.
 
     Knowledge and culture are split equally among all human winner UIDs.
+    `penalized_uids` (anti-farming protection) each take a reduced culture
+    share — see models/battle.py's farming_attacker_uids docstring.
+
+    Knowledge is only stolen on a full attacker win (`attacker_won=True`).
+    Culture is stolen whenever the defender lost lives, even on a lost
+    attack (`attacker_won=False` with `battle.critters_reached > 0`) —
+    the two loot types are intentionally asymmetric here.
     """
+    penalized_uids = penalized_uids or set()
     import random as _random
     from gameserver.engine.ai_service import AI_UID as _AI_UID
 
@@ -800,7 +838,12 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
         iid, rem = iid_rem
         return float(items[iid].effort if items.get(iid) else 0.0) - rem
 
-    if _is_ai_only:
+    if not attacker_won:
+        # Research is only stolen on a full attacker win — unlike culture, a
+        # partial siege (some critters reached but the defender still won)
+        # never costs the defender any research progress.
+        chosen_iid = None
+    elif _is_ai_only:
         chosen_iid = max(active, key=_by_progress)[0] if active else None
     elif _first_human and active:
         best_iid = max(active, key=_by_progress)[0]
@@ -830,8 +873,19 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                 w_emp = svc.empire_service.get(uid) if svc.empire_service else None
                 if w_emp is None:
                     continue
+                w_was_in_progress = w_emp.knowledge.get(chosen_iid, 0.0) > 0.0
                 w_remaining = w_emp.knowledge.get(chosen_iid, effort)
-                w_emp.knowledge[chosen_iid] = max(0.0, w_remaining - per_winner_gain)
+                w_new_remaining = max(0.0, w_remaining - per_winner_gain)
+                if w_was_in_progress and w_new_remaining <= 0.0 and svc.empire_service is not None:
+                    # Stolen progress can finish a winner's in-progress research even
+                    # when it isn't their actively-queued item — completion must still
+                    # run so gold_lump_sum_after_research (Maja's Scholar's Bounty) and
+                    # ItemCompleted fire, matching the normal per-tick completion path.
+                    if w_emp.research_queue == chosen_iid:
+                        w_emp.research_queue = None
+                    svc.empire_service.complete_knowledge(w_emp, chosen_iid)
+                else:
+                    w_emp.knowledge[chosen_iid] = w_new_remaining
 
         defender.knowledge[chosen_iid] = min(effort, current_remaining + total_gain)
         loot["knowledge"] = {
@@ -915,18 +969,24 @@ def _compute_and_apply_loot(battle: "BattleState", svc: Any) -> dict[str, Any]:
                 attacker_era = svc.empire_service.get_current_era(w_emp)
                 attacker_era_idx = _ERA_ORDER.index(attacker_era) if attacker_era in _ERA_ORDER else 0
                 era_penalty = attacker_era_idx > defender_era_idx
-                payout = round(base_per_winner * (0.5 if era_penalty else 1.0), 2)
+                antifarm_penalty = uid in penalized_uids
+                antifarm_mult = getattr(cfg, "anti_farm_culture_multiplier", 0.33) if antifarm_penalty else 1.0
+                payout = round(base_per_winner * (0.5 if era_penalty else 1.0) * antifarm_mult, 2)
                 w_emp.resources["culture"] = w_emp.resources.get("culture", 0.0) + payout
                 payout_total += payout
                 loot["per_attacker"].setdefault(uid, {})["culture"] = payout
                 if era_penalty:
                     loot["per_attacker"][uid]["culture_era_penalty"] = True
                     loot["per_attacker"][uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
+                if antifarm_penalty:
+                    loot["per_attacker"][uid]["antifarm_penalty"] = True
                 battle.attacker_gains.setdefault(uid, {})
                 battle.attacker_gains[uid]["culture"] = battle.attacker_gains[uid].get("culture", 0.0) + payout
                 if era_penalty:
                     battle.attacker_gains[uid]["culture_era_penalty"] = True
                     battle.attacker_gains[uid]["culture_era_penalty_lost"] = round(base_per_winner - payout, 2)
+                if antifarm_penalty:
+                    battle.attacker_gains[uid]["antifarm_penalty"] = True
             log.info(
                 "[LOOT] Culture stolen from uid=%d: %.1f (pct=%.2f%% life_ratio=%.2f %d winners)",
                 defender.uid, payout_total, pct_culture * 100, life_ratio, n_winners,
@@ -1306,12 +1366,32 @@ def _create_battle_start_handler() -> Callable[..., Any]:
                 attacker_uids=[attacker_uid],
             )
 
+            # Anti-farming protection: decided once, here, at battle creation —
+            # gates both the live 3x defender gold bonus (battle_service.py) and
+            # the attacker-side culture/ruler-XP penalty applied at battle end.
+            from gameserver.engine.ai_service import AI_UID as _AI_UID_FARM
+            farming_attacker_uids: set[int] = set()
+            if defender_uid != _AI_UID_FARM and attacker_uid != _AI_UID_FARM:
+                _threshold = getattr(svc.game_config, "anti_farm_win_threshold", 4)
+                _window_s = int(getattr(svc.game_config, "anti_farm_window_hours", 24.0) * 3600)
+                _now_ts = int(time.time())
+                _prior_wins = await svc.database.count_recent_attacker_wins(
+                    attacker_uid, defender_uid, _now_ts - _window_s,
+                )
+                if _prior_wins >= _threshold:
+                    farming_attacker_uids.add(attacker_uid)
+                    log.info(
+                        "[anti_farm] attacker uid=%d has %d wins vs defender uid=%d in last %dh — protection active",
+                        attacker_uid, _prior_wins, defender_uid, _window_s // 3600,
+                    )
+
             battle = BattleState(
                 bid=bid,
                 attacker_uids=[attacker_uid],
                 attack_ids=[attack_id],
                 armies={attack_id: attacking_army},
                 attacker_gains={attacker_uid: {}},
+                farming_attacker_uids=farming_attacker_uids,
                 defender=defender_empire,
                 structures=structures_dict,
                 observer_uids={attacker_uid, defender_uid} | existing_observers,

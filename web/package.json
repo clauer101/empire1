@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/optimize-assets.mjs --write && node scripts/build-api-page.mjs && node scripts/gen-openapi.mjs && vite build",
+    "build": "node scripts/optimize-assets.mjs --write && node scripts/build-api-page.mjs && node scripts/build-devlog-page.mjs && node scripts/build-fairplay-page.mjs && node scripts/gen-openapi.mjs && vite build",
     "build:api": "node scripts/build-api-page.mjs",
+    "build:devlog": "node scripts/build-devlog-page.mjs",
+    "build:fairplay": "node scripts/build-fairplay-page.mjs",
     "preview": "vite preview",
     "assets:optimize": "node scripts/optimize-assets.mjs --write",
     "test:e2e": "playwright test",

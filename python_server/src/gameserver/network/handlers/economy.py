@@ -591,6 +591,26 @@ async def handle_map_save_request(
             errors.append(f"Cannot place '{_tile_type(tile_val)}' on a void tile at {tile_key}")
             break
 
+    # Newly-claimed tiles must not already belong to another empire.
+    # (handle_buy_tile_request already checks this for single-tile purchases;
+    # the map editor can claim many tiles at once via this endpoint and must
+    # be checked the same way against the global tile-ownership index.) Checked
+    # independent of whether the tile was explicitly 'void' or simply absent
+    # from this empire's own map — either way, this empire never owned it.
+    if not errors:
+        world_owner = svc.empire_service.world_tile_owner()
+        for tile_key, tile_val in tiles.items():
+            if _tile_type(tile_val) == 'void':
+                continue
+            try:
+                tq, tr = (int(v) for v in tile_key.split(","))
+            except (ValueError, AttributeError):
+                continue
+            other_uid = world_owner.get((tq, tr))
+            if other_uid is not None and other_uid != target_uid:
+                errors.append(f"Tile {tile_key} belongs to another empire")
+                break
+
     # Check path connectivity (only when both castle and spawnpoint exist)
     if not errors and not _has_path_from_spawn_to_castle(tiles):
         errors.append("Weg verbaut – kein Pfad vom Spawnpoint zum Castle")

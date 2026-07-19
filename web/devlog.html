@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Devlog — What's New | Relics'n'Rockets</title>
+  <meta name="description" content="Recent updates and balance changes to Relics'n'Rockets, a multiplayer tower-defense game.">
+  <meta name="keywords" content="relics'n'rockets devlog, game changelog, tower defense updates, balance changes, patch notes">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://relicsnrockets.io/devlog.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://relicsnrockets.io/devlog.html">
+  <meta property="og:title" content="Devlog — What's New | Relics'n'Rockets">
+  <meta property="og:description" content="Recent updates and balance changes to Relics'n'Rockets, a multiplayer tower-defense game.">
+  <meta property="og:site_name" content="Relics'n'Rockets">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Devlog — What's New | Relics'n'Rockets">
+  <meta name="twitter:description" content="Recent updates and balance changes to Relics'n'Rockets, a multiplayer tower-defense game.">
+
+  <link rel="icon" href="/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Devlog — What's New",
+  "description": "Recent updates and balance changes to Relics'n'Rockets, a multiplayer tower-defense game.",
+  "url": "https://relicsnrockets.io/devlog.html",
+  "inLanguage": "en",
+  "dateModified": "2026-07-19",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Relics'n'Rockets",
+    "url": "https://relicsnrockets.io"
+  },
+  "about": {
+    "@type": "VideoGame",
+    "name": "Relics'n'Rockets",
+    "url": "https://relicsnrockets.io"
+  }
+}
+  </script>
+
+  <style>
+    /* Matches web/css/_base.css — same palette as the game/login page */
+    :root {
+      --bg: #0d0d14;
+      --bg-2: #14141f;
+      --bg-3: #1a1a28;
+      --fg: #e0e0e6;
+      --fg-dim: #9999a8;
+      --fg-faint: #888;
+      --accent: #4fc3f7;
+      --accent-2: #ffb74d;
+      --border: #2a2a3a;
+      --code-bg: #0a0a10;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre, kbd, samp {
+      font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 13.5px;
+    }
+    code {
+      background: var(--bg-3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--accent-2);
+    }
+    pre {
+      background: var(--code-bg);
+      padding: 14px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    pre code { background: transparent; padding: 0; color: var(--fg); }
+
+    header.top {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header.top h1 { font-size: 20px; margin: 0; }
+    header.top .back { color: var(--fg-dim); font-size: 14px; }
+
+    .content {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    .content h1 {
+      font-size: 26px;
+      margin: 0 0 24px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+    .content h2 {
+      font-size: 20px;
+      margin: 36px 0 14px;
+      color: var(--accent-2);
+    }
+    .content h3 {
+      font-size: 16px;
+      margin: 24px 0 8px;
+      color: var(--accent);
+    }
+    .content h2, .content h3 { scroll-margin-top: 16px; }
+    .content .permalink {
+      font-size: 0.7em;
+      opacity: 0;
+      margin-left: 6px;
+      text-decoration: none;
+      transition: opacity 0.1s;
+    }
+    .content h2:hover .permalink,
+    .content h3:hover .permalink,
+    .content .permalink:focus {
+      opacity: 0.6;
+    }
+    .content .permalink:hover { opacity: 1; }
+    .content p { margin: 0 0 12px; }
+    .content ul, .content ol { margin: 0 0 12px; padding-left: 22px; }
+    .content li { margin: 4px 0; }
+    .content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+    .content strong { color: var(--fg); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--fg-faint);
+      font-size: 13px;
+    }
+    footer a { color: var(--fg-dim); margin: 0 10px; }
+  </style>
+</head>
+<body>
+
+<header class="top">
+  <h1>📜 Devlog</h1>
+  <a href="/" class="back">← Back to the Game</a>
+</header>
+
+<main class="content">
+<h1>Changelog</h1>
+<h2 id="2026-07-16">2026-07-16 <a class="permalink" href="#2026-07-16" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h2>
+<h3 id="bully-protection-repeated-attacks-on-the-same-defender-now-pay-off-less">Bully protection: repeated attacks on the same defender now pay off less <a class="permalink" href="#bully-protection-repeated-attacks-on-the-same-defender-now-pay-off-less" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h3>
+<p>If you beat the same opponent more than 3 times within 24 hours, every
+attack after that against them earns <strong>no ruler XP</strong> and only <strong>33% of the
+normal culture loot</strong> — your battle report will tell you exactly when this
+kicks in. Beating a weaker empire once or twice is fine; parking an army on
+someone&#39;s doorstep all day is not.</p>
+<p>The flip side: the defender getting farmed isn&#39;t left empty-handed. While
+the protection is active, they earn <strong>triple gold</strong> for every wave they
+repel against that attacker — a direct reward for being repeatedly
+targeted, credited live during the siege.</p>
+<p>This only applies to player-vs-player fights. Grinding AI waves is
+unaffected — go nuts.</p>
+<h2 id="2026-07-14">2026-07-14 <a class="permalink" href="#2026-07-14" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h2>
+<h3 id="tldr-op-settings-get-nerfed">TL;DR: OP settings get nerfed <a class="permalink" href="#tldr-op-settings-get-nerfed" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h3>
+<p>Found something that feels too strong? Use it — that&#39;s smart play, not
+cheating. But don&#39;t build your whole empire around a single loophole: if a
+setting is OP, it gets nerfed, no exceptions. Full policy on the new
+<a href="/fairplay.html">Fair Play page</a>.</p>
+<h2 id="2026-07-13">2026-07-13 <a class="permalink" href="#2026-07-13" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h2>
+<h3 id="ruler-balance-pass">Ruler balance pass <a class="permalink" href="#ruler-balance-pass" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h3>
+<p>Several rulers received skill tuning:</p>
+<ul>
+<li><strong>Maja</strong> — gold rewards from Erudite Synergy (gold bonus after research)
+increased significantly, in some tiers up to 10x.</li>
+<li><strong>Nandi</strong> — base speed slightly reduced; the Cultural Footprint bonus was
+split into finer tiers and slightly weakened at the top end.</li>
+<li><strong>Lucien</strong> — gold bonus on skill-up doubled.</li>
+<li><strong>Borin</strong> — two skills reworked: one skill now delays enemy waves instead
+of refunding tower sell value, and Undying Defiance now grants a longer
+artifact retention time instead of a wave-delay bonus.</li>
+</ul>
+<h2 id="2026-07-12">2026-07-12 <a class="permalink" href="#2026-07-12" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h2>
+<h3 id="season-3-the-rise-of-the-robots">Season 3: The Rise of the Robots <a class="permalink" href="#season-3-the-rise-of-the-robots" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h3>
+<p>Tomorrow Season 3: The Rise of the Robots starts! This season brings trophies,
+tech tree branches, and a wide balance pass across towers and critters.</p>
+<p><strong>Trophies</strong> now reward sustained defensive performance, not just single wins.
+Each trophy tracks a running total — battles won, AI waves repelled, human
+attackers turned away — and unlocks at set thresholds, with higher tiers
+granting small permanent bonuses on top of the bragging rights. Unbroken is
+your first taste of it: win a single defense and it&#39;s yours. Keep winning and
+you&#39;ll climb through Centurion (100 defensive wins) all the way to Iron Wall
+(500 wins), which also shaves 2% off your outgoing travel time — a trophy that
+pays for itself.</p>
+<p><strong>The knowledge tree</strong> is now split into a main branch and optional side
+branches. Main-branch techs are the required backbone — you&#39;ll eventually need
+all of them to keep advancing eras, including the tech that unlocks your
+ruler. Left and right branches (Trade, Military, Science, Culture, and more)
+are where the real power spikes live: Caravan Networks, for instance, adds a
+flat +0.3 gold/s once researched. But every hour spent down a branch is an
+hour not spent pushing toward the next era&#39;s tech — branches make you
+stronger now at the cost of getting there later. Choosing when to detour, and
+how far, is the new strategic knob.</p>
+<p><strong>Towers and critters</strong> also saw dozens of balance changes this cycle —
+damage, reload times, health, new units, and a few retirements. The full
+list, era by era, is up on the
+<a href="/tower-critter-changes.html">tower &amp; critter changes page</a>.</p>
+<h2 id="2026-06-10">2026-06-10 <a class="permalink" href="#2026-06-10" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h2>
+<h3 id="culture-raiding-fairer-loot-even-for-lost-attacks">Culture Raiding — fairer loot even for lost attacks <a class="permalink" href="#culture-raiding-fairer-loot-even-for-lost-attacks" title="Permalink to this entry" aria-label="Permalink to this entry">🔗</a></h3>
+<p>When attacking another empire, culture is now stolen even if the attack fails —
+as long as the defender lost lives in the process.</p>
+<p><strong>New calculation:</strong></p>
+<p>The stolen culture amount consists of two parts:</p>
+<ol>
+<li><p><strong>Lives share</strong> (always applies, even on attacker defeat):
+<code>defender&#39;s lost lives × era factor × rate</code>
+The more lives the defender lost and the more advanced their era, the more
+culture is stolen.</p>
+</li>
+<li><p><strong>Pool share</strong> (only on attacker victory):
+Additionally a random percentage (1–5%) of the defender&#39;s total culture pool.</p>
+</li>
+</ol>
+<p><strong>Era penalty:</strong> If a player attacks an empire in a lower era, they receive only
+50% of the stolen culture — cultural progress protects.</p>
+
+</main>
+
+<footer>
+  <a href="/">← Back to the Game</a>
+  <a href="/fairplay.html">Fair Play</a>
+  <a href="/api.html">API for AI devs</a>
+  <a href="/dsgvo.html">Privacy / GDPR</a>
+</footer>
+
+</body>
+</html>

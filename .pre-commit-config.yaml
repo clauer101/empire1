@@ -11,7 +11,7 @@ repos:
       - id: mypy
         name: mypy
         entry: .venv/bin/mypy
-        args: [python_server/src]
+        args: [--config-file=python_server/pyproject.toml, python_server/src]
         language: system
         pass_filenames: false
         types: [python]
@@ -26,5 +26,6 @@ repos:
             \.env\.example|
             python_server/tests/.*|
             docs/.*|
-            data/backups/.*
+            data/backups/.*|
+            web/public/tower-critter-changes\.json
           )$

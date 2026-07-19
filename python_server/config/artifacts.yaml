@@ -8,7 +8,6 @@ AWE_INSPIRING_GRAIL:
     remembers who drank from it last.
   type: ''
   effects:
-    gold_modifier: 0.5
     gold_offset: 0.3
     culture_modifier: 0.33
     culture_offset: 0.5

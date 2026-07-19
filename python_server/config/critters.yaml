@@ -84,7 +84,7 @@ WARRIOR:
   name: "Warrior"
   description: "Reliable all-rounder with basic armor and decent health. A solid first-era attacker."
   speed: 0.2
-  health: 11
+  health: 9
   value: 8
   damage: 1
   armour: 1
@@ -296,7 +296,7 @@ THE_SWORDMASTER:
   value: 300
   damage: 7
   armour: 4.5
-  slots: 999
+  slots: 7
   time_between: 2000
   is_boss: true
   capture: {}
@@ -376,7 +376,7 @@ SIEGE_RAM:
   name: "Siege Ram"
   description: "A slow carrier that carries Crusaders and deals massive damage. Three slots of nearly unstoppable force."
   speed: 0.4
-  health: 55
+  health: 53
   value: 330
   damage: 3
   armour: 4.5
@@ -396,7 +396,7 @@ CONDOTTERI:
   name: "Condotteri"
   description: "A battle-hardened mercenary with above-average health and good speed. Reliable all-rounder of the medieval era."
   speed: 0.6
-  health: 80
+  health: 78
   value: 108
   damage: 2
   armour: 2.5
@@ -416,7 +416,7 @@ HANDGUNNER:
   name: "Handgunner"
   description: "Early gunpowder unit combining strong armor with high speed. Blends firepower with surprising mobility."
   speed: 0.7
-  health: 73
+  health: 71
   value: 101
   damage: 1
   armour: 3
@@ -444,7 +444,7 @@ THE_KING:
   value: 1000
   damage: 10
   armour: 9
-  slots: 999
+  slots: 10
   time_between: 2000
   is_boss: true
   capture: {}
@@ -460,10 +460,10 @@ NINJA:
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
   speed: 1.45
-  health: 79
+  health: 74
   value: 168
   damage: 1
-  armour: 3.5
+  armour: 3
   slots: 1
   time_between: 900
   is_boss: false
@@ -483,9 +483,9 @@ MUSKETEER:
   health: 92
   value: 171
   damage: 1
-  armour: 5
+  armour: 4
   slots: 1
-  time_between: 600
+  time_between: 400
   is_boss: false
   capture: {}
   bonus: {}
@@ -503,7 +503,7 @@ DRAGOONER:
   health: 148
   value: 182
   damage: 2
-  armour: 9
+  armour: 7.5
   slots: 2.2
   time_between: 1000
   is_boss: false
@@ -519,11 +519,11 @@ CARGO:
   era: renaissance
   name: "Cargo"
   description: "A heavy transport that deploys three Musketeers on death. Takes four slots but delivers a fearsome payload."
-  speed: 0.75
+  speed: 0.7
   health: 63
   value: 334
   damage: 4
-  armour: 2.5
+  armour: 2
   slots: 4
   time_between: 2000
   is_boss: false
@@ -549,7 +549,7 @@ SOLDIER:
   damage: 1
   armour: 5
   slots: 1
-  time_between: 900
+  time_between: 400
   is_boss: false
   capture: {}
   bonus: {}
@@ -653,7 +653,7 @@ SPECOPS:
   damage: 2
   armour: 8
   slots: 1
-  time_between: 400
+  time_between: 300
   is_boss: false
   capture: {}
   bonus: {}
@@ -692,7 +692,7 @@ THE_GENERAL:
   value: 9000
   damage: 18
   armour: 13
-  slots: 999
+  slots: 18
   time_between: 2000
   is_boss: true
   capture: {}
@@ -718,7 +718,7 @@ DRONE:
   damage: 1
   armour: 2
   slots: 0.6
-  time_between: 300
+  time_between: 200
   is_boss: false
   capture: {}
   bonus: {}

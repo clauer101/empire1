@@ -1,0 +1,2944 @@
+{
+  "since": "14 days ago",
+  "generated_at": "2026-07-12T07:36:06+00:00",
+  "categories": {
+    "structures": {
+      "added": {
+        "CROSSBOW_TOWER": {
+          "tower_type": "fast",
+          "era": "iron",
+          "name": "Crossbow Tower",
+          "sprite": "assets/sprites/structures/crossbow_tower/crossbow_tower.webp",
+          "damage": 4,
+          "range": 1.5,
+          "reload_time": 1100,
+          "shot_speed": 15,
+          "shot_sprite": "assets/sprites/hud/bolt.webp",
+          "shot_sprite_scale": 0.5,
+          "projectile_y_offset": 0.3,
+          "upgrade_costs": {},
+          "max_level": 1,
+          "select": "first",
+          "costs": {
+            "gold": 25500
+          },
+          "effects": {},
+          "requirements": [
+            "IRON"
+          ]
+        }
+      },
+      "removed": {
+        "RAPID_FIRE_MG_BUNKER": {
+          "era": "modern",
+          "name": "Rapid Fire MG Bunker",
+          "sprite": "assets/sprites/structures/rapid_mg_tower/rapid_mg_tower.webp",
+          "damage": 15,
+          "range": 1.5,
+          "reload_time": 600,
+          "shot_speed": 10,
+          "shot_sprite": "assets/sprites/hud/shot.webp",
+          "projectile_y_offset": 0.3,
+          "upgrade_costs": {},
+          "max_level": 1,
+          "select": "first",
+          "costs": {
+            "gold": 450000
+          },
+          "effects": {},
+          "requirements": [
+            "MASS_PRODUCTION"
+          ]
+        }
+      },
+      "changed": {
+        "ANTI_AIR_TOWER": {
+          "era": "modern",
+          "name": "Anti-Air Tower",
+          "fields": {
+            "damage": {
+              "old": 48,
+              "new": 58
+            },
+            "range": {
+              "old": 2.5,
+              "new": 1.5
+            },
+            "reload_time": {
+              "old": 2800,
+              "new": 3800
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "modern",
+            "name": "Anti-Air Tower",
+            "sprite": "assets/sprites/structures/anti_air_tower/anti_air_tower.webp",
+            "damage": 58,
+            "range": 1.5,
+            "reload_time": 3800,
+            "shot_speed": 5,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 450000
+            },
+            "effects": {},
+            "requirements": [
+              "ECHELON_DEFENSE_FACILITY",
+              "AVIATION"
+            ]
+          }
+        },
+        "ARBELESTE_TOWER": {
+          "era": "iron",
+          "name": "Arbalest Tower",
+          "fields": {
+            "damage": {
+              "old": 10,
+              "new": 12
+            },
+            "reload_time": {
+              "old": 2600,
+              "new": 4400
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "iron",
+            "name": "Arbalest Tower",
+            "sprite": "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp",
+            "damage": 12,
+            "range": 1.5,
+            "reload_time": 4400,
+            "shot_speed": 5,
+            "shot_sprite": "assets/sprites/hud/bolt.webp",
+            "shot_sprite_scale": 1.5,
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 21500
+            },
+            "effects": {},
+            "requirements": [
+              "FORGE",
+              "IRON"
+            ]
+          }
+        },
+        "ARROW_TOWER": {
+          "era": "bronze",
+          "name": "Arrow Tower",
+          "fields": {
+            "damage": {
+              "old": 5,
+              "new": 3
+            },
+            "reload_time": {
+              "old": 1400,
+              "new": 1300
+            },
+            "requirements": {
+              "old": [
+                "BOW_MAKER",
+                "COPPER_BRONZE"
+              ],
+              "new": [
+                "BOW_MAKER",
+                "FLETCHING"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "bronze",
+            "name": "Arrow Tower",
+            "sprite": "assets/sprites/structures/arrow_tower/arrow_tower.webp",
+            "damage": 3,
+            "range": 2,
+            "reload_time": 1300,
+            "shot_speed": 3,
+            "shot_sprite": "assets/sprites/hud/arrow.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 4600
+            },
+            "effects": {},
+            "requirements": [
+              "BOW_MAKER",
+              "FLETCHING"
+            ]
+          }
+        },
+        "BALLISTA_TOWER": {
+          "era": "bronze",
+          "name": "Ballista Tower",
+          "fields": {
+            "reload_time": {
+              "old": 3000,
+              "new": 4200
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "bronze",
+            "name": "Ballista Tower",
+            "sprite": "assets/sprites/structures/ballista_tower/ballista_tower.webp",
+            "damage": 8,
+            "range": 1.5,
+            "reload_time": 4200,
+            "shot_speed": 2,
+            "shot_sprite": "assets/sprites/hud/bolt.webp",
+            "shot_sprite_scale": 0.8,
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 7800
+            },
+            "effects": {},
+            "requirements": [
+              "WATCH_TOWER",
+              "DRILL"
+            ]
+          }
+        },
+        "BASIC_TOWER": {
+          "era": "stone",
+          "name": "Basic Tower",
+          "fields": {
+            "damage": {
+              "old": 1,
+              "new": 2
+            },
+            "reload_time": {
+              "old": 2000,
+              "new": 2400
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "stone",
+            "name": "Basic Tower",
+            "sprite": "assets/sprites/structures/basic_tower/basic_tower.webp",
+            "damage": 2,
+            "range": 1.5,
+            "reload_time": 2400,
+            "shot_speed": 1,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.2,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 100
+            },
+            "effects": {},
+            "requirements": [
+              "HUNTING"
+            ]
+          }
+        },
+        "BOILING_OIL": {
+          "era": "medieval",
+          "name": "Boiling Oil",
+          "fields": {
+            "damage": {
+              "old": 3,
+              "new": 1
+            },
+            "effects": {
+              "old": {
+                "burn_duration": 2000,
+                "burn_dps": 7
+              },
+              "new": {
+                "burn_duration": 2500,
+                "burn_dps": 16
+              }
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "reload_time": {
+              "old": 2400,
+              "new": 3400
+            },
+            "requirements": {
+              "old": [
+                "CITY_WALLS",
+                "TACTICS"
+              ],
+              "new": [
+                "CITY_WALLS",
+                "SIEGE_DEFENSE"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "burn"
+            }
+          },
+          "current": {
+            "tower_type": "burn",
+            "era": "medieval",
+            "name": "Boiling Oil",
+            "sprite": "assets/sprites/structures/boiling_oil/boiling_oil.webp",
+            "damage": 1,
+            "range": 1.5,
+            "reload_time": 3400,
+            "shot_speed": 1,
+            "shot_sprite": "assets/sprites/hud/fireball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 47000
+            },
+            "effects": {
+              "burn_duration": 2500,
+              "burn_dps": 16
+            },
+            "requirements": [
+              "CITY_WALLS",
+              "SIEGE_DEFENSE"
+            ]
+          }
+        },
+        "CANNON_TOWER": {
+          "era": "medieval",
+          "name": "Cannon Tower",
+          "fields": {
+            "damage": {
+              "old": 18,
+              "new": 20
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "reload_time": {
+              "old": 4000,
+              "new": 4800
+            },
+            "tower_type": {
+              "old": null,
+              "new": "splash"
+            }
+          },
+          "current": {
+            "tower_type": "splash",
+            "era": "medieval",
+            "name": "Cannon Tower",
+            "sprite": "assets/sprites/structures/cannon_tower/cannon_tower.webp",
+            "damage": 20,
+            "range": 2,
+            "reload_time": 4800,
+            "shot_speed": 1,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 78000
+            },
+            "effects": {
+              "splash_radius": 0.4
+            },
+            "requirements": [
+              "CANNON_MANUFACTORY",
+              "GUNPOWDER"
+            ]
+          }
+        },
+        "CATAPULTS": {
+          "era": "iron",
+          "name": "Catapult",
+          "fields": {
+            "effects": {
+              "old": {
+                "splash_radius": 0.35
+              },
+              "new": {
+                "splash_radius": 0.3
+              }
+            },
+            "reload_time": {
+              "old": 3600,
+              "new": 4200
+            },
+            "requirements": {
+              "old": [
+                "MECHANICS",
+                "MATHMATICS"
+              ],
+              "new": [
+                "MATHMATICS"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "splash"
+            }
+          },
+          "current": {
+            "tower_type": "splash",
+            "era": "iron",
+            "name": "Catapult",
+            "sprite": "assets/sprites/structures/catapults/catapults.webp",
+            "damage": 9,
+            "range": 2,
+            "reload_time": 4200,
+            "shot_speed": 1,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.2,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 18000
+            },
+            "effects": {
+              "splash_radius": 0.3
+            },
+            "requirements": [
+              "MATHMATICS"
+            ]
+          }
+        },
+        "COLD_TOWER": {
+          "era": "iron",
+          "name": "Cold Tower",
+          "fields": {
+            "effects": {
+              "old": {
+                "slow_duration": 4000,
+                "slow_ratio": 0.4
+              },
+              "new": {
+                "slow_duration": 3000,
+                "slow_ratio": 0.4
+              }
+            },
+            "era": {
+              "old": "renaissance",
+              "new": "iron"
+            },
+            "range": {
+              "old": 2,
+              "new": 1.5
+            },
+            "reload_time": {
+              "old": 1200,
+              "new": 1300
+            },
+            "requirements": {
+              "old": [
+                "CHEMISTRY",
+                "LABORATORY"
+              ],
+              "new": [
+                "WEATHER_OBSERVATION",
+                "ARCHITECTURE"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "slow"
+            }
+          },
+          "current": {
+            "tower_type": "slow",
+            "era": "iron",
+            "name": "Cold Tower",
+            "sprite": "assets/sprites/structures/cold_tower/cold_tower.webp",
+            "damage": 3,
+            "range": 1.5,
+            "reload_time": 1300,
+            "shot_speed": 5,
+            "shot_sprite": "assets/sprites/hud/iceball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 83000
+            },
+            "effects": {
+              "slow_duration": 3000,
+              "slow_ratio": 0.4
+            },
+            "requirements": [
+              "WEATHER_OBSERVATION",
+              "ARCHITECTURE"
+            ]
+          }
+        },
+        "DOUBLE_SLING_TOWER": {
+          "era": "neolithic",
+          "name": "Double Sling Tower",
+          "fields": {
+            "damage": {
+              "old": 2,
+              "new": 1
+            },
+            "reload_time": {
+              "old": 2000,
+              "new": 1100
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "neolithic",
+            "name": "Double Sling Tower",
+            "sprite": "assets/sprites/structures/double_sling_tower/double_sling_tower.webp",
+            "damage": 1,
+            "range": 2,
+            "reload_time": 1100,
+            "shot_speed": 1.4,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.4,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 300
+            },
+            "effects": {},
+            "requirements": [
+              "CRAFTSMANSHIP",
+              "EARTH_WALL",
+              "POTTERY"
+            ]
+          }
+        },
+        "FIRE_TOWER": {
+          "era": "bronze",
+          "name": "Fire Tower",
+          "fields": {
+            "damage": {
+              "old": 3,
+              "new": 1
+            },
+            "effects": {
+              "old": {
+                "burn_duration": 1500,
+                "burn_dps": 3
+              },
+              "new": {
+                "burn_duration": 4000,
+                "burn_dps": 1.25
+              }
+            },
+            "requirements": {
+              "old": [
+                "COPPER_BRONZE"
+              ],
+              "new": [
+                "FLETCHING"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "burn"
+            }
+          },
+          "current": {
+            "tower_type": "burn",
+            "era": "bronze",
+            "name": "Fire Tower",
+            "sprite": "assets/sprites/structures/fire_tower/fire_tower.webp",
+            "damage": 1,
+            "range": 1.5,
+            "reload_time": 3000,
+            "shot_speed": 1,
+            "shot_sprite": "assets/sprites/hud/fireball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 5000
+            },
+            "effects": {
+              "burn_duration": 4000,
+              "burn_dps": 1.25
+            },
+            "requirements": [
+              "FLETCHING"
+            ]
+          }
+        },
+        "FLAME_THROWER": {
+          "era": "industrial",
+          "name": "Flame Thrower",
+          "fields": {
+            "damage": {
+              "old": 2,
+              "new": 9
+            },
+            "effects": {
+              "old": {
+                "burn_duration": 3000,
+                "burn_dps": 8
+              },
+              "new": {
+                "burn_duration": 2500,
+                "burn_dps": 32
+              }
+            },
+            "reload_time": {
+              "old": 2400,
+              "new": 3300
+            },
+            "requirements": {
+              "old": [
+                "HEAVY_EQUIPMENT",
+                "MECHANICAL_ENGINEERING"
+              ],
+              "new": [
+                "MECHANICAL_ENGINEERING",
+                "ELECTRICITY"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "burn"
+            }
+          },
+          "current": {
+            "tower_type": "burn",
+            "era": "industrial",
+            "name": "Flame Thrower",
+            "sprite": "assets/sprites/structures/flame_thrower/flame_thrower.webp",
+            "damage": 9,
+            "range": 1.5,
+            "reload_time": 3300,
+            "shot_speed": 3,
+            "shot_sprite": "assets/sprites/hud/fireball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 135000
+            },
+            "effects": {
+              "burn_duration": 2500,
+              "burn_dps": 32
+            },
+            "requirements": [
+              "MECHANICAL_ENGINEERING",
+              "ELECTRICITY"
+            ]
+          }
+        },
+        "GATLING_TOWER": {
+          "era": "industrial",
+          "name": "Gatling Tower",
+          "fields": {
+            "damage": {
+              "old": 13,
+              "new": 12
+            },
+            "reload_time": {
+              "old": 800,
+              "new": 550
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "industrial",
+            "name": "Gatling Tower",
+            "sprite": "assets/sprites/structures/gatling_tower/gatling_tower.webp",
+            "damage": 12,
+            "range": 1.5,
+            "reload_time": 550,
+            "shot_speed": 6,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 125000
+            },
+            "effects": {},
+            "requirements": [
+              "FACTORY",
+              "STEAM_ENGINE"
+            ]
+          }
+        },
+        "HEAVY_TOWER": {
+          "era": "medieval",
+          "name": "Heavy Tower",
+          "fields": {
+            "damage": {
+              "old": 22,
+              "new": 26
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "reload_time": {
+              "old": 3200,
+              "new": 4500
+            },
+            "requirements": {
+              "old": [
+                "STEEL",
+                "LAWS"
+              ],
+              "new": [
+                "LAWS",
+                "STEEL"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "medieval",
+            "name": "Heavy Tower",
+            "sprite": "assets/sprites/structures/heavy_tower/heavy_tower.webp",
+            "damage": 26,
+            "range": 1.5,
+            "reload_time": 4500,
+            "shot_speed": 2.5,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 55000
+            },
+            "effects": {},
+            "requirements": [
+              "LAWS",
+              "STEEL"
+            ]
+          }
+        },
+        "ICE_TOWER": {
+          "era": "renaissance",
+          "name": "Ice Tower",
+          "fields": {
+            "damage": {
+              "old": 6,
+              "new": 11
+            },
+            "effects": {
+              "old": {
+                "slow_duration": 3500,
+                "slow_ratio": 0.2
+              },
+              "new": {
+                "slow_duration": 3000,
+                "slow_ratio": 0.3
+              }
+            },
+            "tower_type": {
+              "old": null,
+              "new": "slow"
+            }
+          },
+          "current": {
+            "tower_type": "slow",
+            "era": "renaissance",
+            "name": "Ice Tower",
+            "sprite": "assets/sprites/structures/ice_tower/ice_tower.webp",
+            "damage": 11,
+            "range": 3,
+            "reload_time": 2000,
+            "shot_speed": 2,
+            "shot_sprite": "assets/sprites/hud/iceball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 64000
+            },
+            "effects": {
+              "slow_duration": 3000,
+              "slow_ratio": 0.3
+            },
+            "requirements": [
+              "CHEMISTRY",
+              "PHYSICS"
+            ]
+          }
+        },
+        "LASER_TOWER": {
+          "era": "modern",
+          "name": "Laser Tower",
+          "fields": {
+            "damage": {
+              "old": 60,
+              "new": 80
+            },
+            "reload_time": {
+              "old": 3600,
+              "new": 5000
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "modern",
+            "name": "Laser Tower",
+            "sprite": "assets/sprites/structures/sniper_tower/sniper_tower.webp",
+            "damage": 80,
+            "range": 2.5,
+            "reload_time": 5000,
+            "shot_speed": 10,
+            "shot_sprite": "assets/sprites/hud/red_laser.webp",
+            "shot_sprite_scale": 0.3,
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 400000
+            },
+            "effects": {},
+            "requirements": [
+              "RESEARCH_LAB",
+              "ELECTRONICS"
+            ]
+          }
+        },
+        "MG_TOWER": {
+          "era": "modern",
+          "name": "MG Bunker",
+          "fields": {
+            "damage": {
+              "old": 20,
+              "new": 16
+            },
+            "reload_time": {
+              "old": 1000,
+              "new": 350
+            },
+            "requirements": {
+              "old": [
+                "DEFENSE_DEPARTMENT",
+                "MILITARY_SERVICE"
+              ],
+              "new": [
+                "MASS_PRODUCTION"
+              ]
+            },
+            "shot_speed": {
+              "old": 10,
+              "new": 15
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "modern",
+            "name": "MG Bunker",
+            "sprite": "assets/sprites/structures/mg_bunker/mg_bunker.webp",
+            "damage": 16,
+            "range": 1.5,
+            "reload_time": 350,
+            "shot_speed": 15,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.1,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 400000
+            },
+            "effects": {},
+            "requirements": [
+              "MASS_PRODUCTION"
+            ]
+          }
+        },
+        "NAPALM_THROWER": {
+          "era": "modern",
+          "name": "Napalm Thrower",
+          "fields": {
+            "damage": {
+              "old": 9,
+              "new": 1
+            },
+            "effects": {
+              "old": {
+                "burn_dps": 19,
+                "burn_duration": 2000
+              },
+              "new": {
+                "burn_dps": 60,
+                "burn_duration": 2300
+              }
+            },
+            "reload_time": {
+              "old": 3000,
+              "new": 3500
+            },
+            "shot_speed": {
+              "old": 2,
+              "new": 3
+            },
+            "tower_type": {
+              "old": null,
+              "new": "burn"
+            }
+          },
+          "current": {
+            "tower_type": "burn",
+            "era": "modern",
+            "name": "Napalm Thrower",
+            "sprite": "assets/sprites/structures/napalm_tower/napalm_tower.webp",
+            "damage": 1,
+            "range": 1.5,
+            "reload_time": 3500,
+            "shot_speed": 3,
+            "shot_sprite": "assets/sprites/hud/fireball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 540000
+            },
+            "effects": {
+              "burn_dps": 60,
+              "burn_duration": 2300
+            },
+            "requirements": [
+              "WMD_SITE",
+              "CHEMICAL_WARFARE"
+            ]
+          }
+        },
+        "PARALYZNG_TOWER": {
+          "era": "modern",
+          "name": "Paralyzing Tower",
+          "fields": {
+            "damage": {
+              "old": 8,
+              "new": 12
+            },
+            "effects": {
+              "old": {
+                "slow_duration": 1200,
+                "slow_ratio": 0.05
+              },
+              "new": {
+                "slow_duration": 1200,
+                "slow_ratio": 0.1
+              }
+            },
+            "era": {
+              "old": "industrial",
+              "new": "modern"
+            },
+            "reload_time": {
+              "old": 2000,
+              "new": 1800
+            },
+            "requirements": {
+              "old": [
+                "HOSPITAL",
+                "MEDICINE"
+              ],
+              "new": [
+                "CHEMICAL_WARFARE"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "slow"
+            }
+          },
+          "current": {
+            "tower_type": "slow",
+            "era": "modern",
+            "name": "Paralyzing Tower",
+            "sprite": "assets/sprites/structures/paralyzing_tower/paralyzing_tower.webp",
+            "damage": 12,
+            "range": 1.5,
+            "reload_time": 1800,
+            "shot_speed": 5,
+            "shot_sprite": "assets/sprites/hud/iceball.webp",
+            "shot_sprite_scale": 2.0,
+            "projectile_y_offset": 0.2,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 100000
+            },
+            "effects": {
+              "slow_duration": 1200,
+              "slow_ratio": 0.1
+            },
+            "requirements": [
+              "CHEMICAL_WARFARE"
+            ]
+          }
+        },
+        "RADAR_TOWER": {
+          "era": "modern",
+          "name": "Radar Tower",
+          "fields": {
+            "damage": {
+              "old": 23,
+              "new": 19
+            },
+            "effects": {
+              "old": {
+                "splash_radius": 0.6
+              },
+              "new": {
+                "splash_radius": 0.5
+              }
+            },
+            "range": {
+              "old": 3,
+              "new": 1.5
+            },
+            "reload_time": {
+              "old": 2900,
+              "new": 5100
+            },
+            "tower_type": {
+              "old": null,
+              "new": "splash"
+            }
+          },
+          "current": {
+            "tower_type": "splash",
+            "era": "modern",
+            "name": "Radar Tower",
+            "sprite": "assets/sprites/structures/radar_tower/radar_tower.webp",
+            "damage": 19,
+            "range": 1.5,
+            "reload_time": 5100,
+            "shot_speed": 5,
+            "shot_sprite": "assets/sprites/hud/radio.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 500000
+            },
+            "effects": {
+              "splash_radius": 0.5
+            },
+            "requirements": [
+              "SATELLITE_SYSTEMS"
+            ]
+          }
+        },
+        "RIFLE_TOWER": {
+          "era": "renaissance",
+          "name": "Rifle Tower",
+          "fields": {
+            "damage": {
+              "old": 13,
+              "new": 15
+            },
+            "reload_time": {
+              "old": 1400,
+              "new": 900
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "renaissance",
+            "name": "Rifle Tower",
+            "sprite": "assets/sprites/structures/rifle_tower/rifle_tower.webp",
+            "damage": 15,
+            "range": 1.5,
+            "reload_time": 900,
+            "shot_speed": 5,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 85000
+            },
+            "effects": {},
+            "requirements": [
+              "GUNSMITH",
+              "CONSTITUTION"
+            ]
+          }
+        },
+        "ROCKET_TOWER": {
+          "era": "future",
+          "name": "Rocket Tower",
+          "fields": {
+            "damage": {
+              "old": 120,
+              "new": 200
+            },
+            "reload_time": {
+              "old": 3500,
+              "new": 5000
+            },
+            "tower_type": {
+              "old": null,
+              "new": "strong"
+            }
+          },
+          "current": {
+            "tower_type": "strong",
+            "era": "future",
+            "name": "Rocket Tower",
+            "sprite": "assets/sprites/structures/rocket_tower/rocket_tower.webp",
+            "damage": 200,
+            "range": 6,
+            "reload_time": 5000,
+            "shot_speed": 0.5,
+            "shot_sprite": "assets/sprites/hud/rocket.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 1000000
+            },
+            "effects": {},
+            "requirements": [
+              "ROCKET_SCIENCE",
+              "ROCKET_SILO",
+              "CYBER_COMMAND"
+            ]
+          }
+        },
+        "SHOCK_TOWER": {
+          "era": "industrial",
+          "name": "Shock Tower",
+          "fields": {
+            "effects": {
+              "old": {
+                "slow_duration": 1500,
+                "slow_ratio": 0.4
+              },
+              "new": {
+                "slow_duration": 1500,
+                "slow_ratio": 0.35
+              }
+            },
+            "tower_type": {
+              "old": null,
+              "new": "slow"
+            }
+          },
+          "current": {
+            "tower_type": "slow",
+            "era": "industrial",
+            "name": "Shock Tower",
+            "sprite": "assets/sprites/structures/shock_tower/shock_tower.webp",
+            "damage": 14,
+            "range": 1.5,
+            "reload_time": 1700,
+            "shot_speed": 20,
+            "shot_sprite": "assets/sprites/hud/iceball.webp",
+            "shot_sprite_scale": 2.0,
+            "projectile_y_offset": 0.2,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 145000
+            },
+            "effects": {
+              "slow_duration": 1500,
+              "slow_ratio": 0.35
+            },
+            "requirements": [
+              "ELECTRIC_FENCE",
+              "ELECTRICITY"
+            ]
+          }
+        },
+        "SLING_TOWER": {
+          "era": "stone",
+          "name": "Sling Tower",
+          "fields": {
+            "reload_time": {
+              "old": 1700,
+              "new": 1200
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "stone",
+            "name": "Sling Tower",
+            "sprite": "assets/sprites/structures/sling_tower/sling_tower.webp",
+            "damage": 1,
+            "range": 1.5,
+            "reload_time": 1200,
+            "shot_speed": 1.2,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.4,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 150
+            },
+            "effects": {},
+            "requirements": [
+              "MAIN_HOUSE",
+              "HUNTING"
+            ]
+          }
+        },
+        "SNIPER_TOWER": {
+          "era": "future",
+          "name": "Sniper Tower",
+          "fields": {
+            "damage": {
+              "old": 90,
+              "new": 65
+            },
+            "reload_time": {
+              "old": 2700,
+              "new": 1800
+            },
+            "tower_type": {
+              "old": null,
+              "new": "fast"
+            }
+          },
+          "current": {
+            "tower_type": "fast",
+            "era": "future",
+            "name": "Sniper Tower",
+            "sprite": "assets/sprites/structures/sniper_tower/sniper_tower.webp",
+            "damage": 65,
+            "range": 10,
+            "reload_time": 1800,
+            "shot_speed": 10,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 800000
+            },
+            "effects": {},
+            "requirements": [
+              "SPECIAL_FORCES",
+              "ELITE_ACADEMY",
+              "CYBER_COMMAND"
+            ]
+          }
+        },
+        "SPIKE_TRAP": {
+          "era": "neolithic",
+          "name": "Spike Trap",
+          "fields": {
+            "damage": {
+              "old": 2,
+              "new": 3
+            },
+            "tower_type": {
+              "old": null,
+              "new": "slow"
+            }
+          },
+          "current": {
+            "tower_type": "slow",
+            "era": "neolithic",
+            "name": "Spike Trap",
+            "sprite": "assets/sprites/structures/spike_trap/spike_trap.webp",
+            "damage": 3,
+            "range": 1.5,
+            "reload_time": 3000,
+            "shot_speed": 0.7,
+            "shot_sprite": "assets/sprites/hud/shot.webp",
+            "projectile_y_offset": 0.1,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 850
+            },
+            "effects": {
+              "slow_duration": 2000,
+              "slow_ratio": 0.7
+            },
+            "requirements": [
+              "EARTH_WALL",
+              "AGRICULTURE"
+            ]
+          }
+        },
+        "TAR_TOWER": {
+          "era": "medieval",
+          "name": "Tar Tower",
+          "fields": {
+            "damage": {
+              "old": 6,
+              "new": 13
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "range": {
+              "old": 1.5,
+              "new": 2
+            },
+            "reload_time": {
+              "old": 2400,
+              "new": 2100
+            },
+            "requirements": {
+              "old": [
+                "TACTICS",
+                "FEUDALISM"
+              ],
+              "new": [
+                "SIEGE_DEFENSE"
+              ]
+            },
+            "tower_type": {
+              "old": null,
+              "new": "slow"
+            }
+          },
+          "current": {
+            "tower_type": "slow",
+            "era": "medieval",
+            "name": "Tar Tower",
+            "sprite": "assets/sprites/structures/tar_tower/tar_tower.webp",
+            "damage": 13,
+            "range": 2,
+            "reload_time": 2100,
+            "shot_speed": 1,
+            "shot_sprite": "assets/sprites/hud/tarball.webp",
+            "projectile_y_offset": 0.3,
+            "upgrade_costs": {},
+            "max_level": 1,
+            "select": "first",
+            "costs": {
+              "gold": 40000
+            },
+            "effects": {
+              "slow_duration": 3000,
+              "slow_ratio": 0.3
+            },
+            "requirements": [
+              "SIEGE_DEFENSE"
+            ]
+          }
+        }
+      },
+      "base_revision": "6049e2006b408fa4594ac5971f97b8376312025c"
+    },
+    "critters": {
+      "added": {},
+      "removed": {},
+      "changed": {
+        "BOWMAN": {
+          "era": "bronze",
+          "name": "Bowman",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "health"
+            },
+            "health": {
+              "old": 5,
+              "new": 18
+            }
+          },
+          "current": {
+            "critter_type": "health",
+            "era": "bronze",
+            "name": "Bowman",
+            "description": "Fast enough to outpace slow towers, with decent health for its era. A versatile Bronze Age attacker.",
+            "speed": 0.45,
+            "health": 18,
+            "value": 22,
+            "damage": 2,
+            "armour": 0.5,
+            "slots": 1,
+            "time_between": 1600,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/bowman",
+            "requirements": [
+              "CRAFTSMANSHIP",
+              "BOW_MAKER",
+              "COPPER_BRONZE"
+            ]
+          }
+        },
+        "CARGO": {
+          "era": "renaissance",
+          "name": "Cargo",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "carrier"
+            },
+            "health": {
+              "old": 53,
+              "new": 63
+            },
+            "speed": {
+              "old": 0.8,
+              "new": 0.75
+            }
+          },
+          "current": {
+            "critter_type": "carrier",
+            "era": "renaissance",
+            "name": "Cargo",
+            "description": "A heavy transport that deploys three Musketeers on death. Takes four slots but delivers a fearsome payload.",
+            "speed": 0.75,
+            "health": 63,
+            "value": 334,
+            "damage": 4,
+            "armour": 2.5,
+            "slots": 4,
+            "time_between": 2000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "MUSKETEER": 3
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/cargo",
+            "requirements": [
+              "PHYSICS",
+              "MECHANICAL_ENGINEERING"
+            ]
+          }
+        },
+        "CART": {
+          "era": "neolithic",
+          "name": "Cart",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "carrier"
+            },
+            "health": {
+              "old": 2,
+              "new": 5
+            },
+            "requirements": {
+              "old": [
+                "DOMESTICATION",
+                "TOOL_SHOP",
+                "POTTERY"
+              ],
+              "new": [
+                "DOMESTICATION",
+                "WORK_SHOP",
+                "POTTERY"
+              ]
+            }
+          },
+          "current": {
+            "critter_type": "carrier",
+            "era": "neolithic",
+            "name": "Cart",
+            "description": "A carrier that fills three slots but releases five Clubmen on death. Hard to stop once rolling.",
+            "speed": 0.2,
+            "health": 5,
+            "value": 9,
+            "damage": 2,
+            "armour": 1,
+            "slots": 3,
+            "time_between": 4000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "CLUBMAN": 5
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/cart",
+            "requirements": [
+              "DOMESTICATION",
+              "WORK_SHOP",
+              "POTTERY"
+            ]
+          }
+        },
+        "CHARIOT": {
+          "era": "bronze",
+          "name": "Chariot",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "health": {
+              "old": 6,
+              "new": 5
+            },
+            "speed": {
+              "old": 0.65,
+              "new": 1.15
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "bronze",
+            "name": "Chariot",
+            "description": "The fastest Bronze Age unit, charging through defenses before they can react. Light armor but hard to intercept.",
+            "speed": 1.15,
+            "health": 5,
+            "value": 27,
+            "damage": 1,
+            "armour": 0.5,
+            "slots": 1,
+            "time_between": 1100,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/chariot",
+            "requirements": [
+              "HORSEBACK_RIDING",
+              "COPPER_BRONZE"
+            ]
+          }
+        },
+        "CLUBMAN": {
+          "era": "stone",
+          "name": "Clubman",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "health": {
+              "old": 2,
+              "new": 4
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "stone",
+            "name": "Clubman",
+            "description": "A basic melee brawler that takes up extra wave capacity. Stronger than a Slave but equally slow.",
+            "speed": 0.2,
+            "health": 4,
+            "value": 4,
+            "damage": 1,
+            "armour": 0,
+            "slots": 2,
+            "time_between": 1900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/clubman",
+            "requirements": [
+              "HUNTING"
+            ]
+          }
+        },
+        "CONDOTTERI": {
+          "era": "medieval",
+          "name": "Condotteri",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "health"
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "health": {
+              "old": 57,
+              "new": 80
+            }
+          },
+          "current": {
+            "critter_type": "health",
+            "era": "medieval",
+            "name": "Condotteri",
+            "description": "A battle-hardened mercenary with above-average health and good speed. Reliable all-rounder of the medieval era.",
+            "speed": 0.6,
+            "health": 80,
+            "value": 108,
+            "damage": 2,
+            "armour": 2.5,
+            "slots": 1,
+            "time_between": 1000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/condotteri",
+            "requirements": [
+              "STEEL",
+              "FANATISM"
+            ]
+          }
+        },
+        "CRUSADER": {
+          "era": "medieval",
+          "name": "Crusader",
+          "fields": {
+            "armour": {
+              "old": 2.5,
+              "new": 4.5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "spread"
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "health": {
+              "old": 40,
+              "new": 70
+            },
+            "requirements": {
+              "old": [
+                "HOLY_WAR"
+              ],
+              "new": [
+                "HOLY_ORDERS"
+              ]
+            },
+            "speed": {
+              "old": 0.5,
+              "new": 0.55
+            },
+            "time_between": {
+              "old": 1100,
+              "new": 1200
+            }
+          },
+          "current": {
+            "critter_type": "spread",
+            "era": "medieval",
+            "name": "Crusader",
+            "description": "A well-rounded holy warrior with solid armor and decent speed. The backbone of medieval assaults.",
+            "speed": 0.55,
+            "health": 70,
+            "value": 74,
+            "damage": 2,
+            "armour": 4.5,
+            "slots": 1,
+            "time_between": 1200,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/crusader",
+            "requirements": [
+              "HOLY_ORDERS"
+            ]
+          }
+        },
+        "DRAGOONER": {
+          "era": "renaissance",
+          "name": "Dragoon",
+          "fields": {
+            "armour": {
+              "old": 4,
+              "new": 9
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "health": {
+              "old": 112,
+              "new": 148
+            },
+            "slots": {
+              "old": 1.2,
+              "new": 2.2
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "renaissance",
+            "name": "Dragoon",
+            "description": "Mounted gunner combining speed with solid armor. A well-rounded attacker that hits hard and moves fast.",
+            "speed": 0.75,
+            "health": 148,
+            "value": 182,
+            "damage": 2,
+            "armour": 9,
+            "slots": 2.2,
+            "time_between": 1000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.9,
+            "animation": "assets/sprites/critters/dragooner",
+            "requirements": [
+              "STRATEGIC_WARFARE",
+              "GUNSMITH"
+            ]
+          }
+        },
+        "DRONE": {
+          "era": "future",
+          "name": "Drone",
+          "fields": {
+            "armour": {
+              "old": 5,
+              "new": 2
+            },
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "health": {
+              "old": 135,
+              "new": 177
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "future",
+            "name": "Drone",
+            "description": "A fast and agile flying unit with light armor. Difficult to hit but vulnerable to area damage.",
+            "speed": 1.9,
+            "health": 177,
+            "value": 1112,
+            "damage": 1,
+            "armour": 2,
+            "slots": 0.6,
+            "time_between": 300,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {},
+            "scale": 1.4,
+            "animation": "assets/sprites/critters/drone",
+            "requirements": [
+              "FIBER_COMPOSITE"
+            ]
+          }
+        },
+        "HANDGUNNER": {
+          "era": "medieval",
+          "name": "Handgunner",
+          "fields": {
+            "armour": {
+              "old": 4.5,
+              "new": 3
+            },
+            "critter_type": {
+              "old": null,
+              "new": "bulk"
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "health": {
+              "old": 53,
+              "new": 73
+            },
+            "time_between": {
+              "old": 1200,
+              "new": 600
+            }
+          },
+          "current": {
+            "critter_type": "bulk",
+            "era": "medieval",
+            "name": "Handgunner",
+            "description": "Early gunpowder unit combining strong armor with high speed. Blends firepower with surprising mobility.",
+            "speed": 0.7,
+            "health": 73,
+            "value": 101,
+            "damage": 1,
+            "armour": 3,
+            "slots": 1,
+            "time_between": 600,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/handgunner",
+            "requirements": [
+              "COMMAND_CHAIN",
+              "GUNPOWDER"
+            ]
+          }
+        },
+        "HELI": {
+          "era": "modern",
+          "name": "Helicopter",
+          "fields": {
+            "armour": {
+              "old": 4,
+              "new": 8
+            },
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "speed": {
+              "old": 1.5,
+              "new": 1.6
+            },
+            "value": {
+              "old": 812,
+              "new": 1012
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "modern",
+            "name": "Helicopter",
+            "description": "The fastest modern unit, deploying Soldiers on crash. Weak armor but nearly impossible to intercept.",
+            "speed": 1.6,
+            "health": 120,
+            "value": 1012,
+            "damage": 3,
+            "armour": 8,
+            "slots": 2,
+            "time_between": 900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "SOLDIER": 2
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/heli",
+            "requirements": [
+              "AVIATION",
+              "HANGAR"
+            ]
+          }
+        },
+        "HORSEMAN_FAST": {
+          "era": "iron",
+          "name": "Light Horseman",
+          "fields": {
+            "armour": {
+              "old": 0.5,
+              "new": 1
+            },
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "health": {
+              "old": 7,
+              "new": 13
+            },
+            "requirements": {
+              "old": [
+                "HORSEBACK_RIDING",
+                "RACE_COURSE"
+              ],
+              "new": [
+                "HORSEBACK_RIDING",
+                "STABLES"
+              ]
+            },
+            "speed": {
+              "old": 0.75,
+              "new": 1.25
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "iron",
+            "name": "Light Horseman",
+            "description": "Swift cavalry that outpaces most tower fire. Fragile but nearly impossible to intercept.",
+            "speed": 1.25,
+            "health": 13,
+            "value": 45,
+            "damage": 1,
+            "armour": 1,
+            "slots": 1,
+            "time_between": 900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.8,
+            "animation": "assets/sprites/critters/horseman_fast",
+            "requirements": [
+              "HORSEBACK_RIDING",
+              "STABLES"
+            ]
+          }
+        },
+        "HORSEMAN_SLOW": {
+          "era": "iron",
+          "name": "Heavy Horseman",
+          "fields": {
+            "armour": {
+              "old": 2.5,
+              "new": 5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "health": {
+              "old": 21,
+              "new": 20
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "iron",
+            "name": "Heavy Horseman",
+            "description": "Heavily armored cavalry that shrugs off most damage. Slow but nearly unstoppable.",
+            "speed": 0.3,
+            "health": 20,
+            "value": 47,
+            "damage": 2,
+            "armour": 5,
+            "slots": 1,
+            "time_between": 1200,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.8,
+            "animation": "assets/sprites/critters/horseman_slow",
+            "requirements": [
+              "HORSEBACK_RIDING",
+              "STABLES"
+            ]
+          }
+        },
+        "KNIGHT": {
+          "era": "medieval",
+          "name": "Knight",
+          "fields": {
+            "armour": {
+              "old": 6,
+              "new": 8.5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "health": {
+              "old": 68,
+              "new": 110
+            },
+            "slots": {
+              "old": 2,
+              "new": 3
+            },
+            "speed": {
+              "old": 0.4,
+              "new": 0.45
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "medieval",
+            "name": "Knight",
+            "description": "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down.",
+            "speed": 0.45,
+            "health": 110,
+            "value": 194,
+            "damage": 1,
+            "armour": 8.5,
+            "slots": 3,
+            "time_between": 1900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/knight",
+            "requirements": [
+              "FEUDALISM",
+              "COMMAND_CHAIN"
+            ]
+          }
+        },
+        "LARGE_CART": {
+          "era": "iron",
+          "name": "Large Cart",
+          "fields": {
+            "armour": {
+              "old": 2.5,
+              "new": 3
+            },
+            "critter_type": {
+              "old": null,
+              "new": "carrier"
+            },
+            "health": {
+              "old": 7,
+              "new": 11
+            },
+            "speed": {
+              "old": 0.35,
+              "new": 0.45
+            }
+          },
+          "current": {
+            "critter_type": "carrier",
+            "era": "iron",
+            "name": "Large Cart",
+            "description": "A massive carrier that deploys three Pikeneers on destruction. Four slots but delivers a dangerous payload.",
+            "speed": 0.45,
+            "health": 11,
+            "value": 130,
+            "damage": 3,
+            "armour": 3,
+            "slots": 4,
+            "time_between": 2200,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "PIKENEER": 3
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/large_cart",
+            "requirements": [
+              "BOOT_CAMP",
+              "IRON"
+            ]
+          }
+        },
+        "LEGIONARY": {
+          "era": "iron",
+          "name": "Legionary",
+          "fields": {
+            "armour": {
+              "old": 2.5,
+              "new": 1
+            },
+            "critter_type": {
+              "old": null,
+              "new": "health"
+            },
+            "health": {
+              "old": 12,
+              "new": 38
+            }
+          },
+          "current": {
+            "critter_type": "health",
+            "era": "iron",
+            "name": "Legionary",
+            "description": "Rome's elite infantry with excellent armor and methodical advance. Relentless and hard to stop.",
+            "speed": 0.35,
+            "health": 38,
+            "value": 46,
+            "damage": 1,
+            "armour": 1,
+            "slots": 1,
+            "time_between": 1600,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/legionary",
+            "requirements": [
+              "FORGE",
+              "LORE_COLLECTION",
+              "MECHANICS"
+            ]
+          }
+        },
+        "MECH_WARRIOR": {
+          "era": "future",
+          "name": "Mech Warrior",
+          "fields": {
+            "armour": {
+              "old": 11,
+              "new": 18
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "damage": {
+              "old": 5,
+              "new": 4
+            },
+            "health": {
+              "old": 350,
+              "new": 400
+            },
+            "slots": {
+              "old": 2,
+              "new": 3
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "future",
+            "name": "Mech Warrior",
+            "description": "A two-slot combat mech with heavy armor that releases Special Ops on destruction. The pinnacle of future warfare.",
+            "speed": 0.5,
+            "health": 400,
+            "value": 3000,
+            "damage": 4,
+            "armour": 18,
+            "slots": 3,
+            "time_between": 2000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "SPECOPS": 2
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/mech_warrior",
+            "requirements": [
+              "MECH_WARRIOR_LAB",
+              "BIONICS"
+            ]
+          }
+        },
+        "MOTORBIKE": {
+          "era": "industrial",
+          "name": "Motorbike",
+          "fields": {
+            "armour": {
+              "old": 4.5,
+              "new": 4
+            },
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "health": {
+              "old": 91,
+              "new": 86
+            },
+            "speed": {
+              "old": 1.25,
+              "new": 1.5
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "industrial",
+            "name": "Motorbike",
+            "description": "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity.",
+            "speed": 1.5,
+            "health": 86,
+            "value": 264,
+            "damage": 3,
+            "armour": 4,
+            "slots": 1,
+            "time_between": 700,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 2.4,
+            "animation": "assets/sprites/critters/motorbike",
+            "requirements": [
+              "COMBUSTION_ENGINE",
+              "VEHICLE_WORKSHOP"
+            ]
+          }
+        },
+        "MUSKETEER": {
+          "era": "renaissance",
+          "name": "Musketeer",
+          "fields": {
+            "armour": {
+              "old": 6,
+              "new": 5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "bulk"
+            },
+            "health": {
+              "old": 87,
+              "new": 92
+            },
+            "speed": {
+              "old": 0.6,
+              "new": 0.75
+            },
+            "time_between": {
+              "old": 900,
+              "new": 600
+            }
+          },
+          "current": {
+            "critter_type": "bulk",
+            "era": "renaissance",
+            "name": "Musketeer",
+            "description": "Well-armored gunner that advances steadily under fire. Good balance of health, speed, and durability.",
+            "speed": 0.75,
+            "health": 92,
+            "value": 171,
+            "damage": 1,
+            "armour": 5,
+            "slots": 1,
+            "time_between": 600,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/musketeer",
+            "requirements": [
+              "CONSTITUTION",
+              "GUNSMITH"
+            ]
+          }
+        },
+        "NINJA": {
+          "era": "renaissance",
+          "name": "Ninja",
+          "fields": {
+            "armour": {
+              "old": 3,
+              "new": 3.5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "health": {
+              "old": 52,
+              "new": 79
+            },
+            "speed": {
+              "old": 1.1,
+              "new": 1.45
+            },
+            "time_between": {
+              "old": 1100,
+              "new": 900
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "renaissance",
+            "name": "Ninja",
+            "description": "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch.",
+            "speed": 1.45,
+            "health": 79,
+            "value": 168,
+            "damage": 1,
+            "armour": 3.5,
+            "slots": 1,
+            "time_between": 900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/ninja",
+            "requirements": [
+              "STEALTH_SECRECY",
+              "SECRET_ORDER"
+            ]
+          }
+        },
+        "PIKENEER": {
+          "era": "iron",
+          "name": "Pikeneer",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "bulk"
+            },
+            "health": {
+              "old": 11,
+              "new": 13
+            },
+            "time_between": {
+              "old": 700,
+              "new": 600
+            }
+          },
+          "current": {
+            "critter_type": "bulk",
+            "era": "iron",
+            "name": "Pikeneer",
+            "description": "Disciplined spearman who moves quickly in tight formation. Low damage but relentless in numbers.",
+            "speed": 0.6,
+            "health": 13,
+            "value": 45,
+            "damage": 1,
+            "armour": 1.5,
+            "slots": 1,
+            "time_between": 600,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/pikeneer",
+            "requirements": [
+              "COPPER_BRONZE",
+              "DRILL",
+              "IRON"
+            ]
+          }
+        },
+        "SAMURAI": {
+          "era": "medieval",
+          "name": "Samurai",
+          "fields": {
+            "armour": {
+              "old": 3,
+              "new": 3.5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "health": {
+              "old": 21,
+              "new": 36
+            },
+            "speed": {
+              "old": 1,
+              "new": 1.4
+            },
+            "time_between": {
+              "old": 1100,
+              "new": 1000
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "medieval",
+            "name": "Samurai",
+            "description": "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker.",
+            "speed": 1.4,
+            "health": 36,
+            "value": 86,
+            "damage": 1,
+            "armour": 3.5,
+            "slots": 1,
+            "time_between": 1000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/samurai",
+            "requirements": [
+              "TACTICS",
+              "FENCING_SCHOOL"
+            ]
+          }
+        },
+        "SCOUT": {
+          "era": "stone",
+          "name": "Scout",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "fast"
+            },
+            "time_between": {
+              "old": 1800,
+              "new": 2100
+            }
+          },
+          "current": {
+            "critter_type": "fast",
+            "era": "stone",
+            "name": "Scout",
+            "description": "Fast and fragile, dashes through defenses before towers can react. Best used in large swarms.",
+            "speed": 0.6,
+            "health": 1,
+            "value": 4,
+            "damage": 1,
+            "armour": 0,
+            "slots": 1,
+            "time_between": 2100,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.8,
+            "animation": "assets/sprites/critters/scout",
+            "requirements": [
+              "HUNTING"
+            ]
+          }
+        },
+        "SIEGE_RAM": {
+          "era": "medieval",
+          "name": "Siege Ram",
+          "fields": {
+            "armour": {
+              "old": 5,
+              "new": 4.5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "carrier"
+            },
+            "era": {
+              "old": "middle_ages",
+              "new": "medieval"
+            },
+            "health": {
+              "old": 29,
+              "new": 55
+            }
+          },
+          "current": {
+            "critter_type": "carrier",
+            "era": "medieval",
+            "name": "Siege Ram",
+            "description": "A slow carrier that carries Crusaders and deals massive damage. Three slots of nearly unstoppable force.",
+            "speed": 0.4,
+            "health": 55,
+            "value": 330,
+            "damage": 3,
+            "armour": 4.5,
+            "slots": 3,
+            "time_between": 2300,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "CRUSADER": 3
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/siege_ram",
+            "requirements": [
+              "MECHANICS",
+              "THE_KINGS_LAIR"
+            ]
+          }
+        },
+        "SIEGE_TANK": {
+          "era": "modern",
+          "name": "Siege Tank",
+          "fields": {
+            "armour": {
+              "old": 15,
+              "new": 18
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "speed": {
+              "old": 0.35,
+              "new": 0.4
+            },
+            "value": {
+              "old": 857,
+              "new": 1833
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "modern",
+            "name": "Siege Tank",
+            "description": "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy.",
+            "speed": 0.4,
+            "health": 350,
+            "value": 1833,
+            "damage": 2,
+            "armour": 18,
+            "slots": 2,
+            "time_between": 1100,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 2.5,
+            "animation": "assets/sprites/critters/siege_tank",
+            "requirements": [
+              "KNO_ARMOUR",
+              "COMPUTER_TECHNOLOGY"
+            ]
+          }
+        },
+        "SLAVE": {
+          "era": "stone",
+          "name": "Slave",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "spread"
+            },
+            "health": {
+              "old": 1,
+              "new": 2
+            }
+          },
+          "current": {
+            "critter_type": "spread",
+            "era": "stone",
+            "name": "Slave",
+            "description": "Weak and expendable, sent in swarms to overwhelm defenses. Costs almost nothing to field.",
+            "speed": 0.2,
+            "health": 2,
+            "value": 2,
+            "damage": 1,
+            "armour": 0,
+            "slots": 1,
+            "time_between": 2000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 0.8,
+            "animation": "assets/sprites/critters/slave",
+            "requirements": [
+              "BASE_CAMP",
+              "HUNTING"
+            ]
+          }
+        },
+        "SMALL_TANK": {
+          "era": "industrial",
+          "name": "Small Tank",
+          "fields": {
+            "armour": {
+              "old": 9,
+              "new": 13
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "health": {
+              "old": 301,
+              "new": 270
+            },
+            "speed": {
+              "old": 0.4,
+              "new": 0.45
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "industrial",
+            "name": "Small Tank",
+            "description": "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage.",
+            "speed": 0.45,
+            "health": 270,
+            "value": 500,
+            "damage": 2,
+            "armour": 13,
+            "slots": 2,
+            "time_between": 1000,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/small_tank",
+            "requirements": [
+              "COMBUSTION_ENGINE",
+              "FACTORY"
+            ]
+          }
+        },
+        "SOLDIER": {
+          "era": "industrial",
+          "name": "Soldier",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "bulk"
+            }
+          },
+          "current": {
+            "critter_type": "bulk",
+            "era": "industrial",
+            "name": "Soldier",
+            "description": "Industrial-era infantry with solid health and armor. The dependable backbone of modern assaults.",
+            "speed": 0.75,
+            "health": 189,
+            "value": 250,
+            "damage": 1,
+            "armour": 5,
+            "slots": 1,
+            "time_between": 900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/soldier",
+            "requirements": [
+              "BARRACKS",
+              "CONSTITUTION",
+              "BALLISTICS"
+            ]
+          }
+        },
+        "SPECOPS": {
+          "era": "modern",
+          "name": "Special Ops",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "bulk"
+            },
+            "health": {
+              "old": 230,
+              "new": 240
+            },
+            "time_between": {
+              "old": 700,
+              "new": 400
+            }
+          },
+          "current": {
+            "critter_type": "bulk",
+            "era": "modern",
+            "name": "Special Ops",
+            "description": "Elite special forces with advanced armor and tactical precision. Balanced speed and durability.",
+            "speed": 0.8,
+            "health": 240,
+            "value": 941,
+            "damage": 2,
+            "armour": 8,
+            "slots": 1,
+            "time_between": 400,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/specops",
+            "requirements": [
+              "SPECIAL_FORCES",
+              "ELITE_ACADEMY"
+            ]
+          }
+        },
+        "SWORDMAN": {
+          "era": "bronze",
+          "name": "Swordman",
+          "fields": {
+            "armour": {
+              "old": 1.5,
+              "new": 4
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "health": {
+              "old": 6,
+              "new": 14
+            },
+            "slots": {
+              "old": 1,
+              "new": 2
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "bronze",
+            "name": "Swordman",
+            "description": "Well-armored melee fighter with steady movement. A dependable all-purpose attacker.",
+            "speed": 0.3,
+            "health": 14,
+            "value": 25,
+            "damage": 2,
+            "armour": 4,
+            "slots": 2,
+            "time_between": 1700,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/swordman",
+            "requirements": [
+              "COPPER_BRONZE",
+              "SWORD_MAKER"
+            ]
+          }
+        },
+        "THE_GENERAL": {
+          "era": "modern",
+          "name": "The General",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "boss"
+            }
+          },
+          "current": {
+            "critter_type": "boss",
+            "era": "modern",
+            "name": "The General",
+            "description": "Supreme commander with devastating power and near-impenetrable armor. A wave-filling behemoth of modern warfare.",
+            "speed": 0.5,
+            "health": 2270,
+            "value": 9000,
+            "damage": 18,
+            "armour": 13,
+            "slots": 999,
+            "time_between": 2000,
+            "is_boss": true,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/the_general",
+            "requirements": [
+              "RECRUITING_OFFICE",
+              "MILITARY_SERVICE"
+            ]
+          }
+        },
+        "THE_KING": {
+          "era": "renaissance",
+          "name": "The King",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "boss"
+            }
+          },
+          "current": {
+            "critter_type": "boss",
+            "era": "renaissance",
+            "name": "The King",
+            "description": "A legendary ruler who fills an entire wave with impossible health and crushing damage. Bring your best defenses.",
+            "speed": 0.45,
+            "health": 1080,
+            "value": 1000,
+            "damage": 10,
+            "armour": 9,
+            "slots": 999,
+            "time_between": 2000,
+            "is_boss": true,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.2,
+            "animation": "assets/sprites/critters/the_king",
+            "requirements": [
+              "PARLIAMENT",
+              "CONSTITUTION"
+            ]
+          }
+        },
+        "THE_SWORDMASTER": {
+          "era": "iron",
+          "name": "The Swordmaster",
+          "fields": {
+            "critter_type": {
+              "old": null,
+              "new": "boss"
+            }
+          },
+          "current": {
+            "critter_type": "boss",
+            "era": "iron",
+            "name": "The Swordmaster",
+            "description": "An ancient legend who fills an entire wave alone. Enormous health and damage that no single tower can handle.",
+            "speed": 0.4,
+            "health": 256,
+            "value": 300,
+            "damage": 7,
+            "armour": 4.5,
+            "slots": 999,
+            "time_between": 2000,
+            "is_boss": true,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 1.0,
+            "animation": "assets/sprites/critters/the_swordmaster",
+            "requirements": [
+              "IRON",
+              "FENCING_SCHOOL"
+            ]
+          }
+        },
+        "TRANSPORTER": {
+          "era": "industrial",
+          "name": "Transporter",
+          "fields": {
+            "armour": {
+              "old": 4.5,
+              "new": 5
+            },
+            "critter_type": {
+              "old": null,
+              "new": "carrier"
+            },
+            "health": {
+              "old": 126,
+              "new": 130
+            }
+          },
+          "current": {
+            "critter_type": "carrier",
+            "era": "industrial",
+            "name": "Transporter",
+            "description": "A hulking carrier that deploys eight Soldiers on death. Takes ten slots but delivers a full squad.",
+            "speed": 0.4,
+            "health": 130,
+            "value": 547,
+            "damage": 5,
+            "armour": 5,
+            "slots": 10,
+            "time_between": 1900,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": {
+              "SOLDIER": 8
+            },
+            "scale": 2.0,
+            "animation": "assets/sprites/critters/transporter",
+            "requirements": [
+              "COMBUSTION_ENGINE",
+              "VEHICLE_WORKSHOP"
+            ]
+          }
+        },
+        "WARRIOR": {
+          "era": "neolithic",
+          "name": "Warrior",
+          "fields": {
+            "armour": {
+              "old": 0.5,
+              "new": 1
+            },
+            "critter_type": {
+              "old": null,
+              "new": "tank"
+            },
+            "health": {
+              "old": 3,
+              "new": 11
+            }
+          },
+          "current": {
+            "critter_type": "tank",
+            "era": "neolithic",
+            "name": "Warrior",
+            "description": "Reliable all-rounder with basic armor and decent health. A solid first-era attacker.",
+            "speed": 0.2,
+            "health": 11,
+            "value": 8,
+            "damage": 1,
+            "armour": 1,
+            "slots": 1,
+            "time_between": 1700,
+            "is_boss": false,
+            "capture": {},
+            "bonus": {},
+            "spawn_on_death": null,
+            "scale": 0.9,
+            "animation": "assets/sprites/critters/warrior",
+            "requirements": [
+              "CRAFTSMANSHIP",
+              "GRANARY"
+            ]
+          }
+        }
+      },
+      "base_revision": "6049e2006b408fa4594ac5971f97b8376312025c"
+    }
+  }
+}

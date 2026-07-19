@@ -1,0 +1,13 @@
+/* ── Trophy progress (fraction shown in .trophy-condition, bar below it) ── */
+.trophy-progress-bar {
+  height: 5px;
+  background: var(--surface-alt, rgba(26, 26, 40, 0.72));
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 4px 0 8px;
+}
+.trophy-progress-bar-fill {
+  height: 100%;
+  background: var(--accent, #4fc3f7);
+  border-radius: 3px;
+}

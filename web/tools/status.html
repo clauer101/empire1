@@ -360,6 +360,27 @@
     <div id="no-attacks" style="display:none">No active attacks.</div>
   </div>
 
+  <!-- Anti-Farm Protection -->
+  <div class="card">
+    <div class="card-header">
+      Anti-Farm Protection
+      <span class="badge" id="antifarm-count">0</span>
+      <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0" id="antifarm-config"></span>
+    </div>
+    <table id="antifarm-table">
+      <thead>
+        <tr>
+          <th>Attacker</th>
+          <th>Defender</th>
+          <th>Wins (window)</th>
+          <th>Last win</th>
+        </tr>
+      </thead>
+      <tbody id="antifarm-body"></tbody>
+    </table>
+    <div id="no-antifarm" style="display:none">No attacker/defender pair is currently protected.</div>
+  </div>
+
   <!-- Trophies -->
   <div class="card">
     <div class="card-header">
@@ -959,6 +980,39 @@ async function poll() {
     connEl.textContent = '✗ ' + e.message;
     connEl.className = 'err';
   }
+
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/anti-farm/active`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+    });
+    if (r.ok) renderAntiFarm(await r.json());
+  } catch (_) {}
+}
+
+function renderAntiFarm(data) {
+  const pairs = data.active || [];
+  document.getElementById('antifarm-count').textContent = pairs.length;
+  document.getElementById('antifarm-config').textContent =
+    `≥${data.threshold} wins / ${data.window_hours}h`;
+  const tbody = document.getElementById('antifarm-body');
+  const noRow = document.getElementById('no-antifarm');
+
+  if (!pairs.length) {
+    tbody.innerHTML = '';
+    noRow.style.display = 'block';
+    return;
+  }
+  noRow.style.display = 'none';
+
+  tbody.innerHTML = pairs.map(p => `
+    <tr>
+      <td>${p.attacker_name} <span style="color:var(--text-dim)">(${p.attacker_uid})</span></td>
+      <td>${p.defender_name} <span style="color:var(--text-dim)">(${p.defender_uid})</span></td>
+      <td>${p.win_count}</td>
+      <td>${new Date(p.last_win_ts * 1000).toLocaleString()}</td>
+    </tr>
+  `).join('');
 }
 
 async function loadItems() {

@@ -607,7 +607,7 @@ PRINTING_PRESS:
   description: "Mass production of printed materials and information."
   effort: 372418
   costs: {}
-  requirements: [PAINTING, LITERATURE]
+  requirements: [LITERATURE, SCIENCE, STEEL]
   effects:
     research_speed_modifier: 0.2
     culture_offset: 0.2

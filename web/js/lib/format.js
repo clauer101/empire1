@@ -192,6 +192,13 @@ export const CONDITION_META = {
   all_trophies:   ['🏆', () => 'Earn every other trophy'],
 };
 
+/** Format a trophy's current/target progress as a compact fraction, e.g. "37 / 50". */
+export function fmtTrophyProgress(current, target) {
+  if (target == null) return '';
+  const fmt = (v) => (Number.isInteger(v) ? v : v.toFixed(1));
+  return `${fmt(current ?? 0)} / ${fmt(target)}`;
+}
+
 /** Format a trophy condition object → human-readable string. */
 export function fmtTrophyCondition(condition) {
   if (!condition?.type) return '—';

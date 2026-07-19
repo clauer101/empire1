@@ -111,7 +111,6 @@ function init(el, _api, _state) {
         </div>
         <a href="#" id="forgot-pwd-link" class="lp-topnav-signup">Forgot password?</a>
         <a href="#signup" class="lp-topnav-signup">New? Create Empire →</a>
-        <a href="/api.html" class="lp-topnav-api" title="Public REST API — build your own AI bot">🤖 API for AI devs</a>
       </div>
     </div>
 
@@ -198,8 +197,14 @@ function init(el, _api, _state) {
 
     </div>
 
-    <div style="text-align:center;padding:16px 0 24px;font-size:11px;">
-      <a href="#legal" style="color:var(--text-dim);opacity:0.6;text-decoration:none;">Legal</a>
+    <div class="lp-footer">
+      <a href="/devlog.html" class="lp-footer-link">📜 Devlog</a>
+      <span class="lp-footer-sep">·</span>
+      <a href="/fairplay.html" class="lp-footer-link">⚖️ Fair Play</a>
+      <span class="lp-footer-sep">·</span>
+      <a href="/api.html" class="lp-footer-link" title="Public REST API — build your own AI bot">🤖 API for AI devs</a>
+      <span class="lp-footer-sep">·</span>
+      <a href="#legal" class="lp-footer-link lp-footer-link--muted">Legal</a>
     </div>
   `;
 

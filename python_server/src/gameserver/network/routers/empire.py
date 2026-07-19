@@ -721,6 +721,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 empire_service.recalculate_effects(empire)
         earned_rows = await services.trophy_service.get_trophy_rows(uid, empire)
         earned_iids = {r["iid"] for r in earned_rows}
+        progress = await services.trophy_service.get_condition_progress_all(uid, empire)
 
         from gameserver.models.items import ItemType
         all_trophies = [
@@ -731,6 +732,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         result = []
         for trophy in all_trophies:
             earned_row = next((r for r in earned_rows if r["iid"] == trophy.iid), None)
+            current, target = progress.get(trophy.iid, (0.0, 1.0))
             result.append({
                 "iid": trophy.iid,
                 "name": trophy.name,
@@ -741,6 +743,8 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "earned": trophy.iid in earned_iids,
                 "earned_at": earned_row["earned_at"] if earned_row else None,
                 "season": earned_row["season"] if earned_row else None,
+                "progress_current": current,
+                "progress_target": target,
             })
 
         return {"trophies": result}
