@@ -12,7 +12,7 @@ CONFIG: dict = {}  # strict priority dispatch takes no config (kept for call-sit
 
 
 def _ctx(gold, personality="balanced", memory=None):
-    summary = {"resources": {"gold": gold, "culture": 0}}
+    summary = {"resources": {"gold": gold, "culture": 0}, "base_gold": 1.0}
     return BotContext(summary, {}, memory if memory is not None else {},
                       {"type": "defense", "valid_until": "2099-01-01T00:00:00Z"}, None,
                       selection={"top_n": 1},
@@ -85,6 +85,27 @@ def test_unaffordable_top_priority_declares_goal_and_blocks_lower(monkeypatch):
     assert goal and goal["item"] == "TOWER" and goal["amount"] == 500
     # lower-priority option must respect the savings cap: gold 10 - goal 500 < 5 → blocked
     assert action is None
+
+
+def test_zero_income_bypasses_goal_even_for_lower_priority_owner(monkeypatch):
+    # Regression: a fresh empire with base_gold <= 0 can never out-earn a
+    # savings goal it hasn't funded yet (e.g. attack's army goal). Here the
+    # goal-owning option (army, priority 5, unaffordable) is LOWER priority
+    # than an affordable build option (priority 15) — without the no_income
+    # bypass the goal would still be declared and its cap would starve the
+    # higher-priority, currently-affordable option, deadlocking the bot.
+    memory = {}
+    opts = [Option("attack", "create army", lambda api: "ARMY", price=1000,
+                   priority=5, saves_for=1000,
+                   goal_meta={"item": "army", "action": "army", "sticky": True}),
+            Option("baseline", "build BASE_CAMP", lambda api: "BUILT",
+                   price=5, priority=15)]
+    _patch(monkeypatch, opts)
+    ctx = _ctx(10, memory=memory)
+    ctx.summary["base_gold"] = 0.0
+    action = dispatch.choose_action(ctx, CONFIG, "attack")
+    assert memory.get("savings_goal") is None
+    assert _ran(action) == "BUILT"
 
 
 def test_unaffordable_option_without_goal_meta_does_not_block_lower(monkeypatch):

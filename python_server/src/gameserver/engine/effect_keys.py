@@ -47,6 +47,7 @@ EMPIRE_EFFECT_KEYS: list[tuple[str, str, str, str]] = [
     # Citizens
     ("citizen_effect_modifier",                 "🫂", "Citizen efficiency",              "Adds to the productivity bonus of each citizen"),
     ("other_citizen_gold_modifier",             "💰", "Artist/Scientist gold",           "Artists and scientists also contribute to gold income"),
+    ("critter_gold_modifier",                   "🐜", "Critter gold bonus",              "Grants bonus gold when critters are defeated, proportional to gold earned this battle"),
     # Misc
     ("increase_start_gold",                     "💰", "Starting gold",                   "Grants extra gold when respawning after season restart"),
     # Artifacts & Spies

@@ -63,7 +63,7 @@ class TestGameYaml:
         return _load("game.yaml")
 
     def test_required_sections_present(self, raw):
-        for section in ("spy_costs", "prices", "era_effects",
+        for section in ("prices", "era_effects",
                          "structure_upgrades", "critter_upgrades",
                          "end_ralley_effects", "starting_resources"):
             assert section in raw, f"Missing required section '{section}'"

@@ -7,8 +7,8 @@ import { pageTitle } from '../lib/page_title.js';
 import { rest } from '../rest.js';
 import { escHtml, hilite } from '../lib/html.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY, ERA_ROMAN, ERA_LABEL_EN } from '../lib/eras.js';
-import { _buildEraStatsHTML } from './defense/era_data.js';
 import { isGameFrozen } from '../lib/game_state.js';
+import { showSpyReportOverlay, hideSpyReportOverlay } from '../lib/spy_report_overlay.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -231,14 +231,6 @@ function init(el, _api, _state) {
       </div>
     </div>
 
-    <!-- ── Spy Report Overlay ─────────────────────────── -->
-    <div id="spy-report-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);align-items:center;justify-content:center;">
-      <div style="background:var(--panel-bg,#1e1e2e);border:1px solid rgba(150,100,220,0.5);border-radius:var(--radius,8px);padding:20px;min-width:280px;max-width:min(520px,92vw);max-height:80vh;overflow-y:auto;position:relative;">
-        <button id="spy-report-close" style="position:absolute;top:8px;right:12px;background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;">✕</button>
-        <div id="spy-report-body"></div>
-      </div>
-    </div>
-
     <!-- ── Armies Overview ────────────────────────────── -->
     <div id="army-list" class="army-tiles">
       <div class="empty-state"><div class="empty-icon">⚔</div><p>Loading armies…</p></div>
@@ -301,7 +293,6 @@ function init(el, _api, _state) {
   // Move fixed overlays to document.body so they're not inside #shell's stacking context
   // (otherwise the rally banner at z-index:99 outside #shell beats them despite z-index:9999)
   document.body.appendChild(container.querySelector('#new-army-overlay'));
-  document.body.appendChild(container.querySelector('#spy-report-overlay'));
   document.body.appendChild(container.querySelector('#critter-overlay'));
 
   // ── Global target input ─────────────────────────────────────
@@ -325,15 +316,6 @@ function init(el, _api, _state) {
   globalTargetInput.addEventListener('blur', () => setTimeout(() => _syncGlobalTarget(globalTargetInput.value), 100));
 
   // Spy attack button is rendered inside #army-list by renderArmies; listener attached there.
-
-  // Bind spy report overlay close
-  const spyOverlay = document.getElementById('spy-report-overlay');
-  document.getElementById('spy-report-close').addEventListener('click', () => {
-    spyOverlay.style.display = 'none';
-  });
-  spyOverlay.addEventListener('click', (e) => {
-    if (e.target === spyOverlay) spyOverlay.style.display = 'none';
-  });
 
   // Bind critter overlay close
   const critterOverlay = document.getElementById('critter-overlay');
@@ -488,8 +470,7 @@ function leave() {
   // Hide overlays (they live on document.body across navigations)
   const _newArmyOv = document.getElementById('new-army-overlay');
   if (_newArmyOv) _newArmyOv.style.display = 'none';
-  const _spyOv = document.getElementById('spy-report-overlay');
-  if (_spyOv) _spyOv.style.display = 'none';
+  hideSpyReportOverlay();
   const _critterOv = document.getElementById('critter-overlay');
   if (_critterOv) _critterOv.classList.remove('is-open');
 }
@@ -1410,99 +1391,7 @@ async function onSpyAttack() {
 }
 
 function _onSpyReport(msg) {
-  const overlay = document.getElementById('spy-report-overlay');
-  const body = document.getElementById('spy-report-body');
-  if (!overlay || !body) return;
-
-  const era = msg.era || '?';
-  const defName = msg.defender_name || `Player ${msg.defender_uid}`;
-
-  const structHtml = (msg.structures || [])
-    .map((s) => {
-      const upg = Object.entries(s.upgrades || {})
-        .filter(([, v]) => v > 0)
-        .map(([k, v]) => {
-          const abbr = {
-            damage: 'dmg',
-            range: 'rng',
-            reload: 'rld',
-            effect_duration: 'eff_dur',
-            effect_value: 'eff_val',
-          };
-          return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k] || k}+${v}</span>`;
-        })
-        .join(' ');
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-      <span>🗼 ${escHtml(s.name)}</span>
-      <span>${upg || '<span style="opacity:0.4;font-size:11px;">no upgrades</span>'}</span>
-    </div>`;
-    })
-    .join('');
-
-  const critterHtml = (msg.critters || [])
-    .map((c) => {
-      const upg = Object.entries(c.upgrades || {})
-        .filter(([, v]) => v > 0)
-        .map(([k, v]) => {
-          const abbr = { health: 'hp', speed: 'spd', armour: 'arm' };
-          return `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 4px;font-size:11px;">${abbr[k] || k}+${v}</span>`;
-        })
-        .join(' ');
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-      <span>⚔ ${escHtml(c.name)}</span>
-      <span>${upg || '<span style="opacity:0.4;font-size:11px;">no upgrades</span>'}</span>
-    </div>`;
-    })
-    .join('');
-
-  const eraDistHTML = _buildEraStatsHTML(msg.placed_towers || [], null, st.items?.catalog);
-
-  const pathLenHtml = msg.path_length != null
-    ? `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 6px;font-size:12px;font-family:monospace;">${msg.path_length} tiles</span>`
-    : '<span style="opacity:0.4;font-size:12px;">unknown</span>';
-  const towerCountHtml = `<span style="background:rgba(255,255,255,0.08);border-radius:3px;padding:1px 6px;font-size:12px;font-family:monospace;">${(msg.placed_towers || []).length}</span>`;
-
-  body.innerHTML = `
-    <h3 style="margin:0 0 4px;font-size:15px;">🕵 Spy Report</h3>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">${escHtml(defName)}</div>
-
-    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--accent,#4fc3f7);">🛡 Defense Intelligence</div>
-    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:6px;">
-      <div style="font-size:12px;margin-bottom:3px;">🛤 Path length: ${pathLenHtml}</div>
-      <div style="font-size:12px;margin-bottom:8px;">🏰 Towers placed: ${towerCountHtml}</div>
-      ${eraDistHTML}
-    </div>
-
-    <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">⚜ Artifacts</div>
-    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:10px;">
-      ${(msg.artifacts || []).length > 0
-        ? (msg.artifacts).map((a) => {
-            const name = typeof a === 'string' ? a : a.name;
-            const prot = typeof a === 'object' && a.protected;
-            const glow = prot ? 'box-shadow:0 0 8px 2px #4fc3f7,0 0 2px #4fc3f7;border:1px solid #4fc3f7;border-radius:4px;padding:0 4px;' : '';
-            const tag = prot ? ' <span style="font-size:0.75em;color:#4fc3f7;">🔒 protected</span>' : '';
-            return `<div style="padding:2px 0;font-size:12px;${glow}">⚜ ${escHtml(name)}${tag}</div>`;
-          }).join('')
-        : '<div style="opacity:0.4;font-size:12px;">none</div>'}
-    </div>
-
-    <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">👑 Ruler</div>
-    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:10px;">
-      ${msg.ruler
-        ? `<div style="font-size:12px;">👑 ${escHtml(msg.ruler.name)} &mdash; <span style="color:#aaa">Lv ${msg.ruler.level}</span></div>`
-        : '<div style="opacity:0.4;font-size:12px;">none</div>'}
-    </div>
-
-    <div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;color:var(--accent,#4fc3f7);">🔬 Workshop Intelligence &mdash; ${escHtml(era)}</div>
-    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Towers</div>
-      <div style="margin-bottom:10px;">${structHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Units</div>
-      <div>${critterHtml || '<div style="opacity:0.4;font-size:12px;">none</div>'}</div>
-    </div>
-  `;
-
-  overlay.style.display = 'flex';
+  showSpyReportOverlay(msg);
 }
 
 async function onAttackOpponent(e) {

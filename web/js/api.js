@@ -329,6 +329,20 @@ class ApiClient {
         eventBus.emit('server:attack_phase_changed', msg);
         break;
       case 'spy_report':
+        state.upsertSpyReport({
+          defender_uid: msg.defender_uid,
+          defender_name: msg.defender_name,
+          era: msg.era,
+          era_idx: msg.era_idx,
+          placed_towers: msg.placed_towers,
+          path_length: msg.path_length,
+          artifacts: msg.artifacts,
+          ruler: msg.ruler,
+          queues: msg.queues,
+          structures: msg.structures,
+          critters: msg.critters,
+          created_at: new Date().toISOString(),
+        });
         eventBus.emit('server:spy_report', msg);
         break;
       case 'trophy_awarded':

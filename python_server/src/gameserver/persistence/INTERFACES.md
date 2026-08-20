@@ -41,6 +41,11 @@ async send_message(from_uid, to_uid, text) -> None
 # Rankings
 async update_ranking(uid, tai) -> None
 async get_rankings(limit=20) -> list[dict]
+
+# Alliances (directional declarations; mutual = active alliance, pools culture for leaderboard ranking)
+async toggle_alliance_declaration(from_uid, to_uid) -> bool  # insert if absent, delete if present
+async get_alliance_declarations_for(uid) -> tuple[set[int], set[int]]  # (declared_to, declared_by)
+async get_all_mutual_alliances() -> dict[int, set[int]]  # {uid: {allied_uid, ...}} two-way declarations only
 ```
 
 ### State Save/Load

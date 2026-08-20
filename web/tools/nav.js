@@ -48,6 +48,7 @@
     { name: '🐾 Critters',     href: 'critters.html' },
     // Battle/Balancing
     { name: '⚖ Balance',      href: 'balance.html' },
+    { name: '📐 Balance Matrix', href: 'balance-matrix.html' },
     { name: '🌊 AI Waves',     href: 'ai-waves.html' },
     { name: '🤖 AI Generator', href: 'ai_generator.html' },
     { name: '⚔ AI Army',      href: 'send-ai-army.html' },

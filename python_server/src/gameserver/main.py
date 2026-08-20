@@ -190,6 +190,7 @@ def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
             "aura_min": float(item.get("aura_min", 0.0)),
             "aura_max": float(item.get("aura_max", 0.0)),
             "aura_effects": dict(item.get("aura_effects") or {}),
+            "ally_effects": dict(item.get("ally_effects") or {}),
         }
     return result
 
@@ -695,6 +696,13 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
             empire.ruler.level = services.empire_service.ruler_level_from_xp(empire.ruler.xp)
             if services.trophy_service is not None:
                 await services.trophy_service.load_trophies_into_empire(empire.uid, empire)
+        # Populate allied_uids from the DB before the first effects recompute
+        # so ally ruler bonuses (rulers.yaml ally_effects) apply from boot.
+        if services.database is not None:
+            mutual_alliances = await services.database.get_all_mutual_alliances()
+            for empire in saved_state.empires.values():
+                empire.allied_uids = set(mutual_alliances.get(empire.uid, set()))
+        for empire in saved_state.empires.values():
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))
         services.empire_service.sync_aid_counter()

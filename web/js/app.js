@@ -37,6 +37,7 @@ import empirestatsView from './views/empirestats.js';
 import rulerView from './views/ruler.js';
 import seasonResultsView from './views/seasonresults.js';
 import trophiesView from './views/trophies.js';
+import empireView from './views/empire.js';
 
 // ── Determine REST URL ─────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
@@ -70,6 +71,7 @@ eventBus.on('rest:unauthorized', () => {
   workshopView,
   globalmapView,
   globalempiresView,
+  empireView,
   empirestatsView,
   rulerView,
   seasonResultsView,
@@ -265,13 +267,6 @@ function _hideEraOverlay() {
 
 const navBrand = document.getElementById('nav-brand');
 if (navBrand) navBrand.addEventListener('click', _showEraOverlay);
-
-window.addEventListener('empire:attack', (e) => {
-  const { uid, name } = e.detail || {};
-  if (!uid) return;
-  state.pendingAttackTarget = { uid: parseInt(uid, 10), name: name || '' };
-  window.location.hash = '#army';
-});
 
 eventBus.on('state:summary', (data) => {
   if (data?.resources) {

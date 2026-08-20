@@ -6,7 +6,7 @@
 import { rest } from '../rest.js';
 import { pageTitle } from '../lib/page_title.js';
 import { state } from '../state.js';
-import { showIconLegend } from '../lib/format.js';
+import { showIconLegend, EMPIRE_ROW_ACTION_BTN_STYLE } from '../lib/format.js';
 
 /** @type {HTMLElement} */
 let container;
@@ -26,6 +26,8 @@ function init(el) {
   container.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow-x:hidden;';
   container.addEventListener('click', e => {
     if (e.target.closest('.icon-legend-trigger')) showIconLegend();
+    const attackBtn = e.target.closest('.empire-attack-btn');
+    if (attackBtn) _onAttackClick(e, parseInt(attackBtn.dataset.uid, 10), attackBtn.dataset.name);
   });
 }
 
@@ -36,7 +38,10 @@ async function enter() {
   if (!_empiresData) _render(null);
   try {
     const resp = await rest.getEmpires();
-    _empiresData = (resp.empires || []).slice().sort((a, b) => (b.culture ?? 0) - (a.culture ?? 0));
+    // Server already sorts by culture, with mutually-allied empires grouped
+    // into contiguous blocks ranked by pooled culture — do not re-sort here,
+    // that would break alliance_group_id contiguity (see _allianceGroupBorderStyle).
+    _empiresData = resp.empires || [];
   } catch (e) {
     _renderError(e.message);
     return;
@@ -47,6 +52,14 @@ async function enter() {
     if (scrollEl) scrollEl.scrollTop = _savedScrollTop;
   }
   if (isFirstVisit) _savedScrollTop = 0;
+
+  try {
+    const spyResp = await rest.getSpyReports();
+    state.setSpyReports(spyResp.reports || []);
+    _render(_empiresData, true);
+  } catch (e) {
+    console.warn('Failed to load spy reports:', e);
+  }
 }
 
 function leave() {
@@ -80,17 +93,41 @@ function _dot(online) {
 
 // ── Row rendering ─────────────────────────────────────────────────────────────
 
-function _rowHtml(e, rankIndex, selfEra) {
+function _allianceGroupBorderStyle(rankIndex) {
+  const e = _empiresData?.[rankIndex];
+  const gid = e?.alliance_group_id;
+  if (gid == null) return '';
+  const prevGid = _empiresData?.[rankIndex - 1]?.alliance_group_id;
+  const nextGid = _empiresData?.[rankIndex + 1]?.alliance_group_id;
+  const isTop = prevGid !== gid;
+  const isBottom = nextGid !== gid;
+  const c = 'var(--accent,#4fc3f7)';
+  let style = `border-left:1px solid ${c};border-right:1px solid ${c};`;
+  style += isTop ? `border-top:1px solid ${c};margin-top:3px;` : '';
+  style += isBottom ? `border-bottom:1px solid ${c};margin-bottom:3px;` : '';
+  return style;
+}
+
+function _onAttackClick(e, uid, name) {
+  e.preventDefault();
+  state.pendingAttackTarget = { uid, name };
+  window.location.hash = '#army';
+}
+
+function _rowHtml(e, rankIndex) {
+  const detailBtn = !e.is_self
+    ? `<a href="#empire/${e.uid}" class="empire-detail-btn" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--accent,#4fc3f7);border:1px solid var(--accent,#4fc3f7);">🏰</a>`
+    : '';
   const armyEnabled = (state.summary?.effects?.enable_army ?? 0) > 0;
-  const canAttack = armyEnabled && e.era >= selfEra - 1;
-  const attackBtn = !e.is_self && canAttack
-    ? `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>`
+  const attackBtn = (armyEnabled && e.can_attack)
+    ? `<button class="empire-attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--danger,#e53935);border:1px solid var(--danger,#e53935);cursor:pointer;">⚔</button>`
     : '';
 
   const currentMedal = e.season_place === 1 ? '🥇' : e.season_place === 2 ? '🥈' : e.season_place === 3 ? '🥉' : '';
   const pastMedal = e.past_champion ? '🎖️' : '';
   const selfStyle = e.is_self ? 'background:rgba(255,255,255,0.06);' : '';
-  return `<div class="ge-row panel-row${e.is_self ? ' ge-self' : ''}" style="display:flex;flex-direction:row;align-items:center;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);${selfStyle}">
+  const groupBorderStyle = _allianceGroupBorderStyle(rankIndex);
+  return `<div class="ge-row panel-row${e.is_self ? ' ge-self' : ''}" style="display:flex;flex-direction:row;align-items:center;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);${selfStyle}${groupBorderStyle}">
     <span style="color:#888;font-size:0.8em;min-width:22px;">${rankIndex + 1}</span>
     ${_dot(e.online)}
     <div style="min-width:0;flex:1;">
@@ -100,19 +137,13 @@ function _rowHtml(e, rankIndex, selfEra) {
         ${e.is_self ? ' ★' : ''}
       </div>
       <div style="color:#ffa726;font-size:0.82em;">${_fmtCulture(e.resources?.culture ?? e.culture ?? 0)} ✦
-        ${(e.artifact_count || 0) > 0 ? `<span class="icon-legend-trigger" style="margin-left:6px;color:#c9a84c;cursor:pointer;">${'⚜'.repeat(e.artifact_count)}</span>` : ''}
+        ${e.alliance_group_culture != null ? ` <span style="color:var(--accent,#4fc3f7);">(${_fmtCulture(e.alliance_group_culture)})</span>` : ''}
+        ${(e.artifact_count || 0) > 0 ? `<span class="icon-legend-trigger" style="margin-left:6px;cursor:pointer;">${(() => { const p = e.artifact_protected_count || 0; const u = (e.artifact_count || 0) - p; return '<span style="color:#4fc3f7;text-shadow:0 0 8px #4fc3f7;">⚜</span>'.repeat(p) + '<span style="color:#c9a84c;">⚜</span>'.repeat(u); })()}</span>` : ''}
       </div>
     </div>
     ${attackBtn}
+    ${detailBtn}
   </div>`;
-}
-
-function _bindAttackBtns(parent) {
-  parent.querySelectorAll('.attack-btn').forEach((btn) => {
-    btn.onclick = () => window.dispatchEvent(
-      new CustomEvent('empire:attack', { detail: { uid: btn.dataset.uid, name: btn.dataset.name } })
-    );
-  });
 }
 
 // ── Lazy scroll ───────────────────────────────────────────────────────────────
@@ -129,14 +160,13 @@ function _teardownScroll() {
 function _appendBottom() {
   const empires = _empiresData;
   if (!empires || _renderedEnd >= empires.length) return;
-  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
   const target = container.querySelector('#ge-rows');
   if (!target) return;
   const next = empires.slice(_renderedEnd, _renderedEnd + BATCH);
   const wrapper = document.createElement('div');
-  next.forEach((e, j) => wrapper.insertAdjacentHTML('beforeend', _rowHtml(e, _renderedEnd + j, selfEra).trim()));
+  next.forEach((e, j) => wrapper.insertAdjacentHTML('beforeend', _rowHtml(e, _renderedEnd + j).trim()));
   const frag = document.createDocumentFragment();
-  while (wrapper.firstElementChild) { const n = wrapper.firstElementChild; _bindAttackBtns(n); frag.appendChild(n); }
+  while (wrapper.firstElementChild) frag.appendChild(wrapper.firstElementChild);
   target.appendChild(frag);
   _renderedEnd += next.length;
   _updateCountLabel();
@@ -145,16 +175,15 @@ function _appendBottom() {
 function _prependTop() {
   const empires = _empiresData;
   if (!empires || _renderedStart <= 0) return;
-  const selfEra = (empires.find((e) => e.is_self) || {}).era || 1;
   const target = container.querySelector('#ge-rows');
   if (!target) return;
   const batchStart = Math.max(0, _renderedStart - BATCH);
   const next = empires.slice(batchStart, _renderedStart);
   const prevHeight = target.scrollHeight;
   const wrapper = document.createElement('div');
-  next.forEach((e, j) => wrapper.insertAdjacentHTML('beforeend', _rowHtml(e, batchStart + j, selfEra).trim()));
+  next.forEach((e, j) => wrapper.insertAdjacentHTML('beforeend', _rowHtml(e, batchStart + j).trim()));
   const frag = document.createDocumentFragment();
-  while (wrapper.firstElementChild) { const n = wrapper.firstElementChild; _bindAttackBtns(n); frag.appendChild(n); }
+  while (wrapper.firstElementChild) frag.appendChild(wrapper.firstElementChild);
   target.insertBefore(frag, target.firstChild);
   if (_scrollEl) _scrollEl.scrollTop += target.scrollHeight - prevHeight;
   _renderedStart = batchStart;
@@ -208,13 +237,12 @@ function _render(empires, preserveScroll = false) {
   }
 
   const selfIdx = empires.findIndex((e) => e.is_self);
-  const selfEra = selfIdx >= 0 ? (empires[selfIdx].era || 1) : 1;
 
   _renderedStart = Math.max(0, selfIdx - INITIAL_WINDOW);
   _renderedEnd   = Math.min(empires.length, selfIdx + INITIAL_WINDOW + 1);
   const slice = empires.slice(_renderedStart, _renderedEnd);
 
-  const rows = slice.map((e, i) => _rowHtml(e, _renderedStart + i, selfEra)).join('');
+  const rows = slice.map((e, i) => _rowHtml(e, _renderedStart + i)).join('');
 
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:0;width:100%;box-sizing:border-box;height:100%;padding:8px 0 0;">
@@ -226,7 +254,6 @@ function _render(empires, preserveScroll = false) {
       </div>
     </div>`;
 
-  _bindAttackBtns(container);
   _initLazyScroll();
 
   if (!preserveScroll) {

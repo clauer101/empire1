@@ -164,7 +164,10 @@ class TestSkipSiege:
         a.siege_remaining_seconds = 120.0
         svc._attacks = [a]
         result = svc.skip_siege(1, requester_uid=20)
-        assert result is a
+        assert not isinstance(result, str)
+        attack, remaining_before_skip = result
+        assert attack is a
+        assert remaining_before_skip == 120.0
         assert a.siege_remaining_seconds == 0.0
 
 

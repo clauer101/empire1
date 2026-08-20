@@ -268,14 +268,20 @@ class GameLoop:
                 set_season_snapshot_done(True)
                 set_season_reset_triggered(True)
                 # Auto-set next_season_start if not already configured.
+                # Base it on when the rally actually ENDED (activated +
+                # end_rally_duration), not on rally activation — this code
+                # only runs once the rally has already fully elapsed, so
+                # using `activated` alone understates the leadtime by the
+                # rally's own duration (and can even land in the past).
                 if not get_next_season_start() and self._gc is not None:
                     activated = get_end_criterion_activated()
                     if isinstance(activated, datetime):
-                        next_start = (activated + timedelta(seconds=float(self._gc.next_season_start_after_end))).isoformat()
+                        rally_end = activated + timedelta(seconds=float(self._gc.end_rally_duration))
+                        next_start = (rally_end + timedelta(seconds=float(self._gc.next_season_start_after_end))).isoformat()
                         set_season(get_season_number(), get_season_title(), _next_start=next_start)
                         _log.info(
-                            "Auto-set next_season_start: %s (activated + %.0fs)",
-                            next_start, self._gc.next_season_start_after_end,
+                            "Auto-set next_season_start: %s (rally end %s + %.0fs)",
+                            next_start, rally_end.isoformat(), self._gc.next_season_start_after_end,
                         )
                 try:
                     loop = asyncio.get_running_loop()

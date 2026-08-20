@@ -675,6 +675,23 @@ class RestClient {
     return this._post('/api/spy-attack', { target_uid: targetUid });
   }
 
+  /**
+   * Fetch all of the current player's stored latest-per-target spy reports.
+   * @returns {Promise<{reports: Array<object>}>}
+   */
+  async getSpyReports() {
+    return this._get('/api/spy-reports');
+  }
+
+  /**
+   * Toggle the current player's alliance declaration toward targetUid.
+   * @param {number} targetUid
+   * @returns {Promise<object>}
+   */
+  async toggleAlliance(targetUid) {
+    return this._post('/api/diplomacy/alliance', { target_uid: targetUid });
+  }
+
   async rulerSkillUp(skill) {
     return this._post('/api/empire/ruler/skill-up', { skill });
   }

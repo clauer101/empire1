@@ -146,6 +146,30 @@ def test_no_ruler_claim_when_already_chosen():
     assert baseline_action(ctx) is None
 
 
+def test_build_queue_bypasses_savings_cap_when_no_income():
+    # Army savings goal (amount 1000) far exceeds gold (100) → spendable_gold
+    # would normally be 0, blocking HUT (price 20). With base_gold <= 0 the
+    # empire can never out-earn the goal, so the build queue bypasses the cap.
+    memory = {"savings_goal": {
+        "item": "army", "action": "army", "amount": 1000.0,
+        "strategy_type": "attack", "sticky": True,
+        "created_at": "2026-01-01T00:00:00Z", "expires_at": "2099-01-01T00:00:00Z"}}
+    ctx = _ctx({"research_queue": "FIRE", "base_gold": 0.0}, memory=memory)
+    action = baseline_action(ctx)
+    assert action and "build HUT" in action.description
+
+
+def test_build_queue_respects_savings_cap_when_income_positive():
+    # Same goal, but base_gold > 0 → the empire will eventually reach the
+    # goal on its own, so the normal savings cap applies and build stays idle.
+    memory = {"savings_goal": {
+        "item": "army", "action": "army", "amount": 1000.0,
+        "strategy_type": "attack", "sticky": True,
+        "created_at": "2026-01-01T00:00:00Z", "expires_at": "2099-01-01T00:00:00Z"}}
+    ctx = _ctx({"research_queue": "FIRE", "base_gold": 5.0}, memory=memory)
+    assert baseline_action(ctx) is None
+
+
 def test_pending_breach_cleared_even_without_affordable_defense():
     memory = {"pending_breach": True}
 

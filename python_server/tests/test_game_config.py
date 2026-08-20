@@ -84,7 +84,6 @@ class TestGameConfigStrictValidation:
     ]
 
     _REQUIRED_SECTIONS = [
-        "spy_costs",
         "prices",
         "era_effects",
         "structure_upgrades",

@@ -455,7 +455,8 @@ Returns all player empires sorted by culture (leaderboard).
       "era": 4,               // era index 1–9
       "is_self": true,
       "online": true,
-      "artifact_count": 2
+      "artifact_count": 2,
+      "can_attack": true      // false if allied, self, or defender era too low
     }
   ]
 }

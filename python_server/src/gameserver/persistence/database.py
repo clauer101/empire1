@@ -9,12 +9,15 @@ Provides async database operations for:
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
 import aiosqlite
 
 log = logging.getLogger(__name__)
+
+SPY_REPORT_MAX_AGE_DAYS = 3
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS empire_stats (
@@ -127,6 +130,44 @@ CREATE TABLE IF NOT EXISTS password_resets (
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS ix_password_resets_uid ON password_resets(uid);
+-- skip_siege_log is superseded by the generic event_window_log below
+-- (kind="skip_siege") and is no longer written to. Left in place unused —
+-- this codebase has no destructive-migration precedent (only additive
+-- CREATE TABLE IF NOT EXISTS / ALTER TABLE ADD COLUMN), and the data was a
+-- rolling 48h-pruned window anyway, so there is nothing worth migrating.
+CREATE TABLE IF NOT EXISTS skip_siege_log (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    defender_uid            INTEGER NOT NULL,
+    attacker_uid            INTEGER NOT NULL,
+    attack_id               INTEGER NOT NULL,
+    siege_remaining_at_skip REAL NOT NULL,
+    ts                      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_skip_siege_log_defender ON skip_siege_log(defender_uid, ts);
+CREATE TABLE IF NOT EXISTS event_window_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind        TEXT    NOT NULL,
+    key_uid     INTEGER NOT NULL,
+    ref_id      INTEGER,
+    magnitude   REAL,
+    ts          INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_event_window_log_kind_key ON event_window_log(kind, key_uid, ts);
+CREATE TABLE IF NOT EXISTS spy_reports (
+    attacker_uid   INTEGER NOT NULL,
+    defender_uid   INTEGER NOT NULL,
+    defender_name  TEXT    NOT NULL DEFAULT '',
+    report_json    TEXT    NOT NULL DEFAULT '{}',
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (attacker_uid, defender_uid)
+);
+CREATE TABLE IF NOT EXISTS alliance_declarations (
+    from_uid    INTEGER NOT NULL,
+    to_uid      INTEGER NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (from_uid, to_uid)
+);
+CREATE INDEX IF NOT EXISTS ix_alliance_declarations_to ON alliance_declarations(to_uid);
 CREATE TABLE IF NOT EXISTS ai_battle_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -459,6 +500,50 @@ class Database:
         )
         await self._conn.commit()
 
+    # Groups sharing a single IP/fingerprint/device_id larger than this are
+    # skipped entirely — almost certainly a NAT/shared-WiFi/proxy IP rather
+    # than a real multi-account signal, and without this guard a single huge
+    # group turns the O(group_size^2) pairing below into a hang (this is
+    # exactly what caused the game-freezing lifelock this replaces: the old
+    # SQL used a self-join with an OR across three columns, which forced
+    # SQLite into an unindexable O(n^2) scan across the entire login_events
+    # table — 295k+ rows in prod, effectively unbounded runtime on the single
+    # asyncio event loop thread).
+    _DEVICE_CLUSTER_MAX_GROUP_SIZE = 50
+
+    async def _device_cluster_pairs_for_column(
+        self, column: str, recent_only: bool = False,
+    ) -> dict[tuple[int, int], set[str]]:
+        """Group login_events by one signal column and return, for every
+        pair of uids that share a value, the set of shared values.
+
+        Linear in the number of login_events rows (one query, one pass in
+        Python) — no self-join, no per-row cross product across columns.
+        """
+        assert self._conn is not None
+        if recent_only:
+            sql = (
+                f"SELECT {column}, uid FROM login_events"
+                f" WHERE {column} != '' AND logged_in_at >= datetime('now', '-30 days')"
+            )
+        else:
+            sql = f"SELECT {column}, uid FROM login_events WHERE {column} != ''"
+        groups: dict[str, set[int]] = {}
+        async with self._conn.execute(sql) as cursor:
+            async for value, uid in cursor:
+                groups.setdefault(value, set()).add(uid)
+
+        pairs: dict[tuple[int, int], set[str]] = {}
+        for value, uids in groups.items():
+            if len(uids) < 2 or len(uids) > self._DEVICE_CLUSTER_MAX_GROUP_SIZE:
+                continue
+            sorted_uids = sorted(uids)
+            for i in range(len(sorted_uids)):
+                for j in range(i + 1, len(sorted_uids)):
+                    key = (sorted_uids[i], sorted_uids[j])
+                    pairs.setdefault(key, set()).add(value)
+        return pairs
+
     async def get_device_clusters(self) -> list[dict[str, Any]]:
         """Return pairs of UIDs that share device signals, with a risk score.
 
@@ -469,54 +554,30 @@ class Database:
           +15  shared IP, older
         Max score is capped at 100. Pairs with score < 15 are excluded.
         """
-        assert self._conn is not None
-        sql = """
-        SELECT
-            a.uid AS uid_a,
-            b.uid AS uid_b,
-            GROUP_CONCAT(DISTINCT CASE WHEN a.ip != '' AND a.ip = b.ip THEN a.ip END)
-                AS shared_ips,
-            GROUP_CONCAT(DISTINCT CASE WHEN a.fingerprint != '' AND a.fingerprint = b.fingerprint THEN a.fingerprint END)
-                AS shared_fps,
-            GROUP_CONCAT(DISTINCT CASE WHEN a.device_id != '' AND a.device_id = b.device_id THEN a.device_id END)
-                AS shared_dids,
-            MAX(CASE WHEN a.device_id != '' AND a.device_id = b.device_id THEN 1 ELSE 0 END)
-                AS has_did,
-            MAX(CASE WHEN a.fingerprint != '' AND a.fingerprint = b.fingerprint THEN 1 ELSE 0 END)
-                AS has_fp,
-            MAX(CASE WHEN a.ip != '' AND a.ip = b.ip
-                          AND a.logged_in_at >= datetime('now', '-30 days')
-                          AND b.logged_in_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END)
-                AS has_recent_ip,
-            MAX(CASE WHEN a.ip != '' AND a.ip = b.ip
-                          AND NOT (a.logged_in_at >= datetime('now', '-30 days')
-                               AND b.logged_in_at >= datetime('now', '-30 days')) THEN 1 ELSE 0 END)
-                AS has_old_ip
-        FROM login_events a
-        JOIN login_events b
-            ON (a.ip = b.ip OR a.fingerprint = b.fingerprint OR a.device_id = b.device_id)
-            AND a.uid < b.uid
-        WHERE a.device_id != '' OR a.fingerprint != '' OR a.ip != ''
-        GROUP BY a.uid, b.uid
-        """
-        async with self._conn.execute(sql) as cursor:
-            rows = await cursor.fetchall()
-        results = []
-        for r in rows:
+        did_pairs = await self._device_cluster_pairs_for_column("device_id")
+        fp_pairs = await self._device_cluster_pairs_for_column("fingerprint")
+        ip_recent_pairs = await self._device_cluster_pairs_for_column("ip", recent_only=True)
+        ip_all_pairs = await self._device_cluster_pairs_for_column("ip", recent_only=False)
+        ip_old_pairs = {k: v for k, v in ip_all_pairs.items() if k not in ip_recent_pairs}
+
+        all_keys = set(did_pairs) | set(fp_pairs) | set(ip_recent_pairs) | set(ip_old_pairs)
+        results: list[dict[str, Any]] = []
+        for uid_a, uid_b in all_keys:
             score = min(100,
-                int(r[5]) * 70 +   # shared device_id
-                int(r[6]) * 55 +   # shared fingerprint
-                int(r[7]) * 30 +   # shared recent IP
-                int(r[8]) * 15     # shared old IP
+                (70 if (uid_a, uid_b) in did_pairs else 0) +
+                (55 if (uid_a, uid_b) in fp_pairs else 0) +
+                (30 if (uid_a, uid_b) in ip_recent_pairs else 0) +
+                (15 if (uid_a, uid_b) in ip_old_pairs else 0)
             )
             if score < 15:
                 continue
+            shared_ips = ip_recent_pairs.get((uid_a, uid_b), set()) | ip_old_pairs.get((uid_a, uid_b), set())
             results.append({
-                "uid_a": r[0],
-                "uid_b": r[1],
-                "shared_ips": r[2] or "",
-                "shared_fps": r[3] or "",
-                "shared_dids": r[4] or "",
+                "uid_a": uid_a,
+                "uid_b": uid_b,
+                "shared_ips": ",".join(sorted(shared_ips)),
+                "shared_fps": ",".join(sorted(fp_pairs.get((uid_a, uid_b), set()))),
+                "shared_dids": ",".join(sorted(did_pairs.get((uid_a, uid_b), set()))),
                 "score": score,
             })
         results.sort(key=lambda x: x["score"], reverse=True)
@@ -657,6 +718,97 @@ class Database:
         ) as cursor:
             rows = await cursor.fetchall()
         return [self._msg_row_to_dict(r) for r in rows]
+
+    # -- Spy report operations --------------------------------------------
+
+    async def save_spy_report(
+        self, attacker_uid: int, defender_uid: int, defender_name: str, report_data: dict[str, Any],
+    ) -> None:
+        """Upsert the latest spy report for this (attacker, defender) pair."""
+        assert self._conn is not None
+        await self._conn.execute(
+            "INSERT INTO spy_reports (attacker_uid, defender_uid, defender_name, report_json, created_at)"
+            " VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)"
+            " ON CONFLICT(attacker_uid, defender_uid) DO UPDATE SET"
+            " defender_name = excluded.defender_name,"
+            " report_json = excluded.report_json,"
+            " created_at = excluded.created_at",
+            (attacker_uid, defender_uid, defender_name, json.dumps(report_data)),
+        )
+        await self._conn.commit()
+
+    async def get_spy_reports_for(self, attacker_uid: int) -> list[dict[str, Any]]:
+        """Return latest-per-target spy reports sent by attacker_uid within
+        SPY_REPORT_MAX_AGE_DAYS, newest first. Older reports are hidden."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT defender_uid, defender_name, report_json, created_at FROM spy_reports"
+            " WHERE attacker_uid = ? AND created_at >= datetime('now', ?) ORDER BY created_at DESC",
+            (attacker_uid, f"-{SPY_REPORT_MAX_AGE_DAYS} days"),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        out = []
+        for r in rows:
+            data = json.loads(r["report_json"])
+            out.append({
+                "defender_uid": r["defender_uid"],
+                "defender_name": r["defender_name"],
+                "created_at": r["created_at"],
+                **data,
+            })
+        return out
+
+    # -- Alliance/diplomacy operations -------------------------------------
+
+    async def toggle_alliance_declaration(self, from_uid: int, to_uid: int) -> bool:
+        """Toggle from_uid's declaration toward to_uid: insert if absent, delete if present.
+
+        Returns True if a declaration now exists (inserted), False if it was removed (deleted).
+        """
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT 1 FROM alliance_declarations WHERE from_uid = ? AND to_uid = ?",
+            (from_uid, to_uid),
+        ) as cursor:
+            exists = await cursor.fetchone() is not None
+        if exists:
+            await self._conn.execute(
+                "DELETE FROM alliance_declarations WHERE from_uid = ? AND to_uid = ?",
+                (from_uid, to_uid),
+            )
+        else:
+            await self._conn.execute(
+                "INSERT INTO alliance_declarations (from_uid, to_uid, created_at)"
+                " VALUES (?, ?, CURRENT_TIMESTAMP)",
+                (from_uid, to_uid),
+            )
+        await self._conn.commit()
+        return not exists
+
+    async def get_alliance_declarations_for(self, uid: int) -> tuple[set[int], set[int]]:
+        """Return (declared_to, declared_by) uid sets for uid's alliance declarations."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT to_uid FROM alliance_declarations WHERE from_uid = ?", (uid,)
+        ) as cursor:
+            declared_to = {r["to_uid"] for r in await cursor.fetchall()}
+        async with self._conn.execute(
+            "SELECT from_uid FROM alliance_declarations WHERE to_uid = ?", (uid,)
+        ) as cursor:
+            declared_by = {r["from_uid"] for r in await cursor.fetchall()}
+        return declared_to, declared_by
+
+    async def get_all_mutual_alliances(self) -> dict[int, set[int]]:
+        """Return {uid: {allied_uid, ...}} for every uid with at least one mutual (two-way) declaration."""
+        assert self._conn is not None
+        async with self._conn.execute("SELECT from_uid, to_uid FROM alliance_declarations") as cursor:
+            pairs = {(r["from_uid"], r["to_uid"]) for r in await cursor.fetchall()}
+        mutual: dict[int, set[int]] = {}
+        for from_uid, to_uid in pairs:
+            if (to_uid, from_uid) in pairs:
+                mutual.setdefault(from_uid, set()).add(to_uid)
+                mutual.setdefault(to_uid, set()).add(from_uid)
+        return mutual
 
     async def unread_count_private(self, uid: int) -> int:
         """Unread private messages for uid (excludes battle reports and global)."""
@@ -931,6 +1083,117 @@ class Database:
         except Exception:
             log.warning("record_attacker_win failed attacker=%d defender=%d", attacker_uid, defender_uid, exc_info=True)
 
+    # -- Generic event-window tracker --------------------------------------
+    #
+    # A shared substrate for "record event X for key Y, prune old rows, count
+    # events in a trailing window, list keys currently over a threshold with
+    # timing-interval statistics" — the pattern skip-siege abuse detection and
+    # BotDetector's timing-regularity signal both need. `kind` discriminates
+    # between event families sharing this one table (e.g. "skip_siege",
+    # "api_call"); rows of different kinds never cross-contaminate counts.
+    # Anti-farm protection is NOT built on this — it's pair-keyed
+    # (attacker_uid, defender_uid) rather than single-key, and already has
+    # its own well-tested table (attacker_win_log) tied to gameplay rewards.
+
+    async def record_window_event(
+        self, kind: str, key_uid: int, ts: int,
+        ref_id: int | None = None, magnitude: float | None = None,
+        prune_older_than_s: int = 172_800,
+    ) -> None:
+        """Record one (kind, key_uid) event; prunes this (kind, key_uid)'s
+        rows older than prune_older_than_s (default 48h) before inserting."""
+        assert self._conn is not None
+        try:
+            await self._conn.execute(
+                "DELETE FROM event_window_log WHERE kind = ? AND key_uid = ? AND ts < ?",
+                (kind, key_uid, ts - prune_older_than_s),
+            )
+            await self._conn.execute(
+                "INSERT INTO event_window_log (kind, key_uid, ref_id, magnitude, ts)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (kind, key_uid, ref_id, magnitude, ts),
+            )
+            await self._conn.commit()
+        except Exception:
+            log.warning("record_window_event failed kind=%s key_uid=%d", kind, key_uid, exc_info=True)
+
+    async def count_recent_window_events(self, kind: str, key_uid: int, since_ts: int) -> int:
+        """Count (kind, key_uid) events at/after since_ts."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT COUNT(*) FROM event_window_log WHERE kind = ? AND key_uid = ? AND ts >= ?",
+            (kind, key_uid, since_ts),
+        ) as cur:
+            row = await cur.fetchone()
+        return row[0] if row else 0
+
+    @staticmethod
+    def _window_event_stats(rows: Any) -> dict[str, Any]:
+        """Compute count/last_ts/mean/stddev-interval/distinct_ref_ids/max_magnitude
+        from a list of (ref_id, magnitude, ts) rows for one key, ordered by ts."""
+        timestamps = [r["ts"] for r in rows]
+        intervals = [b - a for a, b in zip(timestamps, timestamps[1:])]
+        if intervals:
+            mean_interval = sum(intervals) / len(intervals)
+            variance = sum((x - mean_interval) ** 2 for x in intervals) / len(intervals)
+            stddev_interval = variance ** 0.5
+        else:
+            mean_interval = 0.0
+            stddev_interval = 0.0
+        ref_ids = {r["ref_id"] for r in rows if r["ref_id"] is not None}
+        magnitudes = [r["magnitude"] for r in rows if r["magnitude"] is not None]
+        return {
+            "event_count": len(rows),
+            "last_ts": timestamps[-1],
+            "mean_interval_s": mean_interval,
+            "stddev_interval_s": stddev_interval,
+            "distinct_ref_ids": len(ref_ids),
+            "max_magnitude": max(magnitudes) if magnitudes else None,
+        }
+
+    async def get_active_window_event_keys(
+        self, kind: str, since_ts: int, threshold: int,
+    ) -> list[dict[str, Any]]:
+        """Return per-key_uid stats for every key_uid at/over threshold event
+        count within the trailing window, for a given kind."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT key_uid, ref_id, magnitude, ts FROM event_window_log"
+            " WHERE kind = ? AND ts >= ? ORDER BY key_uid, ts",
+            (kind, since_ts),
+        ) as cursor:
+            rows = await cursor.fetchall()
+
+        by_key: dict[int, list[Any]] = {}
+        for r in rows:
+            by_key.setdefault(r["key_uid"], []).append(r)
+
+        result: list[dict[str, Any]] = []
+        for key_uid, events in by_key.items():
+            if len(events) < threshold:
+                continue
+            result.append({"key_uid": key_uid, **self._window_event_stats(events)})
+        result.sort(key=lambda r: r["event_count"], reverse=True)
+        return result
+
+    async def get_window_event_stats_for_key(
+        self, kind: str, key_uid: int, since_ts: int,
+    ) -> dict[str, Any] | None:
+        """Return stats for a single (kind, key_uid) within the trailing
+        window, or None if there are no events — a single-key variant of
+        get_active_window_event_keys that avoids fetching every key's rows
+        just to read one."""
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT key_uid, ref_id, magnitude, ts FROM event_window_log"
+            " WHERE kind = ? AND key_uid = ? AND ts >= ? ORDER BY ts",
+            (kind, key_uid, since_ts),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        if not rows:
+            return None
+        return {"key_uid": key_uid, **self._window_event_stats(rows)}
+
     async def record_artifact_lost(self, uid: int, artifact_iid: str, ts: float) -> None:
         """Accumulate hold duration into total_held_secs and clear acquired_at."""
         assert self._conn is not None
@@ -965,27 +1228,74 @@ class Database:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
 
+    # Sanity cap for artifact hold durations shown in season-end stats. A
+    # corrupted/epoch-zero `acquired_at` (see the era-3 grant bug, now fixed
+    # in EmpireService._maybe_grant_artifact_for_era3) can otherwise produce
+    # multi-decade "held" durations that dwarf all real entries. No single
+    # legitimate hold can exceed a season's lifetime, so anything past one
+    # year is filtered out rather than displayed.
+    _MAX_PLAUSIBLE_HOLD_SECS = 365 * 24 * 3600
+
     async def get_artifact_hold_totals(self) -> list[dict[str, Any]]:
-        """Return (uid, artifact_iid, held_secs) including ongoing holds."""
+        """Return (uid, artifact_iid, held_secs) including ongoing holds.
+
+        Excludes holds exceeding _MAX_PLAUSIBLE_HOLD_SECS (see constant).
+        """
         assert self._conn is not None
         async with self._conn.execute(
-            "SELECT uid, artifact_iid,"
-            " total_held_secs + CASE WHEN acquired_at IS NOT NULL"
-            " THEN (unixepoch() - acquired_at) ELSE 0 END AS held_secs"
-            " FROM artifact_holds"
+            "SELECT uid, artifact_iid, held_secs FROM ("
+            "  SELECT uid, artifact_iid,"
+            "    total_held_secs + CASE WHEN acquired_at IS NOT NULL"
+            "    THEN (unixepoch() - acquired_at) ELSE 0 END AS held_secs"
+            "  FROM artifact_holds"
+            ") WHERE held_secs <= ?",
+            (self._MAX_PLAUSIBLE_HOLD_SECS,),
         ) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
 
     async def get_longest_artifact_hold_per_uid(self) -> list[dict[str, Any]]:
-        """Return the longest single-artifact hold duration per uid."""
+        """Return the longest single-artifact hold duration per uid.
+
+        Excludes holds exceeding _MAX_PLAUSIBLE_HOLD_SECS (see constant) —
+        filtered per-row, before the MAX() aggregation, so one implausible
+        hold can't mask (or masquerade as) a uid's real longest hold.
+        """
         assert self._conn is not None
         async with self._conn.execute(
-            "SELECT uid, MAX("
-            "  total_held_secs + CASE WHEN acquired_at IS NOT NULL"
-            "  THEN (unixepoch() - acquired_at) ELSE 0 END"
-            ") AS longest_hold_secs"
-            " FROM artifact_holds GROUP BY uid"
+            "SELECT uid, MAX(held_secs) AS longest_hold_secs FROM ("
+            "  SELECT uid,"
+            "    total_held_secs + CASE WHEN acquired_at IS NOT NULL"
+            "    THEN (unixepoch() - acquired_at) ELSE 0 END AS held_secs"
+            "  FROM artifact_holds"
+            ") WHERE held_secs <= ?"
+            " GROUP BY uid",
+            (self._MAX_PLAUSIBLE_HOLD_SECS,),
+        ) as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def get_longest_single_artifact_holds(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Return the longest individual artifact holds, across all empires and
+        artifacts, ordered longest-first.
+
+        Unlike get_longest_artifact_hold_per_uid (best hold per player, any
+        artifact), this answers "which artifact was held longest by a single
+        player, and by whom" — e.g. "Book of Heroes held by Alice for 3 days".
+        Excludes holds exceeding _MAX_PLAUSIBLE_HOLD_SECS (see constant).
+        `limit` caps the row count (season-end stats only need the top few
+        plus enough rows to find the requesting player's own rank).
+        """
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT uid, artifact_iid, held_secs FROM ("
+            "  SELECT uid, artifact_iid,"
+            "    total_held_secs + CASE WHEN acquired_at IS NOT NULL"
+            "    THEN (unixepoch() - acquired_at) ELSE 0 END AS held_secs"
+            "  FROM artifact_holds"
+            ") WHERE held_secs <= ?"
+            " ORDER BY held_secs DESC LIMIT ?",
+            (self._MAX_PLAUSIBLE_HOLD_SECS, limit),
         ) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]

@@ -51,6 +51,7 @@ class Empire:
         artifacts: Collected artifact IIDs.
         bosses: Boss critters {iid: Critter}.
         max_life: Maximum life points.
+        allied_uids: Mutually-allied partner uids (DB-derived, not persisted).
     """
 
     uid: int
@@ -84,6 +85,10 @@ class Empire:
     max_life: float = 10.0
     ruler: Ruler = field(default_factory=Ruler)
     is_bot: bool = False
+    # Mutually-allied partner uids — cached from alliance_declarations (DB is
+    # the source of truth; this is repopulated at startup and kept in sync by
+    # the diplomacy router). Not persisted to state.yaml.
+    allied_uids: set[int] = field(default_factory=set)
     # -- Helpers ---------------------------------------------------------
 
     def get_effect(self, key: str, default: float = 0.0) -> float:

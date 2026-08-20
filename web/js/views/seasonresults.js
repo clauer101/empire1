@@ -28,7 +28,7 @@ async function enter() {
   try {
     const data = await rest.getSeasonResults();
     const myUid = _state?.auth?.uid ?? null;
-    _render(data?.empires || [], data?.season_number ?? 1, data?.season_title ?? '', data?.next_season_start ?? '', myUid, data?.era_firsts ?? [], data?.era_order ?? []);
+    _render(data?.empires || [], data?.season_number ?? 1, data?.season_title ?? '', data?.next_season_start ?? '', myUid, data?.era_firsts ?? [], data?.era_order ?? [], data?.longest_single_artifact_holds ?? []);
   } catch (err) {
     _renderError(err);
   }
@@ -54,7 +54,7 @@ function _renderError(err) {
     </div>`;
 }
 
-function _render(empires, seasonNumber, seasonTitle, nextSeasonStart, myUid, eraFirsts, eraOrder) {
+function _render(empires, seasonNumber, seasonTitle, nextSeasonStart, myUid, eraFirsts, eraOrder, longestSingleArtifactHolds) {
   if (!empires.length) {
     container.innerHTML = `<div class="sr-wrap"><div class="sr-error">No data available.</div></div>`;
     return;
@@ -85,6 +85,7 @@ function _render(empires, seasonNumber, seasonTitle, nextSeasonStart, myUid, era
           <h2 class="sr-awards-title">Honorable Mentions</h2>
           <div class="sr-awards">
             ${_allAwardsHtml(empires, myUid)}
+            ${_longestSingleArtifactHoldHtml(longestSingleArtifactHolds, myUid)}
           </div>
         </div>
 
@@ -222,6 +223,48 @@ function _allAwardsHtml(empires, myUid) {
         </span>
       </div>`;
   }).join('');
+}
+
+function _longestSingleArtifactHoldHtml(rows, myUid) {
+  if (!rows || !rows.length) return '';
+
+  const rowStr = (r) => `${_esc(r.empire_name)} held <strong>${_esc(r.artifact_name)}</strong>: ${fmtSecs(r.held_secs)}`;
+
+  const sorted = [...rows].sort((a, b) => (b.held_secs ?? 0) - (a.held_secs ?? 0));
+  const top = sorted[0]?.held_secs ?? 0;
+  const rank1 = sorted.filter(r => r.held_secs >= top);
+  const rest2 = sorted.slice(rank1.length);
+  const top2val = rest2[0]?.held_secs ?? null;
+  const rank2 = top2val != null ? rest2.filter(r => r.held_secs >= top2val) : [];
+  const rest3 = rest2.slice(rank2.length);
+  const top3val = rest3[0]?.held_secs ?? null;
+  const rank3 = top3val != null ? rest3.filter(r => r.held_secs >= top3val) : [];
+
+  // eslint-disable-next-line eqeqeq -- uid may be int from API vs string from JWT
+  const isMyRow = (r) => myUid != null && r.uid == myUid;
+  const myRankGroup = rank1.some(isMyRow) ? 1 : rank2.some(isMyRow) ? 2 : rank3.some(isMyRow) ? 3 : null;
+  const myBestIdx = myUid != null ? sorted.findIndex(isMyRow) : -1;
+  const myBestRow = myBestIdx >= 0 ? sorted[myBestIdx] : null;
+
+  const nameStr = rank1.map(r => `<strong>${rowStr(r)}</strong>`).join(', ');
+  const sub2 = rank2.length ? `<span class="sr-award-sub">2nd: ${rank2.map(rowStr).join(', ')}</span>` : '';
+  const sub3 = rank3.length ? `<span class="sr-award-sub">3rd: ${rank3.map(rowStr).join(', ')}</span>` : '';
+  const myValStr = (myBestRow && myRankGroup == null)
+    ? `<span class="sr-my-value">You: #${myBestIdx + 1} (${rowStr(myBestRow)})</span>`
+    : (myBestRow && myRankGroup != null && myRankGroup > 1)
+    ? `<span class="sr-my-value">You: #${myRankGroup}</span>`
+    : '';
+
+  return `
+    <div class="sr-award-row">
+      <span class="sr-award-icon">📜</span>
+      <span class="sr-award-label">Longest Single Artifact Hold<span class="sr-award-desc">The artifact held longest by a single empire without being stolen, across all players.</span></span>
+      <span class="sr-award-winner">
+        <span class="sr-award-top">${nameStr}</span>
+        ${sub2}${sub3}
+        ${myValStr}
+      </span>
+    </div>`;
 }
 
 const _ERA_LABELS = {

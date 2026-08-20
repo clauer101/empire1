@@ -27,7 +27,7 @@
 #   Neolithic      →  CLUBMAN / SCOUT / WARRIOR
 #   Bronze Age     →  BOWMAN / SWORDMAN / CHARIOT
 #   Iron Age       →  PIKENEER / HORSEMAN_FAST / LEGIONARY
-#   Medieval    →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM
+#   Medieval       →  CRUSADER / KNIGHT / SAMURAI / SIEGE_RAM
 #   Renaissance    →  NINJA / MUSKETEER / DRAGOONER
 #   Industrial     →  SOLDIER / MOTORBIKE / SMALL_TANK / SIEGE_TANK
 #   Modern         →  SPECOPS / HELI
@@ -78,7 +78,7 @@ armies:
     travel_time: 12
     trigger:
       items: [BASE_CAMP]
-    waves: []
+    waves:
 
   # ──────────────────────────────────────────────────────────
   #   NEOLITHIC  (Effort 800 – 7.500)
@@ -417,10 +417,6 @@ armies:
         slots: 26
       - critter: SAMURAI
         slots: 28
-      - critter: SIEGE_RAM
-        slots: 30
-      - critter: CONDOTTERI
-        slots: 34
 
   - name: "Knights' Charge"
     travel_time: 8100
@@ -453,14 +449,8 @@ armies:
         slots: 26
       - critter: KNIGHT
         slots: 28
-      - critter: SIEGE_RAM
+      - critter: NINJA
         slots: 30
-      - critter: CONDOTTERI
-        slots: 32
-      - critter: HANDGUNNER
-        slots: 34
-      - critter: HANDGUNNER
-        slots: 32
 
   - name: "Crusader Host"
     travel_time: 9300
@@ -493,13 +483,9 @@ armies:
         slots: 26
       - critter: SAMURAI
         slots: 28
-      - critter: KNIGHT
+      - critter: THE_SWORDMASTER
         slots: 30
-      - critter: CRUSADER
-        slots: 32
-      - critter: CRUSADER
-        slots: 34
-      - critter: KNIGHT
+      - critter: LARGE_CART
         slots: 31
 
   - name: "Castle Assault"
@@ -531,18 +517,14 @@ armies:
         slots: 24
       - critter: SIEGE_RAM
         slots: 26
-      - critter: CRUSADER
+      - critter: LEGIONARY
         slots: 28
       - critter: CRUSADER
         slots: 30
       - critter: SAMURAI
         slots: 32
-      - critter: CONDOTTERI
-        slots: 34
-      - critter: SIEGE_RAM
+      - critter: HORSEMAN_FAST
         slots: 32
-      - critter: KNIGHT
-        slots: 33
 
   - name: "Feudal Army"
     travel_time: 12800
@@ -577,14 +559,10 @@ armies:
         slots: 28
       - critter: KNIGHT
         slots: 30
-      - critter: CONDOTTERI
+      - critter: LARGE_CART
         slots: 32
-      - critter: CONDOTTERI
-        slots: 34
       - critter: CRUSADER
         slots: 31
-      - critter: CRUSADER
-        slots: 33
 
   - name: "Holy Crusade"
     travel_time: 11400
@@ -613,18 +591,14 @@ armies:
         slots: 23
       - critter: MUSKETEER
         slots: 12
-      - critter: HANDGUNNER
+      - critter: THE_SWORDMASTER
         slots: 24
       - critter: SIEGE_RAM
         slots: 28
       - critter: SIEGE_RAM
         slots: 30
-      - critter: KNIGHT
-        slots: 32
       - critter: HANDGUNNER
         slots: 31
-      - critter: CRUSADER
-        slots: 28
       - critter: CRUSADER
         slots: 34
 

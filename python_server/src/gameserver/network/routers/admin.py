@@ -7,7 +7,7 @@ from typing import Any, TYPE_CHECKING
 from fastapi import APIRouter, Depends, HTTPException
 
 from gameserver.network.jwt_auth import get_current_uid_admin
-from gameserver.network.rest_models import SavedMapRenameBody
+from gameserver.network.rest_models import SavedMapRenameBody, GoldAdjustBody, CultureAdjustBody
 from gameserver.network.rest_api import (
     _is_recently_active,
     _ERA_LABELS_EN,
@@ -367,8 +367,25 @@ def make_router(services: "Services") -> APIRouter:
 
 
     @router.get("/api/admin/device-clusters")
-    async def admin_device_clusters(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
-        return []
+    async def admin_device_clusters(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return every pair of UIDs sharing login-device signals (device_id,
+        fingerprint, or IP), with resolved empire names, for manual
+        multi-account review.
+        """
+        assert services.empire_service is not None
+        assert services.database is not None
+
+        clusters = await services.database.get_device_clusters()
+        result = []
+        for c in clusters:
+            empire_a = services.empire_service.get(c["uid_a"])
+            empire_b = services.empire_service.get(c["uid_b"])
+            result.append({
+                **c,
+                "name_a": empire_a.name if empire_a else f"uid {c['uid_a']}",
+                "name_b": empire_b.name if empire_b else f"uid {c['uid_b']}",
+            })
+        return {"active": result}
 
     @router.get("/api/admin/users")
     async def admin_list_users(_uid: int = Depends(require_admin)) -> list[dict[str, Any]]:
@@ -463,6 +480,7 @@ def make_router(services: "Services") -> APIRouter:
         for iid, item in up.items.items():
             entry = {
                 "name": item.name,
+                "era": item.era,
                 "effects": dict(item.effects),
             }
             if item.item_type == ItemType.BUILDING:
@@ -514,6 +532,48 @@ def make_router(services: "Services") -> APIRouter:
         services.empire_service.invalidate_tile_index()
         log.info("Admin removed tile %s from empire uid=%d (was %r)", tile_key, uid, removed)
         return {"ok": True, "removed": removed}
+
+    @router.post("/api/admin/empire/{uid}/gold-adjust")
+    async def admin_adjust_gold(uid: int, body: GoldAdjustBody, _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Apply a one-off gold bonus (positive) or malus (negative) to an empire.
+
+        Instant adjustment to the current gold balance — not a persistent
+        per-second modifier. Result is clamped to never go below 0.
+        """
+        assert services.empire_service is not None
+        empire = services.empire_service.get(uid)
+        if empire is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
+        before = empire.resources.get("gold", 0.0)
+        after = max(0.0, before + body.amount)
+        empire.resources["gold"] = after
+        log.info(
+            "Admin gold adjustment: uid=%d amount=%.1f gold %.1f → %.1f%s",
+            uid, body.amount, before, after,
+            f" (reason: {body.reason})" if body.reason else "",
+        )
+        return {"ok": True, "uid": uid, "gold_before": before, "gold_after": after, "amount_applied": after - before}
+
+    @router.post("/api/admin/empire/{uid}/culture-adjust")
+    async def admin_adjust_culture(uid: int, body: CultureAdjustBody, _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Apply a one-off culture bonus (positive) or malus (negative) to an empire.
+
+        Instant adjustment to the current culture balance — not a persistent
+        per-second modifier. Result is clamped to never go below 0.
+        """
+        assert services.empire_service is not None
+        empire = services.empire_service.get(uid)
+        if empire is None:
+            raise HTTPException(status_code=404, detail=f"Empire uid={uid} not found")
+        before = empire.resources.get("culture", 0.0)
+        after = max(0.0, before + body.amount)
+        empire.resources["culture"] = after
+        log.info(
+            "Admin culture adjustment: uid=%d amount=%.1f culture %.1f → %.1f%s",
+            uid, body.amount, before, after,
+            f" (reason: {body.reason})" if body.reason else "",
+        )
+        return {"ok": True, "uid": uid, "culture_before": before, "culture_after": after, "amount_applied": after - before}
 
     @router.post("/api/admin/anti-farm/backfill")
     async def admin_backfill_anti_farm(hours: float = 24.0, _uid: int = Depends(require_admin)) -> dict[str, Any]:
@@ -590,6 +650,115 @@ def make_router(services: "Services") -> APIRouter:
             "window_hours": window_s / 3600,
             "active": result,
         }
+
+    @router.get("/api/admin/skip-siege-abuse/active")
+    async def admin_skip_siege_abuse_active(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Return every defender currently over the skip-siege abuse threshold
+        within the trailing window, with resolved empire names and timing
+        stats for the admin dashboard.
+
+        A defender who calls skip-siege many times in a short window, with
+        near-zero variance between calls, is unlikely to be a human clicking
+        a button — this surfaces that pattern for manual review. Detection
+        only; no automated penalty is applied.
+        """
+        from datetime import datetime, timezone
+
+        assert services.empire_service is not None
+        assert services.database is not None
+        gc = services.empire_service._gc
+        threshold = int(getattr(gc, "skip_siege_abuse_count_threshold", 5)) if gc else 5
+        window_s = int(getattr(gc, "skip_siege_abuse_window_minutes", 10.0) * 60) if gc else 600
+        since_ts = int(datetime.now(timezone.utc).timestamp()) - window_s
+
+        rows = await services.database.get_active_window_event_keys("skip_siege", since_ts, threshold)
+        abusers = [
+            {
+                "defender_uid": r["key_uid"],
+                "skip_count": r["event_count"],
+                "last_skip_ts": r["last_ts"],
+                "mean_interval_s": r["mean_interval_s"],
+                "stddev_interval_s": r["stddev_interval_s"],
+                "max_siege_remaining_at_skip": r["max_magnitude"],
+                "distinct_attackers": r["distinct_ref_ids"],
+            }
+            for r in rows
+        ]
+        result = []
+        for a in abusers:
+            defender = services.empire_service.get(a["defender_uid"])
+            result.append({
+                **a,
+                "defender_name": defender.name if defender else f"uid {a['defender_uid']}",
+            })
+        return {
+            "threshold": threshold,
+            "window_minutes": window_s / 60,
+            "active": result,
+        }
+
+    @router.get("/api/admin/detection-summary")
+    async def admin_detection_summary(_uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Merge every scripted-access/abuse signal into one row per empire:
+        every raw factor BotDetector uses to compute bot_probability/is_bot
+        (header score, reaction-latency score, timing-regularity score, and
+        their sample counts), plus anti-farm involvement (as attacker or
+        defender) and skip-siege abuse (as defender).
+
+        One-stop summary for the admin dashboard — the two dedicated cards
+        (Anti-Farm / Skip-Siege Abuse) remain the detailed per-mechanism
+        views; this endpoint answers "which empires look suspicious overall
+        and why" without cross-referencing tables by hand.
+        """
+        from datetime import datetime, timezone
+
+        assert services.empire_service is not None
+        assert services.database is not None
+        gc = services.empire_service._gc
+
+        anti_farm_threshold = int(getattr(gc, "anti_farm_win_threshold", 4)) if gc else 4
+        anti_farm_window_s = int(getattr(gc, "anti_farm_window_hours", 24.0) * 3600) if gc else 86400
+        skip_siege_threshold = int(getattr(gc, "skip_siege_abuse_count_threshold", 5)) if gc else 5
+        skip_siege_window_s = int(getattr(gc, "skip_siege_abuse_window_minutes", 10.0) * 60) if gc else 600
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+
+        anti_farm_pairs = await services.database.get_active_anti_farm_pairs(
+            now_ts - anti_farm_window_s, anti_farm_threshold,
+        )
+        skip_siege_rows = await services.database.get_active_window_event_keys(
+            "skip_siege", now_ts - skip_siege_window_s, skip_siege_threshold,
+        )
+
+        anti_farm_by_uid: dict[int, int] = {}
+        for p in anti_farm_pairs:
+            anti_farm_by_uid[p["attacker_uid"]] = max(anti_farm_by_uid.get(p["attacker_uid"], 0), p["win_count"])
+            anti_farm_by_uid[p["defender_uid"]] = max(anti_farm_by_uid.get(p["defender_uid"], 0), p["win_count"])
+
+        skip_siege_by_uid: dict[int, int] = {r["key_uid"]: r["event_count"] for r in skip_siege_rows}
+
+        flagged_uids = set(anti_farm_by_uid) | set(skip_siege_by_uid)
+
+        result: list[dict[str, Any]] = []
+        for empire in services.empire_service.all_empires.values():
+            if services.bot_detector is not None:
+                breakdown = services.bot_detector.get_signal_breakdown(empire.uid)
+            else:
+                breakdown = {
+                    "user_agent": "", "header_score": None, "reaction_sample_count": 0,
+                    "reaction_score": None, "timing_score": None, "declared_bot": False,
+                    "bot_probability": 0.5, "is_bot": False,
+                }
+            if empire.uid not in flagged_uids and breakdown["bot_probability"] <= 0.5:
+                continue  # only include empires with at least one non-trivial signal
+            result.append({
+                "uid": empire.uid,
+                "name": empire.name,
+                **breakdown,
+                "anti_farm_win_count": anti_farm_by_uid.get(empire.uid, 0),
+                "skip_siege_count": skip_siege_by_uid.get(empire.uid, 0),
+            })
+        result.sort(key=lambda r: r["bot_probability"], reverse=True)
+        return {"summary": result}
 
     @router.get("/api/admin/analyze-empire/{uid}")
     async def admin_analyze_empire(uid: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:

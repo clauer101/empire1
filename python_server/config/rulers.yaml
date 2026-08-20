@@ -25,36 +25,36 @@ MAJA:
     name: Chrono-Scholar’s Insight
     description: ''
     levels:
-    - research_speed_offset: 0.1
     - research_speed_offset: 0.2
+    - research_speed_offset: 0.3
     - research_speed_offset: 0.4
-    - research_speed_offset: 0.8
-    - research_speed_offset: 1.6
+    - research_speed_offset: 0.5
+    - research_speed_offset: 1.5
   w:
     name: Scholar’s Bounty
     description: ''
     levels:
-    - gold_lump_sum_after_research: 1000
-    - gold_lump_sum_after_research: 25000
-    - gold_lump_sum_after_research: 50000
-    - gold_lump_sum_after_research: 75000
-    - gold_lump_sum_after_research: 200000
+    - workshop_cost_modifier: 0.1
+    - workshop_cost_modifier: 0.13
+    - workshop_cost_modifier: 0.16
+    - workshop_cost_modifier: 0.19
+    - workshop_cost_modifier: 0.25
   e:
     name: Erudite Synergy
     description: ''
     levels:
-    - scientist_citizen_bonus: 0.2
     - scientist_citizen_bonus: 0.4
+    - scientist_citizen_bonus: 0.5
     - scientist_citizen_bonus: 0.6
-    - scientist_citizen_bonus: 0.8
+    - scientist_citizen_bonus: 0.7
     - scientist_citizen_bonus: 1
   r:
     name: Grand Architect’s Decree
     description: ''
     levels:
-    - workshop_cost_modifier: 0.07
-    - workshop_cost_modifier: 0.14
-    - workshop_cost_modifier: 0.21
+    - gold_lump_sum_after_research: 100000
+    - gold_lump_sum_after_research: 250000
+    - gold_lump_sum_after_research: 1000000
 NANDI:
   name: Nandi
   description: A charismatic cultural patron who inspires the people. Nandi amplifies
@@ -79,36 +79,36 @@ NANDI:
     name: Voice of the Commons
     description: ''
     levels:
-    - citizen_cost_modifier: 0.05
     - citizen_cost_modifier: 0.1
-    - citizen_cost_modifier: 0.15
-    - citizen_cost_modifier: 0.2
-    - citizen_cost_modifier: 0.25
+    - citizen_cost_modifier: 0.14
+    - citizen_cost_modifier: 0.18
+    - citizen_cost_modifier: 0.22
+    - citizen_cost_modifier: 0.3
   w:
     name: Symphony of Toil
     description: ''
     levels:
-    - citizen_effect_modifier: 0.004
     - citizen_effect_modifier: 0.008
-    - citizen_effect_modifier: 0.012
-    - citizen_effect_modifier: 0.016
-    - citizen_effect_modifier: 0.02
+    - citizen_effect_modifier: 0.011
+    - citizen_effect_modifier: 0.015
+    - citizen_effect_modifier: 0.018
+    - citizen_effect_modifier: 0.025
   e:
     name: Cultural Footprint
     description: ''
     levels:
-    - tile_cost_modifier: 0.03
     - tile_cost_modifier: 0.06
-    - tile_cost_modifier: 0.09
-    - tile_cost_modifier: 0.12
-    - tile_cost_modifier: 0.15
+    - tile_cost_modifier: 0.1
+    - tile_cost_modifier: 0.14
+    - tile_cost_modifier: 0.16
+    - tile_cost_modifier: 0.24
   r:
     name: Grand Apotheosis
     description: ''
     levels:
     - culture_lump_sum_on_skill_up: 250000
     - culture_lump_sum_on_skill_up: 1000000
-    - culture_lump_sum_on_skill_up: 5000000
+    - culture_lump_sum_on_skill_up: 10000000
 LUCIEN:
   name: Lucien Duskbane
   description: A cunning merchant lord and master of commerce. Lucien turns every
@@ -133,28 +133,28 @@ LUCIEN:
     name: Golden Interest
     description: ''
     levels:
-    - gold_offset: 0.15
-    - gold_offset: 0.25
+    - gold_offset: 0.2
+    - gold_offset: 0.3
+    - gold_offset: 0.4
     - gold_offset: 0.5
-    - gold_offset: 1
-    - gold_offset: 1.5
+    - gold_offset: 2
   w:
     name: Guild Monopoly
     description: ''
     levels:
-    - building_cost_modifier: 0.03
-    - building_cost_modifier: 0.06
-    - building_cost_modifier: 0.09
+    - building_cost_modifier: 0.08
     - building_cost_modifier: 0.12
-    - building_cost_modifier: 0.15
+    - building_cost_modifier: 0.16
+    - building_cost_modifier: 0.2
+    - building_cost_modifier: 0.3
   e:
     name: Tribute of the Masses
     description: ''
     levels:
-    - other_citizen_gold_modifier: 0.002
     - other_citizen_gold_modifier: 0.004
-    - other_citizen_gold_modifier: 0.006
-    - other_citizen_gold_modifier: 0.008
+    - other_citizen_gold_modifier: 0.005
+    - other_citizen_gold_modifier: 0
+    - other_citizen_gold_modifier: 0.007
     - other_citizen_gold_modifier: 0.01
   r:
     name: Grand Bailout
@@ -187,36 +187,36 @@ BORIN:
     name: Juggernauts Resolve
     description: ''
     levels:
-    - restore_life_during_battle_modifier: 0.01
     - restore_life_during_battle_modifier: 0.02
-    - restore_life_during_battle_modifier: 0.03
-    - restore_life_during_battle_modifier: 0.04
-    - restore_life_during_battle_modifier: 0.05
+    - restore_life_during_battle_modifier: 0.026
+    - restore_life_during_battle_modifier: 0.032
+    - restore_life_during_battle_modifier: 0.038
+    - restore_life_during_battle_modifier: 0.045
   w:
     name: Scrap and Salvage
     description: ''
     levels:
-    - wave_delay_offset: 0.6
-    - wave_delay_offset: 1.2
-    - wave_delay_offset: 1.8
-    - wave_delay_offset: 2.4
-    - wave_delay_offset: 3
+    - wave_delay_offset: 1200
+    - wave_delay_offset: 1800
+    - wave_delay_offset: 2400
+    - wave_delay_offset: 3000
+    - wave_delay_offset: 4000
   e:
     name: Undying Defiance
     description: ''
     levels:
-    - restore_life_after_loss_offset: 2
-    - restore_life_after_loss_offset: 5
-    - restore_life_after_loss_offset: 8
-    - restore_life_after_loss_offset: 11
-    - restore_life_after_loss_offset: 14
+    - artifact_retention_time: 24686
+    - artifact_retention_time: 37029
+    - artifact_retention_time: 49371
+    - artifact_retention_time: 61714
+    - artifact_retention_time: 0
   r:
     name: Fortress Bastion
     description: ''
     levels:
-    - artifact_retention_time: 43200
-    - artifact_retention_time: 86400
-    - artifact_retention_time: 129600
+    - critter_gold_modifier: 0.1
+    - critter_gold_modifier: 0.15
+    - critter_gold_modifier: 0.2
 ALRIC:
   name: Alric Shadowmere
   description: A shadowy tactician who moves armies like shadows across the map. Alric
@@ -240,38 +240,39 @@ ALRIC:
     name: Shadow Conscription
     description: ''
     levels:
-    - wave_slot_cost_modifier: 0.05
     - wave_slot_cost_modifier: 0.1
-    - wave_slot_cost_modifier: 0.15
-    - wave_slot_cost_modifier: 0.2
-    - wave_slot_cost_modifier: 0.25
+    - wave_slot_cost_modifier: 0.14
+    - wave_slot_cost_modifier: 0.18
+    - wave_slot_cost_modifier: 0.22
+    - wave_slot_cost_modifier: 0.3
   w:
     name: Umbral Evolution
     description: ''
     levels:
-    - wave_era_cost_modifier: 0.1
     - wave_era_cost_modifier: 0.2
+    - wave_era_cost_modifier: 0.25
     - wave_era_cost_modifier: 0.3
-    - wave_era_cost_modifier: 0.4
-    - wave_era_cost_modifier: 0.5
+    - wave_era_cost_modifier: 0.35
+    - wave_era_cost_modifier: 0.45
   e:
     name: Grand Larceny
     description: ''
     levels:
-    - artifact_steal_victory_modifier: 0.03
-      ruler_artifact_steal_bonus: 0.02
-    - artifact_steal_victory_modifier: 0.05
-      ruler_artifact_steal_bonus: 0.04
-    - artifact_steal_victory_modifier: 0.09
-      ruler_artifact_steal_bonus: 0.06
-    - artifact_steal_victory_modifier: 0.12
-      ruler_artifact_steal_bonus: 0.08
-    - artifact_steal_victory_modifier: 0.15
-      ruler_artifact_steal_bonus: 0.1
+    - enemy_siege_time_modifier: 0.1
+    - enemy_siege_time_modifier: 0.15
+    - enemy_siege_time_modifier: 0.2
+    - enemy_siege_time_modifier: 0.25
+    - enemy_siege_time_modifier: 0.33
   r:
     name: Desolated Siege
     description: ''
     levels:
-    - enemy_siege_time_modifier: 0.09
-    - enemy_siege_time_modifier: 0.18
-    - enemy_siege_time_modifier: 0.27
+    - ruler_artifact_steal_bonus: 0.04
+      artifact_steal_defeat_modifier: 0.02
+      artifact_steal_victory_modifier: 0.07
+    - ruler_artifact_steal_bonus: 0.08
+      artifact_steal_defeat_modifier: 0.04
+      artifact_steal_victory_modifier: 0.14
+    - artifact_steal_victory_modifier: 0.21
+      artifact_steal_defeat_modifier: 0.06
+      ruler_artifact_steal_bonus: 0.12

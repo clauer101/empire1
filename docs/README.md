@@ -3,6 +3,7 @@
 | Doc | Contents |
 |---|---|
 | [API.md](API.md) | REST/WebSocket API reference — single source of truth; generates `web/api.html` |
+| [DEVLOG.md](DEVLOG.md) | How the public devlog page is generated from `CHANGELOG.md` |
 | [CODINGGUIDELINE.md](CODINGGUIDELINE.md) | Coding standards for backend and frontend |
 | [EFFECTSGUIDE.md](EFFECTSGUIDE.md) | Effects system (burn, slow, splash, …) — config keys and semantics |
 | [YAMLATTRIBUTEGUIDE.md](YAMLATTRIBUTEGUIDE.md) | Attribute reference for the game config YAMLs |

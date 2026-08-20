@@ -41,6 +41,24 @@
       padding: 2px 5px; outline: none; font-family: monospace;
     }
     .item-value-input:focus { border-color: var(--accent); }
+    .item-value-input.dirty { border-color: var(--warning); color: var(--warning); }
+    .item-card.pending-remove { opacity: 0.45; }
+    .item-card.pending-remove .item-value-input { text-decoration: line-through; }
+    .global-save-bar {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 14px; margin-bottom: 20px;
+    }
+    .global-save-bar .dirty-count { font-size: 12px; color: var(--text-dim); flex: 1; }
+    .global-save-btn {
+      background: var(--accent); color: #0d0d14; border: none; border-radius: 6px;
+      padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .global-save-btn:disabled { background: var(--surface); color: var(--text-muted); cursor: default; }
+    .global-save-status { font-size: 12px; }
+    .global-save-status.ok  { color: var(--success); }
+    .global-save-status.err { color: var(--danger); }
     .save-eff-btn {
       background: none; border: 1px solid var(--border); border-radius: 4px;
       color: var(--text-dim); cursor: pointer; font-size: 11px;
@@ -64,6 +82,27 @@
       border-bottom: 1px solid var(--border);
     }
     .group-header:first-child { margin-top: 0; }
+    .income-section { margin-bottom: 28px; }
+    .income-title {
+      font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px;
+    }
+    .income-note { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+    .income-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    table.income-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+    table.income-table th, table.income-table td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+    table.income-table th:first-child, table.income-table td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
+    table.income-table thead th { background: var(--surface-alt); color: var(--text-dim); font-weight: 600; position: sticky; top: 0; }
+    table.income-table tbody tr:last-child td { border-bottom: none; }
+    table.income-table tbody tr:hover td { background: var(--surface-hover); }
+    .income-gold { color: var(--warning, #ffa726); }
+    .income-culture { color: #ba68c8; }
+    .income-research { color: var(--accent); }
+    .era-header {
+      grid-column: 1/-1;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--accent-dim); padding: 6px 2px 2px; margin-top: 4px;
+    }
+    .era-header:first-child { margin-top: 0; }
 
     /* ── Mobile responsive ── */
     @media (max-width: 600px) {
@@ -84,6 +123,26 @@
 <body>
 <div class="page-wrap">
   <h1>⚡ Effects Overview</h1>
+  <div class="income-section">
+    <div class="income-title">📈 Income Heuristic — Gold / Culture / Research per Hour, per Era</div>
+    <div class="income-note">
+      Assumes every gold/culture/research-producing building and knowledge item unlocked up to and including
+      that era has been built/researched (cumulative, era order). Real player progress will vary — this is a
+      ceiling estimate, not a guarantee. Ignores citizen assignment (merchants/artists/scientists) and ruler
+      skills; base rates and era_effects.gold_offset come from game.yaml. All rates shown per hour.
+    </div>
+    <div class="income-table-wrap">
+      <table class="income-table" id="income-table">
+        <thead><tr><th>Era</th><th>💰 Gold/h</th><th>🎭 Culture/h</th><th>🔬 Research/h</th></tr></thead>
+        <tbody id="income-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="global-save-bar">
+    <span class="dirty-count" id="dirty-count">No unsaved changes</span>
+    <span class="global-save-status" id="global-save-status"></span>
+    <button class="global-save-btn" id="global-save-btn" disabled>💾 Save all changes</button>
+  </div>
   <div class="filter-bar">
     <input type="text" id="filter" placeholder="Filter by effect, item name or ID…">
     <span class="toggle-all" id="toggle-all">Expand all</span>
@@ -169,6 +228,15 @@ const EFFECT_GROUPS = [
   },
 ];
 
+// Ordered era keys + labels — mirrors web/js/lib/eras.js (standalone tool, no bundler import).
+const ERA_KEYS = ['stone','neolithic','bronze','iron','medieval','renaissance','industrial','modern','future'];
+const ERA_LABEL_EN = {
+  stone: 'Stone Age', neolithic: 'Neolithic', bronze: 'Bronze Age', iron: 'Iron Age',
+  medieval: 'Medieval', renaissance: 'Renaissance', industrial: 'Industrial Age',
+  modern: 'Modern Age', future: 'Future',
+};
+const ERA_RANK = Object.fromEntries(ERA_KEYS.map((k, i) => [k, i]));
+
 let CATALOG = {};
 let DATA = {};
 let currentFilter = '';
@@ -182,12 +250,12 @@ function buildData(catalog) {
   const effects = {};
   for (const [iid, item] of Object.entries(catalog.buildings || {})) {
     for (const [eff, val] of Object.entries(item.effects || {})) {
-      (effects[eff] = effects[eff] || []).push({ id: iid, name: item.name, type: 'building', value: val });
+      (effects[eff] = effects[eff] || []).push({ id: iid, name: item.name, era: item.era, type: 'building', value: val });
     }
   }
   for (const [iid, item] of Object.entries(catalog.knowledge || {})) {
     for (const [eff, val] of Object.entries(item.effects || {})) {
-      (effects[eff] = effects[eff] || []).push({ id: iid, name: item.name, type: 'knowledge', value: val });
+      (effects[eff] = effects[eff] || []).push({ id: iid, name: item.name, era: item.era, type: 'knowledge', value: val });
     }
   }
   return effects;
@@ -221,9 +289,28 @@ function renderEffectBlock(root, eff, items, q) {
   hdr.insertBefore(addItemBtn, hdr.querySelector('.effect-chevron'));
   const list = document.createElement('div');
   list.className = 'effect-items';
-  matched.forEach(it => {
+
+  // Group matched items by era (in era order), unknown/missing era last.
+  const byEra = new Map();
+  matched
+    .slice()
+    .sort((a, b) => (ERA_RANK[a.era] ?? 999) - (ERA_RANK[b.era] ?? 999))
+    .forEach(it => {
+      const key = it.era || '';
+      if (!byEra.has(key)) byEra.set(key, []);
+      byEra.get(key).push(it);
+    });
+
+  byEra.forEach((eraItems, eraKey) => {
+    const eraHdr = document.createElement('div');
+    eraHdr.className = 'era-header';
+    eraHdr.textContent = ERA_LABEL_EN[eraKey] || 'Unknown Era';
+    list.appendChild(eraHdr);
+    eraItems.forEach(it => {
+      const pendKey = pendingKey(it.type, it.id, eff);
       const card = document.createElement('div');
       card.className = 'item-card';
+      if (PENDING.get(pendKey)?.remove) card.classList.add('pending-remove');
 
       const nameEl = document.createElement('span');
       nameEl.className = 'item-name';
@@ -235,35 +322,42 @@ function renderEffectBlock(root, eff, items, q) {
       const input = document.createElement('input');
       input.type = 'number';
       input.className = 'item-value-input';
-      input.value = it.value;
+      const pending = PENDING.get(pendKey);
+      input.value = pending && 'value' in pending ? pending.value : it.value;
       input.step = 'any';
       input.title = eff;
-
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'save-eff-btn';
-      saveBtn.textContent = '💾';
-      saveBtn.title = 'Speichern';
-
-      const statusEl = document.createElement('span');
-      statusEl.className = 'eff-status';
+      if (pending && 'value' in pending) input.classList.add('dirty');
+      if (pending?.remove) input.disabled = true;
 
       const removeBtn = document.createElement('button');
       removeBtn.className = 'save-eff-btn';
-      removeBtn.textContent = '✕';
-      removeBtn.title = 'Effect entfernen';
-      removeBtn.style.color = 'var(--danger, #ef5350)';
-      removeBtn.addEventListener('click', () => removeEffect(it.id, it.type, eff));
+      removeBtn.textContent = pending?.remove ? '↺' : '✕';
+      removeBtn.title = pending?.remove ? 'Entfernen rückgängig machen' : 'Effect zum Entfernen vormerken';
+      removeBtn.style.color = pending?.remove ? 'var(--accent)' : 'var(--danger, #ef5350)';
 
-      saveBtn.addEventListener('click', () =>
-        saveEffect(it.id, it.type, eff, parseFloat(input.value), saveBtn, statusEl)
-      );
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') saveBtn.click();
+      input.addEventListener('input', () => {
+        const num = parseFloat(input.value);
+        if (Number.isNaN(num) || num === it.value) {
+          PENDING.delete(pendKey);
+          input.classList.remove('dirty');
+        } else {
+          PENDING.set(pendKey, { type: it.type, iid: it.id, effect: eff, value: num });
+          input.classList.add('dirty');
+        }
+        updateGlobalSaveBar();
+      });
+
+      removeBtn.addEventListener('click', () => {
+        if (pending?.remove) {
+          PENDING.delete(pendKey);
+        } else {
+          PENDING.set(pendKey, { type: it.type, iid: it.id, effect: eff, remove: true });
+        }
+        updateGlobalSaveBar();
+        render(currentFilter);
       });
 
       metaEl.appendChild(input);
-      metaEl.appendChild(saveBtn);
-      metaEl.appendChild(statusEl);
       metaEl.appendChild(removeBtn);
 
       const typeEl = document.createElement('span');
@@ -275,12 +369,13 @@ function renderEffectBlock(root, eff, items, q) {
       card.appendChild(typeEl);
       list.appendChild(card);
     });
-    hdr.addEventListener('click', () => { hdr.classList.toggle('open'); list.classList.toggle('open'); });
-    if (q) { hdr.classList.add('open'); list.classList.add('open'); }
-    block.appendChild(hdr);
-    block.appendChild(list);
-    root.appendChild(block);
-    return true;
+  });
+  hdr.addEventListener('click', () => { hdr.classList.toggle('open'); list.classList.toggle('open'); });
+  if (q) { hdr.classList.add('open'); list.classList.add('open'); }
+  block.appendChild(hdr);
+  block.appendChild(list);
+  root.appendChild(block);
+  return true;
 }
 
 function render(filter) {
@@ -316,29 +411,73 @@ function render(filter) {
   }
 }
 
-async function saveEffect(iid, type, effKey, newVal, btn, statusEl) {
+// Pending edits, keyed by "type::iid::effect" -> { type, iid, effect, value } | { type, iid, effect, remove: true }.
+// Nothing is written to the backend until the global save button is clicked.
+const PENDING = new Map();
+function pendingKey(type, iid, effect) { return `${type}::${iid}::${effect}`; }
+
+function updateGlobalSaveBar() {
+  const countEl = document.getElementById('dirty-count');
+  const btn = document.getElementById('global-save-btn');
+  const n = PENDING.size;
+  countEl.textContent = n === 0 ? 'No unsaved changes' : `${n} unsaved change${n === 1 ? '' : 's'}`;
+  btn.disabled = n === 0;
+}
+
+async function saveAllPending() {
+  const btn = document.getElementById('global-save-btn');
+  const statusEl = document.getElementById('global-save-status');
+  if (PENDING.size === 0) return;
   btn.disabled = true;
   statusEl.textContent = '';
-  statusEl.className = 'eff-status';
-  const endpoint = type === 'building' ? '/api/building-effects' : '/api/knowledge-effects';
+  statusEl.className = 'global-save-status';
+
+  // Group value-updates into one PATCH body per type; removals go one call each
+  // (the remove endpoint only takes a single iid/effect pair).
+  const patchBodies = { building: {}, knowledge: {} };
+  const removals = [];
+  for (const change of PENDING.values()) {
+    if (change.remove) {
+      removals.push(change);
+    } else {
+      (patchBodies[change.type][change.iid] ??= {})[change.effect] = change.value;
+    }
+  }
+
   try {
-    const res = await fetch(endpoint, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [iid]: { [effKey]: newVal } }),
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    statusEl.textContent = '✓';
-    statusEl.className = 'eff-status ok';
-    setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'eff-status'; }, 2500);
+    for (const type of ['building', 'knowledge']) {
+      if (Object.keys(patchBodies[type]).length === 0) continue;
+      const endpoint = type === 'building' ? '/api/building-effects' : '/api/knowledge-effects';
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patchBodies[type]),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' (' + endpoint + ')');
+    }
+    for (const change of removals) {
+      const endpoint = change.type === 'building' ? '/api/building-effects/remove' : '/api/knowledge-effects/remove';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ iid: change.iid, effect: change.effect }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' (' + endpoint + ')');
+    }
+    PENDING.clear();
+    statusEl.textContent = '✓ Saved';
+    statusEl.className = 'global-save-status ok';
+    setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'global-save-status'; }, 2500);
+    await load();
   } catch (e) {
-    statusEl.textContent = '✗';
-    statusEl.className = 'eff-status err';
-    statusEl.title = e.message;
+    statusEl.textContent = '✗ ' + e.message;
+    statusEl.className = 'global-save-status err';
   } finally {
-    btn.disabled = false;
+    updateGlobalSaveBar();
   }
 }
+
+document.getElementById('global-save-btn').addEventListener('click', saveAllPending);
 
 function showAddForm(list, eff, existingItems) {
   if (list.querySelector('.add-effect-form')) return;
@@ -406,32 +545,91 @@ function showAddForm(list, eff, existingItems) {
   list.insertBefore(formDiv, list.firstChild);
 }
 
-async function removeEffect(iid, type, effKey) {
-  if (!confirm(`"${effKey}" von "${iid}" entfernen?`)) return;
-  const endpoint = type === 'building' ? '/api/building-effects/remove' : '/api/knowledge-effects/remove';
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ iid, effect: effKey }),
+// Mirrors the backend formula (empire_service.py): rate = (base + Σoffset) * (1 + Σmodifier).
+// Citizen assignment and ruler skills are deliberately excluded — this is a
+// building/knowledge-only ceiling estimate, not a live player projection.
+function computeIncomeByEra(buildingsList, knowledgeList, gameConfig) {
+  const allItems = [...buildingsList, ...knowledgeList];
+  const eraEffects = (gameConfig && gameConfig.era_effects) || {};
+  const base = {
+    gold: (gameConfig && gameConfig.base_gold_per_sec) || 0,
+    culture: (gameConfig && gameConfig.base_culture_per_sec) || 0,
+    research: (gameConfig && gameConfig.base_research_speed) || 0,
+  };
+  const RESOURCE_KEYS = {
+    gold: { offset: 'gold_offset', modifier: 'gold_modifier' },
+    culture: { offset: 'culture_offset', modifier: 'culture_modifier' },
+    research: { offset: 'research_speed_offset', modifier: 'research_speed_modifier' },
+  };
+
+  const offset = { gold: base.gold, culture: base.culture, research: base.research };
+  const modifier = { gold: 0, culture: 0, research: 0 };
+  const rows = [];
+
+  for (const era of ERA_KEYS) {
+    // era_effects (game.yaml) apply as flat per-era offsets, on top of buildings/knowledge.
+    const eraFx = eraEffects[era] || {};
+    for (const res of Object.keys(RESOURCE_KEYS)) {
+      const k = RESOURCE_KEYS[res];
+      if (typeof eraFx[k.offset] === 'number') offset[res] += eraFx[k.offset];
+      if (typeof eraFx[k.modifier] === 'number') modifier[res] += eraFx[k.modifier];
+    }
+    // All buildings/knowledge belonging to this era, applied cumulatively.
+    for (const item of allItems) {
+      if (item.era !== era) continue;
+      const fx = item.effects || {};
+      for (const res of Object.keys(RESOURCE_KEYS)) {
+        const k = RESOURCE_KEYS[res];
+        if (typeof fx[k.offset] === 'number') offset[res] += fx[k.offset];
+        if (typeof fx[k.modifier] === 'number') modifier[res] += fx[k.modifier];
+      }
+    }
+    rows.push({
+      era,
+      goldPerHour: offset.gold * (1 + modifier.gold) * 3600,
+      culturePerHour: offset.culture * (1 + modifier.culture) * 3600,
+      researchPerHour: offset.research * (1 + modifier.research) * 3600,
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    await load();
-  } catch(e) {
-    alert('Fehler: ' + e.message);
   }
+  return rows;
+}
+
+function fmtRate(v) {
+  return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderIncomeTable(rows) {
+  const tbody = document.getElementById('income-tbody');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${ERA_LABEL_EN[r.era] || r.era}</td>
+      <td class="income-gold">${fmtRate(r.goldPerHour)}</td>
+      <td class="income-culture">${fmtRate(r.culturePerHour)}</td>
+      <td class="income-research">${fmtRate(r.researchPerHour)}</td>
+    </tr>
+  `).join('');
 }
 
 async function load() {
   const root = document.getElementById('effects-root');
   root.innerHTML = '<div style="color:var(--text-dim);padding:20px">Loading…</div>';
-  const token = localStorage.getItem('e3_jwt_token');
   try {
-    const res = await fetch('/api/admin/catalog', { headers: { Authorization: 'Bearer ' + token } });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    CATALOG = await res.json();
+    // /api/buildings + /api/knowledge read straight from the YAML files on every
+    // request (no server-side cache), unlike /api/admin/catalog which reflects
+    // whatever was loaded into the UpgradeProvider at server start.
+    const token = localStorage.getItem('e3_jwt_token') || sessionStorage.getItem('e3_jwt_token') || '';
+    const [buildingsList, knowledgeList, gameConfig] = await Promise.all([
+      fetch('/api/buildings').then(r => r.json()),
+      fetch('/api/knowledge').then(r => r.json()),
+      fetch('/api/admin/game-config', { headers: { Authorization: 'Bearer ' + token } })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null),
+    ]);
+    const toMap = list => Object.fromEntries(list.map(it => [it.iid, it]));
+    CATALOG = { buildings: toMap(buildingsList), knowledge: toMap(knowledgeList) };
     DATA = buildData(CATALOG);
     render(currentFilter);
+    renderIncomeTable(computeIncomeByEra(buildingsList, knowledgeList, gameConfig));
   } catch (e) {
     root.innerHTML = '<div style="color:var(--danger);padding:20px">Failed to load: ' + e.message + '</div>';
   }

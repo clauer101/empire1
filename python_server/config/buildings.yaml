@@ -78,7 +78,7 @@ EPIC_DRAWINGS:
   requirements: [HUNTING]
   effects:
     culture_offset: 0.1
-    research_speed_modifier: 0.15
+    research_speed_offset: 0.1
     enable_techtree: 1  # only true or false
 
 EXCHANGE_POST:
@@ -90,8 +90,7 @@ EXCHANGE_POST:
   costs: {gold: 500}
   requirements: [CRAFTSMANSHIP]
   effects:
-    gold_modifier: 0.1
-    gold_offset: 0.21
+    gold_offset: 0.25
 
 WORK_SHOP:
   era: stone
@@ -142,7 +141,7 @@ GRANARY:
   costs: {gold: 400}
   requirements: [AGRICULTURE]
   effects:
-    gold_offset: 0.121
+    gold_offset: 0.2
 
 FIELD_HEALER:
   era: neolithic
@@ -187,8 +186,7 @@ TRADING_POST:
   costs: {gold: 900}
   requirements: [BARTERING]
   effects:
-    gold_modifier: 0.1
-    gold_offset: 0.15
+    gold_offset: 0.2
 
 TRIBAL_COUNCIL:
   era: neolithic
@@ -239,19 +237,19 @@ HARBOR:
   costs: {gold: 1200}
   requirements: [SAILING]
   effects:
-    gold_modifier: 0.3
-    travel_offset: -1800
+    gold_offset: 0.5
+    travel_offset: -900
 
-SWORD_MAKER:
-  era: bronze
-  image: assets/sprites/buildings/sword_maker
-  name: "Sword Maker"
-  description: "Weapon workshop for melee combat. Requires metallurgy."
-  effort: 9724
-  costs: {gold: 1600}
-  requirements: [COPPER_BRONZE]
-  effects:
-    build_speed_modifier: 0.1
+# SWORD_MAKER:
+#   era: bronze
+#   image: assets/sprites/buildings/sword_maker
+#   name: "Sword Maker"
+#   description: "Weapon workshop for melee combat. Requires metallurgy."
+#   effort: 9724
+#   costs: {gold: 1600}
+#   requirements: [COPPER_BRONZE]
+#   effects:
+#     build_speed_modifier: 0.1
 
 MARKET_PLACE:
   era: bronze
@@ -262,18 +260,18 @@ MARKET_PLACE:
   costs: {gold: 2400}
   requirements: [CURRENCY]
   effects:
-    gold_modifier: 0.4
+    gold_offset: 1
 
-BOOT_CAMP:
-  era: bronze
-  image: assets/sprites/buildings/boot_camp
-  name: "Boot Camp"
-  description: "Military training facility. Requires weapon training."
-  effort: 17017
-  costs: {gold: 2800}
-  requirements: [DRILL]
-  effects:
-    max_life_modifier: 3
+# BOOT_CAMP:
+#   era: bronze
+#   image: assets/sprites/buildings/boot_camp
+#   name: "Boot Camp"
+#   description: "Military training facility. Requires weapon training."
+#   effort: 17017
+#   costs: {gold: 2800}
+#   requirements: [DRILL]
+#   effects:
+#     max_life_modifier: 3
 
 CHAPEL:
   era: bronze
@@ -284,8 +282,7 @@ CHAPEL:
   costs: {gold: 3000}
   requirements: [RELIGION]
   effects:
-    culture_modifier: 0.15
-    culture_offset: 0.1
+    culture_offset: 0.2
 
 TOWN_GUARD:
   era: bronze
@@ -370,7 +367,7 @@ TREASURE_CHAMBER:
   costs: {gold: 9000}
   requirements: [CURRENCY, MATHMATICS]
   effects:
-    gold_offset: 0.7
+    gold_offset: 2
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
     spy_artifacts: 1  # only true or false
@@ -395,8 +392,7 @@ STABLES:
   effort: 60155
   costs: {gold: 9000}
   requirements: [HORSEBACK_RIDING, IRON]
-  effects:
-    gold_offset: 0.1
+  effects: {}
 
 # RACE_COURSE:
 #   era: iron
@@ -429,8 +425,7 @@ THEATER:
   costs: {gold: 18000}
   requirements: [ARTS]
   effects:
-    culture_modifier: 0.2
-    culture_offset: 0.3
+    culture_offset: 0.6
 
 TREADWHEEL_CRANE:
   era: iron
@@ -452,8 +447,7 @@ TEMPLE:
   costs: {gold: 21000}
   requirements: [ARCHITECTURE]
   effects:
-    culture_offset: 0.2
-    culture_modifier: 0.1
+    culture_offset: 0.5
 
 FENCING_SCHOOL:
   era: iron
@@ -475,8 +469,8 @@ OBSERVATORY:
   requirements: [ARCHITECTURE]
   excludes: [QUARTERMASTER]
   effects:
-    research_speed_modifier: 0.3
-    research_speed_offset: 0.35
+    research_speed_modifier: 0.1
+    research_speed_offset: 0.4
 
 QUARTERMASTER:
   era: iron
@@ -488,9 +482,9 @@ QUARTERMASTER:
   requirements: [IRON, LAWS]
   excludes: [OBSERVATORY]
   effects:
-    wave_cost_modifier: 0.08
-    wave_era_cost_modifier: 0.08
-    wave_slot_cost_modifier: 0.08
+    wave_cost_modifier: 0.1
+    wave_era_cost_modifier: 0.15
+    wave_slot_cost_modifier: 0.1
 
 # ============================================================
 #   MEDIEVAL  (Effort 30.000 – 130.000)
@@ -531,7 +525,7 @@ MONASTERY:
   requirements: [RELIGION, ECONOMY]
   effects:
     culture_offset: 0.1
-    research_speed_modifier: 0.35
+    research_speed_offset: 0.6
 
 MANOR:
   era: medieval
@@ -553,8 +547,7 @@ BANK:
   costs: {gold: 38000}
   requirements: [ECONOMY]
   effects:
-    gold_modifier: 0.5
-    gold_offset: 0.5
+    gold_offset: 1.2
 
 ACADEMY:
   era: medieval
@@ -565,7 +558,7 @@ ACADEMY:
   costs: {gold: 60000}
   requirements: [SCIENCE, FEUDALISM]
   effects:
-    research_speed_modifier: 0.2
+    research_speed_offset: 0.6
 
 CITY_WALLS:
   era: medieval
@@ -588,8 +581,8 @@ CASTLE:
   costs: {gold: 84000}
   requirements: [MONARCHY]
   effects:
-    culture_modifier: 0.3
-    gold_offset: 0.5
+    culture_offset: 0.6
+    gold_offset: 1.5
 
 MUSEUM:
   era: medieval
@@ -600,8 +593,7 @@ MUSEUM:
   costs: {gold: 86000}
   requirements: [ARTS, ECONOMY]
   effects:
-    culture_modifier: 0.25
-    culture_offset: 0.5
+    culture_offset: 1.2
 
 THE_KINGS_LAIR:
   era: medieval
@@ -612,7 +604,7 @@ THE_KINGS_LAIR:
   costs: {gold: 96000}
   requirements: [MONARCHY]
   effects:
-    culture_modifier: 0.15
+    culture_offset: 0.6
     gold_offset: 0.7
 
 LABORATORY:
@@ -624,7 +616,7 @@ LABORATORY:
   costs: {gold: 160000}
   requirements: [SCIENCE]
   effects:
-    research_speed_modifier: 0.5
+    research_speed_offset: 1
 
 TRIUMPHAL_ARC:
   era: medieval
@@ -703,8 +695,7 @@ MERCHANT_GUILD:
   requirements: [ECONOMY, FEUDALISM]
   excludes: [COLONIAL_OFFICE]
   effects:
-    gold_modifier: 0.4
-    gold_offset: 1
+    gold_offset: 2
 
 COLONIAL_OFFICE:
   era: medieval
@@ -743,19 +734,18 @@ ARCHIVES:
   costs: {gold: 170100}
   requirements: [PRINTING_PRESS]
   effects:
-    research_speed_offset: 0.3
-    research_speed_modifier: 0.2
+    research_speed_offset: 0.7
     culture_offset: 0.1
 
-SECRET_ORDER:
-  era: renaissance
-  image: assets/sprites/buildings/secret_order
-  name: "Secret Order"
-  description: "Covert intelligence operations. Requires secrecy mastery."
-  effort: 225625
-  costs: {gold: 283500}
-  requirements: [STEALTH_SECRECY]
-  effects: {}
+# SECRET_ORDER:
+#   era: renaissance
+#   image: assets/sprites/buildings/secret_order
+#   name: "Secret Order"
+#   description: "Covert intelligence operations. Requires secrecy mastery."
+#   effort: 225625
+#   costs: {gold: 283500}
+#   requirements: [STEALTH_SECRECY]
+#   effects: {}
 
 UNIVERSITY:
   era: renaissance
@@ -766,7 +756,7 @@ UNIVERSITY:
   costs: {gold: 289800}
   requirements: [PRINTING_PRESS, SCIENCE]
   effects:
-    research_speed_modifier: 1
+    research_speed_offset: 1
 
 HIGH_COURT:
   era: renaissance
@@ -802,8 +792,8 @@ EMPERORS_PALACE:
   costs: {gold: 294000}
   requirements: [CONSTITUTION, STATE_ADMINISTRATION]
   effects:
-    culture_modifier: 0.2
-    gold_modifier: 0.5
+    culture_offset: 0.8
+    gold_offset: 3
 
 PATENT_OFFICE:
   era: renaissance
@@ -843,8 +833,7 @@ STOCK_MARKET:
   costs: {gold: 602889}
   requirements: [ECONOMY, CAPITALISM]
   effects:
-    gold_offset: 0.7
-    gold_modifier: 0.5
+    gold_offset: 4
 
 HEAVY_EQUIPMENT:
   era: industrial
@@ -869,15 +858,15 @@ RAIL_ROADS:
     travel_offset: -1800
     map_vision_radius_offset: 3
 
-VEHICLE_WORKSHOP:
-  era: industrial
-  image: assets/sprites/buildings/vehicle_workshop
-  name: "Vehicle Workshop"
-  description: "Advanced vehicle manufacturing. Requires mechanical engineering."
-  effort: 403541
-  costs: {gold: 679630}
-  requirements: [COMBUSTION_ENGINE]
-  effects:
+# VEHICLE_WORKSHOP:
+#   era: industrial
+#   image: assets/sprites/buildings/vehicle_workshop
+#   name: "Vehicle Workshop"
+#   description: "Advanced vehicle manufacturing. Requires mechanical engineering."
+#   effort: 403541
+#   costs: {gold: 679630}
+#   requirements: [COMBUSTION_ENGINE]
+#   effects:
 
 ELECTRIC_FENCE:
   era: industrial
@@ -902,15 +891,15 @@ AIRFIELD:
   effects:
     travel_offset: -1800
 
-HANGAR:
-  era: industrial
-  image: assets/sprites/buildings/hangar
-  name: "Hangar"
-  description: "Aircraft maintenance and storage facility."
-  effort: 400551
-  costs: {gold: 768276}
-  requirements: [AVIATION]
-  effects: {}
+# HANGAR:
+#   era: industrial
+#   image: assets/sprites/buildings/hangar
+#   name: "Hangar"
+#   description: "Aircraft maintenance and storage facility."
+#   effort: 400551
+#   costs: {gold: 768276}
+#   requirements: [AVIATION]
+#   effects: {}
 
 HOSPITAL:
   era: industrial
@@ -935,7 +924,7 @@ FACTORY:
   effects:
     build_speed_modifier: 0.4
     build_speed_offset: 0.4
-    gold_offset: 0.3
+    gold_offset: 1
 
 EMERGENCY_ROOM:
   era: industrial
@@ -949,15 +938,15 @@ EMERGENCY_ROOM:
     life_regen_modifier: 0.001
     restore_life_after_loss_offset: 5
 
-BARRACKS:
-  era: industrial
-  image: assets/sprites/buildings/barracks
-  name: "Barracks"
-  description: "Military complex for large army training and deployment."
-  effort: 451872
-  costs: {gold: 886473}
-  requirements: [STRATEGIC_WARFARE, BALLISTICS]
-  effects: {}
+# BARRACKS:
+#   era: industrial
+#   image: assets/sprites/buildings/barracks
+#   name: "Barracks"
+#   description: "Military complex for large army training and deployment."
+#   effort: 451872
+#   costs: {gold: 886473}
+#   requirements: [STRATEGIC_WARFARE, BALLISTICS]
+#   effects: {}
 
 FEDERAL_RESERVE:
   era: industrial
@@ -968,8 +957,7 @@ FEDERAL_RESERVE:
   costs: {gold: 960346}
   requirements: [ECONOMY, ELECTRICITY, BUREAUCRACY]
   effects:
-    gold_modifier: 0.5
-    gold_offset: 0.7
+    gold_offset: 4
 
 CENSUS_BUREAU:
   era: industrial
@@ -1002,8 +990,7 @@ RESEARCH_VAULT:
   costs: {gold: 958030}
   requirements: [OPTICS]
   effects:
-    research_speed_offset: 0.4
-    research_speed_modifier: 0.3
+    research_speed_offset: 1.5
 
 SUPPLY_CHAIN:
   era: industrial
@@ -1031,8 +1018,8 @@ BROADCASTING_STATION:
   excludes: [SUPPLY_CHAIN]
   effects:
     citizen_effect_modifier: 0.015
-    culture_modifier: 0.8
-    culture_offset: 0.8
+    culture_modifier: 0.1
+    culture_offset: 2.5
 
 # ============================================================
 #   MODERN  (Effort 2.000.000 – 5.300.000)
@@ -1104,7 +1091,7 @@ RESEARCH_LAB:
   costs: {gold: 1736091}
   requirements: [SCIENCE, COMPUTER_TECHNOLOGY]
   effects:
-    research_speed_offset: 0.5
+    research_speed_offset: 2
 
 ECHELON_DEFENSE_FACILITY:
   era: modern
@@ -1140,7 +1127,7 @@ EXECUTIVE_CARPOOL:
   costs: {gold: 1918100}
   requirements: [SATELLITE_SYSTEMS, KNO_ARMOUR]
   effects:
-    gold_offset: 1.3
+    gold_offset: 6
 
 NAVIGATION_SYSTEM:
   era: modern
@@ -1163,8 +1150,7 @@ DERIVATIVE_MARKET:
   costs: {gold: 1890100}
   requirements: [ECONOMY, GLOBALIZATION_STRATEGIES]
   effects:
-    gold_modifier: 0.5
-    gold_offset: 0.5
+    gold_offset: 6
 
 NATIONAL_ARCHIVE:
   era: modern
@@ -1176,8 +1162,8 @@ NATIONAL_ARCHIVE:
   requirements: [GLOBALIZATION_STRATEGIES]
   excludes: [THINK_TANK]
   effects:
-    culture_modifier: 0.6
-    culture_offset: 1.5
+    culture_modifier: 0.2
+    culture_offset: 3.5
 
 THINK_TANK:
   era: modern
@@ -1189,18 +1175,17 @@ THINK_TANK:
   requirements: [GLOBALIZATION_STRATEGIES]
   excludes: [NATIONAL_ARCHIVE]
   effects:
-    research_speed_modifier: 0.6
-    research_speed_offset: 0.8
+    research_speed_offset: 3
 
-BOMBING_AREA:
-  era: modern
-  image: assets/sprites/buildings/bombing_area
-  name: "Bombing Area"
-  description: "Aircraft bombing range for military training."
-  effort: 661018
-  costs: {gold: 1960104}
-  requirements: [STRATEGIC_WARFARE, SATELLITE_SYSTEMS]
-  effects: {}
+# BOMBING_AREA:
+#   era: modern
+#   image: assets/sprites/buildings/bombing_area
+#   name: "Bombing Area"
+#   description: "Aircraft bombing range for military training."
+#   effort: 661018
+#   costs: {gold: 1960104}
+#   requirements: [STRATEGIC_WARFARE, SATELLITE_SYSTEMS]
+#   effects: {}
 
 NUCLEAR_POWER_PLANT:
   era: modern
@@ -1212,7 +1197,7 @@ NUCLEAR_POWER_PLANT:
   requirements: [NUCLEAR_REACTION]
   effects:
     gold_offset: 0.5
-    research_speed_modifier: 0.3
+    research_speed_offset: 1
 
 ROBO_MANUFACTURE:
   era: modern
@@ -1248,18 +1233,18 @@ ELITE_ACADEMY:
   costs: {gold: 2800149}
   requirements: [COMMAND_CHAIN, CRYPTOLOGY]
   effects:
-    research_speed_modifier: 0.35
+    research_speed_offset: 1
 
-RECRUITING_OFFICE:
-  era: modern
-  image: assets/sprites/buildings/recruiting_office
-  name: "Recruiting Office"
-  description: "Massive military recruitment and conscription center."
-  effort: 875849
-  costs: {gold: 2744145}
-  requirements: [MILITARY_SERVICE]
-  effects:
-    culture_offset: 0.4
+# RECRUITING_OFFICE:
+#   era: modern
+#   image: assets/sprites/buildings/recruiting_office
+#   name: "Recruiting Office"
+#   description: "Massive military recruitment and conscription center."
+#   effort: 875849
+#   costs: {gold: 2744145}
+#   requirements: [MILITARY_SERVICE]
+#   effects:
+#     culture_offset: 0.4
 
 # ============================================================
 #   FUTURE  (Effort 40.000.000 – 80.000.000)
@@ -1273,7 +1258,7 @@ MECH_WARRIOR_LAB:
   effort: 826270
   costs: {gold: 2520132}
   requirements: [FIBER_COMPOSITE]
-  effects: []
+  effects: {}
 
 THE_WORLD_WONDER:
   era: future
@@ -1282,10 +1267,10 @@ THE_WORLD_WONDER:
   type: wonder
   description: "Ultimate achievement combining science, culture and power."
   effort: 3021021
-  costs: {gold: 1017402}
+  costs: {gold: 10174020}
   requirements: [BIONICS, FIBER_COMPOSITE, NUCLEAR_FUSION]
   effects:
-    culture_modifier: 3
+    culture_offset: 10
 
 SPACE_CENTER:
   era: future
@@ -1296,7 +1281,7 @@ SPACE_CENTER:
   costs: {gold: 4291077}
   requirements: [ROCKET_SCIENCE, CIVIL_ENGINEERING]
   effects:
-    research_speed_offset: 3
+    research_speed_offset: 5
 
 CYBER_COMMAND:
   era: future
@@ -1318,4 +1303,4 @@ FUSION_REACTOR:
   costs: {gold: 4205782}
   requirements: [NUCLEAR_FUSION]
   effects:
-    gold_offset: 3
+    gold_offset: 5

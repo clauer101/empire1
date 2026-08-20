@@ -297,6 +297,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "era_travel_base_seconds": round(svc.attack_service._era_travel_offset(empire), 0),
         "base_artifact_steal_victory": svc.game_config.base_artifact_steal_victory if svc.game_config else 0.0,
         "base_artifact_steal_defeat": svc.game_config.base_artifact_steal_defeat if svc.game_config else 0.0,
+        "alliance_culture_cost": svc.game_config.alliance_culture_cost if svc.game_config else 0.0,
         "current_era": svc.empire_service.get_current_era(empire),
         # Alias of current_era: ai_players bots read this key everywhere.
         "era": svc.empire_service.get_current_era(empire),
@@ -400,6 +401,10 @@ def handle_effect_sources_request(uid: int) -> dict[str, Any]:
     for key, value in svc.empire_service.get_ruler_effects(empire).items():
         _add(key, "ruler", value)
 
+    # Alliance (ally rulers' ally_effects)
+    for key, value in svc.empire_service.get_ally_effects(empire).items():
+        _add(key, "alliance", value)
+
     # Trophies
     upgrades_map = svc.empire_service._upgrades
     for iid in empire.trophies:
@@ -430,18 +435,38 @@ async def _create_empire_for_new_user(uid: int, username: str, empire_name: str)
     The initial tiles are shifted to the empire's assigned global spawn position.
     """
     from gameserver.models.empire import Empire
-    from gameserver.models.hex import spiral_slot
+    from gameserver.models.hex import HexCoord, spiral_slot
+    from gameserver.util.hex_math import hex_distance
     svc = _svc()
     assert svc.empire_service is not None
     starting_res = dict(svc.game_config.starting_resources) if svc.game_config else {"gold": 0.0, "culture": 0.0, "life": 10.0}
     starting_max_life = svc.game_config.starting_max_life if svc.game_config else 10.0
 
-    # Deterministic spawn position: the Nth empire always gets the Nth slot
-    # of an expanding hex spiral — no distance checks or tile scanning needed.
+    # Deterministic spawn position: the Nth empire normally gets the Nth slot
+    # of an expanding hex spiral. As a safety net against index drift (e.g.
+    # empires removed by admin/season-wipe shifting the count), verify the
+    # candidate tiles keep at least `spacing` hex distance from every
+    # currently-owned tile — not just other empires' castles — and if not,
+    # advance to the next spiral slot until one is clear.
     spacing = svc.game_config.empire_spawn_spacing if svc.game_config else 11
     index = sum(1 for eu in svc.empire_service.all_empires if eu not in (0, 100))
-    slot = spiral_slot(index)
-    oq, or_ = slot.q * spacing, slot.r * spacing
+    owned_tiles = list(svc.empire_service.world_tile_owner().keys())
+
+    def _template_tiles(oq: int, or_: int) -> list[HexCoord]:
+        return [HexCoord(oq, or_), HexCoord(oq, or_ + 1), HexCoord(oq + 1, or_)]
+
+    while True:
+        slot = spiral_slot(index)
+        oq, or_ = slot.q * spacing, slot.r * spacing
+        candidates = _template_tiles(oq, or_)
+        if all(
+            hex_distance(cand, HexCoord(tq, tr)) >= spacing
+            for cand in candidates
+            for tq, tr in owned_tiles
+        ):
+            break
+        index += 1
+
     log.info("New empire uid=%d spawn offset q=%d r=%d (spacing=%d, index=%d)", uid, oq, or_, spacing, index)
     empire = Empire(
         uid=uid,

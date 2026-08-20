@@ -110,11 +110,11 @@ class AttackService:
                 return attack
         return None
 
-    def skip_siege(self, attack_id: int, requester_uid: int) -> Attack | str:
+    def skip_siege(self, attack_id: int, requester_uid: int) -> tuple[Attack, float] | str:
         """Immediately end the siege phase for attack_id.
 
         Only the defender may call this.
-        Returns the Attack on success, or an error string.
+        Returns (Attack, siege_remaining_seconds_before_skip) on success, or an error string.
         """
         attack = self.get(attack_id)
         if attack is None:
@@ -123,12 +123,13 @@ class AttackService:
             return f"Attack {attack_id} is not in IN_SIEGE phase (current: {attack.phase.value})"
         if attack.defender_uid != requester_uid:
             return "Only the defender can use Fight now!"
+        remaining_before_skip = attack.siege_remaining_seconds
         attack.siege_remaining_seconds = 0.0
         log.info(
             "Siege skipped: attack_id=%d defender=%d attacker=%d",
             attack_id, attack.defender_uid, attack.attacker_uid,
         )
-        return attack
+        return attack, remaining_before_skip
 
     def restore_attacks(self, attacks: list[Attack]) -> None:
         """Restore persisted attacks and advance the ID counter past all existing IDs."""

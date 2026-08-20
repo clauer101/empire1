@@ -34,6 +34,7 @@ from gameserver.network.rest_api import (
     _knowledge_groups,
     _building_groups,
 )
+from gameserver.network.routers.diplomacy import _alliance_status
 import gameserver.network.rest_api as _rest_api
 
 log = logging.getLogger(__name__)
@@ -133,13 +134,32 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
     @router.get("/api/empires")
     @limiter.limit("120/minute")
     async def list_empires(request: Request, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
-        """Return all known empires sorted by culture points descending."""
+        """Return all known empires, ranked by culture descending.
+
+        Mutually-allied empires are grouped into a contiguous block, ranked by
+        their pooled culture; within a block members are ordered by their own
+        culture descending. Each empire still reports its own culture and gets
+        an `alliance_group_id` (shared by all members of its alliance, None if
+        unallied) so the frontend can draw a boundary around the group, plus
+        `alliance_group_culture` (the group's pooled culture total, None if
+        unallied) for display next to the empire's own culture.
+
+        Each empire also reports `ally_ruler_bonus`: that empire's ruler's
+        `ally_effects` (rulers.yaml) — i.e. the bonus the viewer currently
+        receives from the alliance — plus `ally_ruler_name`, the display name
+        of that ruler. Both empty/blank unless mutually allied.
+        """
         uid_to_user: dict[int, str] = {}
         uid_to_last_seen: dict[int, str] = {}
         uid_to_stats: dict[int, dict[str, Any]] = {}
         winner_place: dict[int, int] = {}
         past_champions: set[int] = set()
+        declared_to: set[int] = set()
+        declared_by: set[int] = set()
+        mutual_alliances: dict[int, set[int]] = {}
         if services.database is not None:
+            declared_to, declared_by = await services.database.get_alliance_declarations_for(uid)
+            mutual_alliances = await services.database.get_all_mutual_alliances()
             for row in await services.database.list_users():
                 uid_to_user[row["uid"]] = row["username"]
                 uid_to_last_seen[row["uid"]] = row.get("last_seen", "")
@@ -163,6 +183,15 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             "research_won", "research_stolen", "defense_gold_earned",
             "spies_sent", "longest_battle_ms",
         ]
+        viewer_empire = empire_service.get(uid)
+        viewer_era_idx = 1
+        if viewer_empire is not None:
+            viewer_era_key = empire_service.get_current_era(viewer_empire)
+            viewer_era_idx = (
+                empire_service._ERA_ORDER.index(viewer_era_key) + 1
+                if viewer_era_key in empire_service._ERA_ORDER else 1
+            )
+
         empires = []
         for empire in empire_service.all_empires.values():
             if empire.uid != uid and empire.uid not in uid_to_user:
@@ -185,6 +214,21 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             )
             empire.is_bot = is_bot  # sync back so state.yaml stays current
             stats = uid_to_stats.get(empire.uid, {})
+            empire_alliance_status = _alliance_status(empire.uid, declared_to, declared_by)
+            ally_ruler_bonus: dict[str, float] = {}
+            ally_ruler_name = ""
+            if empire_alliance_status == "allied":
+                ruler_type = empire.ruler.type
+                ruler_def = empire_service._rulers.get(ruler_type, {}) if ruler_type else {}
+                ally_ruler_bonus = dict(ruler_def.get("ally_effects") or {})
+                ally_ruler_name = empire.ruler.name or ruler_def.get("name", "") or ruler_type or ""
+            # Mirrors the era-gap check in handle_new_attack: a defender at
+            # most one era behind the viewer can still be attacked.
+            can_attack = (
+                empire.uid != uid
+                and empire_alliance_status != "allied"
+                and era_idx >= viewer_era_idx - 1
+            )
             empires.append({
                 "uid": empire.uid,
                 "name": empire.name,
@@ -192,6 +236,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "culture": round(empire.resources.get("culture", 0.0), 1),
                 "is_self": empire.uid == uid,
                 "era": era_idx,
+                "can_attack": can_attack,
                 "online": empire.uid in connected_uids or _is_recently_active(uid_to_last_seen.get(empire.uid, ""), 60),
                 "artifact_count": len(empire.artifacts),
                 "artifact_protected_count": _count_protected_artifacts(empire),
@@ -199,9 +244,58 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "is_bot": is_bot,
                 "season_place": winner_place.get(empire.uid),
                 "past_champion": empire.uid in past_champions,
+                "alliance_status": empire_alliance_status,
+                # This empire's ruler's ally_effects — what the viewer receives
+                # from the alliance, if allied. Empty dict otherwise.
+                "ally_ruler_bonus": ally_ruler_bonus,
+                # Display name of that ruler (e.g. "Lucien Duskbane"), empty if unallied.
+                "ally_ruler_name": ally_ruler_name,
                 **{k: stats.get(k, 0) for k in _STAT_KEYS},
             })
-        empires.sort(key=lambda e: float(e.get("culture") or 0), reverse=True)
+
+        # Group mutually-allied empires into connected clusters so allies are
+        # ranked and listed as a contiguous block (pooled culture for ranking).
+        listed_uids = {e["uid"] for e in empires}
+        seen: set[int] = set()
+        groups: list[list[int]] = []
+        for e in empires:
+            root = e["uid"]
+            if root in seen:
+                continue
+            stack = [root]
+            cluster: set[int] = set()
+            while stack:
+                u = stack.pop()
+                if u in cluster or u not in listed_uids:
+                    continue
+                cluster.add(u)
+                stack.extend(mutual_alliances.get(u, set()))
+            seen |= cluster
+            groups.append(sorted(cluster))
+
+        empire_by_uid = {e["uid"]: e for e in empires}
+
+        def _empire_culture(u: int) -> float:
+            return float(empire_by_uid[u].get("culture") or 0)
+
+        group_id_of: dict[int, int] = {}
+        for gid, group in enumerate(groups):
+            for u in group:
+                group_id_of[u] = gid
+
+        for e in empires:
+            group = groups[group_id_of[e["uid"]]]
+            is_allied_group = len(group) > 1
+            e["alliance_group_id"] = group_id_of[e["uid"]] if is_allied_group else None
+            e["alliance_group_culture"] = (
+                round(sum(_empire_culture(u) for u in group), 1) if is_allied_group else None
+            )
+
+        groups.sort(key=lambda group: sum(_empire_culture(u) for u in group), reverse=True)
+        for group in groups:
+            group.sort(key=_empire_culture, reverse=True)
+
+        empires = [empire_by_uid[u] for group in groups for u in group]
         return {"empires": empires}
 
     @router.post("/api/empire/build")
@@ -381,8 +475,14 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             return {"success": False, "error": "Empire not found"}
         if empire.ruler.r > 0:
             return {"success": False, "error": "Ruler cannot be changed once the R skill has been upgraded"}
+        old_ruler_type = empire.ruler.type
         from gameserver.models.empire import Ruler
         empire.ruler = Ruler()
+        if old_ruler_type:
+            for army in empire.armies:
+                for wave in army.waves:
+                    if wave.iid == old_ruler_type:
+                        wave.iid = "SLAVE"
         return {"success": True}
 
     @router.post("/api/empire/ruler/aura-choice")
@@ -676,6 +776,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             hold_rows = await services.database.get_longest_artifact_hold_per_uid()
             hold_by_uid = {row["uid"]: row["longest_hold_secs"] for row in hold_rows}
             era_firsts = await services.database.get_era_firsts()
+            longest_single_holds = await services.database.get_longest_single_artifact_holds()
             runtime_fields = [
                 "critters_killed", "towers_placed", "towers_sold",
                 "spies_sent", "artifacts_stolen", "defense_gold_earned",
@@ -697,6 +798,20 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 r["attacks_received_human"] = (r["defense_won_human"] or 0) + (r["defense_lost_human"] or 0)  # type: ignore[operator]
                 r["longest_artifact_hold_secs"] = round(hold_by_uid.get(r["uid"], 0) or 0)
 
+        longest_single_artifact_holds: list[dict[str, Any]] = []
+        for hold_row in longest_single_holds:
+            hold_uid = hold_row["uid"]
+            hold_iid = hold_row["artifact_iid"]
+            holder = empire_service.all_empires.get(hold_uid)
+            item_def = upgrades.get(hold_iid)
+            longest_single_artifact_holds.append({
+                "uid": hold_uid,
+                "empire_name": holder.name if holder is not None else f"uid:{hold_uid}",
+                "artifact_iid": hold_iid,
+                "artifact_name": item_def.name if item_def is not None else hold_iid,
+                "held_secs": round(hold_row["held_secs"]),
+            })
+
         from gameserver.util.eras import ERA_ORDER as _ERA_ORDER_LIST
         return {
             "season_number": get_season_number(),
@@ -705,6 +820,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             "empires": results,
             "era_firsts": era_firsts,
             "era_order": _ERA_ORDER_LIST,
+            "longest_single_artifact_holds": longest_single_artifact_holds,
         }
 
     @router.get("/api/empire/trophies")

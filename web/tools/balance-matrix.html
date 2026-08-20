@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Balance Matrix</title>
+  <style>
+    :root {
+      --bg:          #0d0d14;
+      --surface:     #14141f;
+      --surface-alt: #1a1a28;
+      --surface-hover: #22222f;
+      --border:      #2a2a3a;
+      --accent:      #4fc3f7;
+      --success:     #66bb6a;
+      --danger:      #ef5350;
+      --warning:     #ffa726;
+      --purple:      #ab47bc;
+      --text:        #e0e0e6;
+      --text-dim:    #9999a8;
+      --radius:      6px;
+      --mono:        'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',system-ui,sans-serif; font-size: 13px; min-height: 100vh; }
+
+    #topbar {
+      position: sticky; top: 38px; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    }
+    #topbar h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; flex: 1; }
+    #load-status { font-size: 12px; color: var(--text-dim); }
+
+    #save-btn {
+      padding: 5px 14px; border-radius: var(--radius); border: 1px solid var(--success);
+      background: rgba(102,187,106,0.15); color: var(--success); cursor: pointer;
+      font-size: 12px; font-weight: 600;
+    }
+    #save-btn:hover { background: rgba(102,187,106,0.3); }
+    #save-btn:disabled { opacity: 0.5; cursor: default; }
+
+    #content { max-width: 100%; margin: 0 auto; padding: 16px; }
+    /* #table-wrap is its own scroll container (fixed height = viewport minus
+       the two sticky bars above it) — the table header's `position: sticky;
+       top: 0` then sticks to THIS box unambiguously, no guessing about
+       whether the page body or some ancestor is "the" scroll container. */
+    #table-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 38px - 58px);
+      border: 1px solid var(--border);
+    }
+
+    table.matrix { border-collapse: collapse; font-size: 12px; width: max-content; }
+    table.matrix th, table.matrix td {
+      border: 1px solid var(--border); padding: 6px; vertical-align: top;
+    }
+    table.matrix thead th {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--surface-alt); color: var(--text-dim);
+      font-weight: 600; white-space: nowrap; text-align: center;
+    }
+    table.matrix thead th.group-tower  { color: var(--danger); }
+    table.matrix thead th.group-critter{ color: var(--accent); }
+    table.matrix thead th.group-boss   { color: var(--warning); }
+    table.matrix tbody th.era-cell {
+      position: sticky; left: 0; z-index: 40;
+      background: var(--surface-alt); color: var(--text);
+      font-weight: 700; white-space: nowrap; text-align: left;
+    }
+    table.matrix td.cell {
+      min-width: 220px;
+      background: var(--surface);
+    }
+
+    .cell-cards { display: flex; flex-direction: column; gap: 6px; }
+    .cell-empty {
+      min-height: 40px; border: 1px dashed var(--border); border-radius: 4px;
+      opacity: 0.35; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--text-dim);
+    }
+
+    .col-type-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── Compact editable unit card (trimmed version of balance.html's .unit-card) ── */
+    .unit-card {
+      background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 6px 8px; width: 260px;
+    }
+    .unit-card:hover { border-color: var(--accent); }
+    .unit-name { font-weight: 700; font-size: 11px; margin-bottom: 3px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .card-body { display: flex; gap: 6px; }
+    .card-sprite { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; border-radius: 4px; background: rgba(255,255,255,0.03); }
+    .card-sprite.critter-sprite-canvas { image-rendering: pixelated; }
+    .card-info { flex: 1; min-width: 0; }
+    .stats-row {
+      display: grid; grid-template-columns: 52px 1fr; column-gap: 6px; row-gap: 2px;
+      align-items: center; margin: 3px 0; font-size: 10px;
+    }
+    .stat { display: contents; }
+    .stat-label { color: var(--text-dim); text-align: right; }
+    .stat-value { font-family: var(--mono); font-weight: 600; }
+    .stat-controls { display: flex; align-items: center; gap: 2px; }
+
+    .tag {
+      display: inline-block; padding: 1px 6px; border-radius: 3px;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .tag-normal  { background: rgba(224,224,230,0.1); color: var(--text); }
+    .tag-splash  { background: rgba(255,167,38,0.2); color: var(--warning); }
+    .tag-slow    { background: rgba(79,195,247,0.2); color: var(--accent); }
+    .tag-stun    { background: rgba(171,71,188,0.2); color: var(--purple); }
+
+    .reqs-line { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; align-items: center; }
+    .req-tag {
+      font-size: 8px; font-family: var(--mono); padding: 1px 4px; border-radius: 3px;
+      background: rgba(224,224,230,0.07); color: var(--text-dim); letter-spacing: 0.3px;
+      display: inline-flex; align-items: center; gap: 3px; cursor: default;
+    }
+    .req-tag.changed { background: rgba(255,167,38,0.15); color: var(--warning); }
+    .req-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 10px; padding: 0; line-height: 1; opacity: 0.7; }
+    .req-del:hover { opacity: 1; }
+    .req-add-wrap { position: relative; display: inline-flex; }
+    .req-add-btn { font-size: 8px; padding: 1px 5px; border-radius: 3px; border: 1px dashed var(--border); color: var(--text-dim); background: none; cursor: pointer; }
+    .req-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .req-add-input { font-size: 8px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--accent); background: var(--bg); color: var(--text); width: 100px; display: none; }
+    .req-add-input.open { display: inline-block; }
+    .req-ac-list { position: absolute; top: 100%; left: 0; z-index: 300; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); max-height: 140px; overflow-y: auto; min-width: 160px; display: none; }
+    .req-ac-list.open { display: block; }
+    .req-ac-item { padding: 3px 8px; cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--accent); }
+    .req-ac-item:hover, .req-ac-item.sel { background: var(--surface-hover); }
+    .effort-line { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
+    .effort-val { font-family: var(--mono); color: var(--warning); }
+
+    .eff-badge { margin-top: 4px; font-size: 9px; color: var(--text-dim); }
+    .eff-val { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+
+    .stat-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-dim);
+      font-size: 10px; width: 13px; height: 13px; cursor: pointer; border-radius: 2px;
+      display: inline-flex; align-items: center; justify-content: center; padding: 0;
+      flex-shrink: 0; line-height: 1;
+    }
+    .stat-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .stat-val { font-family: var(--mono); font-weight: 600; min-width: 28px; width: 42px; text-align: center; display: inline-block; background: transparent; border: none; border-bottom: 1px solid #444; color: inherit; font-size: 10px; padding: 0 1px; cursor: text; -moz-appearance: textfield; }
+    .stat-val::-webkit-outer-spin-button, .stat-val::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .stat-val:focus { outline: none; border-bottom-color: var(--accent); background: #1a1a2a; }
+    .stat-val.changed { color: var(--warning); }
+
+    .fx-editor { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }
+    .fx-editor-header { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+    .fx-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    .fx-table.changed .fx-key-in,
+    .fx-table.changed .fx-val-in { border-color: var(--warning); }
+    .fx-table td { padding: 1px 2px; vertical-align: middle; }
+    td.fx-key-cell { width: 100px; }
+    td.fx-val-cell { width: 55px; }
+    td.fx-del-cell { width: 20px; text-align: center; }
+    .fx-key-in { font-family: var(--mono); font-size: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; color: var(--text); padding: 2px 4px; width: 100%; outline: none; }
+    .fx-key-in:focus { border-color: var(--accent); }
+    .fx-val-in { font-family: var(--mono); font-size: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; color: var(--success); padding: 2px 4px; width: 100%; text-align: right; outline: none; }
+    .fx-val-in:focus { border-color: var(--accent); }
+    .fx-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 12px; line-height: 1; padding: 1px 3px; border-radius: 3px; }
+    .fx-del:hover { background: rgba(239,83,80,0.15); }
+    .fx-footer { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+    .fx-add { background: none; border: 1px dashed var(--border); color: var(--text-dim); font-size: 9px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+    .fx-add:hover { border-color: var(--accent); color: var(--accent); }
+
+    @media (max-width: 768px) {
+      #content { padding: 8px; }
+      table.matrix { font-size: 11px; }
+      .unit-card { width: 220px; }
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+<datalist id="fx-known-keys">
+  <option value="slow_duration">
+  <option value="slow_ratio">
+  <option value="burn_duration">
+  <option value="burn_dps">
+  <option value="splash_radius">
+</datalist>
+
+<div id="topbar">
+  <h1>Balance Matrix</h1>
+  <span id="load-status">Loading...</span>
+  <button id="save-btn" disabled>Save</button>
+</div>
+
+<div id="content">
+  <div id="loading" style="text-align:center;padding:40px;color:var(--text-dim)">Loading data...</div>
+</div>
+
+<script>
+(async function() {
+  const eraMap = await fetch('/api/era-map').then(r => r.json()).catch(() => ({}));
+  const ERA_ORDER = eraMap.eras || [
+    "stone","neolithic","bronze","iron",
+    "medieval","renaissance","industrial","modern","future"
+  ];
+  const ERA_EN = {
+    "stone": "Stone Age", "neolithic": "Neolithic", "bronze": "Bronze Age",
+    "iron": "Iron Age", "medieval": "Medieval", "renaissance": "Renaissance",
+    "industrial": "Industrial Age", "modern": "Modern Age", "future": "Future",
+  };
+  function eraLabel(e) { return ERA_EN[e] || e; }
+
+  const statusEl = document.getElementById('load-status');
+  const contentEl = document.getElementById('content');
+  const saveBtn   = document.getElementById('save-btn');
+
+  // ── Edit tracking (same shape/endpoints as balance.html) ──
+  const critterChanges = {};  // { IID: { field: value } }
+  const towerChanges   = {};
+  const reqChanges     = {};  // { IID: [req, ...] }
+  const eraChanges     = {};  // { IID: "era_name" }
+  const typeChanges    = {};  // { IID: { item_kind, type_value } }
+  const fxChanges      = {};  // { IID: { effects: {...} } } — tower effects, saved by the main Save button too
+  const liveVals       = {};  // key = "critter-IID-field" → current value
+  const liveReqs       = {};  // key = IID → current requirements array
+
+  // Base type vocabularies for the <select> dropdowns include a blank option
+  // (unassigned) plus every value already observed in the data, computed below
+  // once critters/structures are loaded — see CRITTER_TYPE_OPTIONS/TOWER_TYPE_OPTIONS.
+
+  const CRITTER_FIELDS = {
+    health:       { label: 'HP',       step: 1,    min: 1    },
+    speed:        { label: 'Speed',    step: 0.05, min: 0.05 },
+    armour:       { label: 'Armour',   step: 0.5,  min: 0    },
+    damage:       { label: 'Dmg',      step: 1,    min: 0    },
+    value:        { label: 'Value',    step: 1,    min: 0    },
+    time_between: { label: 'Interval', step: 100,  min: 100  },
+    slots:        { label: 'Slots',    step: 1,    min: 1    },
+  };
+  const TOWER_FIELDS = {
+    damage:      { label: 'Dmg',        step: 1,    min: 0   },
+    range:       { label: 'Range',      step: 0.5,  min: 0.5 },
+    reload_time: { label: 'Reload',     step: 100,  min: 100 },
+    shot_speed:  { label: 'Shot Speed', step: 0.1,  min: 0.1 },
+    gold:        { label: 'Gold',       step: 1,    min: 0   },
+  };
+
+  // ── Type-specific effectiveness ──
+  // Each critter_type gets its own weighted mix of normalized stats (normalized
+  // within its own type group, not across all critters — health/armour/speed/slots
+  // are on very different scales). `slots` is a cost (fewer slots = more copies per
+  // wave), so it's inverted unless explicitly noted otherwise (e.g. `bulk`, which
+  // deliberately wants a high slot count).
+  const CRITTER_EFFECTIVENESS_SPEC = {
+    tank:    [{ key: 'armour', w: 2 }, { key: 'speed',  w: 1 }, { key: 'slots', w: 1, invert: true }],
+    fast:    [{ key: 'speed',  w: 2 }, { key: 'health', w: 1 }, { key: 'slots', w: 1, invert: true }],
+    health:  [{ key: 'health', w: 2 }, { key: 'armour', w: 1 }, { key: 'slots', w: 1, invert: true }],
+    bulk:    [{ key: 'health', w: 1 }, { key: 'slots',  w: 1 }],
+    spread:  [{ key: 'slots',  w: 2, invert: true }, { key: 'speed', w: 1 }],
+    carrier: [{ key: 'value',  w: 2 }, { key: 'slots',  w: 1, invert: true }],
+    boss:    [{ key: 'health', w: 1 }, { key: 'armour', w: 1 }, { key: 'damage', w: 1 }],
+  };
+
+  function fmtVal(v, step) {
+    if (step >= 1) return String(Math.round(v));
+    return parseFloat(v.toFixed(step >= 0.1 ? 1 : 2)).toString();
+  }
+
+  function editStat(iid, type, field, value) {
+    const cfg = type === 'critter' ? CRITTER_FIELDS[field] : TOWER_FIELDS[field];
+    if (!cfg) return `<span class="stat"><span class="stat-label">${field}</span><span class="stat-value">${value}</span></span>`;
+    const key = `${type}-${iid}-${field}`;
+    liveVals[key] = value;
+    const display = fmtVal(value, cfg.step);
+    return `<span class="stat">
+      <span class="stat-label">${cfg.label}</span>
+      <span class="stat-controls">
+        <button class="stat-btn" data-iid="${iid}" data-type="${type}" data-field="${field}" data-dir="-1">−</button>
+        <input class="stat-val" type="number" step="${cfg.step}" min="${cfg.min}" data-key="${key}" data-iid="${iid}" data-type="${type}" data-field="${field}" value="${display}">
+        <button class="stat-btn" data-iid="${iid}" data-type="${type}" data-field="${field}" data-dir="1">+</button>
+      </span>
+    </span>`;
+  }
+
+  function typeSelectHtml(iid, kind, current, options) {
+    const opts = options.map(v => `<option value="${v}"${v === current ? ' selected' : ''}>${v || '— none —'}</option>`).join('');
+    return `<select class="type-select" data-iid="${iid}" data-kind="${kind}"
+      style="font-size:9px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);border-radius:3px;padding:1px 4px;cursor:pointer;margin-left:4px;">
+      ${opts}
+    </select>`;
+  }
+
+  function eraSelectHtml(iid, currentEra) {
+    const opts = ERA_ORDER.map(e =>
+      `<option value="${e}"${e === currentEra ? ' selected' : ''}>${eraLabel(e)}</option>`
+    ).join('');
+    return `<select class="era-select" data-iid="${iid}"
+      style="font-size:9px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);border-radius:3px;padding:1px 4px;cursor:pointer;margin-left:4px;">
+      ${opts}
+    </select>`;
+  }
+
+  function updateSaveBtn() {
+    const n = Object.keys(critterChanges).length + Object.keys(towerChanges).length + Object.keys(reqChanges).length + Object.keys(eraChanges).length + Object.keys(typeChanges).length + Object.keys(fxChanges).length;
+    saveBtn.disabled = n === 0;
+    saveBtn.textContent = n > 0 ? `Save (${n})` : 'Save';
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    try {
+      // Split towerChanges: gold goes via /api/structure-gold, rest via /api/structure-stats
+      const goldChanges = {};
+      const statChanges = {};
+      for (const [iid, fields] of Object.entries(towerChanges)) {
+        for (const [field, value] of Object.entries(fields)) {
+          if (field === 'gold') {
+            goldChanges[iid] = value;
+          } else {
+            if (!statChanges[iid]) statChanges[iid] = {};
+            statChanges[iid][field] = value;
+          }
+        }
+      }
+
+      const reqs = [];
+      if (Object.keys(critterChanges).length)
+        reqs.push(fetch('/api/critter-stats',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(critterChanges) }));
+      if (Object.keys(statChanges).length)
+        reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(statChanges) }));
+      if (Object.keys(goldChanges).length)
+        reqs.push(fetch('/api/structure-gold',  { method: 'POST',  headers: {'Content-Type':'application/json'}, body: JSON.stringify(goldChanges) }));
+      if (Object.keys(reqChanges).length)
+        reqs.push(fetch('/api/item-requirements', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(reqChanges) }));
+      if (Object.keys(eraChanges).length)
+        reqs.push(fetch('/api/critter-era', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(eraChanges) }));
+      if (Object.keys(typeChanges).length)
+        reqs.push(fetch('/api/item-type',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(typeChanges) }));
+      // Tower effects: one PATCH per changed tower (endpoint is per-iid, not batch).
+      const fxEntries = Object.entries(fxChanges);
+      for (const [iid, payload] of fxEntries) {
+        reqs.push(fetch(`/api/tower-effects/${iid}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+      }
+      const results = await Promise.all(reqs);
+      for (const r of results) if (!r.ok) throw new Error(await r.text());
+      for (const k of Object.keys(critterChanges)) delete critterChanges[k];
+      for (const k of Object.keys(towerChanges))   delete towerChanges[k];
+      for (const k of Object.keys(reqChanges))     delete reqChanges[k];
+      for (const k of Object.keys(eraChanges))     delete eraChanges[k];
+      for (const k of Object.keys(typeChanges))    delete typeChanges[k];
+      for (const k of Object.keys(fxChanges))      delete fxChanges[k];
+      saveBtn.textContent = 'Saved ✓ — reloading…';
+      setTimeout(() => window.location.reload(), 700);
+    } catch(e) {
+      saveBtn.textContent = 'Error: ' + e.message;
+      saveBtn.disabled = false;
+    }
+  });
+
+  // ── Fetch all data ──
+  let buildings, knowledge, critters, structures;
+  try {
+    const [bRes, kRes, cRes, sRes] = await Promise.all([
+      fetch('/api/buildings').then(r => r.json()),
+      fetch('/api/knowledge').then(r => r.json()),
+      fetch('/api/critter-stats').then(r => r.json()),
+      fetch('/api/structure-stats').then(r => r.json()),
+    ]);
+    buildings = bRes; knowledge = kRes; critters = cRes; structures = sRes;
+    statusEl.textContent = `${critters.length} Critters, ${structures.length} Towers`;
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+    return;
+  }
+
+  const bossCritters = critters.filter(c => c.is_boss);
+  const combatCritters = critters.filter(c => !c.is_boss);
+
+  // ── Type dropdown vocabularies: every value already in use, plus a blank
+  // "unassigned" option — dynamic, not hardcoded, so a value only ever used
+  // once still round-trips correctly through the dropdown. ──
+  const CRITTER_TYPE_OPTIONS = ['', ...new Set(combatCritters.map(c => c.critter_type).filter(Boolean))].sort();
+  const TOWER_TYPE_OPTIONS   = ['', ...new Set(structures.map(t => t.tower_type).filter(Boolean))].sort();
+
+  // ── Columns: derived dynamically from actual tower_type / critter_type values
+  // in the YAML data — never hardcoded, so a new type value automatically
+  // shows up as a new column without touching this page. ──
+  const towerTypes = TOWER_TYPE_OPTIONS.filter(Boolean);
+  const critterTypes = CRITTER_TYPE_OPTIONS.filter(Boolean);
+
+  const columns = [
+    ...towerTypes.map(type => ({ kind: 'tower', type })),
+    ...critterTypes.map(type => ({ kind: 'critter', type })),
+  ];
+  if (bossCritters.length) columns.push({ kind: 'boss', type: '' });
+
+  // ── Tech tree DAG for unlock-effort calculation ──
+  const techTree = {};
+  for (const item of [...buildings, ...knowledge]) {
+    techTree[item.iid] = { effort: item.effort || 0, requirements: item.requirements || [] };
+  }
+  const _effortMemo = {};
+  function cumulativeEffort(requirements) {
+    const key = requirements.slice().sort().join(',');
+    if (_effortMemo[key] !== undefined) return _effortMemo[key];
+    let total = 0;
+    const visited = new Set();
+    const stack = [...requirements];
+    while (stack.length) {
+      const iid = stack.pop();
+      if (visited.has(iid)) continue;
+      visited.add(iid);
+      const node = techTree[iid];
+      if (!node) continue;
+      total += node.effort;
+      for (const req of node.requirements) {
+        if (!visited.has(req)) stack.push(req);
+      }
+    }
+    _effortMemo[key] = total;
+    return total;
+  }
+
+  // ── Critter effectiveness: normalized per critter_type group ──
+  // health/armour/speed/slots/value live on very different scales, so each
+  // stat is min-max normalized within its own type group (not across all
+  // critters) before being weighted per CRITTER_EFFECTIVENESS_SPEC.
+  function makeNorm(arr, invert) {
+    const min = Math.min(...arr), max = Math.max(...arr);
+    const range = max - min || 1;
+    return v => invert ? 1 - ((v - min) / range) : (v - min) / range;
+  }
+  const critterMap = Object.fromEntries(combatCritters.map(c => [c.iid, c]));
+  const towerMap = Object.fromEntries(structures.map(t => [t.iid, t]));
+
+  const CRITTER_TYPE_GROUPS = { boss: bossCritters };
+  for (const c of combatCritters) (CRITTER_TYPE_GROUPS[c.critter_type] ??= []).push(c);
+
+  // type -> { key -> normalizer fn }, built once from the group's stat range
+  const CRITTER_NORMALIZERS = {};
+  for (const [type, spec] of Object.entries(CRITTER_EFFECTIVENESS_SPEC)) {
+    const group = CRITTER_TYPE_GROUPS[type] || [];
+    const norms = {};
+    for (const { key, invert } of spec) {
+      const dflt = key === 'slots' ? 1 : 0;
+      norms[key] = makeNorm(group.map(c => c[key] ?? dflt), !!invert);
+    }
+    CRITTER_NORMALIZERS[type] = norms;
+  }
+
+  function critterEffectivenessPct(c) {
+    const spec = CRITTER_EFFECTIVENESS_SPEC[c.critter_type];
+    if (!spec) return null;
+    const norms = CRITTER_NORMALIZERS[c.critter_type];
+    const iid = c.iid;
+    let score = 0, maxScore = 0;
+    for (const { key, w } of spec) {
+      const dflt = key === 'slots' ? 1 : 0;
+      const live = liveVals[`critter-${iid}-${key}`];
+      const value = live ?? (c[key] ?? dflt);
+      score += norms[key](value) * w;
+      maxScore += w;
+    }
+    return maxScore > 0 ? (score / maxScore) * 100 : null;
+  }
+
+  // ── Tower effectiveness: one formula per tower_type ──
+  function dps(tower) { return tower.damage / (tower.reload_time / 1000); }
+  function fmtNum(n) { return n >= 1000 ? (n/1000).toFixed(1) + 'k' : String(Math.round(n)); }
+
+  function towerEffectiveness(t) {
+    const iid = t.iid;
+    const dmg      = liveVals[`tower-${iid}-damage`]      ?? t.damage;
+    const reloadMs = liveVals[`tower-${iid}-reload_time`] ?? t.reload_time;
+    const reloadS  = reloadMs / 1000;
+    const baseDps  = dmg / reloadS;
+    const efx = fxChanges[iid]?.effects ?? t.effects ?? {};
+    switch (t.tower_type) {
+      case 'burn': {
+        const burnDps = efx.burn_dps || 0;
+        const burnDurS = (efx.burn_duration || 0) / 1000;
+        return (dmg + burnDps * burnDurS) / reloadS;
+      }
+      case 'slow': {
+        const slowRatio = efx.slow_ratio || 0;
+        const slowDurMs = efx.slow_duration || 0;
+        return slowRatio * Math.min(1, slowDurMs / reloadMs);
+      }
+      case 'splash': {
+        const splashRadius = efx.splash_radius || 0;
+        return baseDps * (1 + splashRadius);
+      }
+      default: // 'strong', 'fast', or any unrecognized type
+        return baseDps;
+    }
+  }
+
+  function effectivenessHtml(item, kind) {
+    if (kind === 'tower') {
+      const v = towerEffectiveness(item);
+      return `<div class="eff-badge" data-iid="${item.iid}" data-kind="tower">Eff: <span class="eff-val">${v.toFixed(1)}</span></div>`;
+    }
+    const pct = critterEffectivenessPct(item);
+    if (pct == null) return '';
+    return `<div class="eff-badge" data-iid="${item.iid}" data-kind="critter">Eff: <span class="eff-val">${pct.toFixed(0)}%</span></div>`;
+  }
+
+  function updateEffectiveness(iid, kind) {
+    const el = contentEl.querySelector(`.eff-badge[data-iid="${iid}"][data-kind="${kind}"] .eff-val`);
+    if (!el) return;
+    if (kind === 'tower') {
+      const t = towerMap[iid];
+      if (t) el.textContent = towerEffectiveness(t).toFixed(1);
+    } else {
+      const c = critterMap[iid];
+      const pct = c ? critterEffectivenessPct(c) : null;
+      if (pct != null) el.textContent = pct.toFixed(0) + '%';
+    }
+  }
+
+  // ── Requirements editor (autocomplete tags) ──
+  function reqsHtml(iid, reqs) {
+    liveReqs[iid] = (reqs || []).slice();
+    const tags = (reqs || []).map(r =>
+      `<span class="req-tag" data-req="${r}">${r}<button class="req-del" data-iid="${iid}" data-req="${r}" title="Remove">×</button></span>`
+    ).join('');
+    return `<div class="reqs-line" data-reqs-iid="${iid}">
+      ${tags}
+      <span class="req-add-wrap">
+        <button class="req-add-btn" data-iid="${iid}">+ req</button>
+        <input class="req-add-input" data-iid="${iid}" placeholder="IID…" autocomplete="off" spellcheck="false">
+        <div class="req-ac-list" data-iid="${iid}"></div>
+      </span>
+    </div>`;
+  }
+
+  function initReqEditors() {
+    const allIids = [...buildings, ...knowledge, ...critters, ...structures].map(x => x.iid).sort();
+
+    function markReqDirty(iid) {
+      reqChanges[iid] = liveReqs[iid].slice();
+      const line = contentEl.querySelector(`.reqs-line[data-reqs-iid="${iid}"]`);
+      if (line) line.querySelectorAll('.req-tag').forEach(t => t.classList.add('changed'));
+      updateSaveBtn();
+    }
+
+    contentEl.addEventListener('click', e => {
+      const btn = e.target.closest('.req-del');
+      if (!btn) return;
+      const { iid, req } = btn.dataset;
+      liveReqs[iid] = (liveReqs[iid] || []).filter(r => r !== req);
+      const tag = btn.closest('.req-tag');
+      if (tag) tag.remove();
+      markReqDirty(iid);
+    });
+
+    contentEl.addEventListener('click', e => {
+      const btn = e.target.closest('.req-add-btn');
+      if (!btn) return;
+      const iid = btn.dataset.iid;
+      const wrap = btn.closest('.req-add-wrap');
+      const inp = wrap.querySelector('.req-add-input');
+      btn.style.display = 'none';
+      inp.classList.add('open');
+      inp.value = '';
+      showAc(inp, allIids);
+      inp.focus();
+    });
+
+    function showAc(inp, allIids) {
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      if (!ac) return;
+      const q = inp.value.toUpperCase();
+      const matches = allIids.filter(x => x.includes(q) && !(liveReqs[iid] || []).includes(x));
+      ac.innerHTML = matches.slice(0, 20).map(x => `<div class="req-ac-item" data-id="${x}">${x}</div>`).join('');
+      ac.classList.toggle('open', matches.length > 0);
+      ac.querySelectorAll('.req-ac-item').forEach(item => {
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          commitReq(inp, item.dataset.id);
+        });
+      });
+    }
+
+    function commitReq(inp, value) {
+      const val = (value || inp.value).trim().toUpperCase();
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      if (ac) ac.classList.remove('open');
+      if (!val) { cancelReqInput(inp); return; }
+      if (!(liveReqs[iid] || []).includes(val)) {
+        liveReqs[iid] = [...(liveReqs[iid] || []), val];
+        const line = contentEl.querySelector(`.reqs-line[data-reqs-iid="${iid}"]`);
+        const wrap = inp.closest('.req-add-wrap');
+        const tag = document.createElement('span');
+        tag.className = 'req-tag changed';
+        tag.dataset.req = val;
+        tag.innerHTML = `${val}<button class="req-del" data-iid="${iid}" data-req="${val}" title="Remove">×</button>`;
+        line.insertBefore(tag, wrap);
+        markReqDirty(iid);
+      }
+      cancelReqInput(inp);
+    }
+
+    function cancelReqInput(inp) {
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      if (ac) ac.classList.remove('open');
+      inp.classList.remove('open');
+      inp.value = '';
+      const btn = inp.closest('.req-add-wrap').querySelector('.req-add-btn');
+      if (btn) btn.style.display = '';
+    }
+
+    contentEl.addEventListener('input', e => {
+      if (!e.target.classList.contains('req-add-input')) return;
+      showAc(e.target, allIids);
+    });
+
+    contentEl.addEventListener('keydown', e => {
+      if (!e.target.classList.contains('req-add-input')) return;
+      const inp = e.target;
+      const iid = inp.dataset.iid;
+      const ac = contentEl.querySelector(`.req-ac-list[data-iid="${iid}"]`);
+      const items = ac ? ac.querySelectorAll('.req-ac-item') : [];
+      const sel = ac ? ac.querySelector('.req-ac-item.sel') : null;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = sel ? sel.nextElementSibling : items[0];
+        sel?.classList.remove('sel'); next?.classList.add('sel'); next?.scrollIntoView({block:'nearest'});
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = sel ? sel.previousElementSibling : items[items.length - 1];
+        sel?.classList.remove('sel'); prev?.classList.add('sel'); prev?.scrollIntoView({block:'nearest'});
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        commitReq(inp, sel?.dataset.id || '');
+      } else if (e.key === 'Escape' || e.key === 'Tab') {
+        cancelReqInput(inp);
+      }
+    });
+  }
+
+  // ── Sprite handling ──
+  const pendingCanvases = [];
+
+  function critterSprite(c) {
+    if (c.sprite) return `/${c.sprite}`;
+    if (!c.animation) return '';
+    const folder = c.animation.replace(/^\//, '');
+    const name = folder.split('/').pop();
+    return `/${folder}/${name}.webp`;
+  }
+
+  // ── Compact editable cards (trimmed balance.html renderCritterCard/renderTowerCard) ──
+  function renderCritterCard(c) {
+    const effort = cumulativeEffort(c.requirements || []);
+    const sprite = critterSprite(c);
+    if (sprite) pendingCanvases.push({ iid: c.iid, src: sprite });
+    return `<div class="unit-card">
+      <div class="unit-name" title="${c.iid}">${c.name}${typeSelectHtml(c.iid, 'critter', c.critter_type || '', CRITTER_TYPE_OPTIONS)}</div>
+      <div class="card-body">
+        ${sprite ? `<canvas class="card-sprite critter-sprite-canvas" id="sprite-critter-${c.iid}" width="32" height="32"></canvas>` : ''}
+        <div class="card-info">
+          <div class="stats-row">
+            ${editStat(c.iid,'critter','health',c.health)}
+            ${editStat(c.iid,'critter','speed',c.speed)}
+            ${editStat(c.iid,'critter','armour',c.armour)}
+            ${editStat(c.iid,'critter','damage',c.damage)}
+            ${editStat(c.iid,'critter','value',c.value)}
+            ${editStat(c.iid,'critter','time_between',c.time_between)}
+            ${editStat(c.iid,'critter','slots',c.slots ?? 1)}
+          </div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;margin-top:3px">
+            <span style="font-size:9px;color:var(--text-dim)">Era:</span>
+            ${eraSelectHtml(c.iid, c.era)}
+          </div>
+          ${reqsHtml(c.iid, c.requirements)}
+          ${effectivenessHtml(c, 'critter')}
+          <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderTowerCard(t) {
+    const effort = cumulativeEffort(t.requirements || []);
+    const d = dps(t);
+    const sprite = t.sprite ? `/${t.sprite.replace(/^\//, '')}` : '';
+    const efx = t.effects || {};
+    const fxData = JSON.stringify(efx).replace(/'/g, '&#39;');
+    return `<div class="unit-card">
+      <div class="unit-name" title="${t.iid}">${t.name}${typeSelectHtml(t.iid, 'tower', t.tower_type || '', TOWER_TYPE_OPTIONS)}</div>
+      <div class="card-body">
+        ${sprite ? `<img class="card-sprite" src="${sprite}" alt="${t.name}" onerror="this.style.display='none'">` : ''}
+        <div class="card-info">
+          <div class="stats-row">
+            ${editStat(t.iid,'tower','damage',t.damage)}
+            ${editStat(t.iid,'tower','range',t.range)}
+            ${editStat(t.iid,'tower','reload_time',t.reload_time)}
+            ${editStat(t.iid,'tower','shot_speed',t.shot_speed)}
+            ${editStat(t.iid,'tower','gold',t.costs?.gold || 0)}
+            <span class="stat"><span class="stat-label">DPS</span> <span class="stat-value">${d.toFixed(1)}</span></span>
+          </div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;margin-top:3px">
+            <span class="tag tag-${t.shot_type}">${t.shot_type}</span>
+          </div>
+          <div class="fx-editor" data-iid="${t.iid}" data-fx='${fxData}'></div>
+          ${reqsHtml(t.iid, t.requirements)}
+          ${effectivenessHtml(t, 'tower')}
+          <div class="effort-line">Unlock Effort: <span class="effort-val">${fmtNum(effort)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Effects editor (per tower) ──
+  // Edits here feed into fxChanges, persisted only by the main Save button
+  // (see saveBtn click handler) — there is no separate per-row save.
+  function initFxEditors() {
+    document.querySelectorAll('.fx-editor:not(.fx-inited)').forEach(el => {
+      el.classList.add('fx-inited');
+      const iid = el.dataset.iid;
+      let efx;
+      try { efx = JSON.parse(el.dataset.fx || '{}'); } catch { efx = {}; }
+
+      const header = document.createElement('div');
+      header.className = 'fx-editor-header';
+      header.textContent = 'Effects';
+
+      const table = document.createElement('table');
+      table.className = 'fx-table';
+
+      function readEffects() {
+        const effects = {};
+        for (const tr of table.querySelectorAll('tr')) {
+          const k = tr.querySelector('.fx-key-in').value.trim();
+          const v = tr.querySelector('.fx-val-in').value.trim();
+          if (k) effects[k] = v === '' ? 0 : parseFloat(v);
+        }
+        return effects;
+      }
+
+      function markFxDirty() {
+        fxChanges[iid] = { effects: readEffects() };
+        table.classList.add('changed');
+        updateEffectiveness(iid, 'tower');
+        updateSaveBtn();
+      }
+
+      function addRow(k, v) {
+        const tr = document.createElement('tr');
+        const kTd = document.createElement('td'); kTd.className = 'fx-key-cell';
+        const kIn = document.createElement('input'); kIn.className = 'fx-key-in';
+        kIn.setAttribute('list', 'fx-known-keys'); kIn.value = k || ''; kIn.placeholder = 'effect key';
+        kIn.addEventListener('input', markFxDirty);
+        kTd.appendChild(kIn);
+        const vTd = document.createElement('td'); vTd.className = 'fx-val-cell';
+        const vIn = document.createElement('input'); vIn.type = 'number'; vIn.step = 'any';
+        vIn.className = 'fx-val-in'; vIn.value = (v !== undefined && v !== '') ? v : '';
+        vIn.addEventListener('input', markFxDirty);
+        vTd.appendChild(vIn);
+        const dTd = document.createElement('td'); dTd.className = 'fx-del-cell';
+        const dBtn = document.createElement('button'); dBtn.className = 'fx-del';
+        dBtn.textContent = '✕'; dBtn.title = 'Delete';
+        dBtn.addEventListener('click', () => { tr.remove(); markFxDirty(); });
+        dTd.appendChild(dBtn);
+        tr.appendChild(kTd); tr.appendChild(vTd); tr.appendChild(dTd);
+        table.appendChild(tr);
+      }
+
+      for (const [k, v] of Object.entries(efx)) addRow(k, v);
+
+      const footer = document.createElement('div');
+      footer.className = 'fx-footer';
+      const addBtn = document.createElement('button'); addBtn.className = 'fx-add'; addBtn.textContent = '+ Effect';
+
+      addBtn.addEventListener('click', () => { addRow('', ''); markFxDirty(); });
+
+      footer.appendChild(addBtn);
+      el.appendChild(header); el.appendChild(table); el.appendChild(footer);
+    });
+  }
+
+  // ── Bucket items by era + column ──
+  function eraOf(item) { return ERA_ORDER.includes(item.era) ? item.era : ERA_ORDER[0]; }
+
+  const bucket = {}; // "era|colIdx" -> items[]
+  function bucketKey(era, colIdx) { return `${era}|${colIdx}`; }
+  for (const era of ERA_ORDER) {
+    columns.forEach((_, colIdx) => { bucket[bucketKey(era, colIdx)] = []; });
+  }
+  columns.forEach((col, colIdx) => {
+    let items;
+    if (col.kind === 'tower') items = structures.filter(t => t.tower_type === col.type);
+    else if (col.kind === 'critter') items = combatCritters.filter(c => c.critter_type === col.type);
+    else items = bossCritters;
+    for (const item of items) {
+      const key = bucketKey(eraOf(item), colIdx);
+      if (bucket[key]) bucket[key].push(item);
+    }
+  });
+
+  function cellHtml(era, colIdx, col) {
+    const items = bucket[bucketKey(era, colIdx)];
+    if (!items.length) return `<div class="cell-empty">— no ${col.type || 'boss'} —</div>`;
+    const cards = items.map(item => col.kind === 'tower' ? renderTowerCard(item) : renderCritterCard(item)).join('');
+    return `<div class="cell-cards">${cards}</div>`;
+  }
+
+  // ── Render table ──
+  let html = `<div id="table-wrap"><table class="matrix"><thead><tr><th>Era</th>`;
+  for (const col of columns) {
+    const groupClass = col.kind === 'tower' ? 'group-tower' : col.kind === 'boss' ? 'group-boss' : 'group-critter';
+    const icon = col.kind === 'tower' ? '🗼' : col.kind === 'boss' ? '👑' : '🐾';
+    const label = col.kind === 'boss' ? 'Boss' : col.type;
+    html += `<th class="${groupClass}">${icon}<br><span class="col-type-label">${label}</span></th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  for (const era of ERA_ORDER) {
+    html += `<tr><th class="era-cell">${eraLabel(era)}</th>`;
+    columns.forEach((col, colIdx) => {
+      html += `<td class="cell">${cellHtml(era, colIdx, col)}</td>`;
+    });
+    html += `</tr>`;
+  }
+  html += `</tbody></table></div>`;
+
+  contentEl.innerHTML = html;
+
+  initFxEditors();
+  initReqEditors();
+
+  // ── Era / Type dropdown delegation ──
+  contentEl.addEventListener('change', e => {
+    const eraEl = e.target.closest('.era-select');
+    if (eraEl) {
+      eraChanges[eraEl.dataset.iid] = eraEl.value;
+      eraEl.style.color = 'var(--warning)';
+      eraEl.style.borderColor = 'var(--warning)';
+      updateSaveBtn();
+      return;
+    }
+    const typeEl = e.target.closest('.type-select');
+    if (typeEl) {
+      typeChanges[typeEl.dataset.iid] = { item_kind: typeEl.dataset.kind, type_value: typeEl.value };
+      typeEl.style.color = 'var(--warning)';
+      typeEl.style.borderColor = 'var(--warning)';
+      updateSaveBtn();
+    }
+  });
+
+  // ── +/− button event delegation ──
+  contentEl.addEventListener('click', e => {
+    const btn = e.target.closest('.stat-btn');
+    if (!btn) return;
+    const { iid, type, field, dir } = btn.dataset;
+    const cfg = type === 'critter' ? CRITTER_FIELDS[field] : TOWER_FIELDS[field];
+    if (!cfg) return;
+    const key = `${type}-${iid}-${field}`;
+    const oldVal = liveVals[key] ?? 0;
+    const newVal = Math.max(cfg.min, parseFloat((oldVal + parseInt(dir) * cfg.step).toFixed(4)));
+    liveVals[key] = newVal;
+    const el = contentEl.querySelector(`.stat-val[data-key="${key}"]`);
+    if (el) { el.value = fmtVal(newVal, cfg.step); el.classList.add('changed'); }
+    const changes = type === 'critter' ? critterChanges : towerChanges;
+    if (!changes[iid]) changes[iid] = {};
+    changes[iid][field] = newVal;
+    updateEffectiveness(iid, type);
+    updateSaveBtn();
+  });
+
+  // ── Direct text input for stat values ──
+  contentEl.addEventListener('change', e => {
+    const inp = e.target.closest('.stat-val');
+    if (!inp) return;
+    const { iid, type, field } = inp.dataset;
+    const cfg = type === 'critter' ? CRITTER_FIELDS[field] : TOWER_FIELDS[field];
+    if (!cfg) return;
+    const key = `${type}-${iid}-${field}`;
+    const newVal = Math.max(cfg.min, parseFloat(parseFloat(inp.value).toFixed(4)));
+    if (isNaN(newVal)) { inp.value = fmtVal(liveVals[key] ?? 0, cfg.step); return; }
+    liveVals[key] = newVal;
+    inp.value = fmtVal(newVal, cfg.step);
+    inp.classList.add('changed');
+    const changes = type === 'critter' ? critterChanges : towerChanges;
+    if (!changes[iid]) changes[iid] = {};
+    changes[iid][field] = newVal;
+    updateEffectiveness(iid, type);
+    updateSaveBtn();
+  });
+
+  // ── Render critter sprites via canvas (extract first frame from 4×4 sheet) ──
+  for (const { iid, src } of pendingCanvases) {
+    const canvas = document.getElementById(`sprite-critter-${iid}`);
+    if (!canvas) continue;
+    const img = new Image();
+    img.onload = () => {
+      const frameW = Math.floor(img.naturalWidth / 4);
+      const frameH = Math.floor(img.naturalHeight / 4);
+      canvas.width = frameW;
+      canvas.height = frameH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, frameW, frameH, 0, 0, frameW, frameH);
+    };
+    img.onerror = () => { canvas.style.display = 'none'; };
+    img.src = src;
+  }
+})();
+</script>
+</body>
+</html>

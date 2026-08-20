@@ -10,6 +10,18 @@ from gameserver.network.handlers import handle_map_save_request
 from gameserver.main import Services
 
 
+@pytest.fixture(autouse=True)
+def _reset_season_freeze():
+    """global_state.game_frozen is a module-level global — another test in
+    the full suite may leave it True, which would short-circuit every
+    handler in this file before its own validation ever runs (see the same
+    pattern/rationale in test_routers.py's buy-upgrade tests)."""
+    from gameserver.engine.global_state import set_season_reset_triggered
+    set_season_reset_triggered(False)
+    yield
+    set_season_reset_triggered(False)
+
+
 @pytest.fixture
 def mock_services():
     """Create minimal mock services."""
@@ -53,6 +65,31 @@ async def test_map_save_valid_simple(mock_services):
     response = await handle_map_save_request(message, sender_uid=42)
     assert response["success"] is True
     assert mock_services.empire_service.get(42).hex_map == message.tiles
+
+
+@pytest.mark.asyncio
+async def test_map_save_rejected_while_season_frozen(mock_services):
+    """No map changes while a season transition has frozen the game."""
+    from gameserver.engine import global_state
+    import gameserver.network.handlers
+    gameserver.network.handlers._services = mock_services
+
+    global_state.set_season_reset_triggered(True)
+    try:
+        message = MapSaveRequest(
+            type="map_save_request",
+            tiles={
+                "0,0": "spawnpoint",
+                "1,0": "path",
+                "2,0": "castle",
+            }
+        )
+        response = await handle_map_save_request(message, sender_uid=42)
+        assert response["success"] is False
+        assert "frozen" in response["error"].lower()
+        assert mock_services.empire_service.get(42).hex_map == {}
+    finally:
+        global_state.set_season_reset_triggered(False)
 
 
 @pytest.mark.asyncio

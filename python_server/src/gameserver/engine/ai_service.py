@@ -174,6 +174,14 @@ class AIService:
         if empire is None:
             return
 
+        from gameserver.engine.global_state import is_season_reset_triggered
+        if is_season_reset_triggered():
+            log.info(
+                "[AI_ATTACK] Item '%s' completed for defender=%d — suppressed (season frozen)",
+                iid, empire_uid,
+            )
+            return
+
         if self._is_suppressed_item(iid):
             log.info("[AI_ATTACK] Item '%s' completed for defender=%d — suppressed (no-spawn entry)", iid, empire_uid)
             return
@@ -763,6 +771,10 @@ class AIService:
         cfg = self._game_config
         aggr: dict[str, float] = getattr(cfg, "barbarians_aggressiveness", {}) if cfg else {}
         if not aggr:
+            return
+
+        from gameserver.engine.global_state import is_season_reset_triggered
+        if is_season_reset_triggered():
             return
 
         for uid, empire in list(empire_service.all_empires.items()):

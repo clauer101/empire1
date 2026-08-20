@@ -88,6 +88,17 @@ tower, attack saving for an army). While `memory.savings_goal` is active:
 - **Non-owning spenders** (baseline queue filling, other planner steps) may only
   spend gold *above* the goal amount (`spendable_gold = max(0, gold − amount)`).
   Queues may therefore stay idle while saving — saving outranks obligation 2.
+- **Bootstrap exception:** if the empire has zero passive gold income
+  (`base_gold <= 0`), no savings goal is declared at all this cycle
+  (`bot/dispatch.py::choose_action`) — every option is evaluated at face
+  value instead. Without any income a savings goal can never be reached on
+  its own (e.g. attack's army goal on a fresh empire with no buildings), so a
+  lower-priority unaffordable option (the goal owner) must not starve a
+  higher-priority option that's affordable right now (typically a baseline
+  econ building) — that building is exactly what turns income positive and
+  lets the normal savings-goal cap resume next cycle. Also mirrored in
+  `baseline.py`'s own build-queue candidate selection for consistency when
+  `baseline_options` is inspected directly (e.g. in tests).
 - The **owning planner** (same strategy type) bypasses the cap and clears the
   goal after the purchase.
 - Goals auto-expire: TTL = min(strategy remainder, 2 h), and any strategy-type

@@ -47,6 +47,7 @@ export function createQueueView(cfg) {
   let _tickTimer = null;
   let _tickRemainSecs = null;
   let _tickTs = null;
+  let _lastSignature = null;
 
   function init(el, _api, _state) {
     container = el;
@@ -86,6 +87,7 @@ export function createQueueView(cfg) {
     }
     _tickRemainSecs = null;
     _tickTs = null;
+    _lastSignature = null;
   }
 
   function _fmtEffects(effects) {
@@ -120,6 +122,44 @@ export function createQueueView(cfg) {
         return `<span style="color:${color};margin-right:12px;white-space:nowrap;${extra}">${icon} ${Math.round(discounted)} ${name}</span>`;
       })
       .join('');
+  }
+
+  function _patchActiveRow(el, activeQueue, info, summary) {
+    if (!info) return false;
+    const row = el.querySelector(`tr[data-row-iid="${activeQueue}"]`);
+    const cdSpan = row?.querySelector('[data-active-cd]');
+    const bar = row?.querySelector('.queue-progress-bar');
+    if (!row || !cdSpan || !bar) return false;
+
+    const fullEffort = info.effort;
+    const stored = summary[cfg.storedKey]?.[activeQueue];
+    const remaining = stored != null && stored < fullEffort ? stored : fullEffort;
+    const multiplier = cfg.speedFn(summary);
+    const remainSecs = multiplier > 0 ? remaining / multiplier : remaining;
+    const pct = fullEffort > 0 ? Math.max(0, Math.min(100, (1 - remaining / fullEffort) * 100)) : 0;
+    const wasStarted = stored != null && stored < fullEffort;
+
+    cdSpan.textContent = fmtSecs(remainSecs);
+    cdSpan.dataset.remain = remainSecs.toFixed(2);
+    cdSpan.dataset.full = fullEffort;
+    cdSpan.dataset.mult = multiplier.toFixed(6);
+    bar.style.width = pct.toFixed(1) + '%';
+
+    const goldModifier = cfg.categoryKey === 'buildings' ? (summary?.effects?.building_cost_modifier ?? 0) : 0;
+    const costsRow = [...row.querySelectorAll('.detail-row')].find((r) =>
+      r.querySelector('.detail-label')?.textContent === 'Costs:'
+    );
+    if (costsRow && info.costs && Object.keys(info.costs).length > 0) {
+      const labelEl = costsRow.querySelector('.detail-label');
+      costsRow.innerHTML = '';
+      costsRow.appendChild(labelEl);
+      costsRow.insertAdjacentHTML('beforeend', _fmtCosts(info.costs, summary, wasStarted, goldModifier));
+    }
+
+    _tickRemainSecs = remainSecs;
+    _tickTs = Date.now();
+    if (!_tickTimer) _tickTimer = setInterval(_tick, 1000);
+    return true;
   }
 
   function render() {
@@ -175,8 +215,26 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
 
     if (entries.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${cfg.emptyText}</p></div>`;
+      _lastSignature = null;
       return;
     }
+
+    // Fast path: if the row set/order/statuses are unchanged and only the
+    // active item's progress advanced, patch its duration/progress-bar/costs
+    // in place instead of re-rendering the whole table (avoids flicker).
+    const signature = entries.map(([iid]) => {
+      let status = 'available';
+      if (completed.has(iid)) status = 'completed';
+      else if (excluded.has(iid)) status = 'excluded';
+      else if (iid === activeQueue) status = 'in-progress';
+      return `${iid}:${status}`;
+    }).join('|');
+
+    if (signature === _lastSignature && activeQueue) {
+      const patched = _patchActiveRow(el, activeQueue, itemMap[activeQueue], summary);
+      if (patched) return;
+    }
+    _lastSignature = signature;
 
     const rows = entries
       .map(([iid, info]) => {
@@ -198,7 +256,7 @@ const completed = new Set(cfg.completedKeys.flatMap((k) => summary[k] || []));
 
         const imgUrl = info.image ? `/${info.image}/${info.image.split('/').pop()}.webp` : '';
         const exclusiveGlow = info.excludes?.length > 0 ? 'box-shadow:0 0 0 2px #c9a84c,0 0 10px 2px rgba(201,168,76,0.45);' : '';
-        return `<tr>
+        return `<tr data-row-iid="${iid}">
         <td class="col-name" data-label="Name" style="padding:0;">
           <div class="item-header" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;overflow:hidden;height:100%;padding:8px 12px;box-sizing:border-box;${exclusiveGlow}">
             ${imgUrl ? `<div class="item-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;" data-bg="${imgUrl}"></div><div class="item-bg-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;"></div>` : ''}

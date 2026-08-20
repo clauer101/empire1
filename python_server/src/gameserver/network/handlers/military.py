@@ -278,6 +278,16 @@ async def handle_new_attack(
             "_debug": f"Input: target_uid={defender_uid_raw}, opponent_name={opponent_name!r}, army_aid={army_aid}",
         }
 
+    # Alliance check: mutually-allied empires cannot attack each other
+    if svc.database is not None:
+        declared_to, declared_by = await svc.database.get_alliance_declarations_for(target_uid)
+        if defender_uid in declared_to and defender_uid in declared_by:
+            return {
+                "type": "attack_response",
+                "success": False,
+                "error": "Cannot attack an allied empire",
+            }
+
     # Era check: attacker cannot attack a defender in a lower era
     from gameserver.util.eras import ERA_ORDER, ERA_LABELS_EN
     attacker_empire = svc.empire_service.get(target_uid)

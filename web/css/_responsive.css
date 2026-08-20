@@ -199,6 +199,19 @@
     font-size: 14px;
   }
 
+  /* Small square icon buttons in empire leaderboard rows (⚔ attack, 🏰 detail)
+     stay fixed-size on mobile — the generic touch-target min-height above
+     would otherwise stretch only the <button> one (attack) taller than the
+     <a> one (detail), which isn't matched by `button, .btn`. */
+  .empire-attack-btn,
+  .empire-detail-btn {
+    min-height: 0;
+    height: 24px;
+    width: 24px;
+    padding: 0;
+    font-size: 11px;
+  }
+
   /* Larger form inputs for touch */
   input[type='text'],
   input[type='password'],
@@ -336,5 +349,14 @@
   .btn {
     padding: 8px 16px;
     font-size: 13px;
+  }
+
+  .empire-attack-btn,
+  .empire-detail-btn {
+    min-height: 0;
+    height: 24px;
+    width: 24px;
+    padding: 0;
+    font-size: 11px;
   }
 }

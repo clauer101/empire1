@@ -5881,3 +5881,168 @@ maps:
   - q: -45
     r: 37
     type: empty
+- id: live_94_1784869081
+  name: Mixed early ren
+  hex_map:
+  - q: -10
+    r: -10
+    type: empty
+  - q: -10
+    r: -11
+    type: BOILING_OIL
+  - q: -10
+    r: -12
+    type: empty
+  - q: -10
+    r: -13
+    type: TAR_TOWER
+  - q: -10
+    r: -6
+    type: TAR_TOWER
+  - q: -10
+    r: -7
+    type: empty
+  - q: -10
+    r: -8
+    type: CANNON_TOWER
+  - q: -10
+    r: -9
+    type: spawnpoint
+  - q: -11
+    r: -10
+    type: empty
+  - q: -11
+    r: -11
+    type: CANNON_TOWER
+  - q: -11
+    r: -12
+    type: empty
+  - q: -11
+    r: -13
+    type: RIFLE_TOWER
+  - q: -11
+    r: -6
+    type: CANNON_TOWER
+  - q: -11
+    r: -7
+    type: empty
+  - q: -11
+    r: -8
+    type: TAR_TOWER
+  - q: -11
+    r: -9
+    type: TAR_TOWER
+  - q: -12
+    r: -10
+    type: RIFLE_TOWER
+  - q: -12
+    r: -11
+    type: empty
+  - q: -12
+    r: -12
+    type: BOILING_OIL
+  - q: -12
+    r: -6
+    type: TAR_TOWER
+  - q: -12
+    r: -7
+    type: empty
+  - q: -12
+    r: -8
+    type: empty
+  - q: -12
+    r: -9
+    type: empty
+  - q: -13
+    r: -10
+    type: empty
+  - q: -13
+    r: -11
+    type: TAR_TOWER
+  - q: -13
+    r: -6
+    type: BOILING_OIL
+  - q: -13
+    r: -7
+    type: RIFLE_TOWER
+  - q: -13
+    r: -8
+    type: RIFLE_TOWER
+  - q: -13
+    r: -9
+    type: BOILING_OIL
+  - q: -14
+    r: -10
+    type: CANNON_TOWER
+  - q: -14
+    r: -7
+    type: castle
+  - q: -14
+    r: -8
+    type: empty
+  - q: -14
+    r: -9
+    type: empty
+  - q: -15
+    r: -7
+    type: TAR_TOWER
+  - q: -15
+    r: -8
+    type: CANNON_TOWER
+  - q: -15
+    r: -9
+    type: RIFLE_TOWER
+  - q: -7
+    r: -10
+    type: BOILING_OIL
+  - q: -7
+    r: -11
+    type: CANNON_TOWER
+  - q: -7
+    r: -12
+    type: BOILING_OIL
+  - q: -7
+    r: -13
+    type: TAR_TOWER
+  - q: -7
+    r: -9
+    type: TAR_TOWER
+  - q: -8
+    r: -10
+    type: empty
+  - q: -8
+    r: -11
+    type: empty
+  - q: -8
+    r: -12
+    type: empty
+  - q: -8
+    r: -13
+    type: CANNON_TOWER
+  - q: -8
+    r: -8
+    type: RIFLE_TOWER
+  - q: -8
+    r: -9
+    type: empty
+  - q: -9
+    r: -10
+    type: BOILING_OIL
+  - q: -9
+    r: -11
+    type: CANNON_TOWER
+  - q: -9
+    r: -12
+    type: empty
+  - q: -9
+    r: -13
+    type: BOILING_OIL
+  - q: -9
+    r: -7
+    type: BOILING_OIL
+  - q: -9
+    r: -8
+    type: empty
+  - q: -9
+    r: -9
+    type: CANNON_TOWER

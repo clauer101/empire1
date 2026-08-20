@@ -242,6 +242,39 @@ async def test_malformed_next_season_start_stays_frozen(harness):
     assert global_state.get_season_number() == season_before
 
 
+async def test_auto_next_season_start_bases_on_rally_end_not_activation(harness):
+    """Regression: auto-set next_season_start must be computed from when the
+    rally ENDED (activated + end_rally_duration), not from activation time.
+
+    Prod incident: with next_season_start_after_end (86000s) smaller than
+    end_rally_duration (604800s), basing the offset on activation alone
+    produced a next_season_start already in the past the moment the rally
+    expired, collapsing snapshot -> wipe -> new season into a single tick
+    with no leadtime at all.
+    """
+    gl, empires, attacks, gc, tmp_path = harness
+    # Deliberately smaller than end_rally_duration + elapsed time, so the old
+    # activation-based computation would land in the past.
+    gc.next_season_start_after_end = RALLY_DURATION
+
+    activated_at = datetime.now(timezone.utc) - timedelta(seconds=RALLY_DURATION + 1)
+    global_state.restore_end_criterion_activated(
+        activated_at, empire_uid=1, empire_name="Alpha",
+    )
+    assert global_state.is_end_rally_active(gc) is False
+
+    before_step = datetime.now(timezone.utc)
+    gl._step(1.0)
+
+    next_start = global_state.parse_iso_utc(global_state.get_next_season_start())
+    assert next_start is not None
+    # Must be in the future relative to when we stepped — i.e. based on rally
+    # end (~now), not on the long-past activation time.
+    assert next_start > before_step
+    expected = activated_at + timedelta(seconds=RALLY_DURATION) + timedelta(seconds=gc.next_season_start_after_end)
+    assert abs((next_start - expected).total_seconds()) < 2
+
+
 async def _drain_pending_tasks() -> None:
     """Await all background tasks the game loop spawned (snapshot, db wipe).
 

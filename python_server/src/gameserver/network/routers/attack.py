@@ -1,6 +1,7 @@
-"""Attack router — /api/attack/*, /api/spy-attack."""
+"""Attack router — /api/attack/*, /api/spy-attack, /api/spy-reports."""
 from __future__ import annotations
 
+import time
 from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, Request
@@ -35,12 +36,25 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         resp = await handle_spy_attack(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
+    @router.get("/api/spy-reports")
+    async def get_spy_reports(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Return the current player's latest-per-target stored spy reports."""
+        assert services.database is not None
+        reports = await services.database.get_spy_reports_for(uid)
+        return {"reports": reports}
+
     @router.post("/api/attack/{attack_id}/skip-siege")
     async def skip_siege(attack_id: int, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
         """Immediately end the siege phase — only callable by the defender."""
         result = attack_service.skip_siege(attack_id, uid)
         if isinstance(result, str):
             return {"success": False, "error": result}
-        return {"success": True, "attack_id": result.attack_id, "phase": result.phase.value}
+        attack, remaining_before_skip = result
+        if services.database:
+            await services.database.record_window_event(
+                kind="skip_siege", key_uid=attack.defender_uid, ts=int(time.time()),
+                ref_id=attack.attacker_uid, magnitude=remaining_before_skip,
+            )
+        return {"success": True, "attack_id": attack.attack_id, "phase": attack.phase.value}
 
     return router

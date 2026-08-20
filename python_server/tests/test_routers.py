@@ -21,6 +21,7 @@ from httpx import ASGITransport, AsyncClient
 from gameserver.engine.attack_service import AttackService
 from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.upgrade_provider import UpgradeProvider
+from gameserver.loaders.game_config_loader import GameConfig
 from gameserver.models.army import Army, CritterWave
 from gameserver.models.attack import Attack, AttackPhase
 from gameserver.models.empire import Empire
@@ -78,6 +79,11 @@ def _make_db_mock() -> AsyncMock:
     db.list_users = AsyncMock(return_value=[])
     db.save_push_subscription = AsyncMock()
     db.delete_push_subscription = AsyncMock()
+    db.save_spy_report = AsyncMock()
+    db.get_spy_reports_for = AsyncMock(return_value=[])
+    db.toggle_alliance_declaration = AsyncMock(return_value=True)
+    db.get_alliance_declarations_for = AsyncMock(return_value=(set(), set()))
+    db.get_all_mutual_alliances = AsyncMock(return_value={})
     return db
 
 
@@ -324,6 +330,34 @@ class TestAttackRouter:
         )
         assert resp.status_code == 200
 
+    async def test_attack_rejected_against_ally(self, client, svc):
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+        resp = await client.post(
+            "/api/attack",
+            json={"target_uid": 99, "army_aid": 1},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "ally" in data["error"].lower() or "allied" in data["error"].lower()
+
+    async def test_attack_allowed_against_one_sided_declaration(self, client, svc):
+        # Not mutual (only declared_to, no declared_by) -> not allied, so the
+        # alliance check does not block the attack (it fails later for an
+        # unrelated reason: uid 99 has no registered empire in this test).
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        resp = await client.post(
+            "/api/attack",
+            json={"target_uid": 99, "army_aid": 1},
+            headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "ally" not in data["error"].lower()
+        assert "allied" not in data["error"].lower()
+
 
 # ---------------------------------------------------------------------------
 # Replays router
@@ -524,6 +558,39 @@ class TestRulerEndpoints:
         data = resp.json()
         assert data["success"] is False
 
+    async def test_dismiss_ruler_replaces_ruler_waves_with_slaves(self, client, svc):
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.ruler.type = "WARRIOR"
+        empire.ruler.r = 0
+        empire.armies.append(
+            Army(
+                aid=99,
+                uid=TEST_UID,
+                waves=[
+                    CritterWave(wave_id=0, iid="WARRIOR", slots=1),
+                    CritterWave(wave_id=1, iid="ARCHER", slots=5),
+                ],
+            )
+        )
+        resp = await client.post("/api/empire/ruler/dismiss", headers=_auth())
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert empire.ruler.type == ""
+        new_army = next(a for a in empire.armies if a.aid == 99)
+        assert new_army.waves[0].iid == "SLAVE"
+        assert new_army.waves[1].iid == "ARCHER"
+
+    async def test_dismiss_ruler_blocked_when_r_skill_upgraded(self, client, svc):
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.ruler.type = "WARRIOR"
+        empire.ruler.r = 1
+        resp = await client.post("/api/empire/ruler/dismiss", headers=_auth())
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert empire.ruler.type == "WARRIOR"
+
     async def test_skill_up_no_points(self, client, svc):
         """Ruler at level 1 with 0 XP should have 0 points available."""
         empire = svc.empire_service.all_empires[TEST_UID]
@@ -624,6 +691,388 @@ class TestSpyAttackRouter:
     async def test_spy_attack_requires_auth(self, client):
         resp = await client.post("/api/spy-attack", json={"target_uid": 99, "opponent_name": "Enemy"})
         assert resp.status_code in (401, 403, 422)
+
+
+class TestSpyReportsRouter:
+    async def test_get_spy_reports_empty(self, client, svc):
+        resp = await client.get("/api/spy-reports", headers=_auth())
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["reports"] == []
+
+    async def test_get_spy_reports_returns_stored_reports(self, client, svc):
+        svc.database.get_spy_reports_for = AsyncMock(return_value=[
+            {"defender_uid": 99, "defender_name": "Enemy", "era": "stone", "era_idx": 0,
+             "placed_towers": [], "path_length": 10, "created_at": "2026-07-28 00:00:00"},
+        ])
+        resp = await client.get("/api/spy-reports", headers=_auth())
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["reports"]) == 1
+        assert data["reports"][0]["defender_uid"] == 99
+        assert data["reports"][0]["era"] == "stone"
+
+    async def test_get_spy_reports_requires_auth(self, client):
+        resp = await client.get("/api/spy-reports")
+        assert resp.status_code in (401, 403, 422)
+
+
+# ---------------------------------------------------------------------------
+# Diplomacy router — alliance declarations
+# ---------------------------------------------------------------------------
+
+class TestDiplomacyRouter:
+    async def test_declare_alliance_from_none(self, client, svc):
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert data["declared"] is True
+        assert data["alliance_status"] == "pending_sent"
+        svc.database.toggle_alliance_declaration.assert_awaited_once_with(TEST_UID, 99)
+
+    async def test_completing_mutual_declaration_returns_allied(self, client, svc):
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["alliance_status"] == "allied"
+
+    async def test_accepting_request_rejected_when_already_allied_elsewhere(self, client, svc):
+        # I'm already allied with uid 50; uid 99 has now sent me a request
+        # (pending_received). Accepting it would create a second alliance,
+        # which the current max_alliances=1 cap must reject.
+        me = svc.empire_service.get(TEST_UID)
+        me.allied_uids = {50}
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), {99}))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "alliance" in data["error"].lower()
+        # Toggle must never have been called — request is rejected up front.
+        svc.database.toggle_alliance_declaration.assert_not_awaited()
+
+    async def test_accepting_request_rejected_when_partner_already_allied_elsewhere(self, client, svc):
+        # uid 99 (the requester) is already allied with someone else; I must
+        # not be able to complete a second alliance for them either.
+        partner = _make_empire(uid=99, name="Partner")
+        partner.allied_uids = {50}
+        svc.empire_service.register(partner)
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), {99}))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["success"] is False
+        svc.database.toggle_alliance_declaration.assert_not_awaited()
+
+    async def test_sending_request_allowed_while_already_allied(self, client, svc):
+        # Sending a NEW request (not yet mutual) while already allied is fine
+        # — the cap only blocks the moment an alliance would actually complete.
+        me = svc.empire_service.get(TEST_UID)
+        me.allied_uids = {50}
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        # Not mutual yet: target hasn't declared toward me.
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["success"] is True
+        assert data["alliance_status"] == "pending_sent"
+
+    async def test_breaking_existing_alliance_then_accepting_new_one_allowed(self, client, svc):
+        # Retracting my declaration toward an existing ally (breaking it) must
+        # never be blocked by the cap, regardless of allied_uids content.
+        me = svc.empire_service.get(TEST_UID)
+        me.allied_uids = {99}
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=False)
+        svc.database.get_alliance_declarations_for = AsyncMock(
+            side_effect=[({99}, {99}), (set(), {99})]
+        )
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["success"] is True
+        assert data["alliance_status"] == "pending_received"
+
+    async def test_completing_alliance_charges_culture_cost_both_ways(self, client, svc):
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+        partner = _make_empire(uid=99, name="Partner")
+        partner.resources["culture"] = 400.0
+        svc.empire_service.register(partner)
+        svc.game_config = GameConfig(alliance_culture_cost=0.05)
+
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["alliance_status"] == "allied"
+
+        # 5% of 1000 (50) and 5% of 400 (20) are swapped between the two.
+        assert me.resources["culture"] == pytest.approx(1000.0 - 50.0 + 20.0)
+        assert partner.resources["culture"] == pytest.approx(400.0 - 20.0 + 50.0)
+
+    async def test_completing_alliance_applies_ally_ruler_effects_both_ways(self, client, svc):
+        from gameserver.models.empire import Ruler
+
+        svc.empire_service._rulers = {
+            "MAJA": {"ally_effects": {"research_speed_modifier": 0.3}},
+            "NANDI": {"ally_effects": {"tile_cost_modifier": 0.05}},
+        }
+        me = svc.empire_service.get(TEST_UID)
+        me.ruler = Ruler(type="MAJA", name="Maja")
+        partner = _make_empire(uid=99, name="Partner")
+        partner.ruler = Ruler(type="NANDI", name="Nandi")
+        svc.empire_service.register(partner)
+
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        # Before: only pending_received ({} sent, {99} received). After: mutual.
+        svc.database.get_alliance_declarations_for = AsyncMock(
+            side_effect=[(set(), {99}), ({99}, {99})]
+        )
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.json()["alliance_status"] == "allied"
+
+        assert 99 in me.allied_uids
+        assert TEST_UID in partner.allied_uids
+        # I receive the partner's (NANDI) ally_effects; they receive mine (MAJA).
+        assert me.effects.get("tile_cost_modifier") == pytest.approx(0.05)
+        assert partner.effects.get("research_speed_modifier") == pytest.approx(0.3)
+
+    async def test_breaking_alliance_removes_ally_ruler_effects(self, client, svc):
+        from gameserver.models.empire import Ruler
+
+        svc.empire_service._rulers = {
+            "NANDI": {"ally_effects": {"tile_cost_modifier": 0.05}},
+        }
+        me = svc.empire_service.get(TEST_UID)
+        partner = _make_empire(uid=99, name="Partner")
+        partner.ruler = Ruler(type="NANDI", name="Nandi")
+        svc.empire_service.register(partner)
+        me.allied_uids = {99}
+        partner.allied_uids = {TEST_UID}
+        svc.empire_service.recalculate_effects(me)
+        assert me.effects.get("tile_cost_modifier") == pytest.approx(0.05)
+
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=False)
+        svc.database.get_alliance_declarations_for = AsyncMock(
+            side_effect=[({99}, {99}), (set(), {99})]
+        )
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.json()["alliance_status"] == "pending_received"
+
+        assert 99 not in me.allied_uids
+        assert me.effects.get("tile_cost_modifier", 0.0) == 0.0
+
+    async def test_pending_declaration_does_not_charge_culture(self, client, svc):
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+        partner = _make_empire(uid=99, name="Partner")
+        partner.resources["culture"] = 400.0
+        svc.empire_service.register(partner)
+        svc.game_config = GameConfig(alliance_culture_cost=0.05)
+
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.json()["alliance_status"] == "pending_sent"
+        assert me.resources["culture"] == 1000.0
+        assert partner.resources["culture"] == 400.0
+
+    async def test_retract_pending_declaration(self, client, svc):
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=False)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), set()))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["declared"] is False
+        assert data["alliance_status"] == "none"
+
+    async def test_break_active_alliance_leaves_pending_received(self, client, svc):
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=False)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), {99}))
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["alliance_status"] == "pending_received"
+
+    async def test_breaking_alliance_charges_breaker_only_and_destroys_it(self, client, svc):
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+        partner = _make_empire(uid=99, name="Partner")
+        partner.resources["culture"] = 400.0
+        svc.empire_service.register(partner)
+        svc.game_config = GameConfig(alliance_culture_cost=0.05)
+
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=False)
+        # Before: mutual (allied). After: breaker's declared_to is gone -> pending_received.
+        svc.database.get_alliance_declarations_for = AsyncMock(
+            side_effect=[({99}, {99}), (set(), {99})]
+        )
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["declared"] is False
+        assert data["alliance_status"] == "pending_received"
+
+        # Breaker (me) pays 5% of 1000 = 50, destroyed — not sent to partner.
+        assert me.resources["culture"] == pytest.approx(950.0)
+        assert partner.resources["culture"] == 400.0
+
+    async def test_pending_declaration_retract_does_not_charge_penalty(self, client, svc):
+        # Retracting a one-sided (never mutual) declaration is not "breaking
+        # an alliance" and must not incur the penalty.
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+        svc.game_config = GameConfig(alliance_culture_cost=0.05)
+
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=False)
+        svc.database.get_alliance_declarations_for = AsyncMock(
+            side_effect=[({99}, set()), (set(), set())]
+        )
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.json()["alliance_status"] == "none"
+        assert me.resources["culture"] == 1000.0
+
+    async def test_rejects_self_target(self, client, svc):
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": TEST_UID}, headers=_auth(),
+        )
+        data = resp.json()
+        assert data["success"] is False
+
+    async def test_requires_auth(self, client):
+        resp = await client.post("/api/diplomacy/alliance", json={"target_uid": 99})
+        assert resp.status_code in (401, 403, 422)
+
+    async def test_list_empires_includes_alliance_status(self, client, svc):
+        other = _make_empire(uid=99, name="Other")
+        svc.empire_service.register(other)
+        svc.database.list_users = AsyncMock(return_value=[
+            {"uid": TEST_UID, "username": "me", "last_seen": ""},
+            {"uid": 99, "username": "other", "last_seen": ""},
+        ])
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        svc.database.get_season_winners = AsyncMock(return_value=[])
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        resp = await client.get("/api/empires", headers=_auth())
+        assert resp.status_code == 200
+        rows = {e["uid"]: e for e in resp.json()["empires"]}
+        assert rows[99]["alliance_status"] == "pending_sent"
+        assert rows[TEST_UID]["alliance_status"] == "none"
+
+    async def test_list_empires_includes_ally_ruler_name_when_allied(self, client, svc):
+        from gameserver.models.empire import Ruler
+
+        svc.empire_service._rulers = {
+            "LUCIEN": {"name": "Lucien Duskbane", "ally_effects": {"gold_modifier": 0.2}},
+        }
+        other = _make_empire(uid=99, name="Other")
+        other.ruler = Ruler(type="LUCIEN", name="Lucien Duskbane")
+        svc.empire_service.register(other)
+        svc.database.list_users = AsyncMock(return_value=[
+            {"uid": TEST_UID, "username": "me", "last_seen": ""},
+            {"uid": 99, "username": "other", "last_seen": ""},
+        ])
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+        svc.database.get_season_winners = AsyncMock(return_value=[])
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        resp = await client.get("/api/empires", headers=_auth())
+        assert resp.status_code == 200
+        rows = {e["uid"]: e for e in resp.json()["empires"]}
+        assert rows[99]["alliance_status"] == "allied"
+        assert rows[99]["ally_ruler_name"] == "Lucien Duskbane"
+        assert rows[99]["ally_ruler_bonus"] == {"gold_modifier": 0.2}
+        # Not allied with myself -> blank/empty.
+        assert rows[TEST_UID]["ally_ruler_name"] == ""
+        assert rows[TEST_UID]["ally_ruler_bonus"] == {}
+
+    async def test_list_empires_ally_ruler_name_blank_when_not_allied(self, client, svc):
+        from gameserver.models.empire import Ruler
+
+        svc.empire_service._rulers = {
+            "LUCIEN": {"name": "Lucien Duskbane", "ally_effects": {"gold_modifier": 0.2}},
+        }
+        other = _make_empire(uid=99, name="Other")
+        other.ruler = Ruler(type="LUCIEN", name="Lucien Duskbane")
+        svc.empire_service.register(other)
+        svc.database.list_users = AsyncMock(return_value=[
+            {"uid": TEST_UID, "username": "me", "last_seen": ""},
+            {"uid": 99, "username": "other", "last_seen": ""},
+        ])
+        # Only pending, not mutual.
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        svc.database.get_season_winners = AsyncMock(return_value=[])
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        resp = await client.get("/api/empires", headers=_auth())
+        rows = {e["uid"]: e for e in resp.json()["empires"]}
+        assert rows[99]["alliance_status"] == "pending_sent"
+        assert rows[99]["ally_ruler_name"] == ""
+        assert rows[99]["ally_ruler_bonus"] == {}
+
+    async def test_list_empires_ranks_by_pooled_allied_culture(self, client, svc):
+        # TEST_UID has 1000 culture (own). uid 99 has 200 (own), but is allied
+        # with uid 100 (900 culture) -> pooled 1100, so 99 should outrank TEST_UID
+        # even though 99's own culture is displayed unchanged.
+        low_ally = _make_empire(uid=99, name="LowAlly")
+        low_ally.resources["culture"] = 200.0
+        high_ally = _make_empire(uid=100, name="HighAlly")
+        high_ally.resources["culture"] = 900.0
+        svc.empire_service.register(low_ally)
+        svc.empire_service.register(high_ally)
+        svc.database.list_users = AsyncMock(return_value=[
+            {"uid": TEST_UID, "username": "me", "last_seen": ""},
+            {"uid": 99, "username": "lowally", "last_seen": ""},
+            {"uid": 100, "username": "highally", "last_seen": ""},
+        ])
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), set()))
+        svc.database.get_all_mutual_alliances = AsyncMock(return_value={99: {100}, 100: {99}})
+        svc.database.get_season_winners = AsyncMock(return_value=[])
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        resp = await client.get("/api/empires", headers=_auth())
+        assert resp.status_code == 200
+        body = resp.json()["empires"]
+        uids_in_order = [e["uid"] for e in body]
+        assert uids_in_order.index(99) < uids_in_order.index(TEST_UID)
+        # 99 and 100 must be listed contiguously (adjacent, allied block),
+        # with the higher-culture ally (100) first within the block.
+        assert uids_in_order.index(99) == uids_in_order.index(100) + 1
+        rows = {e["uid"]: e for e in body}
+        assert rows[99]["culture"] == 200.0
+        assert rows[99]["alliance_group_id"] is not None
+        assert rows[99]["alliance_group_id"] == rows[100]["alliance_group_id"]
+        assert rows[TEST_UID]["alliance_group_id"] is None
+        assert rows[99]["alliance_group_culture"] == 1100.0
+        assert rows[100]["alliance_group_culture"] == 1100.0
+        assert rows[TEST_UID]["alliance_group_culture"] is None
 
 
 class TestBuyTileRouter:

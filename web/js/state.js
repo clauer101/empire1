@@ -11,6 +11,7 @@
  *   'state:connected' – WebSocket connected
  *   'state:disconnected' – WebSocket disconnected
  *   'state:auth'      – auth state changed
+ *   'state:spy_reports' – spy report cache refreshed or updated
  */
 
 import { eventBus } from './events.js';
@@ -36,14 +37,14 @@ class StateStore {
     /** @type {{ uid: number, name: string }|null} pending attack target set by dashboard */
     this.pendingAttackTarget = null;
 
-    /** @type {{ uid: number, name: string }|null} pending message target set by dashboard */
-    this.pendingMessageTarget = null;
-
     /** @type {{ attack_id: number, attacker_uid: number }|null} incoming attack to watch in battle view */
     this.pendingIncomingAttack = null;
 
     /** @type {boolean} */
     this.connected = false;
+
+    /** @type {Map<number, object>|null} Latest spy report per defender_uid */
+    this.spyReports = null;
   }
 
   setAuth(uid, username) {
@@ -74,6 +75,19 @@ class StateStore {
   setConnected(value) {
     this.connected = value;
     eventBus.emit(value ? 'state:connected' : 'state:disconnected');
+  }
+
+  setSpyReports(reportsArray) {
+    const map = new Map();
+    for (const r of reportsArray || []) map.set(r.defender_uid, r);
+    this.spyReports = map;
+    eventBus.emit('state:spy_reports', this.spyReports);
+  }
+
+  upsertSpyReport(report) {
+    if (!this.spyReports) this.spyReports = new Map();
+    this.spyReports.set(report.defender_uid, report);
+    eventBus.emit('state:spy_reports', this.spyReports);
   }
 }
 

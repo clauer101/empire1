@@ -1,5 +1,6 @@
 """Tests for engine/ai_service.py — AI attack heuristics and adaptation."""
 
+import random
 from unittest.mock import MagicMock
 
 import pytest
@@ -359,3 +360,93 @@ class TestAttackPlayer:
         call = ats.start_ai_attack.call_args
         assert call is not None
         assert call.kwargs.get("defender_uid") == 1 or (call.args and call.args[0] == 1)
+
+
+# ── Season-frozen guard ──────────────────────────────────────────────────────
+
+
+class TestSeasonFrozenGuard:
+    """No AI-triggered random armies (item-completion or barbarian) while the
+    game is frozen for a season transition — the world is meant to hold still
+    during the rally-end freeze / winner banner, not keep sending attacks."""
+
+    def _make_services(self):
+        empire_service = MagicMock()
+        empire_service.next_army_id.return_value = 42
+        empire_service.get.return_value = None
+        empire_service.get_current_era.return_value = "stone"
+
+        attack = MagicMock()
+        attack.attack_id = 1
+        attack_service = MagicMock()
+        attack_service.start_ai_attack.return_value = attack
+
+        return empire_service, attack_service
+
+    def test_on_item_completed_suppressed_while_frozen(self, monkeypatch):
+        from gameserver.engine import global_state
+        monkeypatch.setattr(global_state, "is_season_reset_triggered", lambda: True)
+
+        waves_config = [{
+            "name": "test_wave", "trigger": {"items": ["FIRE_PLACE"]},
+            "waves": [{"critter": "wolf", "slots": 5}], "travel_time": 10,
+        }]
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig(),
+                        hardcoded_waves=waves_config)
+        empire = _make_empire()
+        es, ats = self._make_services()
+        es.get.return_value = empire
+
+        ai.on_item_completed(1, "FIRE_PLACE", es, ats)
+
+        ats.start_ai_attack.assert_not_called()
+
+    def test_on_item_completed_dispatches_when_not_frozen(self, monkeypatch):
+        from gameserver.engine import global_state
+        monkeypatch.setattr(global_state, "is_season_reset_triggered", lambda: False)
+
+        waves_config = [{
+            "name": "test_wave", "trigger": {"items": ["FIRE_PLACE"]},
+            "waves": [{"critter": "wolf", "slots": 5}], "travel_time": 10,
+        }]
+        ai = AIService(_make_upgrade_provider(), game_config=GameConfig(),
+                        hardcoded_waves=waves_config)
+        empire = _make_empire()
+        es, ats = self._make_services()
+        es.get.return_value = empire
+
+        ai.on_item_completed(1, "FIRE_PLACE", es, ats)
+
+        ats.start_ai_attack.assert_called_once()
+
+    def test_tick_barbarians_suppressed_while_frozen(self, monkeypatch):
+        from gameserver.engine import global_state
+        monkeypatch.setattr(global_state, "is_season_reset_triggered", lambda: True)
+        monkeypatch.setattr(random, "random", lambda: 0.0)  # would always trigger
+
+        gc = GameConfig(barbarians_aggressiveness={"modern": 1.0})
+        ai = AIService(_make_upgrade_provider(), game_config=gc)
+        empire = _make_empire()
+        es, ats = self._make_services()
+        es.all_empires = {1: empire}
+        es.get_current_era.return_value = "modern"  # highest aggressiveness
+
+        ai.tick_barbarians(999999.0, es, ats)
+
+        ats.start_ai_attack.assert_not_called()
+
+    def test_tick_barbarians_dispatches_when_not_frozen(self, monkeypatch):
+        from gameserver.engine import global_state
+        monkeypatch.setattr(global_state, "is_season_reset_triggered", lambda: False)
+        monkeypatch.setattr(random, "random", lambda: 0.0)  # always trigger
+
+        gc = GameConfig(barbarians_aggressiveness={"modern": 1.0})
+        ai = AIService(_make_upgrade_provider(), game_config=gc)
+        empire = _make_empire()
+        es, ats = self._make_services()
+        es.all_empires = {1: empire}
+        es.get_current_era.return_value = "modern"
+
+        ai.tick_barbarians(999999.0, es, ats)
+
+        ats.start_ai_attack.assert_called_once()

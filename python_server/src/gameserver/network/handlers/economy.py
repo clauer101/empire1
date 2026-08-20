@@ -352,6 +352,10 @@ async def handle_set_structure_select(
     and persists the value into empire.hex_map so it survives the next save.
     Only the defender (map owner) is allowed to change targeting.
     """
+    from gameserver.engine.global_state import is_season_reset_triggered
+    if is_season_reset_triggered():
+        return None
+
     select_val = getattr(message, 'select', 'first')
     if select_val not in ('first', 'last', 'random'):
         return None
@@ -519,6 +523,14 @@ async def handle_map_save_request(
     The map data is stored in the empire object. It will be persisted
     automatically during the next regular state save (e.g., on shutdown).
     """
+    from gameserver.engine.global_state import is_season_reset_triggered
+    if is_season_reset_triggered():
+        return {
+            "type": "map_save_response",
+            "success": False,
+            "error": "Season is frozen — map changes unavailable",
+        }
+
     svc = _svc()
     target_uid = sender_uid if sender_uid > 0 else message.sender
     empire = svc.empire_service.get(target_uid)
@@ -778,6 +790,14 @@ async def handle_buy_tile_request(
 
     Cost: TBD (currently free)
     """
+    from gameserver.engine.global_state import is_season_reset_triggered
+    if is_season_reset_triggered():
+        return {
+            "type": "buy_tile_response",
+            "success": False,
+            "error": "Season is frozen — map changes unavailable",
+        }
+
     svc = _svc()
     target_uid = sender_uid if sender_uid > 0 else message.sender
     empire = svc.empire_service.get(target_uid)
@@ -799,71 +819,78 @@ async def handle_buy_tile_request(
             "error": "Missing tile coordinates (q, r)",
         }
 
-    hex_map = getattr(empire, 'hex_map', {}) or {}
     tile_key = f"{q},{r}"
 
-    # Check if tile exists and is void
-    current_type = hex_map.get(tile_key, 'void')
-    if current_type != 'void':
+    # Serialize against any other concurrent resource-spending request for this
+    # empire (e.g. a duplicated/retried buy-tile submission) so the void-check
+    # below and the gold deduction + tile write happen as one atomic unit —
+    # otherwise two racing requests could both see the tile as void and both
+    # charge gold for it.
+    async with svc.empire_service.mutation_lock(target_uid):
+        hex_map = getattr(empire, 'hex_map', {}) or {}
+
+        # Check if tile exists and is void
+        current_type = hex_map.get(tile_key, 'void')
+        if current_type != 'void':
+            return {
+                "type": "buy_tile_response",
+                "success": False,
+                "error": f"Tile {tile_key} is not a void tile (current type: {current_type})",
+            }
+
+        # Check if the tile is already claimed by another empire using the world tile index
+        world_owner = svc.empire_service.world_tile_owner()
+        owner_uid = world_owner.get((q, r))
+        if owner_uid is not None and owner_uid != target_uid:
+            return {
+                "type": "buy_tile_response",
+                "success": False,
+                "error": "This tile belongs to another empire",
+            }
+
+        # Require adjacency to an existing owned (non-void) tile to keep territory contiguous
+        neighbor_offsets = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1))
+        has_owned_neighbor = any(
+            _tile_type(hex_map.get(f"{q + dq},{r + dr}", 'void')) != 'void'
+            for dq, dr in neighbor_offsets
+        )
+        if not has_owned_neighbor:
+            return {
+                "type": "buy_tile_response",
+                "success": False,
+                "error": "Tile must be adjacent to one of your existing tiles",
+            }
+
+        # Calculate cost based on number of already purchased tiles
+        purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
+        tile_price = svc.empire_service.tile_price_for(empire, purchased_tile_count + 1)
+
+        # Check if player has enough gold
+        current_gold = empire.resources.get('gold', 0.0)
+        if current_gold < tile_price:
+            return {
+                "type": "buy_tile_response",
+                "success": False,
+                "error": f"Not enough gold (need {tile_price:.1f}, have {current_gold:.1f})",
+            }
+
+        # Deduct gold
+        empire.resources['gold'] -= tile_price
+
+        # Convert void tile to empty land
+        hex_map[tile_key] = 'empty'
+        empire.hex_map = hex_map
+        svc.empire_service.invalidate_tile_index()
+
+        log.info(f"Tile {tile_key} purchased by empire {empire.name} (uid={target_uid}) for {tile_price:.1f} gold")
+
         return {
             "type": "buy_tile_response",
-            "success": False,
-            "error": f"Tile {tile_key} is not a void tile (current type: {current_type})",
+            "success": True,
+            "tile_key": tile_key,
+            "new_type": "empty",
+            "cost": round(tile_price, 2),
         }
-
-    # Check if the tile is already claimed by another empire using the world tile index
-    world_owner = svc.empire_service.world_tile_owner()
-    owner_uid = world_owner.get((q, r))
-    if owner_uid is not None and owner_uid != target_uid:
-        return {
-            "type": "buy_tile_response",
-            "success": False,
-            "error": "This tile belongs to another empire",
-        }
-
-    # Require adjacency to an existing owned (non-void) tile to keep territory contiguous
-    neighbor_offsets = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1))
-    has_owned_neighbor = any(
-        _tile_type(hex_map.get(f"{q + dq},{r + dr}", 'void')) != 'void'
-        for dq, dr in neighbor_offsets
-    )
-    if not has_owned_neighbor:
-        return {
-            "type": "buy_tile_response",
-            "success": False,
-            "error": "Tile must be adjacent to one of your existing tiles",
-        }
-
-    # Calculate cost based on number of already purchased tiles
-    purchased_tile_count = sum(1 for tile_type in hex_map.values() if tile_type != 'void')
-    tile_price = svc.empire_service.tile_price_for(empire, purchased_tile_count + 1)
-
-    # Check if player has enough gold
-    current_gold = empire.resources.get('gold', 0.0)
-    if current_gold < tile_price:
-        return {
-            "type": "buy_tile_response",
-            "success": False,
-            "error": f"Not enough gold (need {tile_price:.1f}, have {current_gold:.1f})",
-        }
-
-    # Deduct gold
-    empire.resources['gold'] -= tile_price
-
-    # Convert void tile to empty land
-    hex_map[tile_key] = 'empty'
-    empire.hex_map = hex_map
-    svc.empire_service.invalidate_tile_index()
-
-    log.info(f"Tile {tile_key} purchased by empire {empire.name} (uid={target_uid}) for {tile_price:.1f} gold")
-
-    return {
-        "type": "buy_tile_response",
-        "success": True,
-        "tile_key": tile_key,
-        "new_type": "empty",
-        "cost": round(tile_price, 2),
-    }
 
 
 async def handle_buy_item_upgrade(

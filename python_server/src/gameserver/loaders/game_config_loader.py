@@ -70,16 +70,6 @@ class Prices:
 
 
 @dataclass
-class SpyCosts:
-    """Gold costs for spy operations."""
-    defense: int = 500
-    build_queue: int = 1000
-    research_queue: int = 2000
-    attacks: int = 5000
-    artifacts: int = 10000
-
-
-@dataclass
 class GameConfig:
     """All tunable gameplay constants.
 
@@ -141,6 +131,15 @@ class GameConfig:
     ai_travel_seconds: float = 30.0
     ai_min_player_score: float = 500.0
 
+    # -- Diplomacy -----------------------------------------------------
+    # Fraction of culture each partner pays the other when an alliance forms.
+    alliance_culture_cost: float = 0.05
+    # Max simultaneous mutual alliance partners per empire. Currently a flat
+    # global cap (1 = one ally at a time). Future: could become per-empire
+    # (base + an effect offset, e.g. "max_alliances_offset" unlocked by a
+    # building/knowledge/trophy) — see get_max_alliances() in empire_service.py.
+    max_alliances: int = 1
+
     # -- Barbarian attacks -------------------------------------------
     # Probability per minute (Bernoulli trial) that barbarians attack.
     # Keys are lowercase English era names (same as era_effects keys).
@@ -173,6 +172,10 @@ class GameConfig:
     anti_farm_culture_multiplier: float = 0.33
     anti_farm_defender_gold_multiplier: float = 3.0
 
+    # -- Skip-siege abuse detection (scripted/staggered defender skips) --
+    skip_siege_abuse_window_minutes: float = 10.0
+    skip_siege_abuse_count_threshold: int = 5
+
     # -- Ruler aura --------------------------------------------------
     ruler_aura_effects: Dict[str, float] = field(default_factory=lambda: {
         "slow_tower_modifier": 0.3,
@@ -188,9 +191,6 @@ class GameConfig:
 
     # -- Prices ------------------------------------------------------
     prices: Prices = field(default_factory=Prices)
-
-    # -- Spy costs ---------------------------------------------------
-    spy_costs: SpyCosts = field(default_factory=SpyCosts)
 
     # -- Unit upgrades -----------------------------------------------
     structure_upgrades: StructureUpgradeDef = field(default_factory=StructureUpgradeDef)
@@ -274,12 +274,6 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         raw = yaml.safe_load(f) or {}
 
     log.info("Loaded game config from %s (%d keys)", p, len(raw))
-
-    # -- spy_costs (required section) ------------------------------------
-    if "spy_costs" not in raw:
-        raise ValueError("Missing required section 'spy_costs' in game.yaml")
-    spy_raw = raw.pop("spy_costs")
-    spy = SpyCosts(**spy_raw)
 
     # -- prices (required section) ---------------------------------------
     if "prices" not in raw:
@@ -379,7 +373,6 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         _require(raw, key)
 
     cfg = GameConfig(
-        spy_costs=spy,
         prices=prices,
         era_effects=era_effects_dict,
         barbarians_aggressiveness=barbarians_aggressiveness,

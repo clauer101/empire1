@@ -104,6 +104,16 @@ class SavedMapRenameBody(BaseModel):
     life: float | None = None
 
 
+class GoldAdjustBody(BaseModel):
+    amount: float
+    reason: str = ""
+
+
+class CultureAdjustBody(BaseModel):
+    amount: float
+    reason: str = ""
+
+
 class MapSaveResponse(BaseModel):
     success: bool
     error: str = ""
@@ -158,6 +168,10 @@ class AttackRequest(BaseModel):
 class SpyAttackRequest(BaseModel):
     target_uid: int = 0
     opponent_name: str = ""
+
+
+class AllianceRequest(BaseModel):
+    target_uid: int = 0
 
 
 class SendMessageRequest(BaseModel):

@@ -88,6 +88,7 @@ Empire-Effects werden durch abgeschlossene Knowledge-Items freigeschaltet und vi
 | `citizen_cost_modifier` | float 0–1 | Bürgerpreis in Kultur reduziert: `preis × (1 − v)` |
 | `citizen_effect_modifier` | float ≥0 | Addiert auf `citizen_effect`: `base + v` — erhöht alle Bürger-Boni |
 | `other_citizen_gold_modifier` | float | Artists und Scientists tragen zusätzlich zu Gold bei: `gold_modifier += (artists + scientists) × v` |
+| `critter_gold_modifier` | float | Bonus-Gold am Kampfende: Verteidiger erhält zusätzlich `defender_gold_earned × v` Gold (analog zum PvP-Gold-Bonus, siehe `_apply_critter_gold_bonus` in `battle_task.py`) |
 
 ### Kosten-Reduktionen
 

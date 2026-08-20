@@ -360,6 +360,33 @@
     <div id="no-attacks" style="display:none">No active attacks.</div>
   </div>
 
+  <!-- Detection Summary (one row per empire, merges all signals below) -->
+  <div class="card">
+    <div class="card-header">
+      Detection Summary
+      <span class="badge" id="detectionsummary-count">0</span>
+      <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">all scripted-access/abuse signals, one row per empire</span>
+    </div>
+    <table id="detectionsummary-table">
+      <thead>
+        <tr>
+          <th>Empire</th>
+          <th>User-Agent</th>
+          <th>Header score</th>
+          <th>Reaction score</th>
+          <th title="Number of tracked reaction-time samples collected">Reaction samples</th>
+          <th>Timing score</th>
+          <th>Bot%</th>
+          <th>Is bot</th>
+          <th>Anti-farm wins</th>
+          <th>Skip-siege count</th>
+        </tr>
+      </thead>
+      <tbody id="detectionsummary-body"></tbody>
+    </table>
+    <div id="no-detectionsummary" style="display:none">No empire currently has a non-trivial detection signal.</div>
+  </div>
+
   <!-- Anti-Farm Protection -->
   <div class="card">
     <div class="card-header">
@@ -379,6 +406,30 @@
       <tbody id="antifarm-body"></tbody>
     </table>
     <div id="no-antifarm" style="display:none">No attacker/defender pair is currently protected.</div>
+  </div>
+
+  <!-- Skip-Siege Abuse Detection -->
+  <div class="card">
+    <div class="card-header">
+      Skip-Siege Abuse
+      <span class="badge" id="skipsiege-count">0</span>
+      <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0" id="skipsiege-config"></span>
+    </div>
+    <table id="skipsiege-table">
+      <thead>
+        <tr>
+          <th>Defender</th>
+          <th>Skips (window)</th>
+          <th>Distinct attackers</th>
+          <th>Mean interval</th>
+          <th>Stddev interval</th>
+          <th>Max siege remaining at skip</th>
+          <th>Last skip</th>
+        </tr>
+      </thead>
+      <tbody id="skipsiege-body"></tbody>
+    </table>
+    <div id="no-skipsiege" style="display:none">No defender is currently over the skip-siege abuse threshold.</div>
   </div>
 
   <!-- Trophies -->
@@ -542,6 +593,22 @@ function buildDetailHTML(e) {
     <div class="detail-section">
       <div class="detail-title">Resources</div>
       ${resRows}
+      <div class="detail-row" style="margin-top:6px;gap:6px;align-items:center">
+        <input type="number" class="gold-adjust-input" data-uid="${e.uid}" placeholder="+/- gold" step="1"
+          style="width:100px;background:var(--surface-alt);color:var(--text);border:1px solid var(--border);
+          border-radius:4px;padding:3px 6px;font-size:11px" />
+        <button class="gold-adjust-btn" data-uid="${e.uid}" style="cursor:pointer;border:1px solid var(--border);
+          border-radius:4px;padding:3px 10px;font-size:11px;background:var(--surface-alt);color:var(--text)">
+          💰 Apply bonus/malus</button>
+      </div>
+      <div class="detail-row" style="margin-top:6px;gap:6px;align-items:center">
+        <input type="number" class="culture-adjust-input" data-uid="${e.uid}" placeholder="+/- culture" step="1"
+          style="width:100px;background:var(--surface-alt);color:var(--text);border:1px solid var(--border);
+          border-radius:4px;padding:3px 6px;font-size:11px" />
+        <button class="culture-adjust-btn" data-uid="${e.uid}" style="cursor:pointer;border:1px solid var(--border);
+          border-radius:4px;padding:3px 10px;font-size:11px;background:var(--surface-alt);color:var(--text)">
+          🎭 Apply bonus/malus</button>
+      </div>
     </div>
     <div class="detail-section">
       <div class="detail-title">Citizens</div>
@@ -624,6 +691,23 @@ function renderEmpires(empires) {
     [...tbody.querySelectorAll('.empire-detail.open')].map(r => parseInt(r.dataset.uid))
   );
 
+  // Preserve focus/value of a gold/culture-adjust input being edited — a full
+  // innerHTML rebuild every poll (3s) otherwise silently steals focus and
+  // clears the field mid-typing (very noticeable on mobile, where losing
+  // focus also dismisses the keyboard).
+  let focusedGoldInput = null;
+  const activeEl = document.activeElement;
+  if (activeEl && activeEl.classList &&
+      (activeEl.classList.contains('gold-adjust-input') || activeEl.classList.contains('culture-adjust-input'))) {
+    focusedGoldInput = {
+      cls: activeEl.classList.contains('gold-adjust-input') ? 'gold-adjust-input' : 'culture-adjust-input',
+      uid: parseInt(activeEl.dataset.uid),
+      value: activeEl.value,
+      selStart: activeEl.selectionStart,
+      selEnd: activeEl.selectionEnd,
+    };
+  }
+
   tbody.innerHTML = '';
 
   empires.forEach(e => {
@@ -687,6 +771,44 @@ function renderEmpires(empires) {
       });
     }
 
+    const goldBtn = detailTd.querySelector('.gold-adjust-btn');
+    if (goldBtn) {
+      goldBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const input = detailTd.querySelector('.gold-adjust-input');
+        adjustEmpireGold(e.uid, input, goldBtn);
+      });
+    }
+    const goldInput = detailTd.querySelector('.gold-adjust-input');
+    if (goldInput) {
+      goldInput.addEventListener('click', ev => ev.stopPropagation());
+      goldInput.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') {
+          ev.stopPropagation();
+          adjustEmpireGold(e.uid, goldInput, goldBtn);
+        }
+      });
+    }
+
+    const cultureBtn = detailTd.querySelector('.culture-adjust-btn');
+    if (cultureBtn) {
+      cultureBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const input = detailTd.querySelector('.culture-adjust-input');
+        adjustEmpireCulture(e.uid, input, cultureBtn);
+      });
+    }
+    const cultureInput = detailTd.querySelector('.culture-adjust-input');
+    if (cultureInput) {
+      cultureInput.addEventListener('click', ev => ev.stopPropagation());
+      cultureInput.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') {
+          ev.stopPropagation();
+          adjustEmpireCulture(e.uid, cultureInput, cultureBtn);
+        }
+      });
+    }
+
     mainRow.addEventListener('click', () => {
       const arrow = mainRow.querySelector('.expand-arrow');
       if (detailRow.classList.toggle('open')) {
@@ -699,6 +821,19 @@ function renderEmpires(empires) {
     tbody.appendChild(mainRow);
     tbody.appendChild(detailRow);
   });
+
+  if (focusedGoldInput) {
+    const restored = tbody.querySelector(`.${focusedGoldInput.cls}[data-uid="${focusedGoldInput.uid}"]`);
+    if (restored) {
+      restored.value = focusedGoldInput.value;
+      restored.focus({ preventScroll: true });
+      try {
+        restored.setSelectionRange(focusedGoldInput.selStart, focusedGoldInput.selEnd);
+      } catch (_e) {
+        // setSelectionRange can throw on some mobile browsers for number inputs — harmless
+      }
+    }
+  }
 }
 
 function renderAttacks(attacks) {
@@ -948,6 +1083,84 @@ async function saveEmpireMap(uid, btn) {
   }
 }
 
+// ── Gold bonus / malus ───────────────────────────────────────────────
+async function adjustEmpireGold(uid, input, btn) {
+  const amount = parseFloat(input.value);
+  if (!Number.isFinite(amount) || amount === 0) {
+    alert('Enter a non-zero number (positive = bonus, negative = malus).');
+    return;
+  }
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Applying…';
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/empire/${uid}/gold-adjust`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      },
+      body: JSON.stringify({ amount }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
+    btn.textContent = `✓ ${amount > 0 ? '+' : ''}${amount} → ${fmtPow(d.gold_after)}`;
+    btn.style.color = 'var(--success)';
+    btn.style.borderColor = 'var(--success)';
+    input.value = '';
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2500);
+  } catch (e) {
+    btn.textContent = original;
+    btn.disabled = false;
+    alert('Failed to adjust gold: ' + e.message);
+  }
+}
+
+// ── Culture bonus / malus ────────────────────────────────────────────
+async function adjustEmpireCulture(uid, input, btn) {
+  const amount = parseFloat(input.value);
+  if (!Number.isFinite(amount) || amount === 0) {
+    alert('Enter a non-zero number (positive = bonus, negative = malus).');
+    return;
+  }
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Applying…';
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/empire/${uid}/culture-adjust`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      },
+      body: JSON.stringify({ amount }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
+    btn.textContent = `✓ ${amount > 0 ? '+' : ''}${amount} → ${fmtPow(d.culture_after)}`;
+    btn.style.color = 'var(--success)';
+    btn.style.borderColor = 'var(--success)';
+    input.value = '';
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2500);
+  } catch (e) {
+    btn.textContent = original;
+    btn.disabled = false;
+    alert('Failed to adjust culture: ' + e.message);
+  }
+}
+
 // ── Poll ──────────────────────────────────────────────────────────
 async function poll() {
   const connEl = document.getElementById('conn-status');
@@ -980,13 +1193,34 @@ async function poll() {
     connEl.textContent = '✗ ' + e.message;
     connEl.className = 'err';
   }
+}
 
+// The four detection cards below hit heavier admin queries (table scans /
+// grouping over all-time login/event history) — polled on their own, slower
+// interval so they don't add load to the fast 3s empire/attack refresh.
+async function pollDetection() {
   try {
     const token = localStorage.getItem('e3_jwt_token');
     const r = await fetch(`${GS_BASE}/api/admin/anti-farm/active`, {
       headers: token ? { 'Authorization': 'Bearer ' + token } : {},
     });
     if (r.ok) renderAntiFarm(await r.json());
+  } catch (_) {}
+
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/skip-siege-abuse/active`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+    });
+    if (r.ok) renderSkipSiegeAbuse(await r.json());
+  } catch (_) {}
+
+  try {
+    const token = localStorage.getItem('e3_jwt_token');
+    const r = await fetch(`${GS_BASE}/api/admin/detection-summary`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+    });
+    if (r.ok) renderDetectionSummary(await r.json());
   } catch (_) {}
 }
 
@@ -1011,6 +1245,69 @@ function renderAntiFarm(data) {
       <td>${p.defender_name} <span style="color:var(--text-dim)">(${p.defender_uid})</span></td>
       <td>${p.win_count}</td>
       <td>${new Date(p.last_win_ts * 1000).toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+function renderSkipSiegeAbuse(data) {
+  const abusers = data.active || [];
+  document.getElementById('skipsiege-count').textContent = abusers.length;
+  document.getElementById('skipsiege-config').textContent =
+    `≥${data.threshold} skips / ${data.window_minutes}min`;
+  const tbody = document.getElementById('skipsiege-body');
+  const noRow = document.getElementById('no-skipsiege');
+
+  if (!abusers.length) {
+    tbody.innerHTML = '';
+    noRow.style.display = 'block';
+    return;
+  }
+  noRow.style.display = 'none';
+
+  tbody.innerHTML = abusers.map(a => {
+    // Near-zero variance between skip timestamps is the strongest scripted-timing
+    // signal — a human clicking a button never reproduces the same interval exactly.
+    const suspicious = a.stddev_interval_s < 1.0 && a.skip_count >= data.threshold;
+    return `
+    <tr>
+      <td>${a.defender_name} <span style="color:var(--text-dim)">(${a.defender_uid})</span></td>
+      <td style="${suspicious ? 'color:var(--danger);font-weight:700' : ''}">${a.skip_count}</td>
+      <td>${a.distinct_attackers}</td>
+      <td>${fmtSec(a.mean_interval_s)}</td>
+      <td style="${suspicious ? 'color:var(--danger);font-weight:700' : ''}">${a.stddev_interval_s.toFixed(2)}s</td>
+      <td>${fmtSec(a.max_siege_remaining_at_skip)}</td>
+      <td>${new Date(a.last_skip_ts * 1000).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDetectionSummary(data) {
+  const rows = data.summary || [];
+  document.getElementById('detectionsummary-count').textContent = rows.length;
+  const tbody = document.getElementById('detectionsummary-body');
+  const noRow = document.getElementById('no-detectionsummary');
+
+  if (!rows.length) {
+    tbody.innerHTML = '';
+    noRow.style.display = 'block';
+    return;
+  }
+  noRow.style.display = 'none';
+
+  const fmtFactorScore = (v) => v == null ? '<span style="color:var(--text-dim)">—</span>' : fmtBotProb(v);
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.name} <span style="color:var(--text-dim)">(${r.uid})</span></td>
+      <td style="font-size:11px;color:var(--text-dim);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.user_agent || ''}">${r.declared_bot ? '<span style="color:var(--accent)">self-declared bot</span>' : (r.user_agent || '—')}</td>
+      <td>${fmtFactorScore(r.header_score)}</td>
+      <td>${fmtFactorScore(r.reaction_score)}</td>
+      <td>${r.reaction_sample_count}</td>
+      <td>${fmtFactorScore(r.timing_score)}</td>
+      <td>${fmtBotProb(r.bot_probability)}</td>
+      <td>${r.is_bot ? '<span style="color:var(--danger);font-weight:700">yes</span>' : 'no'}</td>
+      <td style="${r.anti_farm_win_count > 0 ? 'color:var(--warning);font-weight:700' : ''}">${r.anti_farm_win_count}</td>
+      <td style="${r.skip_siege_count > 0 ? 'color:var(--danger);font-weight:700' : ''}">${r.skip_siege_count}</td>
     </tr>
   `).join('');
 }
@@ -1048,8 +1345,9 @@ document.getElementById('speedup-set').addEventListener('click', async () => {
   }
 });
 
-Promise.all([loadEraMap(), loadItems()]).then(poll);
+Promise.all([loadEraMap(), loadItems()]).then(() => { poll(); pollDetection(); });
 setInterval(poll, 3000);
+setInterval(pollDetection, 30000);
 
 // ── Trophies ─────────────────────────────────────────────────────────────────
 let TROPHY_DATA = null;

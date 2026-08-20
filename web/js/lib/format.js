@@ -54,6 +54,7 @@ const EFFECT_META = {
   // -- Citizen modifiers
   citizen_effect_modifier:        ['🫂', 'Citizen efficiency',       (v) => `+${(v * 100).toFixed(1)}%`,                                                               'Adds to the productivity bonus of each citizen'],
   other_citizen_gold_modifier:    ['💰', 'Artist/Scientist gold',    (v) => `+${(v * 100).toFixed(1)}% per citizen`,                                                  'Artists and scientists also contribute to gold income'],
+  critter_gold_modifier:          ['🐜', 'Critter gold bonus',       (v) => `+${(v * 100).toFixed(0)}%`,                                                               'Grants bonus gold when critters are defeated, proportional to gold earned this battle'],
   increase_start_gold:            ['💰', 'Starting gold',   (v) => `+${v.toLocaleString('de-DE')} gold`,                                                       'Grants extra gold when respawning after season restart'],
   // -- One-shot lump sums (shown in ruler skill tooltips only)
   gold_lump_sum_on_skill_up:      ['💰', 'Skill-up gold reward',     (v) => `+${v.toLocaleString('de-DE')} gold`,                                                     'Grants a one-time gold bonus when this skill level is reached'],
@@ -208,6 +209,29 @@ export function fmtTrophyCondition(condition) {
   return condition.type;
 }
 
+/** Alliance/diplomacy relationship status → {label, badgeClass} for the Empire Details page. */
+export function fmtAllianceStatus(status) {
+  switch (status) {
+    case 'allied':           return { label: '🤝 Allied',           badgeClass: 'badge--completed' };
+    case 'pending_sent':     return { label: '💬 Request Sent',     badgeClass: 'badge--in-progress' };
+    case 'pending_received': return { label: '💬 Request Received', badgeClass: 'badge--available' };
+    default:                 return { label: '💬 Diplomacy',        badgeClass: 'badge--available' };
+  }
+}
+
+/**
+ * Fixed-size square action button style for empire leaderboard rows
+ * (⚔ attack / 🏰 detail buttons in status.js and globalempires.js).
+ * A shared fixed box (not padding-based) keeps both buttons the exact same
+ * size regardless of the visual width of the glyph/emoji inside, and
+ * regardless of whether the element is a <button> or an <a>.
+ */
+export const EMPIRE_ROW_ACTION_BTN_STYLE =
+  'font-size:11px;font-family:inherit;line-height:1;margin:0;padding:0;' +
+  'width:24px;height:24px;box-sizing:border-box;box-shadow:none;color:#fff;' +
+  'text-decoration:none;display:inline-flex;align-items:center;justify-content:center;' +
+  'border-radius:var(--radius,4px);';
+
 /** Tower combat effects: burn / slow / splash */
 export function fmtTowerEffects(effects) {
   if (!effects || Object.keys(effects).length === 0) return '';
@@ -269,6 +293,7 @@ export function showIconLegend() {
         <div>🎖️ &nbsp;Winner of a <strong>past season</strong></div>
         <div>🤖 &nbsp;AI-controlled empire</div>
         <div>⚜ &nbsp;Artifact — a powerful item that can be conquered from other empires</div>
+        <div><span style="color:#4fc3f7;text-shadow:0 0 8px #4fc3f7;">⚜</span> &nbsp;Artifact with <strong>steal protection</strong> — cannot currently be conquered</div>
       </div>
     </div>`;
   ov.addEventListener('click', e => {

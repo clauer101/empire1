@@ -8,7 +8,7 @@
 import { eventBus } from '../events.js';
 import { pageTitle } from '../lib/page_title.js';
 import { formatEffect, fmtNumber } from '../i18n.js';
-import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition, fmtTrophyProgress, showIconLegend } from '../lib/format.js';
+import { fmtEffectRow, fmtEffectValue, fmtEffectLabel, fmtEffectsInline, fmtTrophyCondition, fmtTrophyProgress, showIconLegend, EMPIRE_ROW_ACTION_BTN_STYLE } from '../lib/format.js';
 import { escHtml } from '../lib/html.js';
 import { rest } from '../rest.js';
 import { calcBuildSpeed, calcResearchSpeed } from '../lib/speed.js';
@@ -136,8 +136,9 @@ async function refresh() {
 
 async function refreshEmpires() {
   try {
-    const resp = await rest.getEmpires();
+    const [resp, spyResp] = await Promise.all([rest.getEmpires(), rest.getSpyReports()]);
     _empiresData = resp.empires || [];
+    st.setSpyReports(spyResp.reports || []);
     if (_onLeaderUpdated) _onLeaderUpdated();
     const sec = container.querySelector('#empires-section');
     if (sec) {
@@ -1195,6 +1196,7 @@ const _SRC_COLOR_RULER    = '#FFD700';   // gold
 const _SRC_COLOR_RALLY    = '#87CEEB';   // light blue
 const _SRC_COLOR_ERA      = '#87CEEB';   // light blue
 const _SRC_COLOR_TROPHY   = '#cd7f32';   // bronze
+const _SRC_COLOR_ALLIANCE = '#4fc3f7';   // accent blue
 
 function _resolveName(iid, items) {
   return items?.buildings?.[iid]?.name
@@ -1219,6 +1221,8 @@ function _renderOffsetSourceRows(effectSources, key, fmtVal, rulerName, items) {
     if (v > 0.0005) html += `<div class="panel-row"><span class="label">${fmtVal(v)}</span><span class="value" style="color:${_SRC_COLOR_TROPHY}">🏆 ${_resolveName(iid, items)}</span></div>`;
   if (src.ruler > 0.0005 && rulerName)
     html += `<div class="panel-row"><span class="label">${fmtVal(src.ruler)}</span><span class="value" style="color:${_SRC_COLOR_RULER}">👑 ${rulerName}</span></div>`;
+  if (src.alliance > 0.0005)
+    html += `<div class="panel-row"><span class="label">${fmtVal(src.alliance)}</span><span class="value" style="color:${_SRC_COLOR_ALLIANCE}">🤝 Alliance</span></div>`;
   if (src.end_rally > 0.0005)
     html += `<div class="panel-row"><span class="label">${fmtVal(src.end_rally)}</span><span class="value" style="color:${_SRC_COLOR_RALLY}">⚔ End Rally</span></div>`;
   if (src.era > 0.0005)
@@ -1242,6 +1246,8 @@ function _renderModifierSourceRows(effectSources, key, rulerName, skipCategories
     if (v > 0.0005) html += `<div class="panel-row"><span class="label">+${(v * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_TROPHY}">🏆 ${_resolveName(iid, items)}</span></div>`;
   if (src.ruler > 0.0005 && rulerName)
     html += `<div class="panel-row"><span class="label">+${(src.ruler * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_RULER}">👑 ${rulerName}</span></div>`;
+  if (src.alliance > 0.0005)
+    html += `<div class="panel-row"><span class="label">+${(src.alliance * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_ALLIANCE}">🤝 Alliance</span></div>`;
   if (src.end_rally > 0.0005)
     html += `<div class="panel-row"><span class="label">+${(src.end_rally * 100).toFixed(0)}%</span><span class="value" style="color:${_SRC_COLOR_RALLY}">⚔ End Rally</span></div>`;
   if (src.era > 0.0005)
@@ -1601,24 +1607,44 @@ function renderEffects(effects) {
     .join('');
 }
 
-function _empireRowHtml(e, i, selfEra, armyEnabled = false) {
-  const canAttack = (targetEra) => armyEnabled && targetEra >= selfEra - 1;
+function _allianceGroupBorderStyle(rankIndex) {
+  const e = _empiresData?.[rankIndex];
+  const gid = e?.alliance_group_id;
+  if (gid == null) return '';
+  const prevGid = _empiresData?.[rankIndex - 1]?.alliance_group_id;
+  const nextGid = _empiresData?.[rankIndex + 1]?.alliance_group_id;
+  const isTop = prevGid !== gid;
+  const isBottom = nextGid !== gid;
+  const c = 'var(--accent,#4fc3f7)';
+  let style = `border-left:1px solid ${c};border-right:1px solid ${c};`;
+  style += isTop ? `border-top:1px solid ${c};margin-top:3px;` : '';
+  style += isBottom ? `border-bottom:1px solid ${c};margin-bottom:3px;` : '';
+  return style;
+}
+
+function _empireRowHtml(e, i) {
   const dot = (online) =>
     `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${online ? 'var(--success,#66bb6a)' : '#3a3a4a'};${online ? 'box-shadow:0 0 4px var(--success,#66bb6a)' : ''}"></span>`;
+  const groupBorderStyle = _allianceGroupBorderStyle(i);
   return `
-    <div class="panel-row" style="display:flex;flex-direction:row;align-items:stretch;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);${e.is_self ? 'background:rgba(255,255,255,0.06);' : ''}">
+    <div class="panel-row" style="display:flex;flex-direction:row;align-items:stretch;padding:4px 8px;gap:8px;border-bottom:1px solid var(--border-color,#2a2a3a);${e.is_self ? 'background:rgba(255,255,255,0.06);' : ''}${groupBorderStyle}">
       <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;">
         <span style="color:#888;font-size:0.8em;min-width:16px;">${i + 1}</span>
         ${dot(e.online)}
         <div style="min-width:0;">
           <div style="font-weight:${e.is_self ? 'bold' : 'normal'};color:${e.is_self ? 'var(--accent,#4fc3f7)' : 'inherit'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name} <span style="font-size:0.8em;color:#c9a84c;">${_toRoman(e.era || 1)}</span>${e.username ? (() => { const _cm = e.season_place === 1 ? '🥇' : e.season_place === 2 ? '🥈' : e.season_place === 3 ? '🥉' : ''; const _pm = e.past_champion ? '🎖️' : ''; const _icons = (e.is_bot ? ' 🤖' : '') + (_cm ? ' ' + _cm : '') + (_pm ? ' ' + _pm : ''); return ` <span style="color:#888;font-weight:normal;font-size:0.82em;">(${e.username}${_icons ? `<span class="icon-legend-trigger" style="cursor:pointer;">${_icons}</span>` : ''})</span>`; })() : ''}${e.is_self ? ' ★' : ''}</div>
-          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${(e.artifact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artifacts?">${(() => { const p = e.artifact_protected_count || 0; const u = (e.artifact_count || 0) - p; return '<span style="color:#4fc3f7;text-shadow:0 0 8px #4fc3f7;">⚜</span>'.repeat(p) + '<span style="color:#c9a84c;">⚜</span>'.repeat(u); })()}</span>` : ''}</div>
+          <div style="color:#ffa726;font-size:0.82em;">${fmtNumber(e.resources?.culture ?? e.culture)} ✦${e.alliance_group_culture != null ? ` <span style="color:var(--accent,#4fc3f7);">(${fmtNumber(e.alliance_group_culture)})</span>` : ''}${(e.artifact_count || 0) > 0 ? `<span class="art-info-trigger" style="margin-left:6px;cursor:pointer;font-size:1.25em;letter-spacing:2px;vertical-align:middle;" title="What are artifacts?">${(() => { const p = e.artifact_protected_count || 0; const u = (e.artifact_count || 0) - p; return '<span style="color:#4fc3f7;text-shadow:0 0 8px #4fc3f7;">⚜</span>'.repeat(p) + '<span style="color:#c9a84c;">⚜</span>'.repeat(u); })()}</span>` : ''}</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:row;align-items:center;gap:4px;">
         ${
-          !e.is_self && canAttack(e.era || 1)
-            ? `<button class="attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="font-size:11px;padding:3px 8px;background:var(--danger,#e53935);border-color:var(--danger,#e53935);">⚔</button>`
+          ((st.summary?.effects?.enable_army ?? 0) > 0 && e.can_attack)
+            ? `<button class="empire-attack-btn" data-uid="${e.uid}" data-name="${e.name}" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--danger,#e53935);border:1px solid var(--danger,#e53935);cursor:pointer;">⚔</button>`
+            : ''
+        }
+        ${
+          !e.is_self
+            ? `<a href="#empire/${e.uid}" class="empire-detail-btn" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--accent,#4fc3f7);border:1px solid var(--accent,#4fc3f7);">🏰</a>`
             : ''
         }
       </div>
@@ -1771,8 +1797,6 @@ function renderEmpiresSection(empires) {
   }
 
   const selfIdx = empires.findIndex((e) => e.is_self);
-  const selfEra = selfIdx >= 0 ? (empires[selfIdx].era || 1) : 1;
-  const armyEnabled = (st.summary?.effects?.enable_army ?? 0) > 0;
 
   // Show 5 above and below self in the status tile
   const TILE_WINDOW = 5;
@@ -1780,7 +1804,7 @@ function renderEmpiresSection(empires) {
   const end = Math.min(empires.length, selfIdx + TILE_WINDOW + 1);
   const slice = empires.slice(start, end);
 
-  const rows = slice.map((e, i) => _empireRowHtml(e, start + i, selfEra, armyEnabled)).join('');
+  const rows = slice.map((e, i) => _empireRowHtml(e, start + i)).join('');
 
   return `
     <div class="panel">
@@ -1793,41 +1817,20 @@ function renderEmpiresSection(empires) {
 }
 
 
-function _refreshEmpiresSection() {
-  const empires = _empiresData;
-  if (!empires) return;
-  const sec = container.querySelector('#empires-section');
-  if (!sec) return;
-  sec.innerHTML = renderEmpiresSection(empires);
-  bindEmpiresEvents();
-}
-
 function bindEmpiresEvents() {
   const sec = container.querySelector('#empires-section');
   if (!sec) return;
 
-  // Only bind events for the initially rendered batch; lazy-loaded rows bind inline
-  sec.querySelectorAll('.attack-btn').forEach((btn) => {
-    btn.onclick = () => onAttackClick(btn);
-  });
-
   sec.querySelectorAll('.art-info-trigger').forEach((el) => {
     el.onclick = (e) => { e.stopPropagation(); showIconLegend(); };
   });
-}
 
-function onMessageClick(btn) {
-  const targetUid = parseInt(btn.dataset.uid, 10);
-  const targetName = btn.dataset.name;
-  st.pendingMessageTarget = { uid: targetUid, name: targetName };
-  window.location.hash = '#social';
-}
-
-async function onAttackClick(btn) {
-  const targetUid = parseInt(btn.dataset.uid, 10);
-  const targetName = btn.dataset.name;
-  st.pendingAttackTarget = { uid: targetUid, name: targetName };
-  window.location.hash = '#army';
+  sec.querySelectorAll('.empire-attack-btn').forEach((btn) => {
+    btn.onclick = () => {
+      st.pendingAttackTarget = { uid: parseInt(btn.dataset.uid, 10), name: btn.dataset.name };
+      window.location.hash = '#army';
+    };
+  });
 }
 
 function fmt(n) {

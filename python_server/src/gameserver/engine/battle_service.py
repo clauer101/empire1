@@ -808,18 +808,8 @@ class BattleService:
                 svc = _core_svc()
                 emp = svc.empire_service.get(uid) if svc.empire_service else None
                 attacker_item_upgrades = emp.item_upgrades if emp else None
-            except Exception:
-                log.exception(
-                    "[_step_armies] empire lookup failed for uid=%d (battle=%d) — "
-                    "ruler_level will default to 1",
-                    uid, battle.bid,
-                )
-            if emp is None:
-                log.warning(
-                    "[_step_armies] empire_service.get(%d) returned None (battle=%d) — "
-                    "ruler_level will default to 1",
-                    uid, battle.bid,
-                )
+            except AssertionError:
+                pass  # services not initialized (e.g. headless simulation) — ruler_level defaults to 1
 
             ruler_level = emp.ruler.level if emp else 1
             aura_choice = emp.ruler.aura_choice if emp else ""
@@ -1101,6 +1091,7 @@ class BattleService:
         ruler_xp_pvp_bonus: dict[int, float] | None = None,
         artifact_steal_chances: dict[int, float] | None = None,
         army_steal_multipliers: dict[int, float] | None = None,
+        critter_gold_bonus: float = 0.0,
     ) -> None:
         """Send battle_summary when battle ends.
 
@@ -1110,6 +1101,7 @@ class BattleService:
             ruler_xp_gained: Optional dict mapping attacker uid -> XP gained this battle.
             pvp_gold_bonus: Extra gold awarded to defender for surviving a human attacker.
             ruler_xp_pvp_bonus: uid -> bonus XP from attacking a higher-era defender.
+            critter_gold_bonus: Extra gold awarded to defender via `critter_gold_modifier`.
         """
         total_waves = sum(len(a.waves) for a in battle.armies.values())
         # army_names: uid → list of army names (one uid can have multiple armies)
@@ -1139,6 +1131,7 @@ class BattleService:
             "defender_losses": dict(battle.defender_losses),
             "defender_gold_earned": battle.defender_gold_earned,
             "pvp_gold_bonus": round(pvp_gold_bonus),
+            "critter_gold_bonus": round(critter_gold_bonus),
             "critters_spawned": battle.critters_spawned,
             "critters_killed": battle.critters_killed,
             "critters_reached": battle.critters_reached,

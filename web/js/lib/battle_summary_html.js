@@ -91,11 +91,15 @@ export function buildBattleSummaryHtml(msg, catalog = {}, opts = {}) {
   // ── Gold earned (only when viewer is the defender) ────────────────────────
   if (isDefender && msg.defender_gold_earned > 0) {
     const pvpBonus = Math.round(msg.pvp_gold_bonus ?? 0);
+    const critterGoldBonus = Math.round(msg.critter_gold_bonus ?? 0);
     html += `<div ${sep}>`;
     html += `<strong style="font-size:0.9em;text-transform:uppercase;letter-spacing:.04em">💰 Gold Earned</strong>`;
     html += `<p style="margin:5px 0 0 0">+${Math.round(msg.defender_gold_earned).toLocaleString()} Gold from defeated attackers</p>`;
     if (pvpBonus > 0) {
       html += `<p style="margin:4px 0 0 0;color:var(--gold,#ffd54f)">⚡ +${pvpBonus.toLocaleString()} PvP Bonus (×2 vs player)</p>`;
+    }
+    if (critterGoldBonus > 0) {
+      html += `<p style="margin:4px 0 0 0;color:var(--gold,#ffd54f)">🐜 +${critterGoldBonus.toLocaleString()} Critter Gold Bonus</p>`;
     }
     html += `</div>`;
   }

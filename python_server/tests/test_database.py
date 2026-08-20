@@ -6,12 +6,13 @@ Uses an in-memory SQLite database (":memory:") to avoid touching disk.
 from __future__ import annotations
 
 import base64
+import time
 from pathlib import Path
 
 import pytest
 import yaml
 
-from gameserver.persistence.database import Database
+from gameserver.persistence.database import SPY_REPORT_MAX_AGE_DAYS, Database
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +123,78 @@ class TestLoginEvents:
         clusters = await db.get_device_clusters()
         # Should detect one cluster (u1, u2 share IP)
         assert len(clusters) >= 1
+
+    async def test_shared_device_id_scores_70(self, db: Database):
+        u1 = await db.create_user("d1", "pw")
+        u2 = await db.create_user("d2", "pw")
+        await db.record_login(u1, "1.1.1.1", "fp_x", "device-abc")
+        await db.record_login(u2, "2.2.2.2", "fp_y", "device-abc")  # same device_id, different IP/fp
+        clusters = await db.get_device_clusters()
+        assert len(clusters) == 1
+        assert clusters[0]["score"] == 70
+        assert clusters[0]["shared_dids"] == "device-abc"
+
+    async def test_shared_device_id_and_fingerprint_scores_125_capped_at_100(self, db: Database):
+        u1 = await db.create_user("e1", "pw")
+        u2 = await db.create_user("e2", "pw")
+        await db.record_login(u1, "1.1.1.1", "fp_shared", "device-shared")
+        await db.record_login(u2, "2.2.2.2", "fp_shared", "device-shared")
+        clusters = await db.get_device_clusters()
+        assert clusters[0]["score"] == 100
+
+    async def test_below_score_15_excluded(self, db: Database):
+        u1 = await db.create_user("f1", "pw")
+        u2 = await db.create_user("f2", "pw")
+        # only an old (>30d) shared IP -> score 15, which is NOT below 15, so
+        # use no shared signal at all instead to confirm no cluster appears
+        await db.record_login(u1, "3.3.3.3", "fp_only_u1")
+        await db.record_login(u2, "4.4.4.4", "fp_only_u2")
+        clusters = await db.get_device_clusters()
+        assert clusters == []
+
+    async def test_group_larger_than_guard_is_skipped(self, db: Database):
+        """A single IP shared by more than _DEVICE_CLUSTER_MAX_GROUP_SIZE uids
+        (e.g. NAT/shared WiFi) must not produce O(n^2) pairs — this is the
+        guard that prevents the pairing step itself from hanging on a huge
+        shared-signal group, independent of the query-level fix."""
+        uids = [await db.create_user(f"g{i}", "pw") for i in range(60)]
+        for uid in uids:
+            await db.record_login(uid, "9.9.9.9", f"fp_{uid}")
+        clusters = await db.get_device_clusters()
+        # The shared IP group (60 uids) exceeds the guard and is skipped
+        # entirely; since fingerprints are all distinct, no clusters result.
+        assert clusters == []
+
+    async def test_multiple_pairs_returned_independently(self, db: Database):
+        u1 = await db.create_user("h1", "pw")
+        u2 = await db.create_user("h2", "pw")
+        u3 = await db.create_user("h3", "pw")
+        await db.record_login(u1, "5.5.5.5", "fp_h1", "device-h1h2")
+        await db.record_login(u2, "6.6.6.6", "fp_h2", "device-h1h2")  # shares device with u1
+        await db.record_login(u3, "5.5.5.5", "fp_h3")  # shares IP with u1 only
+        clusters = await db.get_device_clusters()
+        pairs = {(c["uid_a"], c["uid_b"]) for c in clusters}
+        assert (min(u1, u2), max(u1, u2)) in pairs
+        assert (min(u1, u3), max(u1, u3)) in pairs
+        assert (min(u2, u3), max(u2, u3)) not in pairs
+
+    async def test_runs_quickly_on_large_login_history(self, db: Database):
+        """Regression test for the lifelock this replaced: the old
+        self-join-with-OR query degraded to an unindexable O(n^2) scan and
+        hung indefinitely on a real login_events table with ~300k rows.
+        This seeds a smaller but still substantial history and asserts the
+        call completes well within a reasonable bound."""
+        import time as _time
+
+        uids = [await db.create_user(f"perf{i}", "pw") for i in range(200)]
+        for i, uid in enumerate(uids):
+            # small overlapping groups of shared IPs/fingerprints, not one huge group
+            await db.record_login(uid, f"10.0.{i % 20}.1", f"fp_{i % 20}", f"device_{i}")
+        t0 = _time.monotonic()
+        clusters = await db.get_device_clusters()
+        elapsed = _time.monotonic() - t0
+        assert elapsed < 5.0
+        assert isinstance(clusters, list)
 
 
 # ---------------------------------------------------------------------------
@@ -426,14 +499,18 @@ class TestEmpireStats:
 
 class TestArtifactHolds:
     async def test_acquired_sets_timestamp(self, db: Database):
-        await db.record_artifact_acquired(1, "goblet", 1_000_000.0)
+        # Acquired a moment ago (real "now"-relative time) — an absolute
+        # near-epoch timestamp here would exceed the plausible-hold cap and
+        # get filtered out by get_artifact_hold_totals (see that cap's own
+        # regression tests below).
+        await db.record_artifact_acquired(1, "goblet", time.time() - 10.0)
         rows = await db.get_artifact_hold_totals()
         assert len(rows) == 1
-        # held_secs includes ongoing hold: unixepoch() - 1_000_000 (a past time)
-        # We only verify the row exists and held_secs is positive
+        # held_secs includes the ongoing hold — just verify it's a small,
+        # positive, plausible duration.
         assert rows[0]["uid"] == 1
         assert rows[0]["artifact_iid"] == "goblet"
-        assert rows[0]["held_secs"] >= 0
+        assert 0 <= rows[0]["held_secs"] < 60
 
     async def test_lost_accumulates_duration(self, db: Database):
         t0 = 1_000_000.0
@@ -495,10 +572,194 @@ class TestArtifactHolds:
         assert abs(by_iid["goblet"] - 300.0) < 1.0
 
     async def test_reacquire_overwrites_timestamp(self, db: Database):
-        # Empire steals artifact again after losing it
-        await db.record_artifact_acquired(1, "goblet", 1000.0)
-        await db.record_artifact_lost(1, "goblet", 1100.0)   # 100s accrued
-        await db.record_artifact_acquired(1, "goblet", 2000.0)
-        # Still holding — total_held_secs=100, plus ongoing from ts=2000
+        # Empire steals artifact again after losing it. Uses real "now"-
+        # relative timestamps — an absolute near-epoch value would exceed
+        # the plausible-hold cap and get filtered out entirely.
+        now = time.time()
+        await db.record_artifact_acquired(1, "goblet", now - 200.0)
+        await db.record_artifact_lost(1, "goblet", now - 100.0)   # 100s accrued
+        await db.record_artifact_acquired(1, "goblet", now - 10.0)
+        # Still holding — total_held_secs=100, plus ongoing ~10s.
         rows = await db.get_artifact_hold_totals()
         assert rows[0]["held_secs"] >= 100.0
+
+
+class TestArtifactHoldPlausibilityCap:
+    """Season-end stats must filter out implausible (>1 year) hold durations.
+
+    Regression coverage for the era-3 grant bug that recorded acquired_at=0.0
+    (Unix epoch 1970), producing ~56-year "held" durations that dwarfed every
+    real entry on the "Longest Artifact Hold" leaderboard.
+    """
+
+    async def test_get_artifact_hold_totals_excludes_epoch_zero_row(self, db: Database):
+        # acquired_at=0.0 -> held_secs ~= decades. Must not appear at all.
+        await db.record_artifact_acquired(1, "cursed_relic", 0.0)
+        await db.record_artifact_acquired(2, "goblet", time.time() - 10.0)
+        rows = await db.get_artifact_hold_totals()
+        uids = {r["uid"] for r in rows}
+        assert 1 not in uids
+        assert 2 in uids
+
+    async def test_get_artifact_hold_totals_keeps_plausible_row(self, db: Database):
+        # A hold just under the 1-year cap must still be reported.
+        just_under_a_year = time.time() - (364 * 24 * 3600)
+        await db.record_artifact_acquired(1, "goblet", just_under_a_year)
+        rows = await db.get_artifact_hold_totals()
+        assert len(rows) == 1
+        assert rows[0]["held_secs"] < 365 * 24 * 3600
+
+    async def test_get_longest_artifact_hold_per_uid_ignores_implausible_row(self, db: Database):
+        # uid=1 has one implausible (epoch-zero) hold and one plausible one —
+        # the reported "longest hold" must be the plausible value, not the
+        # implausible one, and MAX() must not let the bad row leak through.
+        now = time.time()
+        await db.record_artifact_acquired(1, "cursed_relic", 0.0)
+        await db.record_artifact_acquired(1, "goblet", now - 500.0)
+        rows = await db.get_longest_artifact_hold_per_uid()
+        by_uid = {r["uid"]: r["longest_hold_secs"] for r in rows}
+        assert by_uid[1] < 600.0
+
+    async def test_get_longest_artifact_hold_per_uid_omits_uid_when_only_implausible(
+        self, db: Database,
+    ):
+        # If a uid's ONLY hold is implausible, that uid must be absent from
+        # the results entirely — not present with a bogus 56-year value.
+        await db.record_artifact_acquired(1, "cursed_relic", 0.0)
+        rows = await db.get_longest_artifact_hold_per_uid()
+        assert 1 not in {r["uid"] for r in rows}
+
+
+class TestLongestSingleArtifactHolds:
+    """get_longest_single_artifact_holds: ranked individual holds, any artifact."""
+
+    async def test_returns_empty_when_no_holds(self, db: Database):
+        assert await db.get_longest_single_artifact_holds() == []
+
+    async def test_returns_rows_ordered_longest_first(self, db: Database):
+        now = time.time()
+        await db.record_artifact_acquired(1, "goblet", now - 100.0)
+        await db.record_artifact_acquired(2, "book_of_heroes", now - 500.0)
+        await db.record_artifact_acquired(3, "crown", now - 300.0)
+        rows = await db.get_longest_single_artifact_holds()
+        assert [r["uid"] for r in rows] == [2, 3, 1]
+        assert rows[0]["artifact_iid"] == "book_of_heroes"
+        assert rows[0]["held_secs"] >= 495.0
+
+    async def test_limit_caps_row_count(self, db: Database):
+        now = time.time()
+        await db.record_artifact_acquired(1, "goblet", now - 100.0)
+        await db.record_artifact_acquired(2, "book_of_heroes", now - 500.0)
+        rows = await db.get_longest_single_artifact_holds(limit=1)
+        assert len(rows) == 1
+        assert rows[0]["uid"] == 2
+
+    async def test_excludes_implausible_row(self, db: Database):
+        # The epoch-zero row would otherwise dwarf every real hold.
+        now = time.time()
+        await db.record_artifact_acquired(1, "cursed_relic", 0.0)
+        await db.record_artifact_acquired(2, "goblet", now - 50.0)
+        rows = await db.get_longest_single_artifact_holds()
+        assert [r["uid"] for r in rows] == [2]
+        assert rows[0]["artifact_iid"] == "goblet"
+
+
+# ---------------------------------------------------------------------------
+# Spy reports
+# ---------------------------------------------------------------------------
+
+class TestSpyReports:
+    async def test_save_and_get_spy_report(self, db: Database):
+        await db.save_spy_report(1, 99, "Enemy", {"era": "stone", "era_idx": 0, "placed_towers": [], "path_length": 5})
+        reports = await db.get_spy_reports_for(1)
+        assert len(reports) == 1
+        assert reports[0]["defender_uid"] == 99
+        assert reports[0]["defender_name"] == "Enemy"
+        assert reports[0]["era"] == "stone"
+        assert reports[0]["path_length"] == 5
+
+    async def test_get_spy_reports_empty_for_unknown_attacker(self, db: Database):
+        reports = await db.get_spy_reports_for(1)
+        assert reports == []
+
+    async def test_repeated_spy_on_same_target_overwrites(self, db: Database):
+        await db.save_spy_report(1, 99, "Enemy", {"era": "stone", "era_idx": 0, "placed_towers": [], "path_length": 5})
+        await db.save_spy_report(1, 99, "Enemy", {"era": "medieval", "era_idx": 2, "placed_towers": [], "path_length": 8})
+        reports = await db.get_spy_reports_for(1)
+        assert len(reports) == 1
+        assert reports[0]["era"] == "medieval"
+        assert reports[0]["path_length"] == 8
+
+    async def test_multiple_targets_kept_separately(self, db: Database):
+        await db.save_spy_report(1, 99, "Enemy A", {"era": "stone", "era_idx": 0, "placed_towers": [], "path_length": 5})
+        await db.save_spy_report(1, 100, "Enemy B", {"era": "medieval", "era_idx": 2, "placed_towers": [], "path_length": 8})
+        reports = await db.get_spy_reports_for(1)
+        assert len(reports) == 2
+        by_uid = {r["defender_uid"]: r for r in reports}
+        assert by_uid[99]["defender_name"] == "Enemy A"
+        assert by_uid[100]["defender_name"] == "Enemy B"
+
+    async def test_reports_scoped_to_attacker(self, db: Database):
+        await db.save_spy_report(1, 99, "Enemy", {"era": "stone", "era_idx": 0, "placed_towers": [], "path_length": 5})
+        reports = await db.get_spy_reports_for(2)
+        assert reports == []
+
+    async def test_reports_older_than_max_age_are_hidden(self, db: Database):
+        await db.save_spy_report(1, 99, "Enemy", {"era": "stone", "era_idx": 0, "placed_towers": [], "path_length": 5})
+        await db._conn.execute(
+            "UPDATE spy_reports SET created_at = datetime('now', ?) WHERE attacker_uid = 1 AND defender_uid = 99",
+            (f"-{SPY_REPORT_MAX_AGE_DAYS} days -1 second",),
+        )
+        await db._conn.commit()
+        reports = await db.get_spy_reports_for(1)
+        assert reports == []
+
+# Skip-siege abuse detection is now covered by the generic event-window
+# tracker's tests in test_event_window_log.py (kind="skip_siege") — the
+# bespoke record_skip_siege/count_recent_skip_sieges/get_active_skip_siege_abusers
+# methods have been removed.
+
+
+# ---------------------------------------------------------------------------
+# Alliance declarations
+# ---------------------------------------------------------------------------
+
+class TestAllianceDeclarations:
+    async def test_toggle_inserts_then_deletes(self, db: Database):
+        declared = await db.toggle_alliance_declaration(1, 2)
+        assert declared is True
+        declared_to, _ = await db.get_alliance_declarations_for(1)
+        assert declared_to == {2}
+
+        declared = await db.toggle_alliance_declaration(1, 2)
+        assert declared is False
+        declared_to, _ = await db.get_alliance_declarations_for(1)
+        assert declared_to == set()
+
+    async def test_mutual_declarations_visible_both_directions(self, db: Database):
+        await db.toggle_alliance_declaration(1, 2)
+        await db.toggle_alliance_declaration(2, 1)
+
+        declared_to_1, declared_by_1 = await db.get_alliance_declarations_for(1)
+        assert declared_to_1 == {2}
+        assert declared_by_1 == {2}
+
+        declared_to_2, declared_by_2 = await db.get_alliance_declarations_for(2)
+        assert declared_to_2 == {1}
+        assert declared_by_2 == {1}
+
+    async def test_declarations_scoped_per_pair(self, db: Database):
+        await db.toggle_alliance_declaration(1, 2)
+        await db.toggle_alliance_declaration(1, 3)
+
+        declared_to, _ = await db.get_alliance_declarations_for(1)
+        assert declared_to == {2, 3}
+
+        declared_to_2, declared_by_2 = await db.get_alliance_declarations_for(2)
+        assert declared_to_2 == set()
+        assert declared_by_2 == {1}
+
+    async def test_empty_for_unknown_uid(self, db: Database):
+        declared_to, declared_by = await db.get_alliance_declarations_for(42)
+        assert declared_to == set()
+        assert declared_by == set()

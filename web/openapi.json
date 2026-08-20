@@ -354,7 +354,7 @@
     "/api/empires": {
       "get": {
         "summary": "List Empires",
-        "description": "Return all known empires sorted by culture points descending.",
+        "description": "Return all known empires, ranked by culture descending.\n\nMutually-allied empires are grouped into a contiguous block, ranked by\ntheir pooled culture; within a block members are ordered by their own\nculture descending. Each empire still reports its own culture and gets\nan `alliance_group_id` (shared by all members of its alliance, None if\nunallied) so the frontend can draw a boundary around the group, plus\n`alliance_group_culture` (the group's pooled culture total, None if\nunallied) for display next to the empire's own culture.\n\nEach empire also reports `ally_ruler_bonus`: that empire's ruler's\n`ally_effects` (rulers.yaml) — i.e. the bonus the viewer currently\nreceives from the alliance — plus `ally_ruler_name`, the display name\nof that ruler. Both empty/blank unless mutually allied.",
         "operationId": "list_empires_api_empires_get",
         "responses": {
           "200": {
@@ -1736,6 +1736,32 @@
         ]
       }
     },
+    "/api/spy-reports": {
+      "get": {
+        "summary": "Get Spy Reports",
+        "description": "Return the current player's latest-per-target stored spy reports.",
+        "operationId": "get_spy_reports_api_spy_reports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Spy Reports Api Spy Reports Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/attack/{attack_id}/skip-siege": {
       "post": {
         "summary": "Skip Siege",
@@ -2126,6 +2152,52 @@
             }
           }
         }
+      }
+    },
+    "/api/diplomacy/alliance": {
+      "post": {
+        "summary": "Toggle Alliance",
+        "description": "Toggle the current player's alliance declaration toward target_uid.\n\nWhen the toggle completes a mutual (two-way) declaration, both empires\nimmediately pay `alliance_culture_cost` (fraction of their own culture,\nfrom game.yaml) to each other as a one-time alliance formation cost.\n\nWhen the toggle breaks a previously-active (mutual) alliance, the\nbreaking player alone pays `alliance_culture_cost` again — this\namount is destroyed, not transferred to the ex-partner.\n\nRejects completing a new mutual alliance if either side is already at\ntheir alliance capacity (see EmpireService.get_max_alliances — flat\n1 for now, extensible later via a per-empire effect).",
+        "operationId": "toggle_alliance_api_diplomacy_alliance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllianceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Toggle Alliance Api Diplomacy Alliance Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/health": {
@@ -3370,6 +3442,17 @@
   },
   "components": {
     "schemas": {
+      "AllianceRequest": {
+        "properties": {
+          "target_uid": {
+            "type": "integer",
+            "title": "Target Uid",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "AllianceRequest"
+      },
       "ArmyCreateRequest": {
         "properties": {
           "name": {

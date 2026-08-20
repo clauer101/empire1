@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
 from gameserver.engine.empire_service import EmpireService, ruler_critter_stats, RULER_MAX_LEVEL
+from gameserver.main import _load_rulers
 from gameserver.models.empire import Empire, Ruler
+
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -25,6 +29,7 @@ MAJA_CFG = {
     "value_max": 1000,
     "animation": "assets/sprites/ruler/maja",
     "scale_base": 1.0,
+    "ally_effects": {"research_speed_modifier": 0.3},
     "q": [{"research_speed_offset": 0.1}, {"research_speed_offset": 0.2},
           {"research_speed_offset": 0.4}, {"research_speed_offset": 0.8},
           {"research_speed_offset": 1.6}],
@@ -33,10 +38,30 @@ MAJA_CFG = {
     "r": [],
 }
 
+NANDI_CFG = {
+    "speed_min": 0.2,
+    "speed_max": 1.1,
+    "health_min": 20.0,
+    "health_max": 2000.0,
+    "armour_min": 1.0,
+    "armour_max": 19.0,
+    "damage_min": 1.0,
+    "damage_max": 30.0,
+    "value_min": 10,
+    "value_max": 1000,
+    "animation": "assets/sprites/ruler/nandi",
+    "scale_base": 1.0,
+    "ally_effects": {"tile_cost_modifier": 0.05},
+    "q": [],
+    "w": [],
+    "e": [],
+    "r": [],
+}
+
 
 @pytest.fixture
 def service() -> EmpireService:
-    rulers = {"MAJA": MAJA_CFG}
+    rulers = {"MAJA": MAJA_CFG, "NANDI": NANDI_CFG}
     return EmpireService(upgrade_provider=MagicMock(), event_bus=MagicMock(), rulers=rulers)
 
 
@@ -440,6 +465,116 @@ class TestRulerEffectsRestored:
     def test_get_ruler_effects_empty_for_no_ruler(self, service):
         emp = Empire(uid=2, name="No ruler")
         assert service.get_ruler_effects(emp) == {}
+
+
+class TestAllyEffects:
+    def test_no_allies_returns_empty(self, service, empire):
+        assert service.get_ally_effects(empire) == {}
+
+    def test_single_ally_grants_their_ruler_ally_effects(self, service, empire):
+        ally = Empire(uid=2, name="Ally")
+        ally.ruler = Ruler(type="NANDI", name="Nandi")
+        service.register(ally)
+        empire.allied_uids = {2}
+
+        effects = service.get_ally_effects(empire)
+        assert effects == {"tile_cost_modifier": pytest.approx(0.05)}
+
+    def test_multiple_allies_stack_additively(self, service, empire):
+        ally_a = Empire(uid=2, name="AllyA")
+        ally_a.ruler = Ruler(type="NANDI", name="Nandi")
+        ally_b = Empire(uid=3, name="AllyB")
+        ally_b.ruler = Ruler(type="NANDI", name="Nandi2")
+        service.register(ally_a)
+        service.register(ally_b)
+        empire.allied_uids = {2, 3}
+
+        effects = service.get_ally_effects(empire)
+        assert effects["tile_cost_modifier"] == pytest.approx(0.10)
+
+    def test_ally_without_ruler_contributes_nothing(self, service, empire):
+        ally = Empire(uid=2, name="NoRulerAlly")
+        service.register(ally)
+        empire.allied_uids = {2}
+        assert service.get_ally_effects(empire) == {}
+
+    def test_unregistered_ally_uid_is_ignored(self, service, empire):
+        empire.allied_uids = {999}
+        assert service.get_ally_effects(empire) == {}
+
+    def test_recalculate_effects_includes_ally_bonus(self, service, empire):
+        ally = Empire(uid=2, name="Ally")
+        ally.ruler = Ruler(type="NANDI", name="Nandi")
+        service.register(ally)
+        empire.allied_uids = {2}
+
+        service.recalculate_effects(empire)
+        assert empire.effects.get("tile_cost_modifier") == pytest.approx(0.05)
+
+    def test_load_rulers_preserves_ally_effects_from_yaml(self):
+        # Regression: _load_rulers builds an explicit per-field dict and had
+        # silently dropped ally_effects (present in rulers.yaml but absent
+        # from the loader's output), so get_ally_effects always returned {}
+        # in production despite allied_uids being wired up correctly.
+        # Compare against the raw YAML (not hardcoded values) so this test
+        # doesn't need updating every time ruler balance is tuned.
+        import yaml
+        with open(CONFIG_DIR / "rulers.yaml") as f:
+            raw = yaml.safe_load(f)
+        rulers = _load_rulers(CONFIG_DIR / "rulers.yaml")
+        for ruler_id, raw_def in raw.items():
+            expected = raw_def.get("ally_effects") or {}
+            assert rulers[ruler_id]["ally_effects"] == expected, ruler_id
+
+    def test_ally_effects_apply_end_to_end_with_real_loaded_rulers(self, empire):
+        # Full pipeline using the real rulers.yaml loader (not a hand-rolled
+        # fixture dict) — catches loader/schema regressions the other
+        # TestAllyEffects tests (which inject rulers directly) would miss.
+        import yaml
+        with open(CONFIG_DIR / "rulers.yaml") as f:
+            raw = yaml.safe_load(f)
+        expected = raw["LUCIEN"].get("ally_effects") or {}
+
+        rulers = _load_rulers(CONFIG_DIR / "rulers.yaml")
+        real_service = EmpireService(upgrade_provider=MagicMock(), event_bus=MagicMock(), rulers=rulers)
+        real_service.register(empire)
+        ally = Empire(uid=2, name="Ally")
+        ally.ruler = Ruler(type="LUCIEN", name="Lucien")
+        real_service.register(ally)
+        empire.allied_uids = {2}
+
+        effects = real_service.get_ally_effects(empire)
+        assert effects == pytest.approx(expected)
+
+    def test_recalculate_effects_ally_bonus_stacks_with_own_ruler_effects(self, service, empire):
+        # empire's own ruler (MAJA) contributes research_speed_offset via q,
+        # while the ally's ally_effects contributes a different key — both
+        # must be present simultaneously without clobbering each other.
+        empire.ruler.q = 2
+        ally = Empire(uid=2, name="Ally")
+        ally.ruler = Ruler(type="NANDI", name="Nandi")
+        service.register(ally)
+        empire.allied_uids = {2}
+
+        service.recalculate_effects(empire)
+        assert empire.effects.get("research_speed_offset") == pytest.approx(0.2)
+        assert empire.effects.get("tile_cost_modifier") == pytest.approx(0.05)
+
+
+class TestMaxAlliances:
+    def test_default_cap_is_one(self, service, empire):
+        assert service.get_max_alliances(empire) == 1
+
+    def test_game_config_max_alliances_is_honored(self, empire):
+        from gameserver.loaders.game_config_loader import GameConfig
+        svc = EmpireService(upgrade_provider=MagicMock(), event_bus=MagicMock(), game_config=GameConfig(max_alliances=3))
+        assert svc.get_max_alliances(empire) == 3
+
+    def test_future_effect_offset_raises_cap(self, service, empire):
+        # Forward-compat: a building/knowledge/trophy could one day grant
+        # max_alliances_offset — get_max_alliances must already honor it.
+        empire.effects["max_alliances_offset"] = 2.0
+        assert service.get_max_alliances(empire) == 3
 
 
 # ── 9. Ruler level derived from XP correctly ─────────────────────────────────

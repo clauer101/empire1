@@ -437,7 +437,7 @@ def _add_effect_to_yaml(path: Path, iid: str, eff_key: str, value: Any) -> bool:
         lines.insert(end, new_line)
         lines.insert(end, "  effects:\n")
     else:
-        if re.match(r'^\s{2}effects:\s*(\{[^}]*\})?\s*$', lines[effects_idx].rstrip('\r\n')):
+        if re.match(r'^\s{2}effects:\s*(\{[^}]*\}|\[\])?\s*$', lines[effects_idx].rstrip('\r\n')):
             lines[effects_idx] = "  effects:\n"
         insert_at = effects_idx
         for j in range(effects_idx + 1, end):

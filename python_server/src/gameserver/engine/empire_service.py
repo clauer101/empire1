@@ -14,6 +14,7 @@ All methods operate on Empire model objects. No network I/O.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -72,6 +73,7 @@ class EmpireService:
         self._upgrades = upgrade_provider
         self._events = event_bus
         self._empires: dict[int, Empire] = {}  # uid → Empire
+        self._mutation_locks: dict[int, asyncio.Lock] = {}  # uid → lock guarding resource-spending ops
 
         # Game balance constants (fall back to defaults if no config)
         from gameserver.loaders.game_config_loader import GameConfig as _GC
@@ -130,7 +132,23 @@ class EmpireService:
     def unregister(self, uid: int) -> Optional[Empire]:
         """Remove and return an empire from the managed set."""
         self.invalidate_tile_index()
+        self._mutation_locks.pop(uid, None)
         return self._empires.pop(uid, None)
+
+    def mutation_lock(self, uid: int) -> asyncio.Lock:
+        """Return the per-empire lock serializing concurrent resource-spending requests.
+
+        Two requests racing on the same empire (e.g. a duplicated tile-buy
+        submission) can otherwise both pass a check-then-act validation before
+        either writes its result, double-spending gold. Handlers that check
+        state and then mutate resources/hex_map for a single empire must hold
+        this lock for the whole check+mutate section.
+        """
+        lock = self._mutation_locks.get(uid)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._mutation_locks[uid] = lock
+        return lock
 
     def wipe_all_empires(self) -> list[int]:
         """Remove all empires from the in-memory registry. Returns list of removed UIDs."""
@@ -448,13 +466,14 @@ class EmpireService:
         artifact_iid = random.choice(candidates)
         empire.artifacts.append(artifact_iid)
         import datetime as _dt
-        empire.artifact_acquired_at[artifact_iid] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        now = _dt.datetime.now(_dt.timezone.utc)
+        empire.artifact_acquired_at[artifact_iid] = now.isoformat()
         self.recalculate_effects(empire)
         log.info("Artifact granted for era3: uid=%d artifact=%s", empire.uid, artifact_iid)
         if self._database is not None:
             import asyncio as _adb
             _adb.get_running_loop().create_task(
-                self._database.record_artifact_acquired(empire.uid, artifact_iid, 0.0)
+                self._database.record_artifact_acquired(empire.uid, artifact_iid, now.timestamp())
             )
             artifact_item = self._upgrades.get(artifact_iid)
             artifact_name = artifact_item.name if artifact_item else artifact_iid
@@ -508,6 +527,9 @@ class EmpireService:
         # Apply ruler skill effects
         for key, value in self.get_ruler_effects(empire).items():
             empire.effects[key] = empire.effects.get(key, 0.0) + value
+        # Apply ally ruler bonus effects (from mutually-allied partners' rulers)
+        for key, value in self.get_ally_effects(empire).items():
+            empire.effects[key] = empire.effects.get(key, 0.0) + value
         # Apply trophy effects from empire state
         for iid in empire.trophies:
             effects = self._upgrades.get_effects(iid)
@@ -545,6 +567,37 @@ class EmpireService:
                     continue
                 result[key] = result.get(key, 0.0) + float(value)
         return result
+
+    def get_ally_effects(self, empire: Empire) -> dict[str, float]:
+        """Return the combined `ally_effects` granted by each mutually-allied partner's ruler.
+
+        Each allied partner's ruler contributes its flat `ally_effects` dict
+        (defined in rulers.yaml) to this empire — independent of that ruler's
+        skill levels. Stacks additively across multiple allies.
+        """
+        result: dict[str, float] = {}
+        for ally_uid in empire.allied_uids:
+            ally = self._empires.get(ally_uid)
+            if ally is None:
+                continue
+            ruler_type = ally.ruler.type
+            if not ruler_type or ruler_type not in self._rulers:
+                continue
+            ally_effects = self._rulers[ruler_type].get("ally_effects") or {}
+            for key, value in ally_effects.items():
+                result[key] = result.get(key, 0.0) + float(value)
+        return result
+
+    def get_max_alliances(self, empire: Empire) -> int:
+        """Return how many simultaneous mutual alliance partners this empire may have.
+
+        Currently a flat global cap from game.yaml (`max_alliances`, default 1).
+        Future: buildings/knowledge/trophies could raise this per-empire via an
+        effect offset (e.g. `empire.get_effect("max_alliances_offset", 0.0)`,
+        added to the base here) once such content exists.
+        """
+        base = getattr(self._gc, "max_alliances", 1)
+        return int(base + empire.get_effect("max_alliances_offset", 0.0))
 
     def _recalculate_max_life(self, empire: Empire) -> None:
         """Update empire.max_life based on the max_life_modifier effect."""

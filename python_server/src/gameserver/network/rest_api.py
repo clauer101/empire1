@@ -30,6 +30,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from gameserver.engine.bot_detection import REST_ACTION_PREFIXES
 from gameserver.network.jwt_auth import verify_token
 from gameserver.models.messages import GameMessage
 from gameserver.util.eras import ERA_ORDER as _ERA_KEYS, ERA_LABELS_EN as _ERA_LABELS_EN  # noqa: F401 — re-exported for routers
@@ -313,14 +314,7 @@ def create_app(services: "Services") -> FastAPI:
         if path == "/api/empire/summary":
             bd.record_reaction_event(uid)
         # Reaction action — any state-mutating call after a summary fetch
-        elif method in ("POST", "PUT") and any(
-            path.startswith(p) for p in (
-                "/api/empire/build", "/api/empire/citizen",
-                "/api/map/buy-tile", "/api/empire/ruler",
-                "/api/army", "/api/attack", "/api/spy-attack",
-                "/api/item/buy-upgrade",
-            )
-        ):
+        elif method in ("POST", "PUT") and any(path.startswith(p) for p in REST_ACTION_PREFIXES):
             bd.record_action(uid)
         return response
 
@@ -332,6 +326,7 @@ def create_app(services: "Services") -> FastAPI:
     from gameserver.network.routers.messages import make_router as _messages_router
     from gameserver.network.routers.replays import make_router as _replays_router
     from gameserver.network.routers.admin import make_router as _admin_router
+    from gameserver.network.routers.diplomacy import make_router as _diplomacy_router
 
     app.include_router(_auth_router(services, limiter))
     app.include_router(_empire_router(services, limiter))
@@ -340,6 +335,7 @@ def create_app(services: "Services") -> FastAPI:
     app.include_router(_messages_router(services, limiter))
     app.include_router(_replays_router(services))
     app.include_router(_admin_router(services), include_in_schema=False)
+    app.include_router(_diplomacy_router(services, limiter))
 
     # WebSocket endpoint — stays here
     @app.websocket("/ws")

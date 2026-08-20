@@ -96,7 +96,7 @@ WARRIOR:
   spawn_on_death: null
   scale: 0.9
   animation: assets/sprites/critters/warrior
-  requirements: [CRAFTSMANSHIP, GRANARY]
+  requirements: [CRAFTSMANSHIP]
 
 CART:
   critter_type: carrier
@@ -116,7 +116,7 @@ CART:
   spawn_on_death: {CLUBMAN: 5}
   scale: 2.0
   animation: assets/sprites/critters/cart
-  requirements: [DOMESTICATION, WORK_SHOP, POTTERY]
+  requirements: [DOMESTICATION, POTTERY]
 
 # ============================================================
 #   BRONZE_AGE  (Effort 1.500 – 8.000)
@@ -140,7 +140,7 @@ BOWMAN:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/bowman
-  requirements: [CRAFTSMANSHIP, BOW_MAKER, COPPER_BRONZE]
+  requirements: [CRAFTSMANSHIP, COPPER_BRONZE]
 
 SWORDMAN:
   critter_type: tank
@@ -160,7 +160,7 @@ SWORDMAN:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/swordman
-  requirements: [COPPER_BRONZE, SWORD_MAKER]
+  requirements: [COPPER_BRONZE]
 
 CHARIOT:
   critter_type: fast
@@ -224,7 +224,7 @@ HORSEMAN_SLOW:
   spawn_on_death: null
   scale: 1.8
   animation: assets/sprites/critters/horseman_slow
-  requirements: [HORSEBACK_RIDING, STABLES]
+  requirements: [HORSEBACK_RIDING]
 
 HORSEMAN_FAST:
   critter_type: fast
@@ -244,7 +244,7 @@ HORSEMAN_FAST:
   spawn_on_death: null
   scale: 1.8
   animation: assets/sprites/critters/horseman_fast
-  requirements: [HORSEBACK_RIDING, STABLES]
+  requirements: [HORSEBACK_RIDING]
 
 LEGIONARY:
   critter_type: health
@@ -264,7 +264,7 @@ LEGIONARY:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/legionary
-  requirements: [FORGE, LORE_COLLECTION, MECHANICS]
+  requirements: [MECHANICS]
 
 LARGE_CART:
   critter_type: carrier
@@ -284,7 +284,7 @@ LARGE_CART:
   spawn_on_death: {PIKENEER: 3}
   scale: 2.0
   animation: assets/sprites/critters/large_cart
-  requirements: [BOOT_CAMP, IRON]
+  requirements: [IRON]
 
 THE_SWORDMASTER:
   critter_type: boss
@@ -304,7 +304,7 @@ THE_SWORDMASTER:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/the_swordmaster
-  requirements: [IRON, FENCING_SCHOOL]
+  requirements: [IRON]
 
 # ============================================================
 #   MEDIEVAL  (Effort 30.000 – 130.000)
@@ -368,7 +368,7 @@ SAMURAI:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/samurai
-  requirements: [TACTICS, FENCING_SCHOOL]
+  requirements: [TACTICS]
 
 SIEGE_RAM:
   critter_type: carrier
@@ -388,7 +388,7 @@ SIEGE_RAM:
   spawn_on_death: {CRUSADER: 3}
   scale: 2.0
   animation: assets/sprites/critters/siege_ram
-  requirements: [MECHANICS, THE_KINGS_LAIR]
+  requirements: [MECHANICS]
 
 CONDOTTERI:
   critter_type: health
@@ -452,7 +452,7 @@ THE_KING:
   spawn_on_death: null
   scale: 1.2
   animation: assets/sprites/critters/the_king
-  requirements: [PARLIAMENT, CONSTITUTION]
+  requirements: [CONSTITUTION]
 
 NINJA:
   critter_type: fast
@@ -472,7 +472,7 @@ NINJA:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/ninja
-  requirements: [STEALTH_SECRECY, SECRET_ORDER]
+  requirements: [STEALTH_SECRECY]
 
 MUSKETEER:
   critter_type: bulk
@@ -492,7 +492,7 @@ MUSKETEER:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/musketeer
-  requirements: [CONSTITUTION, GUNSMITH]
+  requirements: [CONSTITUTION]
 
 DRAGOONER:
   critter_type: tank
@@ -512,7 +512,7 @@ DRAGOONER:
   spawn_on_death: null
   scale: 1.9
   animation: assets/sprites/critters/dragooner
-  requirements: [STRATEGIC_WARFARE,  GUNSMITH]
+  requirements: [STRATEGIC_WARFARE]
 
 CARGO:
   critter_type: carrier
@@ -544,7 +544,7 @@ SOLDIER:
   name: "Soldier"
   description: "Industrial-era infantry with solid health and armor. The dependable backbone of modern assaults."
   speed: 0.75
-  health: 189
+  health: 201
   value: 250
   damage: 1
   armour: 5
@@ -556,7 +556,7 @@ SOLDIER:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/soldier
-  requirements: [BARRACKS, CONSTITUTION, BALLISTICS]
+  requirements: [CONSTITUTION, BALLISTICS]
 
 MOTORBIKE:
   critter_type: fast
@@ -564,7 +564,7 @@ MOTORBIKE:
   name: "Motorbike"
   description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
   speed: 1.5
-  health: 86
+  health: 97
   value: 264
   damage: 3
   armour: 4
@@ -576,7 +576,7 @@ MOTORBIKE:
   spawn_on_death: null
   scale: 2.4
   animation: assets/sprites/critters/motorbike
-  requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
+  requirements: [COMBUSTION_ENGINE]
 
 SMALL_TANK:
   critter_type: tank
@@ -596,7 +596,7 @@ SMALL_TANK:
   spawn_on_death: null
   scale: 2.0
   animation: assets/sprites/critters/small_tank
-  requirements: [COMBUSTION_ENGINE, FACTORY]
+  requirements: [COMBUSTION_ENGINE]
 
 TRANSPORTER:
   critter_type: carrier
@@ -616,7 +616,7 @@ TRANSPORTER:
   spawn_on_death: {SOLDIER: 8}
   scale: 2.0
   animation: assets/sprites/critters/transporter
-  requirements: [COMBUSTION_ENGINE, VEHICLE_WORKSHOP]
+  requirements: [COMBUSTION_ENGINE]
 
 # ============================================================
 #   MODERN  (Effort 2.000.000 – 5.300.000)
@@ -660,7 +660,7 @@ SPECOPS:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/specops
-  requirements: [SPECIAL_FORCES, ELITE_ACADEMY]
+  requirements: [SPECIAL_FORCES]
 
 HELI:
   critter_type: fast
@@ -680,7 +680,7 @@ HELI:
   spawn_on_death: {SOLDIER: 2}
   scale: 2.0
   animation: assets/sprites/critters/heli
-  requirements: [AVIATION, HANGAR]
+  requirements: [AVIATION]
 
 THE_GENERAL:
   critter_type: boss
@@ -700,7 +700,7 @@ THE_GENERAL:
   spawn_on_death: null
   scale: 1.0
   animation: assets/sprites/critters/the_general
-  requirements: [RECRUITING_OFFICE, MILITARY_SERVICE]
+  requirements: [MILITARY_SERVICE]
 
 # ============================================================
 #   FUTURE  (Effort 50.000.000 – 100.000.000)
@@ -732,11 +732,11 @@ MECH_WARRIOR:
   era: future
   name: "Mech Warrior"
   description: "A two-slot combat mech with heavy armor that releases Special Ops on destruction. The pinnacle of future warfare."
-  speed: 0.5
-  health: 400
+  speed: 0.65
+  health: 937
   value: 3000
   damage: 4
-  armour: 18
+  armour: 24
   slots: 3
   time_between: 2000
   is_boss: false

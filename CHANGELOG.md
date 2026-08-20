@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-08-15
+
+### Season 3 wrap-up: The Rise of the Robots
+
+Season 3 has come to a close! Final standings by culture:
+
+1. 🥇 **Zornbolds** — ~115.5M culture. Zornbolds also triggered the season-end
+   criterion outright, closing out the season on their own terms.
+2. 🥈 Empire strikes back — ~94.0M culture
+3. 🥉 500: InternAal Server Error — ~91.6M culture
+4. Proxmoxia — ~84.0M culture
+5. Limperium — ~51.6M culture
+
+The final stretch got a real jolt of energy from the **Mech Warrior**, the
+future-era heavy tank unit — 937 HP, 24 armor, and two Special Ops released on
+death. It turned into a serious wall for attackers to chew through, and a
+serious hammer for whoever fielded it well. Mech Warrior-driven pushes were a
+big part of what kept the final rally so contested and unpredictable right up
+to the wire.
+
+To everyone who built, defended, raided, and pushed through Season 3 — thank
+you. Whether you were fighting for first place or just trying to survive one
+more wave, you're what made this season worth playing. Season 4, "Love and
+Betrayal," kicks off soon. See you on the battlefield.
+
 ## 2026-07-16
 
 ### Bully protection: repeated attacks on the same defender now pay off less

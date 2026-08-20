@@ -340,10 +340,12 @@ async def _run_battle_task(
                     )
                     break
 
+        critter_gold_bonus = _apply_critter_gold_bonus(battle)
+
         if attacker_won or stolen_artifacts or loot:
-            await battle_svc.send_summary(battle, send_fn, loot, ruler_xp_gained, pvp_gold_bonus, ruler_xp_pvp_bonus, artifact_steal_chances=steal_chances, army_steal_multipliers=army_multipliers)
+            await battle_svc.send_summary(battle, send_fn, loot, ruler_xp_gained, pvp_gold_bonus, ruler_xp_pvp_bonus, artifact_steal_chances=steal_chances, army_steal_multipliers=army_multipliers, critter_gold_bonus=critter_gold_bonus)
         elif not _summary_sent:
-            await battle_svc.send_summary(battle, send_fn, loot={}, ruler_xp_gained=ruler_xp_gained, pvp_gold_bonus=pvp_gold_bonus, ruler_xp_pvp_bonus=ruler_xp_pvp_bonus, artifact_steal_chances=steal_chances, army_steal_multipliers=army_multipliers)
+            await battle_svc.send_summary(battle, send_fn, loot={}, ruler_xp_gained=ruler_xp_gained, pvp_gold_bonus=pvp_gold_bonus, ruler_xp_pvp_bonus=ruler_xp_pvp_bonus, artifact_steal_chances=steal_chances, army_steal_multipliers=army_multipliers, critter_gold_bonus=critter_gold_bonus)
 
         from gameserver.models.attack import AttackPhase
         from gameserver.engine.ai_service import AI_UID
@@ -450,6 +452,10 @@ async def _run_battle_task(
                 "🛡 Anti-farm bonus: 3x gold (this attacker has beaten you too often recently)\n"
                 if set(battle.attacker_uids) & battle.farming_attacker_uids else ""
             )
+            critter_gold_bonus_line = (
+                f"🐜 Critter Gold Bonus: +{int(critter_gold_bonus)} gold\n"
+                if critter_gold_bonus > 0 else ""
+            )
             life_lost = float(battle.defender_losses.get("life", 0.0))
             life_lost_line = f"❤ Life lost:  -{life_lost:g}\n" if life_lost > 0 else ""
             def_result = "🛡 You Won!" if defender_won else "🛡 You Lost!"
@@ -467,6 +473,7 @@ async def _run_battle_task(
                 f"💰 Earned:    +{int(battle.defender_gold_earned)} gold\n"
                 f"{pvp_bonus_line}"
                 f"{antifarm_bonus_line}"
+                f"{critter_gold_bonus_line}"
                 f"{loot_def_lines}"
                 f"⏱ Duration:  {dur_str}\n"
                 f"────────────────────\n"
@@ -568,6 +575,26 @@ async def _run_battle_task(
         _core_mod._battle_tasks.pop(bid, None)
         if battle.defender:
             _get_active_battles().pop(battle.defender.uid, None)
+
+
+def _apply_critter_gold_bonus(battle: "BattleState") -> float:
+    """Award the defender a bonus of `critter_gold_modifier × defender_gold_earned`.
+
+    `critter_gold_modifier` is a knowledge-unlocked empire effect (see
+    docs/EFFECTSGUIDE.md). Returns the bonus amount granted (0 if none).
+    """
+    if battle.defender is None or battle.defender_gold_earned <= 0:
+        return 0.0
+    modifier = battle.defender.effects.get("critter_gold_modifier", 0.0)
+    if not modifier:
+        return 0.0
+    bonus = modifier * battle.defender_gold_earned
+    battle.defender.resources["gold"] = battle.defender.resources.get("gold", 0.0) + bonus
+    log.info(
+        "[battle] bid=%d critter gold bonus: +%.1f for defender uid=%d (modifier=%.3f)",
+        battle.bid, bonus, battle.defender.uid, modifier,
+    )
+    return bonus
 
 
 def _award_ruler_xp(
@@ -1105,6 +1132,9 @@ def _create_spy_arrived_handler() -> Callable[..., Any]:
 
         from gameserver.network.handlers.military import _build_spy_report
         report_text, report_data = _build_spy_report(defender, svc, attacker=attacker_empire)
+
+        if svc.database:
+            await svc.database.save_spy_report(attacker_uid, defender_uid, defender.name, report_data)
 
         siege_duration = (
             svc.attack_service._calculate_siege_duration(attacker_uid, defender_uid)

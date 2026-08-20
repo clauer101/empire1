@@ -8,7 +8,10 @@
 3. Citizens are upgraded whenever comfortably affordable.
 4. Ruler skill-ups are spent as they become available.
 5. Savings goals are respected: queue filling only spends gold above an active
-   goal (see bot/savings.py); the goal-owning planner bypasses the cap.
+   goal (see bot/savings.py); the goal-owning planner bypasses the cap. An
+   empire with zero passive gold income (base_gold <= 0) also bypasses the
+   cap for build-queue purchases — without any income a savings goal can
+   never be reached, so bootstrapping an economy building takes priority.
 """
 
 from __future__ import annotations
@@ -266,11 +269,18 @@ def baseline_options(ctx: BotContext) -> list[Option]:
                     description=f"baseline research {iid}",
                     run=lambda api, iid=iid: api.build(iid)))
 
-    # 3. Build queue — prefer economic-effect buildings
+    # 3. Build queue — prefer economic-effect buildings. An empire with no
+    # passive gold income (base_gold <= 0) can never out-earn a savings goal
+    # it hasn't funded yet (e.g. attack's army goal) — bypass the cap so it
+    # can bootstrap an econ building instead of deadlocking on "save for X"
+    # forever. Once base_gold > 0 the normal cap applies again.
     if not ctx.summary.get("build_queue"):
+        no_income = float(ctx.summary.get("base_gold", 0.0) or 0.0) <= 0.0
         buildings = ctx.items.get("buildings", {})
-        econ_iid = cheapest_affordable(buildings, ctx, _has_econ_effect)
-        iid = econ_iid or cheapest_affordable(buildings, ctx)
+        econ_iid = cheapest_affordable(buildings, ctx, _has_econ_effect,
+                                        respect_savings=not no_income)
+        iid = econ_iid or cheapest_affordable(buildings, ctx,
+                                               respect_savings=not no_income)
         if iid:
             item = buildings.get(iid, {})
             price = float((item.get("costs") or {}).get("gold", 0.0))

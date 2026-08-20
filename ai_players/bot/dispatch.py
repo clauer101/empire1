@@ -79,9 +79,20 @@ def choose_action(ctx: BotContext, config: dict, active_type: str, *,
     # savings goal (if it asks for one) — every lower-priority priced option
     # must respect that reserved gold. Free options are never gated (checked
     # first, above, and never compete for gold anyway).
-    goal_owner = next((o for o in ranked
-                       if o.price > 0 and not ctx.affordable_option(o)
-                       and o.saves_for > 0 and o.goal_meta), None)
+    #
+    # Exception: an empire with zero passive gold income (base_gold <= 0)
+    # can never out-earn a goal it hasn't funded yet (e.g. attack's army
+    # goal on a fresh empire with no buildings) — a HIGHER-priority option
+    # that's still affordable right now (typically a baseline econ building)
+    # must not be starved by a LOWER-priority goal reserving gold for
+    # something that will never accumulate on its own. Skip goal-setting
+    # entirely in that case so the affordable, higher-priority option below
+    # can run and bootstrap income.
+    no_income = float(ctx.summary.get("base_gold", 0.0) or 0.0) <= 0.0
+    goal_owner = None if no_income else next(
+        (o for o in ranked
+         if o.price > 0 and not ctx.affordable_option(o)
+         and o.saves_for > 0 and o.goal_meta), None)
     saving = False
     if goal_owner is not None:
         if get_goal(ctx.memory, ctx.strategy) is None:
