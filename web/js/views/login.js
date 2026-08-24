@@ -3,6 +3,8 @@
  */
 
 import { rest } from '../rest.js';
+import { formatEffect } from '../i18n.js';
+import { fmtEffectValue } from '../lib/format.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -45,39 +47,60 @@ const _STRUCTURES = [
   'ballista_tower',
 ];
 
-const _RULERS = [
-  { id: 'maja', name: 'Maja Soulstone', description: 'A brilliant archivist and time-scholar. Maja accelerates research and makes every discovery more rewarding — the ideal ruler for empires built on knowledge.', skills: [
-    { name: 'Chrono-Scholar\'s Insight', description: 'Boosts your research speed.' },
-    { name: 'Scholar\'s Bounty', description: 'Grants a gold lump sum for completing research.' },
-    { name: 'Erudite Synergy', description: 'Enhances the productivity of scientists.' },
-    { name: 'Grand Architect\'s Decree', description: 'Reduces the cost of workshop tech.' },
-  ]},
-  { id: 'nandi', name: 'Nandi', description: 'A charismatic cultural patron who inspires the people. Nandi amplifies citizen output and floods the empire with culture — the soul of a flourishing civilization.', skills: [
-    { name: 'Voice of the Commons', description: 'Reduces the cost of citizen upgrades.' },
-    { name: 'Symphony of Toil', description: 'Increases the effect of citizens.' },
-    { name: 'Cultural Footprint', description: 'Reduces the costs of acquiring new land.' },
-    { name: 'Grand Apotheosis', description: 'Grants a cultural blessing to your empire.' },
-  ]},
-  { id: 'lucien', name: 'Lucien Duskbane', description: 'A cunning merchant lord and master of commerce. Lucien turns every trade into gold and every building into an investment — the ruler for those who value wealth above all.', skills: [
-    { name: 'Golden Interest', description: 'Increases the gold you gain.' },
-    { name: 'Guild Monopoly', description: 'Reduces the cost of buildings.' },
-    { name: 'Tribute of the Masses', description: 'Scientists and artists generate gold.' },
-    { name: 'Grand Bailout', description: 'Provides a large lump sum of gold when a skill is upgraded.' },
-  ]},
-  { id: 'borin', name: 'Borin Stonehelm', description: 'A battle-hardened dwarf lord and master builder. Borin turns defense into dominance — reinforcing towers, reclaiming gold from sold structures, and outlasting every siege.', skills: [
-    { name: 'Juggernauts Resolve', description: 'Largely regenerate life during battles.' },
-    { name: 'Scrap and Salvage', description: 'Increases the refund you receive when selling towers.' },
-    { name: 'Undying Defiance', description: 'Restores life after suffering a defeat.' },
-    { name: 'Fortress Bastion', description: 'Increases the delay between incoming waves.' },
-  ]},
-  { id: 'alric', name: 'Alric Shadowmere', description: 'A shadowy tactician who moves armies like shadows across the map. Alric expands territory cheaply and strikes faster than any opponent can prepare for.', skills: [
-    { name: 'Shadow Conscription', description: 'Reduces the cost of army slots.' },
-    { name: 'Umbral Evolution', description: 'Reduces the cost of upgrading waves to the next era.' },
-    { name: 'Grand Larceny', description: 'Increases your chances to steal an artifact.' },
-    { name: 'Desolated Siege', description: 'Decreases the siege time of attacked empires.' },
-  ]},
-];
+/**
+ * Fill the ruler carousel from the public catalog.
+ *
+ * Everything shown — names, descriptions, skill names and the effect values per
+ * level — comes from `rulers.yaml` via `GET /api/empire/rulers`. The landing
+ * page used to carry its own hardcoded copy, which drifted out of sync when the
+ * ruler skills were reshuffled and advertised effects the skills no longer had.
+ */
+async function _loadRulers() {
+  const track = container.querySelector('#lp-rulers-track');
+  if (!track) return;
+  let rulers;
+  try {
+    const resp = await rest.getPublicRulers();
+    rulers = Object.entries(resp?.rulers || {});
+  } catch (_) {
+    rulers = [];
+  }
+  // Nothing to show (offline, or config empty): drop the whole section rather
+  // than leaving an empty carousel with arrows that do nothing.
+  if (!rulers.length) {
+    container.querySelector('.lp-rulers-wrap')?.remove();
+    container.querySelector('.lp-section-title-rulers')?.remove();
+    return;
+  }
 
+  const SKILL_KEYS = ['q', 'w', 'e', 'r'];
+
+  /** Describe a skill by what its effects actually do, at max level. */
+  function _skillSummary(skill) {
+    const levels = Array.isArray(skill?.levels) ? skill.levels : [];
+    const top = levels[levels.length - 1] || {};
+    return Object.entries(top).map(([k, v]) =>
+      `${formatEffect(k, v).replace(/ \(.*\)$/, '')} ${fmtEffectValue(k, v)}`
+    ).join(', ');
+  }
+
+  track.innerHTML = rulers.map(([, def]) => {
+    const skills = SKILL_KEYS.map((sk) => {
+      const s = def.skills?.[sk];
+      if (!s?.name) return '';
+      const summary = _skillSummary(s);
+      return `<div class="lp-ruler-skill"><span class="lp-skill-name">${s.name}</span>${summary ? ` — ${summary}` : ''}</div>`;
+    }).join('');
+    return `
+      <div class="lp-ruler-card" style="background-image:url('${def.splash || ''}')">
+        <div class="lp-ruler-info">
+          <div class="lp-ruler-name">${def.name || ''}</div>
+          <div class="lp-ruler-desc">${def.description || ''}</div>
+          <div class="lp-ruler-skills">${skills}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
 
 function _critterEl([name, ext, ratio]) {
   const h = 60;
@@ -169,21 +192,12 @@ function init(el, _api, _state) {
       <div class="lp-struct-row">${structureRow}</div>
 
       <!-- ── Rulers ───────────────────────────── -->
-      <div class="lp-section-title">Choose your Ruler</div>
+      <div class="lp-section-title lp-section-title-rulers">Choose your Ruler</div>
       <div class="lp-rulers-wrap">
         <button class="lp-rulers-arrow lp-rulers-arrow--prev" aria-label="Previous ruler">&#8249;</button>
-        <div class="lp-rulers" id="lp-rulers-track">
-          ${_RULERS.map(r => `
-          <div class="lp-ruler-card" style="background-image:url('/assets/sprites/ruler/${r.id}/${r.id}_splash.webp')">
-            <div class="lp-ruler-info">
-              <div class="lp-ruler-name">${r.name}</div>
-              <div class="lp-ruler-desc">${r.description}</div>
-              <div class="lp-ruler-skills">
-                ${r.skills.map(s => `<div class="lp-ruler-skill"><span class="lp-skill-name">${s.name}</span> — ${s.description}</div>`).join('')}
-              </div>
-            </div>
-          </div>`).join('')}
-        </div>
+        <!-- Filled by _loadRulers() from GET /api/empire/rulers — never hardcode
+             ruler data here, it silently goes stale when rulers.yaml changes. -->
+        <div class="lp-rulers" id="lp-rulers-track"></div>
         <button class="lp-rulers-arrow lp-rulers-arrow--next" aria-label="Next ruler">&#8250;</button>
       </div>
 
@@ -220,6 +234,9 @@ function init(el, _api, _state) {
   container.querySelector('.lp-rulers-arrow--next')?.addEventListener('click', () => {
     track?.scrollBy({ left: cardWidth(), behavior: 'smooth' });
   });
+  // Fire-and-forget: the carousel fills in once the catalog arrives. The arrow
+  // handlers above read the cards lazily, so they work either way.
+  _loadRulers();
 
   container.querySelector('#login-btn').addEventListener('click', onLogin);
   container.querySelector('#login-pwd').addEventListener('keydown', (e) => {

@@ -24,7 +24,10 @@ function init(el, _api, state) {
 }
 
 async function enter() {
-  pageTitle.set('👑 Ruler');
+  pageTitle.set('👑 Ruler', {
+    id: 'ruler-codex-btn', title: 'Compare all rulers',
+    onClick: () => _showRulerCodexOverlay(st?.items?.rulers),
+  });
   _renderLoading();
   await _load();
   if (window.innerWidth <= 600) {
@@ -275,47 +278,107 @@ function _render(summary, rulersCatalog) {
   _bindEvents(rulersCatalog);
 }
 
-function _showChangeRulerOverlay(rulersCatalog) {
-  document.querySelector('.change-ruler-confirm-overlay')?.remove();
+/**
+ * Read-only codex of every ruler: each skill with its effects broken down by
+ * level. Purely informational — it sends nothing to the server, so it is the
+ * safe way to compare rulers without touching your own.
+ *
+ * Every value is derived from the live `rulers` catalog (game config, served by
+ * the items endpoint). Nothing here is hardcoded — adding a ruler, a skill or a
+ * level in `rulers.yaml` shows up here with no frontend change.
+ */
+function _showRulerCodexOverlay(rulersCatalog) {
+  document.querySelector('.ruler-codex-overlay')?.remove();
+  const rulers = Object.entries(rulersCatalog || {});
+  if (!rulers.length) return;
+
+  const SKILL_KEYS = ['q', 'w', 'e', 'r'];
+
+  /** One skill → a table of effect rows × level columns. */
+  function _skillTableHtml(skill) {
+    const levels = Array.isArray(skill?.levels) ? skill.levels : [];
+    if (!levels.length) return '';
+    // Union of effect keys across all levels, in first-seen order — a level may
+    // introduce a key the earlier ones don't have (e.g. Alric's ultimate).
+    const keys = [];
+    levels.forEach((lvl) => Object.keys(lvl || {}).forEach((k) => {
+      if (!keys.includes(k)) keys.push(k);
+    }));
+    if (!keys.length) return '';
+
+    const head = levels.map((_, i) =>
+      `<th style="padding:3px 6px;text-align:right;color:#888;font-weight:600;font-size:0.9em;white-space:nowrap">Lv ${i + 1}</th>`
+    ).join('');
+    const rows = keys.map((k) => {
+      const label = formatEffect(k, levels.find((l) => l && l[k] !== undefined)?.[k]).replace(/ \(.*\)$/, '');
+      const cells = levels.map((lvl) => {
+        const v = lvl?.[k];
+        return v === undefined
+          ? '<td style="padding:3px 6px;text-align:right;color:#555">–</td>'
+          : `<td style="padding:3px 6px;text-align:right;color:#a5d6a7;white-space:nowrap">${fmtEffectValue(k, v)}</td>`;
+      }).join('');
+      return `<tr><td style="padding:3px 8px 3px 0;color:#ccc">${label}</td>${cells}</tr>`;
+    }).join('');
+
+    return `<div style="overflow-x:auto;margin-top:4px">
+      <table style="border-collapse:collapse;font-size:0.8em;width:100%">
+        <thead><tr><th style="padding:3px 8px 3px 0;text-align:left;color:#888;font-weight:600;font-size:0.9em">Effect</th>${head}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  function _rulerSectionHtml(iid, def) {
+    const skills = SKILL_KEYS.map((sk) => {
+      const s = def.skills?.[sk];
+      if (!s) return '';
+      const table = _skillTableHtml(s);
+      if (!table) return '';
+      return `<div style="margin-top:12px">
+        <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+          <span style="font-size:0.7em;color:#666;text-transform:uppercase;letter-spacing:1px;border:1px solid #444;border-radius:3px;padding:1px 5px">${sk}</span>
+          <span style="color:#ffa726;font-weight:700;font-size:0.9em">${s.name || sk.toUpperCase()}</span>
+        </div>
+        ${s.description ? `<div style="color:#888;font-size:0.8em;line-height:1.4;margin-top:3px">${s.description}</div>` : ''}
+        ${table}
+      </div>`;
+    }).join('');
+
+    const c = def.critter;
+    const combat = c ? `<div style="margin-top:12px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:0.7em;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Battle stats — level 1 → max</div>
+        <div style="display:grid;grid-template-columns:auto auto;gap:2px 14px;font-size:0.8em;width:fit-content">
+          <span style="color:#aaa">❤ HP</span><span style="color:#ddd">${c.health_min} → ${c.health_max}</span>
+          <span style="color:#aaa">🛡 Armour</span><span style="color:#ddd">${c.armour_min} → ${c.armour_max}</span>
+          <span style="color:#aaa">⚡ Speed</span><span style="color:#ddd">${c.speed_min} → ${c.speed_max}</span>
+          <span style="color:#aaa">⚔ Damage</span><span style="color:#ddd">${c.damage_min} → ${c.damage_max}</span>
+        </div>
+      </div>` : '';
+
+    return `<div class="panel" style="padding:14px;margin-bottom:12px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        ${def.splash ? `<img src="${def.splash}" alt="" style="width:64px;height:64px;object-fit:cover;object-position:top;border-radius:6px;flex:0 0 auto">` : ''}
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:1.05em;color:#fff">${def.name || iid}</div>
+          ${def.description ? `<div style="color:#aaa;font-size:0.82em;line-height:1.45;margin-top:3px">${def.description}</div>` : ''}
+        </div>
+      </div>
+      ${skills}
+      ${combat}
+    </div>`;
+  }
+
   const overlay = document.createElement('div');
-  overlay.className = 'change-ruler-confirm-overlay tt-overlay visible';
+  overlay.className = 'ruler-codex-overlay prod-overlay';
   overlay.innerHTML = `
-    <div class="tt-panel" style="max-width:340px">
-      <button class="tt-close">&times;</button>
-      <div class="tt-dp-name" style="color:#ffa726">👑 Change Ruler</div>
-      <div class="tt-dp-desc" style="margin-top:10px;font-style:normal;line-height:1.7;font-size:0.92em">
-        <p style="margin-bottom:10px">Changing your ruler will permanently remove your current ruler and <strong style="color:#ef5350">reset all XP, levels, and skill points</strong>.</p>
-        <p>You can then select a new ruler from the available options.</p>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button id="change-ruler-cancel" style="flex:1;background:#4fc3f7;color:#111;border:none;border-radius:4px;padding:8px 0;font-weight:700;cursor:pointer">Cancel</button>
-        <button id="change-ruler-confirm" style="flex:1;background:#333;color:#ccc;border:1px solid #555;border-radius:4px;padding:8px 0;cursor:pointer">Change Ruler</button>
-      </div>
-      <div id="change-ruler-error" style="color:#ef9a9a;font-size:0.85em;margin-top:8px;min-height:1em;text-align:center"></div>
-    </div>
-  `;
+    <div class="prod-overlay-box" style="max-width:min(96vw,860px);width:96vw;max-height:90vh;overflow-y:auto">
+      <button class="prod-overlay-close" title="Close">✕</button>
+      <div style="font-weight:bold;font-size:1.05em;margin-bottom:4px">🔍 Ruler Codex</div>
+      <div style="color:#888;font-size:0.82em;margin-bottom:14px">Every ruler's skills and what each level grants. Viewing only — nothing here changes your empire.</div>
+      ${rulers.map(([iid, def]) => _rulerSectionHtml(iid, def)).join('')}
+    </div>`;
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.classList.contains('tt-close')) overlay.remove();
-  });
-  overlay.querySelector('#change-ruler-cancel').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#change-ruler-confirm').addEventListener('click', async () => {
-    const btn = overlay.querySelector('#change-ruler-confirm');
-    const errEl = overlay.querySelector('#change-ruler-error');
-    btn.disabled = true;
-    errEl.textContent = '';
-    try {
-      const resp = await rest.dismissRuler();
-      if (resp?.success) {
-        overlay.remove();
-        showChooseRulerOverlay(rulersCatalog, _load);
-      } else {
-        errEl.textContent = resp?.error || 'Could not change ruler';
-        btn.disabled = false;
-      }
-    } catch (e) {
-      errEl.textContent = e.message;
-      btn.disabled = false;
-    }
+    if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) overlay.remove();
   });
   document.body.appendChild(overlay);
 }
@@ -398,7 +461,10 @@ function _bindEvents(rulersCatalog) {
   container.querySelectorAll('#change-ruler-link').forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      _showChangeRulerOverlay(rulersCatalog);
+      // Opens the picker read-only: the current ruler is only replaced once
+      // the player confirms a new one inside the overlay (single atomic call).
+      // Cancel / ✕ / backdrop therefore leave the existing ruler untouched.
+      showChooseRulerOverlay(rulersCatalog, _load, { replace: true });
     });
   });
   container.querySelectorAll('#select-aura-link').forEach((btn) => {

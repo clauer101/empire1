@@ -1,5 +1,8 @@
-"""Strategy model: two simple rules, nothing else.
+"""Strategy model: one opening rule and two running rules, nothing else.
 
+0. A bot with no active strategy — brand new, or just wiped by a season reset —
+   opens on `defense` via `season_start_defense_strategy()`. Bots always enter a
+   season building their maze first, never raiding.
 1. A fully lost defense immediately switches to `defense` — this always wins,
    unconditionally, overriding whatever was active before.
 2. Winning DEFENSE_WIN_STREAK_TARGET (see run_bot.py) defenses in a row rolls
@@ -103,6 +106,29 @@ def roll_strategy(config: dict, state: BotState, context: dict[str, Any]) -> dic
         "params": {},
         "valid_until": NO_EXPIRY,
         "source": "defense_won",
+        "started_at": now_iso(),
+    }
+
+
+def season_start_defense_strategy(config: dict) -> dict:
+    """Opening strategy for a bot with no active strategy.
+
+    Covers both ways that happens: a brand-new bot on its first tick, and a bot
+    whose state was just wiped by a season reset (`BotState.reset()` clears
+    `strategy`). Bots always start a season on defense so they build a maze
+    before doing anything else.
+
+    Uses the same wall-clock window as a breach-forced defense
+    (`config.strategy.duration_hours.defense`) rather than NO_EXPIRY: rule 2
+    (defense win streak) is the intended way out, but on a quiet opening where
+    nobody attacks the bot there are no defense wins to accumulate, so the
+    window lets it move on to attack/growth instead of parking on defense.
+    """
+    return {
+        "type": "defense",
+        "params": {},
+        "valid_until": _valid_until(config, "defense"),
+        "source": "season_start",
         "started_at": now_iso(),
     }
 

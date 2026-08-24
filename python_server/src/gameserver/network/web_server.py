@@ -812,6 +812,28 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
+    @app.get("/api/ruler-level-curve")
+    async def get_ruler_level_curve() -> Any:
+        try:
+            raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+            return JSONResponse(raw.get("ruler_level_curve", {}))
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
+    @app.post("/api/ruler-level-curve")
+    async def save_ruler_level_curve(request: Request, _uid: int = Depends(require_admin)) -> Any:
+        try:
+            curve = await request.json()
+            raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+            raw["ruler_level_curve"] = curve
+            GAME_CONFIG_PATH.write_text(
+                yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
+                encoding="utf-8",
+            )
+            return JSONResponse({"success": True})
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
     @app.get("/api/ai-generator")
     async def get_ai_generator() -> Any:
         try:

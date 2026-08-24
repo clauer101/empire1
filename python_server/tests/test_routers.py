@@ -558,10 +558,15 @@ class TestRulerEndpoints:
         data = resp.json()
         assert data["success"] is False
 
-    async def test_dismiss_ruler_replaces_ruler_waves_with_slaves(self, client, svc):
+    async def test_change_ruler_swaps_in_one_call_and_replaces_ruler_waves(self, client, svc):
         empire = svc.empire_service.all_empires[TEST_UID]
+        empire.effects["ruler_unlock"] = 1
         empire.ruler.type = "WARRIOR"
         empire.ruler.r = 0
+        empire.ruler.xp = 500.0
+        empire.ruler.level = 7
+        empire.ruler.q = 3
+        svc.empire_service._rulers = {"WARRIOR": {"name": "Warrior"}, "MAJA": {"name": "Maja"}}
         empire.armies.append(
             Army(
                 aid=99,
@@ -572,24 +577,68 @@ class TestRulerEndpoints:
                 ],
             )
         )
-        resp = await client.post("/api/empire/ruler/dismiss", headers=_auth())
+        resp = await client.post(
+            "/api/empire/ruler/change", json={"ruler_iid": "MAJA"}, headers=_auth(),
+        )
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is True
-        assert empire.ruler.type == ""
+        assert resp.json()["success"] is True
+        # New ruler is active immediately — the empire is never ruler-less.
+        assert empire.ruler.type == "MAJA"
+        assert empire.ruler.name == "Maja"
+        # XP / level / skill points are reset by the swap.
+        assert empire.ruler.xp == 0.0
+        assert empire.ruler.level == 1
+        assert empire.ruler.q == 0
         new_army = next(a for a in empire.armies if a.aid == 99)
         assert new_army.waves[0].iid == "SLAVE"
         assert new_army.waves[1].iid == "ARCHER"
 
-    async def test_dismiss_ruler_blocked_when_r_skill_upgraded(self, client, svc):
+    async def test_change_ruler_blocked_when_r_skill_upgraded(self, client, svc):
         empire = svc.empire_service.all_empires[TEST_UID]
+        empire.effects["ruler_unlock"] = 1
         empire.ruler.type = "WARRIOR"
         empire.ruler.r = 1
-        resp = await client.post("/api/empire/ruler/dismiss", headers=_auth())
+        svc.empire_service._rulers = {"WARRIOR": {"name": "Warrior"}, "MAJA": {"name": "Maja"}}
+        resp = await client.post(
+            "/api/empire/ruler/change", json={"ruler_iid": "MAJA"}, headers=_auth(),
+        )
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is False
+        assert resp.json()["success"] is False
         assert empire.ruler.type == "WARRIOR"
+
+    async def test_change_ruler_rejection_leaves_old_ruler_intact(self, client, svc):
+        # The bug this endpoint exists for: a failed change must never strand
+        # the player without a ruler (the old dismiss-then-choose flow did).
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.effects["ruler_unlock"] = 1
+        empire.ruler.type = "WARRIOR"
+        empire.ruler.r = 0
+        empire.ruler.xp = 500.0
+        empire.ruler.level = 7
+        svc.empire_service._rulers = {"WARRIOR": {"name": "Warrior"}}
+        resp = await client.post(
+            "/api/empire/ruler/change", json={"ruler_iid": "NONEXISTENT"}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["success"] is False
+        assert empire.ruler.type == "WARRIOR"
+        assert empire.ruler.xp == 500.0
+        assert empire.ruler.level == 7
+
+    async def test_change_ruler_to_same_ruler_is_rejected(self, client, svc):
+        # Guards against wiping your own XP by re-picking the ruler you have.
+        empire = svc.empire_service.all_empires[TEST_UID]
+        empire.effects["ruler_unlock"] = 1
+        empire.ruler.type = "WARRIOR"
+        empire.ruler.r = 0
+        empire.ruler.xp = 500.0
+        svc.empire_service._rulers = {"WARRIOR": {"name": "Warrior"}}
+        resp = await client.post(
+            "/api/empire/ruler/change", json={"ruler_iid": "WARRIOR"}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["success"] is False
+        assert empire.ruler.xp == 500.0
 
     async def test_skill_up_no_points(self, client, svc):
         """Ruler at level 1 with 0 XP should have 0 points available."""
@@ -1075,6 +1124,60 @@ class TestDiplomacyRouter:
         assert rows[TEST_UID]["alliance_group_culture"] is None
 
 
+class TestSeasonResultsRouter:
+    async def test_season_podium_pools_allied_pair_above_solo_leader(self, client, svc):
+        # uid 99 (500) and uid 100 (700) are mutually allied -> pooled 1200,
+        # which outranks TEST_UID's solo 1000, even though neither of 99/100
+        # individually beats TEST_UID.
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+        low_ally = _make_empire(uid=99, name="LowAlly")
+        low_ally.resources["culture"] = 500.0
+        high_ally = _make_empire(uid=100, name="HighAlly")
+        high_ally.resources["culture"] = 700.0
+        svc.empire_service.register(low_ally)
+        svc.empire_service.register(high_ally)
+
+        svc.database.get_all_mutual_alliances = AsyncMock(return_value={99: {100}, 100: {99}})
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        svc.database.get_longest_artifact_hold_per_uid = AsyncMock(return_value=[])
+        svc.database.get_era_firsts = AsyncMock(return_value=[])
+        svc.database.get_longest_single_artifact_holds = AsyncMock(return_value=[])
+
+        resp = await client.get("/api/season-results", headers=_auth())
+        assert resp.status_code == 200
+        data = resp.json()
+
+        podium = data["season_podium"]
+        assert podium[0]["place"] == 1
+        assert podium[0]["pooled_culture"] == 1200.0
+        assert {m["uid"] for m in podium[0]["members"]} == {99, 100}
+        # Higher own-culture member listed first within the team.
+        assert podium[0]["members"][0]["uid"] == 100
+
+        assert podium[1]["place"] == 2
+        assert podium[1]["pooled_culture"] == 1000.0
+        assert [m["uid"] for m in podium[1]["members"]] == [TEST_UID]
+
+    async def test_season_podium_falls_back_to_individual_places_when_unallied(self, client, svc):
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+
+        svc.database.get_all_mutual_alliances = AsyncMock(return_value={})
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        svc.database.get_longest_artifact_hold_per_uid = AsyncMock(return_value=[])
+        svc.database.get_era_firsts = AsyncMock(return_value=[])
+        svc.database.get_longest_single_artifact_holds = AsyncMock(return_value=[])
+
+        resp = await client.get("/api/season-results", headers=_auth())
+        assert resp.status_code == 200
+        podium = resp.json()["season_podium"]
+        assert len(podium) == 1
+        assert podium[0]["place"] == 1
+        assert podium[0]["pooled_culture"] == 1000.0
+        assert [m["uid"] for m in podium[0]["members"]] == [TEST_UID]
+
+
 class TestBuyTileRouter:
     async def test_buy_tile_endpoint_exists(self, client, svc):
         resp = await client.post(
@@ -1090,3 +1193,41 @@ class TestBuyTileRouter:
         resp = await client.post("/api/map/buy-tile", json={"q": 1, "r": 0})
         assert resp.status_code in (401, 403, 422)
 
+
+
+class TestPublicRulersEndpoint:
+    async def test_public_rulers_needs_no_auth(self, client, svc):
+        # The landing page renders this before login — it must not 401/403.
+        svc.empire_service._rulers = {
+            "MAJA": {
+                "name": "Maja",
+                "description": "A scholar.",
+                "animation": "assets/sprites/ruler/maja",
+                "q_meta": {"name": "Insight", "description": ""},
+                "q": [{"research_speed_offset": 0.2}, {"research_speed_offset": 0.3}],
+            },
+        }
+        resp = await client.get("/api/empire/rulers")
+        assert resp.status_code == 200
+        rulers = resp.json()["rulers"]
+        assert rulers["MAJA"]["name"] == "Maja"
+        # Every level's effects are exposed so the client can script the values
+        # instead of hardcoding them.
+        assert rulers["MAJA"]["skills"]["q"]["levels"] == [
+            {"research_speed_offset": 0.2}, {"research_speed_offset": 0.3},
+        ]
+
+    async def test_public_rulers_matches_authenticated_catalog(self, client, svc):
+        # Both must come from the same builder — a hardcoded landing-page copy
+        # is exactly what drifted out of sync before.
+        svc.empire_service._rulers = {
+            "MAJA": {
+                "name": "Maja",
+                "animation": "assets/sprites/ruler/maja",
+                "q_meta": {"name": "Insight", "description": ""},
+                "q": [{"research_speed_offset": 0.2}],
+            },
+        }
+        public = (await client.get("/api/empire/rulers")).json()["rulers"]
+        authed = (await client.get("/api/empire/items", headers=_auth())).json()["rulers"]
+        assert public == authed

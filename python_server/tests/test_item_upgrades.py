@@ -298,6 +298,11 @@ class TestTowerEffectValueUpgrade:
         efx = self._shoot(50.0, 2, {"burn_duration": 2000.0, "burn_dps": 10.0})
         assert efx["burn_dps"] == pytest.approx(20.0)
 
+    def test_splash_radius_scaled(self):
+        """Level 2 at +50% → splash_radius × 2 (higher radius = wider splash)."""
+        efx = self._shoot(50.0, 2, {"splash_radius": 0.3})
+        assert efx["splash_radius"] == pytest.approx(0.6)
+
     def test_level0_no_change(self):
         """Level 0 → value unchanged."""
         efx = self._shoot(100.0, 0, {"slow_duration": 1000.0, "slow_ratio": 0.3})

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruler Level Curve Tuner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0d0d14;
+      color: #eee;
+      padding: 20px;
+    }
+
+    #topbar {
+      position: sticky;
+      top: 38px;
+      z-index: 100;
+      background: #0d0d14;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 20px;
+      margin: -20px -20px 20px -20px;
+    }
+    #topbar-spacer { flex: 1; }
+    #save-btn {
+      background: #4fc3f7;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #save-btn:hover { opacity: 0.85; }
+    #save-btn:disabled { opacity: 0.4; cursor: default; }
+    #save-status { font-size: 12px; min-width: 100px; color: #66bb6a; }
+
+    h1 { text-align: center; margin-bottom: 6px; color: #4fc3f7; }
+    .subtitle { text-align: center; color: #888; margin-bottom: 24px; font-size: 13px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .panel h2 {
+      color: #4fc3f7;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border-bottom: 2px solid #0f3460;
+      padding-bottom: 8px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .field label {
+      font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    select, input[type="range"] { width: 100%; }
+    select {
+      background: #0f3460; color: #eee; border: 1px solid #22335c;
+      border-radius: 4px; padding: 6px 8px; font-size: 13px;
+    }
+    input[type="range"] { margin: 4px 0; }
+
+    .value-display {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #0f3460; padding: 4px 10px; border-radius: 4px;
+      font-family: 'Courier New', monospace; font-size: 14px; color: #4fc3f7;
+    }
+    .value-display input[type="number"] {
+      background: transparent; border: none; outline: none; color: #4fc3f7;
+      font-family: 'Courier New', monospace; font-size: 14px; width: 70px; text-align: right;
+      -moz-appearance: textfield;
+    }
+    .value-display input[type="number"]::-webkit-inner-spin-button,
+    .value-display input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .curve-toggle {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .curve-toggle button {
+      flex: 1; background: #0f3460; color: #aaa; border: 1px solid #22335c;
+      padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+    .curve-toggle button.active { background: #4fc3f7; color: #0d0d14; border-color: #4fc3f7; }
+
+    .curve-params { display: none; }
+    .curve-params.active { display: block; }
+
+    .stat-box {
+      background: #0f3460; border-radius: 4px; padding: 10px 12px; margin-bottom: 14px;
+      font-size: 12px; color: #ccc; line-height: 1.6;
+    }
+    .stat-box b { color: #4fc3f7; }
+    .warn { color: #ffa726; }
+
+    canvas {
+      width: 100%; height: 320px; background: #0f3460; border-radius: 4px; margin-bottom: 12px;
+    }
+
+    .table-container { max-height: 360px; overflow-y: auto; background: #0f3460; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'Courier New', monospace; }
+    th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #16213e; }
+    th:first-child, td:first-child { text-align: left; }
+    th {
+      background: #16213e; position: sticky; top: 0; color: #4fc3f7; font-weight: 600;
+    }
+    .jump-hi { color: #ffa726; }
+
+    .code-box {
+      margin-top: 16px; background: #0f3460; border-radius: 4px; padding: 10px;
+      font-family: 'Courier New', monospace; font-size: 12px; color: #4fc3f7; white-space: pre-wrap;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      canvas { height: 220px; }
+    }
+  </style>
+</head>
+<body>
+<script src="nav.js"></script>
+<div id="topbar">
+  <span id="topbar-spacer"></span>
+  <span id="save-status"></span>
+  <button id="save-btn" onclick="saveCurve()">💾 Save to game.yaml</button>
+</div>
+<h1>👑 Ruler Level Curve Tuner</h1>
+<div class="subtitle">Level → stat interpolation shape used by <code>ruler_critter_stats()</code></div>
+
+<div class="layout">
+  <div class="panel">
+    <h2>Curve</h2>
+    <div class="curve-toggle">
+      <button id="btn-power" class="active" onclick="setCurveType('power')">Power</button>
+      <button id="btn-sigmoid" onclick="setCurveType('sigmoid')">Sigmoid</button>
+    </div>
+
+    <div id="params-power" class="curve-params active">
+      <div class="field">
+        <label>Exponent (steepness)</label>
+        <input type="range" id="power-exp" min="0.5" max="8" step="0.1" value="4">
+        <div class="value-display"><span>p:</span><input type="number" id="power-exp-val" value="4" step="0.1"></div>
+      </div>
+      <div class="stat-box">t = norm<sup>p</sup>, norm = (level−1)/(max_level−1).<br>Higher p → flatter start, sharper spike near max level.</div>
+    </div>
+
+    <div id="params-sigmoid" class="curve-params">
+      <div class="field">
+        <label>Midpoint (level where growth is fastest)</label>
+        <input type="range" id="sig-mid" min="1" max="18" step="0.5" value="12">
+        <div class="value-display"><span>mid:</span><input type="number" id="sig-mid-val" value="12" step="0.5"></div>
+      </div>
+      <div class="field">
+        <label>Steepness</label>
+        <input type="range" id="sig-steep" min="1" max="20" step="0.5" value="8">
+        <div class="value-display"><span>k:</span><input type="number" id="sig-steep-val" value="8" step="0.5"></div>
+      </div>
+      <div class="stat-box">Logistic curve rescaled so f(1)=0 and f(max_level)=1. Move the midpoint later to keep stats low for longer without an explosive final jump.</div>
+    </div>
+
+    <div class="field">
+      <label>Max ruler level</label>
+      <div class="value-display"><span>RULER_MAX_LEVEL:</span><input type="number" id="max-level" value="18" min="2" max="99"></div>
+    </div>
+
+    <h2 style="margin-top: 20px;">Preview data</h2>
+    <div class="field">
+      <label>Ruler</label>
+      <select id="ruler-select"></select>
+    </div>
+    <div class="field">
+      <label>Stat</label>
+      <select id="stat-select">
+        <option value="health">health</option>
+        <option value="speed">speed</option>
+        <option value="armour">armour</option>
+        <option value="damage">damage</option>
+        <option value="value">value</option>
+        <option value="aura_radius">aura_radius</option>
+      </select>
+    </div>
+
+    <div id="jump-summary" class="stat-box"></div>
+
+    <div class="code-box" id="code-box"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Curve shape (normalized 0–1)</h2>
+    <canvas id="shape-canvas"></canvas>
+    <h2 style="margin-top: 4px;">Resulting stat per level</h2>
+    <canvas id="stat-canvas"></canvas>
+    <div class="table-container">
+      <table id="levels-table">
+        <thead><tr><th>Level</th><th>t</th><th>value</th><th>Δ from prev</th><th>% of range</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Default ruler data (fallback if /api/rulers is unreachable) ──
+  const DEFAULT_RULERS = [
+    { iid: 'MAJA',   name: 'Maja Soulstone',   health_min: 16, health_max: 3000, armour_min: 2, armour_max: 16, speed_min: 0.5, speed_max: 1.1, damage_min: 1, damage_max: 30, value_min: 10, value_max: 10000, aura_min: 1.5, aura_max: 2.5 },
+    { iid: 'NANDI',  name: 'Nandi',            health_min: 18, health_max: 3100, armour_min: 1, armour_max: 16, speed_min: 0.6, speed_max: 1.1, damage_min: 1, damage_max: 30, value_min: 10, value_max: 10000, aura_min: 1.5, aura_max: 2.5 },
+    { iid: 'LUCIEN', name: 'Lucien Duskbane',  health_min: 18, health_max: 3200, armour_min: 2, armour_max: 15, speed_min: 0.6, speed_max: 1.1, damage_min: 1, damage_max: 30, value_min: 10, value_max: 10000, aura_min: 1.5, aura_max: 2.5 },
+    { iid: 'BORIN',  name: 'Borin Stonehelm',  health_min: 18, health_max: 3800, armour_min: 2, armour_max: 17, speed_min: 0.6, speed_max: 1.0, damage_min: 1, damage_max: 30, value_min: 10, value_max: 10000, aura_min: 1.5, aura_max: 2.5 },
+    { iid: 'ALRIC',  name: 'Alric Shadowmere', health_min: 22, health_max: 3700, armour_min: 2, armour_max: 19, speed_min: 0.5, speed_max: 1.0, damage_min: 1, damage_max: 30, value_min: 10, value_max: 10000, aura_min: 1.5, aura_max: 2.5 },
+  ];
+  let rulers = DEFAULT_RULERS;
+  let curveType = 'power';
+
+  const $ = (id) => document.getElementById(id);
+
+  function setCurveType(type) {
+    curveType = type;
+    $('btn-power').classList.toggle('active', type === 'power');
+    $('btn-sigmoid').classList.toggle('active', type === 'sigmoid');
+    $('params-power').classList.toggle('active', type === 'power');
+    $('params-sigmoid').classList.toggle('active', type === 'sigmoid');
+    update();
+  }
+
+  // t(level) in [0, 1] for the currently selected curve
+  function computeT(level, maxLevel) {
+    const norm = Math.max(0, Math.min(1, (level - 1) / (maxLevel - 1)));
+    if (curveType === 'power') {
+      const p = parseFloat($('power-exp-val').value);
+      return Math.pow(norm, p);
+    }
+    const mid = parseFloat($('sig-mid-val').value);
+    const k = parseFloat($('sig-steep-val').value);
+    const midNorm = (mid - 1) / (maxLevel - 1);
+    const raw = (x) => 1 / (1 + Math.exp(-k * (x - midNorm)));
+    const raw0 = raw(0), raw1 = raw(1);
+    return (raw(norm) - raw0) / (raw1 - raw0);
+  }
+
+  function lerp(lo, hi, t) { return lo + (hi - lo) * t; }
+
+  function currentRuler() {
+    const iid = $('ruler-select').value;
+    return rulers.find(r => r.iid === iid) || rulers[0];
+  }
+
+  function statRange(ruler, stat) {
+    if (stat === 'aura_radius') return [ruler.aura_min ?? 0, ruler.aura_max ?? 0];
+    return [ruler[`${stat}_min`] ?? 0, ruler[`${stat}_max`] ?? 0];
+  }
+
+  function drawCurve(canvas, points, color, opts = {}) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+    const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+    if (!opts.skipClear) ctx.clearRect(0, 0, w, h);
+    const minVal = opts.min ?? Math.min(...points);
+    const maxVal = opts.max ?? Math.max(...points);
+    const span = (maxVal - minVal) || 1;
+
+    if (!opts.skipGrid) {
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const y = (h / 5) * i;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+    }
+
+    ctx.strokeStyle = color; ctx.lineWidth = 3;
+    if (opts.dashed) ctx.setLineDash([6 * window.devicePixelRatio, 6 * window.devicePixelRatio]);
+    ctx.beginPath();
+    points.forEach((val, i) => {
+      const x = (w / (points.length - 1)) * i;
+      const y = h - ((val - minVal) / span) * h * 0.9 - h * 0.05;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (!opts.dashed) {
+      ctx.fillStyle = color;
+      points.forEach((val, i) => {
+        const x = (w / (points.length - 1)) * i;
+        const y = h - ((val - minVal) / span) * h * 0.9 - h * 0.05;
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  }
+
+  function update() {
+    const maxLevel = parseInt($('max-level').value, 10);
+    const ruler = currentRuler();
+    const stat = $('stat-select').value;
+    const [lo, hi] = statRange(ruler, stat);
+
+    const levels = Array.from({ length: maxLevel }, (_, i) => i + 1);
+    const tValues = levels.map(lv => computeT(lv, maxLevel));
+    const linearValues = levels.map(lv => (lv - 1) / (maxLevel - 1));
+    const statValues = tValues.map(t => lerp(lo, hi, t));
+    const isDamage = stat === 'damage';
+    const displayValues = isDamage ? statValues.map(v => Math.round(v)) : statValues;
+
+    // ── Shape canvas: curve vs. linear reference ──
+    const shapeCanvas = $('shape-canvas');
+    drawCurve(shapeCanvas, linearValues, '#555', { min: 0, max: 1, dashed: true });
+    drawCurve(shapeCanvas, tValues, '#4fc3f7', { min: 0, max: 1, skipClear: true, skipGrid: true });
+
+    // ── Stat canvas: actual interpolated values ──
+    drawCurve($('stat-canvas'), displayValues, '#66bb6a');
+
+    // ── Table + jump analysis ──
+    const tbody = document.querySelector('#levels-table tbody');
+    tbody.innerHTML = '';
+    let maxJump = 0, maxJumpLevel = 0;
+    const range = (hi - lo) || 1;
+    levels.forEach((lv, i) => {
+      const val = displayValues[i];
+      const prev = i > 0 ? displayValues[i - 1] : val;
+      const delta = val - prev;
+      const pctOfRange = (delta / range) * 100;
+      if (i > 0 && pctOfRange > maxJump) { maxJump = pctOfRange; maxJumpLevel = lv; }
+      const row = document.createElement('tr');
+      const jumpClass = pctOfRange > 15 ? 'jump-hi' : '';
+      row.innerHTML = `<td>${lv}</td><td>${tValues[i].toFixed(3)}</td><td>${val.toFixed(isDamage ? 0 : 2)}</td>` +
+        `<td class="${jumpClass}">${i > 0 ? (delta >= 0 ? '+' : '') + delta.toFixed(isDamage ? 0 : 2) : '—'}</td>` +
+        `<td class="${jumpClass}">${i > 0 ? pctOfRange.toFixed(1) + '%' : '—'}</td>`;
+      tbody.appendChild(row);
+    });
+
+    $('jump-summary').innerHTML = `<b>${ruler.iid} / ${stat}</b>: ${lo} → ${hi}<br>` +
+      `Largest single-level jump: <span class="${maxJump > 15 ? 'warn' : ''}">${maxJump.toFixed(1)}% of range</span> (level ${maxJumpLevel - 1}→${maxJumpLevel})`;
+
+    // ── game.yaml preview (this is what "Save" writes) ──
+    const c = getCurveParams();
+    $('code-box').textContent =
+      `ruler_level_curve:\n  type: ${c.type}\n  power: ${c.power}\n  midpoint: ${c.midpoint}\n  steepness: ${c.steepness}`;
+  }
+
+  // ── Wire up controls ──
+  ['power-exp', 'sig-mid', 'sig-steep'].forEach(id => {
+    const slider = $(id);
+    const numInput = $(`${id}-val`);
+    slider.addEventListener('input', (e) => { numInput.value = e.target.value; update(); });
+    numInput.addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value);
+      if (!isNaN(v)) { slider.value = v; update(); }
+    });
+  });
+  $('max-level').addEventListener('input', update);
+  $('ruler-select').addEventListener('change', update);
+  $('stat-select').addEventListener('change', update);
+
+  function populateRulerSelect() {
+    const sel = $('ruler-select');
+    sel.innerHTML = rulers.map(r => `<option value="${r.iid}">${r.iid} — ${r.name || ''}</option>`).join('');
+  }
+
+  function getCurveParams() {
+    return {
+      type: curveType,
+      power: parseFloat($('power-exp-val').value),
+      midpoint: parseFloat($('sig-mid-val').value),
+      steepness: parseFloat($('sig-steep-val').value),
+    };
+  }
+
+  async function saveCurve() {
+    const btn = $('save-btn');
+    const status = $('save-status');
+    btn.disabled = true;
+    status.textContent = '';
+    try {
+      const r = await fetch('/api/ruler-level-curve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getCurveParams()),
+      });
+      const data = await r.json();
+      const ok = r.ok && data.success;
+      status.textContent = ok ? '✓ Saved!' : ('✗ ' + (data.error || 'Error'));
+      status.style.color = ok ? '#66bb6a' : '#ef5350';
+    } catch (e) {
+      status.textContent = '✗ Failed';
+      status.style.color = '#ef5350';
+    } finally {
+      btn.disabled = false;
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    }
+  }
+
+  async function loadCurve() {
+    try {
+      const r = await fetch('/api/ruler-level-curve');
+      const d = await r.json();
+      if (!r.ok || !d || !Object.keys(d).length) return;
+      if (d.power !== undefined) { $('power-exp').value = d.power; $('power-exp-val').value = d.power; }
+      if (d.midpoint !== undefined) { $('sig-mid').value = d.midpoint; $('sig-mid-val').value = d.midpoint; }
+      if (d.steepness !== undefined) { $('sig-steep').value = d.steepness; $('sig-steep-val').value = d.steepness; }
+      if (d.type === 'sigmoid') setCurveType('sigmoid');
+    } catch (e) {
+      console.warn('Could not load /api/ruler-level-curve, using built-in defaults:', e);
+    }
+  }
+
+  (async () => {
+    populateRulerSelect();
+    await loadCurve();
+    update();
+    try {
+      const r = await fetch('/api/rulers');
+      const data = await r.json();
+      if (r.ok && Array.isArray(data) && data.length) {
+        rulers = data;
+        populateRulerSelect();
+        update();
+      }
+    } catch (e) {
+      console.warn('Could not load /api/rulers, using built-in defaults:', e);
+    }
+  })();
+</script>
+</body>
+</html>

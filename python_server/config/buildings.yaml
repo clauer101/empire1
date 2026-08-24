@@ -5,6 +5,21 @@
 # requirements: list of prerequisite IIDs (buildings or knowledge)
 # effects: passive effects granted when complete
 
+AGI:
+  era: stone
+  image: assets/sprites/buildings/base_camp
+  name: "AGI"
+  description: "Artificial general intelligence."
+  effort: 30  # was 30
+  costs: {gold: 0}  
+  requirements: [THE_WORLD_WONDER]
+  excludes: []
+  effects:
+    gold_modifier: 0.2
+    research_speed_modifier: 0.2
+    build_speed_modifier: 0.2
+    workshop_cost_modifier: 0.2
+
 # ============================================================
 #   STONE_AGE  (Effort 20 – 200)
 # ============================================================
@@ -384,15 +399,15 @@ CARTOGRAPHER:
     travel_offset: -1800
     map_vision_radius_offset: 3
 
-STABLES:
-  era: iron
-  image: assets/sprites/buildings/stables
-  name: "Stables"
-  description: "Housing for horse breeding and cavalry training."
-  effort: 60155
-  costs: {gold: 9000}
-  requirements: [HORSEBACK_RIDING, IRON]
-  effects: {}
+# STABLES:
+#   era: iron
+#   image: assets/sprites/buildings/stables
+#   name: "Stables"
+#   description: "Housing for horse breeding and cavalry training."
+#   effort: 60155
+#   costs: {gold: 9000}
+#   requirements: [HORSEBACK_RIDING, IRON]
+#   effects: {}
 
 # RACE_COURSE:
 #   era: iron
@@ -449,15 +464,26 @@ TEMPLE:
   effects:
     culture_offset: 0.5
 
-FENCING_SCHOOL:
+ARTISANS_WORKSHOP:
   era: iron
-  image: assets/sprites/buildings/fencing_school
-  name: "Fencing School"
-  description: "Advanced combat training. Requires metallurgy and tactics."
-  effort: 78419
-  costs: {gold: 20758}
-  requirements: [IRON, DRILL]
-  effects: {}
+  image: assets/sprites/buildings/artisans_workshop
+  name: "Artisans' Workshop"
+  description: "Workshop of skilled craftsmen producing fine artworks. Requires painting technique."
+  effort: 88500
+  costs: {gold: 32500}
+  requirements: [PAINTING]
+  effects:
+    culture_offset: 0.75
+
+# FENCING_SCHOOL:
+#   era: iron
+#   image: assets/sprites/buildings/fencing_school
+#   name: "Fencing School"
+#   description: "Advanced combat training. Requires metallurgy and tactics."
+#   effort: 78419
+#   costs: {gold: 20758}
+#   requirements: [IRON, DRILL]
+#   effects: {}
 
 OBSERVATORY:
   era: iron
@@ -675,15 +701,15 @@ BOTANIC_GARDENS:
   effects: 
     max_life_modifier: 7
 
-CANNON_MANUFACTORY:
-  era: medieval
-  image: assets/sprites/buildings/cannon_manufactory
-  name: "Cannon Manufactory"
-  description: "Large-scale artillery production facility."
-  effort: 280358
-  costs: {gold: 276130}
-  requirements: [GUNPOWDER]
-  effects: {}
+# CANNON_MANUFACTORY:
+#   era: medieval
+#   image: assets/sprites/buildings/cannon_manufactory
+#   name: "Cannon Manufactory"
+#   description: "Large-scale artillery production facility."
+#   effort: 280358
+#   costs: {gold: 276130}
+#   requirements: [GUNPOWDER]
+#   effects: {}
 
 MERCHANT_GUILD:
   era: medieval

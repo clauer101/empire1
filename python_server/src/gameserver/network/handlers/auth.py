@@ -63,7 +63,7 @@ def _ruler_combat_stats(empire: Any, svc: Any) -> "dict[str, Any] | None":
     if not ruler_cfg:
         return None
     level = svc.empire_service.ruler_level_from_xp(empire.ruler.xp)
-    s = ruler_critter_stats(ruler_cfg, level)
+    s = ruler_critter_stats(ruler_cfg, level, curve=svc.empire_service._gc.ruler_level_curve)
     return {"health": s["health"], "armour": s["armour"], "speed": s["speed"], "damage": s["damage"]}
 
 

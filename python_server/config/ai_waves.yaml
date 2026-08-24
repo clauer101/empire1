@@ -78,7 +78,7 @@ armies:
     travel_time: 12
     trigger:
       items: [BASE_CAMP]
-    waves:
+    waves: []
 
   # ──────────────────────────────────────────────────────────
   #   NEOLITHIC  (Effort 800 – 7.500)
@@ -177,8 +177,6 @@ armies:
         slots: 12
       - critter: SWORDMAN
         slots: 14
-      - critter: SWORDMAN
-        slots: 16
 
   - name: "Copper Blades"
     travel_time: 3300
@@ -197,8 +195,6 @@ armies:
         slots: 12
       - critter: BOWMAN
         slots: 14
-      - critter: CHARIOT
-        slots: 16
 
   - name: "Harbor Raiders"
     travel_time: 6000
@@ -217,10 +213,6 @@ armies:
         slots: 16
       - critter: BOWMAN
         slots: 14
-      - critter: BOWMAN
-        slots: 16
-      - critter: SWORDMAN
-        slots: 18
 
   # ──────────────────────────────────────────────────────────
   #   IRON_AGE  (Effort 8.000 – 30.000)
@@ -237,10 +229,6 @@ armies:
         slots: 11
       - critter: PIKENEER
         slots: 12
-      - critter: HORSEMAN_SLOW
-        slots: 12
-      - critter: PIKENEER
-        slots: 13
       - critter: LEGIONARY
         slots: 15
       - critter: HORSEMAN_FAST
@@ -266,21 +254,15 @@ armies:
       - critter: LARGE_CART
         slots: 17
       - critter: LEGIONARY
-        slots: 17
-      - critter: LEGIONARY
         slots: 18
       - critter: KNIGHT
-        slots: 9
+        slots: 7
       - critter: PIKENEER
         slots: 22
       - critter: LARGE_CART
         slots: 18
       - critter: HORSEMAN_SLOW
-        slots: 20
-      - critter: HORSEMAN_SLOW
         slots: 22
-      - critter: PIKENEER
-        slots: 24
       - critter: LEGIONARY
         slots: 26
 
@@ -300,17 +282,11 @@ armies:
       - critter: HORSEMAN_SLOW
         slots: 18
       - critter: CRUSADER
-        slots: 9
+        slots: 7
       - critter: LARGE_CART
         slots: 20
       - critter: LEGIONARY
         slots: 18
-      - critter: HORSEMAN_FAST
-        slots: 20
-      - critter: LEGIONARY
-        slots: 22
-      - critter: HORSEMAN_FAST
-        slots: 24
       - critter: THE_SWORDMASTER
         slots: 26
 
@@ -333,14 +309,8 @@ armies:
         slots: 18
       - critter: THE_SWORDMASTER
         slots: 19
-      - critter: PIKENEER
-        slots: 20
-      - critter: THE_SWORDMASTER
-        slots: 20
-      - critter: LARGE_CART
-        slots: 22
       - critter: CRUSADER
-        slots: 12
+        slots: 9
       - critter: THE_SWORDMASTER
         slots: 26
       - critter: LEGIONARY
@@ -373,12 +343,6 @@ armies:
         slots: 22
       - critter: HORSEMAN_SLOW
         slots: 24
-      - critter: HORSEMAN_FAST
-        slots: 26
-      - critter: SWORDMAN
-        slots: 28
-      - critter: PIKENEER
-        slots: 28
       - critter: LEGIONARY
         slots: 28
 
@@ -450,7 +414,7 @@ armies:
       - critter: KNIGHT
         slots: 28
       - critter: NINJA
-        slots: 30
+        slots: 14
 
   - name: "Crusader Host"
     travel_time: 9300
@@ -483,8 +447,6 @@ armies:
         slots: 26
       - critter: SAMURAI
         slots: 28
-      - critter: THE_SWORDMASTER
-        slots: 30
       - critter: LARGE_CART
         slots: 31
 
@@ -519,8 +481,6 @@ armies:
         slots: 26
       - critter: LEGIONARY
         slots: 28
-      - critter: CRUSADER
-        slots: 30
       - critter: SAMURAI
         slots: 32
       - critter: HORSEMAN_FAST
@@ -557,8 +517,6 @@ armies:
         slots: 26
       - critter: CONDOTTERI
         slots: 28
-      - critter: KNIGHT
-        slots: 30
       - critter: LARGE_CART
         slots: 32
       - critter: CRUSADER
@@ -595,8 +553,6 @@ armies:
         slots: 24
       - critter: SIEGE_RAM
         slots: 28
-      - critter: SIEGE_RAM
-        slots: 30
       - critter: HANDGUNNER
         slots: 31
       - critter: CRUSADER
@@ -649,10 +605,6 @@ armies:
         slots: 36
       - critter: MUSKETEER
         slots: 35
-      - critter: DRAGOONER
-        slots: 36
-      - critter: DRAGOONER
-        slots: 35
 
   - name: "Musketeer Brigade"
     travel_time: 3400
@@ -697,10 +649,6 @@ armies:
         slots: 36
       - critter: NINJA
         slots: 35
-      - critter: NINJA
-        slots: 38
-      - critter: DRAGOONER
-        slots: 34
 
   - name: "Ninja Infiltration"
     travel_time: 12300
@@ -737,16 +685,12 @@ armies:
         slots: 30
       - critter: CARGO
         slots: 32
-      - critter: MUSKETEER
-        slots: 34
       - critter: DRAGOONER
         slots: 36
       - critter: THE_KING
         slots: 38
       - critter: NINJA
         slots: 36
-      - critter: NINJA
-        slots: 35
       - critter: SOLDIER
         slots: 22
 
@@ -793,10 +737,6 @@ armies:
         slots: 36
       - critter: DRAGOONER
         slots: 36
-      - critter: MUSKETEER
-        slots: 36
-      - critter: MUSKETEER
-        slots: 35
 
   # ──────────────────────────────────────────────────────────
   #   INDUSTRIAL  (Effort 500.000 – 2.000.000)
@@ -839,12 +779,6 @@ armies:
         slots: 32
       - critter: SOLDIER
         slots: 34
-      - critter: TRANSPORTER
-        slots: 36
-      - critter: TRANSPORTER
-        slots: 38
-      - critter: TRANSPORTER
-        slots: 40
       - critter: MOTORBIKE
         slots: 36
 
@@ -891,12 +825,6 @@ armies:
         slots: 29
       - critter: TRANSPORTER
         slots: 30
-      - critter: MOTORBIKE
-        slots: 34
-      - critter: SMALL_TANK
-        slots: 35
-      - critter: SOLDIER
-        slots: 35
 
   - name: "Steam Assault"
     travel_time: 14500
@@ -941,12 +869,6 @@ armies:
         slots: 29
       - critter: MOTORBIKE
         slots: 30
-      - critter: SMALL_TANK
-        slots: 33
-      - critter: TRANSPORTER
-        slots: 35
-      - critter: TRANSPORTER
-        slots: 37
 
   - name: "Tank Column"
     travel_time: 15200
@@ -993,12 +915,6 @@ armies:
         slots: 30
       - critter: SOLDIER
         slots: 34
-      - critter: SOLDIER
-        slots: 36
-      - critter: TRANSPORTER
-        slots: 38
-      - critter: SOLDIER
-        slots: 34
 
   - name: "Factory Raid"
     travel_time: 10000
@@ -1039,12 +955,6 @@ armies:
         slots: 32
       - critter: DRAGOONER
         slots: 34
-      - critter: HELI
-        slots: 13
-      - critter: TRANSPORTER
-        slots: 38
-      - critter: SMALL_TANK
-        slots: 38
       - critter: SOLDIER
         slots: 36
       - critter: SMALL_TANK
@@ -1107,14 +1017,8 @@ armies:
         slots: 29
       - critter: SMALL_TANK
         slots: 30
-      - critter: HELI
-        slots: 30
-      - critter: SIEGE_TANK
-        slots: 33
       - critter: THE_GENERAL
         slots: 40
-      - critter: HELI
-        slots: 34
 
   - name: "Special Ops"
     travel_time: 15300
@@ -1167,12 +1071,6 @@ armies:
         slots: 29
       - critter: SIEGE_TANK
         slots: 30
-      - critter: HELI
-        slots: 30
-      - critter: SMALL_TANK
-        slots: 32
-      - critter: SIEGE_TANK
-        slots: 33
       - critter: THE_GENERAL
         slots: 36
 
@@ -1231,12 +1129,6 @@ armies:
         slots: 30
       - critter: THE_GENERAL
         slots: 35
-      - critter: DRONE
-        slots: 36
-      - critter: SIEGE_TANK
-        slots: 36
-      - critter: HELI
-        slots: 40
 
   - name: "Siege Assault"
     travel_time: 6200
@@ -1283,17 +1175,11 @@ armies:
         slots: 28
       - critter: HELI
         slots: 28
-      - critter: HELI
-        slots: 28
       - critter: SIEGE_TANK
         slots: 29
-      - critter: MECH_WARRIOR
-        slots: 30
       - critter: SPECOPS
         slots: 30
       - critter: THE_GENERAL
-        slots: 40
-      - critter: SIEGE_TANK
         slots: 40
 
   - name: "Urban Combat"
@@ -1347,14 +1233,6 @@ armies:
         slots: 29
       - critter: HELI
         slots: 30
-      - critter: SMALL_TANK
-        slots: 30
-      - critter: DRONE
-        slots: 34
-      - critter: SIEGE_TANK
-        slots: 36
-      - critter: SPECOPS
-        slots: 37
 
   - name: "Cyber Strike"
     travel_time: 16800
@@ -1407,12 +1285,6 @@ armies:
         slots: 27
       - critter: SIEGE_TANK
         slots: 28
-      - critter: SIEGE_TANK
-        slots: 28
-      - critter: SOLDIER
-        slots: 29
-      - critter: DRONE
-        slots: 30
       - critter: THE_GENERAL
         slots: 35
 

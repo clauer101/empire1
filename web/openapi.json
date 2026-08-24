@@ -806,10 +806,11 @@
         ]
       }
     },
-    "/api/empire/ruler/dismiss": {
-      "post": {
-        "summary": "Dismiss Ruler",
-        "operationId": "dismiss_ruler_api_empire_ruler_dismiss_post",
+    "/api/empire/rulers": {
+      "get": {
+        "summary": "Public Rulers",
+        "description": "Ruler catalog — **intentionally unauthenticated**.\n\nThe landing page renders the roster before anyone can log in, so it\ncannot use the authenticated `/api/empire/items`. Same builder as that\nendpoint (`handlers.economy.build_rulers_catalog`), so the public page\nand the in-game codex can never disagree.\n\nExposes only static game-config data from `rulers.yaml` — no player or\nempire state. Sits under the already-whitelisted `/api/empire/` nginx\nprefix, so no nginx change is needed.",
+        "operationId": "public_rulers_api_empire_rulers_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -818,7 +819,48 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Dismiss Ruler Api Empire Ruler Dismiss Post"
+                  "title": "Response Public Rulers Api Empire Rulers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/empire/ruler/change": {
+      "post": {
+        "summary": "Change Ruler",
+        "description": "Atomically replace the current ruler with a different one.\n\nCombines dismiss + choose in one call so the empire is never left\nruler-less: every rejection path returns *before* the old ruler is\ntouched. `choose_ruler` cannot do this itself — it refuses while a\nruler is set — which is why the old client had to dismiss first and\ncould strand a player who then backed out of the picker.\n\nThe frontend shows the ruler catalog first and only calls this on\nconfirm (`web/js/views/status.js::showChooseRulerOverlay`), so\ncancelling or closing the picker leaves the existing ruler intact.",
+        "operationId": "change_ruler_api_empire_ruler_change_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseRulerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Change Ruler Api Empire Ruler Change Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2341,6 +2383,45 @@
               "application/json": {
                 "schema": {
                   "title": "Response Save Prices Api Prices Post"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ruler-level-curve": {
+      "get": {
+        "summary": "Get Ruler Level Curve",
+        "operationId": "get_ruler_level_curve_api_ruler_level_curve_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Ruler Level Curve Api Ruler Level Curve Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Ruler Level Curve",
+        "operationId": "save_ruler_level_curve_api_ruler_level_curve_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Save Ruler Level Curve Api Ruler Level Curve Post"
                 }
               }
             }

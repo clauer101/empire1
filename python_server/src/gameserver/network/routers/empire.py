@@ -255,28 +255,11 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
 
         # Group mutually-allied empires into connected clusters so allies are
         # ranked and listed as a contiguous block (pooled culture for ranking).
-        listed_uids = {e["uid"] for e in empires}
-        seen: set[int] = set()
-        groups: list[list[int]] = []
-        for e in empires:
-            root = e["uid"]
-            if root in seen:
-                continue
-            stack = [root]
-            cluster: set[int] = set()
-            while stack:
-                u = stack.pop()
-                if u in cluster or u not in listed_uids:
-                    continue
-                cluster.add(u)
-                stack.extend(mutual_alliances.get(u, set()))
-            seen |= cluster
-            groups.append(sorted(cluster))
+        from gameserver.util.alliance_grouping import group_by_pooled_culture
 
         empire_by_uid = {e["uid"]: e for e in empires}
-
-        def _empire_culture(u: int) -> float:
-            return float(empire_by_uid[u].get("culture") or 0)
+        culture_by_uid = {u: float(e.get("culture") or 0) for u, e in empire_by_uid.items()}
+        groups = group_by_pooled_culture(culture_by_uid, mutual_alliances)
 
         group_id_of: dict[int, int] = {}
         for gid, group in enumerate(groups):
@@ -288,12 +271,8 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             is_allied_group = len(group) > 1
             e["alliance_group_id"] = group_id_of[e["uid"]] if is_allied_group else None
             e["alliance_group_culture"] = (
-                round(sum(_empire_culture(u) for u in group), 1) if is_allied_group else None
+                round(sum(culture_by_uid[u] for u in group), 1) if is_allied_group else None
             )
-
-        groups.sort(key=lambda group: sum(_empire_culture(u) for u in group), reverse=True)
-        for group in groups:
-            group.sort(key=_empire_culture, reverse=True)
 
         empires = [empire_by_uid[u] for group in groups for u in group]
         return {"empires": empires}
@@ -468,21 +447,66 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         empire.ruler.name = ruler_def.get("name", body.ruler_iid)
         return {"success": True}
 
-    @router.post("/api/empire/ruler/dismiss")
-    async def dismiss_ruler(uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+    @router.get("/api/empire/rulers")
+    @limiter.limit("60/minute")
+    async def public_rulers(request: Request) -> dict[str, Any]:
+        """Ruler catalog — **intentionally unauthenticated**.
+
+        The landing page renders the roster before anyone can log in, so it
+        cannot use the authenticated `/api/empire/items`. Same builder as that
+        endpoint (`handlers.economy.build_rulers_catalog`), so the public page
+        and the in-game codex can never disagree.
+
+        Exposes only static game-config data from `rulers.yaml` — no player or
+        empire state. Sits under the already-whitelisted `/api/empire/` nginx
+        prefix, so no nginx change is needed.
+        """
+        from gameserver.network.handlers.economy import build_rulers_catalog
+        return {"rulers": build_rulers_catalog(empire_service._rulers if empire_service else {})}
+
+    @router.post("/api/empire/ruler/change")
+    async def change_ruler(body: ChooseRulerRequest, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Atomically replace the current ruler with a different one.
+
+        Combines dismiss + choose in one call so the empire is never left
+        ruler-less: every rejection path returns *before* the old ruler is
+        touched. `choose_ruler` cannot do this itself — it refuses while a
+        ruler is set — which is why the old client had to dismiss first and
+        could strand a player who then backed out of the picker.
+
+        The frontend shows the ruler catalog first and only calls this on
+        confirm (`web/js/views/status.js::showChooseRulerOverlay`), so
+        cancelling or closing the picker leaves the existing ruler intact.
+        """
         empire = empire_service.get(uid)
         if empire is None:
             return {"success": False, "error": "Empire not found"}
         if empire.ruler.r > 0:
             return {"success": False, "error": "Ruler cannot be changed once the R skill has been upgraded"}
+        if empire.get_effect("ruler_unlock", 0) <= 0:
+            return {"success": False, "error": "Ruler not yet unlocked — research the required knowledge first"}
+        rulers = empire_service._rulers if empire_service else {}
+        if body.ruler_iid not in rulers:
+            return {"success": False, "error": "Unknown ruler"}
+        if body.ruler_iid == empire.ruler.type:
+            return {"success": False, "error": "That ruler is already active"}
+
+        # Past this point nothing can fail — only now is the old ruler discarded.
         old_ruler_type = empire.ruler.type
+        ruler_def = rulers[body.ruler_iid]
         from gameserver.models.empire import Ruler
-        empire.ruler = Ruler()
+        empire.ruler = Ruler(
+            type=body.ruler_iid,
+            name=ruler_def.get("name", body.ruler_iid),
+        )
         if old_ruler_type:
             for army in empire.armies:
                 for wave in army.waves:
                     if wave.iid == old_ruler_type:
                         wave.iid = "SLAVE"
+        # XP, level and skill points are reset above; drop the old ruler's
+        # skill effects from empire.effects to match.
+        empire_service.recalculate_effects(empire)
         return {"success": True}
 
     @router.post("/api/empire/ruler/aura-choice")
@@ -679,7 +703,7 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
 
         upgrades = empire_service._upgrades.items  # iid → ItemDetails
 
-        results = []
+        results: list[dict[str, Any]] = []
         for e in empire_service.all_empires.values():
             if e.uid == AI_UID:
                 continue
@@ -769,8 +793,10 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         )
 
         era_firsts: list[dict[str, Any]] = []
+        mutual_alliances: dict[int, set[int]] = {}
         # Merge runtime stats and supplemental data into each result.
         if services.database is not None:
+            mutual_alliances = await services.database.get_all_mutual_alliances()
             all_stats = await services.database.get_all_empire_stats()
             stats_by_uid = {row["uid"]: row for row in all_stats}
             hold_rows = await services.database.get_longest_artifact_hold_per_uid()
@@ -794,8 +820,8 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 row = stats_by_uid.get(r["uid"]) or {}
                 for f in runtime_fields:
                     r[f] = row.get(f, 0) or 0
-                r["attacks_sent_human"] = (r["attacks_won_human"] or 0) + (r["attacks_lost_human"] or 0)  # type: ignore[operator]
-                r["attacks_received_human"] = (r["defense_won_human"] or 0) + (r["defense_lost_human"] or 0)  # type: ignore[operator]
+                r["attacks_sent_human"] = (r["attacks_won_human"] or 0) + (r["attacks_lost_human"] or 0)
+                r["attacks_received_human"] = (r["defense_won_human"] or 0) + (r["defense_lost_human"] or 0)
                 r["longest_artifact_hold_secs"] = round(hold_by_uid.get(r["uid"], 0) or 0)
 
         longest_single_artifact_holds: list[dict[str, Any]] = []
@@ -812,12 +838,33 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 "held_secs": round(hold_row["held_secs"]),
             })
 
+        # Podium places are pooled by mutual alliance: an allied pair is ranked
+        # on their combined culture and can occupy a place together, mirroring
+        # the live leaderboard grouping in list_empires().
+        from gameserver.util.alliance_grouping import group_by_pooled_culture
+
+        culture_by_uid: dict[int, float] = {r["uid"]: r["culture"] for r in results}
+        name_by_uid: dict[int, str] = {r["uid"]: r["name"] for r in results}
+        podium_groups = group_by_pooled_culture(culture_by_uid, mutual_alliances)
+        season_podium = [
+            {
+                "place": place,
+                "pooled_culture": round(sum(culture_by_uid[u] for u in group), 1),
+                "members": [
+                    {"uid": u, "name": name_by_uid[u], "culture": culture_by_uid[u]}
+                    for u in group
+                ],
+            }
+            for place, group in enumerate(podium_groups[:3], start=1)
+        ]
+
         from gameserver.util.eras import ERA_ORDER as _ERA_ORDER_LIST
         return {
             "season_number": get_season_number(),
             "season_title": get_season_title(),
             "next_season_start": get_next_season_start(),
             "empires": results,
+            "season_podium": season_podium,
             "era_firsts": era_firsts,
             "era_order": _ERA_ORDER_LIST,
             "longest_single_artifact_holds": longest_single_artifact_holds,

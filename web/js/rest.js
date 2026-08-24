@@ -700,8 +700,21 @@ class RestClient {
     return this._post('/api/empire/ruler/choose', { ruler_iid: rulerIid });
   }
 
-  async dismissRuler() {
-    return this._post('/api/empire/ruler/dismiss', {});
+  /**
+   * Ruler catalog without auth — for the pre-login landing page. Same data as
+   * the `rulers` block of getItems(), so the public page always matches config.
+   */
+  async getPublicRulers() {
+    return this._get('/api/empire/rulers');
+  }
+
+  /**
+   * Atomically swap the current ruler for a different one. Resets XP, level
+   * and skill points. Single call by design — a dismiss-then-choose sequence
+   * could strand the empire without a ruler if the second call never landed.
+   */
+  async changeRuler(rulerIid) {
+    return this._post('/api/empire/ruler/change', { ruler_iid: rulerIid });
   }
 
   async rulerAuraChoice(auraEffect) {

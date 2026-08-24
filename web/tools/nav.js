@@ -44,6 +44,7 @@
     { name: '🏆 Trophy Config', href: 'trophy-config.html' },
     { name: '👑 Rulers',       href: 'rulers.html' },
     { name: '🎛️ Sigmoid',     href: 'sigmoid_tuner.html' },
+    { name: '👑📈 Ruler Curve', href: 'sigmoid.html' },
     { name: '⏱ Effort',       href: 'effort-tuner.html' },
     { name: '🐾 Critters',     href: 'critters.html' },
     // Battle/Balancing

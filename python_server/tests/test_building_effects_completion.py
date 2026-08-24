@@ -93,39 +93,47 @@ class TestBuildingEffectsCompletion:
         Test with multiple buildings where only complete ones contribute effects.
         - FIRE_PLACE: incomplete (10.0 remaining) -> should NOT contribute 0.1 gold
         - SHRINE: complete (0.0 remaining) -> should contribute 0.05 culture
-        - EXCHANGE_POST: complete (0.0 remaining) -> should contribute 0.05 gold + 0.1 gold_modifier
+        - EXCHANGE_POST: complete (0.0 remaining) -> should contribute 0.25 gold
+        - AGI: complete (0.0 remaining) -> should contribute 0.2 gold_modifier
+
+        Note: EXCHANGE_POST no longer carries a gold_modifier (season balance
+        pass moved that onto AGI instead) — AGI is used here so the
+        "modifier only from a *different* completed building" case still
+        exercises the accumulate-only-when-complete behavior.
         """
         # Setup: Create empire
         empire = Empire(uid=1, name="Test Empire")
-        
+
         # Add buildings
         empire.buildings["FIRE_PLACE"] = 10.0      # INCOMPLETE - gold_offset: 0.1
         empire.buildings["SHRINE"] = 0.0            # COMPLETE - culture_offset: 0.05
-        empire.buildings["EXCHANGE_POST"] = 0.0     # COMPLETE - gold_offset: 0.05, gold_modifier: 0.1
-        
+        empire.buildings["EXCHANGE_POST"] = 0.0     # COMPLETE - gold_offset: 0.25
+        empire.buildings["AGI"] = 0.0               # COMPLETE - gold_modifier: 0.2
+
         # Calculate effects
         empire_service.recalculate_effects(empire)
-        
+
         # Only completed buildings should apply effects:
         # - FIRE_PLACE (incomplete) should NOT contribute 0.1
         # - SHRINE (complete) should contribute 0.05 to culture
-        # - EXCHANGE_POST (complete) should contribute 0.05 to gold and 0.1 to gold_modifier
-        
+        # - EXCHANGE_POST (complete) should contribute 0.25 to gold
+        # - AGI (complete) should contribute 0.2 to gold_modifier
+
         gold_offset = empire.get_effect("gold_offset", 0.0)
         culture_offset = empire.get_effect("culture_offset", 0.0)
         gold_modifier = empire.get_effect("gold_modifier", 0.0)
-        
-        # Gold offset: only EXCHANGE_POST's 0.21 (not FIRE_PLACE's 0.1)
-        assert abs(gold_offset - 0.21) < 0.0001, \
-            f"Gold offset should be 0.21 (only from completed EXCHANGE_POST), got {gold_offset}"
-        
+
+        # Gold offset: only EXCHANGE_POST's 0.25 (not FIRE_PLACE's 0.1)
+        assert abs(gold_offset - 0.25) < 0.0001, \
+            f"Gold offset should be 0.25 (only from completed EXCHANGE_POST), got {gold_offset}"
+
         # Culture offset: only SHRINE's 0.05
         assert abs(culture_offset - 0.05) < 0.0001, \
             f"Culture offset should be 0.05 (only from completed SHRINE), got {culture_offset}"
-        
-        # Gold modifier: only EXCHANGE_POST's 0.1
-        assert abs(gold_modifier - 0.1) < 0.0001, \
-            f"Gold modifier should be 0.1 (only from completed EXCHANGE_POST), got {gold_modifier}"
+
+        # Gold modifier: only AGI's 0.2
+        assert abs(gold_modifier - 0.2) < 0.0001, \
+            f"Gold modifier should be 0.2 (only from completed AGI), got {gold_modifier}"
 
     def test_zero_remaining_effort_is_complete(self, empire_service):
         """

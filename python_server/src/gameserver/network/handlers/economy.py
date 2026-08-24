@@ -42,6 +42,43 @@ def _sync_battle_structures(battle: Any, tiles: dict[str, Any], items_dict: dict
     return _bss(battle, tiles, items_dict)
 
 
+def build_rulers_catalog(rulers: dict[str, Any]) -> dict[str, Any]:
+    """Serialize `rulers.yaml` for clients: skills incl. every level's effects.
+
+    Shared by the authenticated item catalog (`handle_item_request`) and the
+    public `GET /api/empire/rulers` used by the pre-login landing page, so both
+    always describe rulers identically — the landing page cannot drift out of
+    sync with the config the way a hardcoded copy did.
+    """
+    catalog: dict[str, Any] = {}
+    for ruler_id, ruler_def in rulers.items():
+        animation = ruler_def.get("animation", "").rstrip("/")
+        catalog[ruler_id] = {
+            "name": ruler_def.get("name", ruler_id),
+            "description": ruler_def.get("description", ""),
+            "splash": f"/{animation}/{animation.split('/')[-1]}_splash.webp",
+            "skills": {
+                skill: {**ruler_def[f"{skill}_meta"], "levels": ruler_def.get(skill, [])}
+                for skill in ("q", "w", "e", "r")
+                if ruler_def.get(f"{skill}_meta")
+            },
+            "critter": {
+                "speed_min": ruler_def.get("speed_min", 0.8),
+                "speed_max": ruler_def.get("speed_max", 1.2),
+                "health_min": ruler_def.get("health_min", 20),
+                "health_max": ruler_def.get("health_max", 2000),
+                "armour_min": ruler_def.get("armour_min", 0),
+                "armour_max": ruler_def.get("armour_max", 19),
+                "value_min": ruler_def.get("value_min", 10),
+                "value_max": ruler_def.get("value_max", 1000),
+                "damage_min": ruler_def.get("damage_min", 1),
+                "damage_max": ruler_def.get("damage_max", 30),
+                "animation": ruler_def.get("animation", ""),
+            },
+        }
+    return catalog
+
+
 async def handle_summary_request(
     message: GameMessage, sender_uid: int,
 ) -> Optional[dict[str, Any]]:
@@ -239,31 +276,7 @@ async def handle_item_request(
             })
         catalog[item.iid] = entry
 
-    rulers_catalog: dict[str, Any] = {}
-    for ruler_id, ruler_def in (svc.empire_service._rulers if svc.empire_service else {}).items():
-        rulers_catalog[ruler_id] = {
-            "name": ruler_def.get("name", ruler_id),
-            "description": ruler_def.get("description", ""),
-            "splash": f"/{ruler_def.get('animation', '').rstrip('/')}/{ruler_def.get('animation', '').rstrip('/').split('/')[-1]}_splash.webp",
-            "skills": {
-                skill: {**ruler_def[f"{skill}_meta"], "levels": ruler_def.get(skill, [])}
-                for skill in ("q", "w", "e", "r")
-                if ruler_def.get(f"{skill}_meta")
-            },
-            "critter": {
-                "speed_min": ruler_def.get("speed_min", 0.8),
-                "speed_max": ruler_def.get("speed_max", 1.2),
-                "health_min": ruler_def.get("health_min", 20),
-                "health_max": ruler_def.get("health_max", 2000),
-                "armour_min": ruler_def.get("armour_min", 0),
-                "armour_max": ruler_def.get("armour_max", 19),
-                "value_min": ruler_def.get("value_min", 10),
-                "value_max": ruler_def.get("value_max", 1000),
-                "damage_min": ruler_def.get("damage_min", 1),
-                "damage_max": ruler_def.get("damage_max", 30),
-                "animation": ruler_def.get("animation", ""),
-            },
-        }
+    rulers_catalog = build_rulers_catalog(svc.empire_service._rulers if svc.empire_service else {})
 
     return {
         "type": "item_response",
@@ -921,19 +934,19 @@ async def handle_buy_item_upgrade(
         return {"success": False, "error": f"Invalid stat '{stat}' for {iid} (valid: {sorted(valid_stats)})"}
 
     # effect_duration/effect_value only apply to structures whose shot effects
-    # actually carry a matching key (see battle_service._step_structures) —
-    # slow_duration/burn_duration for effect_duration, slow_ratio/burn_dps for
-    # effect_value. A tower with no matching effect (e.g. plain damage towers
-    # like HEAVY_TOWER, effects={}) would silently waste gold on a level that
-    # never applies in combat. The web client already hides these stats for
-    # such towers in its upgrade UI; this closes the same gap for direct API
-    # callers (bots).
+    # actually carry a matching key (see battle_service._step_towers) —
+    # slow_duration/burn_duration for effect_duration, slow_ratio/burn_dps/
+    # splash_radius for effect_value. A tower with no matching effect (e.g.
+    # plain damage towers like HEAVY_TOWER, effects={}) would silently waste
+    # gold on a level that never applies in combat. The web client already
+    # hides these stats for such towers in its upgrade UI; this closes the
+    # same gap for direct API callers (bots).
     if item.item_type == ItemType.STRUCTURE and stat in ("effect_duration", "effect_value"):
         effects = item.effects or {}
         applies = (
             ("slow_duration" in effects or "burn_duration" in effects)
             if stat == "effect_duration"
-            else ("slow_ratio" in effects or "burn_dps" in effects)
+            else ("slow_ratio" in effects or "burn_dps" in effects or "splash_radius" in effects)
         )
         if not applies:
             return {"success": False,

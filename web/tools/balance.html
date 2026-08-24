@@ -332,22 +332,28 @@
         }
       }
 
+      const token = localStorage.getItem('e3_jwt_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      };
+
       const reqs = [];
       if (Object.keys(critterChanges).length)
-        reqs.push(fetch('/api/critter-stats',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(critterChanges) }));
+        reqs.push(fetch('/api/critter-stats',   { method: 'PATCH', headers, body: JSON.stringify(critterChanges) }));
       if (Object.keys(statChanges).length)
-        reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(statChanges) }));
+        reqs.push(fetch('/api/structure-stats', { method: 'PATCH', headers, body: JSON.stringify(statChanges) }));
       if (Object.keys(goldChanges).length)
-        reqs.push(fetch('/api/structure-gold',  { method: 'POST',  headers: {'Content-Type':'application/json'}, body: JSON.stringify(goldChanges) }));
+        reqs.push(fetch('/api/structure-gold',  { method: 'POST',  headers, body: JSON.stringify(goldChanges) }));
       if (Object.keys(reqChanges).length)
-        reqs.push(fetch('/api/item-requirements', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(reqChanges) }));
+        reqs.push(fetch('/api/item-requirements', { method: 'PATCH', headers, body: JSON.stringify(reqChanges) }));
       if (Object.keys(eraChanges).length)
-        reqs.push(fetch('/api/critter-era', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(eraChanges) }));
+        reqs.push(fetch('/api/critter-era', { method: 'PATCH', headers, body: JSON.stringify(eraChanges) }));
       if (Object.keys(typeChanges).length)
-        reqs.push(fetch('/api/item-type',   { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(typeChanges) }));
+        reqs.push(fetch('/api/item-type',   { method: 'PATCH', headers, body: JSON.stringify(typeChanges) }));
       // Tower effects: one PATCH per changed tower (endpoint is per-iid, not batch).
       for (const [iid, payload] of Object.entries(fxChanges)) {
-        reqs.push(fetch(`/api/tower-effects/${iid}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        reqs.push(fetch(`/api/tower-effects/${iid}`, { method: 'PATCH', headers, body: JSON.stringify(payload) }));
       }
       const results = await Promise.all(reqs);
       for (const r of results) if (!r.ok) throw new Error(await r.text());

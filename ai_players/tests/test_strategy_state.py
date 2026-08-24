@@ -82,5 +82,24 @@ def test_breach_defense_strategy():
     assert not is_expired(s)
 
 
+def test_season_start_defense_strategy():
+    # Rule 0: a bot with no strategy opens on defense, on the same wall-clock
+    # window as a breach-forced defense (not NO_EXPIRY).
+    from bot.strategy import NO_EXPIRY, season_start_defense_strategy
+    s = season_start_defense_strategy(CONFIG)
+    assert s["type"] == "defense" and s["source"] == "season_start"
+    assert not is_expired(s)
+    assert s["valid_until"] != NO_EXPIRY
+
+
+def test_season_reset_leaves_no_strategy_so_rule_0_applies():
+    # BotState.reset() (called by _check_season_reset on a new season) clears
+    # the strategy, which is exactly the condition run_bot.py's rule 0 keys on.
+    state = BotState(name="t")
+    state.strategy = {"type": "attack", "params": {}, "valid_until": "2099-01-01T00:00:00Z"}
+    state.reset()
+    assert state.strategy is None
+
+
 
 

@@ -131,9 +131,16 @@ A strategy is a dict `{type, valid_until, params, completed}`.
 
 **Types:** `defense`, `attack`, `growth`
 
-**Two rules govern strategy, nothing else** (see `bot/strategy.py` and
-`run_bot.py`):
+**One opening rule and two running rules govern strategy, nothing else** (see
+`bot/strategy.py` and `run_bot.py`):
 
+0. **A bot with no active strategy opens on `defense`**
+   (`strategy.py::season_start_defense_strategy`). That covers a brand-new bot
+   on its first tick and a bot whose state was just wiped by a season reset —
+   bots always enter a season building their maze, never raiding. It uses the
+   same 3–8 h window as a breach-forced defense rather than `NO_EXPIRY`, so a
+   bot nobody attacks in the opening (no defense wins to accumulate, so rule 2
+   can never fire) moves on to attack/growth instead of parking on defense.
 1. **A fully lost defense immediately (and unconditionally) switches to
    `defense`** — this always wins, overriding whatever was active before
    (attack, growth, or an in-progress win streak). Resets the win streak to 0.
@@ -167,8 +174,11 @@ File: `states/<name>.yaml`
 | `memory` | battle history, opponent scores, breach flags, savings goals |
 | `runtime` | cycle counter, last_cycle timestamp |
 
-State is **not** reset between seasons. The bot resumes with the same strategy
-and memory after a wipe; only the empire itself is recreated on next login.
+State **is** reset between seasons: `run_bot.py::_check_season_reset` compares
+`summary.season_number` against `memory.last_season` and calls `BotState.reset()`
+on a change, clearing `strategy`, `memory` and `runtime` (account and personality
+are kept) and wiping the log files. The bot then opens the new season on defense
+via rule 0. The empire itself is recreated on the next login.
 
 ---
 
@@ -180,7 +190,7 @@ and memory after a wipe; only the empire itself is recreated on next login.
 | `cycle_interval_s` | `60` | Seconds between tick starts |
 | `control_port_base` | `9300` | Base port; each bot gets base + offset |
 | `strategy.weights` | — | Weights for the post-win-streak attack/growth roll (`defense`'s weight in this table is unused — `defense` is never rolled, only forced on a lost battle) |
-| `strategy.duration_hours` | — | Only `defense`'s range is used (`breach_defense_strategy`); attack/growth hold indefinitely instead |
+| `strategy.duration_hours` | — | Only `defense`'s range is used (`breach_defense_strategy` and `season_start_defense_strategy`); attack/growth hold indefinitely instead |
 | `personalities` | — | Per-personality strategy weight multipliers |
 | `selection.top_n` | `3` | Weighted sampling among *equally viable* candidates within a single planner step (e.g. which tile/target) — not used for cross-planner option ranking |
 | `category_weights` | — | **Unused** — dispatch is strict priority order (see "Action Selection"), no personality-weighted option scoring |

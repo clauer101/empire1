@@ -47,10 +47,13 @@ _KNOWN_CONDITION_TYPES: frozenset[str] = _DIRECT_STAT_CONDITIONS | frozenset({
 # single battle (not accumulated across battles). Progress for these is
 # reported as binary (0/1 or 1/1) rather than current/threshold, since e.g.
 # "1/2" on max_artifacts_stolen_one_battle would misread as "steal 2 relics
-# total" instead of "steal 2 relics in one engagement".
+# total" instead of "steal 2 relics in one engagement". Same reasoning applies
+# to max_lucky_punch_levels: "1 / 3" on "Beat a defender 3 eras above you"
+# reads as "do it 3 times" rather than "your best gap so far is 1 era".
 _SINGLE_EVENT_THRESHOLD_CONDITIONS: frozenset[str] = frozenset({
     "max_artifacts_stolen_one_battle",
     "max_artifacts_lost_one_battle",
+    "max_lucky_punch_levels",
 })
 
 

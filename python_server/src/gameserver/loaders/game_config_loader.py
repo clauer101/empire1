@@ -40,6 +40,20 @@ class SigmoidPrice:
 
 
 @dataclass
+class RulerLevelCurve:
+    """Shape of the level -> stat interpolation curve used by ruler_critter_stats().
+
+    type "power":   t = norm ** power
+    type "sigmoid": rescaled logistic curve, steepest around `midpoint` level
+    (norm = (level - 1) / (RULER_MAX_LEVEL - 1))
+    """
+    type: str = "power"
+    power: float = 4.0
+    midpoint: float = 12.0
+    steepness: float = 8.0
+
+
+@dataclass
 class StructureUpgradeDef:
     """Per-level percentage bonus for each upgradeable tower stat."""
     damage: float = 5.0          # % per level
@@ -189,6 +203,9 @@ class GameConfig:
     ruler_xp_per_reached_per_era: float = 10.0
     ruler_xp_victory_per_era: float = 50.0
 
+    # -- Ruler level -> stat curve -------------------------------------
+    ruler_level_curve: RulerLevelCurve = field(default_factory=RulerLevelCurve)
+
     # -- Prices ------------------------------------------------------
     prices: Prices = field(default_factory=Prices)
 
@@ -330,6 +347,21 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
     cu_raw = raw.pop("critter_upgrades")
     critter_upgrades = CritterUpgradeDef(**{k: float(v) for k, v in cu_raw.items()})
 
+    # -- ruler_level_curve (required) -------------------------------------
+    if "ruler_level_curve" not in raw:
+        raise ValueError("Missing required section 'ruler_level_curve' in game.yaml")
+    rlc_raw = raw.pop("ruler_level_curve")
+    ruler_level_curve = RulerLevelCurve(
+        type=str(rlc_raw.get("type", "power")),
+        power=float(rlc_raw.get("power", 4.0)),
+        midpoint=float(rlc_raw.get("midpoint", 12.0)),
+        steepness=float(rlc_raw.get("steepness", 8.0)),
+    )
+    if ruler_level_curve.type not in ("power", "sigmoid"):
+        raise ValueError(
+            f"ruler_level_curve.type must be 'power' or 'sigmoid', got {ruler_level_curve.type!r}"
+        )
+
     # -- ai_generator (optional, empty dict if absent) -------------------
     ai_generator_raw = raw.pop("ai_generator", None)
     ai_generator: Dict[str, Dict[str, int]] = (
@@ -379,6 +411,7 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         ai_generator=ai_generator,
         structure_upgrades=structure_upgrades,
         critter_upgrades=critter_upgrades,
+        ruler_level_curve=ruler_level_curve,
         end_rally_effects=end_rally_effects,
         **{
             k: v for k, v in raw.items()

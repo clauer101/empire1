@@ -195,13 +195,16 @@ class TestDirectStatConditions:
 # ── Single-battle peak conditions report binary progress ───────────────────────
 
 class TestSingleEventThresholdProgress:
-    """max_artifacts_stolen_one_battle / max_artifacts_lost_one_battle must reach
-    their threshold within one battle, so progress should read 0/1 or 1/1 —
-    never e.g. 1/2, which would misleadingly suggest accumulating across battles."""
+    """max_artifacts_stolen_one_battle / max_artifacts_lost_one_battle /
+    max_lucky_punch_levels must reach their threshold within one battle, so
+    progress should read 0/1 or 1/1 — never e.g. 1/2, which would misleadingly
+    suggest accumulating across battles (or, for the era-gap trophy, "do this
+    N times" instead of "reach an N-era gap once")."""
 
     @pytest.mark.parametrize("ctype", [
         "max_artifacts_stolen_one_battle",
         "max_artifacts_lost_one_battle",
+        "max_lucky_punch_levels",
     ])
     def test_below_threshold_reports_zero_of_one(self, ctype):
         svc = _svc()
@@ -211,6 +214,7 @@ class TestSingleEventThresholdProgress:
     @pytest.mark.parametrize("ctype", [
         "max_artifacts_stolen_one_battle",
         "max_artifacts_lost_one_battle",
+        "max_lucky_punch_levels",
     ])
     def test_at_threshold_reports_one_of_one(self, ctype):
         svc = _svc()

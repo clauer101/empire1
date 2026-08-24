@@ -205,22 +205,30 @@ class GameLoop:
                 _log.info("Season snapshot: wrote artifact_holds.csv (%d rows)", len(holds_rows))
 
 
-            # 5. Record top-3 winners in the live DB
+            # 5. Record top-3 winners in the live DB. Mutually-allied empires
+            # are pooled: a place can be shared by a two-empire team, ranked
+            # on their combined culture (mirrors the live leaderboard).
             if self._database is not None:
                 from gameserver.engine.global_state import get_season_title
-                empires = list(self._empires.all_empires.values())
-                ranked = sorted(
-                    (e for e in empires if e.uid != 0),
-                    key=lambda e: e.resources.get("culture", 0.0), reverse=True,
-                )
+                from gameserver.util.alliance_grouping import group_by_pooled_culture
+
+                empires_by_uid = {
+                    e.uid: e for e in self._empires.all_empires.values() if e.uid != 0
+                }
+                culture_by_uid = {
+                    uid: e.resources.get("culture", 0.0) for uid, e in empires_by_uid.items()
+                }
+                mutual_alliances = await self._database.get_all_mutual_alliances()
+                groups = group_by_pooled_culture(culture_by_uid, mutual_alliances)
                 winners = [
                     {
-                        "place": i + 1,
-                        "empire_uid": e.uid,
-                        "empire_name": e.name,
-                        "culture": e.resources.get("culture", 0.0),
+                        "place": place,
+                        "empire_uid": uid,
+                        "empire_name": empires_by_uid[uid].name,
+                        "culture": culture_by_uid[uid],
                     }
-                    for i, e in enumerate(ranked[:3])
+                    for place, group in enumerate(groups[:3], start=1)
+                    for uid in group
                 ]
                 await self._database.record_season_winners(
                     season_number=get_season_number(),

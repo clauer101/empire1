@@ -385,6 +385,32 @@ async def save_prices(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+@app.get("/api/ruler-level-curve")
+async def get_ruler_level_curve():
+    """Return the ruler_level_curve section from game.yaml."""
+    try:
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        return JSONResponse(raw.get("ruler_level_curve", {}))
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/ruler-level-curve")
+async def save_ruler_level_curve(request: Request):
+    """Update the ruler_level_curve section in game.yaml (patch only that block)."""
+    try:
+        curve = await request.json()
+        raw = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        raw["ruler_level_curve"] = curve
+        GAME_CONFIG_PATH.write_text(
+            yaml.dump(raw, default_flow_style=False, allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+        return JSONResponse({"success": True})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
 @app.get("/api/ai-generator")
 async def get_ai_generator():
     """Return the ai_generator section from game.yaml, keyed by lowercase English era keys."""

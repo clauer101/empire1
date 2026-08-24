@@ -34,6 +34,7 @@ from bot.planners.base import BotContext  # noqa: E402
 from bot.state import BotState, now_iso  # noqa: E402
 from bot.strategy import (  # noqa: E402
     breach_defense_strategy, is_expired, make_override, roll_strategy,
+    season_start_defense_strategy,
 )
 
 log = logging.getLogger("bot")
@@ -276,12 +277,21 @@ def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer)
             log.info("defense streak %d/%d reached → rolled new strategy: %s",
                      streak, DEFENSE_WIN_STREAK_TARGET, state.strategy["type"])
 
+    # Rule 0: a bot with no strategy at all — brand new, or just wiped by the
+    # season reset above — always opens on defense (build the maze first).
+    if state.strategy is None:
+        state.strategy = season_start_defense_strategy(config)
+        state.dirty = True
+        log.info("no active strategy (new bot or new season) → opening on defense until %s",
+                 state.strategy["valid_until"])
+
     # Strategy expiry / completion → roll a new strategy. In practice this
-    # only ever fires for the "no_targets" placeholder (5 min TTL): defense
-    # is only ever entered via rule 1 above (breach_defense_strategy's
-    # wall-clock window is set but rule 1 replaces it long before it could
-    # expire in normal play), and attack/growth hold with NO_EXPIRY.
-    if is_expired(state.strategy) or (state.strategy or {}).get("completed"):
+    # only ever fires for the "no_targets" placeholder (5 min TTL) and for a
+    # season-start defense on a quiet opening: defense is otherwise only
+    # entered via rule 1 above (breach_defense_strategy's wall-clock window is
+    # set but rule 1 replaces it long before it could expire in normal play),
+    # and attack/growth hold with NO_EXPIRY.
+    elif is_expired(state.strategy) or state.strategy.get("completed"):
         targets = score_targets(
             _empire_list(api), summary.get("uid", 0),
             float(summary.get("resources", {}).get("culture", 0.0)),

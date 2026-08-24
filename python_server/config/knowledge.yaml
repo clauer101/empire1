@@ -328,7 +328,7 @@ LOGIC:
   branch: right
   branch_label: "Science"
   effects:
-    research_speed_modifier: 0.5
+    research_speed_modifier: 0.1
 
 ASTRONOMY:
   era: iron

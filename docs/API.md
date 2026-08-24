@@ -925,10 +925,15 @@ Mark a message as read.
 ### `GET /api/season-results`  🔐
 End-of-season leaderboard with gold investment, army strength, and culture scores for all player empires.
 
+`season_podium` gives the top-3 places pooled by mutual alliance: an allied
+pair is ranked on their combined culture and can share a place as a
+two-empire team (mirrors the live `/api/empires` alliance grouping). Falls
+back to a solo `members` array of length 1 for unallied places.
+
 **Response**
 ```json
 {
-  "results": [
+  "empires": [
     {
       "uid": 42,
       "name": "The Iron Throne",
@@ -936,6 +941,16 @@ End-of-season leaderboard with gold investment, army strength, and culture score
       "tower_gold": 8200.0,
       "army_gold": 3100.0,
       "era": 5
+    }
+  ],
+  "season_podium": [
+    {
+      "place": 1,
+      "pooled_culture": 61200.0,
+      "members": [
+        { "uid": 42, "name": "The Iron Throne", "culture": 34500.0 },
+        { "uid": 7, "name": "Sunspear Hold", "culture": 26700.0 }
+      ]
     }
   ]
 }

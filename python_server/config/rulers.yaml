@@ -52,7 +52,7 @@ MAJA:
     name: Grand Architect’s Decree
     description: ''
     levels:
-    - gold_lump_sum_after_research: 100000
+    - gold_lump_sum_after_research: 50000
     - gold_lump_sum_after_research: 250000
     - gold_lump_sum_after_research: 1000000
 NANDI:
@@ -153,7 +153,7 @@ LUCIEN:
     levels:
     - other_citizen_gold_modifier: 0.004
     - other_citizen_gold_modifier: 0.005
-    - other_citizen_gold_modifier: 0
+    - other_citizen_gold_modifier: 0.006
     - other_citizen_gold_modifier: 0.007
     - other_citizen_gold_modifier: 0.01
   r:

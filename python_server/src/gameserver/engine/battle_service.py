@@ -495,6 +495,8 @@ class BattleService:
                             shot_effects["burn_dps"] = shot_effects["burn_dps"] * efval_mult
                         if "slow_ratio" in shot_effects:
                             shot_effects["slow_ratio"] = shot_effects["slow_ratio"] * efval_mult_inv
+                        if "splash_radius" in shot_effects:
+                            shot_effects["splash_radius"] = shot_effects["splash_radius"] * efval_mult
 
                     shot = Shot(
                         damage=structure.damage * damage_mult,
@@ -662,7 +664,11 @@ class BattleService:
         aura_choice: str = "",
     ) -> Critter:
         """Create a Critter from ruler config, scaling stats by ruler level."""
-        stats = ruler_critter_stats(ruler_cfg, ruler_level, aura_effects=dict(self._gc.ruler_aura_effects))
+        stats = ruler_critter_stats(
+            ruler_cfg, ruler_level,
+            aura_effects=dict(self._gc.ruler_aura_effects),
+            curve=self._gc.ruler_level_curve,
+        )
         health = stats["health"]
         anim_folder = (stats.get("animation") or "").rstrip("/").split("/")[-1]
         sprite_iid = f"ruler_{anim_folder}" if anim_folder else f"RULER_{ruler_iid}"

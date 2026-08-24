@@ -46,7 +46,7 @@
   "url": "https://relicsnrockets.io/api.html",
   "image": "https://relicsnrockets.io/assets/sprites/banner.webp",
   "inLanguage": "en",
-  "dateModified": "2026-08-18",
+  "dateModified": "2026-08-24",
   "audience": {
     "@type": "Audience",
     "audienceType": "Developer"
@@ -1155,9 +1155,13 @@ defender_uid     — which empire to spectate (requires spectating=1)
 <h2 id="season">Season</h2>
 <h3 id="get-apiseason-results"><code>GET /api/season-results</code>  🔐</h3>
 <p>End-of-season leaderboard with gold investment, army strength, and culture scores for all player empires.</p>
+<p><code>season_podium</code> gives the top-3 places pooled by mutual alliance: an allied
+pair is ranked on their combined culture and can share a place as a
+two-empire team (mirrors the live <code>/api/empires</code> alliance grouping). Falls
+back to a solo <code>members</code> array of length 1 for unallied places.</p>
 <p><strong>Response</strong></p>
 <pre><code class="language-json">{
-  &quot;results&quot;: [
+  &quot;empires&quot;: [
     {
       &quot;uid&quot;: 42,
       &quot;name&quot;: &quot;The Iron Throne&quot;,
@@ -1165,6 +1169,16 @@ defender_uid     — which empire to spectate (requires spectating=1)
       &quot;tower_gold&quot;: 8200.0,
       &quot;army_gold&quot;: 3100.0,
       &quot;era&quot;: 5
+    }
+  ],
+  &quot;season_podium&quot;: [
+    {
+      &quot;place&quot;: 1,
+      &quot;pooled_culture&quot;: 61200.0,
+      &quot;members&quot;: [
+        { &quot;uid&quot;: 42, &quot;name&quot;: &quot;The Iron Throne&quot;, &quot;culture&quot;: 34500.0 },
+        { &quot;uid&quot;: 7, &quot;name&quot;: &quot;Sunspear Hold&quot;, &quot;culture&quot;: 26700.0 }
+      ]
     }
   ]
 }

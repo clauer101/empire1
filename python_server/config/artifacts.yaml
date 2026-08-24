@@ -4,6 +4,7 @@
 
 AWE_INSPIRING_GRAIL:
   name: Awe-Inspiring Grail
+  image: assets/sprites/artifacts/awe_inspiring_grail.webp
   description: Forged in a forgotten age, those who behold it fall silent. No one
     remembers who drank from it last.
   type: ''
@@ -13,6 +14,7 @@ AWE_INSPIRING_GRAIL:
     culture_modifier: 0.2
 LOST_ALMANAC:
   name: Lost Almanac
+  image: assets/sprites/artifacts/lost_almanac.webp
   description: A water-stained tome filled with diagrams of machines that do not yet
     exist. The last page is always blank.
   type: ''
@@ -23,6 +25,7 @@ LOST_ALMANAC:
     life_regen_modifier: 0.003
 ANCIENT_RELIQUE:
   name: Ancient Relique
+  image: assets/sprites/artifacts/ancient_relique.webp
   description: Excavated from beneath three civilisations. Scholars argue about its
     purpose; merchants argue about its price.
   type: ''
@@ -33,6 +36,7 @@ ANCIENT_RELIQUE:
     research_speed_modifier: 0.1
 ASSASSINS_DAGGER:
   name: Assassin's Dagger
+  image: assets/sprites/artifacts/assassins_dagger.webp
   description: The blade is clean. It has always been clean. Nobody knows why.
   type: ''
   effects:
@@ -42,6 +46,7 @@ ASSASSINS_DAGGER:
     culture_modifier: 0.3
 BATTLE_DRUMS:
   name: Battle Drums
+  image: assets/sprites/artifacts/battle_drums.webp
   description: Said to have been beaten at the founding of the first empire. The leather
     is older than memory.
   type: ''
@@ -53,6 +58,7 @@ BATTLE_DRUMS:
     culture_modifier: 0.2
 BOOK_OF_HEROES:
   name: Book of Heroes
+  image: assets/sprites/artifacts/book_of_heroes.webp
   description: Every name written inside belongs to someone who died young. The last
     entry is smudged beyond reading.
   type: ''
@@ -62,6 +68,7 @@ BOOK_OF_HEROES:
     culture_modifier: 0.05
 FINE_TROWEL:
   name: Fine Trowel
+  image: assets/sprites/artifacts/fine_trowel.webp
   description: Unremarkable at first glance. Yet every wall built with it has outlasted
     the empire that raised it.
   type: ''
@@ -71,6 +78,7 @@ FINE_TROWEL:
     culture_modifier: 0.2
 GOLDEN_ARC:
   name: Golden Arc
+  image: assets/sprites/artifacts/golden_arc.webp
   description: A curved fragment of something much larger. Whatever it once framed,
     no record survives.
   type: ''
@@ -82,6 +90,7 @@ GOLDEN_ARC:
     culture_modifier: 0.1
 MERCIFUL_ARMOUR:
   name: Merciful Armour
+  image: assets/sprites/artifacts/merciful_armour.webp
   description: Not a single dent. Whoever wore it never needed to be struck twice
     — or perhaps was never struck at all.
   type: ''
@@ -92,6 +101,7 @@ MERCIFUL_ARMOUR:
     gold_modifier: 0.05
 SCROLLS_OF_WISDOM:
   name: Scrolls of Wisdom
+  image: assets/sprites/artifacts/scrolls_of_wisdom.webp
   description: Forty-seven scrolls, tightly bound. The forty-eighth is missing. Everyone
     who reads them goes looking for it.
   type: ''

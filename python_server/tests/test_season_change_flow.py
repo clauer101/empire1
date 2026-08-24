@@ -96,6 +96,22 @@ async def harness(gc, tmp_path):
     # File-backed DB so the snapshot's gameserver.db copy has a real source.
     db = Database(str(tmp_path / "gameserver.db"))
     await db.connect()
+    # season_winners is Alembic-managed (migrations/versions/1595c89ddf0b_*),
+    # not part of Database._SCHEMA, and this fixture doesn't run migrations —
+    # create it directly so _take_season_snapshot's DB write has a target.
+    await db._conn.execute(
+        "CREATE TABLE IF NOT EXISTS season_winners ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " season_number INTEGER NOT NULL,"
+        " season_title TEXT NOT NULL DEFAULT '',"
+        " place INTEGER NOT NULL,"
+        " empire_uid INTEGER NOT NULL,"
+        " empire_name TEXT NOT NULL,"
+        " culture REAL NOT NULL,"
+        " recorded_at TEXT NOT NULL"
+        ")"
+    )
+    await db._conn.commit()
 
     gl = GameLoop(
         event_bus=event_bus,
@@ -273,6 +289,39 @@ async def test_auto_next_season_start_bases_on_rally_end_not_activation(harness)
     assert next_start > before_step
     expected = activated_at + timedelta(seconds=RALLY_DURATION) + timedelta(seconds=gc.next_season_start_after_end)
     assert abs((next_start - expected).total_seconds()) < 2
+
+
+async def test_season_snapshot_pools_allied_culture(harness):
+    """An allied pair shares a podium place, ranked on combined culture.
+
+    Alpha (uid=1, 100 culture) and Beta (uid=2, 50 culture) are mutually
+    allied -> pooled 150. Gamma (uid=99, 120 culture) is unallied and would
+    beat either of them individually, but not the pooled pair.
+    """
+    gl, empires, attacks, gc, tmp_path = harness
+    db = gl._database
+
+    alpha = empires.get(1)
+    alpha.resources["culture"] = 100.0
+    beta = empires.get(2)
+    beta.resources["culture"] = 50.0
+    gamma = Empire(uid=99, name="Gamma", resources={"culture": 120.0})
+    empires.register(gamma)
+
+    await db.toggle_alliance_declaration(1, 2)
+    await db.toggle_alliance_declaration(2, 1)
+
+    await gl._take_season_snapshot()
+
+    winners = await db.get_season_winners(season_number=global_state.get_season_number())
+    places = {w["empire_uid"]: w["place"] for w in winners}
+    assert places[1] == 1
+    assert places[2] == 1
+    assert places[99] == 2
+    # Own culture is recorded per member, not the pooled total.
+    culture_by_uid = {w["empire_uid"]: w["culture"] for w in winners}
+    assert culture_by_uid[1] == 100.0
+    assert culture_by_uid[2] == 50.0
 
 
 async def _drain_pending_tasks() -> None:

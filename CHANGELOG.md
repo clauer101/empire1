@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-08-20
+
+### Season 4 balance pass: sharper roles, and a reason to trust someone
+
+Season 4, "Love and Betrayal," arrives with the biggest rebalance we've shipped.
+
+**Rulers.** Every ruler had skills moved between slots, so check your build —
+your points may now sit on a different effect. **Maja**
+swapped her workshop discount and her research payout; the payout at max is now
+1M gold. **Borin** traded life restoration for artifact retention, and his
+ultimate now grants bonus gold per critter killed. **Alric** moved the artifact
+stealing package to his ultimate and now slows enemy sieges earlier in the tree.
+**Nandi** and **Lucien** kept their layouts but had every tier rescaled.
+
+**Units and towers.** The goal was to make each class feel like its class. Tanks
+are genuinely hard to kill now — the Mech Warrior went from 18 to 35 armor, out
+of reach of most single-shot towers. Fast units are faster and arrive in tighter
+packs; the Helicopter now spawns every 500ms instead of 900ms. Carriers move
+quicker, and the Cargo dropped to three wave slots while gaining armor. Because
+armor subtracts flat damage, the counter to all this armor is
+fire: burn damage ignores armor entirely, and every burn tower got a serious
+lift — the Fire Tower's burn went from 1.25 to 4 damage per second. The Rocket
+Tower changed job completely, from a single heavy hit to splash damage, and the
+Laser Tower is now a future-era tower.
+
+Most units also lost their building prerequisites and now unlock from research
+alone, so armies come online much earlier.
+
+**Economy and diplomacy.** Late-era upgrades cost far more — the last era step
+went from 730k to 2.73M — while early citizens got cheaper, so the opening is
+faster and the endgame is a real grind. Artifacts are more common but
+individually weaker, and now mostly grant culture. Spy intel is no longer bought
+with gold; you send a spy army instead. And you can now ally with one other
+empire: allies can't attack each other, they're ranked together by combined
+culture, and forming or breaking the pact costs 5% of your culture.
+
 ## 2026-08-15
 
 ### Season 3 wrap-up: The Rise of the Robots

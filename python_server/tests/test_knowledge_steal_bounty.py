@@ -42,10 +42,12 @@ def empire_service(upgrade_provider):
 
 
 def _give_scholars_bounty(empire: Empire) -> None:
-    """Set the empire's ruler to Maja with Scholar's Bounty (W skill) at level 1 —
-    real rulers.yaml grants gold_lump_sum_after_research: 1000 at that level."""
+    """Set the empire's ruler to Maja with Grand Architect's Decree (R skill) at
+    level 1 — real rulers.yaml grants gold_lump_sum_after_research: 50000 at that
+    level. (Season balance pass moved this payload from the W skill to R; W now
+    grants workshop_cost_modifier instead.)"""
     empire.ruler.type = "MAJA"
-    empire.ruler.w = 1
+    empire.ruler.r = 1
 
 
 def _make_item(iid, effort=100.0):
@@ -106,7 +108,7 @@ class TestKnowledgeStealPaysBounty:
         _compute_and_apply_loot(battle, svc)
 
         assert winner.knowledge["TECH"] == 0.0
-        assert winner.resources["gold"] == pytest.approx(1000.0)
+        assert winner.resources["gold"] == pytest.approx(50000.0)
         # research_queue pointed at a different item — must be left untouched
         assert winner.research_queue == "OTHER_TECH"
 
@@ -130,7 +132,7 @@ class TestKnowledgeStealPaysBounty:
         _compute_and_apply_loot(battle, svc)
 
         assert winner.knowledge["TECH"] == 0.0
-        assert winner.resources["gold"] == pytest.approx(1000.0)
+        assert winner.resources["gold"] == pytest.approx(50000.0)
         assert winner.research_queue is None
 
     def test_partial_progress_without_completion_pays_no_bounty(

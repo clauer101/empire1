@@ -4,7 +4,8 @@
 > `FrontierDefensePlanner.propose_options()`.
 > Analysis/geometry: `bot/defense_analysis.py` (`bfs_path`, `coverage_score`,
 > `pick_tower`); saving: `bot/savings.py`; maze-sim: `bot/sim.py::SimApi`.
-> Duration: `config.yaml`; forced switch: `bot/strategy.py::breach_defense_strategy`.
+> Duration: `config.yaml`; forced switch: `bot/strategy.py::breach_defense_strategy`;
+> season opening: `bot/strategy.py::season_start_defense_strategy`.
 > This file is the spec — when the planner changes, update it (and vice versa).
 
 **Goal:** Make the own hex map harder to break through by growing a single
@@ -12,9 +13,17 @@ walkable corridor (spawn → castle) that is walled with towers on both sides,
 instead of filling the whole owned field.
 
 Defense is never chosen by `roll_strategy()`'s weighted roll (that only ever
-picks between [attack](attack.md) and [growth](growth.md)) — it only takes
-over reactively, unconditionally, per the two rules in `bot-flow.md`'s
-Strategy System section: a **fully lost** defense (the whole battle, not just
+picks between [attack](attack.md) and [growth](growth.md)). It is reached two
+other ways, per the rules in `bot-flow.md`'s Strategy System section.
+
+**As the season opening (rule 0):** a bot with no active strategy — brand new,
+or just wiped by a season reset — always starts here for 3–8 hours
+(`strategy.py::season_start_defense_strategy`), so every bot enters a season
+building its maze before it considers raiding. The win streak starts at 0, so
+the normal way out is rule 2; if nobody attacks the bot during that window it
+expires into the usual attack/growth roll instead.
+
+**Reactively (rule 1):** a **fully lost** defense (the whole battle, not just
 a partial breach) immediately force-switches to this strategy for 3–8 hours
 (`strategy.py::breach_defense_strategy`) and resets the win streak to 0;
 winning `DEFENSE_WIN_STREAK_TARGET` (3) defenses in a row is the only way

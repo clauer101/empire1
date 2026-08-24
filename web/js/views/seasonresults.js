@@ -28,7 +28,7 @@ async function enter() {
   try {
     const data = await rest.getSeasonResults();
     const myUid = _state?.auth?.uid ?? null;
-    _render(data?.empires || [], data?.season_number ?? 1, data?.season_title ?? '', data?.next_season_start ?? '', myUid, data?.era_firsts ?? [], data?.era_order ?? [], data?.longest_single_artifact_holds ?? []);
+    _render(data?.empires || [], data?.season_number ?? 1, data?.season_title ?? '', data?.next_season_start ?? '', myUid, data?.era_firsts ?? [], data?.era_order ?? [], data?.longest_single_artifact_holds ?? [], data?.season_podium ?? []);
   } catch (err) {
     _renderError(err);
   }
@@ -54,13 +54,13 @@ function _renderError(err) {
     </div>`;
 }
 
-function _render(empires, seasonNumber, seasonTitle, nextSeasonStart, myUid, eraFirsts, eraOrder, longestSingleArtifactHolds) {
+function _render(empires, seasonNumber, seasonTitle, nextSeasonStart, myUid, eraFirsts, eraOrder, longestSingleArtifactHolds, seasonPodium) {
   if (!empires.length) {
     container.innerHTML = `<div class="sr-wrap"><div class="sr-error">No data available.</div></div>`;
     return;
   }
 
-  const podiumHtml = _podiumHtml(empires);
+  const podiumHtml = _podiumHtml(empires, seasonPodium);
   const titleHtml = seasonTitle
     ? `<div class="sr-season-label">Season ${seasonNumber}</div><h1 class="sr-title">${_esc(seasonTitle)}</h1>`
     : `<h1 class="sr-title">Season ${seasonNumber} Results</h1>`;
@@ -100,21 +100,30 @@ function _render(empires, seasonNumber, seasonTitle, nextSeasonStart, myUid, era
     </div>`;
 }
 
-function _podiumHtml(empires) {
+function _podiumHtml(empires, seasonPodium) {
   const medals = [
-    { rank: 1, icon: '🥇', cls: 'sr-gold',   label: '' },
-    { rank: 2, icon: '🥈', cls: 'sr-silver', label: '' },
-    { rank: 3, icon: '🥉', cls: 'sr-bronze', label: '' },
+    { rank: 1, icon: '🥇', cls: 'sr-gold' },
+    { rank: 2, icon: '🥈', cls: 'sr-silver' },
+    { rank: 3, icon: '🥉', cls: 'sr-bronze' },
   ];
+  // Places are pooled by mutual alliance server-side: a place can be a
+  // two-empire team ranked on combined culture. Fall back to individual
+  // top-3 if the server didn't send season_podium (e.g. stale cache).
+  const places = (seasonPodium && seasonPodium.length)
+    ? seasonPodium
+    : empires.slice(0, 3).map((e, i) => ({ place: i + 1, pooled_culture: e.culture, members: [e] }));
+
   let html = '';
   for (const m of medals) {
-    const e = empires[m.rank - 1];
-    if (!e) continue;
+    const p = places[m.rank - 1];
+    if (!p || !p.members?.length) continue;
+    const isTeam = p.members.length > 1;
+    const namesStr = p.members.map(e => _esc(e.name)).join(' & ');
     html += `
-      <div class="sr-podium-entry ${m.cls}">
+      <div class="sr-podium-entry ${m.cls}${isTeam ? ' sr-podium-team' : ''}">
         <span class="sr-medal">${m.icon}</span>
-        <span class="sr-empire-name">${_esc(e.name)}</span>
-        <span class="sr-culture">${fmtRes(e.culture)} culture</span>
+        <span class="sr-empire-name">${namesStr}</span>
+        <span class="sr-culture">${fmtRes(p.pooled_culture)} culture${isTeam ? ' (team)' : ''}</span>
       </div>`;
   }
 

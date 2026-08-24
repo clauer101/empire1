@@ -503,9 +503,29 @@ async function _showProductionOverlay(data) {
   });
 }
 
-export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
+/**
+ * Ruler picker. Browsing is always non-destructive: nothing is sent to the
+ * server until the player presses the confirm button, so Cancel, the ✕ and a
+ * backdrop click all leave the current ruler untouched.
+ *
+ * @param {object} rulersCatalog  ruler defs, keyed by iid
+ * @param {Function|null} onSuccess  called after a successful pick
+ * @param {{replace?: boolean}} opts  `replace: true` when the empire already
+ *   has a ruler — confirming then swaps it via a single atomic call and warns
+ *   about the XP reset up front.
+ */
+export function showChooseRulerOverlay(rulersCatalog, onSuccess = null, opts = {}) {
   document.querySelector('.choose-ruler-overlay')?.remove();
   if (!rulersCatalog) return;
+  const isReplace = !!opts.replace;
+  const confirmLabel = isReplace ? 'Replace Ruler' : 'Choose';
+  const warningHtml = isReplace
+    ? `<div style="background:rgba(239,83,80,0.1);border:1px solid rgba(239,83,80,0.4);border-radius:4px;padding:8px 12px;margin-bottom:12px;font-size:0.82em;line-height:1.5;color:#ef9a9a">
+         Replacing your ruler <strong>permanently resets XP, level and all skill points</strong>,
+         and any army wave using your current ruler is switched back to Slaves.
+         Nothing changes until you press “${confirmLabel}”.
+       </div>`
+    : '';
 
   const rulers = Object.entries(rulersCatalog);
   if (!rulers.length) return;
@@ -593,13 +613,14 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
 
           <div style="position:absolute;bottom:0;left:0;right:0;z-index:2;padding:16px 16px 20px">
             <div style="font-weight:700;font-size:1.3em;color:#fff;margin-bottom:8px">${def.name || iid}</div>
+            ${warningHtml}
             <div style="font-size:0.82em">${skillRows}</div>
             <div style="display:flex;justify-content:center;gap:8px;margin-top:12px">${dots}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px">
               <button id="ruler-prev" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:8px 18px;cursor:pointer;font-size:1.2em;backdrop-filter:blur(4px)">‹</button>
               <div style="display:flex;gap:8px">
                 <button id="ruler-choose-cancel" style="background:rgba(0,0,0,0.5);color:#ccc;border:1px solid #555;border-radius:4px;padding:8px 18px;cursor:pointer;backdrop-filter:blur(4px)">Cancel</button>
-                <button id="ruler-choose-confirm" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:8px 18px;font-weight:700;cursor:pointer">Choose</button>
+                <button id="ruler-choose-confirm" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:8px 18px;font-weight:700;cursor:pointer">${confirmLabel}</button>
               </div>
               <button id="ruler-next" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:8px 18px;cursor:pointer;font-size:1.2em;backdrop-filter:blur(4px)">›</button>
             </div>
@@ -610,7 +631,8 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
     return `
       <div class="prod-overlay-box" style="max-width:min(98vw,1600px);width:98vw;max-height:92vh;overflow-y:auto">
         <button class="prod-overlay-close" title="Close">✕</button>
-        <div style="font-weight:bold;font-size:1.05em;margin-bottom:14px">Choose Your Ruler</div>
+        <div style="font-weight:bold;font-size:1.05em;margin-bottom:14px">${isReplace ? 'Replace Your Ruler' : 'Choose Your Ruler'}</div>
+        ${warningHtml}
         <div style="display:flex;align-items:center;gap:8px">
           <button id="ruler-carousel-prev" style="flex:0 0 auto;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:2em;line-height:1;width:40px;height:60px;border-radius:6px;cursor:pointer">&#8249;</button>
           <div id="ruler-cards-track" style="flex:1;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory">
@@ -622,7 +644,7 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
         </div>
         <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px">
           <button id="ruler-choose-cancel" style="background:#333;color:#ccc;border:none;border-radius:4px;padding:7px 18px;cursor:pointer">Cancel</button>
-          <button id="ruler-choose-confirm" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer">Choose</button>
+          <button id="ruler-choose-confirm" style="background:#ffa726;color:#111;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer">${confirmLabel}</button>
         </div>
         <div id="ruler-choose-error" style="color:#e57373;font-size:0.85em;margin-top:8px;min-height:1em"></div>
       </div>`;
@@ -672,7 +694,11 @@ export function showChooseRulerOverlay(rulersCatalog, onSuccess = null) {
       btn.disabled = true;
       errEl.textContent = '';
       try {
-        const resp = await rest.chooseRuler(selectedIid);
+        // Destructive step happens here and nowhere else — see the doc comment
+        // on showChooseRulerOverlay.
+        const resp = isReplace
+          ? await rest.changeRuler(selectedIid)
+          : await rest.chooseRuler(selectedIid);
         if (resp?.success) { overlay.remove(); await (onSuccess ? onSuccess() : refresh()); }
         else { errEl.textContent = resp?.error || 'Could not choose ruler'; btn.disabled = false; }
       } catch (err) { errEl.textContent = err.message; btn.disabled = false; }

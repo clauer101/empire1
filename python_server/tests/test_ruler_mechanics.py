@@ -7,7 +7,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gameserver.engine.empire_service import EmpireService, ruler_critter_stats, RULER_MAX_LEVEL
+from gameserver.engine.empire_service import (
+    RULER_MAX_LEVEL,
+    EmpireService,
+    ruler_critter_stats,
+)
+from gameserver.loaders.game_config_loader import RulerLevelCurve
 from gameserver.main import _load_rulers
 from gameserver.models.empire import Empire, Ruler
 
@@ -88,10 +93,10 @@ class TestRulerCritterStats:
         assert stats["speed"] == pytest.approx(1.1)
         assert stats["armour"] == pytest.approx(19.0)
 
-    def test_mid_level_interpolates_quadratically(self):
+    def test_mid_level_interpolates_along_curve(self):
         mid = (RULER_MAX_LEVEL + 1) // 2  # level 9 for max_level=18
         stats = ruler_critter_stats(MAJA_CFG, level=mid)
-        t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** 2
+        t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** RulerLevelCurve().power
         expected_health = 20.0 + (2000.0 - 20.0) * t
         assert stats["health"] == pytest.approx(expected_health)
 
@@ -184,9 +189,9 @@ class TestRulerCombatScaling:
             prev = cur
 
     @pytest.mark.parametrize("attr,key_min,key_max", _COMBAT_ATTRS)
-    def test_quadratic_interpolation_at_midpoint(self, attr, key_min, key_max):
+    def test_curve_interpolation_at_midpoint(self, attr, key_min, key_max):
         mid = (RULER_MAX_LEVEL + 1) // 2
-        t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** 2
+        t = ((mid - 1) / (RULER_MAX_LEVEL - 1)) ** RulerLevelCurve().power
         expected = MAJA_CFG[key_min] + (MAJA_CFG[key_max] - MAJA_CFG[key_min]) * t
         if attr == "damage":
             expected = round(expected)

@@ -16,13 +16,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from gameserver.engine.upgrade_provider import UpgradeProvider
-    from gameserver.loaders.game_config_loader import GameConfig
     from gameserver.util.events import EventBus
 
+from gameserver.loaders.game_config_loader import GameConfig, RulerLevelCurve
 from gameserver.models.empire import Empire
 from gameserver.util.eras import ERA_ORDER
 
@@ -31,14 +32,31 @@ log = logging.getLogger(__name__)
 RULER_MAX_LEVEL = 18
 
 
-def ruler_critter_stats(ruler_cfg: "dict[str, Any]", level: int, aura_effects: "dict[str, float] | None" = None) -> "dict[str, Any]":
+def _ruler_level_t(level: int, curve: "RulerLevelCurve") -> float:
+    """Normalized [0, 1] progress along the level -> stat curve for `level`."""
+    norm = max(0.0, min(1.0, (level - 1) / (RULER_MAX_LEVEL - 1)))
+    if curve.type == "sigmoid":
+        mid_norm = (curve.midpoint - 1) / (RULER_MAX_LEVEL - 1)
+        def _raw(x: float) -> float:
+            return 1.0 / (1.0 + math.exp(-curve.steepness * (x - mid_norm)))
+        raw0, raw1 = _raw(0.0), _raw(1.0)
+        return (_raw(norm) - raw0) / (raw1 - raw0)
+    return float(norm ** curve.power)
+
+
+def ruler_critter_stats(
+    ruler_cfg: "dict[str, Any]",
+    level: int,
+    aura_effects: "dict[str, float] | None" = None,
+    curve: "RulerLevelCurve | None" = None,
+) -> "dict[str, Any]":
     """Compute level-scaled critter stats for a ruler.
 
     All numeric combat attributes are linearly interpolated between their
-    _min and _max values based on level / RULER_MAX_LEVEL.
+    _min and _max values based on level / RULER_MAX_LEVEL, along the shape
+    given by `curve` (defaults to game.yaml's ruler_level_curve via caller).
     """
-    t = max(0.0, min(1.0, (level - 1) / (RULER_MAX_LEVEL - 1)))
-    t = t * t  # quadratic: slow growth early, steep growth near max level
+    t = _ruler_level_t(level, curve or RulerLevelCurve())
     def _lerp(lo: float, hi: float) -> float:
         return lo + (hi - lo) * t
     return {
@@ -76,8 +94,7 @@ class EmpireService:
         self._mutation_locks: dict[int, asyncio.Lock] = {}  # uid → lock guarding resource-spending ops
 
         # Game balance constants (fall back to defaults if no config)
-        from gameserver.loaders.game_config_loader import GameConfig as _GC
-        _gc = game_config if game_config is not None else _GC()
+        _gc = game_config if game_config is not None else GameConfig()
         self._gc = _gc
         self._base_gold = _gc.base_gold_per_sec
         self._base_culture = _gc.base_culture_per_sec
