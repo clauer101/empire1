@@ -1121,6 +1121,7 @@ async def get_artifacts():
                 result.append({
                     "iid": iid,
                     "name": data.get("name", ""),
+                    "image": data.get("image", ""),
                     "description": data.get("description", ""),
                     "type": data.get("type", ""),
                     "effects": data.get("effects") or {},
@@ -1140,6 +1141,7 @@ async def save_artifacts(request: Request):
             iid = item["iid"].strip().upper().replace(" ", "_")
             raw[iid] = {
                 "name": item.get("name", ""),
+                "image": item.get("image", ""),
                 "description": item.get("description", ""),
                 "type": item.get("type", ""),
                 "effects": item.get("effects") or {},

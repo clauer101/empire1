@@ -103,7 +103,7 @@ export class ItemOverlay {
       const name = avail?.name || catInfo.name || iid;
       const desc = avail?.description || catInfo.description;
       const effort = avail?.effort ?? catInfo.effort;
-      const effectsStr = this._fmtEffects(avail?.effects || catInfo.effects);
+      const effectsStr = this._fmtItemEffects(avail?.effects || catInfo.effects);
       const reqs = this._reqLinks(avail?.requirements || catInfo.requirements);
       const excl = this._excludesLinks(avail?.excludes || catInfo.excludes);
       const eraLabel = this._getEraLabel(iid);
@@ -291,10 +291,6 @@ export class ItemOverlay {
   _fmtEffectRows(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
     return Object.entries(effects).map(([k, v]) => fmtEffectRow(k, v)).join('');
-  }
-
-  _fmtEffects(effects) {
-    return fmtEffectsInline(effects);
   }
 
   _fmtItemEffects(effects) {

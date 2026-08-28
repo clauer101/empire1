@@ -356,10 +356,10 @@ SAMURAI:
   name: "Samurai"
   description: "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker."
   speed: 1.5
-  health: 41
+  health: 55
   value: 86
   damage: 1
-  armour: 2
+  armour: 0
   slots: 1
   time_between: 800
   is_boss: false
@@ -460,10 +460,10 @@ NINJA:
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
   speed: 1.6
-  health: 62
+  health: 81
   value: 168
   damage: 2
-  armour: 2
+  armour: 0
   slots: 1
   time_between: 700
   is_boss: false
@@ -564,10 +564,10 @@ MOTORBIKE:
   name: "Motorbike"
   description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
   speed: 1.7
-  health: 97
+  health: 134
   value: 264
   damage: 3
-  armour: 4
+  armour: 0
   slots: 1
   time_between: 600
   is_boss: false
@@ -668,10 +668,10 @@ HELI:
   name: "Helicopter"
   description: "The fastest modern unit, deploying Soldiers on crash. Weak armor but nearly impossible to intercept."
   speed: 1.8
-  health: 133
+  health: 167
   value: 1012
   damage: 3
-  armour: 4
+  armour: 0
   slots: 2
   time_between: 500
   is_boss: false
@@ -713,10 +713,10 @@ DRONE:
   name: "Drone"
   description: "A fast and agile flying unit with light armor. Difficult to hit but vulnerable to area damage."
   speed: 2
-  health: 161
+  health: 199
   value: 1112
   damage: 1
-  armour: 2
+  armour: 0
   slots: 0.6
   time_between: 200
   is_boss: false

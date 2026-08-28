@@ -214,7 +214,7 @@ export function fmtAllianceStatus(status) {
   switch (status) {
     case 'allied':           return { label: '🤝 Allied',           badgeClass: 'badge--completed' };
     case 'pending_sent':     return { label: '💬 Request Sent',     badgeClass: 'badge--in-progress' };
-    case 'pending_received': return { label: '💬 Request Received', badgeClass: 'badge--available' };
+    case 'pending_received': return { label: '💬 Request Received', badgeClass: 'badge--alliance-request' };
     default:                 return { label: '💬 Diplomacy',        badgeClass: 'badge--available' };
   }
 }

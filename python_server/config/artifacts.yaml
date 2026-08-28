@@ -23,6 +23,7 @@ LOST_ALMANAC:
     build_speed_modifier: 0.3
     restore_life_after_loss_offset: 10
     life_regen_modifier: 0.003
+    culture_modifier: 0.1
 ANCIENT_RELIQUE:
   name: Ancient Relique
   image: assets/sprites/artifacts/ancient_relique.webp
@@ -107,3 +108,4 @@ SCROLLS_OF_WISDOM:
   type: ''
   effects:
     research_speed_modifier: 0.2
+    culture_modifier: 0.1

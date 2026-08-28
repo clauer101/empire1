@@ -2242,6 +2242,52 @@
         ]
       }
     },
+    "/api/diplomacy/alliance/decline": {
+      "post": {
+        "summary": "Decline Alliance",
+        "description": "Decline an alliance request received from body.target_uid.\n\nRemoves only target_uid's outgoing declaration toward uid — the\ncaller's own declarations (e.g. an existing mutual alliance\nelsewhere) are untouched. Unlike toggle_alliance, this never forms\nor breaks an alliance and never charges the culture cost, since\ndeclining isn't breaking anything the caller declared.",
+        "operationId": "decline_alliance_api_diplomacy_alliance_decline_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllianceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Decline Alliance Api Diplomacy Alliance Decline Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health Check",

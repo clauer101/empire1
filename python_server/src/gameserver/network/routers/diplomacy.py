@@ -117,4 +117,26 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
 
         return {"success": True, "declared": declared, "alliance_status": status}
 
+    @router.post("/api/diplomacy/alliance/decline")
+    @limiter.limit("20/minute")
+    async def decline_alliance(
+        request: Request, body: AllianceRequest, uid: int = Depends(get_current_uid),
+    ) -> dict[str, Any]:
+        """Decline an alliance request received from body.target_uid.
+
+        Removes only target_uid's outgoing declaration toward uid — the
+        caller's own declarations (e.g. an existing mutual alliance
+        elsewhere) are untouched. Unlike toggle_alliance, this never forms
+        or breaks an alliance and never charges the culture cost, since
+        declining isn't breaking anything the caller declared.
+        """
+        if body.target_uid == uid or body.target_uid <= 0:
+            return {"success": False, "error": "Invalid target"}
+        assert services.database is not None
+        declared_to, declared_by = await services.database.get_alliance_declarations_for(uid)
+        if _alliance_status(body.target_uid, declared_to, declared_by) != "pending_received":
+            return {"success": False, "error": "No pending request from this empire"}
+        removed = await services.database.remove_alliance_declaration(body.target_uid, uid)
+        return {"success": True, "declined": removed}
+
     return router

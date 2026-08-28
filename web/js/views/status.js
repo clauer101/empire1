@@ -1670,7 +1670,7 @@ function _empireRowHtml(e, i) {
         }
         ${
           !e.is_self
-            ? `<a href="#empire/${e.uid}" class="empire-detail-btn" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--accent,#4fc3f7);border:1px solid var(--accent,#4fc3f7);">🏰</a>`
+            ? `<a href="#empire/${e.uid}" class="empire-detail-btn${e.alliance_status === 'pending_received' ? ' has-alliance-request' : ''}" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--accent,#4fc3f7);border:1px solid var(--accent,#4fc3f7);" ${e.alliance_status === 'pending_received' ? 'title="Alliance request received"' : ''}>🏰</a>`
             : ''
         }
       </div>

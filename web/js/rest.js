@@ -692,6 +692,16 @@ class RestClient {
     return this._post('/api/diplomacy/alliance', { target_uid: targetUid });
   }
 
+  /**
+   * Decline an alliance request received from targetUid, without touching
+   * the current player's own declarations (e.g. an existing alliance elsewhere).
+   * @param {number} targetUid
+   * @returns {Promise<object>}
+   */
+  async declineAlliance(targetUid) {
+    return this._post('/api/diplomacy/alliance/decline', { target_uid: targetUid });
+  }
+
   async rulerSkillUp(skill) {
     return this._post('/api/empire/ruler/skill-up', { skill });
   }

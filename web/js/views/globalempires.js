@@ -116,7 +116,7 @@ function _onAttackClick(e, uid, name) {
 
 function _rowHtml(e, rankIndex) {
   const detailBtn = !e.is_self
-    ? `<a href="#empire/${e.uid}" class="empire-detail-btn" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--accent,#4fc3f7);border:1px solid var(--accent,#4fc3f7);">🏰</a>`
+    ? `<a href="#empire/${e.uid}" class="empire-detail-btn${e.alliance_status === 'pending_received' ? ' has-alliance-request' : ''}" style="${EMPIRE_ROW_ACTION_BTN_STYLE}background:var(--accent,#4fc3f7);border:1px solid var(--accent,#4fc3f7);" ${e.alliance_status === 'pending_received' ? 'title="Alliance request received"' : ''}>🏰</a>`
     : '';
   const armyEnabled = (state.summary?.effects?.enable_army ?? 0) > 0;
   const attackBtn = (armyEnabled && e.can_attack)

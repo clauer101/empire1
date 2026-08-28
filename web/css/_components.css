@@ -265,6 +265,26 @@ ul.effects-list li {
   border: 1px solid rgba(201, 168, 76, 0.4);
   margin-left: 6px;
 }
+.badge--alliance-request {
+  background: rgba(79, 195, 247, 0.15);
+  color: var(--accent);
+  animation: alliance-request-glow 1.6s ease-in-out infinite;
+}
+
+/* Empire-row 🏰 detail button, when that empire has sent an alliance
+   request awaiting our reply (status.js + globalempires.js leaderboards). */
+.empire-detail-btn.has-alliance-request {
+  animation: alliance-request-glow 1.6s ease-in-out infinite;
+}
+@keyframes alliance-request-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 4px 0 rgba(79, 195, 247, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(79, 195, 247, 0.95);
+  }
+}
 
 /* Unlock category badges */
 .badge--unlock-building {

@@ -653,7 +653,7 @@ TRIUMPHAL_ARC:
   costs: {gold: 214000}
   requirements: [MONARCHY]
   effects:
-    culture_offset: 0.2
+    culture_offset: 1.2
 
 COURTHOUSE:
   era: medieval

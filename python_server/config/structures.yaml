@@ -287,7 +287,7 @@ CANNON_TOWER:
   era: medieval
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 19
+  damage: 18
   range: 2
   reload_time: 5000
   shot_speed: 1

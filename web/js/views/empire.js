@@ -148,6 +148,7 @@ function _onDiplomacyClick(btn) {
       'Already Allied',
       `<p style="margin:0 0 10px;">You are already allied with <strong>${currentAlly?.name ?? 'another empire'}</strong>. You must break that alliance before you can accept a new one from ${_empire.name}.</p>`,
       null,
+      () => _doDeclineAlliance(targetUid),
     );
     return;
   }
@@ -172,16 +173,21 @@ function _onDiplomacyClick(btn) {
   _showDiplomacyConfirmOverlay(title, bodyHtml, () => _doToggleAlliance(targetUid));
 }
 
-function _showDiplomacyConfirmOverlay(title, bodyHtml, onConfirm) {
+function _showDiplomacyConfirmOverlay(title, bodyHtml, onConfirm, onDecline) {
   document.querySelector('.diplomacy-confirm-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.className = 'diplomacy-confirm-overlay prod-overlay';
   overlay.style.alignItems = 'center';
   // onConfirm === null means this is a notice-only dialog (e.g. "already
-  // allied elsewhere") — show a single acknowledgment button, no action.
+  // allied elsewhere"). If onDecline is also given (the incoming-request
+  // case), pair the acknowledgment with a way to reject that request
+  // outright instead of just closing the dialog.
   const buttonsHtml = onConfirm
     ? `<button id="diplomacy-confirm-cancel" style="background:#333;color:#ccc;border:none;border-radius:4px;padding:7px 18px;cursor:pointer;">Cancel</button>
        <button id="diplomacy-confirm-ok" style="background:var(--danger,#e53935);color:#fff;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer;">Confirm</button>`
+    : onDecline
+    ? `<button id="diplomacy-confirm-decline" style="background:var(--danger,#e53935);color:#fff;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer;">Decline Request</button>
+       <button id="diplomacy-confirm-cancel" style="background:var(--accent,#4fc3f7);color:#111;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer;">OK</button>`
     : `<button id="diplomacy-confirm-cancel" style="background:var(--accent,#4fc3f7);color:#111;border:none;border-radius:4px;padding:7px 18px;font-weight:700;cursor:pointer;">OK</button>`;
   overlay.innerHTML = `
     <div class="prod-overlay-box" style="max-width:380px;">
@@ -198,6 +204,12 @@ function _showDiplomacyConfirmOverlay(title, bodyHtml, onConfirm) {
     if (e.target === overlay || e.target.classList.contains('prod-overlay-close')) close();
   });
   overlay.querySelector('#diplomacy-confirm-cancel').addEventListener('click', close);
+  if (onDecline) {
+    overlay.querySelector('#diplomacy-confirm-decline').addEventListener('click', () => {
+      close();
+      onDecline();
+    });
+  }
   if (!onConfirm) {
     document.body.appendChild(overlay);
     return;
@@ -207,6 +219,25 @@ function _showDiplomacyConfirmOverlay(title, bodyHtml, onConfirm) {
     onConfirm();
   });
   document.body.appendChild(overlay);
+}
+
+async function _doDeclineAlliance(targetUid) {
+  try {
+    const resp = await rest.declineAlliance(targetUid);
+    const allEmpires = await rest.getEmpires();
+    _allEmpires = allEmpires.empires || [];
+    const empire = _allEmpires.find((e) => e.uid === targetUid) || null;
+    if (empire) _render(empire);
+    if (!resp.success) {
+      const statusEl = container.querySelector('#empire-spy-status');
+      if (statusEl) {
+        statusEl.style.color = 'var(--danger, #e53935)';
+        statusEl.textContent = resp.error || 'Could not decline request.';
+      }
+    }
+  } catch (e) {
+    console.warn('Diplomacy decline failed:', e);
+  }
 }
 
 async function _doToggleAlliance(targetUid) {

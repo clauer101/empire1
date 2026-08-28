@@ -785,6 +785,23 @@ class Database:
         await self._conn.commit()
         return not exists
 
+    async def remove_alliance_declaration(self, from_uid: int, to_uid: int) -> bool:
+        """Delete a specific one-directional alliance declaration, if present.
+
+        Unlike toggle_alliance_declaration, this never inserts — used to
+        decline an incoming request (from_uid's declaration toward to_uid)
+        without touching to_uid's own outgoing declarations.
+
+        Returns True if a row was removed.
+        """
+        assert self._conn is not None
+        cursor = await self._conn.execute(
+            "DELETE FROM alliance_declarations WHERE from_uid = ? AND to_uid = ?",
+            (from_uid, to_uid),
+        )
+        await self._conn.commit()
+        return cursor.rowcount > 0
+
     async def get_alliance_declarations_for(self, uid: int) -> tuple[set[int], set[int]]:
         """Return (declared_to, declared_by) uid sets for uid's alliance declarations."""
         assert self._conn is not None
