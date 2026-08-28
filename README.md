@@ -1,4 +1,6 @@
-# empire1 — Relics & Rockets
+![Relics & Rockets](web/assets/banner.webp)
+
+# Relics & Rockets
 
 [![CI](https://github.com/clauer101/empire1/actions/workflows/ci.yml/badge.svg)](https://github.com/clauer101/empire1/actions/workflows/ci.yml)
 
