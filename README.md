@@ -17,23 +17,23 @@ in [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
 ```
                         ┌────────────────────┐
-   Internet ──HTTPS──▶  │       nginx         │
-                        │  (prod: 443, dev:80) │
-                        └─────────┬───────────┘
+   Internet ──HTTPS──>  │       nginx        │
+                        │(prod: 443, dev:80) │
+                        └─────────┬──────────┘
                     ┌─────────────┼─────────────┐
               /api, /ws                    everything else
                     ▼                             ▼
           ┌───────────────────┐        ┌──────────────────────┐
-          │     gameserver     │        │       webserver       │
-          │  asyncio + FastAPI │        │  FastAPI static host  │
-          │  WebSocket + REST  │        │  serves Vite SPA       │
-          │  1000ms game tick  │        │  (web/dist/)           │
-          └─────────┬──────────┘        └──────────────────────┘
-                    │
-          ┌─────────┴──────────┐
-          │  SQLite (aiosqlite) │
-          │  + YAML state       │
-          │  + Alembic          │
+          │     gameserver    │        │       webserver      │
+          │ asyncio + FastAPI │        │  FastAPI static host │
+          │ WebSocket + REST  │        │  serves Vite SPA     │
+          │ 1000ms game tick  │        │  (web/dist/)         │
+          └────────┬──────────┘        └──────────────────────┘
+                   │
+          ┌────────┴───────────┐
+          │ SQLite (aiosqlite) │
+          │ + YAML state       │
+          │ + Alembic          │
           └────────────────────┘
 ```
 
