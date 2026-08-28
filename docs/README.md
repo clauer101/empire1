@@ -2,6 +2,7 @@
 
 | Doc | Contents |
 |---|---|
+| [AI_WORKFLOW.md](AI_WORKFLOW.md) | How this project uses Claude Code — layered rules, skills, permissions, and guardrails |
 | [API.md](API.md) | REST/WebSocket API reference — single source of truth; generates `web/api.html` |
 | [DEVLOG.md](DEVLOG.md) | How the public devlog page is generated from `CHANGELOG.md` |
 | [CODINGGUIDELINE.md](CODINGGUIDELINE.md) | Coding standards for backend and frontend |
@@ -9,8 +10,7 @@
 | [YAMLATTRIBUTEGUIDE.md](YAMLATTRIBUTEGUIDE.md) | Attribute reference for the game config YAMLs |
 | [SEASONENDFLOW.md](SEASONENDFLOW.md) | Season-end flow (reset, trophies, carry-over) |
 | [RUNTIMESTATS.md](RUNTIMESTATS.md) | Runtime statistics and monitoring |
-| [building_image_prompts.md](building_image_prompts.md) | Image-generation prompts for building assets |
-| [knowledge_image_prompts.md](knowledge_image_prompts.md) | Image-generation prompts for knowledge/tech assets |
+| [FAIRPLAY.md](FAIRPLAY.md) | Fair-play policy — strong strategies get used, not banned; overpowered ones get balanced |
 
 ## Related documentation elsewhere
 

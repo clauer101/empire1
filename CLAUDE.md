@@ -1,6 +1,8 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+For the human-readable story behind this file and the `.claude/` setup, see
+[docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
 Detailed, area-specific rules live in `.claude/rules/` (loaded automatically):
 - `.claude/rules/frontend.md` — Vite build/deploy, shared utilities, assets, API docs
