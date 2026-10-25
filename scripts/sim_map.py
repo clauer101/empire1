@@ -30,16 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from gameserver.main import load_configuration
 from gameserver.engine.battle_service import BattleService
 from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
-from gameserver.models.army import Army, CritterWave
-from gameserver.util.army_generator import (
-    generate_army,
-    parse_boss_iids,
-    parse_critter_era_groups,
-    parse_slot_by_iid,
-    ERA_BACKEND_TO_INTERNAL,
-)
+from gameserver.util.army_generator import ERA_BACKEND_TO_INTERNAL
 from gameserver.util.maze_loader import find_raw_map, load_raw_maps, normalize_hex_map
 
+from scripts.army_pool import generate_random_army
 from scripts.battle_sim import build_structures, make_battle, run_battle, tile_type
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -50,7 +44,6 @@ REPO_ROOT       = Path(__file__).resolve().parent.parent
 CONFIG_DIR      = REPO_ROOT / "python_server" / "config"
 if not CONFIG_DIR.exists():
     CONFIG_DIR = REPO_ROOT / "config"
-CRITTERS_PATH   = CONFIG_DIR / "critters.yaml"
 
 # Maps era CLI arg → backend era key
 ERA_KEYWORDS = {
@@ -83,40 +76,6 @@ def load_map(name: str) -> dict:
     for n in available:
         print(f"  - {n}")
     sys.exit(1)
-
-
-def make_army(
-    era_internal: str, game_config, aid: int, critter_override: str | None = None,
-) -> tuple[str, Army]:
-    """Generate one random army via the AI army generator.
-
-    If `critter_override` is set, every non-boss wave spawns that critter instead
-    of the randomly-drawn one — wave `slots` (capacity) is kept as-is; the actual
-    spawn count is recomputed downstream from the override critter's own slot
-    cost. Boss waves are left untouched: their `slots` is a sentinel (999) sized
-    for the boss's own slot cost so exactly one boss spawns — overriding the
-    critter there while keeping that sentinel would spawn hundreds of the
-    override critter instead.
-    """
-    ai_cfg           = getattr(game_config, "ai_generator", {}) or {}
-    critter_groups   = parse_critter_era_groups(CRITTERS_PATH)
-    slot_by_iid      = parse_slot_by_iid(CRITTERS_PATH)
-    boss_iids        = parse_boss_iids(CRITTERS_PATH)
-    initial_delay_ms = getattr(game_config, "initial_wave_delay_ms", 15000.0)
-
-    result = generate_army(era_internal, ai_cfg, critter_groups, slot_by_iid, boss_iids=boss_iids)
-    aname  = result["name"]
-    waves  = [
-        CritterWave(
-            wave_id=i + 1,
-            iid=(critter_override.upper() if critter_override and wd["critter"].upper() not in boss_iids else wd["critter"].upper()),
-            slots=int(wd["slots"]),
-            num_critters_spawned=0,
-            next_critter_ms=int(i * initial_delay_ms),
-        )
-        for i, wd in enumerate(result["waves"])
-    ]
-    return aname, Army(aid=aid, uid=0, name=aname, waves=waves)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -192,8 +151,11 @@ def main():
 
     wins = losses = 0
 
+    ai_generator_cfg = getattr(config.game, "ai_generator", {}) or {}
     for i in range(n):
-        army_name, army = make_army(era_internal, config.game, aid=i + 1, critter_override=critter_override)
+        attacker = generate_random_army(era_internal, ai_generator_cfg, aid=i + 1,
+                                        critter_override=critter_override)
+        army_name, army = attacker.name, attacker.army
         battle = make_battle(army, structures, path, defender_life=life)
         result = run_battle(svc, battle)
 

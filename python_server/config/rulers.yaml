@@ -1,6 +1,8 @@
 # Ruler definitions
 # Q/W/E: 5 levels of ability effects
 # R: 3 levels of ability effects
+# sprite_y_offset: optional vertical sprite shift in battle, as a fraction of the
+#   rendered sprite height (0.1 = 10% up, -0.1 = 10% down; default 0 = no shift)
 
 MAJA:
   name: Maja Soulstone
@@ -10,16 +12,16 @@ MAJA:
   health_min: 16.0
   health_max: 3000.0
   armour_min: 2.0
-  armour_max: 16.0
+  armour_max: 12.0
   speed_min: 0.5
-  speed_max: 1.1
+  speed_max: 1.5
   damage_min: 1.0
-  damage_max: 30.0
+  damage_max: 24.0
   value_min: 10.0
-  value_max: 10000.0
+  value_max: 100000.0
   scale_base: 1.0
   aura_min: 1.5
-  aura_max: 2.5
+  aura_max: 2.4
   animation: assets/sprites/ruler/maja
   q:
     name: Chrono-Scholar’s Insight
@@ -62,37 +64,37 @@ NANDI:
     civilization.
   type: ''
   health_min: 18.0
-  health_max: 3100.0
+  health_max: 2500.0
   armour_min: 1.0
   armour_max: 16.0
   speed_min: 0.6
-  speed_max: 1.1
+  speed_max: 1.5
   damage_min: 1.0
-  damage_max: 30.0
+  damage_max: 24.0
   value_min: 10.0
-  value_max: 10000.0
+  value_max: 100000.0
   scale_base: 1.0
   aura_min: 1.5
-  aura_max: 2.5
+  aura_max: 2.7
   animation: assets/sprites/ruler/nandi
   q:
     name: Voice of the Commons
     description: ''
     levels:
-    - citizen_cost_modifier: 0.1
-    - citizen_cost_modifier: 0.14
-    - citizen_cost_modifier: 0.18
-    - citizen_cost_modifier: 0.22
-    - citizen_cost_modifier: 0.3
+    - citizen_cost_modifier: 0.15
+    - citizen_cost_modifier: 0.20
+    - citizen_cost_modifier: 0.25
+    - citizen_cost_modifier: 0.30
+    - citizen_cost_modifier: 0.35
   w:
     name: Symphony of Toil
     description: ''
     levels:
-    - citizen_effect_modifier: 0.008
-    - citizen_effect_modifier: 0.011
-    - citizen_effect_modifier: 0.015
-    - citizen_effect_modifier: 0.018
-    - citizen_effect_modifier: 0.025
+    - citizen_effect_modifier: 0.006
+    - citizen_effect_modifier: 0.01
+    - citizen_effect_modifier: 0.013
+    - citizen_effect_modifier: 0.016
+    - citizen_effect_modifier: 0.02
   e:
     name: Cultural Footprint
     description: ''
@@ -116,18 +118,18 @@ LUCIEN:
     value wealth above all.
   type: ''
   health_min: 18.0
-  health_max: 3200.0
+  health_max: 3000.0
   armour_min: 2.0
-  armour_max: 15.0
+  armour_max: 14.0
   speed_min: 0.6
-  speed_max: 1.1
+  speed_max: 1.2
   damage_min: 1.0
   damage_max: 30.0
   value_min: 10.0
-  value_max: 10000.0
+  value_max: 100000.0
   scale_base: 1.0
   aura_min: 1.5
-  aura_max: 2.5
+  aura_max: 2.0
   animation: assets/sprites/ruler/lucien
   q:
     name: Golden Interest
@@ -170,18 +172,18 @@ BORIN:
     every siege.
   type: ''
   health_min: 18.0
-  health_max: 3800.0
-  armour_min: 2.0
-  armour_max: 17.0
-  speed_min: 0.6
+  health_max: 4000.0
+  armour_min: 0.0
+  armour_max: 30.0
+  speed_min: 0.3
   speed_max: 1.0
   damage_min: 1.0
-  damage_max: 30.0
+  damage_max: 24.0
   value_min: 10.0
-  value_max: 10000.0
+  value_max: 100000.0
   scale_base: 1.0
   aura_min: 1.5
-  aura_max: 2.5
+  aura_max: 2.0
   animation: assets/sprites/ruler/borin
   q:
     name: Juggernauts Resolve
@@ -209,7 +211,7 @@ BORIN:
     - artifact_retention_time: 37029
     - artifact_retention_time: 49371
     - artifact_retention_time: 61714
-    - artifact_retention_time: 0
+    - artifact_retention_time: 86400
   r:
     name: Fortress Bastion
     description: ''
@@ -223,18 +225,18 @@ ALRIC:
     expands territory cheaply and strikes faster than any opponent can prepare for.
   type: ''
   health_min: 22.0
-  health_max: 3700.0
+  health_max: 4200.0
   armour_min: 2.0
-  armour_max: 19.0
-  speed_min: 0.5
-  speed_max: 1.0
+  armour_max: 18.0
+  speed_min: 0.7
+  speed_max: 1.2
   damage_min: 1.0
   damage_max: 30.0
   value_min: 10.0
-  value_max: 10000.0
+  value_max: 100000.0
   scale_base: 1.0
   aura_min: 1.5
-  aura_max: 2.5
+  aura_max: 2.0
   animation: assets/sprites/ruler/alric
   q:
     name: Shadow Conscription
@@ -255,7 +257,7 @@ ALRIC:
     - wave_era_cost_modifier: 0.35
     - wave_era_cost_modifier: 0.45
   e:
-    name: Grand Larceny
+    name: Desolated Siege
     description: ''
     levels:
     - enemy_siege_time_modifier: 0.1
@@ -264,7 +266,7 @@ ALRIC:
     - enemy_siege_time_modifier: 0.25
     - enemy_siege_time_modifier: 0.33
   r:
-    name: Desolated Siege
+    name: Grand Larceny
     description: ''
     levels:
     - ruler_artifact_steal_bonus: 0.04
@@ -276,3 +278,111 @@ ALRIC:
     - artifact_steal_victory_modifier: 0.21
       artifact_steal_defeat_modifier: 0.06
       ruler_artifact_steal_bonus: 0.12
+# MAGNUS:
+#   name: Magnus Ironwright
+#   description: A tireless master builder who raises cities from bare rock. Magnus
+#     speeds up every construction site, cuts building costs, and turns a dense skyline
+#     into a steady stream of gold.
+#   type: ''
+#   health_min: 20.0
+#   health_max: 3800.0
+#   armour_min: 2.0
+#   armour_max: 20.0
+#   speed_min: 0.4
+#   speed_max: 1.1
+#   damage_min: 1.0
+#   damage_max: 24.0
+#   value_min: 10.0
+#   value_max: 100000.0
+#   scale_base: 1.0
+#   aura_min: 1.5
+#   aura_max: 2.2
+#   animation: assets/sprites/ruler/magnus
+#   q:
+#     name: Master Mason’s Pace
+#     description: ''
+#     levels:
+#     - build_speed_offset: 0.2
+#     - build_speed_offset: 0.3
+#     - build_speed_offset: 0.4
+#     - build_speed_offset: 0.5
+#     - build_speed_offset: 0.8
+#   w:
+#     name: Thrifty Foundations
+#     description: ''
+#     levels:
+#     - building_cost_modifier: 0.08
+#     - building_cost_modifier: 0.12
+#     - building_cost_modifier: 0.16
+#     - building_cost_modifier: 0.2
+#     - building_cost_modifier: 0.3
+#   e:
+#     name: Bulwark of Stone
+#     description: ''
+#     levels:
+#     - max_life_modifier: 5
+#     - max_life_modifier: 8
+#     - max_life_modifier: 11
+#     - max_life_modifier: 14
+#     - max_life_modifier: 20
+#   r:
+#     name: Golden Skyline
+#     description: ''
+#     levels:
+#     - gold_modifier_per_building: 0.002
+#     - gold_modifier_per_building: 0.004
+#     - gold_modifier_per_building: 0.006
+# SILAS:
+#   name: Silas Blackwharf
+#   description: A silver-tongued smuggler who knows every hidden route. Silas moves
+#     armies faster than rumors travel, keeps contraband gold flowing, and slips away
+#     with a share of the enemy's treasury.
+#   type: ''
+#   health_min: 16.0
+#   health_max: 3200.0
+#   armour_min: 1.0
+#   armour_max: 12.0
+#   speed_min: 0.8
+#   speed_max: 1.6
+#   damage_min: 1.0
+#   damage_max: 26.0
+#   value_min: 10.0
+#   value_max: 100000.0
+#   scale_base: 1.0
+#   aura_min: 1.5
+#   aura_max: 2.0
+#   animation: assets/sprites/ruler/silas
+#   q:
+#     name: Hidden Routes
+#     description: ''
+#     levels:
+#     - travel_offset: -900
+#     - travel_offset: -1500
+#     - travel_offset: -2100
+#     - travel_offset: -2700
+#     - travel_offset: -3600
+#   w:
+#     name: Black Market Remedies
+#     description: ''
+#     levels:
+#     - life_regen_modifier: 0.0006
+#     - life_regen_modifier: 0.0008
+#     - life_regen_modifier: 0.001
+#     - life_regen_modifier: 0.0012
+#     - life_regen_modifier: 0.0015
+#   e:
+#     name: Contraband Coffers
+#     description: ''
+#     levels:
+#     - gold_offset: 0.4
+#     - gold_offset: 0.5
+#     - gold_offset: 0.6
+#     - gold_offset: 0.7
+#     - gold_offset: 1.5
+#   r:
+#     name: Midnight Heist
+#     description: ''
+#     levels:
+#     - gold_steal_ratio: 0.0033
+#     - gold_steal_ratio: 0.0066
+#     - gold_steal_ratio: 0.001

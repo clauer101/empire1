@@ -65,6 +65,30 @@ def _stub_message(**fields: Any) -> GameMessage:
     return msg
 
 
+def culture_leader_names(empire_service: Any) -> list[str]:
+    """Names of whoever currently leads the season, strongest member first.
+
+    The season is scored on **pooled** culture, mirroring the end-of-season
+    podium in `/api/season-results` and the winners recorded by
+    `GameLoop._take_season_snapshot`: mutually-allied empires are ranked on
+    their combined total and lead as a unit (two names), while an unallied
+    empire is ranked on its own and leads alone (one name) when it outscores
+    every team. Empty only without empires or an empire service.
+    """
+    if empire_service is None:
+        return []
+    try:
+        from gameserver.engine.ai_service import AI_UID
+        from gameserver.util.alliance_grouping import pooled_culture_leader
+        leaders = pooled_culture_leader(
+            e for e in empire_service.all_empires.values() if e.uid != AI_UID
+        )
+        return [e.name for e in leaders]
+    except Exception:
+        log.warning("culture_leader_names failed", exc_info=True)
+        return []
+
+
 def _is_recently_active(last_seen_str: str, threshold_s: int) -> bool:
     if not last_seen_str:
         return False

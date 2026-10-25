@@ -322,8 +322,18 @@ class AttackService:
                             emp = self._empire_service.get(uid)
                             if emp is not None:
                                 self._empire_service.recalculate_effects(emp)
+                    # The attacking army decides whether siege corruption
+                    # applies; a vanished army falls back to applying it.
+                    attacker_empire = self._empire_service.get(attack.attacker_uid) if self._empire_service else None
+                    attacking_army = next(
+                        (a for a in attacker_empire.armies if a.aid == attack.army_aid),
+                        None,
+                    ) if attacker_empire else None
                     siege_duration = self._calculate_siege_duration(
-                        attack.attacker_uid, attack.defender_uid
+                        attack.attacker_uid, attack.defender_uid,
+                        apply_attacker_corruption=(
+                            attacking_army.siege_corruption_enabled if attacking_army else True
+                        ),
                     )
                     attack.siege_remaining_seconds = siege_duration
                     attack.total_siege_seconds = siege_duration
@@ -413,6 +423,7 @@ class AttackService:
         attacker_uid: int,
         defender_uid: int,
         base_override: float | None = None,
+        apply_attacker_corruption: bool = True,
     ) -> float:
         """Calculate siege duration at TRAVELING→IN_SIEGE transition.
 
@@ -421,6 +432,11 @@ class AttackService:
 
         where base is base_override (from ai_waves siege_time) if provided, otherwise 0.
         Computed fresh each time so buildings completed during travel are reflected.
+
+        `apply_attacker_corruption=False` leaves the attacker's
+        ENEMY_SIEGE_TIME_MODIFIER out: the attacking army has the siege
+        corruption toggle switched off (Army.siege_corruption_enabled) and
+        serves the full siege instead.
         """
         from gameserver.util import effects as fx
 
@@ -442,11 +458,15 @@ class AttackService:
 
         attacker = self._empire_service.get(attacker_uid)
         attacker_corruption = attacker.get_effect(fx.ENEMY_SIEGE_TIME_MODIFIER, 0.0) if attacker else 0.0
+        if not apply_attacker_corruption:
+            attacker_corruption = 0.0
 
         result = max(1.0, (base + offset) * (1.0 - modifier) * (1.0 - attacker_corruption))
         log.debug(
-            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f, defender_modifier=%.3f, attacker_corruption=%.3f)",
+            "Siege duration %d→%d: %.1fs (base=%.1f%s, defender_offset=%.3f, defender_modifier=%.3f, "
+            "attacker_corruption=%.3f%s)",
             attacker_uid, defender_uid, result, base,
             " [override]" if base_override is not None else "", offset, modifier, attacker_corruption,
+            "" if apply_attacker_corruption else " [army toggle off]",
         )
         return result

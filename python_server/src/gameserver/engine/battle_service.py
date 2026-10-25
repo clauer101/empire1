@@ -32,6 +32,7 @@ from gameserver.models.critter import Critter
 from gameserver.engine.empire_service import ruler_critter_stats
 from gameserver.models.hex import HexCoord
 from gameserver.models.shot import Shot
+from gameserver.util.sprites import sprite_key
 from gameserver.engine.hex_pathfinding import critter_hex_pos, hex_world_distance
 
 # Visual shot type constants (sent to client for rendering only)
@@ -649,6 +650,8 @@ class BattleService:
             speed=speed,
             armour=armour,
             scale=getattr(item, 'scale', 1.0) if item else 1.0,
+            sprite_y_offset=getattr(item, 'sprite_y_offset', 0.0) if item else 0.0,
+            sprite_key=sprite_key(getattr(item, 'animation', '') or '') if item else '',
             value=getattr(item, 'value', getattr(item, 'health', 1.0) if item else 1.0) if item else 1.0,
             damage=getattr(item, 'critter_damage', 1.0) if item else 1.0,
             slots=max(1, int(getattr(item, 'slots', 1) or 1)) if item else 1,
@@ -670,8 +673,8 @@ class BattleService:
             curve=self._gc.ruler_level_curve,
         )
         health = stats["health"]
-        anim_folder = (stats.get("animation") or "").rstrip("/").split("/")[-1]
-        sprite_iid = f"ruler_{anim_folder}" if anim_folder else f"RULER_{ruler_iid}"
+        ruler_sprite = sprite_key(stats.get("animation") or "")
+        sprite_iid = ruler_sprite or f"RULER_{ruler_iid}"
         all_aura_effects: dict[str, float] = dict(stats.get("aura_effects") or {})
         if aura_choice and aura_choice in all_aura_effects:
             active_aura_effects = {aura_choice: all_aura_effects[aura_choice]}
@@ -687,6 +690,8 @@ class BattleService:
             speed=stats["speed"],
             armour=stats["armour"],
             scale=stats["scale"],
+            sprite_y_offset=stats["sprite_y_offset"],
+            sprite_key=ruler_sprite,
             value=stats["value"],
             damage=stats["damage"],
             spawn_on_death={},
@@ -1013,6 +1018,8 @@ class BattleService:
                     "iid": critter.iid,
                     "max_health": critter.max_health,
                     "scale": critter.scale,
+                    "sprite_y_offset": critter.sprite_y_offset,
+                    "sprite_key": critter.sprite_key,
                     "aura_radius": critter.aura_radius,
                     "speed": critter.speed,
                     "path_length": max(1, len(critter.path) - 1),
@@ -1061,9 +1068,12 @@ class BattleService:
             msg["wave_infos"] = upcoming_waves
             battle.last_wave_infos_json = wave_infos_json
 
-        # Record for replay before clearing deltas
+        # Record for replay before clearing deltas. Periodically flush to disk
+        # so a very long battle never accumulates its full event history in
+        # memory (see ReplayRecorder.FLUSH_INTERVAL_MS).
         if battle.recorder is not None:
             battle.recorder.record(battle.elapsed_ms, msg)
+            battle.recorder.maybe_flush(battle.elapsed_ms)
 
         # Send to all observers (snapshot to avoid mutation during async iteration)
         for uid in list(battle.observer_uids):

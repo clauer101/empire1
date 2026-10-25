@@ -14,7 +14,7 @@ import {
   hexNeighbors,
   hexAStar,
 } from './hex.js';
-import { CritterSprite } from './critter_sprite.js';
+import { CritterSprite, critterSpriteWidth, critterSpriteCenterY } from './critter_sprite.js';
 
 /** Tile type definitions with visual styling. */
 export const TILE_TYPES = {
@@ -895,11 +895,18 @@ export class HexGrid {
   }
 
   /**
-   * Load and cache a CritterSprite for the given IID.
-   * IID is matched case-insensitively against manifest names.
+   * Manifest name of a battle critter's sprite: the backend's sprite_key (from the
+   * YAML animation folder), falling back to the IID for older saves/replays.
    */
-  _ensureCritterSprite(iid) {
-    const key = iid.toLowerCase();
+  _critterSpriteKey(critter) {
+    return (critter.sprite_key || critter.iid || '').toLowerCase();
+  }
+
+  /**
+   * Load and cache a CritterSprite for the given manifest name (case-insensitive).
+   */
+  _ensureCritterSprite(name) {
+    const key = name.toLowerCase();
     if (this._critterSprites.has(key)) return;
     this._critterSprites.set(key, 'loading');
     this._loadManifest().then((manifest) => {
@@ -1016,6 +1023,8 @@ export class HexGrid {
       iid:               data.iid         ?? existing.iid,
       max_health:        data.max_health  ?? existing.max_health,
       scale:             data.scale       ?? existing.scale       ?? 1.0,
+      sprite_y_offset:   data.sprite_y_offset ?? existing.sprite_y_offset ?? 0,
+      sprite_key:        data.sprite_key  ?? existing.sprite_key  ?? '',
       aura_radius:       data.aura_radius ?? existing.aura_radius ?? 0,
       speed:             data.speed       ?? existing.speed       ?? 0,
       path_length:       data.path_length ?? existing.path_length ?? 1,
@@ -1145,12 +1154,32 @@ export class HexGrid {
    * @param {boolean} [invalidateBase=true]  Set false for dynamic sprites (shots, critters)
    *   that are not part of the base layer — they only need _dirty, not a full base re-render.
    */
-  _ensureSpriteLoaded(url, invalidateBase = true) {
+  _ensureSpriteLoaded(url, invalidateBase = true, capToTile = false) {
     if (this._spriteCache.has(url)) return;
     this._spriteCache.set(url, 'loading');
     fetch(url)
       .then((r) => r.blob())
       .then((blob) => createImageBitmap(blob))
+      .then((raw) => {
+        if (!capToTile) return raw;
+        // Structure/tile sprites are authored at high native resolution (e.g.
+        // 1024px) but only ever drawn at hex-tile scale (tens to low hundreds
+        // of px). Letting the canvas 2D context downscale that directly every
+        // frame produces visibly grainy/aliased sprites in Firefox — its
+        // minification filter isn't a true mipmap for such large ratios.
+        // Pre-shrink once here via the browser's higher-quality decode-time
+        // resize instead, so drawImage only ever does a small residual scale.
+        const dpr = window.devicePixelRatio || 1;
+        const maxDim = Math.ceil(this.hexSize * this._maxZoom * 2.1 * dpr * 1.1);
+        const largest = Math.max(raw.width, raw.height);
+        if (largest <= maxDim) return raw;
+        const scale = maxDim / largest;
+        return createImageBitmap(raw, {
+          resizeWidth: Math.round(raw.width * scale),
+          resizeHeight: Math.round(raw.height * scale),
+          resizeQuality: 'high',
+        });
+      })
       .then((bmp) => {
         this._spriteCache.set(url, bmp);
         if (invalidateBase) this._invalidateBase();
@@ -1502,7 +1531,7 @@ export class HexGrid {
       const tileType = getTileType(data.type);
       const bitmap = this._spriteCache.get(tileType.spriteUrl);
       if (!bitmap) {
-        this._ensureSpriteLoaded(tileType.spriteUrl);
+        this._ensureSpriteLoaded(tileType.spriteUrl, true, true);
         continue;
       }
       if (bitmap === 'loading') continue;
@@ -1547,8 +1576,7 @@ export class HexGrid {
     for (const [cid, critter] of this.battleCritters) {
       if (!critter.iid) continue;
       const critterScale = critter.scale ?? 1.0;
-      // Base size at scale=1: sz*0.467 (2/3 of sz*0.7), then multiplied by critter scale
-      const spriteSize = sz * 0.467 * critterScale;
+      const spriteSize = critterSpriteWidth(sz, critterScale);
 
       // Smooth rendering: advance _renderProgress toward server path_progress at a constant rate.
       // How much progress the critter covers per ms (measured from speed + path_length).
@@ -1567,11 +1595,12 @@ export class HexGrid {
       critter._renderProgress = renderProgress;
 
       const { x, y } = this._getCritterPixelPos(renderProgress, sz);
-      const spriteKey = critter.iid.toLowerCase();
+      const spriteKey = this._critterSpriteKey(critter);
       const sprite = this._critterSprites.get(spriteKey);
 
-      // Offset draw position upward so feet (bottom of sprite) sit on hex center
-      const drawY = y - spriteSize / 2;
+      const drawY = critterSpriteCenterY(
+        y, spriteSize, sprite instanceof CritterSprite ? sprite : null, critter.sprite_y_offset ?? 0,
+      );
 
       // ── Ruler aura circle (drawn behind everything) ───────
       if (critter.aura_radius > 0) {
@@ -1594,7 +1623,7 @@ export class HexGrid {
         sprite.draw(ctx, dir, ts, x, drawY, spriteSize);
       } else {
         // ── Fallback: coloured circle ────────────────────
-        if (!sprite) this._ensureCritterSprite(critter.iid);
+        if (!sprite) this._ensureCritterSprite(spriteKey);
         const color = critter.iid.toLowerCase().includes('soldier') ? '#4488ff' : '#ff4444';
         const strokeColor = critter.iid.toLowerCase().includes('soldier') ? '#2266dd' : '#dd2222';
         ctx.fillStyle = color;
@@ -1639,8 +1668,12 @@ export class HexGrid {
   /** Return the visual center (mid-sprite) of a critter — same Y offset used in _renderCritters. */
   _getCritterVisualCenter(critter, sz) {
     const pos = this._getCritterPixelPos(critter.path_progress, sz);
-    const spriteSize = sz * 0.467 * (critter.scale ?? 1.0);
-    return { x: pos.x, y: pos.y - spriteSize / 2 };
+    const spriteSize = critterSpriteWidth(sz, critter.scale ?? 1.0);
+    const sprite = this._critterSprites.get(this._critterSpriteKey(critter));
+    const y = critterSpriteCenterY(
+      pos.y, spriteSize, sprite instanceof CritterSprite ? sprite : null, critter.sprite_y_offset ?? 0,
+    );
+    return { x: pos.x, y };
   }
 
   /** Get interpolated pixel position of a shot between origin and target critter center. */
@@ -1946,7 +1979,7 @@ export class HexGrid {
       const tileType = getTileType(iid);
       if (!tileType?.spriteUrl) continue;
       let bmp = this._spriteCache.get(tileType.spriteUrl);
-      if (!bmp) { this._ensureSpriteLoaded(tileType.spriteUrl); continue; }
+      if (!bmp) { this._ensureSpriteLoaded(tileType.spriteUrl, true, true); continue; }
       if (bmp === 'loading') continue;
       const spriteSize = sz * 2.1;
       const aspect = bmp.width / bmp.height;
@@ -2187,6 +2220,13 @@ export class HexGrid {
 
     // Apply zoom for per-frame dynamic layers (not in any cache)
     ctx.scale(this.zoom, this.zoom);
+
+    // Re-enable smoothing for sprite upscaling — it was turned off above only
+    // for the pixel-exact base/static canvas blit and must not leak into the
+    // structure/critter/shot sprites drawn below, or they render blocky
+    // (nearest-neighbor) instead of smoothly interpolated.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Path rendered per-frame so texture stays stable during pan
     this._renderPath(ctx);

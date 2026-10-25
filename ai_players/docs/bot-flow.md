@@ -60,16 +60,21 @@ The cycle runs in two phases:
 **Phase B — Action loop (up to `MAX_ACTIONS_PER_TICK = 20` iterations):**
 
 ```
+GET /api/map               ← once per tick; all maze geometry is derived from it
+GET /api/map/neighbors     ← fog-range view of foreign land (optional, non-fatal)
 loop:
-    GET /api/empire/summary    ← refresh gold after each action
-    ctx = BotContext(summary, items, memory, strategy)
+    GET /api/empire/summary        ← refresh gold after each action
+    ctx = BotContext(summary, items, memory, strategy, map_data, neighbors)
     action = choose_action(ctx)
-    if action is None → break  ← nothing affordable
+    if action is None → break      ← nothing affordable
     action.run(api)
-    if action failed → break   ← avoid tight retry loop
+    if action failed → continue    ← try the next-highest priority instead
+    if action.mutates_map → GET /api/map   ← refresh so later options see it
 ```
 
-The loop exits when no affordable action exists or the iteration limit is reached.
+The loop exits when no affordable action exists or the iteration limit is
+reached. A failed action is excluded for the rest of this tick only
+(`failed_this_tick`), never remembered across cycles.
 
 ### Step 3 — Save State
 
@@ -100,6 +105,11 @@ one. Dispatch is **strict priority order** — no ROI/personality scoring:
    one is skipped (not blocking); every remaining priority is still checked
    and run if affordable this tick.
 3. **Nothing affordable at all** → the tick ends and waits for the next one.
+
+An option that buys a tile or writes the map sets `Option.mutates_map`, which
+is what makes `run_bot.py` refetch its cached map afterwards (it used to guess
+from description substrings, which silently missed the flank and side-tile
+purchases while refetching for research and buildings that touch no tile).
 
 Options are gathered from, in no particular precedence (priority numbers
 decide, not source):
@@ -171,7 +181,7 @@ File: `states/<name>.yaml`
 | `account` | username, password, empire_name, uid |
 | `personality` | one of: aggressive, defensive, balanced (rolled once) |
 | `strategy` | active strategy dict (type, valid_until, params, completed) |
-| `memory` | battle history, opponent scores, breach flags, savings goals |
+| `memory` | battle history, opponent scores, breach flags, savings goals, RNG seed/step, upgrade focus — **no map coordinates**: all maze geometry is re-derived from `GET /api/map` each cycle, so it cannot drift out of sync with the server |
 | `runtime` | cycle counter, last_cycle timestamp |
 
 State **is** reset between seasons: `run_bot.py::_check_season_reset` compares

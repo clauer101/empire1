@@ -134,6 +134,10 @@ class ApiClient:
     def get_map(self) -> dict:
         return self.get("/api/map")
 
+    def map_neighbors(self) -> dict:
+        """Non-owned tiles within the fog radius — what the map screen shows."""
+        return self.get("/api/map/neighbors")
+
     def save_map(self, tiles: dict[str, str]) -> dict:
         return self.put("/api/map", {"tiles": tiles})
 

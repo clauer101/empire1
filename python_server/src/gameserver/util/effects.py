@@ -7,6 +7,8 @@ Replaces the ~80 string constants from the Java Effect class.
 # -- Resource modifiers --------------------------------------------------
 GOLD_MODIFIER = "gold_modifier"
 GOLD_OFFSET = "gold_offset"
+GOLD_MODIFIER_PER_BUILDING = "gold_modifier_per_building"  # each completed building adds v to gold_modifier
+GOLD_INTEREST = "gold_interest"  # 0.0-1.0: gold income += current gold × sum of this effect, per hour
 CULTURE_MODIFIER = "culture_modifier"
 CULTURE_OFFSET = "culture_offset"
 LIFE_REGEN_MODIFIER = "life_regen_modifier"
@@ -28,6 +30,7 @@ SIEGE_TIME_OFFSET = "siege_offset"        # only defender can modify this
 SIEGE_TIME_MODIFIER = "siege_time_modifier"  # attacker: percentage reduction (0.0–1.0)
 
 RESTORE_LIFE_AFTER_LOSS_OFFSET = "restore_life_after_loss_offset"  # Immediately restore life after losing a battle
+GOLD_STEAL_RATIO = "gold_steal_ratio"  # attacker: on a won attack, steal v × defender gold (split by winners)
 
 # -- Battle / Defense ----------------------------------------------------
 WAVE_DELAY_OFFSET = "wave_delay_offset"

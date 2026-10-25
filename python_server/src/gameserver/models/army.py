@@ -40,7 +40,11 @@ class Army:
         uid: Owner player UID.
         name: Display name.
         waves: Ordered list of critter waves.
-    
+        siege_corruption_enabled: Whether this army's attacks apply the owner's
+            `enemy_siege_time_modifier` ("siege corruption"). Off means the
+            attack sits out the full, unshortened siege — read when the siege
+            starts, see AttackService._calculate_siege_duration().
+
     Note: Wave progression is managed by BattleService during battle execution.
     Each wave spawns critters based on its next_critter_ms and num_critters_spawned runtime state.
     """
@@ -49,6 +53,7 @@ class Army:
     uid: int
     name: str = ""
     waves: list[CritterWave] = field(default_factory=list)
+    siege_corruption_enabled: bool = True
 
 
 

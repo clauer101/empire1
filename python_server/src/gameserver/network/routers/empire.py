@@ -34,10 +34,14 @@ from gameserver.network.rest_api import (
     _knowledge_groups,
     _building_groups,
 )
-from gameserver.network.routers.diplomacy import _alliance_status
+from gameserver.network.routers.diplomacy import _alliance_status, dissolve_alliances_for_inactive
 import gameserver.network.rest_api as _rest_api
 
 log = logging.getLogger(__name__)
+
+# Entry threshold for the eternal ranking: an empire needs more than this much
+# all-time culture to appear in it at all.
+ETERNAL_RANKING_MIN_CULTURE = 1_000_000.0
 
 
 def _count_protected_artifacts(empire: Any) -> int:
@@ -68,21 +72,12 @@ def _build_end_rally_info_for_era_map(gc: Any, empire_service: Any = None) -> di
         get_end_criterion_activated, is_end_rally_active, end_rally_seconds_remaining,
         get_end_criterion_empire_uid, get_end_criterion_empire_name,
     )
-    from gameserver.network.rest_api import _item_names
+    from gameserver.network.rest_api import _item_names, culture_leader_names
     if gc is None:
         return {"active": False, "effects": {}, "duration": 0.0, "end_criterion": "", "end_criterion_name": ""}
     active = is_end_rally_active(gc)
     activated = get_end_criterion_activated()
-    culture_leader_name = ""
-    if empire_service is not None:
-        try:
-            from gameserver.engine.ai_service import AI_UID
-            empires = [e for e in empire_service.all_empires.values() if e.uid != AI_UID]
-            if empires:
-                top = max(empires, key=lambda e: e.resources.get("culture", 0.0))
-                culture_leader_name = top.name
-        except Exception as exc:
-            log.warning("culture_leader_name failed: %s", exc)
+    leader_names = culture_leader_names(empire_service)
     return {
         "active": active,
         "effects": dict(gc.end_rally_effects),
@@ -93,7 +88,9 @@ def _build_end_rally_info_for_era_map(gc: Any, empire_service: Any = None) -> di
         "activated_at": activated.isoformat() if activated else None,
         "triggered_by_uid": get_end_criterion_empire_uid(),
         "triggered_by_name": get_end_criterion_empire_name(),
-        "culture_leader_name": culture_leader_name,
+        # Pooled: an allied team leads as a unit, so this can name two empires.
+        "culture_leader_name": " & ".join(leader_names),
+        "culture_leader_names": leader_names,
     }
 
 
@@ -201,6 +198,8 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
                 culture = empire.resources.get("culture", 0.0)
                 last_seen = uid_to_last_seen.get(empire.uid, "")
                 if culture <= 0 and not _is_recently_active(last_seen, _week_s):
+                    if services.database is not None:
+                        await dissolve_alliances_for_inactive(services, empire.uid)
                     continue
             era_key = empire_service.get_current_era(empire)
             era_idx = empire_service._ERA_ORDER.index(era_key) + 1 if era_key in empire_service._ERA_ORDER else 1
@@ -276,6 +275,136 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
 
         empires = [empire_by_uid[u] for group in groups for u in group]
         return {"empires": empires}
+
+    @router.get("/api/empires/eternal")
+    @limiter.limit("60/minute")
+    async def eternal_ranking(request: Request, uid: int = Depends(get_current_uid)) -> dict[str, Any]:
+        """Return the all-time culture ranking across every season.
+
+        Culture from all finished seasons (read from the archived
+        ``results/season<N>/state.yaml`` snapshots) is summed with the culture
+        the empire holds in the currently running season. Every uid that ever
+        scored culture is ranked, including accounts that no longer exist —
+        ``users.uid`` is AUTOINCREMENT, so a uid is never reused and always
+        refers to the same player.
+
+        A season counts as soon as its empires are wiped, so the table picks
+        up the finished season during the transition rather than only when
+        the next one starts. ``current_season`` then names the season the
+        ``current_culture`` column is filling up — the one about to start.
+
+        ``seasons_played`` counts only seasons the empire scored culture in.
+
+        Only empires above ``ETERNAL_RANKING_MIN_CULTURE`` are listed, and
+        ranks run 1..n over that qualifying set; the threshold is reported as
+        ``min_culture`` so clients need not hardcode it.
+
+        Mutually-allied empires are NOT pooled here (unlike ``/api/empires``):
+        alliances are a per-season construct and the archives carry none.
+        """
+        import asyncio
+        import functools
+
+        from gameserver.engine.ai_service import AI_UID
+        from gameserver.persistence import season_archive
+
+        from gameserver.engine.global_state import is_season_wipe_done
+
+        current_season = get_season_number()
+        # The counter only advances when the next season starts, days after
+        # the running one ended. Once the empires are wiped the current
+        # season is over and its snapshot belongs in the table — before that
+        # it must not count, the live empires still hold that culture.
+        current_season_ended = is_season_wipe_done()
+        # Cold path parses a few hundred KB of YAML per archived season — keep
+        # it off the event loop. Warm calls hit the module cache and return
+        # immediately.
+        seasons = await asyncio.get_running_loop().run_in_executor(
+            None,
+            functools.partial(
+                season_archive.load_finished_seasons,
+                current_season,
+                current_season_ended=current_season_ended,
+            ),
+        )
+
+        past_culture: dict[int, float] = {}
+        seasons_scored: dict[int, int] = {}
+        archive_name: dict[int, str] = {}
+        bots: set[int] = set()
+        for season in seasons:  # oldest first — later names overwrite earlier ones
+            for season_uid, culture in season.culture_by_uid.items():
+                past_culture[season_uid] = past_culture.get(season_uid, 0.0) + culture
+                if culture > 0:
+                    seasons_scored[season_uid] = seasons_scored.get(season_uid, 0) + 1
+                name = season.name_by_uid.get(season_uid, "")
+                if name:
+                    archive_name[season_uid] = name
+            bots |= season.bots
+
+        current_culture: dict[int, float] = {}
+        live_name: dict[int, str] = {}
+        for empire in empire_service.all_empires.values():
+            if empire.uid == AI_UID:
+                continue
+            current_culture[empire.uid] = empire.resources.get("culture", 0.0)
+            live_name[empire.uid] = empire.name
+            if empire.is_bot:
+                bots.add(empire.uid)
+
+        account_name: dict[int, str] = {}
+        if services.database is not None:
+            for row in await services.database.list_users():
+                account_name[row["uid"]] = row.get("empire_name") or row.get("username") or ""
+
+        rows: list[dict[str, Any]] = []
+        for ranked_uid in set(past_culture) | set(current_culture):
+            past = past_culture.get(ranked_uid, 0.0)
+            current = current_culture.get(ranked_uid, 0.0)
+            total = past + current
+            if total <= ETERNAL_RANKING_MIN_CULTURE:
+                continue
+            name = (
+                live_name.get(ranked_uid)
+                or account_name.get(ranked_uid)
+                or archive_name.get(ranked_uid)
+                or f"Empire {ranked_uid}"
+            )
+            rows.append({
+                "uid": ranked_uid,
+                "name": name,
+                "total_culture": round(total, 1),
+                "current_culture": round(current, 1),
+                # Seasons the empire actually scored in. An empire registered
+                # but sitting at 0 — every empire right after a season wipe —
+                # does not make the running season count.
+                "seasons_played": seasons_scored.get(ranked_uid, 0) + (1 if current > 0 else 0),
+                "is_self": ranked_uid == uid,
+                "is_bot": ranked_uid in bots,
+            })
+
+        rows.sort(key=lambda r: r["total_culture"], reverse=True)
+        self_rank = None
+        for rank, row in enumerate(rows, start=1):
+            row["rank"] = rank
+            if row["is_self"]:
+                self_rank = rank
+
+        # From a player's point of view the "current" column is whatever season
+        # they are playing into: while the wipe has already happened, that is
+        # the one about to start, not the archived one the counter still names.
+        return {
+            "current_season": current_season + 1 if current_season_ended else current_season,
+            "current_season_title": (
+                get_next_season_title() if current_season_ended else get_season_title()
+            ),
+            "seasons": [{"number": s.season_number, "title": s.season_title} for s in seasons],
+            "self_uid": uid,
+            "self_rank": self_rank,
+            "total": len(rows),
+            "min_culture": ETERNAL_RANKING_MIN_CULTURE,
+            "ranking": rows,
+        }
 
     @router.post("/api/empire/build")
     @limiter.limit("60/minute")
@@ -839,8 +968,10 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
             })
 
         # Podium places are pooled by mutual alliance: an allied pair is ranked
-        # on their combined culture and can occupy a place together, mirroring
-        # the live leaderboard grouping in list_empires().
+        # on their combined culture and occupies a place together, mirroring
+        # the live leaderboard grouping in list_empires(). An unallied empire
+        # is ranked on its own culture and takes a place alone whenever it
+        # outscores a team.
         from gameserver.util.alliance_grouping import group_by_pooled_culture
 
         culture_by_uid: dict[int, float] = {r["uid"]: r["culture"] for r in results}

@@ -3,12 +3,12 @@
  *
  * Handles two animation formats transparently:
  *
- *  1. Sprite sheet (PNG, 4×4 grid)
+ *  1. Sprite sheet (4 rows × 4 or 8 columns, detected by sprite_grid.js)
  *     Row 0 → forward  (towards viewer)
  *     Row 1 → left
  *     Row 2 → right
  *     Row 3 → backward (away from viewer)
- *     Each row has 4 animation frames.
+ *     Each row holds one animation cycle (4 or 8 frames).
  *
  *  2. GIF set — four separate animated GIFs:
  *       front.gif  → forward
@@ -36,11 +36,41 @@
  *   sprite.ready // true once loaded
  */
 
+import { detectSheetGrid, frameIndex } from './sprite_grid.js';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const COLS = 4;
-export const ROWS = 4;
 export const DEFAULT_FPS = 8;
+
+/** Critter sprite width at scale 1, as a fraction of the hex radius. */
+const CRITTER_BASE_WIDTH = 0.467;
+
+/**
+ * Rendered critter sprite width in px — the single source for battle and tools.
+ * @param {number} hexSize  Hex outer radius in px.
+ * @param {number} [scale=1]  Critter scale from the backend.
+ * @returns {number}
+ */
+export function critterSpriteWidth(hexSize, scale = 1.0) {
+  return hexSize * CRITTER_BASE_WIDTH * scale;
+}
+
+/**
+ * Center Y of a critter sprite standing on the point (x, y) — shared by battle and tools.
+ * In battle the sprite center sits half a width above the hex center; `yOffset`
+ * (backend `sprite_y_offset`) shifts it further by a fraction of the rendered
+ * sprite height, positive = up.
+ *
+ * @param {number} y          Ground point Y (hex center on the path).
+ * @param {number} width      Rendered sprite width (critterSpriteWidth).
+ * @param {CritterSprite|null} sprite  Loaded sprite (null → treat as square).
+ * @param {number} [yOffset=0]
+ * @returns {number}
+ */
+export function critterSpriteCenterY(y, width, sprite, yOffset = 0) {
+  const aspect = sprite?.frameW > 0 ? sprite.frameH / sprite.frameW : 1;
+  return y - width / 2 - yOffset * width * aspect;
+}
 
 /** Direction name → sprite-sheet row index. */
 export const DIRECTION_ROW = {
@@ -57,7 +87,7 @@ export const DIRECTIONS = ['forward', 'left', 'right', 'backward'];
 
 /**
  * Load a sprite-sheet PNG and return the sheet as a single OffscreenCanvas
- * together with per-frame dimensions.
+ * together with the detected grid.
  *
  * We intentionally avoid slicing the sheet into individual ImageBitmaps because
  * createImageBitmap(offscreenCanvas) transfers the underlying bitmap in Chromium,
@@ -67,7 +97,7 @@ export const DIRECTIONS = ['forward', 'left', 'right', 'backward'];
  * Instead, frames are clipped at draw time via the 9-argument ctx.drawImage() form.
  *
  * @param {string} url
- * @returns {Promise<{sheet: OffscreenCanvas, frameW: number, frameH: number}>}
+ * @returns {Promise<{sheet: OffscreenCanvas, cols: number, rows: number, frameW: number, frameH: number}>}
  */
 async function loadSheetFrames(url) {
   const blob = await fetch(url).then((r) => {
@@ -76,8 +106,7 @@ async function loadSheetFrames(url) {
   });
   const img = await createImageBitmap(blob);
 
-  const frameW = Math.floor(img.width / COLS);
-  const frameH = Math.floor(img.height / ROWS);
+  const grid = detectSheetGrid(img);
 
   // Draw the full sheet onto a single OffscreenCanvas
   const sheet = new OffscreenCanvas(img.width, img.height);
@@ -87,7 +116,7 @@ async function loadSheetFrames(url) {
   // Free the source ImageBitmap — we no longer need it
   img.close();
 
-  return { sheet, frameW, frameH };
+  return { sheet, ...grid };
 }
 
 // ─── GIF backend ─────────────────────────────────────────────────────────────
@@ -133,7 +162,7 @@ export class CritterSprite {
    * @param {string|{forward:string,left:string,right:string,backward:string}} src
    *        For 'spritesheet'/'single': URL to the image.
    *        For 'gifs': object mapping direction → GIF URL.
-   * @param {number} [fps]  Only relevant for sprite sheets.
+   * @param {number} [fps]  Only relevant for sprite sheets; refers to a 4-frame cycle.
    */
   constructor(type, src, fps = DEFAULT_FPS) {
     this.type = type;
@@ -143,6 +172,9 @@ export class CritterSprite {
     // Set after load()
     this.frameW = 0;
     this.frameH = 0;
+    /** Sheet grid (sprite sheets only; GIFs keep the defaults). */
+    this.cols = 1;
+    this.rows = DIRECTIONS.length;
     this._ready = false;
 
     // Sprite-sheet internals — single processed OffscreenCanvas
@@ -187,8 +219,10 @@ export class CritterSprite {
     if (this._loadPromise) return this._loadPromise;
 
     if (this.type === 'spritesheet') {
-      this._loadPromise = loadSheetFrames(this._src).then(({ sheet, frameW, frameH }) => {
+      this._loadPromise = loadSheetFrames(this._src).then(({ sheet, cols, rows, frameW, frameH }) => {
         this._sheet = sheet;
+        this.cols = cols;
+        this.rows = rows;
         this.frameW = frameW;
         this.frameH = frameH;
         this._ready = true;
@@ -239,7 +273,7 @@ export class CritterSprite {
 
     if (this.type === 'spritesheet') {
       const row = DIRECTION_ROW[direction] ?? 0;
-      const col = Math.floor((timestamp / 1000) * this.fps) % COLS;
+      const col = frameIndex(timestamp, this.fps, this.cols);
       this._drawSheetFrame(ctx, row, col, x, y, size);
     } else {
       const img = this._imgs[direction];
@@ -253,7 +287,7 @@ export class CritterSprite {
    *
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} row  Direction row index (0-3).
-   * @param {number} col  Frame column index (0-3).
+   * @param {number} col  Frame column index (0 to cols-1).
    * @param {number} x
    * @param {number} y
    * @param {number} [size=64]
@@ -262,9 +296,9 @@ export class CritterSprite {
     if (!this._ready) return;
 
     if (this.type === 'spritesheet') {
-      this._drawSheetFrame(ctx, row % ROWS, col % COLS, x, y, size);
+      this._drawSheetFrame(ctx, row % this.rows, col % this.cols, x, y, size);
     } else {
-      const dir = DIRECTIONS[row % ROWS];
+      const dir = DIRECTIONS[row % this.rows];
       const img = this._imgs[dir];
       if (img) this._drawImg(ctx, img, x, y, size);
     }

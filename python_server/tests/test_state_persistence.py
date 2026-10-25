@@ -211,6 +211,22 @@ class TestSaveLoad:
         assert wave.wave_id == 1
         assert wave.iid == "goblin"
         assert wave.slots == 1
+        assert army.siege_corruption_enabled is True
+
+    def test_round_trip_siege_corruption_toggle_off(self, tmp_path: Path) -> None:
+        path = str(tmp_path / "state.yaml")
+        src = _make_empire()
+        src.armies[0].siege_corruption_enabled = False
+        self._run(save_state({src.uid: src}, path=path))
+        e = self._run(load_state(path)).empires[src.uid]
+        assert e.armies[0].siege_corruption_enabled is False
+
+    def test_army_saved_before_the_toggle_existed_loads_enabled(self) -> None:
+        # Old state.yaml files have no siege_corruption_enabled key — those
+        # armies must keep the previous behaviour (corruption applied).
+        from gameserver.persistence.state_load import _deserialize_army
+        army = _deserialize_army({"aid": 7, "uid": 1, "name": "Legacy", "waves": []})
+        assert army.siege_corruption_enabled is True
 
     def test_round_trip_spies(self, tmp_path: Path) -> None:
         path = str(tmp_path / "state.yaml")

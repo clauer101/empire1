@@ -14,6 +14,8 @@
 const EFFECT_META = {
   gold_offset:                    ['💰', 'Gold income',              (v) => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`, 'Increases gold production by a fixed amount'],
   gold_modifier:                  ['💰', 'Gold bonus',               (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases gold production by a multiplier'],
+  gold_modifier_per_building:     ['💰', 'Gold per building',        (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(1)}% per building`,                                'Increases gold production by a percentage for each completed building'],
+  gold_interest:                  ['💰', 'Gold interest',            (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(1)}%/h of gold`,                                    'Increases gold income by a percentage of current gold per hour'],
   culture_offset:                 ['🎭', 'Culture income',           (v) => `${v > 0 ? '+' : ''}${(v * 3600).toLocaleString('de-DE', { maximumFractionDigits: 1 })}/h`, 'Increases culture production by a fixed amount'],
   culture_modifier:               ['🎭', 'Culture bonus',            (v) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`,                                              'Increases culture production by a multiplier'],
   life_regen_modifier:            ['❤️', 'Life regen',               (v) => `${v > 0 ? '+' : ''}${(v * 3600).toFixed(1)}/h`,                                            'Increases life energy regeneration'],
@@ -64,6 +66,7 @@ const EFFECT_META = {
   increase_critter_speed:         ['⚡', 'Aura: Speed boost',    (v) => `+${(v * 100).toFixed(0)}% speed`,                                                           'Boosts speed of nearby friendly critters'],
   slow_tower_modifier:            ['❄', 'Aura: Tower slow',      (v) => `-${(v * 100).toFixed(0)}% reload`,                                                    'Slows reload speed of nearby enemy towers'],
   reduce_tower_damage:            ['💢', 'Aura: Tower damage',   (v) => `-${(v * 100).toFixed(0)}% damage`,                                                    'Reduces damage of nearby enemy towers'],
+  gold_steal_ratio:               ['💰', 'Gold plunder',             (v) => `${(v * 100).toFixed(0)}% of gold`,                                                        'Steals a percentage of the defender\'s gold on a successful attack'],
   artifact_retention_time:            ['⚜',  'Artifact protection',      (v) => `${Math.round(v / 3600)}h`,                                                           'Newly acquired artifacts cannot be stolen for this duration'],
   // -- Combat
   restore_life_during_battle_modifier: ['❤️', 'Battle life regen',   (v) => `+${v}/s`,                                                                              'Adds to life regeneration while in battle'],
@@ -278,6 +281,18 @@ export function fmtSecs(s) {
   if (h > 0) return `${h}h ${m}m ${sec}s`;
   if (m > 0) return `${m}m ${sec}s`;
   return `${sec}s`;
+}
+
+/** Seconds → "1h 30m" (rounded to the minute, sign-aware for effect deltas). */
+export function fmtHoursMins(s) {
+  if (s == null) return '—';
+  const neg = s < 0;
+  s = Math.abs(s);
+  let h = Math.floor(s / 3600);
+  let m = Math.round((s % 3600) / 60);
+  if (m === 60) { h += 1; m = 0; }
+  const str = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  return neg ? `-${str}` : str;
 }
 
 export function showIconLegend() {

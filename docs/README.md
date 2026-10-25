@@ -11,6 +11,7 @@
 | [SEASONENDFLOW.md](SEASONENDFLOW.md) | Season-end flow (reset, trophies, carry-over) |
 | [RUNTIMESTATS.md](RUNTIMESTATS.md) | Runtime statistics and monitoring |
 | [FAIRPLAY.md](FAIRPLAY.md) | Fair-play policy — strong strategies get used, not banned; overpowered ones get balanced |
+| [BALANCING.md](BALANCING.md) | Combat balance design goals — era progression, tower/critter counters, checked via the `balancing` skill |
 
 ## Related documentation elsewhere
 

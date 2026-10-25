@@ -5,20 +5,20 @@
 # requirements: list of prerequisite IIDs (buildings or knowledge)
 # effects: passive effects granted when complete
 
-AGI:
-  era: stone
-  image: assets/sprites/buildings/base_camp
-  name: "AGI"
-  description: "Artificial general intelligence."
-  effort: 30  # was 30
-  costs: {gold: 0}  
-  requirements: [THE_WORLD_WONDER]
-  excludes: []
-  effects:
-    gold_modifier: 0.2
-    research_speed_modifier: 0.2
-    build_speed_modifier: 0.2
-    workshop_cost_modifier: 0.2
+# AGI:
+#   era: stone
+#   image: assets/sprites/buildings/base_camp
+#   name: "AGI"
+#   description: "Artificial general intelligence."
+#   effort: 30  # was 30
+#   costs: {gold: 0}  
+#   requirements: [THE_WORLD_WONDER]
+#   excludes: []
+#   effects:
+#     gold_modifier: 0.2
+#     research_speed_modifier: 0.2
+#     build_speed_modifier: 0.2
+#     workshop_cost_modifier: 0.2
 
 # ============================================================
 #   STONE_AGE  (Effort 20 – 200)
@@ -359,7 +359,7 @@ LORE_COLLECTION:
   costs: {gold: 4000}
   requirements: [ARTS]
   effects:
-    culture_offset: 0.15    
+    culture_offset: 0.25
     tower_sell_refund_modifier: 0.1
 
 FORGE:
@@ -440,7 +440,7 @@ THEATER:
   costs: {gold: 18000}
   requirements: [ARTS]
   effects:
-    culture_offset: 0.6
+    culture_offset: 0.8
 
 TREADWHEEL_CRANE:
   era: iron
@@ -653,7 +653,7 @@ TRIUMPHAL_ARC:
   costs: {gold: 214000}
   requirements: [MONARCHY]
   effects:
-    culture_offset: 1.2
+    culture_offset: 0.8
 
 COURTHOUSE:
   era: medieval
@@ -749,7 +749,7 @@ CATHEDRAL:
   costs: {gold: 176400}
   requirements: [ARCHITECTURE, THEOLOGY]
   effects:
-    culture_offset: 0.4
+    culture_offset: 1.2
 
 ARCHIVES:
   era: renaissance
@@ -903,7 +903,7 @@ ELECTRIC_FENCE:
   costs: {gold: 709178}
   requirements: [ELECTRICITY]
   effects: 
-    siege_offset: 3600
+    siege_offset: 1800
     wave_delay_offset: 1000
 
 AIRFIELD:
@@ -1028,10 +1028,9 @@ SUPPLY_CHAIN:
   requirements: [COMBUSTION_ENGINE, STRATEGIC_WARFARE]
   excludes: [BROADCASTING_STATION]
   effects:
-    wave_cost_modifier: 0.1
-    wave_slot_cost_modifier: 0.1
-    wave_era_cost_modifier: 0.1
-    enemy_siege_time_modifier: 0.1
+    wave_slot_cost_modifier: 0.20
+    wave_era_cost_modifier: 0.2
+    enemy_siege_time_modifier: 0.3
 
 BROADCASTING_STATION:
   era: industrial
@@ -1044,7 +1043,7 @@ BROADCASTING_STATION:
   excludes: [SUPPLY_CHAIN]
   effects:
     citizen_effect_modifier: 0.015
-    culture_modifier: 0.1
+    culture_modifier: 0.3
     culture_offset: 2.5
 
 # ============================================================
@@ -1060,7 +1059,7 @@ DEFENSE_DEPARTMENT:
   costs: {gold: 650080}
   requirements: [STRATEGIC_WARFARE, CIVIL_ENGINEERING]
   effects: 
-    siege_offset: 3600
+    siege_offset: 1800
     wave_delay_offset: 1000
     max_siege_construction_speed_modifier: -0.05
 
@@ -1073,7 +1072,7 @@ CRYPTOGRAPHERS_GUILD:
   costs: {gold: 1540082}
   requirements: [CRYPTOLOGY]
   effects:
-    siege_offset: 3600
+    siege_offset: 1800
     artifact_steal_victory_modifier: 0.1
     artifact_steal_defeat_modifier: 0.01
 
@@ -1106,7 +1105,7 @@ ARTS_GALLERY:
   costs: {gold: 1708091}
   requirements: [PAINTING, SOCIAL_SCIENCES]
   effects:
-    culture_offset: 1.0
+    culture_offset: 2
 
 RESEARCH_LAB:
   era: modern
@@ -1189,7 +1188,7 @@ NATIONAL_ARCHIVE:
   excludes: [THINK_TANK]
   effects:
     culture_modifier: 0.2
-    culture_offset: 3.5
+    culture_offset: 2.5
 
 THINK_TANK:
   era: modern
@@ -1246,7 +1245,7 @@ INTELLIGENCE_AGENCY:
   costs: {gold: 2170114}
   requirements: [STEALTH_SECRECY, SPECIAL_FORCES]
   effects: 
-    siege_offset: 3600
+    siege_offset: 1800
     artifact_steal_victory_modifier: 0.1
     # artifact_steal_defeat_modifier: 0.01
 
@@ -1296,7 +1295,7 @@ THE_WORLD_WONDER:
   costs: {gold: 10174020}
   requirements: [BIONICS, FIBER_COMPOSITE, NUCLEAR_FUSION]
   effects:
-    culture_offset: 10
+    culture_offset: 5
 
 SPACE_CENTER:
   era: future

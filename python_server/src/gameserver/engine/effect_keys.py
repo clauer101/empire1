@@ -9,6 +9,8 @@ EMPIRE_EFFECT_KEYS: list[tuple[str, str, str, str]] = [
     # Resources
     ("gold_offset",                             "💰", "Gold income",                     "Increases gold production by a fixed amount"),
     ("gold_modifier",                           "💰", "Gold bonus",                      "Increases gold production by a multiplier"),
+    ("gold_modifier_per_building",              "💰", "Gold per building",               "Increases gold production by a percentage for each completed building"),
+    ("gold_interest",                           "💰", "Gold interest",                   "Increases gold income by a percentage of current gold per hour"),
     ("culture_offset",                          "🎭", "Culture income",                  "Increases culture production by a fixed amount"),
     ("culture_modifier",                        "🎭", "Culture bonus",                   "Increases culture production by a multiplier"),
     ("life_regen_modifier",                     "❤️", "Life regen",                      "Increases life energy regeneration"),
@@ -53,6 +55,7 @@ EMPIRE_EFFECT_KEYS: list[tuple[str, str, str, str]] = [
     # Artifacts & Spies
     ("artifact_steal_victory_modifier",         "⚜",  "Artifact steal (victory)",       "Increases artifact maximum steal chance on victory"),
     ("artifact_steal_defeat_modifier",          "⚜",  "Artifact steal (defeat)",        "Increases artifact maximum steal chance on defeat"),
+    ("gold_steal_ratio",                        "💰", "Gold plunder",                    "Steals a percentage of the defender's gold on a successful attack"),
     ("artifact_retention_time",                 "⚜",  "Artifact protection",            "Newly acquired artifacts cannot be stolen for this duration"),
     ("spy_workshop",                            "🕵️", "Workshop intel",                  "Unlocks workshop intelligence in spy reports"),
     ("spy_artifacts",                           "🕵️", "Artifact intel",                  "Unlocks the artifact list in spy reports"),

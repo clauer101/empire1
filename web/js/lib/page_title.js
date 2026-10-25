@@ -20,7 +20,8 @@ function _calcRate(type, s) {
     const offset = (s.base_gold ?? 0) + (fx.gold_offset || 0);
     const mod = (citizens.merchant || 0) * effCe
       + ((citizens.artist || 0) + (citizens.scientist || 0)) * (fx.other_citizen_gold_modifier || 0)
-      + (fx.gold_modifier || 0);
+      + (fx.gold_modifier || 0)
+      + (s.building_gold_modifier || 0);
     return offset * (1 + mod);
   }
   const offset = (s.base_culture ?? 0) + (fx.culture_offset || 0);

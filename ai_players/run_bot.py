@@ -207,6 +207,19 @@ def _check_season_reset(summary: dict, state: BotState) -> bool:
     return False
 
 
+def _fetch_neighbors(api: ApiClient) -> dict | None:
+    """Foreign-territory view within fog range, as the map screen shows it.
+
+    Never fatal: without it the planner simply attempts a purchase and reads
+    the server's rejection, exactly as it did before this view existed.
+    """
+    try:
+        return api.map_neighbors()
+    except ApiError as e:
+        log.warning("neighbor view unavailable (%s) — planning without it", e)
+        return None
+
+
 def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer) -> None:
     # --- One-time setup for this tick ---
     summary = api.summary()
@@ -315,13 +328,18 @@ def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer)
     # Fetch map once per tick — shared across all actions to avoid rate-limiting.
     # Invalidated after map-modifying actions (tower placement, tile purchase).
     map_data: dict | None = api.get_map()
+    # Foreign territory in fog range, fetched once per tick like the map. Not
+    # refreshed after our own purchases: ownership only changes when ANOTHER
+    # empire buys, and a tile missing from this view is simply attempted, so
+    # staleness can never wrongly block growth — only cost a failed attempt.
+    neighbors: dict | None = _fetch_neighbors(api)
 
     for _ in range(MAX_ACTIONS_PER_TICK):
         summary = api.summary()  # refresh gold/resources after each action
         ctx = BotContext(summary, items, state.memory, state.strategy, api,
                          selection=config.get("selection", {"top_n": 3}),
                          personality=state.personality,
-                         map_data=map_data)
+                         map_data=map_data, neighbors=neighbors)
         action = choose_action(ctx, config, active_type, exclude=failed_this_tick)
         if action is None:
             break
@@ -334,13 +352,13 @@ def cycle(api: ApiClient, config: dict, state: BotState, control: ControlServer)
         log.info("action: %s", action.description)
         last_action = action.description
         state.dirty = True
-        # Refresh map after actions that modify it (tile buy, tower placement,
-        # tower sale, or era-swap). Any planner action that calls save_map/buy_tile
-        # must be listed here, otherwise the stale in-memory map makes the planner
-        # re-propose the same action every action-slot until the tick is exhausted.
-        if any(w in action.description for w in
-               ("buy tile", "build ", "relocate", "move spawn", "move castle",
-                "sell ", "tower ", "grow ", "era-swap")):
+        # Refresh the map after an action that changed it, so the rest of the
+        # tick plans against live state. Options declare this themselves via
+        # Option.mutates_map — matching on description substrings silently
+        # missed "frontier: flank tile"/"frontier: buy side tile" (both buy
+        # tiles) while refetching for baseline research and buildings, which
+        # touch no tile at all.
+        if action.mutates_map:
             map_data = api.get_map()
 
     if last_action is None:

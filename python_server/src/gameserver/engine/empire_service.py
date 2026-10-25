@@ -44,6 +44,11 @@ def _ruler_level_t(level: int, curve: "RulerLevelCurve") -> float:
     return float(norm ** curve.power)
 
 
+def ruler_scale(scale_base: float, level: int) -> float:
+    """Visual battle scale of a ruler: grows linearly from scale_base to 2x at max level."""
+    return scale_base * (1.0 + level / RULER_MAX_LEVEL)
+
+
 def ruler_critter_stats(
     ruler_cfg: "dict[str, Any]",
     level: int,
@@ -65,7 +70,8 @@ def ruler_critter_stats(
         "armour":      _lerp(ruler_cfg["armour_min"],  ruler_cfg["armour_max"]),
         "damage":      round(_lerp(ruler_cfg["damage_min"],  ruler_cfg["damage_max"])),
         "value":       _lerp(ruler_cfg["value_min"],   ruler_cfg["value_max"]),
-        "scale":        ruler_cfg["scale_base"] * (1.0 + level / RULER_MAX_LEVEL),
+        "scale":        ruler_scale(ruler_cfg["scale_base"], level),
+        "sprite_y_offset": ruler_cfg.get("sprite_y_offset", 0.0),
         "animation":    ruler_cfg["animation"],
         "aura_radius":  _lerp(ruler_cfg.get("aura_min", 0.0), ruler_cfg.get("aura_max", 0.0)),
         "aura_effects": aura_effects or {},
@@ -272,8 +278,12 @@ class EmpireService:
         gold_modifier = merchant_count * eff_citizen_effect
         gold_modifier += (artist_count + scientist_count_g) * empire.get_effect("other_citizen_gold_modifier", 0.0)
         gold_modifier += empire.get_effect("gold_modifier", 0.0)
+        gold_modifier += self.building_gold_modifier(empire)
         gold_offset = empire.get_effect("gold_offset", 0.0)
-        empire.resources["gold"] += ((self._base_gold + gold_offset) * (1 + gold_modifier)) * dt
+        # gold_interest is a %/hour rate on the current balance, so divide by 3600 (s/h)
+        # to get the per-second gain applied each tick — e.g. 0.01 = +1% of current gold per hour.
+        gold_interest_gain = empire.resources["gold"] * empire.get_effect("gold_interest", 0.0) / 3600.0
+        empire.resources["gold"] += ((self._base_gold + gold_offset) * (1 + gold_modifier) + gold_interest_gain) * dt
 
         # Culture: base * modifier + offset
         culture_modifier = artist_count * eff_citizen_effect
@@ -477,7 +487,9 @@ class EmpireService:
         if num_accounts == 0 or ratio <= self._gc.accounts_per_artifact:
             return
         all_artifact_iids = [item.iid for item in self._upgrades.get_by_type(ItemType.ARTIFACT)]
-        candidates = [iid for iid in all_artifact_iids if iid not in empire.artifacts]
+        # Artifacts are unique relics: never grant one that any empire already holds.
+        held = {iid for e in self._empires.values() for iid in e.artifacts}
+        candidates = [iid for iid in all_artifact_iids if iid not in held]
         if not candidates:
             return
         artifact_iid = random.choice(candidates)
@@ -489,8 +501,14 @@ class EmpireService:
         log.info("Artifact granted for era3: uid=%d artifact=%s", empire.uid, artifact_iid)
         if self._database is not None:
             import asyncio as _adb
-            _adb.get_running_loop().create_task(
+            _loop = _adb.get_running_loop()
+            _loop.create_task(
                 self._database.record_artifact_acquired(empire.uid, artifact_iid, now.timestamp())
+            )
+            _loop.create_task(
+                self._database.record_empire_stat_max(
+                    empire.uid, "peak_artifacts_held", len(empire.artifacts),
+                )
             )
             artifact_item = self._upgrades.get(artifact_iid)
             artifact_name = artifact_item.name if artifact_item else artifact_iid
@@ -765,6 +783,14 @@ class EmpireService:
     def effective_citizen_effect(self, empire: Empire) -> float:
         """citizen_effect scaled by empire's citizen_effect_modifier."""
         return self._citizen_effect + empire.get_effect("citizen_effect_modifier", 0.0)
+
+    def building_gold_modifier(self, empire: Empire) -> float:
+        """Gold modifier from ``gold_modifier_per_building`` × completed buildings."""
+        per_building = empire.get_effect("gold_modifier_per_building", 0.0)
+        if not per_building:
+            return 0.0
+        built = sum(1 for remaining in empire.buildings.values() if remaining <= 0)
+        return built * per_building
 
     @staticmethod
     def _sigmoid(i: int, maxv: float, minv: float, spread: float, steep: float) -> float:

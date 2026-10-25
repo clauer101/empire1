@@ -82,6 +82,7 @@ def _make_db_mock() -> AsyncMock:
     db.save_spy_report = AsyncMock()
     db.get_spy_reports_for = AsyncMock(return_value=[])
     db.toggle_alliance_declaration = AsyncMock(return_value=True)
+    db.remove_alliance_declaration = AsyncMock(return_value=True)
     db.get_alliance_declarations_for = AsyncMock(return_value=(set(), set()))
     db.get_all_mutual_alliances = AsyncMock(return_value={})
     return db
@@ -225,6 +226,39 @@ class TestArmyRouter:
             headers=_auth(),
         )
         assert resp.status_code == 200
+
+    async def test_toggle_siege_corruption_off_and_on(self, client, svc):
+        army = svc.empire_service.get(TEST_UID).armies[0]
+        assert army.siege_corruption_enabled is True  # default
+
+        resp = await client.put(
+            "/api/army/1/siege-corruption", json={"enabled": False}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert data["siege_corruption_enabled"] is False
+        assert army.siege_corruption_enabled is False
+
+        resp = await client.put(
+            "/api/army/1/siege-corruption", json={"enabled": True}, headers=_auth(),
+        )
+        assert resp.json()["siege_corruption_enabled"] is True
+        assert army.siege_corruption_enabled is True
+
+    async def test_toggle_siege_corruption_unknown_army_rejected(self, client, svc):
+        resp = await client.put(
+            "/api/army/9999/siege-corruption", json={"enabled": False}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["success"] is False
+
+    async def test_military_payload_reports_the_toggle(self, client, svc):
+        svc.empire_service.get(TEST_UID).armies[0].siege_corruption_enabled = False
+        resp = await client.get("/api/empire/military", headers=_auth())
+        assert resp.status_code == 200
+        army = next(a for a in resp.json()["armies"] if a["aid"] == 1)
+        assert army["siege_corruption_enabled"] is False
 
     async def test_add_wave(self, client, svc):
         resp = await client.post("/api/army/1/wave", headers=_auth())
@@ -770,6 +804,55 @@ class TestSpyReportsRouter:
 # Diplomacy router — alliance declarations
 # ---------------------------------------------------------------------------
 
+class TestDiplomacyDisabled:
+    """game.yaml `alliances_enabled: false` takes diplomacy out of a season.
+
+    The endpoints stay in place and refuse, so flipping the flag back on
+    restores them without code changes.
+    """
+
+    @staticmethod
+    def _disable(svc):
+        svc.game_config = MagicMock()
+        svc.game_config.alliances_enabled = False
+
+    async def test_toggle_refused_while_disabled(self, client, svc):
+        self._disable(svc)
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), set()))
+
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["success"] is False
+        # Refused before touching the database — no declaration is written
+        svc.database.toggle_alliance_declaration.assert_not_awaited()
+
+    async def test_decline_refused_while_disabled(self, client, svc):
+        self._disable(svc)
+        svc.database.remove_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=(set(), {99}))
+
+        resp = await client.post(
+            "/api/diplomacy/alliance/decline", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["success"] is False
+        svc.database.remove_alliance_declaration.assert_not_awaited()
+
+    async def test_enabled_flag_leaves_the_endpoint_working(self, client, svc):
+        svc.game_config = MagicMock()
+        svc.game_config.alliances_enabled = True
+        svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+
+        resp = await client.post(
+            "/api/diplomacy/alliance", json={"target_uid": 99}, headers=_auth(),
+        )
+        assert resp.json()["success"] is True
+
+
 class TestDiplomacyRouter:
     async def test_declare_alliance_from_none(self, client, svc):
         svc.database.toggle_alliance_declaration = AsyncMock(return_value=True)
@@ -1124,6 +1207,116 @@ class TestDiplomacyRouter:
         assert rows[TEST_UID]["alliance_group_culture"] is None
 
 
+class TestDissolveInactiveAlliances:
+    """An inactive/hidden player can't act to break an alliance themselves —
+    dissolve_alliances_for_inactive() does it for them wherever the "hidden
+    due to inactivity" filter runs (>1 week no login and <=0 culture)."""
+
+    async def test_breaks_mutual_alliance_in_both_directions(self, svc):
+        from gameserver.network.routers.diplomacy import dissolve_alliances_for_inactive
+
+        me = svc.empire_service.get(TEST_UID)
+        partner = _make_empire(uid=99, name="Partner")
+        me.allied_uids = {99}
+        partner.allied_uids = {TEST_UID}
+        svc.empire_service.register(partner)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+
+        await dissolve_alliances_for_inactive(svc, TEST_UID)
+
+        svc.database.remove_alliance_declaration.assert_any_await(TEST_UID, 99)
+        svc.database.remove_alliance_declaration.assert_any_await(99, TEST_UID)
+        assert svc.database.remove_alliance_declaration.await_count == 2
+        assert 99 not in me.allied_uids
+        assert TEST_UID not in partner.allied_uids
+
+    async def test_removes_ally_ruler_effects_from_the_surviving_partner(self, svc):
+        from gameserver.models.empire import Ruler
+        from gameserver.network.routers.diplomacy import dissolve_alliances_for_inactive
+
+        svc.empire_service._rulers = {
+            "NANDI": {"ally_effects": {"tile_cost_modifier": 0.05}},
+        }
+        me = svc.empire_service.get(TEST_UID)
+        partner = _make_empire(uid=99, name="Partner")
+        partner.ruler = Ruler(type="NANDI", name="Nandi")
+        partner.allied_uids = {TEST_UID}
+        svc.empire_service.register(partner)
+        svc.empire_service.recalculate_effects(partner)
+        me.allied_uids = {99}
+        svc.empire_service.recalculate_effects(me)
+        assert me.effects.get("tile_cost_modifier") == pytest.approx(0.05)
+
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+        await dissolve_alliances_for_inactive(svc, TEST_UID)
+
+        assert "tile_cost_modifier" not in me.effects
+
+    async def test_is_a_noop_without_a_mutual_alliance(self, svc):
+        from gameserver.network.routers.diplomacy import dissolve_alliances_for_inactive
+
+        # Only pending (one-directional) — nothing mutual to break.
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, set()))
+        await dissolve_alliances_for_inactive(svc, TEST_UID)
+        svc.database.remove_alliance_declaration.assert_not_awaited()
+
+    async def test_charges_no_culture_cost(self, svc):
+        from gameserver.network.routers.diplomacy import dissolve_alliances_for_inactive
+
+        svc.game_config = GameConfig(alliance_culture_cost=0.05)
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 1000.0
+        partner = _make_empire(uid=99, name="Partner")
+        partner.resources["culture"] = 400.0
+        svc.empire_service.register(partner)
+        svc.database.get_alliance_declarations_for = AsyncMock(return_value=({99}, {99}))
+
+        await dissolve_alliances_for_inactive(svc, TEST_UID)
+
+        # Unlike a player-initiated break (toggle_alliance), no culture moves —
+        # becoming inactive isn't a decision the player made.
+        assert me.resources["culture"] == 1000.0
+        assert partner.resources["culture"] == 400.0
+
+    async def test_list_empires_dissolves_alliance_before_hiding_inactive_empire(
+        self, client, svc,
+    ):
+        """Integration: GET /api/empires hides uid 99 (0 culture, never seen)
+        and must dissolve its mutual alliance with uid 77 as a side effect."""
+        hidden = _make_empire(uid=99, name="Hidden")
+        hidden.resources["culture"] = 0.0
+        hidden.allied_uids = {77}
+        ally = _make_empire(uid=77, name="Ally")
+        ally.allied_uids = {99}
+        svc.empire_service.register(hidden)
+        svc.empire_service.register(ally)
+        svc.database.list_users = AsyncMock(return_value=[
+            {"uid": TEST_UID, "username": "me", "last_seen": ""},
+            {"uid": 99, "username": "hidden", "last_seen": ""},
+            {"uid": 77, "username": "ally", "last_seen": ""},
+        ])
+
+        def _declarations_for(uid: int):
+            if uid == 99:
+                return ({77}, {77})
+            return (set(), set())
+
+        svc.database.get_alliance_declarations_for = AsyncMock(side_effect=_declarations_for)
+        svc.database.get_all_mutual_alliances = AsyncMock(return_value={99: {77}, 77: {99}})
+        svc.database.get_season_winners = AsyncMock(return_value=[])
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+
+        resp = await client.get("/api/empires", headers=_auth())
+
+        assert resp.status_code == 200
+        rows = {e["uid"]: e for e in resp.json()["empires"]}
+        assert 99 not in rows  # hidden from the list, as before
+        assert 77 in rows      # the surviving partner still shows up
+        svc.database.remove_alliance_declaration.assert_any_await(99, 77)
+        svc.database.remove_alliance_declaration.assert_any_await(77, 99)
+        assert 99 not in ally.allied_uids
+
+
 class TestSeasonResultsRouter:
     async def test_season_podium_pools_allied_pair_above_solo_leader(self, client, svc):
         # uid 99 (500) and uid 100 (700) are mutually allied -> pooled 1200,
@@ -1155,11 +1348,39 @@ class TestSeasonResultsRouter:
         # Higher own-culture member listed first within the team.
         assert podium[0]["members"][0]["uid"] == 100
 
+        # The solo empire still places — one rank below the team it lost to.
         assert podium[1]["place"] == 2
         assert podium[1]["pooled_culture"] == 1000.0
         assert [m["uid"] for m in podium[1]["members"]] == [TEST_UID]
 
-    async def test_season_podium_falls_back_to_individual_places_when_unallied(self, client, svc):
+    async def test_solo_leader_outscoring_the_team_takes_first_place_alone(self, client, svc):
+        # Pooling is a score bonus, not a monopoly: TEST_UID's solo 2000 beats
+        # the allied pair's pooled 1200 and wins the podium on its own.
+        me = svc.empire_service.get(TEST_UID)
+        me.resources["culture"] = 2000.0
+        low_ally = _make_empire(uid=99, name="LowAlly")
+        low_ally.resources["culture"] = 500.0
+        high_ally = _make_empire(uid=100, name="HighAlly")
+        high_ally.resources["culture"] = 700.0
+        svc.empire_service.register(low_ally)
+        svc.empire_service.register(high_ally)
+
+        svc.database.get_all_mutual_alliances = AsyncMock(return_value={99: {100}, 100: {99}})
+        svc.database.get_all_empire_stats = AsyncMock(return_value=[])
+        svc.database.get_longest_artifact_hold_per_uid = AsyncMock(return_value=[])
+        svc.database.get_era_firsts = AsyncMock(return_value=[])
+        svc.database.get_longest_single_artifact_holds = AsyncMock(return_value=[])
+
+        resp = await client.get("/api/season-results", headers=_auth())
+        assert resp.status_code == 200
+        podium = resp.json()["season_podium"]
+
+        assert podium[0]["place"] == 1
+        assert podium[0]["pooled_culture"] == 2000.0
+        assert [m["uid"] for m in podium[0]["members"]] == [TEST_UID]
+        assert {m["uid"] for m in podium[1]["members"]} == {99, 100}
+
+    async def test_season_podium_lists_individual_places_when_unallied(self, client, svc):
         me = svc.empire_service.get(TEST_UID)
         me.resources["culture"] = 1000.0
 

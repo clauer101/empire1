@@ -377,6 +377,32 @@
         ]
       }
     },
+    "/api/empires/eternal": {
+      "get": {
+        "summary": "Eternal Ranking",
+        "description": "Return the all-time culture ranking across every season.\n\nCulture from all finished seasons (read from the archived\n``results/season<N>/state.yaml`` snapshots) is summed with the culture\nthe empire holds in the currently running season. Every uid that ever\nscored culture is ranked, including accounts that no longer exist —\n``users.uid`` is AUTOINCREMENT, so a uid is never reused and always\nrefers to the same player.\n\nA season counts as soon as its empires are wiped, so the table picks\nup the finished season during the transition rather than only when\nthe next one starts. ``current_season`` then names the season the\n``current_culture`` column is filling up — the one about to start.\n\n``seasons_played`` counts only seasons the empire scored culture in.\n\nOnly empires above ``ETERNAL_RANKING_MIN_CULTURE`` are listed, and\nranks run 1..n over that qualifying set; the threshold is reported as\n``min_culture`` so clients need not hardcode it.\n\nMutually-allied empires are NOT pooled here (unlike ``/api/empires``):\nalliances are a per-season construct and the archives carry none.",
+        "operationId": "eternal_ranking_api_empires_eternal_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Eternal Ranking Api Empires Eternal Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/empire/build": {
       "post": {
         "summary": "Build Item",
@@ -1296,6 +1322,62 @@
         }
       }
     },
+    "/api/army/{aid}/siege-corruption": {
+      "put": {
+        "summary": "Set Siege Corruption",
+        "operationId": "set_siege_corruption_api_army__aid__siege_corruption_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "aid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Aid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiegeCorruptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Set Siege Corruption Api Army  Aid  Siege Corruption Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/army/{aid}/wave": {
       "post": {
         "summary": "Add Wave",
@@ -2154,7 +2236,7 @@
     "/api/replays/{key}": {
       "get": {
         "summary": "Get Replay",
-        "description": "Get a full battle replay by replay key.\n\nReturns raw gzip bytes for .json.gz files (client decompresses via\nDecompressionStream) or plain JSON for legacy .json files.",
+        "description": "Get a full battle replay by replay key.\n\nReturns raw gzip bytes for legacy .json.gz files (client decompresses\nvia DecompressionStream); streaming .ndjson.gz files are reassembled\ninto the same {..., \"events\": [...]} shape server-side and returned\nas plain JSON, since their on-disk layout is an internal storage\ndetail, not part of the client contract.",
         "operationId": "get_replay_api_replays__key__get",
         "security": [
           {
@@ -2199,7 +2281,7 @@
     "/api/diplomacy/alliance": {
       "post": {
         "summary": "Toggle Alliance",
-        "description": "Toggle the current player's alliance declaration toward target_uid.\n\nWhen the toggle completes a mutual (two-way) declaration, both empires\nimmediately pay `alliance_culture_cost` (fraction of their own culture,\nfrom game.yaml) to each other as a one-time alliance formation cost.\n\nWhen the toggle breaks a previously-active (mutual) alliance, the\nbreaking player alone pays `alliance_culture_cost` again — this\namount is destroyed, not transferred to the ex-partner.\n\nRejects completing a new mutual alliance if either side is already at\ntheir alliance capacity (see EmpireService.get_max_alliances — flat\n1 for now, extensible later via a per-empire effect).",
+        "description": "Toggle the current player's alliance declaration toward target_uid.\n\nWhen the toggle completes a mutual (two-way) declaration, both empires\nimmediately pay `alliance_culture_cost` (fraction of their own culture,\nfrom game.yaml) to each other as a one-time alliance formation cost.\n\nWhen the toggle breaks a previously-active (mutual) alliance, the\nbreaking player alone pays `alliance_culture_cost` again — this\namount is destroyed, not transferred to the ex-partner.\n\nRejects completing a new mutual alliance if either side is already at\ntheir alliance capacity (see EmpireService.get_max_alliances — flat\n1 for now, extensible later via a per-empire effect).\n\nRefuses outright while `alliances_enabled` is false in game.yaml.",
         "operationId": "toggle_alliance_api_diplomacy_alliance_post",
         "requestBody": {
           "content": {
@@ -3411,6 +3493,7 @@
     "/api/critters": {
       "get": {
         "summary": "List Critters",
+        "description": "Sprite manifest; each entry carries its battle display fields (see sprite_display_fields).",
         "operationId": "list_critters_api_critters_get",
         "responses": {
           "200": {
@@ -4052,6 +4135,19 @@
           "ruler_iid"
         ],
         "title": "SetRulerWaveRequest"
+      },
+      "SiegeCorruptionRequest": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "SiegeCorruptionRequest"
       },
       "SignupRequest": {
         "properties": {

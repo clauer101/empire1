@@ -485,6 +485,14 @@ class RestClient {
     return this._get('/api/season-results');
   }
 
+  /**
+   * All-time culture ranking across every season.
+   * @returns {Promise<{current_season: number, seasons: object[], self_rank: number|null, total: number, ranking: object[]}>}
+   */
+  async getEternalRanking() {
+    return this._get('/api/empires/eternal');
+  }
+
   // ── Building / Research ───────────────────────────────────
 
   /**
@@ -591,6 +599,17 @@ class RestClient {
    */
   async changeArmy(aid, name) {
     return this._put(`/api/army/${aid}`, { name });
+  }
+
+  /**
+   * Toggle whether this army's attacks apply the owner's siege corruption.
+   * Disabled means the attack serves the full, unshortened siege.
+   * @param {number} aid
+   * @param {boolean} enabled
+   * @returns {Promise<object>}
+   */
+  async setArmySiegeCorruption(aid, enabled) {
+    return this._put(`/api/army/${aid}/siege-corruption`, { enabled });
   }
 
   /**

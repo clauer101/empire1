@@ -71,6 +71,7 @@ async def handle_military_request(
             "waves": waves,
             "next_wave_price": round(svc.empire_service.wave_price_for(empire, army_wave_count + 1), 2),
             "steal_multiplier": steal_mult,
+            "siege_corruption_enabled": army.siege_corruption_enabled,
         })
 
     # Get available critters based on completed research AND buildings
@@ -685,6 +686,51 @@ async def handle_change_army(
         "success": True,
         "aid": aid,
         "name": name,
+    }
+
+
+async def handle_set_army_siege_corruption(
+    message: GameMessage, sender_uid: int,
+) -> Optional[dict[str, Any]]:
+    """Handle ``set_army_siege_corruption`` — toggle siege corruption per army.
+
+    While disabled, attacks launched with this army serve the full siege: the
+    owner's `enemy_siege_time_modifier` is left out of the siege length (see
+    AttackService._calculate_siege_duration). The flag is read when the siege
+    starts, so toggling it still counts for an army already on its way.
+    """
+    svc = _svc()
+    aid = getattr(message, "aid", 0)
+    enabled = bool(getattr(message, "enabled", True))
+    target_uid = sender_uid if sender_uid > 0 else message.sender
+    empire = svc.empire_service.get(target_uid)
+
+    if empire is None:
+        log.warning("set_army_siege_corruption failed: no empire for uid=%d", target_uid)
+        return {
+            "type": "set_army_siege_corruption_response",
+            "success": False,
+            "error": "No empire found",
+        }
+
+    army = next((a for a in empire.armies if a.aid == aid), None)
+    if army is None:
+        log.warning("set_army_siege_corruption failed uid=%d: army aid=%d not found", target_uid, aid)
+        return {
+            "type": "set_army_siege_corruption_response",
+            "success": False,
+            "error": f"Army {aid} not found",
+        }
+
+    army.siege_corruption_enabled = enabled
+    log.info(
+        "set_army_siege_corruption uid=%d aid=%d → %s", target_uid, aid, "on" if enabled else "off"
+    )
+    return {
+        "type": "set_army_siege_corruption_response",
+        "success": True,
+        "aid": aid,
+        "siege_corruption_enabled": enabled,
     }
 
 

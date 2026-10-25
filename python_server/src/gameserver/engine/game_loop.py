@@ -207,7 +207,9 @@ class GameLoop:
 
             # 5. Record top-3 winners in the live DB. Mutually-allied empires
             # are pooled: a place can be shared by a two-empire team, ranked
-            # on their combined culture (mirrors the live leaderboard).
+            # on their combined culture, while a solo empire takes a place
+            # alone when it outscores a team (mirrors the podium in
+            # /api/season-results and the live leaderboard).
             if self._database is not None:
                 from gameserver.engine.global_state import get_season_title
                 from gameserver.util.alliance_grouping import group_by_pooled_culture

@@ -14,6 +14,44 @@ if TYPE_CHECKING:
     from gameserver.main import Services
 
 
+async def dissolve_alliances_for_inactive(services: "Services", uid: int) -> None:
+    """Break every mutual alliance an inactive/hidden empire still holds.
+
+    Called from the empire-list endpoints (network/routers/empire.py,
+    network/routers/admin.py) wherever they compute the "hidden due to
+    inactivity" filter (>1 week without login and <=0 culture — see
+    `_is_recently_active`) — an inactive player can't act to break an
+    alliance themselves, so this does it for them. Idempotent: an empire
+    with no remaining mutual alliance is a cheap no-op, so it's safe to call
+    on every request rather than only once on the transition into hidden.
+
+    Unlike the player-initiated toggle_alliance break path, this charges no
+    `alliance_culture_cost` — becoming inactive isn't a decision the player
+    made, and the trigger condition (<=0 culture) usually leaves nothing to
+    charge anyway.
+    """
+    assert services.database is not None
+    declared_to, declared_by = await services.database.get_alliance_declarations_for(uid)
+    partners = declared_to & declared_by  # mutual = declared in both directions
+    if not partners:
+        return
+    for partner_uid in partners:
+        # Both directions must go — removing only uid's own declaration would
+        # leave the partner's declaration standing as a dangling pending
+        # request instead of a clean break.
+        await services.database.remove_alliance_declaration(uid, partner_uid)
+        await services.database.remove_alliance_declaration(partner_uid, uid)
+        if services.empire_service is not None:
+            empire = services.empire_service.get(uid)
+            partner = services.empire_service.get(partner_uid)
+            if empire is not None:
+                empire.allied_uids.discard(partner_uid)
+                services.empire_service.recalculate_effects(empire)
+            if partner is not None:
+                partner.allied_uids.discard(uid)
+                services.empire_service.recalculate_effects(partner)
+
+
 def _alliance_status(target_uid: int, declared_to: set[int], declared_by: set[int]) -> str:
     """Derive the viewer's relationship status toward target_uid.
 
@@ -29,6 +67,20 @@ def _alliance_status(target_uid: int, declared_to: set[int], declared_by: set[in
     if received:
         return "pending_received"
     return "none"
+
+
+def _alliances_disabled(services: "Services") -> bool:
+    """True while the season runs without diplomacy (game.yaml alliances_enabled).
+
+    The feature is switched off per season rather than removed: the endpoints
+    below stay intact and simply refuse, so turning the flag back on restores
+    diplomacy without touching this code.
+    """
+    gc = services.game_config
+    return gc is not None and not gc.alliances_enabled
+
+
+_DISABLED_RESPONSE = {"success": False, "error": "Alliances are disabled this season"}
 
 
 def make_router(services: "Services", limiter: Limiter) -> APIRouter:
@@ -52,7 +104,11 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         Rejects completing a new mutual alliance if either side is already at
         their alliance capacity (see EmpireService.get_max_alliances — flat
         1 for now, extensible later via a per-empire effect).
+
+        Refuses outright while `alliances_enabled` is false in game.yaml.
         """
+        if _alliances_disabled(services):
+            return dict(_DISABLED_RESPONSE)
         if body.target_uid == uid or body.target_uid <= 0:
             return {"success": False, "error": "Invalid target"}
         assert services.database is not None
@@ -130,6 +186,8 @@ def make_router(services: "Services", limiter: Limiter) -> APIRouter:
         or breaks an alliance and never charges the culture cost, since
         declining isn't breaking anything the caller declared.
         """
+        if _alliances_disabled(services):
+            return dict(_DISABLED_RESPONSE)
         if body.target_uid == uid or body.target_uid <= 0:
             return {"success": False, "error": "Invalid target"}
         assert services.database is not None

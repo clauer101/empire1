@@ -89,7 +89,7 @@ All writes use `asyncio.ensure_future(...)` (fire-and-forget) and are wrapped in
 | `record_empire_stat(uid, **increments)` | Upsert row, add integer increments to one or more columns |
 | `record_empire_stat_float(uid, field, value)` | Upsert row, add float value to one column |
 | `record_empire_stat_max(uid, field, value)` | Upsert row, update column only if new value is larger |
-| `record_artifact_acquired(uid, iid, ts)` | Set `acquired_at` timestamp for a hold start |
+| `record_artifact_acquired(uid, iid, ts)` | Set `acquired_at` timestamp for a hold start (does not touch `peak_artifacts_held` — callers record that from `len(empire.artifacts)`) |
 | `record_artifact_lost(uid, iid, ts)` | Accumulate hold delta into `total_held_secs`, clear `acquired_at` |
 | `get_empire_stats(uid)` | Return stats dict for one empire |
 | `get_all_empire_stats()` | Return all rows |

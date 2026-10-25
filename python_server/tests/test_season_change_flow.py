@@ -296,7 +296,8 @@ async def test_season_snapshot_pools_allied_culture(harness):
 
     Alpha (uid=1, 100 culture) and Beta (uid=2, 50 culture) are mutually
     allied -> pooled 150. Gamma (uid=99, 120 culture) is unallied and would
-    beat either of them individually, but not the pooled pair.
+    beat either of them individually, but not the pooled pair — so Gamma
+    places second, on its own.
     """
     gl, empires, attacks, gc, tmp_path = harness
     db = gl._database
@@ -317,7 +318,7 @@ async def test_season_snapshot_pools_allied_culture(harness):
     places = {w["empire_uid"]: w["place"] for w in winners}
     assert places[1] == 1
     assert places[2] == 1
-    assert places[99] == 2
+    assert places[99] == 2  # unallied empires still place, on their own score
     # Own culture is recorded per member, not the pooled total.
     culture_by_uid = {w["empire_uid"]: w["culture"] for w in winners}
     assert culture_by_uid[1] == 100.0

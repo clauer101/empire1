@@ -291,6 +291,43 @@ def _save_gold_costs(path: Path, updates: dict[str, Any]) -> None:
     path.write_text("\n".join(result), encoding="utf-8")
 
 
+def sprite_display_fields(critters_path: Path, rulers_path: Path) -> dict[str, dict[str, Any]]:
+    """Battle display fields per sprite-manifest name, for the /api/critters endpoints.
+
+    Entries are keyed like the battle looks sprites up: by the YAML animation
+    folder (util.sprites.sprite_key), falling back to the lowercase IID.
+    Critters: {"iid", "scale", "sprite_y_offset"} from critters.yaml.
+    Rulers: {"iid", "scale": <level 1>, "scale_by_level": [<level 1>, ..., <max level>],
+    "sprite_y_offset"}.
+    """
+    from gameserver.engine.empire_service import RULER_MAX_LEVEL, ruler_scale
+    from gameserver.util.sprites import sprite_key
+
+    fields: dict[str, dict[str, Any]] = {}
+    critter_cfg = yaml.safe_load(critters_path.read_text(encoding="utf-8")) or {}
+    for iid, item in critter_cfg.items():
+        if isinstance(item, dict):
+            fields[sprite_key(str(item.get("animation") or "")) or str(iid).lower()] = {
+                "iid": str(iid),
+                "scale": float(item.get("scale", 1.0)),
+                "sprite_y_offset": float(item.get("sprite_y_offset", 0.0)),
+            }
+    ruler_cfg = yaml.safe_load(rulers_path.read_text(encoding="utf-8")) or {}
+    for iid, item in ruler_cfg.items():
+        key = sprite_key(str(item.get("animation") or "")) if isinstance(item, dict) else ""
+        if not key:
+            continue
+        base = float(item.get("scale_base", 1.0))
+        by_level = [round(ruler_scale(base, lvl), 3) for lvl in range(1, RULER_MAX_LEVEL + 1)]
+        fields[key] = {
+            "iid": str(iid),
+            "scale": by_level[0],
+            "scale_by_level": by_level,
+            "sprite_y_offset": float(item.get("sprite_y_offset", 0.0)),
+        }
+    return fields
+
+
 def _resolve_sprite(web_dir: Path, animation: str) -> str:
     if not animation:
         return ""
@@ -1117,8 +1154,14 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
 
     @app.get("/api/critters")
     async def list_critters() -> Any:
+        """Sprite manifest; each entry carries its battle display fields (see sprite_display_fields)."""
         GIF_NAMES = {"forward": "front.gif", "left": "left.gif", "right": "right.gif", "backward": "back.gif"}
         result = []
+        scales = sprite_display_fields(CRITTERS_PATH, RULERS_PATH)
+
+        def _add_scale(entry: dict[str, Any]) -> dict[str, Any]:
+            entry.update(scales.get(entry["name"], {"scale": 1.0}))
+            return entry
 
         def _scan_dir(sprite_dir: "Path", name_prefix: str = "") -> None:
             if not sprite_dir.is_dir():
@@ -1130,12 +1173,12 @@ def register_web_routes(app: FastAPI, web_dir: Path, services: "Any | None" = No
                 base = f"/{d.relative_to(web_dir)}"
                 gif_paths = {dir_: d / fname for dir_, fname in GIF_NAMES.items()}
                 if all(p.exists() for p in gif_paths.values()):
-                    result.append({"name": name, "type": "gifs",
-                                    "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()}})
+                    result.append(_add_scale({"name": name, "type": "gifs",
+                                    "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()}}))
                     continue
                 sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp") and "_splash" not in f.name)
                 if sheets:
-                    result.append({"name": name, "type": "spritesheet", "file": f"{base}/{sheets[0]}"})
+                    result.append(_add_scale({"name": name, "type": "spritesheet", "file": f"{base}/{sheets[0]}"}))
 
         _scan_dir(web_dir / "assets" / "sprites" / "critters")
         _scan_dir(web_dir / "assets" / "sprites" / "ruler", name_prefix="ruler_")

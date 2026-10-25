@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import random
 from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,6 +21,7 @@ from gameserver.network.rest_api import (
     _update_effects_in_yaml,
     _load_era_effects,
 )
+from gameserver.network.routers.diplomacy import dissolve_alliances_for_inactive
 import gameserver.network.rest_api as _rest_api
 import structlog
 
@@ -130,6 +132,8 @@ def make_router(services: "Services") -> APIRouter:
             culture = empire.resources.get("culture", 0.0)
             last_seen = uid_to_last_seen.get(empire.uid, "")
             if culture <= 0 and not _is_recently_active(last_seen, _week_s):
+                if services.database is not None:
+                    await dissolve_alliances_for_inactive(services, empire.uid)
                 continue
 
             buildings_done = [iid for iid, v in empire.buildings.items() if v == 0.0]
@@ -762,7 +766,9 @@ def make_router(services: "Services") -> APIRouter:
 
     @router.get("/api/admin/analyze-empire/{uid}")
     async def admin_analyze_empire(uid: int, _uid: int = Depends(require_admin)) -> dict[str, Any]:
-        from collections import deque as _deque, Counter as _Counter
+        from collections import Counter as _Counter
+
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle, path_distance
 
         assert services.empire_service is not None
         empire = services.empire_service.get(uid)
@@ -771,40 +777,20 @@ def make_router(services: "Services") -> APIRouter:
 
         raw_map = empire.hex_map
 
-        HEX_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1)]
-        walkable: set[tuple[int, int]] = set()
-        start: tuple[int, int] | None = None
-        goal:  tuple[int, int] | None = None
-
+        # Malformed hex_map keys (e.g. non-integer) are skipped rather than
+        # raising, same tolerance the old hand-rolled BFS here had.
+        normalized_map: dict[str, str] = {}
         for key, tile_type in raw_map.items():
             if isinstance(tile_type, dict):
                 tile_type = tile_type.get("type", "")
             try:
                 q, r = map(int, key.split(","))
             except Exception:
-                # Malformed hex_map key (e.g. non-integer) — skip tile
                 continue
-            if tile_type in ("path", "spawnpoint", "castle"):
-                walkable.add((q, r))
-            if tile_type == "spawnpoint":
-                start = (q, r)
-            if tile_type == "castle":
-                goal = (q, r)
+            normalized_map[f"{q},{r}"] = tile_type
 
-        path_length: int | None = None
-        if start and goal:
-            queue = _deque([(start, 0)])
-            visited = {start}
-            while queue:
-                (q, r), dist = queue.popleft()
-                if (q, r) == goal:
-                    path_length = dist
-                    break
-                for dq, dr in HEX_DIRS:
-                    nb = (q + dq, r + dr)
-                    if nb not in visited and nb in walkable:
-                        visited.add(nb)
-                        queue.append((nb, dist + 1))
+        path = find_path_from_spawn_to_castle(normalized_map)
+        path_length: int | None = path_distance(path) if path else None
 
         from gameserver.util.eras import ERA_LABELS_EN
 
@@ -843,6 +829,173 @@ def make_router(services: "Services") -> APIRouter:
             "tower_counts": tower_counts,
             "age_counts": age_counts,
             "age_pct": age_pct,
+        }
+
+    def _maze_sandbox_catalog(era: str) -> tuple[dict[str, Any], dict[str, int], int]:
+        """Era-filtered tower catalog + era-rank map for the maze tools below.
+
+        Raises HTTPException(400) for an unknown era.
+        """
+        from gameserver.engine.maze_generator import era_filtered_structures
+        from gameserver.util.eras import ERA_ORDER
+
+        assert services.empire_service is not None and services.upgrade_provider is not None
+        if era not in ERA_ORDER:
+            raise HTTPException(status_code=400, detail=f"unknown era {era!r}")
+        era_index = ERA_ORDER.index(era)
+        era_rank = services.empire_service._item_era_index
+        structures = era_filtered_structures(services.upgrade_provider.items, era_rank, era_index)
+        return structures, era_rank, era_index
+
+    def _maze_generator(structures: dict[str, Any], era_rank: dict[str, int],
+                         top_n: int, rng: random.Random, memory: dict[str, Any],
+                         target_length: int, target_towers: int) -> Any:
+        from gameserver.engine.maze_generator import MazeGenerator
+
+        assert services.empire_service is not None and services.game_config is not None
+        return MazeGenerator(
+            structures=structures, era_rank=era_rank,
+            tile_price_for=services.empire_service.tile_price_for,
+            item_upgrade_price_for=services.empire_service._item_upgrade_price,
+            tower_sell_refund=float(getattr(services.game_config, "tower_sell_refund", 0.3)),
+            target_length=target_length, target_towers=target_towers,
+            top_n=top_n, rng=rng, memory=memory,
+        )
+
+    def _maze_tile_price(tiles: dict[str, str], empire: Any) -> float:
+        assert services.empire_service is not None
+        owned_count = sum(1 for v in tiles.values() if v != "void")
+        return services.empire_service.tile_price_for(empire, owned_count + 1)
+
+    def _maze_path_len(tiles: dict[str, str]) -> int:
+        from gameserver.engine.hex_pathfinding import find_path_from_spawn_to_castle
+
+        # Tile count (not edge count) — matches the tool's historical meaning
+        # of "path_len" (ai_players' bfs_path returned the tile list itself).
+        path = find_path_from_spawn_to_castle(tiles)
+        return len(path) if path else 0
+
+    MAZE_START_TILES = {"0,0": "castle", "0,1": "spawnpoint", "1,0": "empty"}
+
+    @router.post("/api/admin/maze/simulate")
+    async def admin_maze_simulate(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Time-accelerated maze simulation for balance tuning.
+
+        Replaces the old ai_players/bot/sim.py-backed dev tool: runs the same
+        corridor-growth algorithm, but against the real EmpireService pricing
+        formulas instead of a reimplemented copy, and entirely against a
+        throwaway, unregistered Empire — no real player data is touched.
+
+        Body: {era, cycles, start_gold, gold_per_cycle, top_n, seed}.
+        """
+        from gameserver.models.empire import Empire as _Empire
+
+        era = str(body.get("era", "stone"))
+        structures, era_rank, _ = _maze_sandbox_catalog(era)
+
+        cycles = max(1, min(2000, int(body.get("cycles", 300))))
+        start_gold = float(body.get("start_gold", 200.0))
+        gold_per_cycle = float(body.get("gold_per_cycle", 100.0))
+        top_n = max(1, min(5, int(body.get("top_n", 1))))
+        seed = int(body["seed"]) if body.get("seed") else (random.SystemRandom().getrandbits(32) or 1)
+
+        empire = _Empire(uid=-1)
+        empire.resources["gold"] = start_gold
+        tiles: dict[str, str] = dict(MAZE_START_TILES)
+        rng = random.Random(seed)
+        from gameserver.engine.maze_generator import target_maze_length, target_maze_towers
+
+        assert services.game_config is not None
+        target_length = target_maze_length(services.game_config.maze_length, era, rng)
+        target_towers = target_maze_towers(services.game_config.maze_length, era, rng)
+        generator = _maze_generator(structures, era_rank, top_n, rng, {}, target_length, target_towers)
+
+        steps: list[dict[str, Any]] = []
+        last_snapshot: dict[str, str] | None = None
+        for cycle in range(cycles):
+            empire.resources["gold"] += gold_per_cycle
+            tile_price = _maze_tile_price(tiles, empire)
+            action = generator.step(tiles, empire)
+            step: dict[str, Any] = {
+                "cycle": cycle,
+                "gold": round(empire.resources["gold"], 1),
+                "action": action,
+                "path_len": _maze_path_len(tiles),
+                "towers": sum(1 for v in tiles.values() if v in structures),
+                "tile_price": round(tile_price, 1),
+                "tiles": dict(tiles),
+            }
+            if step["tiles"] == last_snapshot:
+                del step["tiles"]
+            else:
+                last_snapshot = step["tiles"]
+            steps.append(step)
+
+        return {
+            "steps": steps,
+            "final_tiles": dict(tiles),
+            "final_towers": steps[-1]["towers"] if steps else 0,
+            "item_upgrades": empire.item_upgrades,
+            "gold_left": round(empire.resources["gold"], 1),
+            "seed": seed,
+        }
+
+    @router.post("/api/admin/maze/step")
+    async def admin_maze_step(body: dict[str, Any], _uid: int = Depends(require_admin)) -> dict[str, Any]:
+        """Run ONE maze-generator cycle, resuming from caller-supplied state.
+
+        Iterative counterpart to /api/admin/maze/simulate: the client persists
+        `tiles`, `item_upgrades` and `memory` between calls and feeds them back,
+        so the generator builds the maze one action per call. Gold is treated
+        as infinite (this is a maze-shape tool, not an economy simulation) —
+        pass `tiles=null` on the first call to start from the default map.
+        Body: {era, top_n, seed, tiles?, item_upgrades?, memory?, cycle?}.
+        """
+        from gameserver.models.empire import Empire as _Empire
+
+        era = str(body.get("era", "stone"))
+        structures, era_rank, _ = _maze_sandbox_catalog(era)
+
+        top_n = max(1, min(5, int(body.get("top_n", 1))))
+        cycle = int(body.get("cycle", 0))
+        seed = int(body["seed"]) if body.get("seed") else (random.SystemRandom().getrandbits(32) or 1)
+
+        tiles: dict[str, str] = dict(body["tiles"]) if body.get("tiles") else dict(MAZE_START_TILES)
+        empire = _Empire(uid=-1)
+        empire.resources["gold"] = float("inf")
+        empire.item_upgrades = {k: dict(v) for k, v in (body.get("item_upgrades") or {}).items()}
+        memory = dict(body.get("memory") or {})
+
+        if "target_length" not in memory:
+            from gameserver.engine.maze_generator import target_maze_length, target_maze_towers
+
+            assert services.game_config is not None
+            memory["target_length"] = target_maze_length(
+                services.game_config.maze_length, era, random.Random(seed))
+            memory["target_towers"] = target_maze_towers(
+                services.game_config.maze_length, era, random.Random(seed))
+        target_length = int(memory["target_length"])
+        target_towers = int(memory["target_towers"])
+
+        rng = random.Random(seed + cycle)
+        generator = _maze_generator(structures, era_rank, top_n, rng, memory, target_length, target_towers)
+        tile_price = _maze_tile_price(tiles, empire)
+        action = generator.step(tiles, empire)
+
+        return {
+            "step": {
+                "cycle": cycle, "action": action,
+                "path_len": _maze_path_len(tiles),
+                "towers": sum(1 for v in tiles.values() if v in structures),
+                "tile_price": round(tile_price, 1),
+                "tiles": dict(tiles),
+            },
+            "tiles": dict(tiles),
+            "item_upgrades": empire.item_upgrades,
+            "memory": generator.memory,
+            "cycle": cycle + 1,
+            "seed": seed,
+            "path_len": _maze_path_len(tiles),
         }
 
     @router.get("/api/admin/map-overview")

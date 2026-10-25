@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    pass
+    from gameserver.models.army import CritterWave
 
 BARBARIAN_NAMES: list[str] = [
     "Rude Barbarians", "Lazy Raiders", "Angry Mob", "Wandering Pillagers",
@@ -66,6 +66,19 @@ def parse_boss_iids(critters_yaml: Path) -> set[str]:
     import yaml
     data = yaml.safe_load(critters_yaml.read_text(encoding="utf-8")) or {}
     return {iid for iid, v in data.items() if isinstance(v, dict) and v.get("is_boss")}
+
+
+def parse_critter_type_by_iid(critters_yaml: Path) -> dict[str, str]:
+    """Return {iid: critter_type} from critters.yaml (e.g. "tank", "fast").
+
+    Used to restrict army generation to a single critter class for balancing
+    experiments (`scripts/army_pool.py::generate_random_army`'s `critter_type`
+    param) — not read by the live AI-attack path.
+    """
+    import yaml
+    data = yaml.safe_load(critters_yaml.read_text(encoding="utf-8")) or {}
+    return {iid: v["critter_type"] for iid, v in data.items()
+            if isinstance(v, dict) and v.get("critter_type")}
 
 
 # ── Army generation ───────────────────────────────────────────────────────────
@@ -164,6 +177,53 @@ def generate_army(
         name = BARBARIAN_NAMES[int(rng() * len(BARBARIAN_NAMES)) % len(BARBARIAN_NAMES)]
 
     return {"name": name, "waves": waves, "era_internal": era_internal, "seed": seed}
+
+
+# ── CritterWave construction ──────────────────────────────────────────────────
+
+def build_critter_waves(
+    waves: list[dict[str, Any]],
+    initial_wave_delay_ms: float = 15000.0,
+    critter_override: str | None = None,
+    boss_iids: set[str] | None = None,
+) -> list["CritterWave"]:
+    """Convert wave dicts (as returned by `generate_army()`, or any
+    `[{"critter": iid, "slots": n}, ...]` list — also used for
+    `ai_waves.yaml`-sourced hardcoded armies) into `CritterWave` objects.
+
+    The one shared implementation for what used to be three independent
+    copies of this loop (`ai_service.py`'s live AI-attack path,
+    `scripts/sim_map.py`, `scripts/army_pool.py`).
+
+    Args:
+        waves: Wave specs with "critter" and "slots" keys.
+        initial_wave_delay_ms: Stagger between each wave's first spawn.
+        critter_override: If set, every non-boss wave's critter is replaced
+            by this iid (wave `slots` capacity is left as-is — the actual
+            spawn count is recomputed downstream from the override critter's
+            own slot cost). Boss waves are never overridden: their `slots` is
+            a sentinel sized for the boss's own slot cost so exactly one boss
+            spawns, and overriding the critter there while keeping that
+            sentinel would spawn hundreds of the override critter instead.
+        boss_iids: Boss critter iids, used only to protect them from
+            `critter_override` above.
+    """
+    from gameserver.models.army import CritterWave
+
+    bosses = boss_iids or set()
+    result: list[CritterWave] = []
+    for i, w in enumerate(waves):
+        iid = str(w.get("critter") or "").upper()
+        if critter_override and iid not in bosses:
+            iid = critter_override.upper()
+        result.append(CritterWave(
+            wave_id=i + 1,
+            iid=iid,
+            slots=float(w.get("slots", 1)),
+            num_critters_spawned=0,
+            next_critter_ms=i * initial_wave_delay_ms,
+        ))
+    return result
 
 
 # ── Seeded RNG (matches JS Mulberry32 in ai_generator.html) ──────────────────

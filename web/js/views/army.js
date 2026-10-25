@@ -9,6 +9,8 @@ import { escHtml, hilite } from '../lib/html.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY, ERA_ROMAN, ERA_LABEL_EN } from '../lib/eras.js';
 import { isGameFrozen } from '../lib/game_state.js';
 import { showSpyReportOverlay, hideSpyReportOverlay } from '../lib/spy_report_overlay.js';
+import { fmtHoursMins } from '../lib/format.js';
+import { detectSheetGrid } from '../lib/sprite_grid.js';
 
 /** @type {import('../api.js').ApiClient} */
 let api;
@@ -121,7 +123,6 @@ async function _showArmyEffectsOverlay() {
   const travelOffset = effects.travel_offset || 0;
   const travelTotal = summary.travel_time_seconds ?? (eraBase + travelOffset);
 
-  function _fmtS(s) { return (s / 3600).toFixed(2).replace(/\.?0+$/, '') + 'h'; }
   function _fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
 
   function section(icon, title, color, rows, footer) {
@@ -161,8 +162,8 @@ async function _showArmyEffectsOverlay() {
   const stealVictoryMod = effects.artifact_steal_victory_modifier || 0;
   const stealDefeatMod = effects.artifact_steal_defeat_modifier || 0;
 
-  const travelRows = `<div class="panel-row"><span class="label">${_fmtS(eraBase)}</span><span class="value" style="color:#ccc">Era base (${summary.current_era || '?'})</span></div>`
-    + (travelOffset !== 0 ? sourceRows('travel_offset', (v) => (v < 0 ? '' : '+') + _fmtS(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
+  const travelRows = `<div class="panel-row"><span class="label">${fmtHoursMins(eraBase)}</span><span class="value" style="color:#ccc">Era base (${summary.current_era || '?'})</span></div>`
+    + (travelOffset !== 0 ? sourceRows('travel_offset', (v) => (v < 0 ? '' : '+') + fmtHoursMins(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
 
   const stealVictoryRows = `<div class="panel-row"><span class="label">${_fmtPct(baseVictory)}</span><span class="value" style="color:#ccc">Base chance</span></div>`
     + (stealVictoryMod !== 0 ? sourceRows('artifact_steal_victory_modifier', (v) => (v >= 0 ? '+' : '') + _fmtPct(v), rulerName) : '<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>');
@@ -179,13 +180,17 @@ async function _showArmyEffectsOverlay() {
     + spyIntelRow('Queue intel (build + research) visible in spy reports', effects.spy_queues || 0);
 
   const siegeCorruption = effects.enemy_siege_time_modifier || 0;
-  const siegeCorruptionRows = sourceRows('enemy_siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`, rulerName);
+  const siegeCorruptionRows = sourceRows('enemy_siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`, rulerName)
+    // The per-army checkbox only exists while the effect does — don't advertise it otherwise.
+    + (siegeCorruption > 0
+      ? `<div style="color:#666;font-size:0.8em;padding:4px 0 0">Can be switched off per army — an army with the box unchecked serves the full siege.</div>`
+      : '');
 
   const box = overlay.querySelector('.prod-overlay-box');
   box.innerHTML = `
     <button class="prod-overlay-close" title="Close">✕</button>
     <div style="font-weight:bold;font-size:1.05em;margin-bottom:12px">⚔ Army Effects</div>
-    ${section('🕐', 'Travel Time', '#ffa726', travelRows, _fmtS(travelTotal))}
+    ${section('🕐', 'Travel Time', '#ffa726', travelRows, fmtHoursMins(travelTotal))}
     ${section('⚔️', 'Siege Corruption', '#ef9a9a', siegeCorruptionRows, siegeCorruption > 0 ? `-${(siegeCorruption * 100).toFixed(0)}% enemy siege time` : 'No reduction')}
     ${section('🏆', 'Artifact Steal — Victory', '#c9a84c', stealVictoryRows, _fmtPct(baseVictory + stealVictoryMod))}
     ${section('💀', 'Artifact Steal — Defeat', '#e57373', stealDefeatRows, _fmtPct(baseDefeat + stealDefeatMod))}
@@ -653,15 +658,32 @@ const _SPRITE_EXTS = ['.webp'];
  * Initialize canvas elements with class .critter-sprite-canvas.
  * Uses data-sprite (exact resolved path) when available.
  * Falls back to data-animation folder or data-iid with extension probing.
- * Extracts the first frame (top-left) from a 4×4 sprite sheet,
+ * Extracts the first frame (top-left) from a sprite sheet (grid auto-detected),
  * preserving the original aspect ratio (letterboxed into the canvas).
+ * The backing store is sized to the device pixel ratio and the frame is
+ * downscaled with high-quality smoothing, so detailed (non-pixel-art)
+ * sprites stay crisp on HiDPI screens.
  */
 function _initCritterCanvases(el) {
   el.querySelectorAll('.critter-sprite-canvas').forEach((canvas) => {
     const drawFrame = (img) => {
+      // Size the backing store to the displayed size (set by CSS, e.g. 100% of
+      // a picker tile, or by the width/height attributes when CSS sets none).
+      const cssW = canvas.clientWidth || canvas.width;
+      const cssH = canvas.clientHeight || canvas.height;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      // Attribute-sized canvas: keep its layout size now that the attributes grew.
+      if (canvas.clientWidth !== cssW || canvas.clientHeight !== cssH) {
+        canvas.style.width = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
+      }
+
       const ctx = canvas.getContext('2d');
-      const fw = img.width / 4;
-      const fh = img.height / 4;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      const { frameW: fw, frameH: fh } = detectSheetGrid(img);
       const scale = Math.min(canvas.width / fw, canvas.height / fh);
       const dx = Math.floor((canvas.width - fw * scale) / 2);
       const dy = Math.floor((canvas.height - fh * scale) / 2);
@@ -1290,6 +1312,30 @@ async function onDecreaseSlots(e) {
   }
 }
 
+/**
+ * Toggle siege corruption for one army. Optimistic: the box has already
+ * flipped, so on failure it flips back and the army's error slot explains why.
+ */
+async function onToggleSiegeCorruption(e) {
+  const cb = e.currentTarget;
+  const aid = parseInt(cb.getAttribute('data-aid'), 10);
+  const enabled = cb.checked;
+  const errorEl = cb.closest('.army-group')?.querySelector('.army-attack-error');
+  if (errorEl) errorEl.textContent = '';
+  cb.disabled = true;
+  try {
+    const resp = await rest.setArmySiegeCorruption(aid, enabled);
+    if (resp && resp.success === false) throw new Error(resp.error || 'Could not save');
+    const army = (st.military?.armies || []).find((a) => a.aid === aid);
+    if (army) army.siege_corruption_enabled = enabled;
+  } catch (err) {
+    cb.checked = !enabled;
+    if (errorEl) errorEl.textContent = err.message;
+  } finally {
+    cb.disabled = false;
+  }
+}
+
 function _setAttackBtnState(btn, state, label2 = '') {
   const errorEl = btn.closest('.army-group')?.querySelector('.army-attack-error');
   btn.disabled = state === 'loading';
@@ -1586,6 +1632,9 @@ function renderArmies(data) {
   _critterSprites = data.critter_sprites || {};
 
   const armies = data.armies || [];
+  // The toggle only means something while the empire actually has the effect;
+  // without it there is nothing to switch off, so the box stays hidden.
+  const hasSiegeCorruption = (st.summary?.effects?.enemy_siege_time_modifier || 0) > 0;
 
   if (armies.length === 0) {
     const activeSpies0 = (st.military?.attacks_outgoing || []).filter((a) => a.is_spy);
@@ -1766,6 +1815,13 @@ function renderArmies(data) {
           </div>`;
         })()}
       </div>
+      ${hasSiegeCorruption ? `
+      <label class="army-siege-corruption" title="When off, attacks with this army serve the full siege instead of the shortened one"
+        style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim,#9999a8);cursor:pointer;margin-top:6px;">
+        <input type="checkbox" class="army-siege-corruption-cb" data-aid="${a.aid}"
+          ${a.siege_corruption_enabled === false ? '' : 'checked'} style="margin:0;cursor:pointer;" />
+        <span>⚔️ Siege corruption</span>
+      </label>` : ''}
       ${idx < armies.length - 1 ? '<div class="army-separator"></div>' : ''}
     </div>
   `;
@@ -1775,6 +1831,11 @@ function renderArmies(data) {
   // Attach edit button listeners
   el.querySelectorAll('.army-edit-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => onEditArmyName(e));
+  });
+
+  // Siege corruption toggle, one per army
+  el.querySelectorAll('.army-siege-corruption-cb').forEach((cb) => {
+    cb.addEventListener('change', (e) => onToggleSiegeCorruption(e));
   });
 
   // Attach wave-add button listeners

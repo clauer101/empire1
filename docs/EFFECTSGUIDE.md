@@ -77,6 +77,8 @@ Empire-Effects werden durch abgeschlossene Knowledge-Items freigeschaltet und vi
 | Effect-Key | Typ | Beschreibung |
 |---|---|---|
 | `gold_offset` | float | Goldertrag pro Sekunde (additiv) |
+| `gold_modifier_per_building` | float | Percentage gold bonus per completed building: all sources are summed and multiplied by the number of completed buildings, `gold_modifier += completed_buildings × v` (stacks additively with the other gold modifiers, see `EmpireService.building_gold_modifier`) |
+| `gold_interest` | float (0.0–1.0) | Zinssatz **pro Stunde** auf das aktuelle Gold: alle `gold_interest`-Effects werden aufaddiert zum Gesamtzinssatz. `0.01` = +1% mehr Gold-Ertrag pro Stunde. Intern wird pro Sekunden-Tick `aktuelles_gold × zinssatz / 3600` addiert (siehe `EmpireService._generate_resources`) |
 | `culture_offset` | float | Kulturertrag pro Sekunde (additiv) |
 | `life_regen_modifier` | float | Life-Regen pro Sekunde (additiv) |
 | `life_modifier` | float (0.0–1.0+) | Multiplikator auf `life_regen_modifier`: `regen = life_regen_modifier × (1 + life_modifier)` |
@@ -134,6 +136,7 @@ q:
 |---|---|---|
 | `restore_life_during_battle_modifier` | float ≥0 | Addiert Life-Regen während aktiver Verteidigung (Battle-Phase): `regen = life_regen_modifier + v` |
 | `enemy_siege_time_modifier` | float 0–1 | **Angreifer-Effekt**: reduziert die Belagerungszeit eigener Angriffe: `siege × (1 − v)` |
+| `gold_steal_ratio` | float 0–1 | **Attacker effect**: on a won attack, each human winner additionally steals `defender_gold × v / n_winners` gold (on top of culture). No steal on a lost attack. See `_compute_and_apply_loot` in `battle_task.py` |
 
 **Hinweis zu `enemy_siege_time_modifier`**: Dieser Effect liegt beim **Angreifer** (nicht beim Verteidiger). Der bestehende `siege_time_modifier` liegt beim Verteidiger und reduziert die Zeit, die Angreifer in seiner Basis verbringen.
 

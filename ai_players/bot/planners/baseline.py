@@ -21,7 +21,7 @@ import time
 
 from bot.analyzer import ERA_RANK
 from bot.api_client import ApiError
-from bot.army_building import next_skill, pick_ruler
+from bot.army_building import pick_ruler
 
 from .base import Action, BotContext, Option, cheapest_affordable
 from .defense_frontier import FrontierDefensePlanner
@@ -161,7 +161,8 @@ def baseline_options(ctx: BotContext) -> list[Option]:
                 category="baseline", mandatory=True, priority=PRIO_BREACH,
                 description=f"baseline defense (breach response): {base.description}",
                 run=base.run, price=base.price, gain=base.gain,
-                saves_for=base.saves_for, goal_meta=base.goal_meta))
+                saves_for=base.saves_for, goal_meta=base.goal_meta,
+                mutates_map=base.mutates_map))
     elif is_growth:
         ctx.memory["pending_breach"] = False
 
@@ -177,7 +178,8 @@ def baseline_options(ctx: BotContext) -> list[Option]:
                     description=f"baseline defense (towers {placed}/{needed}): "
                                 f"{base.description}",
                     run=base.run, price=base.price, gain=base.gain,
-                    saves_for=base.saves_for, goal_meta=base.goal_meta))
+                    saves_for=base.saves_for, goal_meta=base.goal_meta,
+                    mutates_map=base.mutates_map))
 
     # 1c. Claim ruler (free)
     ruler = ctx.summary.get("ruler") or {}

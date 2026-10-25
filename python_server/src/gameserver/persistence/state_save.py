@@ -232,6 +232,8 @@ def _serialize_critter(c: Critter) -> dict[str, Any]:
         "xp": c.xp,
         "is_boss": c.is_boss,
         "scale": c.scale,
+        "sprite_y_offset": c.sprite_y_offset,
+        "sprite_key": c.sprite_key,
         "value": c.value,
         "damage": c.damage,
         "slots": c.slots,
@@ -260,6 +262,7 @@ def _serialize_army(army: Army) -> dict[str, Any]:
         "uid": army.uid,
         "name": army.name,
         "waves": [_serialize_critter_wave(w) for w in army.waves],
+        "siege_corruption_enabled": army.siege_corruption_enabled,
     }
 
 

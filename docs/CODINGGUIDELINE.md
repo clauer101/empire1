@@ -386,6 +386,16 @@ UI text, labels, messages, button text, code identifiers, comments, YAML keys an
 
 If a file approaches these limits, plan a Strangler Fig split before adding more code.
 
+### 8.6 No duplicate algorithm implementations
+
+Never write a second implementation of an algorithm that already exists elsewhere in the
+codebase — e.g. random army/wave generation, HTML text formatting, sprite rendering/layout.
+Search for an existing implementation before writing a new one.
+
+If you find that a duplicate already exists (or you're about to create one), stop and flag
+it to the user, then ask whether the implementations should be unified into a single shared
+one. Do not silently add a second implementation or silently unify without asking.
+
 ---
 
 ## 9. Quick Reference — Validation Commands

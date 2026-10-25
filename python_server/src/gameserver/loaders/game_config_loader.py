@@ -146,6 +146,11 @@ class GameConfig:
     ai_min_player_score: float = 500.0
 
     # -- Diplomacy -----------------------------------------------------
+    # Master switch for the whole alliance feature. False takes diplomacy out
+    # of a season entirely: the endpoints refuse, the client hides the buttons
+    # and any declarations still on file are dropped at startup. The code path
+    # stays in place so a later season can switch it back on.
+    alliances_enabled: bool = True
     # Fraction of culture each partner pays the other when an alliance forms.
     alliance_culture_cost: float = 0.05
     # Max simultaneous mutual alliance partners per empire. Currently a flat
@@ -164,6 +169,13 @@ class GameConfig:
     # Each entry: {min_waves, max_waves, min_slots, max_slots,
     #              min_previous_era, max_previous_era, min_next_era, max_next_era}
     ai_generator: Dict[str, Dict[str, int]] = field(default_factory=dict)
+
+    # -- Auto-generated maze length per era ---------------------------
+    # Keys are lowercase YAML era names (e.g. "renaissance").
+    # Each entry: {min_length, max_length} — target spawn-to-castle path
+    # length (tile count) for a maze auto-generated for that era. See
+    # gameserver.engine.maze_generator.
+    maze_length: Dict[str, Dict[str, int]] = field(default_factory=dict)
 
     # -- Battle strategy / loot --------------------------------------
     ruler_artifact_steal_bonus: float = 0.15  # added to steal chance when ruler reaches castle
@@ -370,6 +382,14 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         if isinstance(ai_generator_raw, dict) else {}
     )
 
+    # -- maze_length (optional, empty dict if absent) ---------------------
+    maze_length_raw = raw.pop("maze_length", None)
+    maze_length: Dict[str, Dict[str, int]] = (
+        {k: {ik: int(iv) for ik, iv in v.items() if isinstance(iv, (int, float))}
+         for k, v in maze_length_raw.items() if isinstance(v, dict)}
+        if isinstance(maze_length_raw, dict) else {}
+    )
+
     # -- barbarians_aggressiveness (optional) ----------------------------
     barbarians_raw = raw.pop("barbarians_aggressiveness", None)
     barbarians_aggressiveness: Dict[str, float] = (
@@ -409,6 +429,7 @@ def load_game_config(path: str = DEFAULT_GAME_CONFIG_PATH) -> GameConfig:
         era_effects=era_effects_dict,
         barbarians_aggressiveness=barbarians_aggressiveness,
         ai_generator=ai_generator,
+        maze_length=maze_length,
         structure_upgrades=structure_upgrades,
         critter_upgrades=critter_upgrades,
         ruler_level_curve=ruler_level_curve,

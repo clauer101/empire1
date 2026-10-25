@@ -187,6 +187,7 @@ def _load_rulers(yaml_path: Path) -> "dict[str, Any]":
             "damage_max": float(item.get("damage_max") or item.get("base_damage") or 30),
             "animation": item.get("animation", ""),
             "scale_base": float(item.get("scale_base", 1.0)),
+            "sprite_y_offset": float(item.get("sprite_y_offset", 0.0)),
             "aura_min": float(item.get("aura_min", 0.0)),
             "aura_max": float(item.get("aura_max", 0.0)),
             "aura_effects": dict(item.get("aura_effects") or {}),
@@ -491,7 +492,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
 
 
     async def _backup_loop(_state_file: str = state_file) -> None:
-        """Rolling backups: 24 hourly slots + 7 daily slots for state.yaml and gameserver.db."""
+        """Rolling backups: 24 hourly slots (overwritten) + daily snapshots (kept forever) for state.yaml and gameserver.db."""
         import shutil
         from datetime import datetime, timezone
 
@@ -503,7 +504,7 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
 
         db_path = str(services.database._db_path) if services.database else None
 
-        last_daily_day: int | None = None
+        last_daily_date: str | None = None
         hour_slot: int = 0
 
         while True:
@@ -529,17 +530,14 @@ async def start_network(services: Services, state_file: str = "state.yaml") -> N
                 log.info("Hourly backup written: slot %s", slot)
                 hour_slot = (hour_slot + 1) % 24
 
-                # Daily rolling backup (slots 0–6, one per weekday)
-                today = now.weekday()
-                if today != last_daily_day:
-                    day = f"day{today}"
-                    shutil.copy2(_state_file, daily_dir / f"state_{day}.yaml")
+                # Daily backup, one per calendar date, kept forever (never overwritten or deleted)
+                today = now.strftime("%Y-%m-%d")
+                if today != last_daily_date:
+                    shutil.copy2(_state_file, daily_dir / f"state_{today}.yaml")
                     if db_path and Path(db_path).exists():
-                        daily_db = daily_dir / f"gameserver_{day}.db"
-                        daily_db.unlink(missing_ok=True)
-                        shutil.copy2(db_path, str(daily_db))
-                    log.info("Daily backup written: slot %s", day)
-                    last_daily_day = today
+                        shutil.copy2(db_path, str(daily_dir / f"gameserver_{today}.db"))
+                    log.info("Daily backup written: %s", today)
+                    last_daily_date = today
 
             except Exception:
                 # Backup errors must never crash the game server — log and retry next hour
@@ -664,6 +662,10 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
     import gameserver.persistence.replay as _replay_mod
     _replay_mod.DEFAULT_REPLAY_DIR = str(Path(state_file).parent / "replays")
 
+    # Same for the finished-season snapshots the eternal ranking reads
+    import gameserver.persistence.season_archive as _season_archive_mod
+    _season_archive_mod.DEFAULT_RESULTS_DIR = str(Path(state_file).parent / "results")
+
     # 1. Load configuration
     config = load_configuration(config_dir=config_dir)
 
@@ -698,10 +700,21 @@ async def _start(config_dir: str = "config", state_file: str = "state.yaml", db_
                 await services.trophy_service.load_trophies_into_empire(empire.uid, empire)
         # Populate allied_uids from the DB before the first effects recompute
         # so ally ruler bonuses (rulers.yaml ally_effects) apply from boot.
+        # With alliances switched off for the season, drop any declarations
+        # still on file instead — they survive the empire wipe and would
+        # otherwise carry last season's teams into the new one.
         if services.database is not None:
-            mutual_alliances = await services.database.get_all_mutual_alliances()
-            for empire in saved_state.empires.values():
-                empire.allied_uids = set(mutual_alliances.get(empire.uid, set()))
+            _gc_alliances = services.game_config
+            if _gc_alliances is not None and not _gc_alliances.alliances_enabled:
+                removed = await services.database.clear_all_alliance_declarations()
+                if removed:
+                    log.info("Alliances disabled — cleared %d declaration(s)", removed)
+                for empire in saved_state.empires.values():
+                    empire.allied_uids = set()
+            else:
+                mutual_alliances = await services.database.get_all_mutual_alliances()
+                for empire in saved_state.empires.values():
+                    empire.allied_uids = set(mutual_alliances.get(empire.uid, set()))
         for empire in saved_state.empires.values():
             services.empire_service.recalculate_effects(empire)
         log.info("Restored %d empires from saved state", len(saved_state.empires))

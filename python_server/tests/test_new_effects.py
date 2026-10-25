@@ -208,6 +208,86 @@ class TestOtherCitizenGoldModifier:
         assert empire.resources["gold"] == pytest.approx(base_only_gold, rel=1e-5)
 
 
+# ── gold_modifier_per_building ─────────────────────────────────────────
+
+
+class TestGoldModifierPerBuilding:
+    def test_scales_with_completed_buildings(self, service: EmpireService, empire: Empire):
+        """Each completed building adds the per-building value to the gold modifier."""
+        empire.citizens = {"merchant": 0, "artist": 0, "scientist": 0}
+        empire.buildings = {"a": 0.0, "b": 0.0, "c": 0.0, "in_progress": 50.0}
+        empire.effects[fx.GOLD_MODIFIER_PER_BUILDING] = 0.02
+
+        service._generate_resources(empire, dt=1.0)
+        assert empire.resources["gold"] == pytest.approx(service._base_gold * (1 + 3 * 0.02), rel=1e-5)
+
+    def test_stacks_with_other_gold_modifiers(self, service: EmpireService, empire: Empire):
+        """The building bonus is added to gold_modifier, not multiplied with it."""
+        empire.citizens = {"merchant": 0, "artist": 0, "scientist": 0}
+        empire.buildings = {"a": 0.0, "b": 0.0}
+        empire.effects[fx.GOLD_MODIFIER_PER_BUILDING] = 0.05
+        empire.effects[fx.GOLD_MODIFIER] = 0.3
+
+        service._generate_resources(empire, dt=1.0)
+        assert empire.resources["gold"] == pytest.approx(service._base_gold * (1 + 0.3 + 0.1), rel=1e-5)
+
+    def test_without_effect_no_bonus(self, service: EmpireService, empire: Empire):
+        """Completed buildings give no gold bonus without the effect."""
+        empire.buildings = {"a": 0.0, "b": 0.0}
+        assert service.building_gold_modifier(empire) == 0.0
+
+
+# ── gold_interest ──────────────────────────────────────────────────────
+
+
+class TestGoldInterest:
+    def test_interest_scales_with_current_gold(self, service: EmpireService, empire: Empire):
+        """gold_interest is a %/hour rate: adds current_gold × rate / 3600 to gold income each second-tick."""
+        empire.citizens = {"merchant": 0, "artist": 0, "scientist": 0}
+        empire.resources["gold"] = 1000.0
+        empire.effects[fx.GOLD_INTEREST] = 0.1  # 10%/hour
+
+        service._generate_resources(empire, dt=1.0)
+        expected = 1000.0 + (service._base_gold + 1000.0 * 0.1 / 3600.0) * 1.0
+        assert empire.resources["gold"] == pytest.approx(expected, rel=1e-5)
+
+    def test_multiple_sources_add_up(self, service: EmpireService, empire: Empire):
+        """Effects from different sources sum into a single interest rate (via recalculate_effects)."""
+        empire.resources["gold"] = 100.0
+        empire.effects[fx.GOLD_INTEREST] = 0.05 + 0.03  # e.g. building + ruler skill
+
+        service._generate_resources(empire, dt=1.0)
+        expected = 100.0 + (service._base_gold + 100.0 * 0.08 / 3600.0) * 1.0
+        assert empire.resources["gold"] == pytest.approx(expected, rel=1e-5)
+
+    def test_zero_gold_yields_no_interest(self, service: EmpireService, empire: Empire):
+        """No interest is generated when the empire has no gold, regardless of rate."""
+        empire.resources["gold"] = 0.0
+        empire.effects[fx.GOLD_INTEREST] = 0.5
+
+        service._generate_resources(empire, dt=1.0)
+        assert empire.resources["gold"] == pytest.approx(service._base_gold, rel=1e-5)
+
+    def test_without_effect_no_interest(self, service: EmpireService, empire: Empire):
+        """Without gold_interest set, gold income is unaffected by the current balance."""
+        empire.resources["gold"] = 5000.0
+
+        service._generate_resources(empire, dt=1.0)
+        expected = 5000.0 + service._base_gold * 1.0
+        assert empire.resources["gold"] == pytest.approx(expected, rel=1e-5)
+
+    def test_one_percent_yields_about_one_percent_more_per_hour(self, service: EmpireService, empire: Empire):
+        """0.01 gold_interest means ~+1% more gold income accrued over an hour of ticks."""
+        service._base_gold = 0.0  # isolate interest from the flat base-gold flow
+        empire.resources["gold"] = 10_000.0
+        empire.effects[fx.GOLD_INTEREST] = 0.01  # 1%/hour
+        for _ in range(3600):
+            service._generate_resources(empire, dt=1.0)
+        interest_earned = empire.resources["gold"] - 10_000.0
+        # Slightly above the naive 1% due to continuous compounding within the hour (e^0.01 - 1 ≈ 1.005%).
+        assert interest_earned == pytest.approx(10_000.0 * 0.01, rel=0.01)
+
+
 # ── restore_life_during_battle_modifier ───────────────────────────────
 
 

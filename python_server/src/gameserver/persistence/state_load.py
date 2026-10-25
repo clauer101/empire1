@@ -280,6 +280,8 @@ def _deserialize_critter(d: dict[str, Any]) -> Critter:
         xp=d.get("xp", 0.0),
         is_boss=d.get("is_boss", False),
         scale=float(d.get("scale", 1.0)),
+        sprite_y_offset=float(d.get("sprite_y_offset", 0.0)),
+        sprite_key=d.get("sprite_key", ""),
         value=d.get("value", 0.0),
         damage=d.get("damage", 1.0),
         slots=d.get("slots", 1),
@@ -315,6 +317,8 @@ def _deserialize_army(d: dict[str, Any], preserve_runtime: bool = False) -> Army
         uid=d["uid"],
         name=d.get("name", ""),
         waves=[_deserialize_critter_wave(w, preserve_runtime=preserve_runtime) for w in d.get("waves", [])],
+        # Armies saved before the toggle existed keep the old behaviour
+        siege_corruption_enabled=bool(d.get("siege_corruption_enabled", True)),
     )
 
 

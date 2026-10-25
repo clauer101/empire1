@@ -210,6 +210,11 @@ export function createBattleUi(ctx) {
       }
     }
 
+    const currentSids = new Set(msg.structures.map((s) => s.sid));
+    for (const sid of grid._structureBySid.keys()) {
+      if (!currentSids.has(sid)) grid._structureBySid.delete(sid);
+    }
+
     for (const s of msg.structures) {
       const _meta = s.select && s.select !== 'first' ? { select: s.select } : {};
       grid.setTile(s.q, s.r, s.iid, _meta);
@@ -219,6 +224,8 @@ export function createBattleUi(ctx) {
         tile.sid = s.sid;
         tile.structure_data = s;
       }
+      grid._structureBySid.set(s.sid, s);
+      if (s.shot_sprite) grid._ensureSpriteLoaded('/' + s.shot_sprite, false);
     }
 
     grid._invalidateBase();

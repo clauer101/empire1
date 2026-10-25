@@ -190,7 +190,7 @@ function render(data) {
 
       <div class="panel">
         <div class="panel-header">Resources</div>
-        <div class="panel-row"><span class="label">💰 Gold</span><span class="value"><span data-live-res="gold">${fmt(r.gold)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold))})</span></span></div>
+        <div class="panel-row"><span class="label">💰 Gold</span><span class="value"><span data-live-res="gold">${fmt(r.gold)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('gold', data.effects, data.citizens, data.citizen_effect, data.base_gold, r.gold, data.building_gold_modifier))})</span></span></div>
         <div class="panel-row"><span class="label">🎭 Culture</span><span class="value"><span data-live-res="culture">${fmt(r.culture)}</span> <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('culture', data.effects, data.citizens, data.citizen_effect, data.base_culture))})</span></span></div>
         <div class="panel-row"><span class="label">❤️ Life</span><span class="value">${Math.floor(r.life ?? data.life ?? 0)} / ${Math.floor(data.max_life ?? 0)} <span style="color:#888;font-size:0.85em">(+${fmtPerH(calcIncome('life', data.effects, data.citizens, data.citizen_effect, 0))})</span></span></div>
         <div style="border-top:1px solid var(--border-color);margin:8px 0 4px"></div>
@@ -367,7 +367,9 @@ function render(data) {
     data.effects,
     data.citizens,
     data.citizen_effect,
-    data.base_gold
+    data.base_gold,
+    r2.gold,
+    data.building_gold_modifier
   );
   _liveRate.culture = calcIncome(
     'culture',
@@ -480,7 +482,7 @@ async function _showProductionOverlay(data) {
   }
 
   const rallyActive = data.end_rally?.active;
-  const goldHtml = renderResourceIncome('gold', effectSources, effects, citizens, citizenEffect, data.base_gold, rulerName, rallyActive);
+  const goldHtml = renderResourceIncome('gold', effectSources, effects, citizens, citizenEffect, data.base_gold, rulerName, rallyActive, data.resources?.gold, data.building_gold_modifier, (data.completed_buildings || []).length);
   const cultureHtml = renderResourceIncome('culture', effectSources, effects, citizens, citizenEffect, data.base_culture, rulerName, rallyActive);
   const lifeHtml = renderResourceIncome('life', effectSources, effects, citizens, citizenEffect, 0, rulerName, rallyActive);
   const siegeArmyCount = (data.attacks_incoming || []).filter(a => a.phase === 'in_siege').length;
@@ -1389,7 +1391,7 @@ function fmtPerH(perSecond) {
 // effects[key] from the backend is already the full aggregated sum of all
 // building + knowledge contributions (see empire_service.recalculate_effects).
 // Do NOT iterate completedBuildings here — that would double-count.
-function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) {
+function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount, currentGold, buildingGoldMod) {
   baseAmount = baseAmount ?? 0;
   if (resourceType === 'life') {
     return baseAmount + (effects?.life_regen_modifier || 0);
@@ -1400,8 +1402,11 @@ function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) 
     const modifier =
       (citizens?.merchant || 0) * effCe
       + ((citizens?.artist || 0) + (citizens?.scientist || 0)) * (effects?.other_citizen_gold_modifier || 0)
-      + (effects?.gold_modifier || 0);
-    return offset * (1 + modifier);
+      + (effects?.gold_modifier || 0)
+      + (buildingGoldMod || 0); // backend-computed: completed buildings × gold_modifier_per_building
+    // gold_interest is a %/hour rate — divide by 3600 to get the per-second contribution.
+    const interest = (effects?.gold_interest || 0) * (currentGold || 0) / 3600;
+    return offset * (1 + modifier) + interest;
   }
   // culture
   const offset = baseAmount + (effects?.culture_offset || 0);
@@ -1410,7 +1415,7 @@ function calcIncome(resourceType, effects, citizens, citizenEffect, baseAmount) 
   return offset * (1 + modifier);
 }
 
-function renderResourceIncome(resourceType, effectSources, effects, citizens, citizenEffect, baseAmount, rulerName, rallyActive) {
+function renderResourceIncome(resourceType, effectSources, effects, citizens, citizenEffect, baseAmount, rulerName, rallyActive, currentGold, buildingGoldMod, buildingCount) {
   let effectOffsetKey, effectModifierKey, citizenType, citizenCount;
   if (resourceType === 'gold') {
     citizenType = 'merchant'; effectOffsetKey = 'gold_offset'; effectModifierKey = 'gold_modifier';
@@ -1456,17 +1461,35 @@ function renderResourceIncome(resourceType, effectSources, effects, citizens, ci
     const otherCount = (citizens?.artist || 0) + (citizens?.scientist || 0);
     html += `<div class="panel-row"><span class="label">+${(otherCount * otherMod * 100).toFixed(0)}%</span><span class="value">(${otherCount} 🎨/🔬 × ${(otherMod * 100).toFixed(1)}%)</span></div>`;
   }
+  const perBuildingMod = effects?.gold_modifier_per_building || 0;
+  const buildingGoldBonus = resourceType === 'gold' ? (buildingGoldMod || 0) : 0;
+  if (resourceType === 'gold' && perBuildingMod > 0)
+    html += `<div class="panel-row"><span class="label">+${(buildingGoldBonus * 100).toFixed(0)}%</span><span class="value">(${buildingCount || 0} 🏗 × ${(perBuildingMod * 100).toFixed(1)}%)</span></div>`;
   html += _renderModifierSourceRows(effectSources, effectModifierKey, rulerName, ['citizens'], st.items);
 
   const otherGoldBonus = resourceType === 'gold'
     ? ((citizens?.artist || 0) + (citizens?.scientist || 0)) * otherMod
     : 0;
-  const totalModifier = citizenBonus + otherGoldBonus + (effects[effectModifierKey] || 0);
+  const totalModifier = citizenBonus + otherGoldBonus + buildingGoldBonus + (effects[effectModifierKey] || 0);
   const multiplier = 1 + totalModifier;
-  const total = totalOffset * multiplier;
+  const flowTotal = totalOffset * multiplier;
   const color = resourceType === 'gold' ? '#4fc3f7' : '#ffa726';
   html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
-  html += `<div class="panel-row" style="color:${color};font-weight:bold"><span class="label">= ${fmtH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${fmtH(total)}/h</span></div>`;
+  html += `<div class="panel-row" style="color:${color};font-weight:bold"><span class="label">= ${fmtH(totalOffset)} × ${multiplier.toFixed(2)}</span><span class="value">${fmtH(flowTotal)}/h</span></div>`;
+
+  const interestRate = resourceType === 'gold' ? (effects?.gold_interest || 0) : 0;
+  if (interestRate > 0) {
+    html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+    html += `<div style="font-size:0.82em;color:#9999a8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Interest</div>`;
+    html += _renderModifierSourceRows(effectSources, 'gold_interest', rulerName, [], st.items);
+    // interestRate is %/hour; fmtH() expects a per-second value (it multiplies by 3600 for display).
+    const interestGain = (interestRate * (currentGold || 0)) / 3600;
+    html += `<div class="panel-row"><span class="label">${(interestRate * 100).toFixed(1)}% of ${Math.round(currentGold || 0).toLocaleString('de-DE')} 💰</span><span class="value">+${fmtH(interestGain)}</span></div>`;
+    const total = flowTotal + interestGain;
+    html += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
+    html += `<div class="panel-row" style="color:${color};font-weight:bold"><span class="label">= ${fmtH(flowTotal)} + ${fmtH(interestGain)}</span><span class="value">${fmtH(total)}/h</span></div>`;
+    return html;
+  }
   return html;
 }
 
@@ -1834,7 +1857,7 @@ function renderEmpiresSection(empires) {
 
   return `
     <div class="panel">
-      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a> <a href="#empirestats" class="badge badge--in-progress" style="margin-left:4px;text-decoration:none;font-weight:normal;">📊</a> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
+      <div class="panel-header">Known Empires <a href="#globalempires" class="badge badge--in-progress" style="margin-left:6px;text-decoration:none;font-weight:normal;">☰</a> <a href="#empirestats" class="badge badge--in-progress" style="margin-left:4px;text-decoration:none;font-weight:normal;">📊</a> <a href="#ranking" class="badge badge--in-progress" style="margin-left:4px;text-decoration:none;font-weight:normal;">🏆</a> <span style="color:#666;font-size:0.8em;font-weight:normal">${empires.length} total</span></div>
       <div id="empires-scroll">
         <div id="empires-rows">${rows}</div>
       </div>
@@ -1865,9 +1888,21 @@ function fmt(n) {
 
 export function onLeaderUpdated(cb) { _onLeaderUpdated = cb; }
 
-export function getCultureLeaderName() {
-  if (!_empiresData || _empiresData.length === 0) return null;
-  return _empiresData[0].name || null;
+/**
+ * Names of whoever leads the season on pooled culture, strongest first.
+ *
+ * The server sorts /api/empires with mutually-allied empires pooled into one
+ * contiguous block ranked on combined culture, so row 0 leads: a team leads as
+ * a unit and all its members are returned, an unallied empire leads alone with
+ * a single name whenever it outscores every team.
+ * Client-side fallback for `end_rally.culture_leader_names`.
+ */
+export function getCultureLeaderNames() {
+  if (!_empiresData || _empiresData.length === 0) return [];
+  const leader = _empiresData[0];
+  const groupId = leader.alliance_group_id;
+  if (groupId == null) return leader.name ? [leader.name] : [];
+  return _empiresData.filter(e => e.alliance_group_id === groupId).map(e => e.name);
 }
 
 export default {

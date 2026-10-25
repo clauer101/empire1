@@ -14,13 +14,13 @@ from unittest.mock import MagicMock
 # Provide a test secret so jwt_auth can be imported without a real .env
 os.environ.setdefault("JWT_SECRET", "test-secret-key-for-pytest-only!")
 
-import pytest
+import pytest  # noqa: E402
 
-from gameserver.engine.empire_service import EmpireService
-from gameserver.engine.attack_service import AttackService
-from gameserver.engine.upgrade_provider import UpgradeProvider
-from gameserver.models.empire import Empire
-from gameserver.util.events import EventBus
+from gameserver.engine.empire_service import EmpireService  # noqa: E402
+from gameserver.engine.attack_service import AttackService  # noqa: E402
+from gameserver.engine.upgrade_provider import UpgradeProvider  # noqa: E402
+from gameserver.models.empire import Empire  # noqa: E402
+from gameserver.util.events import EventBus  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -42,11 +42,13 @@ def make_empire(
     artifacts: list | None = None,
     structures: dict | None = None,
     armies: list | None = None,
+    allied_uids: set[int] | None = None,
 ) -> Empire:
     """Create a test empire with sensible defaults."""
     return Empire(
         uid=uid,
         name=name,
+        allied_uids=allied_uids or set(),
         resources={"gold": gold, "culture": culture, "life": life},
         buildings=buildings or {},
         knowledge=knowledge or {},

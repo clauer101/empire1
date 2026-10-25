@@ -24,6 +24,7 @@ data/prod/states/gameserver.db
 data/prod/bot_states/
 data/prod/gameserver.db
 data/prod/results/*/gameserver.db
+data/prod/**/*.db.bak*
 data/prod/logs/
 data/prod/state.yaml
 data/prod/state.yaml.*

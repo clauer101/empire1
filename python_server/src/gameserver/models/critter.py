@@ -85,6 +85,11 @@ class Critter:
 
     # Visual scale (from ItemDetails.scale)
     scale: float = 1.0
+    # Vertical sprite shift, fraction of rendered sprite height (+ = up)
+    sprite_y_offset: float = 0.0
+    # Sprite manifest name from the YAML animation folder (util.sprites.sprite_key);
+    # "" → client falls back to the IID
+    sprite_key: str = ""
 
     # Boss fields
     level: int = 1

@@ -95,6 +95,7 @@ class ItemDetails:
     bonus: dict[str, float] = field(default_factory=dict)
     spawn_on_death: dict[str, int] = field(default_factory=dict)
     scale: float = 1.0
+    sprite_y_offset: float = 0.0  # Vertical sprite shift, fraction of rendered sprite height (+ = up)
     animation: str = ""  # Sprite folder path, e.g. assets/sprites/critters/slave
     image: str = ""  # Image path prefix, e.g. assets/sprites/buildings/hangar
     era: str = ""    # Era key from YAML (e.g. "stone")

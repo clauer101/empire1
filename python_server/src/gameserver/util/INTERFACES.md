@@ -73,6 +73,13 @@ format_number(value) -> str
 format_percent(value) -> str
 ```
 
+### sprites
+```python
+sprite_key(animation: str) -> str   # YAML animation path -> /api/critters manifest name
+```
+Used by the battle engine (critter `sprite_key` sent to the client) and by the
+/api/critters endpoints, so both name sprites the same way.
+
 ## Design-Entscheidung: EventBus statt Interfaces
 
 Der Java-Code verwendet `ICritterListener` und `IStructureListener` als Interfaces.

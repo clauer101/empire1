@@ -46,7 +46,7 @@
   "url": "https://relicsnrockets.io/api.html",
   "image": "https://relicsnrockets.io/assets/sprites/banner.webp",
   "inLanguage": "en",
-  "dateModified": "2026-08-28",
+  "dateModified": "2026-10-25",
   "audience": {
     "@type": "Audience",
     "audienceType": "Developer"
@@ -368,6 +368,7 @@ GET  /api/messages          → read battle reports</code></pre>
 <li class="toc-d3"><a href="#get-apiempireeffect-sources">`GET /api/empire/effect-sources`</a></li>
 <li class="toc-d3"><a href="#get-apiempiremilitary">`GET /api/empire/military`</a></li>
 <li class="toc-d3"><a href="#get-apiempires">`GET /api/empires`</a></li>
+<li class="toc-d3"><a href="#get-apiempireseternal">`GET /api/empires/eternal`</a></li>
 <li class="toc-d3"><a href="#post-apiempirerename">`POST /api/empire/rename`</a></li>
 <li class="toc-d3"><a href="#post-apiempirebuild">`POST /api/empire/build`</a></li>
 <li class="toc-d3"><a href="#post-apiempirecitizenupgrade">`POST /api/empire/citizen/upgrade`</a></li>
@@ -382,6 +383,7 @@ GET  /api/messages          → read battle reports</code></pre>
 <li class="toc-d2"><a href="#army">Army</a></li>
 <li class="toc-d3"><a href="#post-apiarmy">`POST /api/army`</a></li>
 <li class="toc-d3"><a href="#put-apiarmyaid">`PUT /api/army/{aid}`</a></li>
+<li class="toc-d3"><a href="#put-apiarmyaidsiege-corruption">`PUT /api/army/{aid}/siege-corruption`</a></li>
 <li class="toc-d3"><a href="#post-apiarmyaidwave">`POST /api/army/{aid}/wave`</a></li>
 <li class="toc-d3"><a href="#put-apiarmyaidwavewave_number">`PUT /api/army/{aid}/wave/{wave_number}`</a></li>
 <li class="toc-d3"><a href="#post-apiarmybuy-wave">`POST /api/army/buy-wave`</a></li>
@@ -632,6 +634,7 @@ accounts without an email.</p>
   &quot;citizens&quot;: { &quot;merchant&quot;: 3, &quot;scientist&quot;: 2, &quot;artist&quot;: 1 },
   &quot;citizen_price&quot;: 204.0,     // culture cost for the next citizen upgrade
   &quot;citizen_effect&quot;: 0.03,     // bonus per citizen per tick
+  &quot;building_gold_modifier&quot;: 0.12, // completed buildings × gold_modifier_per_building (added to gold modifier)
   &quot;tile_price&quot;: 150.0,        // gold cost for the next hex tile expansion
   &quot;army_price&quot;: 500.0,        // gold cost for the next army
   &quot;wave_price&quot;: 100.0,        // gold cost for the next wave slot
@@ -698,7 +701,18 @@ accounts without an email.</p>
   &quot;tower_sell_refund&quot;: 0.3,      // fraction of gold returned when selling a tower
   &quot;base_artifact_steal_victory&quot;: 0.3,
   &quot;base_artifact_steal_defeat&quot;: 0.04,
-  &quot;end_rally&quot;: { ... },          // end-of-season event info (may be null)
+  &quot;end_rally&quot;: {                 // end-of-season event info (may be null)
+    &quot;active&quot;: true,
+    &quot;end_criterion_name&quot;: &quot;The World Wonder&quot;,
+    &quot;triggered_by_name&quot;: &quot;Limperium&quot;,
+    &quot;seconds_remaining&quot;: 84600,
+    // The season is scored on POOLED culture: mutually-allied empires are
+    // ranked on their combined total and lead as a unit (two names), while
+    // an unallied empire is ranked on its own and leads alone (one name)
+    // when it outscores every team.
+    &quot;culture_leader_names&quot;: [&quot;Team A&quot;, &quot;Team B&quot;],
+    &quot;culture_leader_name&quot;: &quot;Team A &amp; Team B&quot;   // the same names, joined
+  },
   &quot;season_number&quot;: 2,
   &quot;season_title&quot;: &quot;Age of Iron&quot;,
   &quot;next_season_start&quot;: &quot;2026-06-01T00:00:00Z&quot;,
@@ -769,7 +783,8 @@ accounts without an email.</p>
           &quot;next_era_price&quot;: 400.0    // cost to unlock next era for this wave
         }
       ],
-      &quot;next_wave_price&quot;: 120.0       // cost to add another wave to this army
+      &quot;next_wave_price&quot;: 120.0,      // cost to add another wave to this army
+      &quot;siege_corruption_enabled&quot;: true  // false = this army serves the full siege
     }
   ],
   &quot;available_critters&quot;: [
@@ -827,6 +842,45 @@ accounts without an email.</p>
 </code></pre>
 <blockquote>
 <p><strong>AI usage:</strong> Use this to find attack targets. Prefer empires at a similar era index with lower culture (weaker) or higher culture (risky but rewarding artifacts).</p>
+</blockquote>
+<hr>
+<h3 id="get-apiempireseternal"><code>GET /api/empires/eternal</code>  🔐</h3>
+<p>All-time ranking: culture of every finished season summed with the culture held
+in the running season. Lists every empire above the entry threshold
+(<code>min_culture</code>, more than 1M all-time culture), including players who are not
+in the current season — ranks run 1..n over that qualifying set. Mutually-allied
+empires are <strong>not</strong> pooled here — alliances are a per-season construct.</p>
+<p><strong>Response</strong></p>
+<pre><code class="language-json">{
+  // The season current_culture is filling up. Between the season wipe and
+  // the start of the next season this is already the upcoming season, not
+  // the archived one the server&#39;s counter still names.
+  &quot;current_season&quot;: 4,
+  &quot;current_season_title&quot;: &quot;Love and Betrayal&quot;,
+  &quot;seasons&quot;: [
+    { &quot;number&quot;: 1, &quot;title&quot;: &quot;The Dawn of Empires&quot; },
+    { &quot;number&quot;: 2, &quot;title&quot;: &quot;The Rise of Kingdoms&quot; }
+  ],
+  &quot;self_uid&quot;: 42,
+  &quot;self_rank&quot;: 7,             // null if the player is below min_culture
+  &quot;total&quot;: 96,                // number of ranked empires
+  &quot;min_culture&quot;: 1000000.0,   // entry threshold — empires at or below it are omitted
+  &quot;ranking&quot;: [
+    {
+      &quot;rank&quot;: 1,
+      &quot;uid&quot;: 26,
+      &quot;name&quot;: &quot;Zornbolds&quot;,    // current name, falling back to the newest archived one
+      &quot;total_culture&quot;: 174000000.0,   // every season summed
+      &quot;current_culture&quot;: 0.0,         // culture in the current season only
+      &quot;seasons_played&quot;: 3,            // seasons the empire scored culture in
+      &quot;is_self&quot;: false,
+      &quot;is_bot&quot;: false
+    }
+  ]
+}
+</code></pre>
+<blockquote>
+<p><strong>AI usage:</strong> <code>ranking</code> is the complete table, rank ascending. Ranks are assigned by the server; do not re-sort and re-number.</p>
 </blockquote>
 <hr>
 <h3 id="post-apiempirerename"><code>POST /api/empire/rename</code>  🔐</h3>
@@ -981,6 +1035,16 @@ defender_uid     — which empire to spectate (requires spectating=1)
 <pre><code class="language-json">{ &quot;name&quot;: &quot;New Name&quot; }
 </code></pre>
 <p><strong>Response:</strong> <code>{ &quot;success&quot;: true }</code></p>
+<hr>
+<h3 id="put-apiarmyaidsiege-corruption"><code>PUT /api/army/{aid}/siege-corruption</code>  🔐</h3>
+<p>Switch the owner&#39;s siege corruption (<code>enemy_siege_time_modifier</code>) on or off for
+one army. While off, attacks launched with this army serve the full siege
+instead of the shortened one. The flag is read when the siege starts, so it
+still applies to an army already on its way.</p>
+<p><strong>Request body</strong></p>
+<pre><code class="language-json">{ &quot;enabled&quot;: false }
+</code></pre>
+<p><strong>Response:</strong> <code>{ &quot;success&quot;: true, &quot;aid&quot;: 1, &quot;siege_corruption_enabled&quot;: false }</code></p>
 <hr>
 <h3 id="post-apiarmyaidwave"><code>POST /api/army/{aid}/wave</code>  🔐</h3>
 <p>Add a wave slot to an army (costs <code>army.next_wave_price</code> gold).</p>
@@ -1306,6 +1370,11 @@ back to a solo <code>members</code> array of length 1 for unallied places.</p>
 <td><code>gold_offset</code></td>
 <td>offset</td>
 <td>Flat gold/s bonus</td>
+</tr>
+<tr>
+<td><code>gold_interest</code></td>
+<td>rate (0.0–1.0)</td>
+<td>Gold income += current gold × value <strong>per hour</strong> (applied as value/3600 each second-tick); sources sum into one rate</td>
 </tr>
 <tr>
 <td><code>culture_modifier</code></td>

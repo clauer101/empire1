@@ -11,7 +11,8 @@ persistence/
 ├── database.py     → (keine, nur aiosqlite)
 ├── state_save.py   → models/ (alle, für Serialisierung)
 ├── state_load.py   → models/ (alle, für Deserialisierung)
-└── replay.py       → (keine)
+├── replay.py       → (keine)
+└── season_archive.py → engine/ai_service (AI_UID)
 ```
 
 ## Wird verwendet von
@@ -22,6 +23,7 @@ persistence/
 | `engine/game_loop.py` | `state_save.save_state()` periodisch (alle 30s) |
 | `engine/battle_service.py` | `replay.ReplayRecorder` für Battle-Aufzeichnung |
 | `network/auth.py` | `database.get_user()`, `database.create_user()` |
+| `network/routers/empire.py` | `season_archive.load_finished_seasons()` for the eternal ranking |
 
 ## Schnittstellen
 
@@ -59,6 +61,20 @@ Das `state_dict` enthält:
 - `attacks`: list[Attack-Daten]
 - `battles`: list[BattleState-Daten]
 - `engine_state`: Spielphase, Tick-Counter, etc.
+
+### SeasonArchive
+```python
+DEFAULT_RESULTS_DIR: str   # set in main._start() to <data_dir>/results
+
+load_finished_seasons(current_season: int) -> list[SeasonCulture]
+clear_cache() -> None
+```
+
+Read-only access to the season snapshots written by
+`GameLoop._take_season_snapshot()` (`results/season<N>/state.yaml`). A snapshot
+counts as finished when the `season_number` stored inside it is lower than the
+running season; the AI uid is skipped. Snapshots are immutable, so each file is
+parsed once per process and cached by `(mtime, size)`.
 
 ### ReplayRecorder
 ```python

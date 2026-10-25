@@ -25,14 +25,22 @@ def make_router(services: "Services") -> APIRouter:  # noqa: ARG001
     async def get_replay(key: str, uid: int = Depends(get_current_uid)) -> Any:
         """Get a full battle replay by replay key.
 
-        Returns raw gzip bytes for .json.gz files (client decompresses via
-        DecompressionStream) or plain JSON for legacy .json files.
+        Returns raw gzip bytes for legacy .json.gz files (client decompresses
+        via DecompressionStream); streaming .ndjson.gz files are reassembled
+        into the same {..., "events": [...]} shape server-side and returned
+        as plain JSON, since their on-disk layout is an internal storage
+        detail, not part of the client contract.
         """
-        from gameserver.persistence.replay import get_replay_path
+        from gameserver.persistence.replay import get_replay_path, load_replay
         from starlette.responses import Response, JSONResponse
         path = get_replay_path(key)
         if path is None:
             raise HTTPException(status_code=404, detail="Replay not found")
+        if path.name.endswith(".ndjson.gz"):
+            replay = load_replay(key)
+            if replay is None:
+                raise HTTPException(status_code=404, detail="Replay not found")
+            return JSONResponse(content=replay)
         if path.suffix == ".gz":
             data = path.read_bytes()
             return Response(

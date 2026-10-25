@@ -9,6 +9,7 @@ from gameserver.network.jwt_auth import get_current_uid
 from gameserver.network.rest_models import (
     ArmyCreateRequest,
     ArmyRenameRequest,
+    SiegeCorruptionRequest,
     BuyCritterSlotRequest,
     BuyItemUpgradeRequest,
     BuyWaveEraRequest,
@@ -38,6 +39,15 @@ def make_router(services: "Services") -> APIRouter:
         from gameserver.network.handlers import handle_change_army
         msg = _stub_message(aid=aid, name=body.name)
         resp = await handle_change_army(msg, uid)
+        return resp or {"success": False, "error": "No response"}
+
+    @router.put("/api/army/{aid}/siege-corruption")
+    async def set_siege_corruption(
+        aid: int, body: SiegeCorruptionRequest, uid: int = Depends(get_current_uid),
+    ) -> dict[str, Any]:
+        from gameserver.network.handlers import handle_set_army_siege_corruption
+        msg = _stub_message(aid=aid, enabled=body.enabled)
+        resp = await handle_set_army_siege_corruption(msg, uid)
         return resp or {"success": False, "error": "No response"}
 
     @router.post("/api/army/{aid}/wave")

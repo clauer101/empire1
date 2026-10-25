@@ -252,6 +252,7 @@ The **primary polling endpoint**. Returns the full state of the authenticated em
   "citizens": { "merchant": 3, "scientist": 2, "artist": 1 },
   "citizen_price": 204.0,     // culture cost for the next citizen upgrade
   "citizen_effect": 0.03,     // bonus per citizen per tick
+  "building_gold_modifier": 0.12, // completed buildings × gold_modifier_per_building (added to gold modifier)
   "tile_price": 150.0,        // gold cost for the next hex tile expansion
   "army_price": 500.0,        // gold cost for the next army
   "wave_price": 100.0,        // gold cost for the next wave slot
@@ -318,7 +319,18 @@ The **primary polling endpoint**. Returns the full state of the authenticated em
   "tower_sell_refund": 0.3,      // fraction of gold returned when selling a tower
   "base_artifact_steal_victory": 0.3,
   "base_artifact_steal_defeat": 0.04,
-  "end_rally": { ... },          // end-of-season event info (may be null)
+  "end_rally": {                 // end-of-season event info (may be null)
+    "active": true,
+    "end_criterion_name": "The World Wonder",
+    "triggered_by_name": "Limperium",
+    "seconds_remaining": 84600,
+    // The season is scored on POOLED culture: mutually-allied empires are
+    // ranked on their combined total and lead as a unit (two names), while
+    // an unallied empire is ranked on its own and leads alone (one name)
+    // when it outscores every team.
+    "culture_leader_names": ["Team A", "Team B"],
+    "culture_leader_name": "Team A & Team B"   // the same names, joined
+  },
   "season_number": 2,
   "season_title": "Age of Iron",
   "next_season_start": "2026-06-01T00:00:00Z",
@@ -401,7 +413,8 @@ Returns all armies with their waves, available critters, and current attack stat
           "next_era_price": 400.0    // cost to unlock next era for this wave
         }
       ],
-      "next_wave_price": 120.0       // cost to add another wave to this army
+      "next_wave_price": 120.0,      // cost to add another wave to this army
+      "siege_corruption_enabled": true  // false = this army serves the full siege
     }
   ],
   "available_critters": [
@@ -463,6 +476,48 @@ Returns all player empires sorted by culture (leaderboard).
 ```
 
 > **AI usage:** Use this to find attack targets. Prefer empires at a similar era index with lower culture (weaker) or higher culture (risky but rewarding artifacts).
+
+---
+
+### `GET /api/empires/eternal`  🔐
+All-time ranking: culture of every finished season summed with the culture held
+in the running season. Lists every empire above the entry threshold
+(`min_culture`, more than 1M all-time culture), including players who are not
+in the current season — ranks run 1..n over that qualifying set. Mutually-allied
+empires are **not** pooled here — alliances are a per-season construct.
+
+**Response**
+```json
+{
+  // The season current_culture is filling up. Between the season wipe and
+  // the start of the next season this is already the upcoming season, not
+  // the archived one the server's counter still names.
+  "current_season": 4,
+  "current_season_title": "Love and Betrayal",
+  "seasons": [
+    { "number": 1, "title": "The Dawn of Empires" },
+    { "number": 2, "title": "The Rise of Kingdoms" }
+  ],
+  "self_uid": 42,
+  "self_rank": 7,             // null if the player is below min_culture
+  "total": 96,                // number of ranked empires
+  "min_culture": 1000000.0,   // entry threshold — empires at or below it are omitted
+  "ranking": [
+    {
+      "rank": 1,
+      "uid": 26,
+      "name": "Zornbolds",    // current name, falling back to the newest archived one
+      "total_culture": 174000000.0,   // every season summed
+      "current_culture": 0.0,         // culture in the current season only
+      "seasons_played": 3,            // seasons the empire scored culture in
+      "is_self": false,
+      "is_bot": false
+    }
+  ]
+}
+```
+
+> **AI usage:** `ranking` is the complete table, rank ascending. Ranks are assigned by the server; do not re-sort and re-number.
 
 ---
 
@@ -674,6 +729,21 @@ Rename an existing army.
 ```
 
 **Response:** `{ "success": true }`
+
+---
+
+### `PUT /api/army/{aid}/siege-corruption`  🔐
+Switch the owner's siege corruption (`enemy_siege_time_modifier`) on or off for
+one army. While off, attacks launched with this army serve the full siege
+instead of the shortened one. The flag is read when the siege starts, so it
+still applies to an army already on its way.
+
+**Request body**
+```json
+{ "enabled": false }
+```
+
+**Response:** `{ "success": true, "aid": 1, "siege_corruption_enabled": false }`
 
 ---
 
@@ -1014,6 +1084,7 @@ Two formats exist — do not mix them:
 |-----|------|---------|
 | `gold_modifier` | multiplier | Gold income × (1 + value) |
 | `gold_offset` | offset | Flat gold/s bonus |
+| `gold_interest` | rate (0.0–1.0) | Gold income += current gold × value **per hour** (applied as value/3600 each second-tick); sources sum into one rate |
 | `culture_modifier` | multiplier | Culture × (1 + value) |
 | `culture_offset` | offset | Flat culture/s bonus |
 | `build_speed_modifier` | multiplier | Build speed × (1 + value) |

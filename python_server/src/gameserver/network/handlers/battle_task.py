@@ -191,6 +191,11 @@ async def _log_battle_stats(
         # Track max stolen/lost in a single battle
         for winner_uid, count in stolen_per_winner.items():
             await database.record_empire_stat_max(winner_uid, "max_artifacts_stolen_one_battle", count)
+            winner = empire_service.get(winner_uid) if empire_service is not None else None
+            if winner is not None:
+                await database.record_empire_stat_max(
+                    winner_uid, "peak_artifacts_held", len(winner.artifacts),
+                )
         await database.record_empire_stat_max(def_uid, "max_artifacts_lost_one_battle", len(stolen_artifacts))
 
 
@@ -430,6 +435,9 @@ async def _run_battle_task(
                     else:
                         era_note = ""
                     loot_def_lines += f"🎭 Culture: -{culture_stolen:.1f}{era_note}\n"
+                gold_stolen = loot.get("gold", 0.0)
+                if gold_stolen > 0:
+                    loot_def_lines += f"💰 Gold: -{gold_stolen:.0f}\n"
                 if knowledge_loot:
                     k_name = knowledge_loot.get("name", knowledge_loot.get("iid", "?"))
                     k_pct  = knowledge_loot.get("pct", 0.0)
@@ -508,6 +516,9 @@ async def _run_battle_task(
                         else:
                             era_note = ""
                         loot_atk_lines += f"🎭 Culture: +{atk_culture:.1f}{era_note}\n"
+                    atk_gold = per_atk.get("gold", 0.0)
+                    if atk_gold > 0:
+                        loot_atk_lines += f"💰 Gold: +{atk_gold:.0f}\n"
                     if per_atk.get("antifarm_penalty"):
                         loot_atk_lines += "🛡 Anti-farm protection: you've beaten this defender too often — culture reduced, no ruler XP.\n"
                     if knowledge_loot:
@@ -1024,6 +1035,34 @@ def _compute_and_apply_loot(
         defender.resources["culture"] = max(0.0, culture_pool - payout_total)
         battle.defender_losses["culture"] = battle.defender_losses.get("culture", 0.0) + payout_total
         loot["culture"] = loot.get("culture", 0.0) + payout_total
+
+    # --- Gold steal (only on a full attacker win) ---
+    # Each human winner takes `gold_steal_ratio` (their own empire effect) of the
+    # defender's gold pool, split by n_winners like culture.
+    if attacker_won and winners:
+        gold_pool = float(defender.resources.get("gold", 0.0))
+        gold_total = 0.0
+        for uid in winners:
+            w_emp = svc.empire_service.get(uid) if svc.empire_service else None
+            if w_emp is None:
+                continue
+            ratio = float(w_emp.effects.get(fx.GOLD_STEAL_RATIO, 0.0))
+            if ratio <= 0:
+                continue
+            gold_stolen = round(min(gold_pool * ratio / n_winners, gold_pool - gold_total), 2)
+            if gold_stolen <= 0.01:
+                continue
+            w_emp.resources["gold"] = w_emp.resources.get("gold", 0.0) + gold_stolen
+            gold_total += gold_stolen
+            loot["per_attacker"].setdefault(uid, {})["gold"] = gold_stolen
+            battle.attacker_gains.setdefault(uid, {})
+            battle.attacker_gains[uid]["gold"] = battle.attacker_gains[uid].get("gold", 0.0) + gold_stolen
+        if gold_total > 0:
+            defender.resources["gold"] = max(0.0, gold_pool - gold_total)
+            battle.defender_losses["gold"] = battle.defender_losses.get("gold", 0.0) + gold_total
+            loot["gold"] = round(gold_total, 2)
+            log.info("[LOOT] Gold stolen from uid=%d: %.1f (pool=%.1f, %d winners)",
+                     defender.uid, gold_total, gold_pool, n_winners)
 
     # --- Life restore (only on defender defeat) ---
     if battle.defender_won is False:

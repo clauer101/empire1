@@ -244,6 +244,26 @@ class TestBattleStatsLogging:
         db.record_artifact_acquired.assert_any_call(20, "goblet", 1_000_000.0)
         db.record_artifact_acquired.assert_any_call(21, "crown", 1_000_000.0)
 
+    async def test_peak_artifacts_held_counts_duplicates(self):
+        """peak_artifacts_held is the winner's artifact list length, duplicates included.
+
+        Regression: the peak was derived from artifact_holds (one row per
+        uid+iid), so an empire holding the same artifact twice was undercounted.
+        """
+        from gameserver.network.handlers.battle_task import _log_battle_stats
+        defender = _empire(uid=10)
+        winner = _empire(uid=20)
+        winner.artifacts = ["grail", "grail", "dagger", "armour"]
+        battle = _battle(defender, [20], defender_won=False)
+        db = _mock_db()
+        empire_service = MagicMock()
+        empire_service.get.side_effect = lambda uid: winner if uid == 20 else None
+        empire_service.get_current_era.return_value = "stone"
+
+        await _log_battle_stats(battle, db, {}, [("grail", 20)], empire_service)
+
+        db.record_empire_stat_max.assert_any_call(20, "peak_artifacts_held", 4)
+
     async def test_no_stolen_artifacts_nothing_logged(self):
         defender = _empire(uid=10)
         battle = _battle(defender, [20], defender_won=False)

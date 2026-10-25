@@ -122,6 +122,9 @@ export function buildBattleSummaryHtml(msg, catalog = {}, opts = {}) {
     } else {
       html += `<li ${mutedSt}>🎭 Culture: –</li>`;
     }
+    if (loot.gold > 0) {
+      html += `<li ${liSt}>💰 Gold: <strong>-${Math.round(loot.gold).toLocaleString()}</strong></li>`;
+    }
     if (loot.knowledge) {
       const kn = loot.knowledge;
       html += `<li ${liSt}>📖 ${kn.pct}% of <strong>${kn.name}</strong> → -${Math.round(kn.amount)} research effort</li>`;
@@ -168,6 +171,16 @@ export function buildBattleSummaryHtml(msg, catalog = {}, opts = {}) {
       }
     } else {
       html += `<li ${mutedSt}>🎭 Culture: –</li>`;
+    }
+
+    if (loot.gold > 0) {
+      const goldText = multiAttacker
+        ? attackerUids
+            .filter(uid => (perAtk[uid]?.gold ?? 0) > 0)
+            .map(uid => `${_esc(empireNames[uid] || `uid ${uid}`)} +${Math.round(perAtk[uid].gold).toLocaleString()}`)
+            .join(', ')
+        : `+${Math.round(perAtk[firstUid]?.gold ?? loot.gold).toLocaleString()}`;
+      html += `<li ${liSt}>💰 Gold: ${goldText}</li>`;
     }
 
     if (loot.knowledge) {

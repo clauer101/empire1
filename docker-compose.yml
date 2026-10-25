@@ -51,19 +51,22 @@ services:
       retries: 3
       start_period: 10s
 
-  bots:
-    build:
-      context: .
-      target: bots
-    image: empire1-bots
-    restart: unless-stopped
-    environment:
-      SERVER_URL: http://gameserver:8080
-      BOT_COUNT: "3"
-    volumes:
-      - ./data/prod/bot_states:/app/states
-      - ./data/prod/bot_logs:/app/logs
-    depends_on:
-      gameserver:
-        condition: service_healthy
+  # Bots disabled on prod (2026-10-03). During the frozen season they could not
+  # act at all and wrote a failed-action line per second into data/prod/bot_logs.
+  # Re-enable by uncommenting — dev runs them unchanged via docker-compose.dev.yml.
+  # bots:
+  #   build:
+  #     context: .
+  #     target: bots
+  #   image: empire1-bots
+  #   restart: unless-stopped
+  #   environment:
+  #     SERVER_URL: http://gameserver:8080
+  #     BOT_COUNT: "3"
+  #   volumes:
+  #     - ./data/prod/bot_states:/app/states
+  #     - ./data/prod/bot_logs:/app/logs
+  #   depends_on:
+  #     gameserver:
+  #       condition: service_healthy
 

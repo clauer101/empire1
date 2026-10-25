@@ -16,10 +16,11 @@ import { formatEffect } from './i18n.js';
 import { ERA_ROMAN, ERA_LABEL_EN, ERA_SPRITE_KEY } from './lib/eras.js';
 import { pageTitle } from './lib/page_title.js';
 import { fmtRes } from './lib/format.js';
+import { escHtml, escAttr } from './lib/html.js';
 
 import loginView from './views/login.js';
 import resetPasswordView from './views/reset_password.js';
-import dashView, { getCultureLeaderName, onLeaderUpdated } from './views/status.js?v=20260514a';
+import dashView, { getCultureLeaderNames, onLeaderUpdated } from './views/status.js?v=20260514a';
 import buildView from './views/buildings.js';
 import resView from './views/research.js';
 import armyView from './views/army.js';
@@ -34,6 +35,7 @@ import legalView from './views/legal.js';
 import globalmapView from './views/globalmap.js';
 import globalempiresView from './views/globalempires.js';
 import empirestatsView from './views/empirestats.js';
+import eternalRankingView from './views/eternalranking.js';
 import rulerView from './views/ruler.js';
 import seasonResultsView from './views/seasonresults.js';
 import trophiesView from './views/trophies.js';
@@ -73,6 +75,7 @@ eventBus.on('rest:unauthorized', () => {
   globalempiresView,
   empireView,
   empirestatsView,
+  eternalRankingView,
   rulerView,
   seasonResultsView,
   trophiesView,
@@ -295,8 +298,7 @@ eventBus.on('state:summary', (data) => {
   }
   _updateSeasonResetBanner(data);
   const incoming = data?.attacks_incoming || [];
-  const hasIncoming = incoming.length > 0;
-  const hasActive = incoming.some((a) => a.phase === 'in_siege' || a.phase === 'in_battle');
+  const hasActive = incoming.some((a) => a.phase === 'in_battle');
 
   if (navDashboard) navDashboard.classList.remove('alarm');
   if (navDefense) navDefense.classList.toggle('alarm', hasActive);
@@ -342,6 +344,17 @@ function _tickRallyBanner() {
   }
 }
 
+/**
+ * Who leads the season, for the banners: server value first, status-view data
+ * as fallback. Two names for a leading team, one for a solo leader that
+ * outscores every team.
+ */
+function _cultureLeaders(rally) {
+  const fromServer = rally?.culture_leader_names;
+  if (fromServer?.length) return fromServer;
+  return getCultureLeaderNames();
+}
+
 function _updateGameOverBanner(rally, data) {
   const banner = document.getElementById('game-over-banner');
   if (!banner) return;
@@ -352,9 +365,15 @@ function _updateGameOverBanner(rally, data) {
   const inLeadtime = nsl && Date.now() >= _utcMs(nsl);
   // Show only when rally ended but leadtime not yet reached (Phase 2)
   if (!frozen || inLeadtime) { banner.style.display = 'none'; return; }
-  const winner = rally.culture_leader_name || getCultureLeaderName() || rally.triggered_by_name || '?';
-  const winnerSafe = winner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  banner.innerHTML = `🏆 <strong>${winnerSafe}</strong> has won the season — Congratulations! <a href="#season-results" style="color:#ffd700;font-weight:bold;margin-left:10px;text-decoration:underline;">(view results)</a>`;
+  // The season is won on pooled culture: an allied team takes the title
+  // together, a solo empire alone when it outscores every team. The banner
+  // names every winner (escape each name before joining).
+  const winners = _cultureLeaders(rally);
+  const asTeam = winners.length > 1;
+  const resultsLink = `<a href="#season-results" style="color:#ffd700;font-weight:bold;margin-left:10px;text-decoration:underline;">(view results)</a>`;
+  banner.innerHTML = winners.length
+    ? `🏆 <strong>${winners.map(escHtml).join(' &amp; ')}</strong> ${asTeam ? 'have' : 'has'} won the season${asTeam ? ' as a team' : ''} — Congratulations! ${resultsLink}`
+    : `🏆 The season has ended. ${resultsLink}`;
   banner.style.display = 'block';
   requestAnimationFrame(() => {
     document.documentElement.style.setProperty('--rally-banner-h', banner.offsetHeight + 'px');
@@ -390,13 +409,23 @@ function _updateRallyBanner(rally, selfName, data) {
   const builderName = rally.triggered_by_name || '?';
   const builderUid = rally.triggered_by_uid;
   const criterion = rally.end_criterion_name || rally.end_criterion || 'the wonder';
-  const leaderName = rally.culture_leader_name || getCultureLeaderName() || builderName;
-  const leadingLabel = leaderName === selfName ? 'You are leading' : `${leaderName} is leading`;
+  // Pooled culture decides the season: an allied team leads as a unit, a
+  // solo empire leads alone when it outscores every team.
+  const leaders = _cultureLeaders(rally);
+  const asTeam = leaders.length > 1;
+  const leadLabel = (names) => !names.length
+    ? 'the season is ending!'
+    : leaders.includes(selfName)
+      ? (asTeam ? 'your team is leading, go get them!' : 'You are leading, go get them!')
+      : `${names.join(' & ')} ${asTeam ? 'are' : 'is'} leading, go get them!`;
+  // Empire names are player-supplied — escape them for the HTML variant.
+  const leadingLabel = leadLabel(leaders);
+  const leadingLabelHtml = leadLabel(leaders.map(escHtml));
   const nameLink = builderUid != null && builderName !== selfName
-    ? `<a href="#army" data-attack-uid="${builderUid}" data-attack-name="${builderName}" style="color:inherit;font-weight:700;text-decoration:underline;cursor:pointer">${builderName}</a>`
-    : `<strong>${builderName}</strong>`;
-  _rallyBannerBaseText = `⚔ ${builderName} has built ${criterion} — ${leadingLabel}, go get them!`;
-  _rallyBannerBaseHtml = `⚔ ${nameLink} has built ${criterion} — ${leadingLabel}, go get them!`;
+    ? `<a href="#army" data-attack-uid="${builderUid}" data-attack-name="${escAttr(builderName)}" style="color:inherit;font-weight:700;text-decoration:underline;cursor:pointer">${escHtml(builderName)}</a>`
+    : `<strong>${escHtml(builderName)}</strong>`;
+  _rallyBannerBaseText = `⚔ ${builderName} has built ${criterion} — ${leadingLabel}`;
+  _rallyBannerBaseHtml = `⚔ ${nameLink} has built ${criterion} — ${leadingLabelHtml}`;
   _rallySecondsRemaining = rally.seconds_remaining || 0;
   _rallySecondsTs = Date.now();
   if (_rallySecondsRemaining < 2 * 86400 && !_rallyCountdownTimer) {

@@ -763,3 +763,30 @@ class TestAllianceDeclarations:
         declared_to, declared_by = await db.get_alliance_declarations_for(42)
         assert declared_to == set()
         assert declared_by == set()
+
+    async def test_clear_all_removes_every_declaration(self, db: Database):
+        # Declarations survive the per-season stat wipe, so a season running
+        # with alliances disabled clears them explicitly at startup.
+        await db.toggle_alliance_declaration(1, 2)
+        await db.toggle_alliance_declaration(2, 1)
+        await db.toggle_alliance_declaration(3, 4)
+
+        removed = await db.clear_all_alliance_declarations()
+        assert removed == 3
+        assert await db.get_all_mutual_alliances() == {}
+        for uid in (1, 2, 3, 4):
+            assert await db.get_alliance_declarations_for(uid) == (set(), set())
+
+    async def test_clear_all_on_empty_table_is_a_noop(self, db: Database):
+        assert await db.clear_all_alliance_declarations() == 0
+
+    async def test_season_wipe_also_clears_alliances(self, db: Database):
+        # Alliances belong to the season that formed them — the wipe that ends
+        # a season must not leave last season's teams standing.
+        await db.toggle_alliance_declaration(1, 2)
+        await db.toggle_alliance_declaration(2, 1)
+
+        await db.wipe_season_stats()
+
+        assert await db.get_all_mutual_alliances() == {}
+        assert await db.get_alliance_declarations_for(1) == (set(), set())

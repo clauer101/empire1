@@ -17,8 +17,13 @@ let _uid = null;
 let _empire = null;
 let _allEmpires = [];
 
+/**
+ * Whether diplomacy is available this season (game.yaml `alliances_enabled`,
+ * relayed in the empire summary). While off the server refuses every alliance
+ * call, so the button is hidden rather than shown disabled.
+ */
 function _diplomacyEnabled() {
-  return true;
+  return state.summary?.alliances_enabled !== false;
 }
 
 function init(el) {
@@ -295,11 +300,10 @@ function _render(empire) {
           : `<span>🕵 Send Spy</span><span style="font-size:0.75em;opacity:0.8;">${spyTravelLabel}</span>`}
       </button>`
     : '';
-  const diplomacyBtn = !empire.is_self
+  const diplomacyBtn = (!empire.is_self && _diplomacyEnabled())
     ? (() => {
         const { label, badgeClass } = fmtAllianceStatus(empire.alliance_status);
-        const enabled = _diplomacyEnabled();
-        return `<button class="badge ${badgeClass}${enabled ? ' empire-diplomacy-btn' : ''}" data-uid="${empire.uid}" ${enabled ? '' : 'disabled'} style="font-size:13px;padding:6px 14px;border-radius:var(--radius,4px);border:none;${enabled ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.5;'}">${label}</button>`;
+        return `<button class="badge ${badgeClass} empire-diplomacy-btn" data-uid="${empire.uid}" style="font-size:13px;padding:6px 14px;border-radius:var(--radius,4px);border:none;cursor:pointer;">${label}</button>`;
       })()
     : '';
   const allianceCostPct = Math.round((state.summary?.alliance_culture_cost ?? 0) * 100);

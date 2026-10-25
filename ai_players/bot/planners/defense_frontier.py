@@ -7,23 +7,43 @@ on them. When the preferred direction is blocked the planner turns instead
 existing corridor at exactly one tile) guarantees the corridor never shortcuts
 itself.
 
+**The live map is the only state.** Every position is re-derived each cycle
+from `GET /api/map` (`defense_analysis.corridor_from_map`) — the way a human
+player reads the board before deciding what to buy. Nothing positional is ever
+remembered between cycles, so the planner cannot drift out of sync with the
+server. It used to persist the corridor in bot memory, which silently diverged
+from the real map on all three production bots and left them planning against
+a phantom location for a week.
+
+The invariant that makes derivation work: after every completed action the map
+alone describes the maze. Corridor tiles are always `spawnpoint`/`path`/
+`castle`, so an `empty` tile is always a tower spot (or the debris of an
+interrupted grow — see the repair action). That is why growing is ATOMIC: one
+action buys the tile AND moves the anchor onto it.
+
 All applicable options are proposed every cycle (not just the first match) —
 the dispatcher (bot/dispatch.py) picks the highest-priority AFFORDABLE one and
 still tries lower-priority options when higher ones aren't affordable, so a
 tick isn't stuck doing nothing just because the top option is too expensive
 right now. Priority order (see PRIO_* constants), highest first:
-1. Tower on any stray owned empty tile that is not part of the corridor
-   (closes shortcut risks immediately).
-2. Relocate the spawnpoint/castle onto the corridor tip (free, extends the
-   live path).
+1. Tower on any owned empty tile (a tower spot, or leftover grow debris).
+2. Repair: finish an interrupted grow by moving the anchor onto its dangling
+   empty neighbor (free).
 3. Era-swap: replace an outdated placed tower with the best current-era one.
 4. Flank: if a corridor tile has no adjacent tower yet, buy a side tile next
    to it — corridor segments are never left unguarded for long.
-5. Grow the corridor: buy the next void tile at the tip (serpentine heading,
-   turn when blocked).
+5. Grow the corridor: buy the next void tile at an end and move the anchor
+   onto it, in one action (serpentine heading, turn when blocked).
 6. Buy any remaining side tile adjacent to the corridor for extra towers.
 7. Workshop-upgrade the most-placed tower type — lowest priority, so it only
    actually runs when nothing above it is affordable this cycle.
+
+Tiles a neighboring empire owns are skipped up front using the fog-range view
+(`ctx.foreign_tiles`, from `GET /api/map/neighbors` — the same information the
+map screen shows a human). If that view is unavailable the bot just attempts
+the purchase and reads the rejection; a failed `buy_tile` is excluded for the
+rest of the tick only (bot/dispatch.py) and retried fresh next cycle, never
+blacklisted permanently — land ownership nearby changes over a season.
 """
 
 from __future__ import annotations
@@ -34,8 +54,8 @@ from collections import Counter
 
 from bot.analyzer import ERA_RANK
 from bot.defense_analysis import (
-    HEX_DIRS, bfs_path, coverage_score, path_points, pick_tower, tower_class,
-    tower_quality,
+    HEX_DIRS, corridor_from_map, coverage_score, end_state, path_points,
+    pick_tower, tower_class, tower_quality,
 )
 from .base import BotContext, Option, Planner, weighted_top_n
 
@@ -154,26 +174,25 @@ class FrontierDefensePlanner(Planner):
                    if _tile_type(v) == "castle"]
         if not spawns or not castles:
             return []
-        spawn, castle = spawns[0], castles[0]
 
-        mem = ctx.memory.setdefault("frontier", {})
-        corridor: list[str] = mem.setdefault("corridor", [])
-        self._init_ends(mem, corridor, spawn, castle)
+        # Drop the geometry this planner used to persist. It could drift away
+        # from the live map with nothing to notice, which is exactly what broke
+        # the production bots; positions are derived below instead.
+        ctx.memory.pop("frontier", None)
 
         # Per-bot seeded RNG so choices vary between bots but stay reproducible
-        # for a given bot (and testable in the maze-sim tool). Advance the seed
-        # each cycle so successive decisions differ.
+        # for a given bot (and testable). Advance the step each call so
+        # successive decisions within a tick differ — otherwise a rejected
+        # tile would be re-picked identically for the whole tick.
         seed = ctx.memory.setdefault("maze_seed", random.getrandbits(32) or 1)
-        step = int(mem.get("rng_step", 0))
-        mem["rng_step"] = step + 1
+        step = int(ctx.memory.get("maze_step", 0))
+        ctx.memory["maze_step"] = step + 1
         rng = random.Random(seed + step)
 
-        corridor_set = {_parse_key(k) for k in corridor}
+        corridor, corridor_set = corridor_from_map(map_data)
         owned = {_parse_key(k) for k, v in tiles.items()
                  if _tile_type(v) != "void"}
-        # Tiles a previous buy_tile call found already owned by a neighboring
-        # empire — never proposed again (there is no space to grow there).
-        blocked = {tuple(p) for p in mem.setdefault("blocked_tiles", [])}
+        foreign = ctx.foreign_tiles
 
         # Collect every option this cycle instead of returning the first
         # match: options carry a `priority` (see PRIO_* above) precisely so
@@ -185,32 +204,17 @@ class FrontierDefensePlanner(Planner):
         # the dispatcher never even sees the lower-priority alternatives.
         options: list[Option] = []
 
-        # 1. Stray empties (owned, walkable, outside corridor) → tower NOW
-        stray = [
-            _parse_key(k) for k, v in tiles.items()
-            if _tile_type(v) == "empty" and _parse_key(k) not in corridor_set
-        ]
+        # 1. Every owned empty tile is a tower spot — tower it. Under the
+        #    map-only invariant an "empty" is never part of the corridor, so
+        #    this also cleans up a grow whose relocation half failed.
+        stray = [_parse_key(k) for k, v in tiles.items()
+                 if _tile_type(v) == "empty"]
         if stray:
-            opt = self._tower_option(ctx, tiles, structures, stray, rng)
+            opt = self._tower_option(ctx, tiles, structures, stray, corridor, rng)
             if opt:
                 options.append(opt)
 
-        # 2. Spawn not on its corridor end → relocate it there (free). The spawn
-        #    end is corridor[0]; after a spawn-end grow the freshly bought tile is
-        #    corridor[0] and the spawn is one tile inward, so this moves it out.
-        spawn_end = _parse_key(corridor[0])
-        if spawn != spawn_end and _tile_type(tiles.get(_key(spawn_end), "")) in ("empty", "path"):
-            options.append(self._relocate_option(spawn, spawn_end, "spawnpoint"))
-
-        # 3. Castle not on its corridor end → relocate it there (free). The castle
-        #    end is corridor[-1]; mirror of the spawn relocation. Only once the
-        #    corridor has two distinct ends (len >= 2).
-        castle_end = _parse_key(corridor[-1])
-        if (corridor[-1] != corridor[0] and castle != castle_end
-                and _tile_type(tiles.get(_key(castle_end), "")) in ("empty", "path")):
-            options.append(self._relocate_option(castle, castle_end, "castle"))
-
-        # 4. Era-swap: replace an outdated placed tower with the best
+        # 2. Era-swap: replace an outdated placed tower with the best
         #    current-era tower (sell + rebuild in one save_map). Higher
         #    priority than upgrade — spending gold to level up a tower that's
         #    about to be replaced would be wasted. Also higher than growing
@@ -220,7 +224,7 @@ class FrontierDefensePlanner(Planner):
         if swap:
             options.append(swap)
 
-        # 5. Upgrade a current-era tower when that is cheaper than the next tile
+        # 3. Upgrade a current-era tower when that is cheaper than the next tile
         #    purchase. Expanding the maze costs `tile_price`; if improving a placed
         #    tower costs less, spend on the upgrade instead. Lowest priority here —
         #    the dispatcher falls back to it when era-swap/flank/grow/buy-side are
@@ -229,64 +233,92 @@ class FrontierDefensePlanner(Planner):
         if upgrade:
             options.append(upgrade)
 
-        # 6. Flank: every corridor tile (except the two live ends) needs an
+        # Everything below needs to know where the corridor runs. Without a
+        # route (spawn and castle exist but nothing connects them — a data
+        # event or a hand-edited map) the corridor actions would all be
+        # guesses, so skip them and say so once: the missing signal here is
+        # what let the production bots fail silently for a week. Towers and
+        # upgrades above still run, so gold keeps being spent usefully.
+        if not corridor:
+            self._warn_no_route(spawns[0], castles[0])
+            return options
+        self._no_route_key = None
+
+        # 4. Repair: an anchor with a dangling empty neighbor is a grow whose
+        #    relocation half did not land — finish it for free.
+        for anchor, kind in ((corridor[0], "spawnpoint"), (corridor[-1], "castle")):
+            repair = self._repair_option(tiles, anchor, kind, corridor_set)
+            if repair:
+                options.append(repair)
+
+        # 5. Flank: every corridor tile (except the two live ends) needs an
         #    adjacent tower spot before we keep growing.
-        flank = self._flank_option(ctx, corridor, corridor_set, owned, rng, blocked)
+        flank = self._flank_option(ctx, corridor, corridor_set, owned, foreign, rng)
         if flank:
             options.append(flank)
 
-        # 7. Grow the corridor at BOTH ends, alternating: the spawn end
-        #    (corridor[0], spawn follows) and the castle end (corridor[-1], castle
-        #    follows). Try the `next_end` first; if blocked, try the other end.
-        if len(corridor) < MAX_CORRIDOR:
+        # 6. Grow at BOTH ends — the dispatcher runs whichever is affordable.
+        #    Which end is offered first alternates with the owned-tile count:
+        #    every successful grow buys exactly one tile, so the parity flips
+        #    each time. That keeps the two ends taking turns for callers that
+        #    execute only the single best option (Planner.propose) without
+        #    needing a stored cursor.
+        if len(corridor_set) < MAX_CORRIDOR:
             tower_tiles = {_parse_key(k) for k, v in tiles.items()
                            if _tile_type(v) in structures}
-            first = mem.get("next_end", "spawn")
-            order = [first, "castle" if first == "spawn" else "spawn"]
-            for name in order:
-                end_index = 0 if name == "spawn" else -1
-                grow = self._grow_option(
-                    ctx, tiles, mem["ends"][name], corridor, corridor_set,
-                    owned, tower_tiles, rng, end_index=end_index,
-                    append=(name == "castle"), blocked=blocked)
+            ends = ("spawn", "castle") if len(owned) % 2 == 0 else ("castle", "spawn")
+            for end in ends:
+                grow = self._grow_option(ctx, corridor, corridor_set, owned,
+                                         tower_tiles, foreign, rng, end=end)
                 if grow:
-                    # Advance the cursor so the other end goes next cycle.
-                    mem["next_end"] = "castle" if name == "spawn" else "spawn"
                     options.append(grow)
-                    break
 
-        # 8. Buy the best side tile along the corridor for a future tower
+        # 7. Buy the best side tile along the corridor for a future tower
         side = self._side_tile_option(ctx, tiles, structures, corridor_set,
-                                      owned, rng, blocked)
+                                      owned, foreign, corridor, rng)
         if side:
             options.append(side)
 
         return options
 
+    def _warn_no_route(self, spawn: tuple[int, int],
+                       castle: tuple[int, int]) -> None:
+        """Log once per spawn/castle pair that the maze has no walkable route.
+
+        propose_options runs up to ~40x per tick, so this is deduped on the
+        planner (PLANNERS holds one instance) to keep the signal readable.
+        """
+        key = (spawn, castle)
+        if getattr(self, "_no_route_key", None) == key:
+            return
+        self._no_route_key = key
+        log.warning("no spawn→castle route on the live map (spawn %s, castle %s)"
+                    " — skipping corridor actions, towers/upgrades continue",
+                    spawn, castle)
+
     # ── Flanking ────────────────────────────────────────────────────────────
 
-    def _flank_option(self, ctx: BotContext, corridor: list[str],
+    def _flank_option(self, ctx: BotContext, corridor: list[tuple[int, int]],
                       corridor_set: set[tuple[int, int]],
                       owned: set[tuple[int, int]],
-                      rng: random.Random,
-                      blocked: set[tuple[int, int]] = frozenset()) -> Option | None:
+                      foreign: set[tuple[int, int]],
+                      rng: random.Random) -> Option | None:
         """Wall in the corridor: buy EVERY missing neighbor tile of the oldest
         unwalled corridor tile.
 
         No gaps are tolerated — each corridor tile (except the two still-growing
         ends) must have all its non-corridor neighbors owned, so rule 1 turns
-        them into a contiguous tower wall on both sides. `blocked` holds tiles
-        already known to belong to another empire, so a failed purchase there
-        never gets retried.
+        them into a contiguous tower wall on both sides. Tiles a neighboring
+        empire owns are skipped up front via the fog-range view; when that view
+        is unavailable the purchase is simply attempted and the rejection is
+        excluded for the rest of the tick (bot/dispatch.py), never blacklisted.
         """
-        corridor_pos = [_parse_key(k) for k in corridor]
-
         # Skip both ends — they are still growing and get walled on later passes.
-        for pos in corridor_pos[1:-1]:
+        for pos in corridor[1:-1]:
             missing = [
                 (pos[0] + dq, pos[1] + dr) for dq, dr in HEX_DIRS
                 if (pos[0] + dq, pos[1] + dr) not in owned
-                and (pos[0] + dq, pos[1] + dr) not in blocked
+                and (pos[0] + dq, pos[1] + dr) not in foreign
             ]
             if not missing:
                 continue
@@ -300,111 +332,56 @@ class FrontierDefensePlanner(Planner):
             price = float(ctx.summary.get("tile_price", 0.0))
 
             def run(api, p=best):
-                res = api.buy_tile(p[0], p[1])
-                if isinstance(res, dict) and res.get("success") is False:
-                    self._remember_blocked(ctx, p)
-                return res
+                return api.buy_tile(p[0], p[1])
 
             return Option(
                 category="defense",
                 description=f"frontier: flank tile ({best[0]},{best[1]}) "
                             f"for corridor ({pos[0]},{pos[1]})",
                 run=run, price=price, gain=9.0,
-                mandatory=True, priority=PRIO_FLANK,
+                mandatory=True, priority=PRIO_FLANK, mutates_map=True,
             )
         return None
 
-    def _remember_blocked(self, ctx: BotContext, pos: tuple[int, int]) -> None:
-        """Record a tile that buy_tile rejected as foreign-owned, so future
-        cycles pick a different tile instead of retrying the same failure."""
-        mem = ctx.memory.setdefault("frontier", {})
-        blocked_list = mem.setdefault("blocked_tiles", [])
-        entry = [pos[0], pos[1]]
-        if entry not in blocked_list:
-            blocked_list.append(entry)
-
     # ── Growth ──────────────────────────────────────────────────────────────
 
-    def _initial_heading(self, front: tuple[int, int],
-                         back: tuple[int, int]) -> int:
-        """Heading pointing from `back` toward `front` (i.e. outward from back)."""
-        dq, dr = front[0] - back[0], front[1] - back[1]
-        best, best_dot = 0, -999
-        for i, (hq, hr) in enumerate(HEX_DIRS):
-            dot = hq * dq + hr * dr
-            if dot > best_dot:
-                best, best_dot = i, dot
-        return best
+    def _touches_once(self, pos: tuple[int, int],
+                      corridor_set: set[tuple[int, int]]) -> bool:
+        """Flood safety: `pos` may join the corridor at exactly one tile.
 
-    def _init_ends(self, mem: dict, corridor: list[str],
-                   spawn: tuple[int, int], castle: tuple[int, int]) -> None:
-        """Seed a fresh corridor and migrate legacy single-ended state.
-
-        Target layout: corridor[0] = spawn end, corridor[-1] = castle end, with
-        per-end serpentine state under mem["ends"]. Legacy corridors grew at the
-        tip with the spawn chasing it, so on migration the growing tip end is the
-        spawn end — reverse the list so corridor[0] becomes that spawn end, then
-        make sure the castle key sits at corridor[-1].
+        Both anchors live in the corridor (spawn at corridor[0], castle at
+        corridor[-1]), so a single touch forbids shortcuts at either end
+        without a separate castle term.
         """
-        if not corridor:
-            corridor.append(_key(spawn))
-            if _key(castle) != _key(spawn):
-                corridor.append(_key(castle))
-
-        if "ends" not in mem:
-            legacy = {
-                "heading": mem.get("heading", 0),
-                "turn_dir": mem.get("turn_dir", 1),
-                "seg_steps": mem.get("seg_steps", 0),
-                "turns_in_row": mem.get("turns_in_row", 0),
-            }
-            # Legacy tip (corridor[-1]) was the spawn end → make it corridor[0].
-            if "heading" in mem:
-                corridor.reverse()
-            if _key(castle) not in corridor:
-                corridor.append(_key(castle))
-            elif corridor and corridor[-1] != _key(castle):
-                # Keep the castle at the castle end.
-                corridor.remove(_key(castle))
-                corridor.append(_key(castle))
-            mem["ends"] = {
-                "spawn": legacy,
-                "castle": {"heading": self._initial_heading(castle, spawn),
-                           "turn_dir": 1, "seg_steps": 0, "turns_in_row": 0},
-            }
-            for k in ("heading", "turn_dir", "seg_steps", "turns_in_row"):
-                mem.pop(k, None)
-        mem.setdefault("next_end", "spawn")
+        return sum(1 for dq, dr in HEX_DIRS
+                   if (pos[0] + dq, pos[1] + dr) in corridor_set) == 1
 
     def _candidate_ok(self, pos: tuple[int, int],
                       corridor_set: set[tuple[int, int]],
                       owned: set[tuple[int, int]],
-                      blocked: set[tuple[int, int]] = frozenset()) -> bool:
-        """A new corridor tile must be void and touch the corridor exactly once.
+                      foreign: set[tuple[int, int]] = frozenset()) -> bool:
+        """A new corridor tile must be buyable void and satisfy flood safety."""
+        return (pos not in owned and pos not in foreign
+                and self._touches_once(pos, corridor_set))
 
-        Both anchors live in the corridor (spawn on corridor[0], castle on
-        corridor[-1]), so touching corridor_set exactly once forbids shortcuts at
-        either end without a separate castle term. `blocked` holds tiles a prior
-        buy_tile attempt found already owned by another empire.
-        """
-        if pos in owned or pos in blocked:
-            return False
-        touches = sum(
-            1 for dq, dr in HEX_DIRS
-            if (pos[0] + dq, pos[1] + dr) in corridor_set
-        )
-        return touches == 1
-
-    def _grow_option(self, ctx: BotContext, tiles: dict, end_state: dict,
-                     corridor: list[str], corridor_set: set[tuple[int, int]],
+    def _grow_option(self, ctx: BotContext, corridor: list[tuple[int, int]],
+                     corridor_set: set[tuple[int, int]],
                      owned: set[tuple[int, int]],
-                     tower_tiles: set[tuple[int, int]], rng: random.Random, *,
-                     end_index: int, append: bool,
-                     blocked: set[tuple[int, int]] = frozenset()) -> Option | None:
-        tip = _parse_key(corridor[end_index])
-        heading = int(end_state.get("heading", 0))
-        turn_dir = int(end_state.get("turn_dir", 1))
-        want_turn = int(end_state.get("seg_steps", 0)) >= SEG_LEN
+                     tower_tiles: set[tuple[int, int]],
+                     foreign: set[tuple[int, int]], rng: random.Random, *,
+                     end: str) -> Option | None:
+        """Extend one end by one tile: buy it AND move the anchor onto it.
+
+        Both halves live in a single action on purpose. A bought-but-not-yet-
+        connected tile would be a piece of maze state the live map cannot
+        express (it looks exactly like a tower spot), and remembering it is
+        what used to drift out of sync. Doing both here keeps the invariant
+        that the map alone describes the maze.
+        """
+        walk = corridor if end == "spawn" else corridor[::-1]
+        anchor = walk[0]
+        heading, seg_steps, turn_dir = end_state(walk)
+        want_turn = seg_steps >= SEG_LEN
 
         # Serpentine preference: straight while the segment lasts, then U-turn.
         straight = [heading]
@@ -418,8 +395,8 @@ class FrontierDefensePlanner(Planner):
         valid: list[tuple[int, int, tuple[int, int]]] = []  # (order_idx, d, pos)
         for idx, d in enumerate(order):
             hq, hr = HEX_DIRS[d]
-            nxt = (tip[0] + hq, tip[1] + hr)
-            if self._candidate_ok(nxt, corridor_set, owned, blocked):
+            nxt = (anchor[0] + hq, anchor[1] + hr)
+            if self._candidate_ok(nxt, corridor_set, owned, foreign):
                 valid.append((idx, d, nxt))
         if not valid:
             return None  # fully blocked → this end is finished
@@ -433,40 +410,47 @@ class FrontierDefensePlanner(Planner):
         chosen = weighted_top_n(
             valid, key=lambda v: (tower_adj(v[2]), -v[0]), n=ctx.top_n, rng=rng)
         _, d, nxt = chosen
-        turned = d != heading
+        kind = "spawnpoint" if end == "spawn" else "castle"
 
-        def run(api, q=nxt[0], r=nxt[1], nd=d, was_turn=turned):
-            res = api.buy_tile(q, r)
-            if isinstance(res, dict) and res.get("success"):
-                if append:
-                    corridor.append(f"{q},{r}")
-                else:
-                    corridor.insert(0, f"{q},{r}")
-                end_state["heading"] = nd
-                if was_turn:
-                    end_state["turns_in_row"] = int(end_state.get("turns_in_row", 0)) + 1
-                    if end_state["turns_in_row"] >= 2:  # U-turn done → next row
-                        end_state["turn_dir"] = -int(end_state.get("turn_dir", 1))
-                        end_state["turns_in_row"] = 0
-                    end_state["seg_steps"] = 0
-                else:
-                    end_state["seg_steps"] = int(end_state.get("seg_steps", 0)) + 1
-                    end_state["turns_in_row"] = 0
-            elif isinstance(res, dict) and res.get("success") is False:
-                self._remember_blocked(ctx, (q, r))
-            return res
+        def run(api, tgt=nxt, old=anchor, anchor_kind=kind):
+            res = api.buy_tile(tgt[0], tgt[1])
+            if isinstance(res, dict) and res.get("success") is False:
+                return res  # nothing bought, nothing to connect
+            # save_map replaces the whole map, so build the payload from a
+            # FRESH read — a snapshot from the start of the cycle would delete
+            # tiles bought earlier in this tick.
+            new_tiles = dict(api.get_map()["tiles"])
+            new_tiles[_key(old)] = "path"
+            new_tiles[_key(tgt)] = anchor_kind
+            return api.save_map(new_tiles)
 
         price = float(ctx.summary.get("tile_price", 0.0))
-        end_label = "castle" if append else "spawn"
         return Option(
             category="defense",
-            description=f"frontier: grow {end_label} end to ({nxt[0]},{nxt[1]})"
-                        + (" [turn]" if turned else ""),
+            description=f"frontier: grow {end} end to ({nxt[0]},{nxt[1]})"
+                        + (" [turn]" if d != heading else ""),
             run=run, price=price, gain=10.0,
-            mandatory=True, priority=PRIO_GROW,
+            mandatory=True, priority=PRIO_GROW, mutates_map=True,
         )
 
     # ── Relocation ───────────────────────────────────────────────────────────
+
+    def _repair_option(self, tiles: dict, anchor: tuple[int, int], kind: str,
+                       corridor_set: set[tuple[int, int]]) -> Option | None:
+        """Finish a grow whose relocation half did not land.
+
+        An owned `empty` tile hanging off an anchor and touching the corridor
+        exactly once can only be a bought corridor step that never got walked
+        onto — an ordinary tower spot either isn't next to an anchor or touches
+        the corridor more than once. Adopting it is free and strictly better
+        than towering it, so it runs before the priced stray-tower option.
+        """
+        cands = sorted(
+            n for n in ((anchor[0] + dq, anchor[1] + dr) for dq, dr in HEX_DIRS)
+            if _tile_type(tiles.get(_key(n), "")) == "empty"
+            and self._touches_once(n, corridor_set)
+        )
+        return self._relocate_option(anchor, cands[0], kind) if cands else None
 
     def _relocate_option(self, old_pos: tuple[int, int],
                          new_pos: tuple[int, int], kind: str) -> Option:
@@ -486,13 +470,14 @@ class FrontierDefensePlanner(Planner):
             category="defense",
             description=f"frontier: move {label} to ({new_pos[0]},{new_pos[1]})",
             run=run, price=0.0, gain=50.0,
-            mandatory=True, priority=PRIO_RELOCATE,
+            mandatory=True, priority=PRIO_RELOCATE, mutates_map=True,
         )
 
     # ── Towers ──────────────────────────────────────────────────────────────
 
     def _tower_option(self, ctx: BotContext, tiles: dict, structures: dict,
                       stray: list[tuple[int, int]],
+                      corridor: list[tuple[int, int]],
                       rng: random.Random) -> Option | None:
         placed_counts: dict[str, int] = {}
         for k, v in tiles.items():
@@ -505,8 +490,7 @@ class FrontierDefensePlanner(Planner):
         if iid is None:
             return None
 
-        path = bfs_path(tiles) or []
-        pts = path_points(path) if path else []
+        pts = path_points(corridor) if corridor else []
         trange = float(structures[iid].get("range", 1.0) or 1.0)
 
         def score(pos: tuple[int, int]) -> float:
@@ -525,7 +509,7 @@ class FrontierDefensePlanner(Planner):
             category="defense",
             description=f"frontier: tower {iid} at ({best[0]},{best[1]})",
             run=run, price=price, gain=8.0,
-            mandatory=True, priority=PRIO_TOWER_STRAY,
+            mandatory=True, priority=PRIO_TOWER_STRAY, mutates_map=True,
         )
 
     def _highest_unlocked_tower_rank(self, ctx: BotContext, structures: dict) -> int:
@@ -582,17 +566,19 @@ class FrontierDefensePlanner(Planner):
             gain = best_new_q - tower_quality(old)
             if net_cost <= 0 or gain <= 0:
                 continue
-            new_tiles = dict(tiles)
-            new_tiles[key] = best_new
-
-            def run(api, t=new_tiles):
-                return api.save_map(t)
+            # Build the payload from a FRESH read: save_map replaces the whole
+            # map, so posting this cycle's snapshot would delete any tile
+            # bought earlier in the same tick.
+            def run(api, k=key, iid=best_new):
+                new_tiles = dict(api.get_map()["tiles"])
+                new_tiles[k] = iid
+                return api.save_map(new_tiles)
 
             return Option(
                 category="defense",
                 description=f"frontier: era-swap {old_iid} → {best_new} at {key}",
                 run=run, price=net_cost, gain=gain,
-                mandatory=True, priority=PRIO_ERA_SWAP,
+                mandatory=True, priority=PRIO_ERA_SWAP, mutates_map=True,
             )
         return None
 
@@ -636,20 +622,20 @@ class FrontierDefensePlanner(Planner):
     def _side_tile_option(self, ctx: BotContext, tiles: dict, structures: dict,
                           corridor_set: set[tuple[int, int]],
                           owned: set[tuple[int, int]],
-                          rng: random.Random,
-                          blocked: set[tuple[int, int]] = frozenset()) -> Option | None:
+                          foreign: set[tuple[int, int]],
+                          corridor: list[tuple[int, int]],
+                          rng: random.Random) -> Option | None:
         # Purchasable voids adjacent to the corridor (they become tower spots).
         candidates = set()
         for q, r in corridor_set:
             for dq, dr in HEX_DIRS:
                 n = (q + dq, r + dr)
-                if n not in owned and n not in blocked:
+                if n not in owned and n not in foreign:
                     candidates.add(n)
         if not candidates:
             return None
 
-        path = bfs_path(tiles) or []
-        pts = path_points(path) if path else []
+        pts = path_points(corridor) if corridor else []
         # Generic mid-size range for scoring the spot itself
         srange = 2.0
 
@@ -666,14 +652,11 @@ class FrontierDefensePlanner(Planner):
         price = float(ctx.summary.get("tile_price", 0.0))
 
         def run(api, pos=best):
-            res = api.buy_tile(pos[0], pos[1])
-            if isinstance(res, dict) and res.get("success") is False:
-                self._remember_blocked(ctx, pos)
-            return res
+            return api.buy_tile(pos[0], pos[1])
 
         return Option(
             category="defense",
             description=f"frontier: buy side tile ({best[0]},{best[1]})",
             run=run, price=price, gain=5.0,
-            mandatory=True, priority=PRIO_BUY_SIDE,
+            mandatory=True, priority=PRIO_BUY_SIDE, mutates_map=True,
         )

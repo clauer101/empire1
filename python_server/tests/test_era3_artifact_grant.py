@@ -42,6 +42,7 @@ def service(upgrade_provider):
     svc = EmpireService(upgrade_provider, EventBus(), gc)
     svc._database = MagicMock()
     svc._database.record_artifact_acquired = AsyncMock()
+    svc._database.record_empire_stat_max = AsyncMock()
     svc._database.send_message = AsyncMock()
     return svc
 
@@ -90,3 +91,35 @@ async def _drain_pending_tasks() -> None:
     pending = [t for t in asyncio.all_tasks() if t is not current and not t.done()]
     if pending:
         await asyncio.gather(*pending, return_exceptions=True)
+
+
+async def test_era3_grant_skips_artifact_held_by_other_empire(service, monkeypatch):
+    """Artifacts are unique: the grant must not duplicate one another empire holds.
+
+    Bug: candidates only excluded the receiving empire's own artifacts, so a
+    relic already held elsewhere could be granted again. Once both copies were
+    stolen into one empire it held the same artifact twice (double effects).
+    """
+    holder = Empire(uid=2, name="Holder", artifacts=[ARTIFACT_IID])
+    empire = Empire(uid=1, name="Test")
+    service.register(holder)
+    service.register(empire)
+    monkeypatch.setattr(service, "get_current_era", lambda e: "bronze")
+
+    await service._maybe_grant_artifact_for_era3(empire)
+    await _drain_pending_tasks()
+
+    assert empire.artifacts == []
+    service._database.record_artifact_acquired.assert_not_awaited()
+
+
+
+async def test_era3_grant_records_peak_artifacts_held(service, monkeypatch):
+    empire = Empire(uid=1, name="Test")
+    service.register(empire)
+    monkeypatch.setattr(service, "get_current_era", lambda e: "bronze")
+
+    await service._maybe_grant_artifact_for_era3(empire)
+    await _drain_pending_tasks()
+
+    service._database.record_empire_stat_max.assert_awaited_once_with(1, "peak_artifacts_held", 1)

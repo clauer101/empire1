@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-10-09
+
+### Season 5 balance pass: heavier armies, no alliances
+
+Season 5, "Tribal Wars," starts on October 10 at 13:00 UTC, with a balance
+pass aimed at the attacker's side of the fight.
+
+**Rulers.** Damage caps came down from 30 to 24 for Maja, Nandi and Borin, and
+most auras got smaller (2.5 down to 2.0 for Lucien, Borin and Alric). In return
+the rulers got more distinct. **Maja** and **Nandi** are now much faster (speed
+cap 1.1 → 1.5), but Maja wears less armor and Nandi has less health. Nandi's
+aura grows to 2.7, her citizen discount is bigger (up to 35%), and her
+citizen-effect bonus is smaller. **Borin** becomes a slow fortress: armor up to
+30, health up to 4,000, and he can now crawl as slow as 0.3. His top artifact
+retention tier now actually holds artifacts for a full day. **Alric** gains
+health (4,200) and speed, and **Lucien** trades a little health and armor for
+a little speed.
+
+**Units.** Heavy units are heavy again. The Knight, Dragooner, Small Tank,
+Siege Tank, Slow Horseman and Swordman all gained a lot of health (up to six
+times as much). The Dragooner and both tanks also gained armor. The Dragooner,
+both tanks and the Slow Horseman now take an extra wave slot, so you'll see
+fewer of them per wave. Early infantry got sturdier too: the Clubman, Warrior
+and Soldier all have more armor. Fast units got small health bumps. The Large
+Cart now drops four Pikeneers, while the Siege Ram drops Pikeneers instead of
+Crusaders. The King has more health, and the Mech Warrior lost 2 points of
+armor.
+
+**Economy and buildings.** Era upgrades from the Medieval era on cost more
+(the last step is now 2.83M). Culture is spread more evenly: smaller
+buildings like the Theater, Cathedral and Arts Gallery give more, and the
+World Wonder drops from 10 to 5. Defensive buildings that delay enemy sieges
+now delay them half as long, while the Supply Chain got stronger.
+
+**Diplomacy.** Alliances are switched off for this season.
+
 ## 2026-08-20
 
 ### Season 4 balance pass: sharper roles, and a reason to trust someone

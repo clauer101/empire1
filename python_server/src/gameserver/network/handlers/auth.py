@@ -73,21 +73,12 @@ def _build_end_rally_info(gc: Any, empire_service: Any = None) -> dict[str, Any]
         get_end_criterion_activated, is_end_rally_active, end_rally_seconds_remaining,
         get_end_criterion_empire_uid, get_end_criterion_empire_name,
     )
-    from gameserver.network.rest_api import _item_names
+    from gameserver.network.rest_api import _item_names, culture_leader_names
     if gc is None:
         return {"active": False, "effects": {}, "seconds_remaining": 0.0}
     activated = get_end_criterion_activated()
     active = is_end_rally_active(gc)
-    culture_leader_name = ""
-    if empire_service is not None:
-        try:
-            from gameserver.engine.ai_service import AI_UID
-            empires = [e for e in empire_service.all_empires.values() if e.uid != AI_UID]
-            if empires:
-                top = max(empires, key=lambda e: e.resources.get("culture", 0.0))
-                culture_leader_name = top.name
-        except Exception as exc:
-            log.warning("culture_leader_name failed: %s", exc)
+    leader_names = culture_leader_names(empire_service)
     return {
         "active": active,
         "effects": dict(gc.end_rally_effects) if active else {},
@@ -97,7 +88,9 @@ def _build_end_rally_info(gc: Any, empire_service: Any = None) -> dict[str, Any]
         "end_criterion_name": _item_names.get(gc.end_criterion, gc.end_criterion),
         "triggered_by_uid": get_end_criterion_empire_uid(),
         "triggered_by_name": get_end_criterion_empire_name(),
-        "culture_leader_name": culture_leader_name,
+        # Pooled: an allied team leads as a unit, so this can name two empires.
+        "culture_leader_name": " & ".join(leader_names),
+        "culture_leader_names": leader_names,
     }
 
 
@@ -268,6 +261,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "wave_price": round(next_wave_price, 2),
         "critter_slot_price": round(base_critter_slot_price, 2),
         "citizen_effect": svc.empire_service.effective_citizen_effect(empire),
+        "building_gold_modifier": svc.empire_service.building_gold_modifier(empire),
         "base_gold": svc.empire_service._base_gold,
         "base_culture": svc.empire_service._base_culture,
         "base_build_speed": svc.empire_service._base_build_speed,
@@ -297,6 +291,7 @@ def _build_empire_summary(empire: Any, uid: int) -> dict[str, Any]:
         "era_travel_base_seconds": round(svc.attack_service._era_travel_offset(empire), 0),
         "base_artifact_steal_victory": svc.game_config.base_artifact_steal_victory if svc.game_config else 0.0,
         "base_artifact_steal_defeat": svc.game_config.base_artifact_steal_defeat if svc.game_config else 0.0,
+        "alliances_enabled": svc.game_config.alliances_enabled if svc.game_config else True,
         "alliance_culture_cost": svc.game_config.alliance_culture_cost if svc.game_config else 0.0,
         "current_era": svc.empire_service.get_current_era(empire),
         # Alias of current_era: ai_players bots read this key everywhere.

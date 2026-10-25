@@ -39,6 +39,13 @@ def test_to_action():
     assert a.run(None) == "ran"
 
 
+def test_to_action_propagates_mutates_map():
+    """run_bot.py refreshes its cached map from this flag — losing it there
+    would leave later options in the tick planning against a stale map."""
+    assert _opt().to_action().mutates_map is False
+    assert _opt(mutates_map=True).to_action().mutates_map is True
+
+
 def test_category_weight_defaults_to_one():
     assert category_weight({}, "balanced", "other_strategy", "defense") == 1.0
 

@@ -16,6 +16,8 @@ where:
 
 import pytest
 from gameserver.engine.attack_service import AttackService
+from gameserver.models.army import Army
+from gameserver.models.attack import Attack, AttackPhase
 from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.upgrade_provider import UpgradeProvider
 from gameserver.loaders.game_config_loader import GameConfig
@@ -308,3 +310,101 @@ class TestAiBaseOverride:
         """Without base_override, base defaults to 0 (human attack)."""
         _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 500.0
         assert _calc(svc) == pytest.approx(500.0)
+
+
+# ── per-army siege corruption toggle ──────────────────────────────────────────
+
+class TestArmySiegeCorruptionToggle:
+    """Army.siege_corruption_enabled=False leaves the attacker's corruption out.
+
+    The toggle is passed down from the TRAVELING→IN_SIEGE transition, which
+    reads it off the attacking army.
+    """
+
+    def test_toggle_off_drops_the_attacker_corruption(self, svc):
+        attack_service, _ = svc
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.4
+
+        with_corruption = attack_service._calculate_siege_duration(
+            ATTACKER_UID, DEFENDER_UID,
+        )
+        without_corruption = attack_service._calculate_siege_duration(
+            ATTACKER_UID, DEFENDER_UID, apply_attacker_corruption=False,
+        )
+        assert with_corruption == pytest.approx(600.0)   # 1000 * 0.6
+        assert without_corruption == pytest.approx(1000.0)  # full siege
+
+    def test_toggle_off_matches_having_no_corruption_at_all(self, svc):
+        attack_service, _ = svc
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 900.0
+        _def(svc).effects[fx.SIEGE_TIME_MODIFIER] = 0.25
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.3
+        toggled_off = attack_service._calculate_siege_duration(
+            ATTACKER_UID, DEFENDER_UID, apply_attacker_corruption=False,
+        )
+
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.0
+        no_effect = attack_service._calculate_siege_duration(ATTACKER_UID, DEFENDER_UID)
+        assert toggled_off == pytest.approx(no_effect)
+
+    def test_toggle_on_is_the_default(self, svc):
+        attack_service, _ = svc
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.4
+        assert attack_service._calculate_siege_duration(
+            ATTACKER_UID, DEFENDER_UID,
+        ) == attack_service._calculate_siege_duration(
+            ATTACKER_UID, DEFENDER_UID, apply_attacker_corruption=True,
+        )
+
+    def test_toggle_off_still_respects_the_one_second_floor(self, svc):
+        attack_service, _ = svc
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.9
+        assert attack_service._calculate_siege_duration(
+            ATTACKER_UID, DEFENDER_UID, apply_attacker_corruption=False,
+        ) == 1.0
+
+
+# ── the toggle reaching the real TRAVELING→IN_SIEGE transition ────────────────
+
+class TestSiegeTransitionReadsTheArmy:
+    """AttackService.step() must pick the flag off the attacking army.
+
+    Unit-testing _calculate_siege_duration alone would miss the army lookup at
+    the call site, which is where the toggle is actually read.
+    """
+
+    @staticmethod
+    def _arrive(svc, army: Army | None, aid: int = 1) -> float:
+        attack_service, empire_service = svc
+        # step() recomputes both empires' effects from their buildings before
+        # the siege is sized; this test sets effects directly, so keep them.
+        empire_service.recalculate_effects = lambda _empire: None
+        attacker = empire_service.get(ATTACKER_UID)
+        attacker.armies = [army] if army is not None else []
+        attack = Attack(
+            attack_id=1, attacker_uid=ATTACKER_UID, defender_uid=DEFENDER_UID,
+            army_aid=aid, phase=AttackPhase.TRAVELING, eta_seconds=0.0,
+        )
+        attack_service.step(attack, 1.0)
+        assert attack.phase is AttackPhase.IN_SIEGE
+        return attack.total_siege_seconds
+
+    def test_army_with_toggle_on_gets_the_shortened_siege(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.4
+        army = Army(aid=1, uid=ATTACKER_UID, name="Alpha")
+        assert self._arrive(svc, army) == pytest.approx(600.0)
+
+    def test_army_with_toggle_off_serves_the_full_siege(self, svc):
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.4
+        army = Army(aid=1, uid=ATTACKER_UID, name="Alpha", siege_corruption_enabled=False)
+        assert self._arrive(svc, army) == pytest.approx(1000.0)
+
+    def test_vanished_army_falls_back_to_applying_corruption(self, svc):
+        # Army deleted while the attack was in the air — keep the old behaviour.
+        _def(svc).effects[fx.SIEGE_TIME_OFFSET] = 1000.0
+        _atk(svc).effects[fx.ENEMY_SIEGE_TIME_MODIFIER] = 0.4
+        assert self._arrive(svc, None) == pytest.approx(600.0)

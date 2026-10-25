@@ -9,13 +9,14 @@
  */
 
 import { HexGrid, getTileType, registerTileType } from '../lib/hex_grid.js';
-import { hexKey } from '../lib/hex.js';
+import { hexKey, parseKey } from '../lib/hex.js';
 import { eventBus } from '../events.js';
 import { pageTitle } from '../lib/page_title.js';
 import { rest } from '../rest.js';
 import { debug } from '../debug.js';
 import { ERA_KEYS, ERA_YAML_TO_KEY } from '../lib/eras.js';
 import { escHtml } from '../lib/html.js';
+import { fmtHoursMins } from '../lib/format.js';
 
 import {
   _NON_TOWER,
@@ -232,12 +233,6 @@ async function _showDefenseEffectsOverlay() {
     return `<div class="prod-overlay-section"><div class="prod-overlay-title"><span style="color:${color}">${icon} ${title}</span></div>${rowsHtml}</div>`;
   }
 
-  const fmtDur = (s) => {
-    if (s >= 3600) return +(s / 3600).toPrecision(3) + 'h';
-    if (s >= 60) return Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
-    return +s.toPrecision(3) + 's';
-  };
-
   const _items = st.items;
   function _name(iid) {
     return _items?.buildings?.[iid]?.name || _items?.knowledge?.[iid]?.name || _items?.catalog?.[iid]?.name || iid;
@@ -262,14 +257,14 @@ async function _showDefenseEffectsOverlay() {
     return html || `<div style="color:#555;font-size:0.85em;padding:2px 0">No items contribute yet</div>`;
   }
 
-  let siegeRows = sourceRows('siege_offset', (v) => `${v > 0 ? '+' : ''}${(v / 3600).toFixed(1)}h`);
+  let siegeRows = sourceRows('siege_offset', (v) => `${v > 0 ? '+' : ''}${fmtHoursMins(v)}`);
   siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   siegeRows += sourceRows('siege_time_modifier', (v) => `-${(v * 100).toFixed(0)}%`);
   const siegeFinal = siegeTotal * (1 - siegeModifier);
   siegeRows += '<div class="panel-row" style="border-top:1px solid #555;margin:6px 0;padding-top:6px"></div>';
   siegeRows += siegeModifier > 0
-    ? `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(siegeTotal)} × ${((1 - siegeModifier) * 100).toFixed(0)}%</span><span class="value">${fmtDur(siegeFinal)}</span></div>`
-    : `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtDur(siegeTotal)}</span></div>`;
+    ? `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtHoursMins(siegeTotal)} × ${((1 - siegeModifier) * 100).toFixed(0)}%</span><span class="value">${fmtHoursMins(siegeFinal)}</span></div>`
+    : `<div class="panel-row" style="color:#ffa726;font-weight:bold"><span class="label">= ${fmtHoursMins(siegeTotal)}</span></div>`;
 
   const waveRows = sourceRows('wave_delay_offset', (v) => `+${(v / 1000).toFixed(1)}s`);
   const restoreRows = sourceRows('restore_life_after_loss_offset', (v) => `+${v.toFixed(1)} ❤`);
@@ -802,6 +797,11 @@ function _showTileDetails(q, r, tile) {
       _efxHtml +
       '<div class="props-divider"></div>' +
       '<div class="props-section-label">Target Select</div>' +
+      (_isDefender
+        ? '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted,#888);margin-top:4px;cursor:pointer;">' +
+          '<input type="checkbox" id="select-apply-all"> Apply to all' +
+          '</label>'
+        : '') +
       '<div id="select-btns" style="display:flex;gap:4px;margin-top:4px;">' +
       _selectBtns +
       '</div>';
@@ -849,12 +849,24 @@ function _showTileDetails(q, r, tile) {
     root.querySelectorAll('.select-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const val = btn.dataset.select;
-        const tileData = grid.getTile(q, r);
-        if (tileData) {
-          tileData.select = val === 'first' ? undefined : val;
+        const applyAll = root.querySelector('#select-apply-all')?.checked;
+        if (applyAll) {
+          for (const [key, data] of grid.tiles) {
+            if (data.type !== tile.type) continue;
+            data.select = val === 'first' ? undefined : val;
+            const { q: tq, r: tr } = parseKey(key);
+            _ws?.send({ type: 'set_structure_select', hex_q: tq, hex_r: tr, select: val });
+          }
           grid._dirty = true;
-          _ws?.send({ type: 'set_structure_select', hex_q: q, hex_r: r, select: val });
           _placement?.autoSave();
+        } else {
+          const tileData = grid.getTile(q, r);
+          if (tileData) {
+            tileData.select = val === 'first' ? undefined : val;
+            grid._dirty = true;
+            _ws?.send({ type: 'set_structure_select', hex_q: q, hex_r: r, select: val });
+            _placement?.autoSave();
+          }
         }
         root.querySelectorAll('.select-btn').forEach((b) => {
           b.classList.toggle('select-btn--active', b.dataset.select === val);

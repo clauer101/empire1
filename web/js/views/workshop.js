@@ -11,6 +11,7 @@ import { rest } from '../rest.js';
 import { pageTitle } from '../lib/page_title.js';
 import { state } from '../state.js';
 import { eventBus } from '../events.js';
+import { detectSheetGrid } from '../lib/sprite_grid.js';
 
 // ── Module state ──────────────────────────────────────────────
 let _container = null;
@@ -345,8 +346,7 @@ function _initCanvases(el) {
   el.querySelectorAll('.ws-critter-canvas').forEach((canvas) => {
     const drawFrame = (img) => {
       const ctx = canvas.getContext('2d');
-      const fw = img.width / 4,
-        fh = img.height / 4;
+      const { frameW: fw, frameH: fh } = detectSheetGrid(img);
       const scale = Math.min(canvas.width / fw, canvas.height / fh);
       const dx = Math.floor((canvas.width - fw * scale) / 2);
       const dy = Math.floor((canvas.height - fh * scale) / 2);

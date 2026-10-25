@@ -146,6 +146,10 @@ class ArmyRenameRequest(BaseModel):
     name: str
 
 
+class SiegeCorruptionRequest(BaseModel):
+    enabled: bool
+
+
 class WaveCreateRequest(BaseModel):
     pass  # Server decides critter type (SLAVE) and slots (5)
 

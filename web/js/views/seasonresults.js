@@ -107,35 +107,49 @@ function _podiumHtml(empires, seasonPodium) {
     { rank: 3, icon: '🥉', cls: 'sr-bronze' },
   ];
   // Places are pooled by mutual alliance server-side: a place can be a
-  // two-empire team ranked on combined culture. Fall back to individual
-  // top-3 if the server didn't send season_podium (e.g. stale cache).
-  const places = (seasonPodium && seasonPodium.length)
-    ? seasonPodium
-    : empires.slice(0, 3).map((e, i) => ({ place: i + 1, pooled_culture: e.culture, members: [e] }));
+  // two-empire team ranked on combined culture, or a single empire that
+  // outscores the teams on its own.
+  const places = seasonPodium || [];
 
   let html = '';
   for (const m of medals) {
     const p = places[m.rank - 1];
     if (!p || !p.members?.length) continue;
     const isTeam = p.members.length > 1;
-    const namesStr = p.members.map(e => _esc(e.name)).join(' & ');
     html += `
       <div class="sr-podium-entry ${m.cls}${isTeam ? ' sr-podium-team' : ''}">
         <span class="sr-medal">${m.icon}</span>
-        <span class="sr-empire-name">${namesStr}</span>
+        <span class="sr-empire-name">${p.members.map(e => _esc(e.name)).join(' & ')}</span>
         <span class="sr-culture">${fmtRes(p.pooled_culture)} culture${isTeam ? ' (team)' : ''}</span>
       </div>`;
   }
 
-  // Most culture points line (below podium)
+  // Culture lines below the podium: the winning score first (pooled for a
+  // team), then the best individual score so solo performance stays visible.
+  const topPlace = places[0];
+  const topIsTeam = (topPlace?.members?.length ?? 0) > 1;
+  if (topPlace?.members?.length) {
+    html += `
+    <div class="sr-culture-line">
+      🎭 Most Culture Points${topIsTeam ? ' (Team)' : ''}: <strong>${topPlace.members.map(e => _esc(e.name)).join(' & ')}</strong>
+      <span class="sr-value">(${fmtRes(topPlace.pooled_culture)})</span>
+    </div>`;
+  }
+
   const cultureLeader = [...empires].sort((a, b) => b.culture - a.culture);
   const topCulture = cultureLeader[0]?.culture ?? 0;
   const cultureWinners = cultureLeader.filter(e => e.culture >= topCulture);
-  html += `
+  // Skip the individual line when place 1 is that same solo empire — the two
+  // lines would otherwise repeat one name and one number.
+  const soloWinnerIsBestIndividual =
+    !topIsTeam && cultureWinners.length === 1 && topPlace?.members?.[0]?.uid === cultureWinners[0].uid;
+  if (!soloWinnerIsBestIndividual) {
+    html += `
     <div class="sr-culture-line">
-      🎭 Most Culture Points: <strong>${cultureWinners.map(e => _esc(e.name)).join(', ')}</strong>
+      🎖 Best Individual: <strong>${cultureWinners.map(e => _esc(e.name)).join(', ')}</strong>
       <span class="sr-value">(${fmtRes(topCulture)})</span>
     </div>`;
+  }
 
   return html;
 }
@@ -160,7 +174,6 @@ function _allAwardsHtml(empires, myUid) {
     { icon: '💸', label: 'Most Towers Sold',                desc: 'Total towers ever sold or removed.',                                        key: 'towers_sold',                 fmt: n => `${n}` },
     { icon: '🕵', label: 'Most Spies Sent',                 desc: 'Total spy missions launched against other players.',                        key: 'spies_sent',                  fmt: n => `${n}` },
     { icon: '🏺', label: 'Most Artifacts Stolen',           desc: 'Total artifacts taken from other players.',                                 key: 'artifacts_stolen',            fmt: n => `${n}` },
-    { icon: '🏆', label: 'Peak Artifacts Held',             desc: 'Most artifacts held simultaneously at any point during the season.',        key: 'peak_artifacts_held',         fmt: n => `${n} at once` },
     { icon: '💰', label: 'Most Gold Earned from Defense',   desc: 'Gold collected from critter kills via tower bonus rewards.',                key: 'defense_gold_earned',         fmt: n => `${fmtRes(n)} gold` },
     { icon: '🎭', label: 'Most Culture Lost to Attackers',  desc: 'Total culture taken away by successful enemy attacks.',                     key: 'culture_stolen',              fmt: n => fmtRes(n) },
     { icon: '🔬', label: 'Most Research Plundered',         desc: 'Total research effort stolen from other players.',                          key: 'research_stolen',             fmt: n => `${fmtRes(n)} effort` },

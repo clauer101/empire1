@@ -22,6 +22,12 @@ from gameserver.models.hex import HexCoord
 # sqrt(3) — distance between two adjacent flat-top hex centers in "size=1" space
 _SQRT3 = math.sqrt(3)
 
+# The six flat-top hex neighbor offsets. Canonical source — reuse this instead
+# of hand-rolling another copy (admin.py and maze_generator.py both used to).
+HEX_DIRS: tuple[tuple[int, int], ...] = (
+    (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1),
+)
+
 
 def validate_path(path: list[HexCoord]) -> bool:
     """Check that each consecutive pair in the path are hex neighbors.
@@ -68,14 +74,7 @@ def find_path_from_spawn_to_castle(tiles: dict[str, str]) -> Optional[list[HexCo
         return int(q), int(r)
     
     def hex_neighbors(q: int, r: int) -> list[tuple[int, int]]:
-        return [
-            (q + 1, r),
-            (q + 1, r - 1),
-            (q, r - 1),
-            (q - 1, r),
-            (q - 1, r + 1),
-            (q, r + 1),
-        ]
+        return [(q + dq, r + dr) for dq, dr in HEX_DIRS]
     
     def coords_to_key(q: int, r: int) -> str:
         return f"{q},{r}"

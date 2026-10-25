@@ -802,6 +802,18 @@ class Database:
         await self._conn.commit()
         return cursor.rowcount > 0
 
+    async def clear_all_alliance_declarations(self) -> int:
+        """Delete every alliance declaration. Returns the number of rows removed.
+
+        Used at startup when a season runs with alliances disabled: unlike the
+        per-season stat wipe, declarations otherwise survive an empire wipe and
+        would carry teams from the previous season into the new one.
+        """
+        assert self._conn is not None
+        cursor = await self._conn.execute("DELETE FROM alliance_declarations")
+        await self._conn.commit()
+        return int(cursor.rowcount or 0)
+
     async def get_alliance_declarations_for(self, uid: int) -> tuple[set[int], set[int]]:
         """Return (declared_to, declared_by) uid sets for uid's alliance declarations."""
         assert self._conn is not None
@@ -1037,27 +1049,18 @@ class Database:
             log.warning("record_empire_stat_min failed uid=%d field=%s", uid, field, exc_info=True)
 
     async def record_artifact_acquired(self, uid: int, artifact_iid: str, ts: float) -> None:
-        """Upsert artifact_holds row, setting acquired_at = ts, and update peak_artifacts_held."""
+        """Upsert artifact_holds row, setting acquired_at = ts.
+
+        peak_artifacts_held is recorded separately by the caller from the
+        empire's in-memory artifact list: artifact_holds has one row per
+        (uid, iid) and would undercount an empire holding duplicates.
+        """
         assert self._conn is not None
         try:
             await self._conn.execute(
                 "INSERT INTO artifact_holds (uid, artifact_iid, acquired_at) VALUES (?, ?, ?)"
                 " ON CONFLICT(uid, artifact_iid) DO UPDATE SET acquired_at = excluded.acquired_at",
                 (uid, artifact_iid, ts),
-            )
-            # Count how many artifacts this empire currently holds (acquired_at IS NOT NULL)
-            async with self._conn.execute(
-                "SELECT COUNT(*) FROM artifact_holds WHERE uid = ? AND acquired_at IS NOT NULL",
-                (uid,),
-            ) as cur:
-                row = await cur.fetchone()
-            current_count = row[0] if row else 1
-            # Update peak if current count exceeds previous peak
-            await self._conn.execute(
-                "INSERT INTO empire_stats (uid, peak_artifacts_held) VALUES (?, ?)"
-                " ON CONFLICT(uid) DO UPDATE SET"
-                " peak_artifacts_held = MAX(peak_artifacts_held, excluded.peak_artifacts_held)",
-                (uid, current_count),
             )
             await self._conn.commit()
         except Exception:
@@ -1422,11 +1425,19 @@ class Database:
         return [dict(r) for r in rows]
 
     async def wipe_season_stats(self) -> None:
-        """Delete all per-season runtime stats (empire_stats, era_firsts, artifact_holds).
-        User accounts are preserved."""
+        """Delete all per-season runtime state at the season wipe.
+
+        Covers empire_stats, era_firsts, artifact_holds and the alliance
+        declarations — alliances belong to the season that formed them and
+        must not carry last season's teams into the new one. User accounts
+        are preserved.
+        """
         assert self._conn is not None
         await self._conn.execute("DELETE FROM empire_stats")
         await self._conn.execute("DELETE FROM era_firsts")
         await self._conn.execute("DELETE FROM artifact_holds")
+        await self._conn.execute("DELETE FROM alliance_declarations")
         await self._conn.commit()
-        log.info("Season stats wiped (empire_stats, era_firsts, artifact_holds)")
+        log.info(
+            "Season stats wiped (empire_stats, era_firsts, artifact_holds, alliance_declarations)"
+        )

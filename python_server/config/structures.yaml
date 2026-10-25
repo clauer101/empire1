@@ -36,7 +36,7 @@ SLING_TOWER:
   sprite: "assets/sprites/structures/sling_tower/sling_tower.webp"
   damage: 1
   range: 1.5
-  reload_time: 1200
+  reload_time: 1100
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.4
@@ -58,7 +58,7 @@ DOUBLE_SLING_TOWER:
   sprite: "assets/sprites/structures/double_sling_tower/double_sling_tower.webp"
   damage: 2
   range: 2
-  reload_time: 1100
+  reload_time: 1000
   shot_speed: 3
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.4
@@ -98,7 +98,7 @@ ARROW_TOWER:
   sprite: "assets/sprites/structures/arrow_tower/arrow_tower.webp"
   damage: 3
   range: 1.5
-  reload_time: 1000
+  reload_time: 900
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/arrow.webp"
   projectile_y_offset: 0.3
@@ -114,7 +114,7 @@ BALLISTA_TOWER:
   era: bronze
   name: "Ballista Tower"
   sprite: "assets/sprites/structures/ballista_tower/ballista_tower.webp"
-  damage: 12
+  damage: 13
   range: 1.5
   reload_time: 5000
   shot_speed: 2
@@ -165,7 +165,7 @@ COLD_TOWER:
   max_level: 1
   select: first
   costs: {gold: 17600}
-  effects: {slow_duration: 3000, slow_ratio: 0.5}   # slows to 50% speed for 3s
+  effects: {slow_duration: 3000, slow_ratio: 0.6}   # slows to 50% speed for 3s
   requirements: [WEATHER_OBSERVATION, ARCHITECTURE]
 
 CATAPULTS:
@@ -173,7 +173,7 @@ CATAPULTS:
   era: iron
   name: "Catapult"
   sprite: "assets/sprites/structures/catapults/catapults.webp"
-  damage: 12
+  damage: 13
   range: 2
   reload_time: 4900
   shot_speed: 1
@@ -191,7 +191,7 @@ ARBELESTE_TOWER:
   era: iron
   name: "Arbalest Tower"
   sprite: "assets/sprites/structures/arbeleste_tower/arbeleste_tower.webp"
-  damage: 22
+  damage: 24
   range: 1.5
   reload_time: 4800
   shot_speed: 5
@@ -212,7 +212,7 @@ CROSSBOW_TOWER:
   sprite: "assets/sprites/structures/crossbow_tower/crossbow_tower.webp"
   damage: 6
   range: 1.5
-  reload_time: 850
+  reload_time: 750
   shot_speed: 15
   shot_sprite: "assets/sprites/hud/bolt.webp"
   shot_sprite_scale: 0.5
@@ -243,7 +243,7 @@ TAR_TOWER:
   max_level: 1
   select: first
   costs: {gold: 40000}
-  effects: {slow_duration: 3300, slow_ratio: 0.4}   # slows to 40% speed for 4s
+  effects: {slow_duration: 3300, slow_ratio: 0.5}   # slows to 40% speed for 4s
   requirements: [SIEGE_DEFENSE]
 
 HEAVY_TOWER:
@@ -251,7 +251,7 @@ HEAVY_TOWER:
   era: medieval
   name: "Heavy Tower"
   sprite: "assets/sprites/structures/heavy_tower/heavy_tower.webp"
-  damage: 33
+  damage: 36
   range: 1.5
   reload_time: 4700
   shot_speed: 2.5
@@ -279,7 +279,7 @@ BOILING_OIL:
   max_level: 1
   select: first
   costs: {gold: 47000}
-  effects: {burn_duration: 2300, burn_dps: 22}   # burns for 3 dps over 5s
+  effects: {burn_duration: 2300, burn_dps: 18}   # burns for 3 dps over 5s
   requirements: [CITY_WALLS, SIEGE_DEFENSE]
 
 CANNON_TOWER:
@@ -287,7 +287,7 @@ CANNON_TOWER:
   era: medieval
   name: "Cannon Tower"
   sprite: "assets/sprites/structures/cannon_tower/cannon_tower.webp"
-  damage: 18
+  damage: 19
   range: 2
   reload_time: 5000
   shot_speed: 1
@@ -311,7 +311,7 @@ RIFLE_TOWER:
   sprite: "assets/sprites/structures/rifle_tower/rifle_tower.webp"
   damage: 15
   range: 1.5
-  reload_time: 700
+  reload_time: 600
   shot_speed: 5
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -337,7 +337,7 @@ ICE_TOWER:
   max_level: 1
   select: first
   costs: {gold: 64000}
-  effects: {slow_duration: 3000, slow_ratio: 0.3}   
+  effects: {slow_duration: 3000, slow_ratio: 0.4}
   requirements: [CHEMISTRY, PHYSICS]
 
 # ============================================================
@@ -378,7 +378,7 @@ SHOCK_TOWER:
   max_level: 1
   select: first
   costs: {gold: 145000}
-  effects: {slow_duration: 2500, slow_ratio: 0.2}
+  effects: {slow_duration: 2500, slow_ratio: 0.3}
   requirements: [ELECTRIC_FENCE, ELECTRICITY]
 
 GATLING_TOWER:
@@ -388,7 +388,7 @@ GATLING_TOWER:
   sprite: "assets/sprites/structures/gatling_tower/gatling_tower.webp"
   damage: 17
   range: 1.5
-  reload_time: 550
+  reload_time: 450
   shot_speed: 6
   shot_sprite: "assets/sprites/hud/shot.webp"
   projectile_y_offset: 0.3
@@ -419,7 +419,7 @@ PARALYZNG_TOWER:
   max_level: 1
   select: first
   costs: {gold: 300000}
-  effects: {slow_duration: 1200, slow_ratio: 0.1}   # stun: stops completely for 3s
+  effects: {slow_duration: 1200, slow_ratio: 0.2}   # stun: stops completely for 3s
   requirements: [CHEMICAL_WARFARE]
 
 NAPALM_THROWER:
@@ -481,7 +481,7 @@ RADAR_TOWER:
   era: modern
   name: "Radar Tower"
   sprite: "assets/sprites/structures/radar_tower/radar_tower.webp"
-  damage: 32
+  damage: 33
   range: 2.5
   reload_time: 5000
   shot_speed: 5
@@ -499,7 +499,7 @@ ANTI_AIR_TOWER:
   era: modern
   name: "Anti-Air Tower"
   sprite: "assets/sprites/structures/anti_air_tower/anti_air_tower.webp"
-  damage: 72
+  damage: 80
   range: 1.5
   reload_time: 3600
   shot_speed: 5
@@ -540,7 +540,7 @@ LASER_TOWER:
   era: future
   name: "Laser Tower"
   sprite: "assets/sprites/structures/laser_tower/laser_tower.webp"
-  damage: 200
+  damage: 210
   range: 2.5
   reload_time: 5000
   shot_speed: 10
@@ -559,7 +559,7 @@ ROCKET_TOWER:
   era: future
   name: "Rocket Tower"
   sprite: "assets/sprites/structures/rocket_tower/rocket_tower.webp"
-  damage: 70
+  damage: 72
   range: 2.5
   reload_time: 5000
   shot_speed: 3

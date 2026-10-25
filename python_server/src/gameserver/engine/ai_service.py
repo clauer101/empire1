@@ -681,9 +681,9 @@ class AIService:
     def _build_army(self, empire: Empire, player_power: float, army_name: str = "AI Assault",
                     empire_service: "EmpireService | None" = None) -> "tuple[Army, float] | None":
         """Construct a random era-appropriate Army using the shared army_generator logic."""
-        from gameserver.models.army import Army, CritterWave
+        from gameserver.models.army import Army
         from gameserver.util.army_generator import (
-            generate_army, parse_boss_iids, parse_critter_era_groups, parse_slot_by_iid,
+            build_critter_waves, generate_army, parse_boss_iids, parse_critter_era_groups, parse_slot_by_iid,
         )
         import os
 
@@ -716,16 +716,8 @@ class AIService:
             log.warning("[AI_ATTACK] army generation failed: %s", exc)
             return None
 
-        waves: list[CritterWave] = []
         initial_delay_ms = self._game_config.initial_wave_delay_ms
-        for i, w in enumerate(result["waves"]):
-            waves.append(CritterWave(
-                wave_id=i + 1,
-                iid=w["critter"].upper(),
-                slots=w["slots"],
-                num_critters_spawned=0,
-                next_critter_ms=int(i * initial_delay_ms),
-            ))
+        waves = build_critter_waves(result["waves"], initial_delay_ms, boss_iids=boss_iids)
 
         # Travel time from ai_generator config for this era
         era_cfg = ai_generator_cfg.get(era_internal, {})

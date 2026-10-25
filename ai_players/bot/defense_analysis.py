@@ -13,7 +13,12 @@ import random
 from typing import Any, Callable
 
 HEX_DIRS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
-PATH_TILES = {"path", "spawnpoint"}
+DIR_INDEX = {d: i for i, d in enumerate(HEX_DIRS)}
+
+# Tile types that make up the committed maze. A bought tile is "empty" until it
+# is either towered (tower spot) or walked onto by the spawn/castle relocation
+# that finishes a corridor step — so "empty" is never part of the corridor.
+CORRIDOR_TILES = {"spawnpoint", "path", "castle"}
 
 SAMPLES_PER_EDGE = 4     # path interpolation density
 
@@ -108,6 +113,85 @@ def bfs_path(tiles: dict) -> list[tuple[int, int]] | None:
                         nxt.append(n)
             frontier = nxt
     return best
+
+
+def corridor_from_map(map_data: dict) -> tuple[list[tuple[int, int]],
+                                               set[tuple[int, int]]]:
+    """Derive the maze from a live ``GET /api/map`` response.
+
+    Returns ``(route, corridor_set)``:
+
+    - ``route`` — the ordered critter path, spawn first (``route[0]``), castle
+      last (``route[-1]``). Both anchors are corridor types, so those two
+      positions hold by construction and no stored end-convention is needed.
+      Taken from the server's own ``path`` field when present (that is the
+      route battle_service actually walks, including its spawn tie-break),
+      falling back to :func:`bfs_path` for callers whose map response has no
+      ``path`` key (e.g. a test fixture).
+    - ``corridor_set`` — every committed corridor tile, derived from tile TYPE
+      rather than from the route. That keeps the flood-safety rule complete
+      even while the shortest route transiently cuts through a bought-but-not-
+      yet-towered "empty" side tile; such a tile is filtered out of ``route``
+      so the ordered corridor stays a subset of the committed maze.
+
+    Nothing here is remembered between cycles — that is the point: the live map
+    is the single source of truth for where the maze is.
+    """
+    tiles = map_data.get("tiles") or {}
+    corridor_set = {_parse_key(k) for k, v in tiles.items()
+                    if _tile_type(v) in CORRIDOR_TILES}
+    raw = map_data.get("path")
+    route = ([(int(q), int(r)) for q, r in raw] if raw
+             else bfs_path(tiles))
+    return [p for p in (route or []) if p in corridor_set], corridor_set
+
+
+def end_state(walk: list[tuple[int, int]]) -> tuple[int, int, int]:
+    """Serpentine state at ``walk[0]``, derived from the corridor's shape.
+
+    ``walk`` runs from the end being grown inward, so ``walk[0]`` is the anchor
+    (spawn or castle). Returns ``(heading, seg_steps, turn_dir)``:
+
+    - ``heading`` — HEX_DIRS index of the outward step onto the anchor.
+    - ``seg_steps`` — length of the straight run at that end. Note this is a
+      run LENGTH (1 immediately after a turn), where the previously persisted
+      counter was 0 there, so a U-turn is now preferred one tile earlier.
+    - ``turn_dir`` — rotation direction for the next U-turn, flipped after two
+      turns in a row (the serpentine "next row" rule).
+
+    Reading stops at the first non-adjacent step, so a gap left by filtering a
+    shortcut tile out of the route can never produce a bogus heading.
+    """
+    dirs: list[int] = []
+    for a, b in zip(walk, walk[1:]):
+        d = DIR_INDEX.get((a[0] - b[0], a[1] - b[1]))
+        if d is None:
+            break
+        dirs.append(d)
+    if not dirs:
+        return 0, 0, 1
+
+    heading = dirs[0]
+    seg_steps = 0
+    for d in dirs:
+        if d != heading:
+            break
+        seg_steps += 1
+
+    turns_in_row = 0
+    for prev, nxt in zip(dirs, dirs[1:]):
+        if prev == nxt:
+            break
+        turns_in_row += 1
+
+    # Direction of the most recent turn: rotation from the older step to the
+    # newer one, +1/+2 → clockwise, +4/+5 (i.e. -2/-1) → counter-clockwise.
+    turn_dir = 1
+    if len(dirs) > 1 and dirs[0] != dirs[1]:
+        turn_dir = 1 if (dirs[0] - dirs[1]) % 6 in (1, 2) else -1
+    if turns_in_row >= 2:
+        turn_dir = -turn_dir
+    return heading, seg_steps, turn_dir
 
 
 # ── Tower selection ──────────────────────────────────────────────────────────

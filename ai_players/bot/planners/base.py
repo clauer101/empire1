@@ -38,9 +38,11 @@ def weighted_top_n(candidates: Sequence[T], key: Callable[[T], float], n: int,
 class Action:
     """One executable game action: a description plus a callable on the api client."""
 
-    def __init__(self, description: str, run: Callable[[Any], Any]):
+    def __init__(self, description: str, run: Callable[[Any], Any],
+                 mutates_map: bool = False):
         self.description = description
         self.run = run
+        self.mutates_map = mutates_map
 
     def __repr__(self) -> str:
         return f"Action({self.description})"
@@ -71,6 +73,9 @@ class Option:
     saves_for: float = 0.0              # if unaffordable, gold to save toward (0 = don't)
     goal_meta: dict | None = field(default=None)  # {item, action, sticky} for set_goal
     filler: bool = False                # legacy tier field, see class docstring
+    # Buys a tile or writes the map. run_bot.py refetches the cached map after
+    # such an action so later options in the same tick plan against live state.
+    mutates_map: bool = False
 
     def base_score(self) -> float:
         if self.price <= 0:
@@ -93,7 +98,7 @@ class Option:
         return 2 if self.price <= 0 else 1
 
     def to_action(self) -> Action:
-        return Action(self.description, self.run)
+        return Action(self.description, self.run, self.mutates_map)
 
 
 def category_weight(config: dict, personality: str, active_type: str,
@@ -137,7 +142,8 @@ class BotContext:
     def __init__(self, summary: dict, items: dict, memory: dict,
                  strategy: dict, api: Any, selection: dict | None = None,
                  personality: str = "balanced",
-                 map_data: dict | None = None):
+                 map_data: dict | None = None,
+                 neighbors: dict | None = None):
         self.summary = summary
         self.items = items
         self.memory = memory
@@ -146,12 +152,34 @@ class BotContext:
         self.personality = personality
         self.selection = selection or {"top_n": 1}
         self._map_cache: dict | None = map_data
+        self._neighbors: dict | None = neighbors
 
     def get_map(self) -> dict:
         """Return cached map or fetch once (caller should pre-populate via map_data)."""
         if self._map_cache is None:
             self._map_cache = self.api.get_map()
         return self._map_cache
+
+    @property
+    def foreign_tiles(self) -> set[tuple[int, int]]:
+        """Tiles inside the fog radius that belong to another empire.
+
+        The same view a human player has on screen (`GET /api/map/neighbors`),
+        so purchase candidates on foreign land are never proposed in the first
+        place instead of being discovered by a failed buy. The server already
+        nulls the owner uid for our own tiles, so any entry left with a uid is
+        someone else's. An absent or malformed response yields an empty set —
+        the bot then simply falls back to trying, never to standing still.
+        """
+        tiles = (self._neighbors or {}).get("neighbor_tiles") or []
+        found: set[tuple[int, int]] = set()
+        for t in tiles:
+            if isinstance(t, dict) and t.get("uid") is not None:
+                try:
+                    found.add((int(t["q"]), int(t["r"])))
+                except (KeyError, TypeError, ValueError):
+                    continue
+        return found
 
     @property
     def top_n(self) -> int:

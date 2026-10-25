@@ -72,6 +72,7 @@ def _parse_section(type_key: str, section: dict[str, Any]) -> list[ItemDetails]:
             bonus=attrs.get("bonus", {}),
             spawn_on_death=attrs.get("spawn_on_death", {}),
             scale=float(attrs.get("scale", 1.0)),
+            sprite_y_offset=float(attrs.get("sprite_y_offset", 0.0)),
             animation=attrs.get("animation", ""),
             image=attrs.get("image", ""),
             era=attrs.get("era", ""),

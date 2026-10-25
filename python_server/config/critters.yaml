@@ -9,6 +9,8 @@
 # bonus: resources gained for the attacker per critter
 # spawn_on_death: optional critter IID spawned when this unit dies
 # animation: path to sprite folder (contains front/back/left/right.gif)
+# sprite_y_offset: optional vertical sprite shift in battle, as a fraction of the
+#   rendered sprite height (0.1 = 10% up, -0.1 = 10% down; default 0 = no shift)
 
 # ============================================================
 #   STONE_AGE  (Effort 20 – 200)
@@ -43,7 +45,7 @@ CLUBMAN:
   health: 4
   value: 4
   damage: 1
-  armour: 0
+  armour: 1
   slots: 2
   time_between: 1900
   is_boss: false
@@ -83,12 +85,12 @@ WARRIOR:
   era: neolithic
   name: "Warrior"
   description: "Reliable all-rounder with basic armor and decent health. A solid first-era attacker."
-  speed: 0.2
-  health: 8
+  speed: 0.15
+  health: 14
   value: 8
   damage: 1
-  armour: 1
-  slots: 1
+  armour: 2
+  slots: 2
   time_between: 2100
   is_boss: false
   capture: {}
@@ -148,7 +150,7 @@ SWORDMAN:
   name: "Swordman"
   description: "Well-armored melee fighter with steady movement. A dependable all-purpose attacker."
   speed: 0.3
-  health: 35
+  health: 65
   value: 25
   damage: 2
   armour: 7
@@ -211,12 +213,12 @@ HORSEMAN_SLOW:
   era: iron
   name: "Heavy Horseman"
   description: "Heavily armored cavalry that shrugs off most damage. Slow but nearly unstoppable."
-  speed: 0.3
-  health: 15
+  speed: 0.2
+  health: 90
   value: 47
   damage: 2
   armour: 9
-  slots: 1
+  slots: 2
   time_between: 1200
   is_boss: false
   capture: {}
@@ -232,7 +234,7 @@ HORSEMAN_FAST:
   name: "Light Horseman"
   description: "Swift cavalry that outpaces most tower fire. Fragile but nearly impossible to intercept."
   speed: 1.4
-  health: 22
+  health: 24
   value: 45
   damage: 1
   armour: 0
@@ -281,7 +283,7 @@ LARGE_CART:
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: {PIKENEER: 3}
+  spawn_on_death: {PIKENEER: 4}
   scale: 2.0
   animation: assets/sprites/critters/large_cart
   requirements: [IRON]
@@ -315,7 +317,7 @@ CRUSADER:
   era: medieval
   name: "Crusader"
   description: "A well-rounded holy warrior with solid armor and decent speed. The backbone of medieval assaults."
-  speed: 0.6
+  speed: 0.55
   health: 85
   value: 74
   damage: 2
@@ -336,7 +338,7 @@ KNIGHT:
   name: "Knight"
   description: "Encased in full plate armor, the Knight absorbs enormous punishment. Takes two slots but is extremely hard to bring down."
   speed: 0.4
-  health: 141
+  health: 200
   value: 194
   damage: 1
   armour: 12
@@ -356,7 +358,7 @@ SAMURAI:
   name: "Samurai"
   description: "An extremely fast duelist who darts past slow defenses. Less armored than Western knights but far quicker."
   speed: 1.5
-  health: 55
+  health: 65
   value: 86
   damage: 1
   armour: 0
@@ -385,7 +387,7 @@ SIEGE_RAM:
   is_boss: false
   capture: {}
   bonus: {}
-  spawn_on_death: {CRUSADER: 3}
+  spawn_on_death: {PIKENEER: 3}
   scale: 2.0
   animation: assets/sprites/critters/siege_ram
   requirements: [SIEGE_DEFENSE]
@@ -440,7 +442,7 @@ THE_KING:
   name: "The King"
   description: "A legendary ruler who fills an entire wave with impossible health and crushing damage. Bring your best defenses."
   speed: 1
-  health: 880
+  health: 1050
   value: 1000
   damage: 10
   armour: 9
@@ -460,7 +462,7 @@ NINJA:
   name: "Ninja"
   description: "The fastest Renaissance unit, slipping through gaps before towers can respond. Low armor but nearly impossible to catch."
   speed: 1.6
-  health: 81
+  health: 85
   value: 168
   damage: 2
   armour: 0
@@ -500,11 +502,11 @@ DRAGOONER:
   name: "Dragoon"
   description: "Mounted gunner combining speed with solid armor. A well-rounded attacker that hits hard and moves fast."
   speed: 0.7
-  health: 110
+  health: 260
   value: 182
   damage: 2
-  armour: 10
-  slots: 2.2
+  armour: 13
+  slots: 3
   time_between: 1000
   is_boss: false
   capture: {}
@@ -547,7 +549,7 @@ SOLDIER:
   health: 251
   value: 250
   damage: 1
-  armour: 3
+  armour: 6
   slots: 1
   time_between: 400
   is_boss: false
@@ -564,7 +566,7 @@ MOTORBIKE:
   name: "Motorbike"
   description: "Blazing fast reconnaissance unit that tears through defenses at top speed. Light armor compensated by sheer velocity."
   speed: 1.7
-  health: 134
+  health: 139
   value: 264
   damage: 3
   armour: 0
@@ -584,17 +586,17 @@ SMALL_TANK:
   name: "Small Tank"
   description: "Compact armored vehicle with exceptional armor that shrugs off light fire. Slow but nearly immune to most damage."
   speed: 0.4
-  health: 190
+  health: 400
   value: 500
   damage: 2
-  armour: 14
-  slots: 2
+  armour: 16
+  slots: 3
   time_between: 1000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2.0
+  scale: 2.5
   animation: assets/sprites/critters/small_tank
   requirements: [COMBUSTION_ENGINE]
 
@@ -614,7 +616,7 @@ TRANSPORTER:
   capture: {}
   bonus: {}
   spawn_on_death: {SOLDIER: 8}
-  scale: 2.0
+  scale: 2.5
   animation: assets/sprites/critters/transporter
   requirements: [COMBUSTION_ENGINE]
 
@@ -627,18 +629,18 @@ SIEGE_TANK:
   era: modern
   name: "Siege Tank"
   description: "Massively armored siege vehicle with near-impenetrable defense. Slow but almost impossible to destroy."
-  speed: 0.4
-  health: 310
+  speed: 0.45
+  health: 550
   value: 1833
   damage: 2
-  armour: 18
-  slots: 2
+  armour: 20
+  slots: 3
   time_between: 1100
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: null
-  scale: 2.5
+  scale: 3.0
   animation: assets/sprites/critters/siege_tank
   requirements: [KNO_ARMOUR, COMPUTER_TECHNOLOGY]
 
@@ -736,13 +738,14 @@ MECH_WARRIOR:
   health: 937
   value: 3000
   damage: 4
-  armour: 31
+  armour: 29
   slots: 4
-  time_between: 2000
+  time_between: 4000
   is_boss: false
   capture: {}
   bonus: {}
   spawn_on_death: {SPECOPS: 2}
   scale: 2.0
-  animation: assets/sprites/critters/mech_warrior
+  animation: assets/sprites/critters/mech_warrior2
   requirements: [MECH_WARRIOR_LAB, BIONICS]
+

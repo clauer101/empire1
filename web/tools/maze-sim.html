@@ -118,12 +118,6 @@
     <div class="ctl"><label>Era</label>
       <select id="in-era"></select>
     </div>
-    <div class="ctl"><label>Strategy</label>
-      <select id="in-strategy">
-        <option value="coverage">Coverage (serpentine)</option>
-        <option value="frontier">Frontier (corridor growth)</option>
-      </select>
-    </div>
     <div class="ctl"><label>Top-N pick</label><input id="in-topn" type="number" value="2" min="1" max="5"></div>
     <div class="ctl"><label>Seed (blank = random)</label><input id="in-seed" type="number" placeholder="random" min="1"></div>
     <button id="reset-btn">↺ Reset</button>
@@ -245,12 +239,21 @@ function renderMapSVG(tilesObj, maxPx = 520) {
 }
 
 // ── Iterative run state ──
-// Maze-only mode: infinite gold, one DefensePlanner action per Step call. The
-// previous map/state/memory is fed back into the next call so the strategy
-// builds the maze incrementally — exactly like the live bot loop, but gold-free.
+// Maze-only mode: infinite gold, one MazeGenerator action per Step call. The
+// previous map/item_upgrades/memory is fed back into the next call so the
+// generator builds the maze incrementally — exactly like the live bot loop,
+// but gold-free. Backed by the gameserver's admin-only /api/admin/maze/step
+// (python_server/src/gameserver/engine/maze_generator.py) — this is an admin
+// tool, so calls need the admin JWT: log into the SPA as the admin user first.
+const API = window.location.origin;
+function authHeaders() {
+  const token = localStorage.getItem('e3_jwt_token');
+  return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+
 let steps = [];            // steps[i].tilesResolved carries the per-step map
 let playTimer = null;
-let sim = null;            // { era, top_n, seed, tiles, state, memory, cycle } | null
+let sim = null;            // { era, top_n, seed, tiles, item_upgrades, memory, cycle } | null
 let stepping = false;      // re-entrancy guard for Auto
 
 const $ = id => document.getElementById(id);
@@ -260,10 +263,9 @@ function resetSim() {
   const seedInput = $('in-seed').value;
   sim = {
     era: $('in-era').value,
-    strategy: $('in-strategy').value,
     top_n: Number($('in-topn').value),
     seed: seedInput ? Number(seedInput) : null,
-    tiles: null, state: null, memory: null, cycle: 0,
+    tiles: null, item_upgrades: null, memory: null, cycle: 0,
   };
   steps = [];
   renderLog();
@@ -284,13 +286,13 @@ async function step() {
   const status = $('status');
   try {
     const body = {
-      era: sim.era, strategy: sim.strategy, top_n: sim.top_n,
-      tiles: sim.tiles, state: sim.state, memory: sim.memory, cycle: sim.cycle,
+      era: sim.era, top_n: sim.top_n,
+      tiles: sim.tiles, item_upgrades: sim.item_upgrades, memory: sim.memory, cycle: sim.cycle,
     };
     if (sim.seed != null) body.seed = sim.seed;
-    const r = await fetch('/api/tools/maze-sim/step', {
+    const r = await fetch(API + '/api/admin/maze/step', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
@@ -298,7 +300,7 @@ async function step() {
 
     // Persist the returned state as the input for the next call.
     sim.tiles = data.tiles;
-    sim.state = data.state;
+    sim.item_upgrades = data.item_upgrades;
     sim.memory = data.memory;
     sim.cycle = data.cycle;
     sim.seed = data.seed;            // pin the seed the backend actually used

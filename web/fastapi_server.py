@@ -1402,7 +1402,11 @@ async def list_critters():
 
     For "spritesheet":
       file   – relative URL to the PNG (relative to web root)
+
+    Plus the battle display fields: scale (rulers: at level 1), sprite_y_offset
+    and, for rulers, scale_by_level (index 0 = level 1).
     """
+    from gameserver.network.web_server import sprite_display_fields
     critters_dir = WEB_DIR / "assets" / "sprites" / "critters"
     if not critters_dir.is_dir():
         return JSONResponse({"critters": []})
@@ -1416,6 +1420,7 @@ async def list_critters():
     }
 
     result = []
+    scales = sprite_display_fields(CRITTERS_PATH, RULERS_PATH)
 
     def _scan_sprite_dir(sprite_dir: Path, name_prefix: str = "") -> None:
         if not sprite_dir.is_dir():
@@ -1431,6 +1436,7 @@ async def list_critters():
                     "name": name,
                     "type": "gifs",
                     "files": {dir_: f"{base}/{fname}" for dir_, fname in GIF_NAMES.items()},
+                    **scales.get(name, {"scale": 1.0}),
                 })
                 continue
             sheets = sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".webp") and "_splash" not in f.name)
@@ -1439,6 +1445,7 @@ async def list_critters():
                     "name": name,
                     "type": "spritesheet",
                     "file": f"{base}/{sheets[0]}",
+                    **scales.get(name, {"scale": 1.0}),
                 })
 
     _scan_sprite_dir(critters_dir)
@@ -2041,123 +2048,6 @@ async def delete_bot(name: str) -> JSONResponse:
     if log_file.exists():
         log_file.unlink()
     return JSONResponse({"ok": True, "name": name})
-
-
-@app.post("/api/tools/maze-sim")
-async def run_maze_sim(body: dict) -> JSONResponse:
-    """Time-accelerated maze simulation using a REAL bot defense strategy.
-
-    Body: {era, cycles, start_gold, gold_per_cycle, top_n, strategy}.
-    `strategy` selects the build planner (coverage | spiral). Imports the
-    identical implementation from ai_players/bot (mounted ro in Docker next to
-    web/) and runs it against an in-memory map.
-    """
-    try:
-        cfg = _maze_sim_config(body)
-    except _MazeSimError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=exc.status)
-    from bot.sim import simulate_defense
-
-    cycles = max(1, min(2000, int(body.get("cycles", 300))))
-    start_gold = float(body.get("start_gold", 200.0))
-    gold_per_cycle = float(body.get("gold_per_cycle", 100.0))
-    result = simulate_defense(
-        cfg["structures"], cfg["buildings"],
-        cycles=cycles, start_gold=start_gold, gold_per_cycle=gold_per_cycle,
-        completed=cfg["completed"], tile_params=cfg["tile_params"],
-        upgrade_base_by_iid=cfg["upgrade_base_by_iid"],
-        top_n=cfg["top_n"], seed=cfg["seed"], strategy=cfg["strategy"],
-    )
-    return JSONResponse(result)
-
-
-class _MazeSimError(Exception):
-    def __init__(self, message: str, status: int = 400):
-        super().__init__(message)
-        self.status = status
-
-
-def _maze_sim_config(body: dict) -> dict:
-    """Load era-filtered structures/buildings + price params for the maze sim.
-
-    Shared by the batch (`/maze-sim`) and iterative (`/maze-sim/step`) endpoints.
-    Raises _MazeSimError on a bad era or missing ai_players.
-    """
-    ai_players_dir = Path(__file__).parent.parent / "ai_players"
-    if not ai_players_dir.exists():
-        raise _MazeSimError("ai_players not available", status=503)
-    if str(ai_players_dir) not in _sys.path:
-        _sys.path.insert(0, str(ai_players_dir))
-
-    era = str(body.get("era", "stone"))
-    from gameserver.util.army_generator import ERA_ORDER_INTERNAL
-    if era not in ERA_ORDER_INTERNAL:
-        raise _MazeSimError(f"unknown era {era!r}")
-    era_idx = ERA_ORDER_INTERNAL.index(era)
-
-    from bot.sim import DEFENSE_STRATEGIES
-    strategy = str(body.get("strategy", "coverage"))
-    if strategy not in DEFENSE_STRATEGIES:
-        raise _MazeSimError(f"unknown strategy {strategy!r}")
-
-    def _era_filter(catalog: dict) -> dict:
-        return {iid: it for iid, it in catalog.items()
-                if isinstance(it, dict)
-                and it.get("era", "stone") in ERA_ORDER_INTERNAL
-                and ERA_ORDER_INTERNAL.index(it.get("era", "stone")) <= era_idx}
-
-    structures = _era_filter(
-        yaml.safe_load(STRUCTURES_PATH.read_text(encoding="utf-8")) or {})
-    buildings = _era_filter(
-        yaml.safe_load(BUILDINGS_PATH.read_text(encoding="utf-8")) or {})
-    game_cfg = yaml.safe_load(GAME_CONFIG_PATH.read_text(encoding="utf-8")) or {}
-    tile_params = (game_cfg.get("prices") or {}).get(
-        "tile", {"u": 0, "y": 0.7, "z": 1, "v": 2.1})
-    upgrade_bases = game_cfg.get("item_upgrade_base_costs") or []
-
-    def _upgrade_base(it: dict) -> float:
-        idx = ERA_ORDER_INTERNAL.index(it.get("era", "stone"))
-        return float(upgrade_bases[idx]) if idx < len(upgrade_bases) else 100.0
-
-    completed = {req for it in {**structures, **buildings}.values()
-                 for req in (it.get("requirements") or [])}
-    return {
-        "structures": structures,
-        "buildings": buildings,
-        "tile_params": tile_params,
-        "completed": completed,
-        "upgrade_base_by_iid": {iid: _upgrade_base(it)
-                                for iid, it in structures.items()},
-        "top_n": max(1, min(5, int(body.get("top_n", 1)))),
-        "seed": int(body["seed"]) if body.get("seed") else None,
-        "strategy": strategy,
-    }
-
-
-@app.post("/api/tools/maze-sim/step")
-async def run_maze_sim_step(body: dict) -> JSONResponse:
-    """Run ONE defense-planner cycle, resuming from caller-supplied state.
-
-    Iterative maze-only mode: the client persists `tiles`, `state` and `memory`
-    between calls and feeds them back, so each call builds the next part of the
-    maze with infinite gold. Body: {era, top_n, seed, tiles?, state?, memory?,
-    cycle?}. Returns {step, tiles, state, memory, cycle, seed, path_len}.
-    """
-    try:
-        cfg = _maze_sim_config(body)
-    except _MazeSimError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=exc.status)
-    from bot.sim import step_defense
-
-    result = step_defense(
-        cfg["structures"], cfg["buildings"],
-        tiles=body.get("tiles"), state=body.get("state"),
-        memory=body.get("memory"), cycle=int(body.get("cycle", 0)),
-        completed=cfg["completed"], tile_params=cfg["tile_params"],
-        upgrade_base_by_iid=cfg["upgrade_base_by_iid"],
-        top_n=cfg["top_n"], seed=cfg["seed"], strategy=cfg["strategy"],
-    )
-    return JSONResponse(result)
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

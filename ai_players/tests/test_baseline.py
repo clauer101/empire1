@@ -80,6 +80,9 @@ def test_breach_response_places_tower_with_new_planner():
     assert action and "baseline defense" in action.description
     assert "BASIC_TOWER" in action.description
     assert memory["pending_breach"] is False
+    # The wrapper rebuilds the Option, so it must carry the inner option's
+    # map-mutation flag over — otherwise run_bot keeps a stale map for the tick.
+    assert action.mutates_map is True
 
 
 def test_min_towers_scales_with_era():

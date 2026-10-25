@@ -24,12 +24,14 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python_server" / "src"))
 
-from gameserver.models.army import Army, CritterWave
+from gameserver.models.army import Army
 from gameserver.util.army_generator import (
     ERA_ORDER_INTERNAL,
+    build_critter_waves,
     generate_army,
     parse_boss_iids,
     parse_critter_era_groups,
+    parse_critter_type_by_iid,
     parse_slot_by_iid,
 )
 
@@ -86,16 +88,7 @@ def build_hardcoded_pool(
         if era is None:
             continue
         name = entry.get("name", f"Army #{aid}")
-        waves = [
-            CritterWave(
-                wave_id=i + 1,
-                iid=(wd.get("critter") or "").upper(),
-                slots=float(wd.get("slots", 1)),
-                num_critters_spawned=0,
-                next_critter_ms=i * initial_wave_delay_ms,
-            )
-            for i, wd in enumerate(waves_def)
-        ]
+        waves = build_critter_waves(waves_def, initial_wave_delay_ms)
         army = Army(aid=aid, uid=0, name=name, waves=waves)
         pool.setdefault(era, []).append(AttackingArmy(name=name, army=army, era=era, kind="hardcoded"))
         aid += 1
@@ -105,27 +98,41 @@ def build_hardcoded_pool(
 def generate_random_army(
     era: str,
     ai_generator_cfg: dict[str, Any],
-    seed: int,
+    seed: int | None = None,
     initial_wave_delay_ms: float = 15000.0,
     aid: int = 1,
     critters_path: Path = CRITTERS_PATH,
+    critter_type: str | None = None,
+    critter_override: str | None = None,
 ) -> AttackingArmy:
-    """Generate one seeded random army for `era` via the shared AI army generator."""
+    """Generate one seeded random army for `era` via the shared AI army generator.
+
+    Args:
+        critter_type: restrict `era`'s critter pool (and its prev/next-era
+            mixing pools) to only critters of this `critter_type` before
+            generating — e.g. "tank" for an all-tank counter-test army.
+            Raises ValueError listing the critter types actually available
+            for `era` if the filtered pool would be empty.
+        critter_override: after generating, replace every non-boss wave's
+            critter with this iid (wave capacity/slots kept as-is) — absorbed
+            from the old `scripts/sim_map.py::make_army()`.
+    """
     critter_groups = parse_critter_era_groups(critters_path)
+    if critter_type is not None:
+        type_by_iid = parse_critter_type_by_iid(critters_path)
+        matching = {iid for iid, ct in type_by_iid.items() if ct == critter_type}
+        critter_groups = {ek: [iid for iid in iids if iid in matching]
+                          for ek, iids in critter_groups.items()}
+        if not critter_groups.get(era):
+            available = sorted({type_by_iid[iid] for iid in parse_critter_era_groups(critters_path).get(era, [])
+                                if iid in type_by_iid})
+            raise ValueError(
+                f"no {critter_type!r} critters for era {era!r}; available critter_types: {available}")
     slot_by_iid = parse_slot_by_iid(critters_path)
     boss_iids = parse_boss_iids(critters_path)
 
     result = generate_army(era, ai_generator_cfg, critter_groups, slot_by_iid, seed=seed, boss_iids=boss_iids)
-    name = result["name"]
-    waves = [
-        CritterWave(
-            wave_id=i + 1,
-            iid=wd["critter"].upper(),
-            slots=float(wd["slots"]),
-            num_critters_spawned=0,
-            next_critter_ms=i * initial_wave_delay_ms,
-        )
-        for i, wd in enumerate(result["waves"])
-    ]
-    army = Army(aid=aid, uid=0, name=name, waves=waves)
-    return AttackingArmy(name=name, army=army, era=era, kind="random", seed=seed)
+    waves = build_critter_waves(result["waves"], initial_wave_delay_ms,
+                                critter_override=critter_override, boss_iids=boss_iids)
+    army = Army(aid=aid, uid=0, name=result["name"], waves=waves)
+    return AttackingArmy(name=result["name"], army=army, era=era, kind="random", seed=result["seed"])
