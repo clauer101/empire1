@@ -7,10 +7,12 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, AsyncMock, patch
 
 import pytest
 
+from gameserver.engine import global_state
 from gameserver.engine.attack_service import AttackService
 from gameserver.engine.empire_service import EmpireService
 from gameserver.engine.game_loop import GameLoop
@@ -416,10 +418,14 @@ class TestGameLoop:
         attack_svc = MagicMock()
         attack_svc.step_all.return_value = []
         gl = GameLoop(bus, empire_svc, attack_svc, StatisticsService(), game_config=gc)
-        with patch("gameserver.engine.global_state.get_end_criterion_activated",
-                   return_value=object()), \
-             patch("gameserver.engine.global_state.is_end_rally_active", return_value=False):
-            gl._step(1.0)
+        global_state.reset()
+        try:
+            with patch("gameserver.engine.global_state.get_end_criterion_activated",
+                       return_value=datetime.now(timezone.utc)), \
+                 patch("gameserver.engine.global_state.is_end_rally_active", return_value=False):
+                gl._step(1.0)
+        finally:
+            global_state.reset()
         empire_svc.step_all.assert_not_called()
 
     async def test_run_and_stop(self):

@@ -258,37 +258,82 @@ async def test_malformed_next_season_start_stays_frozen(harness):
     assert global_state.get_season_number() == season_before
 
 
-async def test_auto_next_season_start_bases_on_rally_end_not_activation(harness):
-    """Regression: auto-set next_season_start must be computed from when the
-    rally ENDED (activated + end_rally_duration), not from activation time.
+@pytest.mark.parametrize(
+    ("rally_start", "expected"),
+    [
+        # Wednesday: +14 days is a Wednesday, so the Friday of that week.
+        (datetime(2026, 11, 4, 10, 0, tzinfo=timezone.utc), "2026-11-20T13:00:00+00:00"),
+        # Friday before 14:00 Berlin: +14 days still reaches that Friday's slot.
+        (datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc), "2026-11-20T13:00:00+00:00"),
+        # Friday exactly 14:00 Berlin: exactly 14 days is enough.
+        (datetime(2026, 11, 6, 13, 0, tzinfo=timezone.utc), "2026-11-20T13:00:00+00:00"),
+        # Friday after 14:00 Berlin: the slot would be under 14 days, next week.
+        (datetime(2026, 11, 6, 14, 0, tzinfo=timezone.utc), "2026-11-27T13:00:00+00:00"),
+        # Summer time: 14:00 Berlin is 12:00 UTC.
+        (datetime(2026, 7, 1, 10, 0, tzinfo=timezone.utc), "2026-07-17T12:00:00+00:00"),
+        # Next Friday falls after the switch to summer time.
+        (datetime(2026, 3, 13, 14, 0, tzinfo=timezone.utc), "2026-04-03T12:00:00+00:00"),
+    ],
+)
+def test_default_next_season_start(rally_start, expected):
+    assert global_state.default_next_season_start(rally_start) == expected
 
-    Prod incident: with next_season_start_after_end (86000s) smaller than
-    end_rally_duration (604800s), basing the offset on activation alone
-    produced a next_season_start already in the past the moment the rally
-    expired, collapsing snapshot -> wipe -> new season into a single tick
-    with no leadtime at all.
-    """
+
+async def test_rally_start_prefills_next_season_start_and_keeps_title(harness):
     gl, empires, attacks, gc, tmp_path = harness
-    # Deliberately smaller than end_rally_duration + elapsed time, so the old
-    # activation-based computation would land in the past.
-    gc.next_season_start_after_end = RALLY_DURATION
+    activated_at = datetime.now(timezone.utc)
+    global_state.set_season(1, "Season 1", _next_title="Season 2")
+    global_state.restore_end_criterion_activated(activated_at, empire_uid=1, empire_name="Alpha")
 
-    activated_at = datetime.now(timezone.utc) - timedelta(seconds=RALLY_DURATION + 1)
-    global_state.restore_end_criterion_activated(
-        activated_at, empire_uid=1, empire_name="Alpha",
-    )
-    assert global_state.is_end_rally_active(gc) is False
-
-    before_step = datetime.now(timezone.utc)
     gl._step(1.0)
 
-    next_start = global_state.parse_iso_utc(global_state.get_next_season_start())
-    assert next_start is not None
-    # Must be in the future relative to when we stepped — i.e. based on rally
-    # end (~now), not on the long-past activation time.
-    assert next_start > before_step
-    expected = activated_at + timedelta(seconds=RALLY_DURATION) + timedelta(seconds=gc.next_season_start_after_end)
-    assert abs((next_start - expected).total_seconds()) < 2
+    assert global_state.get_next_season_start() == global_state.default_next_season_start(activated_at)
+    assert global_state.get_next_season_title() == "Season 2"
+    assert global_state.is_season_reset_triggered() is False  # rally is still running
+
+
+async def test_admin_next_season_start_is_not_overwritten(harness):
+    gl, empires, attacks, gc, tmp_path = harness
+    override = _iso_in(30 * 86400)
+    global_state.set_season(1, "Season 1", _next_start=override)
+    global_state.restore_end_criterion_activated(
+        datetime.now(timezone.utc), empire_uid=1, empire_name="Alpha",
+    )
+
+    gl._step(1.0)
+
+    assert global_state.get_next_season_start() == override
+
+
+async def test_wipe_waits_for_rally_end_and_snapshot(harness):
+    """A leadtime window that is already open must not wipe the running rally."""
+    gl, empires, attacks, gc, tmp_path = harness
+    global_state.set_season(1, "Season 1", _next_start=_iso_in(SEASON_LEADTIME - 1))
+    global_state.restore_end_criterion_activated(
+        datetime.now(timezone.utc), empire_uid=1, empire_name="Alpha",
+    )
+
+    gl._step(1.0)
+    assert global_state.is_season_wipe_done() is False
+    assert 1 in empires.all_empires
+
+    # Rally over: the snapshot tick must not wipe, the following tick does.
+    global_state.restore_end_criterion_activated(
+        datetime.now(timezone.utc) - timedelta(seconds=RALLY_DURATION + 1),
+        empire_uid=1,
+        empire_name="Alpha",
+    )
+    gl._step(1.0)
+    assert global_state.is_season_snapshot_done() is True
+    assert global_state.is_season_wipe_done() is False
+    assert 1 in empires.all_empires
+    await _drain_pending_tasks()
+    assert (tmp_path / "results" / "season1" / "state.yaml").exists()
+
+    gl._step(1.0)
+    assert global_state.is_season_wipe_done() is True
+    assert empires.all_empires == {}
+    await _drain_pending_tasks()
 
 
 async def test_season_snapshot_pools_allied_culture(harness):

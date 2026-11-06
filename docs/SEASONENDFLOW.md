@@ -32,6 +32,7 @@ Phase 4: New Season Starts when next season time reached  (season_number +1, gam
 - `is_end_rally_active()` returns `True` while `now - activated < end_ralley_duration` (from `game.yaml`).
 - During the rally, `end_ralley_effects` (gold bonus, siege speed modifier, etc.) are broadcast to all clients via the summary endpoint.
 - The frontend shows an "End Rally Active" banner in the era overlay.
+- If `next_season_start` is empty, the next tick prefills it (and `state.yaml` with the next save) with the first Friday 14:00 Berlin time at least 14 days after the rally started. Admins can override it in `tools/season.html`.
 
 **Configured in `game.yaml`:**
 ```yaml
@@ -56,7 +57,7 @@ end_ralley_effects:
 5. `database.wipe_season_stats()` (async) — deletes `empire_stats`, `era_firsts`, `artifact_holds`.
 6. `_season_snapshot_done = False` — allows the snapshot to run.
 
-The wipe is gated on `not is_season_reset_triggered()`, so it fires exactly once; Phase 3/4 take over afterward. A malformed `next_season_start` is treated as "unset" (logged), and the game stays frozen rather than re-triggering the reset every tick.
+The wipe is gated on `is_season_snapshot_done() and not is_season_wipe_done()`, so it never fires before the rally has ended and the snapshot has started, and it fires exactly once; Phase 3/4 take over afterward. A malformed `next_season_start` is treated as "unset" (logged), and the game stays frozen rather than re-triggering the reset every tick.
 
 **Season snapshot (`_take_season_snapshot()`)** runs concurrently:
 - Copies `state.yaml` and `gameserver.db` (via `VACUUM INTO`) to `data/{env}/results/season1/`.
@@ -110,7 +111,7 @@ After the wipe the game loop **returns early every tick** (game is frozen). Clie
 | `end_criterion` | string | Item IID that triggers the end rally |
 | `end_ralley_duration` | int (seconds) | How long the rally lasts |
 | `end_ralley_effects` | dict | Bonus effects active during the rally |
-| `next_season_start` | ISO-8601 string | When the new season opens (in `state.yaml`) |
+| `next_season_start` | ISO-8601 string | When the new season opens (in `state.yaml`, not `game.yaml`; prefilled when the rally starts) |
 | `season_leadtime` | int (seconds) | Fixed duration before `next_season_start` when the wipe fires (default 3 days) |
 | `empire_spawn_spacing` | int | Hex distance between spawn points for new empires |
 

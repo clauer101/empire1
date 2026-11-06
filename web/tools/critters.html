@@ -296,6 +296,12 @@ function startLoop() {
         const cy  = hexCenterY(row, cell);
         drawHex(ctx, cx, cy);
         if (c.sprite.type === 'spritesheet' && c.sprite.ready) {
+          if (c.yOffset) {
+            // Ghost at the unshifted position so the sprite_y_offset is visible.
+            ctx.globalAlpha = 0.22;
+            c.sprite.draw(ctx, direction, ts, cx, critterSpriteCenterY(cy, spriteWidth(c), c.sprite), spriteWidth(c));
+            ctx.globalAlpha = 1;
+          }
           c.sprite.draw(ctx, direction, ts, cx, spriteCenterY(c, cy), spriteWidth(c));
         }
         ctx.font      = '11px monospace';

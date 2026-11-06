@@ -35,7 +35,6 @@ end_ralley_effects:
   siege_time_modifier: 0.5
 end_ralley_duration: 604800
 season_leadtime: 66000
-next_season_start_after_end: 86000
 era_effects:
   stone:
     travel_offset: 300

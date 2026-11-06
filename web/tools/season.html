@@ -252,7 +252,6 @@
         <span class="field-label">Rally active</span><span class="field-value" id="f-rally-active">—</span>
         <span class="field-label">Time remaining</span><span class="field-value" id="f-rally-remaining">—</span>
         <span class="field-label">Rally duration (config)</span><span class="field-value" id="f-rally-duration">—</span>
-        <span class="field-label">Next start after end (config)</span><span class="field-value" id="f-next-start-after">—</span>
       </div>
     </div>
 
@@ -403,7 +402,6 @@
       document.getElementById('f-rally-remaining').textContent =
         d.end_rally_active ? fmtRemaining(d.end_rally_seconds_remaining) : '—';
       document.getElementById('f-rally-duration').textContent   = fmtDuration(d.end_rally_duration_secs);
-      document.getElementById('f-next-start-after').textContent = fmtDuration(d.next_season_start_after_end_secs);
 
       // Editable fields — only pre-fill if not already edited
       const titleInput = document.getElementById('e-next-title');

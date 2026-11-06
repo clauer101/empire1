@@ -259,8 +259,9 @@ class GameLoop:
 
     def _step(self, dt: float) -> None:
         """One tick of the game loop."""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timezone
         from gameserver.engine.global_state import (
+            default_next_season_start,
             get_end_criterion_activated, is_end_rally_active,
             get_next_season_leadtime, get_next_season_start,
             get_next_season_title, get_season_number, get_season_title,
@@ -270,40 +271,34 @@ class GameLoop:
             is_season_wipe_done, set_season_wipe_done,
         )
         now = datetime.now(timezone.utc)
+
+        # Prefill next_season_start as soon as the rally has started, unless an
+        # admin already set one.
+        activated = get_end_criterion_activated()
+        if activated is not None and not get_next_season_start():
+            next_start = default_next_season_start(activated)
+            set_season(get_season_number(), get_season_title(), next_start, get_next_season_title())
+            _log.info("Auto-set next_season_start: %s (rally start %s)", next_start, activated.isoformat())
+
         season_start = parse_iso_utc(get_next_season_start())
 
         # Phase 1 → 2: Rally ended — freeze game and take snapshot once.
-        if get_end_criterion_activated() is not None and self._gc is not None and not is_end_rally_active(self._gc):
+        if activated is not None and self._gc is not None and not is_end_rally_active(self._gc):
             if not is_season_snapshot_done():
                 set_season_snapshot_done(True)
                 set_season_reset_triggered(True)
-                # Auto-set next_season_start if not already configured.
-                # Base it on when the rally actually ENDED (activated +
-                # end_rally_duration), not on rally activation — this code
-                # only runs once the rally has already fully elapsed, so
-                # using `activated` alone understates the leadtime by the
-                # rally's own duration (and can even land in the past).
-                if not get_next_season_start() and self._gc is not None:
-                    activated = get_end_criterion_activated()
-                    if isinstance(activated, datetime):
-                        rally_end = activated + timedelta(seconds=float(self._gc.end_rally_duration))
-                        next_start = (rally_end + timedelta(seconds=float(self._gc.next_season_start_after_end))).isoformat()
-                        set_season(get_season_number(), get_season_title(), _next_start=next_start)
-                        _log.info(
-                            "Auto-set next_season_start: %s (rally end %s + %.0fs)",
-                            next_start, rally_end.isoformat(), self._gc.next_season_start_after_end,
-                        )
                 try:
                     loop = asyncio.get_running_loop()
                     loop.create_task(self._take_season_snapshot())
                 except RuntimeError:
                     pass  # no running event loop in tests
+                return  # let the snapshot start before a wipe can clear its data
 
         # Phase 2 → 3: Wipe when leadtime is reached (next_season_start minus
         # season_leadtime). Fires once regardless of whether game_frozen is
         # already True (set by rally end above). Gated on _season_snapshot_done
         # so snapshot runs first, and on wipe not having happened yet.
-        if season_start is not None and self._gc is not None and not is_season_wipe_done():
+        if season_start is not None and self._gc is not None and is_season_snapshot_done() and not is_season_wipe_done():
             leadtime = get_next_season_leadtime(self._gc.season_leadtime)
             reset_at = parse_iso_utc(leadtime)
             if reset_at is not None and now >= reset_at:

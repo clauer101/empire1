@@ -6,11 +6,17 @@ condition triggers.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import TYPE_CHECKING, Optional
+from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from gameserver.loaders.game_config_loader import GameConfig
+
+_NEXT_SEASON_TZ = ZoneInfo("Europe/Berlin")
+_NEXT_SEASON_WEEKDAY = 4  # Friday (datetime.weekday())
+_NEXT_SEASON_TIME = time(14, 0)
+_NEXT_SEASON_MIN_DAYS_AFTER_RALLY_START = 14
 
 _end_criterion_activated: Optional[datetime] = None
 _eras_first_reached: set[str] = set()  # era keys already claimed by some empire
@@ -127,8 +133,26 @@ def get_next_season_leadtime(season_leadtime: float) -> str:
     start = parse_iso_utc(_next_season_start)
     if start is None:
         return ""
-    from datetime import timedelta
     return (start - timedelta(seconds=season_leadtime)).isoformat()
+
+
+def default_next_season_start(rally_start: datetime) -> str:
+    """First Friday 14:00 Berlin time at least 14 days after the rally started.
+
+    Returns an ISO-8601 UTC timestamp.
+    """
+    earliest = (
+        rally_start + timedelta(days=_NEXT_SEASON_MIN_DAYS_AFTER_RALLY_START)
+    ).astimezone(_NEXT_SEASON_TZ)
+    days_ahead = (_NEXT_SEASON_WEEKDAY - earliest.weekday()) % 7
+    candidate = datetime.combine(
+        earliest.date() + timedelta(days=days_ahead),
+        _NEXT_SEASON_TIME,
+        tzinfo=_NEXT_SEASON_TZ,
+    )
+    if candidate < earliest:
+        candidate += timedelta(days=7)  # wall-clock arithmetic, stays 14:00 across DST
+    return candidate.astimezone(timezone.utc).isoformat()
 
 
 def get_next_season_title() -> str:

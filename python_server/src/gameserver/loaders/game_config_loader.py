@@ -235,11 +235,6 @@ class GameConfig:
     end_rally_duration: float = 604800.0  # 1 week default
     # How long before next_season_start the empire wipe fires (seconds)
     season_leadtime: float = 259200.0  # 3 days default
-    # Seconds after end_criterion_activated to auto-set next_season_start.
-    # Controls how long players have between the world-wonder rally ending and the
-    # new season actually starting (snapshot → wipe → unfreeze).
-    # Only applied if next_season_start is not already set by an admin.
-    next_season_start_after_end: float = 1209600.0  # 14 days default
 
     # -- Structures --------------------------------------------------
     tower_sell_refund: float = 0.3  # fraction of build cost refunded when selling a tower

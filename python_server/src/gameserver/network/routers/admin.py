@@ -1591,7 +1591,6 @@ def make_router(services: "Services") -> APIRouter:
         gc = services.empire_service._gc if services.empire_service else None
         season_leadtime = gc.season_leadtime if gc else 259200.0
         end_rally_duration = gc.end_rally_duration if gc else 604800.0
-        next_season_start_after_end = gc.next_season_start_after_end if gc else 1209600.0
         end_criterion = gc.end_criterion if gc else ""
         eca = get_end_criterion_activated()
         return {
@@ -1603,7 +1602,6 @@ def make_router(services: "Services") -> APIRouter:
             "next_season_leadtime": get_next_season_leadtime(season_leadtime),
             "season_leadtime_secs": season_leadtime,
             "end_rally_duration_secs": end_rally_duration,
-            "next_season_start_after_end_secs": next_season_start_after_end,
             "end_criterion": end_criterion,
             "end_criterion_activated": eca.isoformat() if eca else None,
             "end_criterion_empire_uid": get_end_criterion_empire_uid(),
