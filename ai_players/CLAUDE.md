@@ -20,5 +20,5 @@ describes the overall decision loop.
 ## Tests
 
 ```bash
-rtk run_tests.sh ai_players/tests/          # or --match=<pattern>
+cd ai_players && python -m pytest tests/    # or add -k <pattern>
 ```

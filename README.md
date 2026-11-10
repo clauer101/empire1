@@ -72,16 +72,26 @@ public REST API for load and gameplay testing.
 
 ```bash
 .venv/bin/ruff check python_server/src/     # lint
-rtk run_tests.sh                            # pytest + pytest-asyncio, 93 test files
+rtk run_tests.sh                            # ruff + mypy + pytest
 .venv/bin/pre-commit run --all-files        # ruff + mypy --strict + detect-secrets
 ```
 
+- `run_tests.sh` runs Ruff, mypy, and pytest; use `--match=PATTERN`, a test
+  path, `--quick`, `--cov`, `--failfast`, or `--no-lint` to narrow local runs.
 - Coverage gate enforced in CI: `pytest --cov=gameserver --cov-fail-under=66`.
 - mypy runs in `strict` mode across `python_server/src`.
-- Playwright end-to-end smoke tests run against an isolated dev environment
-  only, with automatic test-account teardown after each run.
+- Playwright end-to-end smoke tests run against dev only. Teardown removes the
+  fixed smoke-test user only when admin credentials are configured.
 - GitHub Actions runs lint + mypy + the full test suite with coverage on every
-  push/PR to `main` (see `.github/workflows/ci.yml`).
+  push/PR to `main` (see `.github/workflows/ci.yml`). Frontend unit tests,
+  Playwright tests, and `ai_players` tests are separate suites and are not
+  currently part of that workflow.
+
+Frontend Node tests run directly, for example `cd web && node
+tests/test_html.test.js`. The autonomous bot suite is separate:
+`cd ai_players && python -m pytest tests/`. Full test architecture, suite
+boundaries, and safety limitations are documented in
+[docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
 ## Deployment
 
@@ -102,7 +112,7 @@ backup to git before touching the running stack.
 
 ## AI-assisted development
 
-`CLAUDE.md` plus scoped rules in `.claude/rules/`, three codified workflows in
+`CLAUDE.md` plus scoped rules in `.claude/rules/`, four codified workflows in
 `.claude/skills/`, and a layered tool-permission model form the actual
 guardrails this project runs on when an AI agent is driving changes against a
 service with real users and real data — including a purpose-built, publicly
